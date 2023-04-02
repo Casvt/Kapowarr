@@ -89,9 +89,9 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 
 		elif key in ('monitor', 'delete_folder'):
 			if value == 'true':
-				value == True
+				value = True
 			elif value == 'false':
-				value == False
+				value = False
 			else:
 				raise InvalidKeyValue(key, value)
 
