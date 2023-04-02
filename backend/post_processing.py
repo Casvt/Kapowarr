@@ -11,7 +11,7 @@ from shutil import move
 from time import time
 
 from backend.db import get_db
-from backend.volumes import scan_files
+from backend.volumes import Volume, scan_files
 
 class PostProcessor(ABC):
 	@abstractmethod
@@ -83,7 +83,7 @@ class PostProcessing(PostProcessor):
 			remove(self.download.file)
 	
 	def _add_file_to_database(self) -> None:
-		scan_files(self.download.volume_id)
+		scan_files(Volume(self.download.volume_id).get_info())
 		return
 
 	def __run_actions(self, actions: list) -> None:
