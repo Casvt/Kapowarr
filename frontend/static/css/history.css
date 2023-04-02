@@ -1,0 +1,14 @@
+table {
+	width: 100%;
+	text-align: left;
+	border-spacing: 0px;
+	padding: 1rem;
+}
+
+th, td {
+	padding: .5rem;
+}
+
+.history-entry > * {
+	border-top: 1px solid lightgray;
+}

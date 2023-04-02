@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<link rel="stylesheet" href="/static/css/general.css">
+	<link rel="stylesheet" href="/static/css/window.css">
+	<link rel="stylesheet" href="/static/css/view_volume.css">
+	<script src="/static/js/general.js" defer></script>
+	<script src="/static/js/window.js" defer></script>
+	<script src="/static/js/view_volume.js" defer></script>
+
+	<title>Volume - Kapowarr</title>
+</head>
+<body>
+	<!-- Window for deleting volume -->
+	<div class="window" id="deleting-window">
+		<section>
+			<div>
+				<h2>Delete volume</h2>
+				<button class="window-close"><img src="/static/img/cancel_search.svg" alt=""></button>
+			</div>
+			<div>
+				<p class="adding-title">Are you sure you want to delete this volume?</p>
+				<form id="delete-form">
+					<table>
+						<tr>
+							<th><label for="delete-folder-input">Delete folder</label></th>
+							<td>
+								<select id="delete-folder-input">
+									<option value="true">Yes</option>
+									<option value="false" selected>No</option>
+								</select>
+							</td>
+						</tr>
+					</table>
+				</form>
+			</div>
+			<div>
+				<button id="cancel-delete">Cancel</button>
+				<button id="submit-delete" type="submit" form="delete-form">Delete</button>
+			</div>
+		</section>
+	</div>
+
+	<!-- Window for editing volume -->
+	<div class="window" id="editing-window">
+		<section>
+			<div>
+				<h2>Edit volume</h2>
+				<button class="window-close"><img src="/static/img/cancel_search.svg" alt=""></button>
+			</div>
+			<div>
+				<form id="edit-form">
+					<table>
+						<tr>
+							<th><label for="monitored-input">Monitored</label></th>
+							<td>
+								<select id="monitored-input">
+									<option value="true">Yes</option>
+									<option value="false" selected>No</option>
+								</select>
+							</td>
+						</tr>
+						<tr>
+							<th><label for="root-folder-input">Root Folder</label></th>
+							<td>
+								<select id="root-folder-input">
+									<option value="true">Yes</option>
+									<option value="false" selected>No</option>
+								</select>
+							</td>
+						</tr>
+					</table>
+				</form>
+			</div>
+			<div>
+				<button id="cancel-edit">Cancel</button>
+				<button id="submit-edit" type="submit" form="edit-form">Update</button>
+			</div>
+		</section>
+	</div>
+
+	<!-- Window for loading after editing volume -->
+	<div class="window window-no-exit" id="edit-loading-window">
+		<section>
+			<div>
+				<h2>Edit volume</h2>
+				<button class="window-close"><img src="/static/img/cancel_search.svg" alt=""></button>
+			</div>
+			<div>
+				<p>Updating...</p>
+			</div>
+			<div>
+			</div>
+		</section>
+	</div>
+
+	<!-- Window for renaming volume files -->
+	<div class="window" id="renaming-window">
+		<section>
+			<div>
+				<h2>Rename volume files</h2>
+				<button class="window-close"><img src="/static/img/cancel_search.svg" alt=""></button>
+			</div>
+			<div>
+				<table id="rename-preview">
+					<tbody>
+					</tbody>
+				</table>
+			</div>
+			<div>
+				<button id="cancel-rename">Cancel</button>
+				<button id="submit-rename" type="submit">Rename</button>
+			</div>
+		</section>
+	</div>
+
+	<!-- Window for manual searching volume -->
+	<div class="window" id="manual-search-window">
+		<section>
+			<div>
+				<h2>Manual Search</h2>
+				<button class="window-close"><img src="/static/img/cancel_search.svg" alt=""></button>
+			</div>
+			<div>
+				<p id="searching-message">Searching...</p>
+				<table id="search-result-table">
+					<thead>
+						<tr>
+							<th class="match-column">Match</th>
+							<th>Title</th>
+							<th class="source-column">Source</th>
+							<th class="search-action-column">Action</th>
+						</tr>
+					</thead>
+					<tbody id="search-results">
+						
+					</tbody>
+				</table>
+			</div>
+			<div>
+				<button id="cancel-search">Cancel</button>
+			</div>
+		</section>
+	</div>
+	
+	<header>
+		<div class="menu-title-container">
+			<button class="toggle-nav" id="nav-button" aria-label="toggle menu">
+				<img src="/static/img/menu.svg" alt="Menu icon" class="nav-icon">
+			</button>
+			<h1>Kapowarr</h1>
+		</div>
+	</header>
+	<div class="nav-main">
+		<div id="nav">
+			<nav>
+				<a href="/" class="nav-entry nav-side-line current-nav">Volumes</a>
+					<a href="/add" class="sub-nav-entry nav-side-line">Add Volume</a>
+					<a href="/library-import" class="sub-nav-entry nav-side-line">Library Import</a>
+				<a href="/activity/queue" class="nav-entry nav-side-line">Activity</a>
+				<a href="/settings" class="nav-entry nav-side-line">Settings</a>
+				<a href="/system/status" class="nav-entry nav-side-line">System</a>
+			</nav>
+			<div id="task-queue"></div>
+		</div>
+		<main>
+			<div class="tool-bar-container">
+				<div class="tool-bar">
+					<button class="tool-bar-button" id="refresh-button">
+						<img src="/static/img/refresh.svg" alt="">
+						<p>Refresh & Scan</p>
+					</button>
+					<button class="tool-bar-button" id="autosearch-button">
+						<img src="/static/img/search_white.svg" alt="">
+						<p>Search Monitored</p>
+					</button>
+					<button class="tool-bar-button" id="manualsearch-button">
+						<img src="/static/img/manual_search_white.svg" alt="">
+						<p>Manual Search</p>
+					</button>
+					<button class="tool-bar-button" id="rename-button">
+						<img src="/static/img/rename.svg" alt="">
+						<p>Preview Rename</p>
+					</button>
+					<button class="tool-bar-button" id="edit-button">
+						<img src="/static/img/edit.svg" alt="">
+						<p>Edit</p>
+					</button>
+					<button class="tool-bar-button" id="delete-button">
+						<img src="/static/img/delete_white.svg" alt="">
+						<p>Delete</p>
+					</button>
+				</div>
+			</div>
+			<div id="volume-content">
+				<div class="volume-mobile-description-container">
+					<div class="volume-info">
+						<img src="" alt="" id="volume-cover">
+						<div class="volume-info-container">
+							<div class="volume-title-monitored">
+								<button id="volume-monitor"><img id="volume-monitor-icon" src=""></button>
+								<h2 id="volume-title"></h2>
+							</div>
+							<div id="volume-tags"></div>
+							<p id="volume-path"></p>
+							<p id="volume-description" class="description"></p>
+						</div>
+					</div>
+					<p id="volume-description-mobile" class="description"></p>
+				</div>
+				<div class="issues-table-container">
+					<table class="issues-table">
+						<thead>
+							<tr>
+								<th class="issues-header monitor-column"></th>
+								<th class="issues-header number-column">#</th>
+								<th class="issues-header title-column">Title</th>
+								<th class="issues-header date-column">Release Date</th>
+								<th class="issues-header download-column"><img src="/static/img/download.svg" alt="Downloaded" class="action-icon"></th>
+								<th class="issues-header action-column"><img class="action-icon" src="/static/img/settings.svg" alt="Settings"></th>
+								<th class="issues-header action-column"></th>
+							</tr>
+						</thead>
+						<tbody id="issues-list">
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</main>
+	</div>
+</body>
+</html>

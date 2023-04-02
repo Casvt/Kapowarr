@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<link rel="stylesheet" href="/static/css/general.css">
+	<link rel="stylesheet" href="/static/css/window.css">
+	<link rel="stylesheet" href="/static/css/add_volume.css">
+	<script src="/static/js/general.js" defer></script>
+	<script src="/static/js/window.js" defer></script>
+	<script src="/static/js/add_volume.js" defer></script>
+
+	<title>Add Volume - Kapowarr</title>
+</head>
+<body>
+	<!-- Window for adding volume -->
+	<div class="window" id="add-window">
+		<section>
+			<div>
+				<h2 id="add-title"></h2>
+				<button class="window-close"><img src="/static/img/cancel_search.svg" alt=""></button>
+			</div>
+			<div>
+				<img src="" id="add-cover">
+				<form id="add-form">
+					<input type="hidden" id="comicvine-input" value="">
+					<table>
+						<tr>
+							<th><label for="rootfolder-input">Root Folder</label></th>
+							<td>
+								<select id="rootfolder-input">
+								</select>
+							</td>
+						</tr>
+						<tr>
+							<th><label for="monitor-input">Monitor</label></th>
+							<td>
+								<select id="monitor-input">
+									<option value="true" selected>Yes</option>
+									<option value="false">No</option>
+								</select>
+							</td>
+						</tr>
+					</table>
+				</form>
+			</div>
+			<div>
+				<button id="add-volume" type="submit" form="add-form">Add Volume</button>
+			</div>
+		</section>
+	</div>
+
+	<!-- Window shown while adding volume -->
+	<div class="window window-no-exit" id="adding-window">
+		<section>
+			<div>
+				<h2 id="adding-title"></h2>
+				<button class="window-close"><img src="/static/img/cancel_search.svg" alt=""></button>
+			</div>
+			<div>
+				<p class="adding-title">Adding volume...</p>
+			</div>
+			<div>
+			</div>
+		</section>
+	</div>
+	
+	<header>
+		<div class="menu-title-container">
+			<button class="toggle-nav" id="nav-button" aria-label="toggle menu">
+				<img src="/static/img/menu.svg" alt="Menu icon" class="nav-icon">
+			</button>
+			<h1>Kapowarr</h1>
+		</div>
+	</header>
+
+	<div class="nav-main">
+		<div id="nav">
+			<nav>
+				<a href="/" class="nav-entry nav-side-line">Volumes</a>
+					<a href="/add" class="sub-nav-entry nav-side-line current-nav">Add Volume</a>
+				<a href="/activity/queue" class="nav-entry nav-side-line">Activity</a>
+				<a href="/settings" class="nav-entry nav-side-line">Settings</a>
+				<a href="/system/status" class="nav-entry nav-side-line">System</a>
+			</nav>
+			<div id="task-queue"></div>
+		</div>
+		<main>
+			<section class="search-bar">
+				<button id="search-button"><img src="/static/img/search.svg" alt="Search icon"></button>
+				<input type="text" id="search-input" autofocus>
+				<button id="search-cancel-button"><img src="/static/img/cancel_search.svg" alt="Cancel search icon"></button>
+			</section>
+			<section id="search-explain">
+				<p>It's easy to add a new volume, just start typing the name of the volume you want to add</p>
+				<br>
+				<p>You can also search using CV id of a volume. e.g. 'cv:4050-2127'</p>
+			</section>
+			<div id="search-empty" class="hidden">
+				<p>No results</p>
+			</div>
+			<div id="search-failed" class="hidden">
+				<p>The Comic Vine api key is not set or is invalid</p>
+				<p>Please set a working Comic Vine api key at Settings -> General -> Comic Vine API</p>
+			</div>
+			<section id="search-results"></section>
+		</main>
+	</div>
+</body>
+</html>

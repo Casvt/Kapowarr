@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<link rel="stylesheet" href="/static/css/general.css">
+	<link rel="stylesheet" href="/static/css/blocklist.css">
+	<script src="/static/js/general.js" defer></script>
+	<script src="/static/js/blocklist.js" defer></script>
+
+	<title>Blocklist - Kapowarr</title>
+</head>
+<body>
+	<header>
+		<div class="menu-title-container">
+			<button class="toggle-nav" id="nav-button" aria-label="toggle menu">
+				<img src="/static/img/menu.svg" alt="Menu icon" class="nav-icon">
+			</button>
+			<h1>Kapowarr</h1>
+		</div>
+	</header>
+	<div class="nav-main">
+		<div id="nav">
+			<nav>
+				<a href="/" class="nav-entry nav-side-line">Volumes</a>
+				<a href="/activity/queue" class="nav-entry nav-side-line">Activity</a>
+					<a href="/activity/queue" class="sub-nav-entry nav-side-line">Queue</a>
+					<a href="/activity/history" class="sub-nav-entry nav-side-line">History</a>
+					<a href="/activity/blocklist" class="sub-nav-entry nav-side-line current-nav">Blocklist</a>
+				<a href="/settings" class="nav-entry nav-side-line">Settings</a>
+				<a href="/system/status" class="nav-entry nav-side-line">System</a>
+			</nav>
+			<div id="task-queue"></div>
+		</div>
+		<main>
+			<div class="tool-bar-container">
+				<div class="tool-bar">
+					<button class="tool-bar-button" id="refresh-button">
+						<img src="/static/img/refresh.svg" alt="">
+						<p>Refresh</p>
+					</button>
+					<button class="tool-bar-button" id="clear-button">
+						<img src="/static/img/delete_white.svg" alt="">
+						<p>Clear Blocklist</p>
+					</button>
+				</div>
+			</div>
+			<div class="main-window">
+				<table>
+					<thead>
+						<tr>
+							<th class="link-column">Link</th>
+							<th class="reason-column">Reason</th>
+							<th class="date-column">Added at</th>
+							<th class="option-column">Delete</th>
+						</tr>
+					</thead>
+					<tbody id="blocklist">
+						
+					</tbody>
+				</table>
+			</div>
+		</main>
+	</div>
+</body>
+</html>

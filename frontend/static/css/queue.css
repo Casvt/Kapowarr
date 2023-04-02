@@ -1,0 +1,43 @@
+.main-window {
+	overflow-x: auto;
+}
+
+table {
+	width: 100%;
+	text-align: left;
+	border-spacing: 0px;
+	padding: 1rem;
+}
+
+th, td {
+	padding: .5rem;
+}
+
+th:not([class$="-column"]),
+td:not([class$="-column"]) {
+	min-width: 12.5rem;
+}
+
+.status-column {
+	width: 7.5rem;
+}
+
+.number-column {
+	width: 6.5rem;
+}
+
+.option-column {
+	width: 3.5rem;
+}
+
+.queue-entry > * {
+	border-top: 1px solid lightgray;
+}
+
+.delete-entry {
+	background-color: transparent;
+}
+
+.delete-entry-icon {
+	width: 20px;
+}

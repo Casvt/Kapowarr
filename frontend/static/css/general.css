@@ -1,0 +1,236 @@
+*, *::before, *::after {
+	margin: 0px;
+	box-sizing: border-box;
+	border: 0px;
+}
+
+img {
+	width: 100%;
+}
+
+button:hover,
+select:hover {
+	cursor: pointer;
+}
+
+:root {
+	--light-color: white;
+	--off-light-color: #f6f6f6;
+	--border-light-color: #dde6e9;
+	--dark-color: #464b51;
+	--mid-color: gray;
+	--accent-color: #ebc700;
+	--success-color: #54db68;
+	--error-color: #db5461;
+
+	--header-height: 65px;
+	--nav-width: clamp(160px, 20vw, 210px);
+}
+
+:root:has(#search-bar.show-search-bar) {
+	--header-height: 103px;
+}
+
+body {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+	background-color: var(--off-light-color);
+	overflow-y: hidden;
+	font-family: 'Roboto', 'open sans', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+}
+
+header {
+	display: flex;
+	justify-content: space-between;
+	gap: .75rem;
+	padding: 1rem;
+	background-color: var(--accent-color);
+	color: var(--dark-color);
+	font-size: .9rem;
+}
+
+.nav-main {
+	display: flex;
+	height: calc(100vh - var(--header-height));
+}
+
+.toggle-nav,
+.toggle-search {
+	display: none;
+	background-color: transparent;
+}
+
+.menu-title-container {
+	display: flex;
+	gap: 1rem;
+	align-items: center;
+}
+
+.nav-icon,
+.search-icon {
+	height: 31px;
+	aspect-ratio: 1/1;
+}
+
+#nav {
+	width: var(--nav-width);
+	background-color: var(--dark-color);
+	color: var(--light-color);
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	flex: 0 0 auto;
+	overflow-y: auto;
+	/* I hate using z-index but it avoids button animations from showing in front of the nav */
+	z-index: 1;
+}
+
+nav {
+	display: flex;
+	flex-direction: column;
+}
+
+.nav-entry,
+.sub-nav-entry {
+	color: var(--light-color);
+	text-decoration: none;
+	padding: .9rem;
+	padding-left: 1.3rem;
+	font-size: .9rem;
+}
+
+.nav-entry:hover,
+.sub-nav-entry:hover {
+	color: var(--accent-color);
+}
+
+.sub-nav-entry {
+	padding-left: 2.3rem;
+	font-size: .8rem;
+}
+
+.nav-side-line {
+	border-left: 3px solid var(--accent-color);
+}
+
+.current-nav {
+	color: var(--accent-color);
+}
+
+#task-queue {
+	padding: 1rem;
+	display: flex;
+	flex-direction: column;
+	font-size: .8rem;
+}
+
+main {
+	overflow-y: auto;
+	width: calc(100% - var(--nav-width));
+}
+
+.tool-bar-container {
+	background-color: var(--mid-color);
+	height: 3.5rem;
+	padding-inline: clamp(.3rem, 2.6vw, 1.5rem);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	overflow-x: auto;
+}
+
+.tool-bar {
+	display: flex;
+}
+
+.tool-bar-button {
+	height: 3.5rem;
+	width: 4rem;
+
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: .25rem;
+
+	padding: .5rem;
+	color: var(--light-color);
+	background-color: var(--mid-color);
+}
+
+select.tool-bar-button {
+	height: unset;
+	width: 100%;
+}
+
+.tool-bar-button > img {
+	height: 1.15rem;
+}
+
+.tool-bar-button > p {
+	word-wrap: normal;
+	font-size: .65rem;
+}
+
+.description {
+	font-size: .9rem;
+	opacity: .9;
+}
+
+.description a {
+	color: var(--accent-color);
+}
+
+.hidden {
+	display: none !important;
+}
+
+.error {
+	color: var(--error-color);
+	font-size: .9rem;
+}
+
+.spinning {
+	animation: spin-element 2.5s linear infinite forwards;
+}
+
+@keyframes spin-element {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+@media (max-width: 720px) {
+	#nav {
+		position: absolute;
+		left: calc(var(--nav-width) * -1);
+		height: calc(100vh - var(--header-height));
+	}
+	.show-nav {
+		left: 0 !important;
+	}
+	.toggle-nav {
+		display: flex;
+	}
+	main {
+		width: 100vw;
+	}
+}
+
+@media (max-width: 535px) {
+	.toggle-search {
+		display: flex;
+	}
+}
+
+@media (max-width: 442px) {
+	header {
+		flex-direction: column;
+	}
+	.menu-title-container {
+		justify-content: center;
+	}
+}

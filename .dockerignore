@@ -14,6 +14,7 @@ dist/
 downloads/
 eggs/
 .eggs/
+lib/
 lib64/
 parts/
 sdist/
@@ -127,12 +128,26 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# database
+# Database
 *.db
 
-# vs-code
+# VS code
 *.code-workspace
 .vscode/
 
-# downloads
-temp_downloads/*
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Git(hub)
+.gitignore
+.git/
+.github/
+
+# Various files
+*.md
+LICENSE
+
+# Tests
+tests/

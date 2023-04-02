@@ -1,0 +1,140 @@
+.settings-container {
+	overflow-x: auto;
+	color: var(--dark-color);
+	padding: 1rem;
+}
+
+.settings-container table {
+	width: 100%;
+}
+
+.settings-container table tr > * {
+	padding: .5rem;
+}
+
+.settings-container table tr > th {
+	width: 20%;
+	text-align: right;
+	vertical-align: top;
+	padding-top: 1.1rem;
+}
+
+.settings-container table tr > td p {
+	margin-top: .3rem;
+}
+
+.settings-container table tr > td select,
+.settings-container table tr > td input[type="text"],
+.settings-container table tr > td input[type="password"],
+#api-container {
+	width: 45vw;
+	height: calc(19px + (2 * .5rem) + (2 * 2px));
+	border: 2px solid var(--border-light-color);
+	background-color: var(--light-color);
+	padding: .5rem;
+	border-radius: 2px;
+	font-size: 1rem;
+	font-family: "Ubuntu Mono", Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+h2 {
+	font-size: 2rem;
+	border-bottom: 1px solid var(--border-light-color);
+	margin-block: 1rem;
+	font-weight: 500;
+}
+
+#api-container {
+	display: flex;
+	justify-content: flex-end;
+	padding: 0;
+	border: 0;
+}
+
+#api-input {
+	margin: 0;
+	flex-grow: 1;
+	padding: .5rem;
+	overflow-x: auto;
+	border-block: 2px solid var(--border-light-color);
+	border-left: 2px solid var(--border-light-color);
+	border-radius: 2px;
+}
+
+#api-container button > img {
+	padding: .4rem;
+	height: 100%;
+}
+
+#generate-api {
+	background-color: var(--error-color);
+	border-block: 2px solid var(--error-color);
+	border-right: 2px solid var(--error-color);
+	border-top-right-radius: 2px;
+	border-bottom-right-radius: 2px;
+}
+
+#root-folder-table {
+	border-spacing: 0px;
+}
+
+#root-folder-table th {
+	text-align: left;
+	padding-top: .5rem;
+	width: unset;
+}
+
+.root-folder-entry > * {
+	border-top: 1px solid var(--border-light-color);
+}
+
+#toggle-root-folder {
+	margin-top: .5rem;
+
+	padding: .8rem;
+	border-radius: 4px;
+	color: var(--dark-color);
+	background-color: var(--accent-color);
+}
+
+#add-row td {
+	padding-block: 0;
+}
+
+#add-row input {
+	width: 20rem;
+
+	padding-inline: .3rem;
+}
+
+#add-row button {
+	padding: .4rem .6rem;
+	border-radius: 4px;
+	color: var(--dark-color);
+	background-color: var(--accent-color);
+}
+
+.action-column {
+	width: 4.5rem;
+}
+
+.action-column button {
+	background-color: transparent;
+	padding: 0;
+}
+
+.action-column img {
+	width: 1.5rem;
+}
+
+@media (max-width: 720px) {
+	.settings-container table {
+		width: 100%;
+	}
+	.settings-container table tr > td select,
+	.settings-container table tr > td input[type="text"],
+	.settings-container table tr > td input[type="password"],
+	#api-container {
+		width: 100%;
+	}
+}

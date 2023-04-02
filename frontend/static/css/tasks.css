@@ -1,0 +1,35 @@
+.main-window {
+	color: var(--dark-color);
+	padding: 1rem;
+}
+
+.main-window h2 {
+	border-bottom: 2px solid var(--border-light-color);
+	margin-bottom: 1rem;
+}
+
+.main-window h2:not(:first-child) {
+	margin-top: 1rem;
+}
+
+.task-interval-table tr > :not(:first-child) {
+	width: 10%;
+}
+
+.task-interval-table tr > td {
+	border-top: 1px solid var(--border-light-color);
+}
+
+table {
+	width: 100%;
+	text-align: left;
+	border-spacing: 0px;
+}
+
+th, td {
+	padding: .5rem;
+}
+
+.history-entry > * {
+	border-top: 1px solid var(--border-light-color);
+}

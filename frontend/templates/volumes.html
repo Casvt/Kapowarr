@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<link rel="stylesheet" href="/static/css/general.css">
+	<link rel="stylesheet" href="/static/css/volumes.css">
+	<script src="/static/js/general.js" defer></script>
+	<script src="/static/js/volumes.js" defer></script>
+
+	<title>Volumes - Kapowarr</title>
+</head>
+<body>
+	<header>
+		<div class="menu-title-container">
+			<button class="toggle-nav" id="nav-button" aria-label="toggle menu">
+				<img src="/static/img/menu.svg" alt="" class="nav-icon">
+			</button>
+			<h1>Kapowarr</h1>
+			<button class="toggle-search" id="search-toggle-button" aria-label="toggle search">
+				<img src="/static/img/search.svg" alt="" class="search-icon">
+			</button>
+		</div>
+		<div id="search-bar">
+			<button type="button" class="search-button" aria-label="Clear search" id="clear-search-button">
+				<img src="/static/img/cancel_search.svg" alt="">
+			</button>
+			<button class="search-button" aria-label="Start search" id="search-button">
+				<img src="/static/img/search.svg" alt="">
+			</button>
+			<input type="text" id="search-input" placeholder="Search">
+		</div>
+	</header>
+	<div class="nav-main">
+		<div id="nav">
+			<nav>
+				<a href="/" class="nav-entry current-nav nav-side-line">Volumes</a>
+					<a href="/add" class="sub-nav-entry nav-side-line">Add Volume</a>
+				<a href="/activity/queue" class="nav-entry nav-side-line">Activity</a>
+				<a href="/settings" class="nav-entry nav-side-line">Settings</a>
+				<a href="/system/status" class="nav-entry nav-side-line">System</a>
+			</nav>
+			<div id="task-queue"></div>
+		</div>
+		<main>
+			<div class="tool-bar-container">
+				<div class="tool-bar">
+					<button class="tool-bar-button" id="update-button">
+						<img src="/static/img/refresh.svg" alt="">
+						<p>Update All</p>
+					</button>
+					<button class="tool-bar-button" id="searchall-button">
+						<img src="/static/img/search_white.svg" alt="">
+						<p>Search All</p>
+					</button>
+				</div>
+				<div class="tool-bar">
+					<select class="tool-bar-button" id="sort-button">
+						<option value="title">Title</option>
+						<option value="volume_number">Volume Number</option>
+						<option value="year">Year</option>
+					</select>
+				</div>
+			</div>
+			<div id="vault"></div>
+		</main>
+	</div>
+</body>
+</html>

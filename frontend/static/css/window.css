@@ -1,0 +1,123 @@
+.window {
+	position: absolute;
+	inset: 0 0 0 0;
+	background-color: rgba(0, 0, 0, 0.6);
+	z-index: 2;
+}
+
+.window-no-exit .window-close {
+	display: none;
+}
+
+.window > section {
+	position: absolute;
+	width: clamp(640px, 65%, 775px);
+	max-height: 90%;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	overflow: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+	background-color: white;
+	color: var(--dark-color);
+}
+
+.window > section > * {
+	padding: clamp(.5rem, 3vw, 1.5rem) clamp(.5rem, 4.5vw, 2rem);
+}
+
+.window > section > :nth-child(1),
+.window > section > :nth-child(3) {
+	display: flex;
+	align-items: center;
+	font-size: .8rem;
+	gap: 1rem;
+	height: 4.5rem;
+}
+
+/* Header */
+.window > section > :nth-child(1) {
+	border-bottom: 2px solid var(--border-light-color);
+	justify-content: space-between;
+}
+
+.window-close {
+	aspect-ratio: 1/1;
+	height: 1.5rem;
+	background-color: transparent;
+	padding: 0;
+}
+
+.window-close > img {
+	height: 100%;
+}
+
+/* Main window */
+.window > section > :nth-child(2) {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+	justify-content: center;
+	min-height: 15rem;
+	overflow: auto;
+}
+
+.window > section > :nth-child(2):has(form) {
+	align-items: center;
+}
+
+.window > section > :nth-child(2) table {
+	width: 100%;
+}
+
+.window > section > :nth-child(2) form table tr > * {
+	padding: .5rem;
+}
+
+.window > section > :nth-child(2) form table tr > th {
+	width: 35%;
+	text-align: right;
+	font-size: .8rem;
+	font-weight: 500;
+}
+
+.window > section > :nth-child(2) form table tr > td > select {
+	width: 85%;
+	border: 2px solid var(--border-light-color);
+	padding: .5rem;
+	border-radius: 2px;
+}
+
+/* Footer */
+.window > section > :nth-child(3) {
+	border-top: 2px solid var(--border-light-color);
+	justify-content: flex-end;
+}
+
+.window > section > :nth-child(3) > button {
+	padding: .5rem 1rem;
+	color: var(--light-color);
+	border-radius: 2px;
+}
+
+@media (max-width: 720px) {
+	.window > section {
+		width: 100vw;
+		height: 100vh;
+		max-height: unset;
+	}
+	.window > section > :nth-child(2) {
+		flex-grow: 1;
+	}
+}
+
+@media (max-width: 440px) {
+	.window > section > :nth-child(2) form table > tr > th {
+		width: 25%;
+	}
+	.window > section > :nth-child(2) form table > tr > td > select {
+		width: 100%;
+	}
+}

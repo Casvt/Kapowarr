@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<link rel="stylesheet" href="/static/css/general.css">
+	<link rel="stylesheet" href="/static/css/settings.css">
+	<script src="/static/js/general.js" defer></script>
+	<script src="/static/js/settings_general.js" defer></script>
+
+	<title>General Settings - Kapowarr</title>
+</head>
+<body>
+	<header>
+		<div class="menu-title-container">
+			<button class="toggle-nav" id="nav-button" aria-label="toggle menu">
+				<img src="/static/img/menu.svg" alt="Menu icon" class="nav-icon">
+			</button>
+			<h1>Kapowarr</h1>
+		</div>
+	</header>
+	<div class="nav-main">
+		<div id="nav">
+			<nav>
+				<a href="/" class="nav-entry current-nav nav-side-line">Volumes</a>
+				<a href="/activity/queue" class="nav-entry nav-side-line">Activity</a>
+				<a href="/settings" class="nav-entry nav-side-line">Settings</a>
+					<a href="/settings/mediamanagement" class="sub-nav-entry nav-side-line">Media Management</a>
+					<a href="/settings/download" class="sub-nav-entry nav-side-line">Download</a>
+					<a href="/settings/general" class="sub-nav-entry nav-side-line current-nav">General</a>
+				<a href="/system/status" class="nav-entry nav-side-line">System</a>
+			</nav>
+			<div id="task-queue"></div>
+		</div>
+		<main>
+			<div class="tool-bar-container">
+				<div class="tool-bar">
+					<button class="tool-bar-button" id="save-button" type="submit">
+						<img src="/static/img/save.svg" alt="">
+						<p>Save</p>
+					</button>
+				</div>
+			</div>
+			<div class="settings-container">
+				<form id="settings-form">
+					<h2>Host</h2>
+					<table>
+						<tr>
+							<th><label for="bind-address-input">Bind Address</label></th>
+							<td>
+								<input type="text" id="bind-address-input" required spellcheck="false">
+								<p>Valid IPv4 address or '0.0.0.0' for all interfaces</p>
+							</td>
+						</tr>
+						<tr>
+							<th><label for="port-input">Port Number</label></th>
+							<td>
+								<input type="text" id="port-input" required spellcheck="false">
+							</td>
+						</tr>
+					</table>
+					<h2>Security</h2>
+					<table>
+						<tr>
+							<th><label for="password-input">Login Password</label></th>
+							<td>
+								<input type="password" id="password-input" required spellcheck="false" autocomplete="new-password">
+								<p>When set, password is required to be entered to get access to web-ui and api</p>
+							</td>
+						</tr>
+						<tr>
+							<th><label>API Key</label></th>
+							<td>
+								<div id="api-container">
+									<p id="api-input"></p>
+									<button type="button" id="generate-api"><img src="/static/img/refresh.svg" alt=""></button>
+								</div>
+							</td>
+						</tr>
+					</table>
+					<h2>Comic Vine API</h2>
+					<table>
+						<tr>
+							<th><label for="cv-input">Comic Vine API Key</label></th>
+							<td>
+								<input type="text" id="cv-input" required spellcheck="false">
+								<p>The API key of the <a href="https://comicvine.gamespot.com/api" target="_blank">Comic Vine API</a>, which is required for Kapowarr to work.</p>
+							</td>
+						</tr>
+					</table>
+					<h2>Logging</h2>
+					<table>
+						<tr>
+							<th><label for="log-level-input">Log Level</label></th>
+							<td>
+								<select id="log-level-input" required>
+									<option value="info">Info</option>
+									<option value="debug">Debug</option>
+								</select>
+							</td>
+						</tr>
+					</table>
+				</form>
+			</div>
+		</main>
+	</div>
+
+</body>
+</html>
