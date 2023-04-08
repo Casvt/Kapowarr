@@ -180,12 +180,12 @@ function autosearchIssue(issue_id) {
 function showEdit() {
 	document.getElementById('monitored-input').value = document.getElementById('volume-monitor').dataset.monitored;
 	fetch(`/api/volumes/${id}?api_key=${api_key}`)
-	.then(response => {return response.json();})
+	.then(response => response.json())
 	.then(json => {
 		const volume_root_folder = json.result.root_folder;
 
 		fetch(`/api/rootfolder?api_key=${api_key}`)
-		.then(response => {return response.json();})
+		.then(response => response.json())
 		.then(json => {
 			const table = document.getElementById('root-folder-input');
 			table.innerHTML = '';
@@ -398,8 +398,17 @@ const api_key = sessionStorage.getItem('api_key');
 const id = window.location.pathname.split('/').at(-1);
 
 fetch(`/api/volumes/${id}?api_key=${api_key}`)
-.then(response => response.json())
-.then(json => fillPage(json.result));
+.then(response => {
+	// catch errors
+	if (!response.ok) return Promise.reject(response.status);
+	return response.json();
+})
+.then(json => fillPage(json.result))
+.catch(e => {
+	if (e === 404) {
+		window.location.href = '/';
+	};
+});
 
 document.getElementById('refresh-button').addEventListener('click', e => refreshVolume());
 document.getElementById('autosearch-button').addEventListener('click', e => autosearchVolume());

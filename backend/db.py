@@ -6,6 +6,8 @@
 KAPOWARR_DATABASE_FILE = "Kapowarr.db"
 
 import logging
+from os import makedirs
+from os.path import dirname
 from sqlite3 import Connection, Row
 from threading import current_thread
 from time import time
@@ -24,12 +26,31 @@ class Singleton(type):
 		return cls._instances[i]
 
 class DBConnection(Connection, metaclass=Singleton):
+	"For creating a connection with a database"	
 	file = ''
 	
 	def __init__(self, timeout: float) -> None:
+		"""Create a connection with a database
+
+		Args:
+			timeout (float): How long to wait before giving up on a command
+		"""
+		logging.debug(f'Creating a connection to a database: {self.file}')
 		super().__init__(self.file, timeout=timeout)
 		super().cursor().execute("PRAGMA foreign_keys = ON;")
 		return
+	
+def set_db_location(db_file_location: str) -> None:
+	"""Setup database location. Create folder for database and set location for db.DBConnection
+
+	Args:
+		db_file_location (str): The absolute path to the database file
+	"""
+	# Create folder where file will be put in if it doesn't exist yet
+	logging.debug(f'Setting database location: {db_file_location}')
+	makedirs(dirname(db_file_location), exist_ok=True)
+	DBConnection.file = db_file_location
+	return
 
 def get_db(output_type='tuple'):
 	"""Get a database cursor instance or create a new one if needed
@@ -106,9 +127,11 @@ def setup_db() -> None:
 			volume_number INTEGER(8) DEFAULT 1,
 			description TEXT,
 			cover BLOB,
-			monitored BOOL,
-			root_folder INTEGER,
-			folder TEXT
+			monitored BOOL NOT NULL DEFAULT 0,
+			root_folder INTEGER NOT NULL,
+			folder TEXT,
+			
+			FOREIGN KEY (root_folder) REFERENCES root_folders(id)
 		);
 		CREATE TABLE IF NOT EXISTS issues(
 			id INTEGER PRIMARY KEY,
@@ -119,11 +142,13 @@ def setup_db() -> None:
 			title VARCHAR(255),
 			date VARCHAR(10),
 			description TEXT,
-			monitored BOOL,
+			monitored BOOL NOT NULL DEFAULT 1,
 
 			FOREIGN KEY (volume_id) REFERENCES volumes(id)
+				ON DELETE CASCADE
 		);
-		CREATE INDEX IF NOT EXISTS issues_volume_number_index ON issues(volume_id, calculated_issue_number);
+		CREATE INDEX IF NOT EXISTS issues_volume_number_index
+			ON issues(volume_id, calculated_issue_number);
 		CREATE TABLE IF NOT EXISTS files(
 			id INTEGER PRIMARY KEY,
 			filepath TEXT UNIQUE NOT NULL,
@@ -133,7 +158,8 @@ def setup_db() -> None:
 			file_id INTEGER NOT NULL,
 			issue_id INTEGER NOT NULL,
 
-			FOREIGN KEY (file_id) REFERENCES files(id),
+			FOREIGN KEY (file_id) REFERENCES files(id)
+				ON DELETE CASCADE,
 			FOREIGN KEY (issue_id) REFERENCES issues(id),
 			CONSTRAINT PK_issues_files PRIMARY KEY (
 				file_id,
@@ -142,9 +168,7 @@ def setup_db() -> None:
 		);
 		CREATE TABLE IF NOT EXISTS download_queue(
 			id INTEGER PRIMARY KEY,
-			original_link TEXT NOT NULL,
-			root_download_link TEXT NOT NULL,
-			filename_body TEXT NOT NULL,
+			link TEXT NOT NULL,
 			volume_id INTEGER NOT NULL,
 			issue_id INTEGER,
 			
@@ -164,7 +188,7 @@ def setup_db() -> None:
 		CREATE TABLE IF NOT EXISTS task_intervals(
 			task_name PRIMARY KEY,
 			interval INTEGER NOT NULL,
-			next_run INTEGER
+			next_run INTEGER NOT NULL
 		);
 		CREATE TABLE IF NOT EXISTS blocklist_reasons(
 			id INTEGER PRIMARY KEY,
@@ -179,9 +203,11 @@ def setup_db() -> None:
 			FOREIGN KEY (reason) REFERENCES blocklist_reasons(id)
 		);
 	"""
+	logging.debug('Creating database tables')
 	cursor.executescript(setup_commands)
 
 	# Insert default setting values
+	logging.debug(f'Inserting default settings: {default_settings}')
 	cursor.executemany(
 		"""
 		INSERT OR IGNORE INTO config
@@ -191,7 +217,10 @@ def setup_db() -> None:
 	)
 
 	# Migrate database if needed
-	current_db_version = int(cursor.execute("SELECT value FROM config WHERE key = 'database_version' LIMIT 1;").fetchone()[0])
+	current_db_version = int(cursor.execute(
+		"SELECT value FROM config WHERE key = 'database_version' LIMIT 1;"
+	).fetchone()[0])
+	logging.debug(f'Database migration: {current_db_version}, {__DATABASE_VERSION__}')
 	if current_db_version < __DATABASE_VERSION__:
 		migrate_db(current_db_version)
 		cursor.execute(
@@ -201,7 +230,7 @@ def setup_db() -> None:
 
 	# Generate api key
 	api_key = cursor.execute(
-		"SELECT value FROM config WHERE key = 'api_key';"
+		"SELECT value FROM config WHERE key = 'api_key' LIMIT 1;"
 	).fetchone()
 	if api_key is None:
 		cursor.execute("INSERT INTO config VALUES ('api_key', '');")
@@ -209,6 +238,7 @@ def setup_db() -> None:
 
 	# Add task intervals
 	current_time = round(time())
+	logging.debug(f'Inserting task intervals: {task_intervals}')
 	cursor.executemany(
 		"""
 		INSERT OR IGNORE INTO task_intervals
@@ -218,6 +248,7 @@ def setup_db() -> None:
 	)
 	
 	# Add blocklist reasons
+	logging.debug(f'Inserting blocklist reasons: {blocklist_reasons}')
 	cursor.executemany(
 		"""
 		INSERT OR IGNORE INTO blocklist_reasons(id, reason)

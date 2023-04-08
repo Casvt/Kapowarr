@@ -36,6 +36,19 @@ issue_formatting_keys = formatting_keys + (
 # Name generation
 #=====================
 def _get_formatting_data(volume_id: int, issue_id: int=None) -> dict:
+	"""Get the values of the formatting keys for a volume or issue
+
+	Args:
+		volume_id (int): The id of the volume
+		issue_id (int, optional): The id of the issue. Defaults to None.
+
+	Raises:
+		VolumeNotFound: The volume id doesn't map to any volume in the library
+		IssueNotFound: The issue id doesn't map to any issue in the volume
+
+	Returns:
+		dict: The formatting keys and their values for the item
+	"""
 	# Fetch volume data and check if id is valid
 	cursor = get_db('dict')
 	volume_data = cursor.execute("""
@@ -94,6 +107,14 @@ def _get_formatting_data(volume_id: int, issue_id: int=None) -> dict:
 	return formatting_data
 
 def generate_volume_folder_name(volume_id: int) -> str:
+	"""Generate a volume folder name based on the format string
+
+	Args:
+		volume_id (int): The id of the volume for which to generate the string
+
+	Returns:
+		str: The volume folder name
+	"""
 	formatting_data = _get_formatting_data(volume_id)
 	format: str = Settings().get_settings()['volume_folder_naming']
 
@@ -101,13 +122,35 @@ def generate_volume_folder_name(volume_id: int) -> str:
 	return name
 
 def generate_tpb_name(volume_id: int) -> str:
+	"""Generate a TPB name based on the format string
+
+	Args:
+		volume_id (int): The id of the volume for which to generate the string
+
+	Returns:
+		str: The TPB name
+	"""
 	formatting_data = _get_formatting_data(volume_id)
 	format: str = Settings().get_settings()['file_naming_tpb']
 
 	name = format.format(**formatting_data)
 	return name
 
-def generate_issue_range_name(volume_id: int, calculated_issue_number_start: float, calculated_issue_number_end: float) -> str:
+def generate_issue_range_name(
+	volume_id: int,
+	calculated_issue_number_start: float,
+	calculated_issue_number_end: float
+) -> str:
+	"""Generate an issue range name based on the format string
+
+	Args:
+		volume_id (int): The id of the volume of the issues
+		calculated_issue_number_start (float): The start of the issue range (output of files.process_issue_number())
+		calculated_issue_number_end (float): The end of the issue range (output of files.process_issue_number())
+
+	Returns:
+		str: The issue range name
+	"""	
 	issue_id = get_db().execute("""
 		SELECT id
 		FROM issues
@@ -129,14 +172,28 @@ def generate_issue_range_name(volume_id: int, calculated_issue_number_start: flo
 				calculated_issue_number = ?
 				OR calculated_issue_number = ?
 			)
-		ORDER BY calculated_issue_number;
-	""", (volume_id, calculated_issue_number_start, calculated_issue_number_end)).fetchall()
+		ORDER BY calculated_issue_number
+		LIMIT 2;
+		""",
+		(volume_id,
+		calculated_issue_number_start,
+		calculated_issue_number_end)
+	).fetchall()
 	formatting_data['issue_number'] = f'{issue_number_start[0]}-{issue_number_end[0]}'
 	
 	name = format.format(**formatting_data)
 	return name
 
 def generate_issue_name(volume_id: int, issue_id: int) -> str:
+	"""Generate a issue name based on the format string
+
+	Args:
+		volume_id (int): The id of the volume of the issue
+		issue_id (int): The id of the issue for which to generate the string
+
+	Returns:
+		str: The issue name
+	"""	
 	formatting_data = _get_formatting_data(volume_id, issue_id)
 	format: str = Settings().get_settings()['file_naming']
 
@@ -147,6 +204,15 @@ def generate_issue_name(volume_id: int, issue_id: int) -> str:
 # Checking formats
 #=====================
 def check_format(format: str, type: str) -> None:
+	"""Check if a format string is valid
+
+	Args:
+		format (str): The format string to check
+		type (str): What type of format string it is ('file_naming', 'file_naming_tpb', 'folder_naming')
+
+	Raises:
+		InvalidSettingValue: Something in the string is invalid
+	"""	
 	keys = [fn for _, fn, _, _ in Formatter().parse(format) if fn is not None]
 
 	if type in ('file_naming', 'file_naming_tpb'):
@@ -165,7 +231,23 @@ def check_format(format: str, type: str) -> None:
 #=====================
 # Renaming
 #=====================
-def same_name_indexing(suggested_name: str, current_name: str, folder: str, planned_names: List[Dict[str, str]]) -> str:
+def same_name_indexing(
+	suggested_name: str,
+	current_name: str,
+	folder: str,
+	planned_names: List[Dict[str, str]]
+) -> str:
+	"""Add a number after a filename if the filename already exists.
+
+	Args:
+		suggested_name (str): The currently suggested filename
+		current_name (str): The current name of the file
+		folder (str): The folder that the file is in
+		planned_names (List[Dict[str, str]]): The already planned names of other files
+
+	Returns:
+		str: The suggested name, now with number at the end if needed
+	"""
 	same_names = tuple(
 		filter(
 			lambda r: match(escape(suggested_name) + r'( \(\d+\))?$', r),
@@ -194,21 +276,29 @@ def same_name_indexing(suggested_name: str, current_name: str, folder: str, plan
 	return suggested_name
 
 def preview_mass_rename(volume_id: int, issue_id: int=None) -> List[Dict[str, str]]:
+	"""Preview what naming.mass_rename() will do.
+
+	Args:
+		volume_id (int): The id of the volume for which to check the renaming.
+		issue_id (int, optional): The id of the issue for which to check the renaming. Defaults to None.
+
+	Returns:
+		List[Dict[str, str]]: The renaming proposals.
+	"""
 	result = []
 	cursor = get_db('dict')
 	# Fetch all files linked to the volume or issue
-	if issue_id is None:
+	if not issue_id:
 		file_infos = cursor.execute("""
 			SELECT DISTINCT
 				f.id, f.filepath
-			FROM
-				files f
-				INNER JOIN issues_files if
-				INNER JOIN issues i
+			FROM files f
+			INNER JOIN issues_files if
+			INNER JOIN issues i
 			ON
 				i.id = if.issue_id
 				AND if.file_id = f.id
-				AND i.volume_id = ?;
+			WHERE i.volume_id = ?;
 			""",
 			(volume_id,)
 		).fetchall()
@@ -217,9 +307,8 @@ def preview_mass_rename(volume_id: int, issue_id: int=None) -> List[Dict[str, st
 			FROM
 				root_folders rf
 				JOIN volumes v
-			ON
-				v.root_folder = rf.id
-				AND v.id = ?
+			ON v.root_folder = rf.id
+			WHERE v.id = ?
 			LIMIT 1;
 			""",
 			(volume_id,)
@@ -229,12 +318,10 @@ def preview_mass_rename(volume_id: int, issue_id: int=None) -> List[Dict[str, st
 		file_infos = cursor.execute("""
 			SELECT
 				f.id, f.filepath
-			FROM
-				files f
-				INNER JOIN issues_files if
-			ON
-				if.file_id = f.id
-				AND if.issue_id = ?;
+			FROM files f
+			INNER JOIN issues_files if
+			ON if.file_id = f.id
+			WHERE if.issue_id = ?;
 			""",
 			(issue_id,)
 		).fetchall()
@@ -254,12 +341,10 @@ def preview_mass_rename(volume_id: int, issue_id: int=None) -> List[Dict[str, st
 		issues = cursor.execute("""
 			SELECT
 				calculated_issue_number, issue_id
-			FROM
-				issues
-				INNER JOIN issues_files
-			ON
-				id = issue_id
-				AND file_id = ?
+			FROM issues
+			INNER JOIN issues_files
+			ON id = issue_id
+			WHERE file_id = ?
 			ORDER BY calculated_issue_number;
 			""",
 			(file['id'],)
@@ -290,6 +375,12 @@ def preview_mass_rename(volume_id: int, issue_id: int=None) -> List[Dict[str, st
 	return result
 
 def mass_rename(volume_id: int, issue_id: int=None) -> None:
+	"""Carry out proposal of naming.preview_mass_rename()
+
+	Args:
+		volume_id (int): The id of the volume for which to rename
+		issue_id (int, optional): The id of the issue for which to rename. Defaults to None.
+	"""	
 	cursor = get_db()
 	renames = preview_mass_rename(volume_id, issue_id)
 	if not issue_id and renames:

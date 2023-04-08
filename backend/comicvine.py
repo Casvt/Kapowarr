@@ -3,6 +3,7 @@
 """This file contains functions to interract with the comicvine api
 """
 
+import logging
 from re import compile
 from typing import List
 
@@ -18,11 +19,20 @@ from backend.settings import Settings, private_settings
 volume_search = compile(r'(?i)(?:v(?:ol(?:ume)?)?[\.\s]*)(\d+)')
 
 def _clean_description(description: str) -> str:
+	"""Reduce size of description (written in html) to only essential information
+
+	Args:
+		description (str): The description (written in html) to clean
+
+	Returns:
+		str: The cleaned description (written in html)
+	"""	
+	logging.debug(f'Cleaning the description: {description}')
 	if not description:
-		return ''
+		return description
 
 	soup = BeautifulSoup(description, 'html.parser')
-	#remove images, titles and lists
+	# Remove images, titles and lists
 	for el in soup.find_all(["figure","img","h2","h3","h4","h5","h6","ul","ol","p"]):
 		if el.name == 'p':
 			above_els = [e for e in getattr(el, 'children', [])]
@@ -31,21 +41,30 @@ def _clean_description(description: str) -> str:
 
 		el.decompose()
 
-	#fix links
+	# Fix links
 	for link in soup.find_all('a'):
 		link['target'] = '_blank'
 		link.attrs = {k: v for k, v in link.attrs.items() if not k.startswith('data-')}
 		link['href'] = link['href'].lstrip('./')
 		if not link['href'].startswith('http'):
-			link['href'] = 'https://comicvine.gamespot.com/' + link['href']
+			link['href'] = private_settings['comicvine_url'] + '/' + link['href']
 
-	return str(soup)
+	result = str(soup)
+	logging.debug(f'Cleaned description result: {result}')
+	return result
 
 class ComicVine:
+	"""Used for interacting with ComicVine
+	"""	
 	volume_field_list = ','.join(('deck', 'description', 'id', 'image', 'issues', 'name', 'publisher', 'start_year', 'count_of_issues'))
 	search_field_list = ','.join(('aliases', 'count_of_issues', 'deck', 'description', 'id', 'image', 'name', 'publisher', 'site_detail_url', 'start_year'))
 	
-	def __init__(self):
+	def __init__(self) -> None:
+		"""Start interacting with ComicVine
+
+		Raises:
+			InvalidComicVineApiKey: No ComicVine API key is set in the settings
+		"""
 		self.api_url = private_settings['comicvine_api_url']
 		api_key = Settings().get_settings()['comicvine_api_key']
 		if not api_key:
@@ -54,8 +73,18 @@ class ComicVine:
 		self.ssn = Session()
 		self.ssn.params.update({'format': 'json', 'api_key': api_key})
 		self.ssn.headers.update({'user-agent': 'Kapowarr'})
+		return
 
 	def __format_volume_output(self, volume_data: dict) -> dict:
+		"""Format the ComicVine API output containing the info about the volume to the "Kapowarr format"
+
+		Args:
+			volume_data (dict): The ComicVine API output
+
+		Returns:
+			dict: The formatted version
+		"""		
+		logging.debug(f'Formating volume output: {volume_data}')
 		result = {
 			'comicvine_id': int(volume_data['id']),
 			'title': volume_data['name'],
@@ -82,10 +111,20 @@ class ComicVine:
 		# Covert other keys if present
 		if 'site_detail_url' in volume_data:
 			result['comicvine_info'] = volume_data['site_detail_url']
-		
+
+		logging.debug(f'Formatted volume output result: {result}')		
 		return result
 		
 	def __format_issue_output(self, issue_data: dict) -> dict:
+		"""Format the ComicVine API output containing the info about the issue to the "Kapowarr format"
+
+		Args:
+			issue_data (dict): The ComicVine API output
+
+		Returns:
+			dict: The formatted version
+		"""		
+		logging.debug(f'Formatting issue output: {issue_data}')
 		result = {
 			'comicvine_id': issue_data['id'],
 			'issue_number': issue_data['issue_number'],
@@ -94,14 +133,30 @@ class ComicVine:
 			'date': issue_data['cover_date'],
 			'description': _clean_description(issue_data['description'])
 		}
+		logging.debug(f'Formatted issue output result: {result}')
 		return result
 
 	def fetch_volume(self, id: str) -> dict:
+		"""Get the metadata of a volume from ComicVine, formatted to the "Kapowarr format"
+
+		Args:
+			id (str): The comicvine id of the volume. The `4050-` prefix is optional.
+
+		Raises:
+			VolumeNotMatched: No comic in the ComicVine database matches with the given id
+
+		Returns:
+			dict: The metadata of the volume
+		"""		
 		if not id.startswith('4050-'):
 			id = '4050-' + id
+		logging.debug(f'Fetching volume data for {id}')
 		
 		# Fetch volume info
-		result = self.ssn.get(f'{self.api_url}/volume/{id}', params={'field_list': self.volume_field_list}).json()
+		result = self.ssn.get(
+			f'{self.api_url}/volume/{id}',
+			params={'field_list': self.volume_field_list}
+		).json()
 		if result['status_code'] == 101:
 			raise VolumeNotMatched
 
@@ -114,17 +169,32 @@ class ComicVine:
 			volume_info['cover'] = None
 
 		# Fetch issues
+		logging.debug(f'Fetching issue data for volume {id}')
 		volume_info['issues'] = []
 		for offset in range(0, volume_info['issue_count'], 100):
-			results = self.ssn.get(f'{self.api_url}/issues', params={'filter': f'volume:{volume_info["comicvine_id"]}', 'offset': offset}).json()['results']
+			results = self.ssn.get(
+				f'{self.api_url}/issues',
+				params={'filter': f'volume:{volume_info["comicvine_id"]}',
+					'offset': offset}
+			).json()['results']
 			for issue in results:
 				volume_info['issues'].append(
 					self.__format_issue_output(issue)
 				)
 
+		logging.debug(f'Fetching volume data result: {volume_info}')
 		return volume_info
 		
 	def search_volumes(self, query: str) -> List[dict]:
+		"""Search for volumes in the ComicVine database
+
+		Args:
+			query (str): The query to use when searching
+
+		Returns:
+			List[dict]: A list with search results
+		"""		
+		logging.debug(f'Searching for volumes with the query {query}')
 		cursor = get_db()
 
 		# Fetch comicvine results
@@ -154,6 +224,7 @@ class ComicVine:
 				return []
 
 		# Remove entries that are already added
+		logging.debug('Removing entries that are already added')
 		volume_ids = cursor.execute(
 			"SELECT comicvine_id FROM volumes;"
 		).fetchall()
@@ -174,6 +245,7 @@ class ComicVine:
 					v['volume_number'] or float('inf') if v['title'] == query else float('inf') + 1
 				)
 			)
-
+		
+		logging.debug(f'Searching for volumes with query result: {results}')
 		return results
 		

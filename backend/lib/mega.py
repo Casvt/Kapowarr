@@ -402,7 +402,7 @@ class Mega:
 
 			start_time = perf_counter()
 			for chunk_size in get_chunks(self.size):
-				if self.downloading == False:
+				if not self.downloading:
 					break
 				chunk = input_file.read(chunk_size)
 				chunk = aes.decrypt(chunk)
@@ -430,7 +430,7 @@ class Mega:
 				self.progress = round(size_downloaded / self.size * 100, 2)
 				start_time = perf_counter()
 
-		if self.downloading == True:
+		if self.downloading:
 			file_mac = str_to_a32(mac_str)
 			# check mac integrity
 			if (file_mac[0] ^ file_mac[1],

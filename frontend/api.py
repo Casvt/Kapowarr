@@ -1,7 +1,7 @@
 #-*- coding: utf-8 -*-
 
 import logging
-from typing import Any
+from typing import Any, Tuple
 
 from flask import Blueprint, Flask, request, send_file
 
@@ -18,16 +18,15 @@ from backend.custom_exceptions import (BlocklistEntryNotFound,
                                        RootFolderNotFound, TaskNotDeletable,
                                        TaskNotFound, VolumeAlreadyAdded,
                                        VolumeNotFound)
-from backend.db import __DATABASE_VERSION__, DBConnection, close_db, get_db
+from backend.db import close_db
 from backend.download import (DownloadHandler, delete_download_history,
                               get_download_history)
-from backend.files import folder_path
 from backend.naming import mass_rename, preview_mass_rename
 from backend.root_folders import RootFolders
 from backend.search import manual_search
-from backend.settings import Settings, blocklist_reasons, private_settings
-from backend.tasks import (TaskHandler, delete_task_history, get_task_history,
-                           task_library)
+from backend.settings import Settings, about_data, blocklist_reasons
+from backend.tasks import (TaskHandler, TaskHandler, delete_task_history, get_task_history,
+                           get_task_planning, task_library)
 from backend.volumes import Library, search_volumes
 
 api = Blueprint('api', __name__)
@@ -35,13 +34,52 @@ root_folders = RootFolders()
 library = Library()
 settings = Settings()
 
-#create handlers
+# Create handlers
 handler_context = Flask('handler')
 handler_context.teardown_appcontext(close_db)
 download_handler = DownloadHandler(handler_context)
 task_handler = TaskHandler(handler_context, download_handler)
 
+def return_api(result: Any, error: str=None, code: int=200) -> Tuple[dict, int]:
+	return {'error': error, 'result': result}, code
+
+def error_handler(method):
+	"""Used as decodator. Catches the errors that can occur in the endpoint and returns the correct api error
+	"""
+	def wrapper(*args, **kwargs):
+		try:
+			return method(*args, **kwargs)
+		except (BlocklistEntryNotFound,
+				DownloadNotFound, FolderNotFound,
+				InvalidComicVineApiKey, InvalidKeyValue,
+				InvalidSettingKey,
+				InvalidSettingModification,
+				InvalidSettingValue, IssueNotFound,
+				KeyNotFound, RootFolderInUse,
+				RootFolderNotFound, TaskNotDeletable,
+				TaskNotFound, VolumeAlreadyAdded,
+				VolumeNotFound) as e:
+			return return_api(**e.api_response)
+	
+	wrapper.__name__ = method.__name__
+	return wrapper
+
 def extract_key(request, key: str, check_existence: bool=True) -> Any:
+	"""Extract and format a value of a parameter from a request
+
+	Args:
+		request (Request): The request from which to get the values.
+		key (str): The key of which to get and format the value.
+		check_existence (bool, optional): Require the key to be given in the request. Defaults to True.
+
+	Raises:
+		KeyNotFound: The key is not found in the request.
+		InvalidKeyValue: The value of a key is invalid.
+		TaskNotFound: The task was not found
+
+	Returns:
+		Any: The formatted value of the key.
+	"""	
 	value: str = request.values.get(key)
 	if check_existence and value is None:
 		raise KeyNotFound(key)
@@ -122,12 +160,13 @@ def auth(method):
 		try:
 			extract_key(request, 'api_key')
 		except (KeyNotFound, InvalidKeyValue):
-			return {'error': 'ApiKeyInvalid', 'result': {}}, 401
+			return return_api({}, 'ApiKeyInvalid', 401)
 
 		result = method(*args, **kwargs)
 		if result[1] > 300:
 			logging.debug(f'{request.method} {request.path} {result[1]} {result[0]}')
 		return result
+
 	wrapper.__name__ = method.__name__
 	return wrapper
 
@@ -138,467 +177,354 @@ def api_auth():
 			extract_key(request, 'password')
 	except InvalidKeyValue:
 		logging.warning(f'Login attempt failed from {request.remote_addr}')
-		return {'error': 'PasswordInvalid', 'result': {}}, 401
+		return return_api({}, 'PasswordInvalid', 401)
 	except KeyNotFound:
-		return {'error': 'PasswordInvalid', 'result': {}}, 401
+		return return_api({}, 'PasswordInvalid', 401)
 	else:
 		logging.info(f'Login attempt successful from {request.remote_addr}')
-		return {'error': None, 'result': {'api_key': settings.get_settings()['api_key']}}, 200
+		return return_api({'api_key': settings.get_settings()['api_key']})
 
 @api.route('/auth/check', methods=['POST'])
+@error_handler
 @auth
 def api_auth_check():
-	return {'error': None, 'result': {}}, 200
+	return return_api({})
 
 #=====================
 # Tasks
 #=====================
 @api.route('/system/about', methods=['GET'])
+@error_handler
 @auth
 def api_about():
-	result = {
-		'version': private_settings['version'],
-		'python_version': private_settings['python_version'],
-		'database_version': __DATABASE_VERSION__,
-		'database_location': DBConnection.file,
-		'data_folder': folder_path()
-	}
-	return {'error': None, 'result': result}, 200
+	return return_api(about_data)
 
 @api.route('/system/tasks', methods=['GET','POST'])
+@error_handler
 @auth
 def api_tasks():
 	if request.method == 'GET':
 		tasks = task_handler.get_all()
-		return {'error': None, 'result': tasks}, 200
+		return return_api(tasks)
 
 	elif request.method == 'POST':
-		try:
-			task = extract_key(request, 'cmd')
-		except (KeyNotFound, TaskNotFound) as e:
-			return e.api_response
+		task = extract_key(request, 'cmd')
 
 		if task.action in ('auto_search_issue', 'auto_search', 'refresh_and_scan'):
-			try:
-				volume_id = extract_key(request, 'volume_id')
-			except (KeyNotFound, InvalidKeyValue, VolumeNotFound) as e:
-				return e.api_response
+			volume_id = extract_key(request, 'volume_id')
 
 			if task.action in ('auto_search_issue',):
-				try:
-					issue_id = extract_key(request, 'issue_id')
-				except (KeyNotFound, InvalidKeyValue, IssueNotFound) as e:
-					return e.api_response
-					
+				issue_id = extract_key(request, 'issue_id')
 				task_instance = task(volume_id, issue_id)
-			
 			else:
 				task_instance = task(volume_id)
-
 		else:
 			task_instance = task()
 
 		result = task_handler.add(task_instance)
-		return {'error': None, 'result': {'id': result}}, 201
+		return return_api({'id': result}, code=201)
 
 @api.route('/system/tasks/history', methods=['GET','DELETE'])
+@error_handler
 @auth
 def api_task_history():
 	if request.method == 'GET':
 		tasks = get_task_history()
-		return {'error': None, 'result': tasks}, 200
+		return return_api(tasks)
 	
 	elif request.method == 'DELETE':
 		delete_task_history()
-		return {'error': None, 'result': {}}, 200
+		return return_api({})
 
 @api.route('/system/tasks/planning', methods=['GET'])
+@error_handler
 @auth
 def api_task_planning():
-	cursor = get_db('dict')
-	
-	# Collect what the last time was the tasks were run
-	last_run = {}
-	for task_name in task_handler.task_intervals.keys():
-		run_at = cursor.execute(
-			"""
-			SELECT
-				task_name, run_at
-			FROM task_history
-			WHERE task_name = ?
-			ORDER BY run_at DESC
-			LIMIT 1
-			""",
-			(task_name,)
-		).fetchone()
-		last_run[run_at['task_name']] = run_at['run_at']
-
-	result = [{
-		'task_name': k,
-		'display_name': task_library[k].display_title,
-		'interval': v['interval'],
-		'next_run': v['next_run'],
-		'last_run': last_run.get(k)
-	} for k, v in task_handler.task_intervals.items()]
-	return {'error': None, 'result': result}, 200
+	result = get_task_planning()
+	return return_api(result)
 
 @api.route('/system/tasks/<int:task_id>', methods=['GET','DELETE'])
+@error_handler
 @auth
 def api_task(task_id: int):
 	if request.method == 'GET':
-		try:
-			task = task_handler.get_one(task_id)
-		except TaskNotFound as e:
-			return e.api_response
-		else:
-			return {'error': None, 'result': task}, 200
+		task = task_handler.get_one(task_id)
+		return return_api(task)
 		
 	elif request.method == 'DELETE':
-		try:
-			task_handler.remove(task_id)
-		except (TaskNotFound, TaskNotDeletable) as e:
-			return e.api_response
-		else:
-			return {'error': None, 'result': {}}, 200
+		task_handler.remove(task_id)
+		return return_api({})
 
 #=====================
 # Settings
 #=====================
 @api.route('/settings', methods=['GET','PUT','DELETE'])
+@error_handler
 @auth
 def api_settings():
 	if request.method == 'GET':
 		result = settings.get_settings()
-		return {'error': None, 'result': result}, 200
+		return return_api(result)
 
 	elif request.method == 'PUT':
 		data = request.get_json()
-		try:
-			result = settings.set_settings(data)
-		except (InvalidSettingKey, InvalidSettingValue, InvalidSettingModification) as e:
-			return e.api_response
-		else:
-			return {'error': None, 'result': result}, 200
+		result = settings.set_settings(data)
+		return return_api(result)
 
 	elif request.method == 'DELETE':
-		try:
-			key = extract_key(request, 'key')
-			result = settings.reset_setting(key)
-		except (KeyNotFound, InvalidSettingKey) as e:
-			return e.api_response
-		else:
-			return {'error': None, 'result': result}, 200
+		key = extract_key(request, 'key')
+		result = settings.reset_setting(key)
+		return return_api(result)
 
 @api.route('/settings/api_key', methods=['POST'])
+@error_handler
 @auth
 def api_settings_api_key():
 	result = settings.generate_api_key()
-	return {'error': 'None', 'result': result}, 200
+	return return_api(result)
 
 @api.route('/rootfolder', methods=['GET','POST'])
+@error_handler
 @auth
 def api_rootfolder():
 	if request.method == 'GET':
 		result = root_folders.get_all()
-		return {'error': None, 'result': result}, 200
+		return return_api(result)
 
 	elif request.method == 'POST':
-		try:
-			folder = extract_key(request, 'folder')
-			root_folder = root_folders.add(folder)
-		except (KeyNotFound, FolderNotFound) as e:
-			return e.api_response
-		else:
-			return {'error': None, 'result': root_folder}, 201
+		folder = extract_key(request, 'folder')
+		root_folder = root_folders.add(folder)
+		return return_api(root_folder, code=201)
 
 @api.route('/rootfolder/<int:id>', methods=['GET','DELETE'])
+@error_handler
 @auth
 def api_rootfolder_id(id: int):
 	if request.method == 'GET':
-		try:
-			root_folder = root_folders.get_one(id)
-		except RootFolderNotFound as e:
-			return e.api_response
-		else:
-			return {'error': None, 'result': root_folder}, 200
+		root_folder = root_folders.get_one(id)
+		return return_api(root_folder)
 
 	elif request.method == 'DELETE':
-		try:
-			root_folders.delete(id)
-		except (RootFolderNotFound, RootFolderInUse) as e:
-			return e.api_response
-		else:
-			return {'error': None, 'result': {}}, 200
+		root_folders.delete(id)
+		return return_api({})
 
 #=====================
 # Library + Volumes
 #=====================
 @api.route('/volumes/search', methods=['GET'])
+@error_handler
 @auth
 def api_volumes_search():
-	try:
-		query = extract_key(request, 'query')
-		search_results = search_volumes(query)
-	except (KeyNotFound, InvalidComicVineApiKey) as e:
-		return e.api_response
-	else:
-		return {'error': None, 'result': search_results}, 200
+	query = extract_key(request, 'query')
+	search_results = search_volumes(query)
+	return return_api(search_results)
 
 @api.route('/volumes', methods=['GET','POST'])
+@error_handler
 @auth
 def api_volumes():
 	if request.method == 'GET':
-		try:
-			query = extract_key(request, 'query', False)
-			sort = extract_key(request, 'sort', False)
-			if query:
-				volumes = library.search(query)
-			else:
-				volumes = library.get_volumes(sort)
-
-		except InvalidKeyValue as e:
-			return e.api_response
+		query = extract_key(request, 'query', False)
+		sort = extract_key(request, 'sort', False)
+		if query:
+			volumes = library.search(query)
 		else:
-			return {'error': None, 'result': volumes}, 200
+			volumes = library.get_volumes(sort)
+
+		return return_api(volumes)
 
 	elif request.method == 'POST':
-		try:
-			comicvine_id = extract_key(request, 'comicvine_id')
-			root_folder_id = extract_key(request, 'root_folder_id')
-			monitor = extract_key(request, 'monitor', False)
+		comicvine_id = extract_key(request, 'comicvine_id')
+		root_folder_id = extract_key(request, 'root_folder_id')
+		monitor = extract_key(request, 'monitor', False)
 
-			volume_id = library.add(comicvine_id, root_folder_id, monitor)
-			volume_info = library.get_volume(volume_id).get_info()
-		except (KeyNotFound, InvalidKeyValue, VolumeNotFound, VolumeAlreadyAdded, RootFolderNotFound, InvalidComicVineApiKey) as e:
-			return e.api_response
-		else:
-			return {'error': None, 'result': volume_info}, 201
+		volume_id = library.add(comicvine_id, root_folder_id, monitor)
+		volume_info = library.get_volume(volume_id).get_info()
+		return return_api(volume_info, code=201)
 
 @api.route('/volumes/<int:id>', methods=['GET','PUT','DELETE'])
+@error_handler
 @auth
 def api_volume(id: int):
-	try:
-		volume = library.get_volume(id)
-	except VolumeNotFound as e:
-		return e.api_response
+	volume = library.get_volume(id)
 
 	if request.method == 'GET':
 		volume_info = volume.get_info()
-		return {'error': None, 'result': volume_info}, 200
+		return return_api(volume_info)
 
 	elif request.method == 'PUT':
 		edit_info = request.get_json()
-		try:
-			result = volume.edit(edit_info)
-		except RootFolderNotFound as e:
-			return e.api_response
-		
-		return {'error': None, 'result': result}, 200
+		result = volume.edit(edit_info)
+		return return_api(result)
 
 	elif request.method == 'DELETE':
-		try:
-			delete_folder = extract_key(request, 'delete_folder')
-		except InvalidKeyValue as e:
-			return e.api_response
-
+		delete_folder = extract_key(request, 'delete_folder')
 		volume.delete(delete_folder=delete_folder)
-		return {'error': None, 'result': {}}, 200
+		return return_api({})
 
 @api.route('/volumes/<int:id>/cover', methods=['GET'])
+@error_handler
 @auth
 def api_volume_cover(id: int):
-	try:
-		cover = library.get_volume(id).get_cover()
-		return send_file(cover, 'image/jpeg'), 200
-	except VolumeNotFound as e:
-		return e.api_response
+	cover = library.get_volume(id).get_cover()
+	return send_file(cover, 'image/jpeg'), 200
 
 @api.route('/issues/<int:id>', methods=['GET','PUT'])
+@error_handler
 @auth
 def api_issues(id: int):
-	try:
-		issue = library.get_issue(id)
-	except IssueNotFound as e:
-		return e.api_response
+	issue = library.get_issue(id)
 
 	if request.method == 'GET':
 		result = issue.get_info()
-		return {'error': None, 'result': result}, 200
+		return return_api(result)
 
 	elif request.method == 'PUT':
-		edit_info = request.get_json()
+		edit_info: dict = request.get_json()
 		monitored = edit_info.get('monitor')
-		if monitored == True:
+		if monitored:
 			issue.monitor()
-		elif monitored == False:
+		else:
 			issue.unmonitor()
 
 		result = issue.get_info()
-		return {'error': None, 'result': result}, 200
+		return return_api(result)
 
 #=====================
 # Renaming
 #=====================
 @api.route('/volumes/<int:id>/rename', methods=['GET','POST'])
+@error_handler
 @auth
 def api_rename(id: int):
-	try:
-		library.get_volume(id)
-	except VolumeNotFound as e:
-		return e.api_response
+	library.get_volume(id)
 
 	if request.method == 'GET':
 		result = preview_mass_rename(id)
-		return {'error': None, 'result': result}, 200
+		return return_api(result)
 		
 	elif request.method == 'POST':
 		mass_rename(id)
-		return {'error': None, 'result': None}, 200
+		return return_api(None)
 
 @api.route('/issues/<int:id>/rename', methods=['GET','POST'])
+@error_handler
 @auth
 def api_rename_issue(id: int):
-	try:
-		volume_id = library.get_issue(id).get_info()['volume_id']
-	except IssueNotFound as e:
-		return e.api_response
+	volume_id = library.get_issue(id).get_info()['volume_id']
 
 	if request.method == 'GET':
 		result = preview_mass_rename(volume_id, id)
-		return {'error': None, 'result': result}, 200
+		return return_api(result)
 		
 	elif request.method == 'POST':
 		mass_rename(volume_id, id)
-		return {'error': None, 'result': None}, 200
+		return return_api(None)
 
 #=====================
 # Manual search + Download
 #=====================
 @api.route('/volumes/<int:id>/manualsearch', methods=['GET'])
+@error_handler
 @auth
 def api_volume_manual_search(id: int):
-	try:
-		volume_info = library.get_volume(id).get_info(complete=False)
-		result = manual_search(volume_info['title'], volume_info['volume_number'], volume_info['year'])
-		return {'error': None, 'result': result}, 200
-	except VolumeNotFound as e:
-		return e.api_response
+	volume_info = library.get_volume(id).get_info(complete=False)
+	result = manual_search(volume_info['title'], volume_info['volume_number'], volume_info['year'])
+	return return_api(result)
 
 @api.route('/volumes/<int:id>/download', methods=['POST'])
+@error_handler
 @auth
 def api_volume_download(id: int):
-	try:
-		link = extract_key(request, 'link')
-		library.get_volume(id)
-		result = download_handler.add(link, id)
-	except (VolumeNotFound, KeyNotFound) as e:
-		return e.api_response
-	else:
-		return {'error': None, 'result': result}, 201
+	link = extract_key(request, 'link')
+	library.get_volume(id)
+	result = download_handler.add(link, id)
+	return return_api(result, code=201)
 
 @api.route('/issues/<int:id>/manualsearch', methods=['GET'])
+@error_handler
 @auth
 def api_issue_manual_search(id: int):
-	try:
-		issue_info = library.get_issue(id).get_info()
-		volume_info = library.get_volume(issue_info['volume_id']).get_info(complete=False)
-		result = manual_search(volume_info['title'], volume_info['volume_number'], volume_info['year'], issue_info['issue_number'])
-		return {'error': None, 'result': result}, 200
-	except IssueNotFound as e:
-		return e.api_response
+	issue_info = library.get_issue(id).get_info()
+	volume_info = library.get_volume(issue_info['volume_id']).get_info(complete=False)
+	result = manual_search(
+		volume_info['title'],
+		volume_info['volume_number'],
+		volume_info['year'],
+		issue_info['issue_number']
+	)
+	return return_api(result)
 
 @api.route('/issues/<int:id>/download', methods=['POST'])
+@error_handler
 @auth
 def api_issue_download(id: int):
-	try:
-		link = extract_key(request, 'link')
-		issue_info = library.get_issue(id).get_info()
-		result = download_handler.add(link, issue_info['volume_id'], id)
-	except (VolumeNotFound, KeyNotFound) as e:
-		return e.api_response
-	else:
-		return {'error': None, 'result': result}, 201
+	link = extract_key(request, 'link')
+	issue_info = library.get_issue(id).get_info()
+	result = download_handler.add(link, issue_info['volume_id'], id)
+	return return_api(result, code=201)
 
 @api.route('/activity/queue', methods=['GET'])
+@error_handler
 @auth
 def api_downloads():
 	result = download_handler.get_all()
-	return {'error': None, 'result': result}, 200
+	return return_api(result)
 
 @api.route('/activity/queue/<int:download_id>', methods=['GET','DELETE'])
+@error_handler
 @auth
 def api_delete_download(download_id: int):
 	if request.method == 'GET':
-		try:
-			result = download_handler.get_one(download_id)
-		except DownloadNotFound as e:
-			return e.api_response
-		else:
-			return {'error': None, 'result': result}, 200
+		result = download_handler.get_one(download_id)
+		return return_api(result)
 
 	elif request.method == 'DELETE':
-		try:
-			download_handler.remove(download_id)
-		except DownloadNotFound as e:
-			return e.api_response
-		else:
-			return {'error': None, 'result': {}}, 200
+		download_handler.remove(download_id)
+		return return_api({})
 
 @api.route('/activity/history', methods=['GET','DELETE'])
+@error_handler
 @auth
 def api_download_history():
 	if request.method == 'GET':
-		try:
-			offset = extract_key(request, 'offset', False)
-		except InvalidKeyValue as e:
-			return e.api_response
-		else:
-			result = get_download_history(offset)
-			return {'error': None, 'result': result}, 200
+		offset = extract_key(request, 'offset', False)
+		result = get_download_history(offset)
+		return return_api(result)
 
 	elif request.method == 'DELETE':
 		delete_download_history()
-		return {'error': None, 'result': {}}, 200
+		return return_api({})
 
 #=====================
 # Blocklist
 #=====================
 @api.route('/blocklist', methods=['GET', 'POST', 'DELETE'])
+@error_handler
 @auth
 def api_blocklist():
 	if request.method == 'GET':
 		result = get_blocklist()
-		return {'error': None, 'result': result}, 200
+		return return_api(result)
 	
 	elif request.method == 'POST':
-		try:
-			link = extract_key(request, 'link')
-			reason_id = extract_key(request, 'reason_id')
-			result = add_to_blocklist(link, reason_id)
-		except (KeyNotFound, InvalidKeyValue) as e:
-			return e.api_response
-		else:
-			return {'error': None, 'result': result}, 201
+		link = extract_key(request, 'link')
+		reason_id = extract_key(request, 'reason_id')
+		result = add_to_blocklist(link, reason_id)
+		return return_api(result, code=201)
 	
 	elif request.method == 'DELETE':
 		delete_blocklist()
-		return {'error': None, 'result': {}}, 200
+		return return_api({})
 
 @api.route('/blocklist/<int:id>', methods=['GET', 'DELETE'])
+@error_handler
 @auth
 def api_blocklist_entry(id: int):
 	if request.method == 'GET':
-		try:
-			result = get_blocklist_entry(id)
-		except BlocklistEntryNotFound as e:
-			return e.api_response
-		else:
-			return {'error': None, 'result': result}, 200
+		result = get_blocklist_entry(id)
+		return return_api(result)
 
 	elif request.method == 'DELETE':
-		try:
-			delete_blocklist_entry(id)
-		except BlocklistEntryNotFound as e:
-			return e.api_response
-		else:
-			return {'error': None, 'result': {}}, 200
+		delete_blocklist_entry(id)
+		return return_api({})

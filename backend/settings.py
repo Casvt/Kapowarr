@@ -5,7 +5,7 @@
 
 import logging
 from os import urandom
-from os.path import isdir, isfile
+from os.path import isdir
 from os.path import sep as path_sep
 from sys import version_info
 
@@ -14,7 +14,7 @@ from backend.custom_exceptions import (FolderNotFound, InvalidSettingKey,
                                        InvalidSettingValue)
 from backend.db import __DATABASE_VERSION__, get_db
 from backend.files import folder_path
-from backend.helpers import set_log_level
+from backend.logging import set_log_level
 
 default_settings = {
 	'host': '0.0.0.0',
@@ -30,11 +30,20 @@ default_settings = {
 }
 
 private_settings = {
+	'comicvine_url': 'https://comicvine.gamespot.com',
 	'comicvine_api_url': 'https://comicvine.gamespot.com/api',
-	'getcomics_url': 'https://getcomics.info',
+	'getcomics_url': 'https://getcomics.org',
 	'hosting_threads': 10,
-	'version': '1.0.0-beta',
+	'version': '1.0.0-beta-2',
 	'python_version': ".".join(str(i) for i in list(version_info))
+}
+
+about_data = {
+	'version': private_settings['version'],
+	'python_version': private_settings['python_version'],
+	'database_version': __DATABASE_VERSION__,
+	'database_location': None,
+	'data_folder': folder_path()
 }
 
 task_intervals = {
@@ -52,10 +61,20 @@ blocklist_reasons = {
 }
 
 class Settings:
+	"""For interacting with the settings
+	"""	
 	cache = {}
 	
 	def get_settings(self, use_cache: bool=True) -> dict:
-		if not self.cache or use_cache == False:
+		"""Get all settings and their values
+
+		Args:
+			use_cache (bool, optional): Wether or not to use the cache instead of going to the database. Defaults to True.
+
+		Returns:
+			dict: All settings and their values
+		"""		
+		if not use_cache or not self.cache:
 			settings = dict(get_db().execute(
 				"SELECT key, value FROM config;"
 			).fetchall())
@@ -64,8 +83,23 @@ class Settings:
 		return self.cache
 
 	def set_settings(self, settings: dict) -> dict:
+		"""Change the values of settings
+
+		Args:
+			settings (dict): The keys and (new) values of settings
+
+		Raises:
+			InvalidSettingValue: The value of a setting is not allowed
+			InvalidSettingModification: The setting is not allowed to be modified this way
+			FolderNotFound: The folder was not found
+			InvalidSettingKey: The key isn't recognised
+
+		Returns:
+			dict: The settings and their new values. Same format as settings.Settings.get_settings()
+		"""		
 		from backend.naming import check_format
 
+		logging.debug(f'Setting settings: {settings}')
 		cursor = get_db()
 		setting_changes = []
 		for key, value in settings.items():
@@ -82,9 +116,6 @@ class Settings:
 				check_format(value, key)
 
 			elif key == 'log_level' and not value in ('info', 'debug'):
-				raise InvalidSettingValue(key)
-				
-			elif key == 'log_file' and not isfile(value):
 				raise InvalidSettingValue(key)
 
 			elif key not in default_settings.keys():
@@ -109,6 +140,18 @@ class Settings:
 		return result
 
 	def reset_setting(self, key: str) -> dict:
+		"""Reset a setting's value
+
+		Args:
+			key (str): The key of the setting of which to reset the value
+
+		Raises:
+			InvalidSettingKey: The key isn't recognised
+
+		Returns:
+			dict: The settings and their new values. Same format as settings.Settings.get_settings()
+		"""		
+		logging.debug(f'Setting reset: {key}')
 		if not key in default_settings:
 			raise InvalidSettingKey(key)
 		
@@ -120,6 +163,12 @@ class Settings:
 		return self.get_settings(use_cache=False)
 		
 	def generate_api_key(self) -> dict:
+		"""Generate a new api key
+
+		Returns:
+			dict: The settings and their new value. Same format as settings.Settings.get_settings()
+		"""		
+		logging.debug('Generating new api key')
 		api_key = urandom(16).hex()
 		get_db().execute(
 			"UPDATE config SET value = ? WHERE key = 'api_key';",

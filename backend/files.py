@@ -49,6 +49,16 @@ issue_regex_5 = compile(r'^(\d+(?:\.\d{1,2})?)$')
 year_regex = compile(r'\(' + year_regex_snippet + r'\)|--' + year_regex_snippet + r'--|, ' + year_regex_snippet + r'\s{3}', IGNORECASE)
 
 def process_issue_number(issue_number: str) -> Union[float, Tuple[float, float], None]:
+	"""Convert an issue number to a float
+
+	Args:
+		issue_number (str): The issue number
+
+	Returns:
+		Union[float, Tuple[float, float], None]: Either a float representing the issue number,
+		a tuple of floats representing the issue numbers when the original issue number was a range of numbers (e.g. 1a-5b)
+		or None if it wasn't succesfull in converting.
+	"""	
 	logging.debug(f'Processing issue number: {issue_number}')
 	if '-' in issue_number and not issue_number.startswith('-'):
 		entries = issue_number.split('-')
@@ -95,14 +105,23 @@ def process_issue_number(issue_number: str) -> Union[float, Tuple[float, float],
 			result = tuple(result)
 	else:
 		result = None
-	logging.debug(f'Processing issue number: {result}')
+	logging.debug(f'Processing issue number result: {result}')
 	return result
 
 def extract_filename_data(file: str, assume_volume_number: bool=True) -> dict:
+	"""Extract data and present in a formatted way from a filename (or title of getcomics page).
+
+	Args:
+		file (str): The filename (or any other unformatted text) to extract from
+		assume_volume_number (bool, optional): If no volume number was found, should `1` be assumed? When a series has only one volume, often the volume number isn't included in the filename. Defaults to True.
+
+	Returns:
+		dict: The extracted data in a formatted way
+	"""	
 	logging.debug(f'Extracting filename data: {file}')
 	series, year, volume_number, special_version, issue_number = None, None, None, None, None
 
-	#generalise filename
+	# Generalise filename
 	file = file.replace('+',' ').replace('_',' ')
 	if 'Том' in file:
 		file = russian_volume_regex.sub(r'Volume \1', file)
@@ -114,12 +133,12 @@ def extract_filename_data(file: str, assume_volume_number: bool=True) -> dict:
 		file = korean_volume_regex.sub(r'Volume \1', file)
 	if '巻' in file:
 		file = japanese_volume_regex.sub(r'Volume \1', file)
-	#only keep filename
+	# Only keep filename
 	filename = unquote(basename(file))
-	#fix some inconsistencies
+	# Fix some inconsistencies
 	filename = filename.replace('_28','(').replace('_29',')').replace('–', '-')
 	
-	#keep stripped version of filename without (), {}, [] and extensions
+	# Keep stripped version of filename without (), {}, [] and extensions
 	stripped_filename = strip_filename_regex.sub(lambda m: " " * len(m.group()), filename)
 	fully_stripped_filename = strip_filename_regex_2.sub('', stripped_filename)
 	stripped_filename_temp = strip_filename_regex_2.sub(r' \1', stripped_filename)
@@ -128,42 +147,42 @@ def extract_filename_data(file: str, assume_volume_number: bool=True) -> dict:
 	else:
 		stripped_filename = stripped_filename_temp
 
-	#get volume number
+	# Get volume number
 	volume_result = volume_regex.search(stripped_filename)
 	if volume_result:
-		#volume number found (e.g. Series Volume 1.ext)
+		# Volume number found (e.g. Series Volume 1.ext)
 		volume_number = volume_result.group(1)
 		volume_pos = volume_result.end(1)
-		#because volume was found in filename, try to find series name in filename too
+		# Because volume was found in filename, try to find series name in filename too
 		if volume_result.start(0) > 0:
-			#series found (e.g. Series Volume 1.ext)
+			# Series found (e.g. Series Volume 1.ext)
 			series = stripped_filename[:volume_result.start(0) - 1].strip()
 
 	else:
-		#no volume number found; check if folder name is volume number
+		# No volume number found; check if folder name is volume number
 		volume_result = volume_folder_regex.search(basename(dirname(file)))
 		volume_pos = 0
 		if volume_result:
-			#volume number found in folder name (e.g. Series Volume 1/Issue 1.ext); assume series is also in folder name
+			# Volume number found in folder name (e.g. Series Volume 1/Issue 1.ext); assume series is also in folder name
 			volume_number = volume_result.group(1) or volume_result.group(2)
 		else:
-			#no volume number found in folder name so assume that folder name is series name
+			# No volume number found in folder name so assume that folder name is series name
 			series = strip_filename_regex.sub('', basename(dirname(file))).strip() or None
 			if assume_volume_number:
 				volume_number = 1
 
-	#check if it's a special version
+	# Check if it's a special version
 	special_result = special_version_regex.search(filename)
 	if special_result:
 		special_version = special_result.group(1).lower()
 		if special_result.start(0) > 0 and series == None:
 			series = stripped_filename[:special_result.start(1) - 1].strip()
 	else:
-		#no special version so find issue number; assume to the right of volume number (if found)
+		# No special version so find issue number; assume to the right of volume number (if found)
 		for regex in (issue_regex, issue_regex_2, issue_regex_3, issue_regex_4):
 			issue_result = regex.search(stripped_filename, pos=volume_pos)
 			if issue_result:
-				#issue number found
+				# Issue number found
 				issue_number = issue_result.group(1)
 				if (
 					not series
@@ -173,7 +192,7 @@ def extract_filename_data(file: str, assume_volume_number: bool=True) -> dict:
 						or volume_result == None
 					)
 				):
-					#series name is probably left of issue number (no volume number found)
+					# Series name is probably left of issue number (no volume number found)
 					series = stripped_filename[:issue_result.start(0) - 1].strip()
 				break
 		else:
@@ -182,23 +201,23 @@ def extract_filename_data(file: str, assume_volume_number: bool=True) -> dict:
 				issue_number = issue_result.group(1)
 	
 	if not series:
-		#series +? volume number in folder name or series name in upper folder name
+		# Series +? volume number in folder name or series name in upper folder name
 		if volume_folder_regex.search(basename(dirname(file))):
-			#volume number in folder name
+			# Volume number in folder name
 			series_result = series_folder_regex.search(basename(dirname(file)))
 			if series_result:
 				series = series_result.group(0) or None
 			if not series:
-				#series name is in upper folder name
+				# Series name is in upper folder name
 				series = strip_filename_regex.sub('', basename(dirname(dirname(file)))).strip()
 		else:
-			#no volume number in folder name so it's series name
+			# No volume number in folder name so it's series name
 			series = strip_filename_regex.sub('', basename(dirname(file))).strip()
 
-	#get year
+	# Get year
 	year_result = year_regex.search(filename)
 	if year_result:
-		#year found
+		# Year found
 		for y in year_result.groups():
 			if y is not None:
 				year = y
@@ -206,7 +225,7 @@ def extract_filename_data(file: str, assume_volume_number: bool=True) -> dict:
 	else:
 		year_result = year_regex.search(basename(dirname(file)))
 		if year_result:
-			#year found in upper folder
+			# Year found in upper folder
 			for y in year_result.groups():
 				if y is not None:
 					year = y
@@ -214,7 +233,7 @@ def extract_filename_data(file: str, assume_volume_number: bool=True) -> dict:
 		else:
 			year_result = year_regex.search(basename(dirname(dirname(file))))
 			if year_result:
-				#year found in upper upper folder
+				# Year found in upper upper folder
 				for y in year_result.groups():
 					if y is not None:
 						year = y
@@ -222,11 +241,11 @@ def extract_filename_data(file: str, assume_volume_number: bool=True) -> dict:
 
 	if issue_number == None and special_version == None:
 		special_version = 'tpb'
-		#because file is special version, series name is probably just complete filename
+		# Because file is special version, series name is probably just complete filename
 		if not series:
 			series = stripped_filename.replace('  ', ' ').strip()
 
-	#format output
+	# Format output
 	if isinstance(volume_number, str):
 		if volume_number.isdigit():
 			volume_number = int(volume_number)
@@ -262,7 +281,7 @@ def _list_files(folder: str, ext: list=[]) -> List[str]:
 
 	Args:
 		folder (str): The root folder to search through
-		ext (list, optional): File extensions to only include (give WITH preceding '.'). Defaults to [].
+		ext (list, optional): File extensions to only include (give WITH preceding `.`). Defaults to [].
 
 	Returns:
 		List[str]: The paths of the files in the folder
@@ -283,6 +302,15 @@ def _list_files(folder: str, ext: list=[]) -> List[str]:
 	return files
 
 def _add_file(filepath: str) -> int:
+	"""Register a file in the database
+
+	Args:
+		filepath (str): The file to register
+
+	Returns:
+		int: The id of the entry in the database
+	"""	
+	logging.debug(f'Adding file to the database: {filepath}')
 	cursor = get_db()
 	cursor.execute(
 		"INSERT OR IGNORE INTO files(filepath, size) VALUES (?,?)",
@@ -295,6 +323,12 @@ def _add_file(filepath: str) -> int:
 	return file_id
 
 def scan_files(volume_data: dict) -> None:
+	"""Scan inside the volume folder for files and map them to issues
+
+	Args:
+		volume_data (dict): The output from volumes.Volume().get_info().
+	"""	
+	logging.debug(f'Scanning for files for {volume_data["id"]}')
 	cursor = get_db()
 
 	file_to_issue_map = []
@@ -388,6 +422,15 @@ def scan_files(volume_data: dict) -> None:
 	return
 
 def create_volume_folder(root_folder: str, volume_id: int) -> str:
+	"""Generate, register and create a folder for a volume
+
+	Args:
+		root_folder (str): The rootfolder (path, not id)
+		volume_id (int): The id of the volume for which the folder is
+
+	Returns:
+		str: The path to the folder
+	"""	
 	from backend.naming import generate_volume_folder_name
 
 	# Generate and register folder
@@ -405,10 +448,21 @@ def create_volume_folder(root_folder: str, volume_id: int) -> str:
 	return volume_folder
 
 def move_volume_folder(folder: str, root_folder: str, new_root_folder: str) -> str:
+	"""Move a volume to a new folder
+
+	Args:
+		folder (str): The current volume folder
+		root_folder (str): The current root folder
+		new_root_folder (str): The new desired root folder
+
+	Returns:
+		str: The new location of the volume folder
+	"""
 	# Generate new folder path
 	new_folder = abspath(join(
 		new_root_folder, relpath(folder, root_folder))
 	)
+	logging.info(f'Moving volume folder {folder} to {new_folder}')
 	
 	# Create and move to new folder
 	move(folder, new_folder)
@@ -416,6 +470,15 @@ def move_volume_folder(folder: str, root_folder: str, new_root_folder: str) -> s
 	return new_folder
 
 def delete_volume_folder(volume_id: int) -> None:
+	"""Delete the volume folder including it's contents,
+	then start deleting parent folders when they're also empty,
+	until either a parent folder is found with other content or the
+	root folder is reached.
+
+	Args:
+		volume_id (int): The id of the volume for which to delete it's folder.
+	"""
+	logging.info(f'Deleting volume folder of {volume_id}')
 	folder, root_folder = get_db().execute(
 		"""
 		SELECT
@@ -432,13 +495,24 @@ def delete_volume_folder(volume_id: int) -> None:
 	
 	# Keep deleting empty folders until
 	# we reach a folder with content or the root folder
-	while (not samefile(folder, root_folder)
-	and not len(listdir(folder))):
+	rmtree(folder, ignore_errors=True)
+	folder = dirname(folder)
+	while (not(
+		samefile(folder, root_folder)
+		or listdir(folder)
+	)):
 		rmtree(folder, ignore_errors=True)
 		folder = dirname(folder)
 	return
 	
 def rename_file(before: str, after: str) -> None:
+	"""Rename a file, taking care of new folder locations
+
+	Args:
+		before (str): The current filepath of the file
+		after (str): The new desired filepath of the file
+	"""
+	logging.debug(f'Renaming file {before} to {after}')
 	# Create destination folder
 	makedirs(dirname(after), exist_ok=True)
 	
