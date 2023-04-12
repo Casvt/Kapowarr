@@ -88,7 +88,7 @@ class ComicVine:
 		result = {
 			'comicvine_id': int(volume_data['id']),
 			'title': volume_data['name'],
-			'year': int(volume_data['start_year'].replace('-', '0')),
+			'year': int(volume_data['start_year'].replace('-', '0')) if volume_data['start_year'] is not None else None,
 			'cover': volume_data['image']['small_url'],
 			'publisher': volume_data['publisher']['name'],
 			'issue_count': int(volume_data['count_of_issues'])
