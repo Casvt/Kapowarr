@@ -174,6 +174,7 @@ class SearchSources:
 		search_results = get(
 			private_settings["getcomics_url"],
 			params={'s': self.query},
+			headers={'user-agent': 'Kapowarr'},
 			timeout=30
 		).text
 		soup = BeautifulSoup(search_results, 'html.parser')
@@ -186,6 +187,7 @@ class SearchSources:
 				search_results = get(
 					f'{private_settings["getcomics_url"]}/page/{page}',
 					params={'s': self.query},
+					headers={'user-agent': 'Kapowarr'},
 					timeout=30
 				).text
 				soup = BeautifulSoup(search_results, 'html.parser')

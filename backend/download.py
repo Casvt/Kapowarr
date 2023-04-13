@@ -349,7 +349,7 @@ def _purify_link(link: str) -> dict:
 
 			elif link.startswith('https://getcomics.org/links.php/'):
 				# Link is direct download from getcomics ('Main Server')
-				r = get(link, allow_redirects=True, stream=True)
+				r = get(link, headers={'user-agent': 'Kapowarr'}, allow_redirects=True, stream=True)
 				return {'link': r.url, 'target': DirectDownload}
 
 			else:
@@ -571,7 +571,7 @@ def _extract_download_links(link: str, volume_id: int, issue_id: int=None) -> Li
 	links = []
 
 	try:
-		r = get(link, stream=True)
+		r = get(link, headers={'user-agent': 'Kapowarr'}, stream=True)
 		if not r.ok:
 			raise requests_ConnectionError
 	except requests_ConnectionError:
