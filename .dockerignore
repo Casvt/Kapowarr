@@ -129,6 +129,7 @@ dmypy.json
 .pyre/
 
 # Database
+db/
 *.db
 
 # VS code
