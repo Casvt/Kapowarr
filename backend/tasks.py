@@ -79,7 +79,7 @@ class AutoSearchIssue(Task):
 		title = get_db().execute(
 			"""
 			SELECT
-				v.title, i.title
+				v.title, i.title, i.issue_number
 			FROM volumes v
 			INNER JOIN issues i
 			ON i.volume_id = v.id
@@ -88,7 +88,10 @@ class AutoSearchIssue(Task):
 			""",
 			(self.id,)
 		).fetchone()
-		self.message = f'Searching for {": ".join(title)}'
+		if title[1] is None:
+			self.message = f'Searching for {title[0]} #{title[2]}'
+		else:
+			self.message = f'Searching for {title[0]}: {title[1]}'
 
 		# Get search results and download them
 		results = auto_search(self.volume_id, self.id)

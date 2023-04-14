@@ -129,8 +129,8 @@ class ComicVine:
 			'comicvine_id': issue_data['id'],
 			'issue_number': issue_data['issue_number'],
 			'calculated_issue_number': process_issue_number(issue_data['issue_number']),
-			'title': issue_data['name'],
-			'date': issue_data['cover_date'],
+			'title': issue_data['name'] or None,
+			'date': issue_data['cover_date'] or None,
 			'description': _clean_description(issue_data['description'])
 		}
 		logging.debug(f'Formatted issue output result: {result}')
@@ -160,7 +160,7 @@ class ComicVine:
 		if result['status_code'] == 101:
 			raise VolumeNotMatched
 
-		volume_info: dict = self.__format_volume_output(result['results'])
+		volume_info = self.__format_volume_output(result['results'])
 
 		# Fetch cover
 		try:

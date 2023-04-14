@@ -137,7 +137,7 @@ def setup_db() -> None:
 			id INTEGER PRIMARY KEY,
 			volume_id INTEGER NOT NULL,
 			comicvine_id INTEGER NOT NULL,
-			issue_number VARCHAR(20),
+			issue_number VARCHAR(20) NOT NULL,
 			calculated_issue_number FLOAT(20) NOT NULL,
 			title VARCHAR(255),
 			date VARCHAR(10),
@@ -220,7 +220,7 @@ def setup_db() -> None:
 	current_db_version = int(cursor.execute(
 		"SELECT value FROM config WHERE key = 'database_version' LIMIT 1;"
 	).fetchone()[0])
-	logging.debug(f'Database migration: {current_db_version}, {__DATABASE_VERSION__}')
+	logging.debug(f'Database migration: {current_db_version} -> {__DATABASE_VERSION__}')
 	if current_db_version < __DATABASE_VERSION__:
 		migrate_db(current_db_version)
 		cursor.execute(
