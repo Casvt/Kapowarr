@@ -236,7 +236,6 @@ class Volume:
 		Args:
 			root_folder_id (int): The id of the new root folder to move the volume to
 		"""
-		logging.info(f'Changing root folder of volume {self.id} from {current_root_folder_id} to {root_folder_id}')
 		# Check that current root folder and new root folder aren't the same
 		current_root_folder_id, folder = get_db().execute(
 			"SELECT root_folder, folder FROM volumes WHERE id = ? LIMIT 1",
@@ -244,6 +243,7 @@ class Volume:
 		).fetchone()
 		if current_root_folder_id == root_folder_id:
 			return
+		logging.info(f'Changing root folder of volume {self.id} from {current_root_folder_id} to {root_folder_id}')
 
 		# Get paths and move
 		rf = RootFolders()
