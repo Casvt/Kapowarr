@@ -299,7 +299,7 @@ def _purify_link(link: str) -> dict:
 	elif link.startswith('http'):
 		if '.zippyshare.com/v/' in link:
 			# Link is zippyshare
-			r = get(link)
+			r = get(link, headers={'User-Agent': 'Kapowarr'})
 			m = zs_regex.search(r.text)
 			if m:
 				parsed_url = urlsplit(link)
@@ -308,7 +308,9 @@ def _purify_link(link: str) -> dict:
 				return {'link': zs_link, 'target': DirectDownload}
 
 		else:
-			r = get(link, allow_redirects=False, stream=True)
+			r = get(link, headers={'User-Agent': 'Kapowarr'}, allow_redirects=False, stream=True)
+			if r.headers.get('Location', '').startswith(private_settings['getcomics_url'] + '/links/'):
+				r = get(r.headers['Location'], headers={'User-Agent': 'Kapowarr'}, allow_redirects=False, stream=True)
 
 			if mega_regex.search(link):
 				# Link is mega
@@ -347,7 +349,7 @@ def _purify_link(link: str) -> dict:
 				return {'link': "magnet:?xt=urn:btih:" + hash + "&tr=udp://tracker.cyberia.is:6969/announce&tr=udp://tracker.port443.xyz:6969/announce&tr=http://tracker3.itzmx.com:6961/announce&tr=udp://tracker.moeking.me:6969/announce&tr=http://vps02.net.orel.ru:80/announce&tr=http://tracker.openzim.org:80/announce&tr=udp://tracker.skynetcloud.tk:6969/announce&tr=https://1.tracker.eu.org:443/announce&tr=https://3.tracker.eu.org:443/announce&tr=http://re-tracker.uz:80/announce&tr=https://tracker.parrotsec.org:443/announce&tr=udp://explodie.org:6969/announce&tr=udp://tracker.filemail.com:6969/announce&tr=udp://tracker.nyaa.uk:6969/announce&tr=udp://retracker.netbynet.ru:2710/announce&tr=http://tracker.gbitt.info:80/announce&tr=http://tracker2.dler.org:80/announce",
 							'target': None}
 
-			elif link.startswith('https://getcomics.org/links.php/'):
+			elif link.startswith(private_settings['getcomics_url'] + '/links/'):
 				# Link is direct download from getcomics ('Main Server')
 				r = get(link, headers={'user-agent': 'Kapowarr'}, allow_redirects=True, stream=True)
 				return {'link': r.url, 'target': DirectDownload}
@@ -578,7 +580,7 @@ def _extract_download_links(link: str, volume_id: int, issue_id: int=None) -> Li
 		# Link broken
 		add_to_blocklist(link, 1)
 
-	if link.startswith(private_settings['getcomics_url']) and not link.startswith(private_settings['getcomics_url'] + '/links.php/'):
+	if link.startswith(private_settings['getcomics_url']) and not link.startswith(private_settings['getcomics_url'] + '/links/'):
 		# Link is to a getcomics page
 
 		# Get info of volume
