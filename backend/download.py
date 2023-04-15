@@ -15,7 +15,6 @@ from typing import Dict, List, Union
 from bencoding import bdecode, bencode
 from bs4 import BeautifulSoup
 from requests import get
-from requests.compat import urlsplit
 from requests.exceptions import ConnectionError as requests_ConnectionError
 
 from backend.blocklist import add_to_blocklist, blocklist_contains
@@ -33,7 +32,8 @@ from .lib.mega import Mega, RequestError
 file_extension_regex = compile(r'(?<=\.)[\w\d]{2,4}(?=$|;|\s)|(?<=\/)[\w\d]{2,4}(?=$|;|\s)', IGNORECASE)
 issue_range_regex = compile(r'#?(\d+)\s?-\s?(\d+)', IGNORECASE)
 mega_regex = compile(r'https?://mega\.(nz|io)/(#\!|file/)')
-mediafire_regex = compile(r'https?://www.mediafire.com/file/')
+mediafire_regex = compile(r'https?://www\.mediafire\.com/file/')
+gc_regex = compile(r'https?://(\w+\.)?getcomics\.(org|info)/(?!links)')
 download_chunk_size = 4194304 # 4MB Chunks
 # Below is in order of preference
 supported_source_strings = (('mega', 'mega link'),
@@ -336,7 +336,7 @@ def _purify_link(link: str) -> dict:
 			return {'link': "magnet:?xt=urn:btih:" + hash + "&tr=udp://tracker.cyberia.is:6969/announce&tr=udp://tracker.port443.xyz:6969/announce&tr=http://tracker3.itzmx.com:6961/announce&tr=udp://tracker.moeking.me:6969/announce&tr=http://vps02.net.orel.ru:80/announce&tr=http://tracker.openzim.org:80/announce&tr=udp://tracker.skynetcloud.tk:6969/announce&tr=https://1.tracker.eu.org:443/announce&tr=https://3.tracker.eu.org:443/announce&tr=http://re-tracker.uz:80/announce&tr=https://tracker.parrotsec.org:443/announce&tr=udp://explodie.org:6969/announce&tr=udp://tracker.filemail.com:6969/announce&tr=udp://tracker.nyaa.uk:6969/announce&tr=udp://retracker.netbynet.ru:2710/announce&tr=http://tracker.gbitt.info:80/announce&tr=http://tracker2.dler.org:80/announce",
 						'target': None}
 
-		elif link.startswith(private_settings['getcomics_url'] + '/links/'):
+		elif gc_regex.search(link):
 			# Link is direct download from getcomics ('Main Server')
 			r = get(link, headers={'user-agent': 'Kapowarr'}, allow_redirects=True, stream=True)
 			return {'link': r.url, 'target': DirectDownload}
