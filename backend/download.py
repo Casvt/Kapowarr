@@ -30,7 +30,6 @@ from backend.settings import Settings, blocklist_reasons, private_settings
 
 from .lib.mega import Mega, RequestError
 
-zs_regex = compile(r'document\.getElementById\(\'dlbutton\'\)\.href = "(.*?)" \+ \((\d+) % (\d+) \+ (\d+) % (\d+)\) \+ "(.*?)";')
 file_extension_regex = compile(r'(?<=\.)[\w\d]{2,4}(?=$|;|\s)|(?<=\/)[\w\d]{2,4}(?=$|;|\s)', IGNORECASE)
 issue_range_regex = compile(r'#?(\d+)\s?-\s?(\d+)', IGNORECASE)
 mega_regex = compile(r'https?://mega\.(nz|io)/(#\!|file/)')
@@ -39,7 +38,6 @@ download_chunk_size = 4194304 # 4MB Chunks
 # Below is in order of preference
 supported_source_strings = (('mega', 'mega link'),
 							('mediafire', 'mediafire link'),
-							('zippyshare', 'zippyshare link'),
 							('direct', 'download now','main server','mirror download'))
 source_preference_order = list(s[0] for s in supported_source_strings)
 
@@ -297,65 +295,54 @@ def _purify_link(link: str) -> dict:
 		raise LinkBroken(2, blocklist_reasons[2])
 
 	elif link.startswith('http'):
-		if '.zippyshare.com/v/' in link:
-			# Link is zippyshare
-			r = get(link, headers={'User-Agent': 'Kapowarr'})
-			m = zs_regex.search(r.text)
-			if m:
-				parsed_url = urlsplit(link)
-				zs_id = int(m.group(2)) % int(m.group(3)) + int(m.group(4)) % int(m.group(5))
-				zs_link = parsed_url.scheme + '://' + parsed_url.netloc + m.group(1) + str(zs_id) + m.group(6)
-				return {'link': zs_link, 'target': DirectDownload}
+		r = get(link, headers={'User-Agent': 'Kapowarr'}, allow_redirects=False, stream=True)
+		if r.headers.get('Location', '').startswith(private_settings['getcomics_url'] + '/links/'):
+			r = get(r.headers['Location'], headers={'User-Agent': 'Kapowarr'}, allow_redirects=False, stream=True)
+
+		if mega_regex.search(link):
+			# Link is mega
+			return {'link': link, 'target': MegaDownload}
+
+		elif mega_regex.search(r.headers.get('Location', '')):
+			# Link is mega
+			return {'link': r.headers['Location'], 'target': MegaDownload}
+
+		elif mediafire_regex.search(link):
+			# Link is mediafire
+			soup = BeautifulSoup(r.text, 'html.parser')
+			button = soup.find('a', {'id': 'downloadButton'})
+			if button:
+				return {'link': button['href'], 'target': DirectDownload}
+			raise LinkBroken(1, blocklist_reasons[1])
+
+		elif mediafire_regex.search(r.headers.get('Location', '')):
+			# Link is mediafire
+			r = get(link)
+			soup = BeautifulSoup(r.text, 'html.parser')
+			button = soup.find('a', {'id': 'downloadButton'})
+			if button:
+				return {'link': button['href'], 'target': DirectDownload}
+			raise LinkBroken(1, blocklist_reasons[1])
+
+		elif r.headers.get('Location','').startswith('magnet:?'):
+			# Link is magnet link
+			raise LinkBroken(2, blocklist_reasons[2])
+			return {'link': r.headers['Location'], 'target': None}
+
+		elif r.headers.get('Content-Type','') == 'application/x-bittorrent':
+			# Link is torrent file
+			raise LinkBroken(2, blocklist_reasons[2])
+			hash = sha1(bencode(bdecode(r.content)[b"info"])).hexdigest()
+			return {'link': "magnet:?xt=urn:btih:" + hash + "&tr=udp://tracker.cyberia.is:6969/announce&tr=udp://tracker.port443.xyz:6969/announce&tr=http://tracker3.itzmx.com:6961/announce&tr=udp://tracker.moeking.me:6969/announce&tr=http://vps02.net.orel.ru:80/announce&tr=http://tracker.openzim.org:80/announce&tr=udp://tracker.skynetcloud.tk:6969/announce&tr=https://1.tracker.eu.org:443/announce&tr=https://3.tracker.eu.org:443/announce&tr=http://re-tracker.uz:80/announce&tr=https://tracker.parrotsec.org:443/announce&tr=udp://explodie.org:6969/announce&tr=udp://tracker.filemail.com:6969/announce&tr=udp://tracker.nyaa.uk:6969/announce&tr=udp://retracker.netbynet.ru:2710/announce&tr=http://tracker.gbitt.info:80/announce&tr=http://tracker2.dler.org:80/announce",
+						'target': None}
+
+		elif link.startswith(private_settings['getcomics_url'] + '/links/'):
+			# Link is direct download from getcomics ('Main Server')
+			r = get(link, headers={'user-agent': 'Kapowarr'}, allow_redirects=True, stream=True)
+			return {'link': r.url, 'target': DirectDownload}
 
 		else:
-			r = get(link, headers={'User-Agent': 'Kapowarr'}, allow_redirects=False, stream=True)
-			if r.headers.get('Location', '').startswith(private_settings['getcomics_url'] + '/links/'):
-				r = get(r.headers['Location'], headers={'User-Agent': 'Kapowarr'}, allow_redirects=False, stream=True)
-
-			if mega_regex.search(link):
-				# Link is mega
-				return {'link': link, 'target': MegaDownload}
-
-			elif mega_regex.search(r.headers.get('Location', '')):
-				# Link is mega
-				return {'link': r.headers['Location'], 'target': MegaDownload}
-
-			elif mediafire_regex.search(link):
-				# Link is mediafire
-				soup = BeautifulSoup(r.text, 'html.parser')
-				button = soup.find('a', {'id': 'downloadButton'})
-				if button:
-					return {'link': button['href'], 'target': DirectDownload}
-				raise LinkBroken(1, blocklist_reasons[1])
-
-			elif mediafire_regex.search(r.headers.get('Location', '')):
-				# Link is mediafire
-				r = get(link)
-				soup = BeautifulSoup(r.text, 'html.parser')
-				button = soup.find('a', {'id': 'downloadButton'})
-				if button:
-					return {'link': button['href'], 'target': DirectDownload}
-				raise LinkBroken(1, blocklist_reasons[1])
-
-			elif r.headers.get('Location','').startswith('magnet:?'):
-				# Link is magnet link
-				raise LinkBroken(2, blocklist_reasons[2])
-				return {'link': r.headers['Location'], 'target': None}
-
-			elif r.headers.get('Content-Type','') == 'application/x-bittorrent':
-				# Link is torrent file
-				raise LinkBroken(2, blocklist_reasons[2])
-				hash = sha1(bencode(bdecode(r.content)[b"info"])).hexdigest()
-				return {'link': "magnet:?xt=urn:btih:" + hash + "&tr=udp://tracker.cyberia.is:6969/announce&tr=udp://tracker.port443.xyz:6969/announce&tr=http://tracker3.itzmx.com:6961/announce&tr=udp://tracker.moeking.me:6969/announce&tr=http://vps02.net.orel.ru:80/announce&tr=http://tracker.openzim.org:80/announce&tr=udp://tracker.skynetcloud.tk:6969/announce&tr=https://1.tracker.eu.org:443/announce&tr=https://3.tracker.eu.org:443/announce&tr=http://re-tracker.uz:80/announce&tr=https://tracker.parrotsec.org:443/announce&tr=udp://explodie.org:6969/announce&tr=udp://tracker.filemail.com:6969/announce&tr=udp://tracker.nyaa.uk:6969/announce&tr=udp://retracker.netbynet.ru:2710/announce&tr=http://tracker.gbitt.info:80/announce&tr=http://tracker2.dler.org:80/announce",
-							'target': None}
-
-			elif link.startswith(private_settings['getcomics_url'] + '/links/'):
-				# Link is direct download from getcomics ('Main Server')
-				r = get(link, headers={'user-agent': 'Kapowarr'}, allow_redirects=True, stream=True)
-				return {'link': r.url, 'target': DirectDownload}
-
-			else:
-				raise LinkBroken(2, blocklist_reasons[2])
+			raise LinkBroken(2, blocklist_reasons[2])
 	else:
 		raise LinkBroken(2, blocklist_reasons[2])
 
