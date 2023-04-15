@@ -630,6 +630,9 @@ class DownloadHandler:
 			# else
 			download['instance'].state = IMPORTING_STATE
 			PostProcessing(download).full()
+			
+			self.queue.pop(0)
+			self._process_queue()
 			return
 
 	def _process_queue(self) -> None:
