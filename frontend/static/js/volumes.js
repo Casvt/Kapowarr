@@ -59,7 +59,8 @@ function fetchLibrary(api_key) {
 
 function searchLibrary(api_key) {
 	const query = document.querySelector('#search-input').value;
-	fetch(`/api/volumes?api_key=${api_key}&query=${query}`)
+	const sort = document.querySelector('#sort-button').value;
+	fetch(`/api/volumes?api_key=${api_key}&query=${query}&sort=${sort}`)
 	.then(response => response.json())
 	.then(json => populateLibrary(json.result, api_key));
 };
@@ -97,5 +98,8 @@ usingApiKey()
 	addEventListener('#search-input', 'keydown', e => e.code === 'Enter' ? searchLibrary(api_key) : null);
 	addEventListener('#updateall-button', 'click', e => updateAll(api_key));
 	addEventListener('#searchall-button', 'click', e => searchAll(api_key));
-	addEventListener('#sort-button', 'change', e => fetchLibrary(api_key));
+	addEventListener('#sort-button', 'change', e => {
+		if (document.querySelector('#search-input').value) searchLibrary(api_key);
+		else fetchLibrary(api_key);
+	});
 });

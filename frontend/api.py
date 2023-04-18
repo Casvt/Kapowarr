@@ -328,7 +328,7 @@ def api_volumes():
 		query = extract_key(request, 'query', False)
 		sort = extract_key(request, 'sort', False)
 		if query:
-			volumes = library.search(query)
+			volumes = library.search(query, sort)
 		else:
 			volumes = library.get_volumes(sort)
 

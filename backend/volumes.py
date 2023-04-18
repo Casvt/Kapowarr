@@ -422,18 +422,19 @@ class Library:
 		
 		return volumes
 		
-	def search(self, query: str) -> List[dict]:
+	def search(self, query: str, sort: str='title') -> List[dict]:
 		"""Search in the library with a query
 
 		Args:
 			query (str): The query to search with
+			sort (str, optional): How to sort the list. `title`, `year` and `volume_number` allowed. Defaults to 'title'.
 
 		Returns:
 			List[dict]: The resulting list of matching volumes in the library
 		"""
 		volumes = list(filter(
 			lambda v: query.lower() in v['title'].lower(),
-			self.get_volumes()
+			self.get_volumes(sort)
 		))
 		
 		return volumes
