@@ -140,7 +140,20 @@ class Volume:
 				id, comicvine_id,
 				title, year, publisher,
 				volume_number, description,
-				monitored, folder, root_folder
+				monitored,
+				folder, root_folder,
+				(
+					SELECT COUNT(*)
+					FROM issues
+					WHERE volume_id = volumes.id
+				) AS issue_count,
+				(
+					SELECT COUNT(DISTINCT issue_id)
+					FROM issues i
+					INNER JOIN issues_files if
+					ON i.id = if.issue_id
+					WHERE volume_id = volumes.id
+				) AS issues_downloaded
 			FROM volumes
 			WHERE id = ?
 			LIMIT 1
