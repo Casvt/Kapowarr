@@ -1,21 +1,21 @@
-.main-window {
-	overflow-x: auto;
+main {
+	overflow-x: hidden;
 }
 
 table {
 	width: 100%;
-	text-align: left;
+	min-width: 50rem;
 	border-spacing: 0px;
 	padding: 1rem;
+	text-align: left;
 }
 
 th, td {
 	padding: .5rem;
 }
 
-th:not([class$="-column"]),
-td:not([class$="-column"]) {
-	min-width: 12.5rem;
+.queue-entry > * {
+	border-top: 1px solid var(--border-color);
 }
 
 .status-column {
@@ -30,14 +30,10 @@ td:not([class$="-column"]) {
 	width: 3.5rem;
 }
 
-.queue-entry > * {
-	border-top: 1px solid lightgray;
-}
-
-.delete-entry {
+.option-column button {
 	background-color: transparent;
 }
 
-.delete-entry-icon {
+.option-column button img {
 	width: 20px;
 }

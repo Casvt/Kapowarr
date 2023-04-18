@@ -7,6 +7,7 @@
 
 	<link rel="stylesheet" href="/static/css/general.css">
 	<link rel="stylesheet" href="/static/css/tasks.css">
+	<script src="/static/js/auth.js"></script>
 	<script src="/static/js/general.js" defer></script>
 	<script src="/static/js/tasks.js" defer></script>
 
@@ -15,30 +16,32 @@
 <body>
 	<header>
 		<div class="menu-title-container">
-			<button class="toggle-nav" id="nav-button" aria-label="toggle menu">
-				<img src="/static/img/menu.svg" alt="Menu icon" class="nav-icon">
+			<button id="toggle-nav" aria-label="Toggle menu">
+				<img src="/static/img/menu.svg" alt="">
 			</button>
 			<h1>Kapowarr</h1>
 		</div>
 	</header>
 	<div class="nav-main">
-		<div id="nav">
+		<div id="nav-bar">
 			<nav>
-				<a href="/" class="nav-entry nav-side-line">Volumes</a>
-				<a href="/activity/queue" class="nav-entry nav-side-line">Activity</a>
-				<a href="/settings" class="nav-entry nav-side-line">Settings</a>
-				<a href="/system/status" class="nav-entry nav-side-line">System</a>
-					<a href="/system/status" class="sub-nav-entry nav-side-line">Status</a>
-					<a href="/system/tasks" class="sub-nav-entry current-nav nav-side-line">Tasks</a>
+				<a href="/">Volumes</a>
+				<a href="/activity/queue">Activity</a>
+				<a href="/settings">Settings</a>
+				<a href="/system/status">System</a>
+					<a href="/system/status" class="sub-entry">Status</a>
+					<a href="/system/tasks" class="sub-entry current-nav">Tasks</a>
 			</nav>
 			<div id="task-queue"></div>
 		</div>
 		<main>
 			<div class="tool-bar-container">
 				<div class="tool-bar">
-					<button class="tool-bar-button" id="clear-button">
+					<button id="clear-button" aria-label="Delete task history" title="Delete task history">
 						<img src="/static/img/delete_white.svg" alt="">
-						<p id="clear-text">Clear History</p>
+						<div>
+							<p>Clear History</p>
+						</div>
 					</button>
 				</div>
 			</div>

@@ -229,7 +229,8 @@ def api_tasks():
 @auth
 def api_task_history():
 	if request.method == 'GET':
-		tasks = get_task_history()
+		offset = extract_key(request, 'offset', False)
+		tasks = get_task_history(offset)
 		return return_api(tasks)
 	
 	elif request.method == 'DELETE':
@@ -504,7 +505,8 @@ def api_download_history():
 @auth
 def api_blocklist():
 	if request.method == 'GET':
-		result = get_blocklist()
+		offset = extract_key(request, 'offset', False)
+		result = get_blocklist(offset)
 		return return_api(result)
 	
 	elif request.method == 'POST':

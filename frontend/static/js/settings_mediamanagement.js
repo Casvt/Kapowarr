@@ -1,25 +1,56 @@
-function fillSettings() {
+//
+// Settings
+// 
+function fillSettings(api_key) {
 	fetch(`/api/settings?api_key=${api_key}`)
-	.then(response => {
-		return response.json();
-	})
+	.then(response => response.json())
 	.then(json => {
-		document.getElementById('volume-folder-naming-input').value = json.result.volume_folder_naming;
-		document.getElementById('file-naming-input').value = json.result.file_naming;
-		document.getElementById('file-naming-tpb-input').value = json.result.file_naming_tpb;
+		document.querySelector('#volume-folder-naming-input').value = json.result.volume_folder_naming;
+		document.querySelector('#file-naming-input').value = json.result.file_naming;
+		document.querySelector('#file-naming-tpb-input').value = json.result.file_naming_tpb;
 	});
-	fillRootFolder();
 };
 
-function fillRootFolder() {
+function saveSettings(api_key) {
+	document.querySelector('#file-naming-input').classList.remove('error-input');
+	document.querySelector('#file-naming-tpb-input').classList.remove('error-input');
+	const data = {
+		'volume_folder_naming': document.querySelector('#volume-folder-naming-input').value,
+		'file_naming': document.querySelector('#file-naming-input').value,
+		'file_naming_tpb': document.querySelector('#file-naming-tpb-input').value
+	};
+	fetch(`/api/settings?api_key=${api_key}`, {
+		'method': 'PUT',
+		'body': JSON.stringify(data),
+		'headers': {'Content-Type': 'application/json'}
+	})
+	.then(response => response.json())
+	.then(json => {
+		if (json.error !== null) return Promise.reject(json);
+	})
+	.catch(e => {
+		if (e.error === 'InvalidSettingValue') {
+			if (e.result.key === 'file_naming')
+				document.querySelector('#file-naming-input').classList.add('error-input');
+			else if (e.result.key === 'file_naming_tpb')
+				document.querySelector('#file-naming-tpb-input').classList.add('error-input');
+		} else {
+			console.log(e.error);
+		};
+	});
+};
+
+// 
+// Root folders
+// 
+function fillRootFolder(api_key) {
 	fetch(`/api/rootfolder?api_key=${api_key}`)
 	.then(response => response.json())
 	.then(json => {
-		const table = document.getElementById('root-folder-list');
+		const table = document.querySelector('#root-folder-list');
 		table.innerHTML = '';
 		json.result.forEach(root_folder => {
 			const entry = document.createElement('tr');
-			entry.classList.add('root-folder-entry');
 			entry.dataset.id = root_folder.id
 
 			const path = document.createElement('td');
@@ -29,7 +60,7 @@ function fillRootFolder() {
 			const delete_root_folder_container = document.createElement('td');
 			delete_root_folder_container.classList.add('action-column');
 			const delete_root_folder = document.createElement('button');
-			delete_root_folder.addEventListener('click', e => deleteRootFolder(root_folder.id));
+			delete_root_folder.addEventListener('click', e => deleteRootFolder(root_folder.id, api_key));
 			delete_root_folder.setAttribute('type', 'button');
 			const delete_root_folder_icon = document.createElement('img');
 			delete_root_folder_icon.src = '/static/img/delete.svg';
@@ -42,15 +73,37 @@ function fillRootFolder() {
 	});
 }
 
-function deleteRootFolder(id) {
+function toggleAddRootFolder(e) {
+	document.querySelector('#folder-error').classList.add('hidden');
+	document.querySelector('#folder-input').value = '';
+	document.querySelector('#add-row').classList.toggle('hidden');
+};
+
+function addRootFolder(api_key) {
+	const folder_input = document.querySelector('#folder-input');
+	const folder = folder_input.value;
+	folder_input.value = '';
+
+	fetch(`/api/rootfolder?api_key=${api_key}&folder=${folder}`, {
+		'method': 'POST'
+	})
+	.then(response => {
+		if (!response.ok) return Promise.reject(response.status);
+		
+		fillRootFolder(api_key);
+		toggleAddRootFolder();
+	})
+	.catch(e => {
+		if (e === 404) document.querySelector('#folder-error').classList.remove('hidden');
+	});
+};
+
+function deleteRootFolder(id, api_key) {
 	fetch(`/api/rootfolder/${id}?api_key=${api_key}`, {
 		'method': 'DELETE'
 	})
 	.then(response => {
-		// catch errors
-		if (!response.ok) {
-			return Promise.reject(response.status);
-		};
+		if (!response.ok) return Promise.reject(response.status);
 		
 		document.querySelector(`tr[data-id="${id}"]`).remove();
 	})
@@ -64,71 +117,15 @@ function deleteRootFolder(id) {
 	});
 };
 
-function saveSettings() {
-	const data = {
-		'volume_folder_naming': document.getElementById('volume-folder-naming-input').value,
-		'file_naming': document.getElementById('file-naming-input').value,
-		'file_naming_tpb': document.getElementById('file-naming-tpb-input').value
-	};
-	fetch(`/api/settings?api_key=${api_key}`, {
-		'method': 'PUT',
-		'body': JSON.stringify(data),
-		'headers': {'Content-Type': 'application/json'}
-	})
-	.then(response => {
-		return response.json();
-	})
-	.then(json => {
-		// catch errors
-		if (!json.error === null) {
-			return Promise.reject(json);
-		};
-	})
-	.catch(e => {
-		console.log(e.error);
-	});
-};
-
-function toggleAddRootFolder() {
-	document.getElementById('folder-error').classList.add('hidden');
-	document.getElementById('folder-input').value = '';
-	document.getElementById('add-row').classList.toggle('hidden');
-};
-
-function addRootFolder() {
-	const folder_input = document.getElementById('folder-input');
-	const folder = folder_input.value;
-	folder_input.value = '';
-	fetch(`/api/rootfolder?api_key=${api_key}&folder=${folder}`, {
-		'method': 'POST'
-	})
-	.then(response => {
-		// catch errors
-		if (!response.ok) {
-			return Promise.reject(response.status);
-		};
-		
-		fillRootFolder();
-		toggleAddRootFolder();
-	})
-	.catch(e => {
-		if (e === 404) {
-			document.getElementById('folder-error').classList.remove('hidden');
-		};
-	});
-};
-
 // code run on load
 
-const api_key = sessionStorage.getItem('api_key');
+usingApiKey()
+.then(api_key => {
+	fillSettings(api_key);
+	fillRootFolder(api_key);
+	addEventListener('#save-button', 'click', e => saveSettings(api_key));
+	addEventListener('#add-folder', 'click', e => addRootFolder(api_key));
+	addEventListener('#folder-input', 'keydown', e => e.code === 'Enter' ? addRootFolder(api_key) : null);
+})
 
-fillSettings();
-
-document.getElementById('save-button').addEventListener('click', e => saveSettings());
-document.getElementById('toggle-root-folder').addEventListener('click', e => toggleAddRootFolder());
-document.getElementById('add-folder').addEventListener('click', e => addRootFolder());
-document.getElementById('folder-input').addEventListener('keydown', e => {
-	if (e.key === 'Enter') {
-		addRootFolder();
-	};
-});
+addEventListener('#toggle-root-folder', 'click', toggleAddRootFolder);

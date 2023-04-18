@@ -1,130 +1,167 @@
-function fillTable(issues) {
-	const table = document.getElementById('issues-list');
+// 
+// Filling data
+// 
+function fillTable(issues, api_key) {
+	const table = document.querySelector('#issues-list');
 	table.innerHTML = '';
-	
-	const base_entry = document.createElement('tr');
-	base_entry.classList.add('issue-entry');
-
-	const monitored_container = document.createElement('td');
-	monitored_container.classList.add('issue-monitored','monitor-column');
-	const monitored = document.createElement('button');
-	const monitored_icon = document.createElement('img');
-	monitored.appendChild(monitored_icon);
-	monitored_container.appendChild(monitored);
-	base_entry.appendChild(monitored_container);
-
-	const issue_number = document.createElement('td');
-	issue_number.classList.add('issue-number','number-column');
-	base_entry.appendChild(issue_number);
-
-	const title = document.createElement('td');
-	title.classList.add('issue-title','title-column');
-	base_entry.append(title);
-
-	const release_date = document.createElement('td');
-	release_date.classList.add('issue-date','date-column');
-	base_entry.append(release_date);
-
-	const status = document.createElement('td');
-	status.classList.add('issue-status','download-column');
-	const status_icon = document.createElement('img');
-	status.appendChild(status_icon);
-	base_entry.appendChild(status);
-
-	const auto_search_container = document.createElement('td');
-	auto_search_container.classList.add('issue-search','action-column');
-	const auto_search = document.createElement('button');
-	auto_search.title = 'Auto search for this issue';
-	const auto_search_icon = document.createElement('img');
-	auto_search_icon.src = '/static/img/search.svg';
-	auto_search.appendChild(auto_search_icon);
-	auto_search_container.appendChild(auto_search);
-	base_entry.appendChild(auto_search_container);
-	
-	const manual_search_container = document.createElement('td');
-	manual_search_container.classList.add('issue-manual-search','action-column');
-	const manual_search = document.createElement('button');
-	const manual_search_icon = document.createElement('img');
-	manual_search_icon.src = '/static/img/manual_search.svg';
-	manual_search.appendChild(manual_search_icon);
-	manual_search_container.appendChild(manual_search);
-	base_entry.appendChild(manual_search_container);
 
 	for (i = issues.length - 1; i >= 0; i--) {
 		const obj = issues[i];
-		const entry = base_entry.cloneNode(true);
+		
+		const entry = document.createElement('tr');
 		entry.setAttribute('data-id', obj.id);
+		entry.classList.add('issue-entry');
 
-		const monitored_button = entry.querySelector('td.issue-monitored button');
-		monitored_button.dataset.monitored = obj.monitored;
-		monitored_button.id = obj.id;
-		monitored_button.addEventListener('click', e => toggleMonitoredIssue(obj.id));
-		monitored_button.querySelector('img').src = obj.monitored === true ? '/static/img/monitored.svg' : '/static/img/unmonitored.svg';
-		
-		entry.querySelector('td.issue-number').innerText = obj.issue_number;
-		
-		entry.querySelector('td.issue-title').innerText = obj.title;
-
-		entry.querySelector('td.issue-date').innerText = obj.date;
-
-		if (obj.files.length === 0) {
-			// Not downloaded
-			entry.querySelector('td.issue-status img').src = '/static/img/cancel_search.svg';
+		// Monitored
+		const monitored_container = document.createElement('td');
+		monitored_container.classList.add('issue-monitored','monitor-column');
+		const monitored = document.createElement('button');
+		monitored.dataset.monitored = obj.monitored;
+		monitored.id = obj.id;
+		monitored.addEventListener('click', e => toggleMonitoredIssue(obj.id, api_key));
+		const monitored_icon = document.createElement('img');
+		if (obj.monitored) {
+			// Issue is monitored
+			monitored_icon.src = '/static/img/monitored.svg';
+			monitored.setAttribute('aria-label', 'Issue is monitored. Click to unmonitor.');
+			monitored.setAttribute('title', 'Issue is monitored. Click to unmonitor.');
 		} else {
-			// Downloaded
-			entry.querySelector('td.issue-status img').src = '/static/img/check.svg';
+			// Issue is unmonitored
+			monitored_icon.src = '/static/img/unmonitored.svg';
+			monitored.setAttribute('aria-label', 'Issue is unmonitored. Click to monitor.');
+			monitored.setAttribute('title', 'Issue is unmonitored. Click to monitor.');
 		};
-		
-		entry.querySelector('td.issue-search button').addEventListener('click', e => autosearchIssue(obj.id));
-		
-		entry.querySelector('td.issue-manual-search button').addEventListener('click', e => showManualSearch(obj.id))
+		monitored.appendChild(monitored_icon);
+		monitored_container.appendChild(monitored);
+		entry.appendChild(monitored_container);
 
+		// Issue number
+		const issue_number = document.createElement('td');
+		issue_number.classList.add('issue-number','number-column');
+		issue_number.innerText = obj.issue_number;
+		entry.appendChild(issue_number);
+
+		// Title
+		const title = document.createElement('td');
+		title.classList.add('issue-title','title-column');
+		title.innerText = obj.title;
+		entry.append(title);
+
+		// Release date
+		const release_date = document.createElement('td');
+		release_date.classList.add('issue-date','date-column');
+		release_date.innerText = obj.date;
+		entry.append(release_date);
+
+		// Download status
+		const status = document.createElement('td');
+		status.classList.add('issue-status','download-column');
+		const status_icon = document.createElement('img');
+		if (obj.files.length) {
+			// Downloaded
+			status_icon.src = '/static/img/check.svg';
+			status.setAttribute('aria-label', 'Issue is downloaded.');
+			status.setAttribute('title', 'Issue is downloaded');
+		} else {
+			// Not downloaded
+			status_icon.src = '/static/img/cancel_search.svg';
+			status.setAttribute('aria-label', 'Issue is not downloaded.');
+			status.setAttribute('title', 'Issue is not downloaded');
+		};
+		status.appendChild(status_icon);
+		entry.appendChild(status);
+
+		// Actions
+		const actions = document.createElement('td');
+		actions.classList.add('action-column');
+		
+		// Auto search
+		const auto_search = document.createElement('button');
+		auto_search.setAttribute('title', 'Auto search for this issue');
+		auto_search.setAttribute('aria-label', 'Auto search for this issue');
+		auto_search.addEventListener('click', e => autosearchIssue(obj.id, api_key));
+		const auto_search_icon = document.createElement('img');
+		auto_search_icon.src = '/static/img/search.svg';
+		auto_search.appendChild(auto_search_icon);
+		actions.appendChild(auto_search);
+
+		// Manual search
+		const manual_search = document.createElement('button');
+		manual_search.setAttribute('title', 'Manually search for this issue');
+		manual_search.setAttribute('aria-label', 'Manually search for this issue');
+		manual_search.addEventListener('click', e => showManualSearch(api_key, obj.id));		
+		const manual_search_icon = document.createElement('img');
+		manual_search_icon.src = '/static/img/manual_search.svg';
+		manual_search.appendChild(manual_search_icon);
+		actions.appendChild(manual_search);
+		entry.appendChild(actions);
+		
 		table.appendChild(entry);
 	};
-	return;
 };
 
-function fillPage(data) {
-	// set volume data
-	const monitor = document.getElementById('volume-monitor');
-	const monitor_icon = document.getElementById('volume-monitor-icon');
-	const title = document.getElementById('volume-title');
-	const cover = document.getElementById('volume-cover');
-	const tags = document.getElementById('volume-tags');
-	monitor.dataset.monitored = data.monitored;
-	monitor.addEventListener('click', e => toggleMonitored());
-	monitor_icon.src = data.monitored === true ? '/static/img/monitored_light.svg' : '/static/img/unmonitored_light.svg';
-	title.innerText = data.title;
+function fillPage(data, api_key) {
+	// Set volume data
+	const monitor = document.querySelector('#volume-monitor');
+	const monitor_icon = monitor.querySelector('img');
+	const title = document.querySelector('.volume-title-monitored > h2');
+	const cover = document.querySelector('.volume-info > img');
+	const tags = document.querySelector('#volume-tags');
+	const path = document.querySelector('#volume-path');
+	const description = document.querySelector('#volume-description');
+	const mobile_description = document.querySelector('#volume-description-mobile');
+
+	// Cover
 	cover.src = `${data.cover}?api_key=${api_key}`;
+	
+	// Monitored state
+	monitor.dataset.monitored = data.monitored;
+	monitor.addEventListener('click', e => toggleMonitored(api_key));
+	if (data.monitored) {
+		// Volume is monitored
+		monitor_icon.src = '/static/img/monitored_light.svg';
+		monitor.setAttribute('aria-label', 'Volume is monitored. Click to unmonitor.');
+		monitor.setAttribute('title', 'Volume is monitored. Click to unmonitor.');
+	} else {
+		// Volume is unmonitored
+		monitor_icon.src = '/static/img/unmonitored_light.svg';
+		monitor.setAttribute('aria-label', 'Volume is unmonitored. Click to monitor.');
+		monitor.setAttribute('title', 'Volume is unmonitored. Click to monitor.');
+	};
+	
+	// Title
+	title.innerText = data.title;
+	
+	// Tags
 	const year = document.createElement('p');
 	year.innerText = data.year;
-	year.classList.add('volume-tag');
 	tags.appendChild(year);
 	const volume_number = document.createElement('p');
-	if (data.volume_number === null) {
-		volume_number.innerText = 'Volume 1';
-	} else {
-		volume_number.innerText = `Volume ${data.volume_number}`;
-	};
-	volume_number.classList.add('volume-tag');
+	volume_number.innerText = `Volume ${data.volume_number || 1}`;
 	tags.appendChild(volume_number);
-	const path = document.getElementById('volume-path');
+	
+	// Path
 	path.innerText = data.folder;
-	const description = document.getElementById('volume-description');
+	path.dataset.root_folder = data.root_folder;
+	
+	// Descriptions
 	description.innerHTML = data.description;
-	const mobile_description = document.getElementById('volume-description-mobile');
 	mobile_description.innerHTML = data.description;
 
 	// fill issue lists
-	fillTable(data.issues);
-	return;
+	fillTable(data.issues, api_key);
+	
+	mapButtons(id);
 };
 
-function toggleMonitored() {
-	const el = document.getElementById('volume-monitor');
-	const icon = el.firstChild;
+// 
+// Actions
+// 
+function toggleMonitored(api_key) {
+	const button = document.querySelector('#volume-monitor');
+	const icon = button.querySelector('img');
 	data = {
-		'monitor': el.dataset.monitored === 'true' ? false : true
+		'monitor': button.dataset.monitored !== 'true'
 	};
 	fetch(`/api/volumes/${id}?api_key=${api_key}`, {
 		'method': 'PUT',
@@ -132,177 +169,77 @@ function toggleMonitored() {
 		'headers': {'Content-Type': 'application/json'}
 	})
 	.then(response => {
-		el.dataset.monitored = data.monitor;
-		icon.src = el.dataset.monitored === 'true' ? '/static/img/monitored_light.svg' : '/static/img/unmonitored_light.svg';
-	})
-}
+		button.dataset.monitored = data.monitor;
+		icon.src = data.monitor ? '/static/img/monitored_light.svg' : '/static/img/unmonitored_light.svg';
+	});
+};
 
-function toggleMonitoredIssue(issue_id) {
-	const el = document.getElementById(issue_id);
-	const icon = el.firstChild;
-	const monitor = el.dataset.monitored === 'true' ? false : true;
+function toggleMonitoredIssue(issue_id, api_key) {
+	const issue = document.querySelector(`#${issue_id}`);
+	const icon = issue.querySelector('img');
+	const monitor = issue.dataset.monitored !== 'true';
 	fetch(`/api/issues/${issue_id}?api_key=${api_key}&monitor=${monitor}`, {
 		'method': 'PUT',
 	})
 	.then(response => {
-		el.dataset.monitored = el.dataset.monitored === 'true' ? false : true;
-		icon.src = el.dataset.monitored === 'true' ? '/static/img/monitored.svg' : '/static/img/unmonitored.svg';
+		issue.dataset.monitored = monitor;
+		icon.src = monitor ? '/static/img/monitored.svg' : '/static/img/unmonitored.svg';
 	});
 };
 
-function refreshVolume() {
-	const el = document.querySelector('#refresh-button > img');
-	el.src = '/static/img/loading_white.svg';
-	el.classList.add('spinning');
+// 
+// Tasks
+// 
+function refreshVolume(api_key) {
+	const button_info = task_to_button[`refresh_and_scan#${id}`];
+	const icon = button_info.button.querySelector('img');
+	icon.src = button_info.loading_icon;
+	icon.classList.add('spinning');
+
 	fetch(`/api/system/tasks?api_key=${api_key}&cmd=refresh_and_scan&volume_id=${id}`, {
 		'method': 'POST'
 	});
 };
 
-function autosearchVolume() {
-	const el = document.querySelector('#autosearch-button > img');
-	el.src = '/static/img/loading_white.svg';
-	el.classList.add('spinning');
+function autosearchVolume(api_key) {
+	const button_info = task_to_button[`auto_search#${id}`];
+	const icon = button_info.button.querySelector('img');
+	icon.src = button_info.loading_icon;
+	icon.classList.add('spinning');
+
 	fetch(`/api/system/tasks?api_key=${api_key}&cmd=auto_search&volume_id=${id}`, {
 		'method': 'POST'
 	});
 };
 
-function autosearchIssue(issue_id) {
-	const el = document.querySelector(`tr[data-id="${issue_id}"] > td.issue-search > button > img`);
-	el.src = '/static/img/loading.svg';
-	el.classList.add('spinning');
+function autosearchIssue(issue_id, api_key) {
+	const button_info = task_to_button[`auto_search_issue#${id}#${issue_id}`];
+	const icon = button_info.button.querySelector('img');
+	icon.src = button_info.loading_icon;
+	icon.classList.add('spinning');
+	
 	fetch(`/api/system/tasks?api_key=${api_key}&cmd=auto_search_issue&volume_id=${id}&issue_id=${issue_id}`, {
 		'method': 'POST'
-	})
-}
-
-function showEdit() {
-	document.getElementById('monitored-input').value = document.getElementById('volume-monitor').dataset.monitored;
-	fetch(`/api/volumes/${id}?api_key=${api_key}`)
-	.then(response => response.json())
-	.then(json => {
-		const volume_root_folder = json.result.root_folder;
-
-		fetch(`/api/rootfolder?api_key=${api_key}`)
-		.then(response => response.json())
-		.then(json => {
-			const table = document.getElementById('root-folder-input');
-			table.innerHTML = '';
-			json.result.forEach(root_folder => {
-				const entry = document.createElement('option');
-				entry.value = root_folder.id;
-				entry.innerText = root_folder.folder;
-				if (root_folder.id === volume_root_folder) {
-					entry.setAttribute('selected', 'true');
-				};
-				table.appendChild(entry);
-			});
-			showWindow('editing-window');
-		});
 	});
 };
 
-function editVolume() {
-	showWindow("edit-loading-window");
-
-	const data = {
-		'monitor': document.getElementById('monitored-input').value == 'true',
-		'root_folder_id': parseInt(document.getElementById('root-folder-input').value)
-	}
-	document.getElementById('submit-edit').innerText = 'Updating...';
-	fetch(`/api/volumes/${id}?api_key=${api_key}`, {
-		'method': 'PUT',
-		'body': JSON.stringify(data),
-		'headers': {'Content-Type': 'application/json'}
-	})
-	.then(response => {
-		window.location.reload();
-	});
-	
-	return;
-};
-
-function deleteVolume() {
-	const delete_folder = document.getElementById('delete-folder-input').value;
-	fetch(`/api/volumes/${id}?api_key=${api_key}&delete_folder=${delete_folder}`, {
-		'method': 'DELETE'
-	})
-	.then(response => {
-		window.location.href = '/';
-	});
-};
-
-function showRename() {
-	fetch(`/api/volumes/${id}/rename?api_key=${api_key}`)
-	.then(response => response.json())
-	.then(json => {
-		const minus = document.createElement('span');
-		minus.classList.add('rename-minus');
-		minus.innerText = '-';
-		const plus = document.createElement('span');
-		plus.classList.add('rename-plus');
-		plus.innerText = '+';
-
-		const table = document.querySelector('#rename-preview > tbody');
-		table.innerHTML = '';
-		const rename_button = document.getElementById('submit-rename');
-		
-		if (json.result.length === 0) {
-			const message = document.createElement('p');
-			message.classList.add('empty-rename-message');
-			message.innerText = 'Nothing to rename';
-			table.appendChild(message);
-			rename_button.classList.add('hidden');
-		} else {
-			rename_button.classList.remove('hidden');
-			json.result.forEach(rename_entry => {
-				const entry = document.createElement('tr');
-				const entry_data = document.createElement('td');
-				const before = document.createElement('p');
-				const before_text = document.createElement('span');
-				before_text.innerText = rename_entry.before;
-				before.appendChild(minus.cloneNode(true));
-				before.appendChild(before_text);
-				const after = document.createElement('p');
-				const after_text = document.createElement('span');
-				after_text.innerText = rename_entry.after;
-				after.appendChild(plus.cloneNode(true));
-				after.appendChild(after_text);
-				entry_data.appendChild(before);
-				entry_data.appendChild(after);
-				entry.appendChild(entry_data);
-				table.appendChild(entry);
-			});
-		};
-		showWindow('renaming-window');
-	});
-};
-
-function renameVolume() {
-	document.getElementById('submit-rename').innerText = 'Renaming...';
-	fetch(`/api/volumes/${id}/rename?api_key=${api_key}`, {
-		'method': 'POST'
-	})
-	.then(response => {
-		window.location.reload();
-	});
-};
-
-function showManualSearch(issue_id=null) {
+// 
+// Manual search
+// 
+function showManualSearch(api_key, issue_id=null) {
 	// Display searching message
-	const message = document.getElementById('searching-message');
+	const message = document.querySelector('#searching-message');
 	message.classList.remove('hidden');
-	const table = document.getElementById('search-result-table');
+	const table = document.querySelector('#search-result-table');
 	table.classList.add('hidden');
-	const tbody = document.getElementById('search-results');
+	const tbody = table.querySelector('tbody');
 
 	// Show window
 	showWindow('manual-search-window');
 
 	// Start search
 	tbody.innerHTML = '';
-	const url = issue_id !== null ? `/api/issues/${issue_id}/manualsearch` : `/api/volumes/${id}/manualsearch`;
+	const url = issue_id ? `/api/issues/${issue_id}/manualsearch` : `/api/volumes/${id}/manualsearch`;
 	fetch(`${url}?api_key=${api_key}`)
 	.then(response => response.json())
 	.then(json => {
@@ -329,25 +266,25 @@ function showManualSearch(issue_id=null) {
 			title_link.setAttribute('target', '_blank');
 			title.appendChild(title_link);
 			entry.appendChild(title);
-			
+
 			const source = document.createElement('td');
 			source.classList.add('source-column');
 			source.innerText = result.source;
 			entry.appendChild(source);
-			
+
 			const action = document.createElement('td');
 			action.classList.add('search-action-column', 'action-list');
 			const add_entry = document.createElement('button');
 			add_entry.title = 'Download';
-			add_entry.addEventListener('click', e => addManualSearch(result.link, add_entry, issue_id));
+			add_entry.addEventListener('click', e => addManualSearch(result.link, add_entry, api_key, issue_id));
 			const add_entry_icon = document.createElement('img');
 			add_entry_icon.src = '/static/img/download.svg';
 			add_entry.appendChild(add_entry_icon);
 			action.appendChild(add_entry);
-			if (result.match_issue !== 'Link is blocklisted') {
+			if (result.match_issue === null || !result.match_issue.includes('blocklist')) {
 				const blocklist_entry = document.createElement('button');
 				blocklist_entry.title = 'Add to blocklist';
-				blocklist_entry.addEventListener('click', e => blockManualSearch(result.link, blocklist_entry, match));
+				blocklist_entry.addEventListener('click', e => blockManualSearch(result.link, blocklist_entry, match, api_key));
 				const blocklist_entry_icon = document.createElement('img');
 				blocklist_entry_icon.src = '/static/img/blocklist.svg';
 				blocklist_entry.appendChild(blocklist_entry_icon);
@@ -363,26 +300,24 @@ function showManualSearch(issue_id=null) {
 	});
 };
 
-function addManualSearch(link, button, issue_id=null) {
+function addManualSearch(link, button, api_key, issue_id=null) {
 	const img = button.querySelector('img');
 	img.src = '/static/img/loading.svg';
 	img.classList.add('spinning');
-	const url = issue_id !== null ? `/api/issues/${issue_id}/download` : `/api/volumes/${id}/download`;
+
+	const url = issue_id ? `/api/issues/${issue_id}/download` : `/api/volumes/${id}/download`;
 	fetch(`${url}?api_key=${api_key}&link=${link}`, {
 		'method': 'POST'
 	})
 	.then(response => response.json())
 	.then(json => {
 		img.classList.remove('spinning');
-		if (json.result.length > 0) {
-			img.src = '/static/img/check.svg';
-		} else {
-			img.src = '/static/img/download_failed.svg';
-		};
+		if (json.result.length) img.src = '/static/img/check.svg';
+		else img.src = '/static/img/download_failed.svg';
 	});
 };
 
-function blockManualSearch(link, button, match) {
+function blockManualSearch(link, button, match, api_key) {
 	fetch(`/api/blocklist?api_key=${api_key}&link=${link}&reason_id=4`, {
 		'method': 'POST'
 	})
@@ -393,38 +328,145 @@ function blockManualSearch(link, button, match) {
 	});
 };
 
+// 
+// Renaming
+// 
+function showRename(api_key) {
+	fetch(`/api/volumes/${id}/rename?api_key=${api_key}`)
+	.then(response => response.json())
+	.then(json => {
+		const table = document.querySelector('#rename-preview > tbody');
+		table.innerHTML = '';
+		const rename_button = document.querySelector('#submit-rename');
+
+		if (!json.result.length) {
+			const message = document.createElement('p');
+			message.classList.add('empty-rename-message');
+			message.innerText = 'Nothing to rename';
+			table.appendChild(message);
+			rename_button.classList.add('hidden');
+		} else {
+			rename_button.classList.remove('hidden');
+			json.result.forEach(rename_entry => {
+				const before = document.createElement('tr');
+				
+				const before_icon = document.createElement('td');
+				before_icon.innerText = '-';
+				before.appendChild(before_icon);
+				
+				const before_path = document.createElement('td');
+				before_path.innerText = rename_entry.before;
+				before.appendChild(before_path);
+				
+				table.appendChild(before);
+				
+				const after = document.createElement('tr');
+				
+				const after_icon = document.createElement('td');
+				after_icon.innerText = '+';
+				after.appendChild(after_icon);
+				
+				const after_path = document.createElement('td');
+				after_path.innerText = rename_entry.after;
+				after.appendChild(after_path);
+				
+				table.appendChild(after);
+			});
+		};
+		showWindow('rename-window');
+	});
+};
+
+function renameVolume(api_key) {
+	showLoadWindow('rename-window');
+	fetch(`/api/volumes/${id}/rename?api_key=${api_key}`, {
+		'method': 'POST'
+	})
+	.then(response => window.location.reload());
+};
+
+// 
+// Editing
+// 
+function showEdit(api_key) {
+	document.querySelector('#monitored-input').value = document.querySelector('#volume-monitor').dataset.monitored;
+	const volume_root_folder = parseInt(document.querySelector('#volume-path').dataset.root_folder);
+	fetch(`/api/rootfolder?api_key=${api_key}`)
+	.then(response => response.json())
+	.then(json => {
+		const table = document.querySelector('#root-folder-input');
+		table.innerHTML = '';
+		json.result.forEach(root_folder => {
+			const entry = document.createElement('option');
+			entry.value = root_folder.id;
+			entry.innerText = root_folder.folder;
+			if (root_folder.id === volume_root_folder) {
+				entry.setAttribute('selected', 'true');
+			};
+			table.appendChild(entry);
+		});
+		showWindow('edit-window');
+	});
+};
+
+function editVolume() {
+	showLoadWindow('edit-window');
+
+	const data = {
+		'monitor': document.querySelector('#monitored-input').value == 'true',
+		'root_folder_id': parseInt(document.querySelector('#root-folder-input').value)
+	}
+	usingApiKey()
+	.then(api_key => {
+		fetch(`/api/volumes/${id}?api_key=${api_key}`, {
+			'method': 'PUT',
+			'body': JSON.stringify(data),
+			'headers': {'Content-Type': 'application/json'}
+		})
+		.then(response => window.location.reload());
+	});
+};
+
+//
+// Deleting
+// 
+function deleteVolume() {
+	const delete_folder = document.querySelector('#delete-folder-input').value;
+	usingApiKey()
+	.then(api_key => {
+		fetch(`/api/volumes/${id}?api_key=${api_key}&delete_folder=${delete_folder}`, {
+			'method': 'DELETE'
+		})
+		.then(response => window.location.href = '/');
+	});
+};
+
 // code run on load
-const api_key = sessionStorage.getItem('api_key');
 const id = window.location.pathname.split('/').at(-1);
 
-fetch(`/api/volumes/${id}?api_key=${api_key}`)
-.then(response => {
-	// catch errors
-	if (!response.ok) return Promise.reject(response.status);
-	return response.json();
-})
-.then(json => fillPage(json.result))
-.catch(e => {
-	if (e === 404) {
-		window.location.href = '/';
-	};
+usingApiKey()
+.then(api_key => {
+	fetch(`/api/volumes/${id}?api_key=${api_key}`)
+	.then(response => response.json())
+	.then(json => fillPage(json.result, api_key));
+
+	addEventListener('#refresh-button', 'click', e => refreshVolume(api_key));
+	addEventListener('#autosearch-button', 'click', e => autosearchVolume(api_key));
+	addEventListener('#manualsearch-button', 'click', e => showManualSearch(api_key));
+
+	addEventListener('#rename-button', 'click', e => showRename(api_key));
+	addEventListener('#submit-rename', 'click', e => renameVolume(api_key));
+
+	addEventListener('#edit-button', 'click', e => showEdit(api_key));
 });
 
-document.getElementById('refresh-button').addEventListener('click', e => refreshVolume());
-document.getElementById('autosearch-button').addEventListener('click', e => autosearchVolume());
+document.querySelector('#cancel-search').addEventListener('click', e => closeWindow());
 
-document.getElementById('manualsearch-button').addEventListener('click', e => showManualSearch());
-document.getElementById('cancel-search').addEventListener('click', e => closeWindow());
+document.querySelector('#cancel-rename').addEventListener('click', e => closeWindow());
 
-document.getElementById('rename-button').addEventListener('click', e => showRename());
-document.getElementById('cancel-rename').addEventListener('click', e => closeWindow());
-document.getElementById('submit-rename').addEventListener('click', e => renameVolume());
+document.querySelector('#edit-form').setAttribute('action', 'javascript:editVolume();');
+document.querySelector('#cancel-edit').addEventListener('click', e => closeWindow());
 
-document.getElementById('edit-button').addEventListener('click', e => showEdit());
-document.getElementById('edit-form').setAttribute('action', 'javascript:editVolume();');
-document.getElementById('cancel-edit').addEventListener('click', e => closeWindow());
-
-document.getElementById('delete-button').addEventListener('click', e => showWindow('deleting-window'));
-document.getElementById('delete-form').setAttribute('action', 'javascript:deleteVolume();');
-document.getElementById('cancel-delete').addEventListener('click', e => closeWindow());
-
+document.querySelector('#delete-button').addEventListener('click', e => showWindow('delete-window'));
+document.querySelector('#delete-form').setAttribute('action', 'javascript:deleteVolume();');
+document.querySelector('#cancel-delete').addEventListener('click', e => closeWindow());

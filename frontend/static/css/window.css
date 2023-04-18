@@ -1,15 +1,19 @@
-.window {
-	position: absolute;
-	inset: 0 0 0 0;
-	background-color: rgba(0, 0, 0, 0.6);
-	z-index: 2;
-}
-
-.window-no-exit .window-close {
+.window:not([show-window]) {
 	display: none;
 }
 
-.window > section {
+.window[show-window] {
+	position: absolute;
+	inset: 0 0 0 0;
+	background-color: rgba(0, 0, 0, 0.6);
+	z-index: 3;
+}
+
+.window > section:not([show-window]) {
+	display: none;
+}
+
+.window > section[show-window] {
 	position: absolute;
 	width: clamp(640px, 65%, 775px);
 	max-height: 90%;
@@ -18,106 +22,131 @@
 	transform: translate(-50%, -50%);
 	overflow: auto;
 	display: flex;
-	flex-direction: column;
-	gap: 1rem;
 	background-color: white;
 	color: var(--dark-color);
 }
 
-.window > section > * {
-	padding: clamp(.5rem, 3vw, 1.5rem) clamp(.5rem, 4.5vw, 2rem);
+.window > section[show-window].wide-window {
+	width: clamp(720px, 85%, 1100px);
 }
 
-.window > section > :nth-child(1),
-.window > section > :nth-child(3) {
+.window > section:not(.loading-window) {
+	flex-direction: column;
+}
+
+.window > section.loading-window {
+	min-height: 50%;
+	justify-content: center;
+	align-items: center;
+}
+
+.window > section > * {
+	padding: clamp(.5rem, 3vw, 1.2rem) clamp(.5rem, 4.5vw, 1.4rem);
+}
+
+.window > section > div:nth-child(1),
+.window > section > div:nth-child(3) {
+	height: 4.5rem;
 	display: flex;
 	align-items: center;
 	font-size: .8rem;
 	gap: 1rem;
-	height: 4.5rem;
 }
 
 /* Header */
-.window > section > :nth-child(1) {
-	border-bottom: 2px solid var(--border-light-color);
+.window > section > div:nth-child(1) {
 	justify-content: space-between;
+	border-bottom: 2px solid var(--border-color);
 }
 
-.window-close {
+.window > section > div:nth-child(1) > button:last-of-type {
+	height: 1rem;
 	aspect-ratio: 1/1;
-	height: 1.5rem;
-	background-color: transparent;
 	padding: 0;
+	background-color: transparent;
 }
 
-.window-close > img {
+.window > section > div:nth-child(1) > button:last-of-type > img {
 	height: 100%;
 }
 
 /* Main window */
-.window > section > :nth-child(2) {
+.window > section > div:nth-child(2) {
+	min-height: 15rem;
 	display: flex;
 	flex-direction: column;
 	gap: 1rem;
 	justify-content: center;
-	min-height: 15rem;
 	overflow: auto;
 }
 
-.window > section > :nth-child(2):has(form) {
-	align-items: center;
+.window > section > div:nth-child(2) form {
+	align-self: center;
 }
 
-.window > section > :nth-child(2) table {
+.window > section > div:nth-child(2) table {
 	width: 100%;
 }
 
-.window > section > :nth-child(2) form table tr > * {
+.window > section > div:nth-child(2) form table tr > * {
 	padding: .5rem;
 }
 
-.window > section > :nth-child(2) form table tr > th {
-	width: 35%;
+.window > section > div:nth-child(2) form table tr > th {
+	width: 30%;
 	text-align: right;
 	font-size: .8rem;
-	font-weight: 500;
+	font-weight: 600;
 }
 
-.window > section > :nth-child(2) form table tr > td > select {
-	width: 85%;
-	border: 2px solid var(--border-light-color);
+.window > section > div:nth-child(2) form table tr > td > select {
+	width: 90%;
 	padding: .5rem;
+	border: 2px solid var(--border-color);
 	border-radius: 2px;
 }
 
 /* Footer */
-.window > section > :nth-child(3) {
-	border-top: 2px solid var(--border-light-color);
+.window > section > div:nth-child(3) {
 	justify-content: flex-end;
+	border-top: 2px solid var(--border-color);
 }
 
-.window > section > :nth-child(3) > button {
+.window > section > div:nth-child(3) > button {
 	padding: .5rem 1rem;
-	color: var(--light-color);
 	border-radius: 2px;
+	color: var(--light-color);
 }
 
-@media (max-width: 720px) {
-	.window > section {
-		width: 100vw;
-		height: 100vh;
+@media (max-width: 850px) {
+	.window > section[show-window].wide-window {
+		width: 90%;
+		height: 90%;
 		max-height: unset;
 	}
-	.window > section > :nth-child(2) {
+	.window > section[show-window].wide-window > div:nth-child(2) {
 		flex-grow: 1;
 	}
 }
 
-@media (max-width: 440px) {
-	.window > section > :nth-child(2) form table > tr > th {
-		width: 25%;
+@media (max-width: 720px) {
+	.window > section[show-window] {
+		width: 90%;
+		height: 90%;
+		max-height: unset;
 	}
-	.window > section > :nth-child(2) form table > tr > td > select {
+	.window > section[show-window] > div:nth-child(2) {
+		flex-grow: 1;
+	}
+	.window > section[show-window].wide-window {
 		width: 100%;
+		height: 100%;
+	}
+}
+
+@media (max-width: 600px) {
+	.window > section[show-window] {
+		width: 100%;
+		height: 100%;
 	}
 }

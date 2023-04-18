@@ -836,7 +836,7 @@ def get_download_history(offset: int=0) -> List[dict]:
 			LIMIT 50
 			OFFSET ?;
 			""",
-			(offset,)
+			(offset * 50,)
 		).fetchall()
 	))
 	return result

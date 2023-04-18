@@ -1,26 +1,23 @@
-function fillQueue() {
+// 
+// Filling data
+// 
+function fillQueue(api_key) {
 	fetch(`/api/activity/queue?api_key=${api_key}`)
 		.then(response => {
-			// catch errors
-			if (!response.ok) {
-				return Promise.reject(response.status);
-			};
-
+			if (!response.ok) return Promise.reject(response.status);
 			return response.json();
 		})
 		.then(json => {
 			const table = document.getElementById('queue');
 			table.innerHTML = '';
-			for (i = 0; i < json.result.length; i++) {
-				const obj = json.result[i];
-
+			json.result.forEach(obj => {
 				const entry = document.createElement('tr');
 				entry.classList.add('queue-entry');
 				entry.id = obj.id;
 
 				const status = document.createElement('td');
 				status.classList.add('status-column');
-				status.innerText = obj.status;
+				status.innerText = obj.status.charAt(0).toUpperCase() + obj.status.slice(1);
 				entry.appendChild(status);
 
 				const title = document.createElement('td');
@@ -47,31 +44,21 @@ function fillQueue() {
 				entry.append(progress);
 				
 				const delete_entry = document.createElement('td');
+				delete_entry.classList.add('option-column');
 				const delete_button = document.createElement('button');
+				delete_button.addEventListener('click', e => deleteEntry(obj.id, api_key));
+				delete_entry.appendChild(delete_button);
 				const delete_icon = document.createElement('img');
 				delete_icon.src = '/static/img/delete.svg';
-				delete_icon.classList.add('delete-entry-icon');
 				delete_button.appendChild(delete_icon);
-				delete_button.classList.add('delete-entry');
-				delete_button.addEventListener('click', e => deleteEntry(obj.id));
-				delete_entry.appendChild(delete_button);
-				delete_entry.classList.add('option-column');
 				entry.append(delete_entry);
 
 				table.appendChild(entry);
-			};
+			});
 		})
 		.catch(e => {
-			if (e === 401) {
-				window.location.href = '/';
-			};
+			if (e === 401) window.location.href = '/';
 		});
-};
-
-function deleteEntry(id) {
-	fetch(`/api/activity/queue/${id}?api_key=${api_key}`, {
-		'method': 'DELETE'
-	})
 };
 
 function convertSize(size) {
@@ -99,12 +86,22 @@ function convertSize(size) {
 		) / 100
 	).toString() + 'TB';
 	return size;
-}
+};
+
+// 
+// Actions
+// 
+function deleteEntry(id, api_key) {
+	fetch(`/api/activity/queue/${id}?api_key=${api_key}`, {
+		'method': 'DELETE'
+	});
+};
 
 // code run on load
-const api_key = sessionStorage.getItem('api_key');
 
-fillQueue();
-setInterval(fillQueue, 1500);
-
-document.getElementById('refresh-button').addEventListener('click', e => fillQueue());
+usingApiKey()
+.then(api_key => {
+	fillQueue(api_key);
+	setInterval(() => fillQueue(api_key), 1500);
+	addEventListener('#refresh-button', 'click', e => fillQueue(api_key));
+});

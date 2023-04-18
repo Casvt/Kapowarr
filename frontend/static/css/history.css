@@ -1,8 +1,16 @@
+.main-window {
+	padding: 1rem;
+}
+
+.main-window > div:nth-child(2) {
+	overflow-x: auto;
+}
+
 table {
 	width: 100%;
-	text-align: left;
+	min-width: 30rem;
 	border-spacing: 0px;
-	padding: 1rem;
+	text-align: left;
 }
 
 th, td {
@@ -10,5 +18,5 @@ th, td {
 }
 
 .history-entry > * {
-	border-top: 1px solid lightgray;
+	border-top: 1px solid var(--border-color);
 }

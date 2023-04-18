@@ -1,10 +1,10 @@
-main {
+main > div {
 	padding: 1rem;
 }
 
 h2 {
 	font-size: 2rem;
-	border-bottom: 1px solid var(--border-light-color);
+	border-bottom: 1px solid var(--border-color);
 	margin-block: 1rem;
 	font-weight: 500;
 }
@@ -31,4 +31,37 @@ h2 {
 
 #about-table td {
 	margin-left: 1rem;
+}
+
+.donate-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1rem;
+}
+
+.donate-list > a {
+	height: 5rem;
+	
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 1rem;
+
+	border-radius: 4px;
+	padding: 1rem 2rem;
+	background-color: var(--accent-color);
+	color: var(--dark-color);
+
+	font-size: 1.1rem;
+	text-decoration: none;
+}
+
+.donate-list > a > img {
+	width: 2.5rem;
+}
+
+@media (max-width: 570px) {
+	.donate-list {
+		justify-content: center;
+	}
 }

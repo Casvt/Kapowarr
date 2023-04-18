@@ -13,13 +13,16 @@ from backend.db import get_db
 from backend.settings import blocklist_reasons
 
 
-def get_blocklist() -> List[dict]:
-	"""Get all blocklist entries
+def get_blocklist(offset: int=0) -> List[dict]:
+	"""Get the blocklist entries in blocks of 50
+	
+	Args:
+		offset (int, optional): The offset of the list. The higher the number, the deeper into the list you go. Defaults to 0.
 
 	Returns:
 		List[dict]: A list of dicts where each dict is a blocklist entry
 	"""	
-	logging.debug('Fetching blocklist')
+	logging.debug(f'Fetching blocklist with offset {offset}')
 	entries = get_db('dict').execute("""
 		SELECT
 			bl.id,
@@ -29,8 +32,10 @@ def get_blocklist() -> List[dict]:
 		FROM blocklist bl
 		INNER JOIN blocklist_reasons blr
 		ON bl.reason = blr.id
-		ORDER BY bl.id DESC;
-	""").fetchall()
+		ORDER BY bl.id DESC
+		LIMIT 50
+		OFFSET ?;
+	""", (offset * 50,)).fetchall()
 	entries = list(map(dict, entries))
 	
 	return entries

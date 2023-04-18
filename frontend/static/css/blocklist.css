@@ -1,13 +1,16 @@
 .main-window {
+	padding: 1rem;
+}
+
+.main-window > div:nth-child(2) {
 	overflow-x: auto;
 }
 
 table {
 	width: 100%;
-	min-width: 40rem;
+	min-width: 33.3rem;
 	text-align: left;
 	border-spacing: 0px;
-	padding: 1rem;
 	table-layout: fixed;
 }
 
@@ -20,8 +23,7 @@ table a:hover {
 }
 
 th, td {
-	padding: .5rem;
-	padding-inline: .9rem;
+	padding: .5rem .9rem;
 }
 
 .link-column {
@@ -41,7 +43,7 @@ th, td {
 }
 
 .list-entry > * {
-	border-top: 1px solid lightgray;
+	border-top: 1px solid var(--border-color);
 }
 
 .delete-entry {

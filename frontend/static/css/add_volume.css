@@ -1,26 +1,28 @@
-main {
-	padding: 1.25rem;
-	width: 100%;
+main > div {
 	display: flex;
 	flex-direction: column;
 	gap: 1.5rem;
+	padding: 1.25rem;
 }
 
+/*  */
 /* SEARCH BAR */
-
+/*  */
 .search-bar {
+	height: 2.9rem;
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	height: 2.9rem;
 }
 
 #search-button,
 #search-cancel-button {
 	height: 100%;
 	aspect-ratio: 1/1;
-	background-color: whitesmoke;
-	border: 1px solid var(--border-light-color);
+
+	padding: 0;
+	border: 1px solid var(--border-color);
+	background-color: var(--off-light-color);
 }
 
 #search-button {
@@ -35,18 +37,24 @@ main {
 
 #search-button > img,
 #search-cancel-button > img {
-	height: 50%;
+	height: 100%;
 	aspect-ratio: 1/1;
+	transform: scale(0.4);
 }
 
 #search-input {
 	height: 100%;
 	width: 100%;
+	/* To make the "glow" go over the search-cancel-button */
+	z-index: 1;
+
 	padding: .4rem 1rem;
-	font-size: 1.1rem;
+	border: 1px solid var(--border-color);
 	color: var(--dark-color);
+
 	box-shadow: rgba(0, 0, 0, 0.075) 0px 1px 1px 0px inset;
-	border: 1px solid var(--border-light-color);
+
+	font-size: 1.1rem;
 }
 
 #search-input:focus {
@@ -55,22 +63,24 @@ main {
 	box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 6px var(--accent-color);
 }
 
+/*  */
 /* SEARCH TEXTS */
-
+/*  */
 #search-explain,
 #search-empty,
 #search-failed {
+	color: var(--dark-color);
 	text-align: center;
 	font-size: 1.5rem;
-	color: var(--dark-color);
 }
 
 #search-explain > *:not(:first-child) {
 	font-size: 1.2rem;
 }
 
+/*  */
 /* SEARCH RESULTS */
-
+/*  */
 #search-results {
 	display: flex;
 	flex-direction: column;
@@ -78,14 +88,17 @@ main {
 }
 
 .search-entry {
-	background-color: var(--light-color);
-	color: var(--dark-color);
 	display: flex;
 	flex-direction: column;
 	gap: 1rem;
+
 	padding: 1.3rem;
-	text-align: left;
 	border-radius: 2px;
+	background-color: var(--light-color);
+	color: var(--dark-color);
+
+	text-align: left;
+
 	transition: background-color 200ms linear;
 }
 
@@ -94,14 +107,18 @@ main {
 }
 
 .cover-info-container {
+	width: 100%;
 	display: flex;
 	align-items: flex-start;
 	gap: 1rem;
 }
 
-.entry-cover {
-	aspect-ratio: 2/3;
+.cover-info-container > :first-child {
 	width: clamp(6rem, 25%, 10rem);
+}
+
+.cover-info-container img {
+	aspect-ratio: 2/3;
 	border-radius: 2px;
 }
 
@@ -112,8 +129,13 @@ main {
 	width: 100%;
 }
 
-.entry-title {
-	font-size: 1.3rem;
+.entry-info-container h2 {
+	font-weight: 400;
+	font-size: clamp(1.2rem, 4.5vw, 2rem);
+}
+
+.entry-info-container h2 span {
+	color: var(--mid-color);
 }
 
 .entry-tags,
@@ -123,8 +145,8 @@ main {
 	flex-wrap: wrap;
 }
 
-.entry-tag,
-.entry-alias {
+.entry-tags > *,
+.entry-aliases > * {
 	background-color: var(--dark-color);
 	color: var(--light-color);
 	padding: .15rem .35rem;
@@ -136,13 +158,22 @@ main {
 	display: none;
 }
 
+/*  */
 /* ADD VOLUME WINDOW */
+/*  */
+#add-title {
+	font-weight: 400;
+	white-space: nowrap;
+	overflow-x: hidden;
+	text-overflow: ellipsis;
+}
+
 #add-cover {
 	aspect-ratio: 2/3;
 	width: 10rem;
 }
 
-.window > section > :nth-child(2) {
+.window > section > div:nth-child(2) {
 	flex-direction: row;
 }
 
@@ -153,6 +184,26 @@ main {
 
 #add-volume {
 	background-color: var(--success-color);
+}
+
+@media (max-width: 1000px) {
+	#add-form {
+		width: 85%;
+		flex-grow: 0;
+	}
+	#add-form table tr {
+		width: 100%;
+		display: inline-flex;
+		flex-direction: column;
+	}
+	#add-form table tr > th,
+	#add-form table tr > td {
+		width: 100%;
+		text-align: left;
+	}
+	#add-form table tr > td > select {
+		width: 100%;
+	}
 }
 
 @media (max-width: 720px) {
@@ -171,16 +222,13 @@ main {
 }
 
 @media (max-width: 440px) {
-	main {
+	.cover-info-container > :first-child {
+		display: none;
+	}
+	main > div {
 		padding: .75rem;
 	}
 	.search-entry {
 		padding: 1rem;
-	}
-}
-
-@media (max-width: 350px) {
-	.entry-cover {
-		display: none;
 	}
 }

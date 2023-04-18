@@ -7,6 +7,7 @@
 
 	<link rel="stylesheet" href="/static/css/general.css">
 	<link rel="stylesheet" href="/static/css/settings.css">
+	<script src="/static/js/auth.js"></script>
 	<script src="/static/js/general.js" defer></script>
 	<script src="/static/js/settings_mediamanagement.js" defer></script>
 
@@ -15,79 +16,88 @@
 <body>
 	<header>
 		<div class="menu-title-container">
-			<button class="toggle-nav" id="nav-button" aria-label="toggle menu">
-				<img src="/static/img/menu.svg" alt="Menu icon" class="nav-icon">
+			<button id="toggle-nav" aria-label="Toggle menu">
+				<img src="/static/img/menu.svg" alt="">
 			</button>
 			<h1>Kapowarr</h1>
 		</div>
 	</header>
 	<div class="nav-main">
-		<div id="nav">
+		<div id="nav-bar">
 			<nav>
-				<a href="/" class="nav-entry current-nav nav-side-line">Volumes</a>
-				<a href="/activity/queue" class="nav-entry nav-side-line">Activity</a>
-				<a href="/settings" class="nav-entry nav-side-line">Settings</a>
-					<a href="/settings/mediamanagement" class="sub-nav-entry nav-side-line current-nav">Media Management</a>
-					<a href="/settings/download" class="sub-nav-entry nav-side-line">Download</a>
-					<a href="/settings/general" class="sub-nav-entry nav-side-line">General</a>
-				<a href="/system/status" class="nav-entry nav-side-line">System</a>
+				<a href="/">Volumes</a>
+				<a href="/activity/queue">Activity</a>
+				<a href="/settings">Settings</a>
+					<a href="/settings/mediamanagement" class="sub-entry current-nav">Media Management</a>
+					<a href="/settings/download" class="sub-entry">Download</a>
+					<a href="/settings/general" class="sub-entry">General</a>
+				<a href="/system/status">System</a>
 			</nav>
 			<div id="task-queue"></div>
 		</div>
 		<main>
 			<div class="tool-bar-container">
 				<div class="tool-bar">
-					<button class="tool-bar-button" id="save-button" type="submit">
+					<button id="save-button" type="submit" aria-label="Save the changes made" title="Save the changes made">
 						<img src="/static/img/save.svg" alt="">
-						<p>Save</p>
+						<div>
+							<p>Save</p>
+						</div>
 					</button>
 				</div>
 			</div>
 			<div class="settings-container">
 				<form id="settings-form">
 					<h2>File Naming</h2>
-					<table>
-						<tr>
-							<th><label for="volume-folder-naming-input">Volume Folder Naming</label></th>
-							<td>
-								<input type="text" id="volume-folder-naming-input" required spellcheck="false">
-								<p>The naming format for the volume folder (folder structure allowed)</p>
-							</td>
-						</tr>
-						<tr>
-							<th><label for="file-naming-input">File Naming</label></th>
-							<td>
-								<input type="text" id="file-naming-input" required spellcheck="false">
-								<p>The naming format for the file itself</p>
-							</td>
-						</tr>
-						<tr>
-							<th><label for="file-naming-tpb-input">File Naming For TPB</label></th>
-							<td>
-								<input type="text" id="file-naming-tpb-input" required spellcheck="false">
-								<p>The naming format for the file itself if it's a TPB</p>
-							</td>
-						</tr>
-					</table>
-					<h2>Root Folders</h2>
-					<table id="root-folder-table">
-						<thead>
-							<tr>
-								<th>Path</th>
-								<th class="action-column">Action</th>
-							</tr>
-						</thead>
-						<tbody id="root-folder-list"></tbody>
+					<table class="fold">
 						<tbody>
-							<tr id="add-row" class="hidden">
+							<tr>
+								<th><label for="volume-folder-naming-input">Volume Folder Naming</label></th>
 								<td>
-									<input type="text" id="folder-input">
-									<p class="error" id="folder-error">*Folder doesn't exist</p>
+									<input type="text" id="volume-folder-naming-input" required spellcheck="false">
+									<p>The naming format for the volume folder (folder structure allowed)</p>
+									<p>Available variables are: {series_name}, {clean_series_name}, {volume_number}, {comicvine_id}, {year} and {publisher}</p>
 								</td>
-								<td><button id="add-folder" type="button">Add</button></td>
+							</tr>
+							<tr>
+								<th><label for="file-naming-input">File Naming</label></th>
+								<td>
+									<input type="text" id="file-naming-input" required spellcheck="false">
+									<p>The naming format for the file itself</p>
+									<p>Available variables are: {series_name}, {clean_series_name}, {volume_number}, {comicvine_id}, {year}, {publisher}, {issue_comicvine_id}, {issue_number}, {issue_title}, {issue_release_date}</p>
+								</td>
+							</tr>
+							<tr>
+								<th><label for="file-naming-tpb-input">File Naming For TPB</label></th>
+								<td>
+									<input type="text" id="file-naming-tpb-input" required spellcheck="false">
+									<p>The naming format for the file itself if it's a TPB</p>
+									<p>Available variables are: {series_name}, {clean_series_name}, {volume_number}, {comicvine_id}, {year}, {publisher}, {issue_comicvine_id}, {issue_number}, {issue_title}, {issue_release_date}</p>
+								</td>
 							</tr>
 						</tbody>
 					</table>
+					<h2>Root Folders</h2>
+					<div id="root-folder-container">
+						<table id="root-folder-table">
+							<thead>
+								<tr>
+									<th>Path</th>
+									<th class="action-column">Action</th>
+								</tr>
+							</thead>
+							<tbody id="root-folder-list"></tbody>
+							<tbody>
+								<tr id="add-row" class="hidden">
+									<td>
+										<input type="text" id="folder-input">
+										<p class="error" id="folder-error">*Folder doesn't exist</p>
+									</td>
+									<td><button id="add-folder" type="button">Add</button></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
 					<button type="button" id="toggle-root-folder">Add Root Folder</button>
 				</form>
 			</div>

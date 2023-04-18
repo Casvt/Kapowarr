@@ -1,33 +1,36 @@
 function showWindow(id) {
-	// Hide all other windows
-	document.querySelectorAll('.window').forEach(e => {
-		e.classList.add('hidden');
-		e.setAttribute('aria-hidden','true');
+	// Deselect all windows
+	document.querySelectorAll('.window > section').forEach(window => {
+		window.removeAttribute('show-window');
 	});
-	
-	// Show window
-	const window = document.getElementById(id);
-	window.classList.remove('hidden');
-	window.setAttribute('aria-hidden', 'false');
 
-	return;
+	// Select the correct window
+	document.querySelector(`.window > section#${id}`).setAttribute('show-window', '');
+	
+	// Show the window
+	document.querySelector('.window').setAttribute('show-window', '');
+};
+
+function showLoadWindow(id) {
+	// Deselect all windows
+	document.querySelectorAll('.window > section').forEach(window => {
+		window.removeAttribute('show-window');
+	});
+
+	// Select the correct window
+	const loading_window = document.querySelector(`.window > section#${id}`).dataset.loading_window;
+	if (loading_window !== undefined) document.querySelector(`.window > section#${loading_window}`).setAttribute('show-window', '');
+	
+	// Show the window
+	document.querySelector('.window').setAttribute('show-window', '');
 };
 
 function closeWindow() {
-	document.querySelectorAll('.window').forEach(e => {
-		e.classList.add('hidden');
-		e.setAttribute('aria-hidden','true');
-	});
-	return;
+	document.querySelector('.window').removeAttribute('show-window');
 };
 
 // code run on load
 
-document.querySelectorAll('.window').forEach(e => {
-	e.classList.add('hidden');
-	e.setAttribute('aria-hidden','true');
-});
-
-document.querySelectorAll('.window-close').forEach(e => {
+document.querySelectorAll('.window > section > div:first-child > button').forEach(e => {
 	e.addEventListener('click', e => closeWindow());
-})
+});

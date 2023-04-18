@@ -1,46 +1,68 @@
-#search-bar {
+/*  */
+/* Search bar */
+/*  */
+#search-container {
+	height: 100%;
 	display: flex;
 	gap: .5rem;
 	justify-content: center;
 	align-items: center;
+	
+	border-bottom: 1px solid var(--dark-color);
 }
 
-.search-button {
-	background-color: transparent;
-	height: 1rem;
-	padding: 0;
-}
-
-.search-button > img {
-	aspect-ratio: 1/1;
+#start-search,
+#clear-search {
 	height: 100%;
+	width: 2rem;
+	padding: 0;
+	background-color: transparent;
+}
+
+#start-search img,
+#clear-search img {
+	height: 100%;
+	aspect-ratio: 1/1;
+	transform: scale(0.6);
+}
+
+#clear-search {
+	opacity: 0;
+	transition: opacity 0.3s ease-out;
+}
+
+#clear-search img {
+	transform: scale(0.45);
+}
+
+#search-container:focus-within #clear-search {
+	opacity: 1;
 }
 
 #search-input {
-	font-size: .9rem;
-	width: clamp(10rem, 20vw, 15rem);
-	background-color: transparent;
-	border-bottom: 1px solid var(--dark-color);
-	color: var(--dark-color);
+	width: min(20vw, 12rem);
 	padding-block: .3rem;
 	outline: 0;
+	background-color: transparent;
+	color: var(--dark-color);
+	font-size: .9rem;
 	transition: border 0.3s ease-out;
-}
-
-#search-input:focus {
-	border-color: transparent;
 }
 
 #search-input::placeholder {
 	color: var(--dark-color);
-	transition: color 0.3s ease-out;
+	transition: color 0.2s ease-out;
 }
 
 #search-input:focus::placeholder {
 	color: transparent;
 }
 
-#vault {
+/*  */
+/* Library window */
+/*  */
+#library {
+	--entry-width: clamp(7rem, 11%, 9rem);
 	padding: 1.5rem;
 	display: flex;
 	align-items: flex-start;
@@ -48,8 +70,9 @@
 	gap: 1rem;
 }
 
-.vault-entry {
-	width: clamp(7rem, 11%, 9rem);
+#library > a {
+	flex-grow: 1;
+	width: var(--entry-width);
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
@@ -62,41 +85,62 @@
 	transition: box-shadow 200ms ease-in;
 }
 
-.vault-entry:hover {
+#library > a:hover {
 	box-shadow: 0 0 12px #000;
 }
 
-.entry-cover {
+#library > a img {
 	aspect-ratio: 2/3;
 }
 
-.entry-title,
-.entry-volume-number,
-.entry-monitored {
-	padding: .2rem;
-	padding-block: .1rem;
+#library > a h2,
+#library > a p {
+	padding: .1rem .2rem;
 	text-align: center;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow-x: hidden;
 	font-size: clamp(.65rem, .8vw, .75rem);
 	font-weight: 400;
 }
 
+#library > a > div {
+	position: relative;
+	display: flex;
+	justify-content: center;
+
+	color: var(--light-color);
+	background-color: var(--dark-color);
+
+	text-align: center;
+	font-size: clamp(.65rem, .8vw, .75rem);
+}
+
+#library > a div > :first-child {
+	position: absolute;
+	inset: 0;
+	background-color: var(--error-color);
+}
+
+#library > a div > :nth-child(2) {
+	z-index: 1;
+}
+
+.space-taker {
+	height: 1rem;
+	max-width: 100%;
+	width: var(--entry-width);
+	flex-grow: 127;
+}
+
 @media (max-width: 535px) {
 	header {
-		flex-direction: column;
-	}
-	#vault {
-		justify-content: center;
-	}
-	#search-bar {
-		display: none;
-	}
-	.show-search-bar {
-		display: flex !important;
+		justify-content: flex-start;
 	}
 }
 
 @media (max-width: 442px) {
-	#vault {
+	#library {
 		padding: 1rem;
 		gap: .75rem;
 	}

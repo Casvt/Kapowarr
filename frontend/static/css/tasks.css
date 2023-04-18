@@ -4,7 +4,7 @@
 }
 
 .main-window h2 {
-	border-bottom: 2px solid var(--border-light-color);
+	border-bottom: 2px solid var(--border-color);
 	margin-bottom: 1rem;
 }
 
@@ -12,12 +12,21 @@
 	margin-top: 1rem;
 }
 
+.task-interval-container {
+	overflow-x: auto;
+}
+
+.task-interval-table {
+	min-width: 33.2rem;
+	table-layout: fixed;
+}
+
 .task-interval-table tr > :not(:first-child) {
-	width: 10%;
+	width: 8.5rem;
 }
 
 .task-interval-table tr > td {
-	border-top: 1px solid var(--border-light-color);
+	border-top: 1px solid var(--border-color);
 }
 
 table {
@@ -31,5 +40,5 @@ th, td {
 }
 
 .history-entry > * {
-	border-top: 1px solid var(--border-light-color);
+	border-top: 1px solid var(--border-color);
 }

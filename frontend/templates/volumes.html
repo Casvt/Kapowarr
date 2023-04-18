@@ -7,6 +7,7 @@
 
 	<link rel="stylesheet" href="/static/css/general.css">
 	<link rel="stylesheet" href="/static/css/volumes.css">
+	<script src="/static/js/auth.js"></script>
 	<script src="/static/js/general.js" defer></script>
 	<script src="/static/js/volumes.js" defer></script>
 
@@ -15,56 +16,57 @@
 <body>
 	<header>
 		<div class="menu-title-container">
-			<button class="toggle-nav" id="nav-button" aria-label="toggle menu">
-				<img src="/static/img/menu.svg" alt="" class="nav-icon">
+			<button id="toggle-nav" aria-label="Toggle menu">
+				<img src="/static/img/menu.svg" alt="">
 			</button>
 			<h1>Kapowarr</h1>
-			<button class="toggle-search" id="search-toggle-button" aria-label="toggle search">
-				<img src="/static/img/search.svg" alt="" class="search-icon">
-			</button>
 		</div>
-		<div id="search-bar">
-			<button type="button" class="search-button" aria-label="Clear search" id="clear-search-button">
-				<img src="/static/img/cancel_search.svg" alt="">
-			</button>
-			<button class="search-button" aria-label="Start search" id="search-button">
+		<div id="search-container">
+			<button id="start-search" aria-label="Start search">
 				<img src="/static/img/search.svg" alt="">
 			</button>
-			<input type="text" id="search-input" placeholder="Search">
+			<input type="text" id="search-input" placeholder="Search" aria-label="Search input">
+			<button id="clear-search" aria-label="Clear search">
+				<img src="/static/img/cancel_search.svg" alt="">
+			</button>
 		</div>
 	</header>
 	<div class="nav-main">
-		<div id="nav">
+		<div id="nav-bar">
 			<nav>
-				<a href="/" class="nav-entry current-nav nav-side-line">Volumes</a>
-					<a href="/add" class="sub-nav-entry nav-side-line">Add Volume</a>
-				<a href="/activity/queue" class="nav-entry nav-side-line">Activity</a>
-				<a href="/settings" class="nav-entry nav-side-line">Settings</a>
-				<a href="/system/status" class="nav-entry nav-side-line">System</a>
+				<a href="/" class="current-nav">Volumes</a>
+					<a href="/add" class="sub-entry">Add Volume</a>
+				<a href="/activity/queue">Activity</a>
+				<a href="/settings">Settings</a>
+				<a href="/system/status">System</a>
 			</nav>
 			<div id="task-queue"></div>
 		</div>
 		<main>
 			<div class="tool-bar-container">
 				<div class="tool-bar">
-					<button class="tool-bar-button" id="update-button">
+					<button id="updateall-button" aria-label="Trigger a 'refresh and scan' for all volumes" title="Trigger a 'refresh and scan' for all volumes">
 						<img src="/static/img/refresh.svg" alt="">
-						<p>Update All</p>
+						<div>
+							<p>Update All</p>
+						</div>
 					</button>
-					<button class="tool-bar-button" id="searchall-button">
+					<button id="searchall-button" aria-label="Trigger a 'search monitored' for all volumes" title="Trigger a 'search monitored' for all volumes">
 						<img src="/static/img/search_white.svg" alt="">
-						<p>Search All</p>
+						<div>
+							<p>Search All</p>
+						</div>
 					</button>
 				</div>
 				<div class="tool-bar">
-					<select class="tool-bar-button" id="sort-button">
+					<select id="sort-button" aria-label="Sort the list of volumes">
 						<option value="title">Title</option>
 						<option value="volume_number">Volume Number</option>
 						<option value="year">Year</option>
 					</select>
 				</div>
 			</div>
-			<div id="vault"></div>
+			<div id="library"></div>
 		</main>
 	</div>
 </body>

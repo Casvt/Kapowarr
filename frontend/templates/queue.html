@@ -7,6 +7,7 @@
 
 	<link rel="stylesheet" href="/static/css/general.css">
 	<link rel="stylesheet" href="/static/css/queue.css">
+	<script src="/static/js/auth.js"></script>
 	<script src="/static/js/general.js" defer></script>
 	<script src="/static/js/queue.js" defer></script>
 
@@ -15,31 +16,33 @@
 <body>
 	<header>
 		<div class="menu-title-container">
-			<button class="toggle-nav" id="nav-button" aria-label="toggle menu">
-				<img src="/static/img/menu.svg" alt="Menu icon" class="nav-icon">
+			<button id="toggle-nav" aria-label="Toggle menu">
+				<img src="/static/img/menu.svg" alt="">
 			</button>
 			<h1>Kapowarr</h1>
 		</div>
 	</header>
 	<div class="nav-main">
-		<div id="nav">
+		<div id="nav-bar">
 			<nav>
-				<a href="/" class="nav-entry nav-side-line">Volumes</a>
-				<a href="/activity/queue" class="nav-entry nav-side-line">Activity</a>
-					<a href="/activity/queue" class="sub-nav-entry nav-side-line current-nav">Queue</a>
-					<a href="/activity/history" class="sub-nav-entry nav-side-line">History</a>
-					<a href="/activity/blocklist" class="sub-nav-entry nav-side-line">Blocklist</a>
-				<a href="/settings" class="nav-entry nav-side-line">Settings</a>
-				<a href="/system/status" class="nav-entry nav-side-line">System</a>
+				<a href="/">Volumes</a>
+				<a href="/activity/queue">Activity</a>
+					<a href="/activity/queue" class="sub-entry current-nav">Queue</a>
+					<a href="/activity/history" class="sub-entry">History</a>
+					<a href="/activity/blocklist" class="sub-entry">Blocklist</a>
+				<a href="/settings">Settings</a>
+				<a href="/system/status">System</a>
 			</nav>
 			<div id="task-queue"></div>
 		</div>
 		<main>
 			<div class="tool-bar-container">
 				<div class="tool-bar">
-					<button class="tool-bar-button" id="refresh-button">
+					<button id="refresh-button" aria-label="Refresh the queue" title="Refresh the queue">
 						<img src="/static/img/refresh.svg" alt="">
-						<p id="refresh-text">Refresh</p>
+						<div>
+							<p>Refresh</p>
+						</div>
 					</button>
 				</div>
 			</div>

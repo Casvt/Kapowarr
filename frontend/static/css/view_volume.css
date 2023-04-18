@@ -1,26 +1,24 @@
-#volume-content {
+/*  */
+/* Volume info */
+/*  */
+.volume-mobile-description-container {
 	display: flex;
 	flex-direction: column;
-}
+	gap: clamp(1rem, 3.75vw, 2rem);	
 
-.volume-mobile-description-container {
-	height: 45%;
+	padding: clamp(1rem, 3.75vw, 2rem);
 	background-color: rgba(0,0,0,.65);
 	color: var(--light-color);
-	display: flex;
-	flex-direction: column;
-	padding: clamp(1rem, 3.75vw, 2rem);
-	gap: clamp(1rem, 3.75vw, 2rem);	
 }
 
 .volume-info {
+	overflow-y: auto;
 	display: flex;
 	gap: clamp(1rem, 3.75vw, 2rem);
-	overflow-y: auto;
 	align-items: flex-start;
 }
 
-#volume-cover {
+.volume-info > img {
 	aspect-ratio: 2/3;
 	width: clamp(8rem, 16vw, 13.5rem);
 }
@@ -38,13 +36,14 @@
 }
 
 #volume-monitor {
-	background-color: transparent;
 	width: clamp(30px, 4vw, 42px);
+	flex: 0 0 auto;
 	padding: 0;
+	background-color: transparent;
 }
 
-#volume-title {
-	font-size: clamp(1.8rem, 5vw, 3rem);
+.volume-title-monitored > h2 {
+	font-size: clamp(2.1rem, 5vw, 3rem);
 	font-weight: 400;
 }
 
@@ -54,7 +53,7 @@
 	gap: clamp(.5rem, 1.8vw, 1rem);
 }
 
-.volume-tag {
+#volume-tags > p {
 	background-color: var(--accent-color);
 	color: var(--dark-color);
 	padding: .3rem;
@@ -66,20 +65,35 @@
 	display: none;
 }
 
+/*  */
+/* Issue list */
+/*  */
 .issues-table-container {
 	overflow-x: auto;
 	display: flex;
 }
 
 .issues-table {
-	flex-grow: 1;
-	margin: clamp(.3rem, calc(2.1vw * 2), 1.75rem);
-	background-color: var(--light-color);
-	border: 2px solid var(--border-light-color);
-	border-radius: 6px;
-	color: var(--dark-color);
-	border-spacing: 0px;
+	width: 100%;
 	min-width: 485px;
+	margin: clamp(.3rem, calc(2.1vw * 2), 1.75rem);
+
+	border-spacing: 0px;
+	border: 2px solid var(--border-color);
+	border-radius: 6px;
+	background-color: var(--light-color);
+	color: var(--dark-color);
+}
+
+.issues-table th {
+	text-align: left;
+	font-size: smaller;
+	padding-block: .75rem;
+	padding-right: .5rem;
+}
+
+.issues-table th > img {
+	width: 15px;
 }
 
 .monitor-column {
@@ -95,19 +109,10 @@
 	width: 3rem;
 }
 .action-column {
-	width: 2rem;
+	width: 4rem;
 }
-
-.issues-header {
-	text-align: left;
-	font-size: smaller;
-	padding-block: .75rem;
-	border-bottom: 2px solid var(--border-light-color);
-	padding-right: .5rem;
-}
-
-.action-icon {
-	width: 15px;
+.action-column > :not(:first-child) {
+	margin-left: .5rem;
 }
 
 .issue-entry {
@@ -115,14 +120,14 @@
 }
 
 .issue-entry:hover {
-	background-color: whitesmoke;
+	background-color: var(--off-light-color);
 }
 
-.issues-header:first-child,
+.issues-table > thead > tr > :first-child,
 .issue-entry > *:first-child {
 	padding-left: .75rem;
 }
-.issues-header:last-child,
+.issues-table > thead > tr > :last-child,
 .issue-entry > *:last-child {
 	padding-right: .75rem;
 }
@@ -131,29 +136,27 @@
 	padding-block: .25rem;
 }
 
-.issue-entry:not(:last-child) > * {
-	border-bottom: 2px solid var(--border-light-color);
+.issue-entry > * {
+	border-top: 2px solid var(--border-color);
 }
 
-.issue-monitored > button,
-.issue-search > button,
-.issue-manual-search > button {
-	background-color: transparent;
-	padding: 0;
+.issue-entry button {
 	height: 18px;
+	padding: 0;
+	background-color: transparent;
 }
 
-.issue-monitored > button > img,
-.issue-search > button > img,
-.issue-manual-search > button > img,
-.issue-status > img {
+.issue-entry img {
 	width: 18px;
 }
 
-/* WINDOWS */
+/*  */
+/* Windows */
+/*  */
 #delete-form,
 #edit-form {
-	width: 30rem;
+	width: 100%;
+	max-width: 30rem;
 }
 
 #cancel-delete,
@@ -169,12 +172,17 @@
 	background-color: var(--success-color);
 }
 
-/* MANUAL SEARCH WINDOW */
-#manual-search-window > section {
-	width: clamp(720px, 85%, 1100px);
+/*  */
+/* Delete volume window */
+/*  */
+#delete-window > div:nth-child(2) p {
+	text-align: center;
 }
 
-#manual-search-window > section > :nth-child(2) {
+/*  */
+/* Manual search window */
+/*  */
+#manual-search-window > :nth-child(2) {
 	justify-content: flex-start;
 	overflow-x: auto;
 }
@@ -184,7 +192,7 @@
 }
 
 #search-result-table {
-	min-width: 412px;
+	min-width: 500px;
 	border-spacing: 0px;
 }
 
@@ -229,7 +237,15 @@
 }
 
 .search-entry > * {
-	border-top: 1px solid var(--border-light-color);
+	border-top: 1px solid var(--border-color);
+}
+
+.search-entry {
+	transition: background-color 400ms linear;
+}
+
+.search-entry:hover {
+	background-color: var(--dark-hover-color);
 }
 
 .action-list {
@@ -238,22 +254,43 @@
 	flex-wrap: wrap;
 }
 
-/* RENAME WINDOW */
-#renaming-window > section {
-	width: clamp(720px, 85%, 1100px);
-}
-
-#renaming-window > section > :nth-child(2) {
+/*  */
+/* Rename window */
+/*  */
+#rename-window > :nth-child(2) {
 	display: block;
-	padding-block: 0;
 }
 
-#rename-preview tr > td {
-	padding-block: .5rem;
+#rename-preview {
+	min-width: 40rem;
+	border-spacing: 0px;
 }
 
-#rename-preview tr:not(:last-child) > td {
-	border-bottom: 1px solid var(--border-light-color);
+#rename-preview tr:nth-child(odd) > td {
+	padding-top: .75rem;
+	padding-bottom: .25rem;
+}
+
+#rename-preview tr:nth-child(even) > td {
+	padding-bottom: .75rem;
+	padding-top: .25rem;
+}
+
+#rename-preview tr:nth-child(even):not(:last-child) > td {
+	border-bottom: 1px solid var(--border-color);
+}
+
+#rename-preview tr > :first-child {
+	text-align: center;
+	padding-right: .5rem;
+}
+
+#rename-preview tr:nth-child(odd) > :first-child {
+	color: var(--error-color);
+}
+
+#rename-preview tr:nth-child(even) > :first-child {
+	color: var(--success-color);
 }
 
 .empty-rename-message {
@@ -270,14 +307,6 @@
 	text-align: center;
 }
 
-.rename-minus {
-	color: var(--error-color);
-}
-
-.rename-plus {
-	color: var(--success-color);
-}
-
 #rename-preview p:not(.empty-rename-message) {
 	font-size: .9rem;
 }
@@ -286,29 +315,37 @@
 	margin-top: .2rem;
 }
 
-@media (max-width: 720px) {
-	#delete-form,
-	#edit-form {
-		width: 100%;
-	}
-	#renaming-window > section,
-	#manual-search-window > section {
-		width: 100vw;
-		height: 100vh;
-	}
-}
-
 @media (max-width: 520px) {
+	/*  */
+	/* Volume info */
+	/*  */
 	#volume-description {
 		display: none;
 	}
 	#volume-description-mobile {
 		display: block;
 	}
+	
+	/*  */
+	/* Windows */
+	/*  */
+	.window > section > div:nth-child(2) form table tr {
+		width: 100%;
+		display: inline-flex;
+		flex-direction: column;
+	}
+	.window > section > div:nth-child(2) form table tr > th,
+	.window > section > div:nth-child(2) form table tr > td {
+		width: 100%;
+		text-align: left;
+	}
+	.window > section > div:nth-child(2) form table tr > td > select {
+		width: 100%;
+	}
 }
 
 @media (max-width: 440px) {
-	#volume-cover {
+	.volume-info > img {
 		display: none;
 	}
 }

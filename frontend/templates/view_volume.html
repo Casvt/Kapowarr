@@ -8,6 +8,7 @@
 	<link rel="stylesheet" href="/static/css/general.css">
 	<link rel="stylesheet" href="/static/css/window.css">
 	<link rel="stylesheet" href="/static/css/view_volume.css">
+	<script src="/static/js/auth.js"></script>
 	<script src="/static/js/general.js" defer></script>
 	<script src="/static/js/window.js" defer></script>
 	<script src="/static/js/view_volume.js" defer></script>
@@ -15,15 +16,26 @@
 	<title>Volume - Kapowarr</title>
 </head>
 <body>
-	<!-- Window for deleting volume -->
-	<div class="window" id="deleting-window">
-		<section>
+	<!-- Windows -->
+	<div class="window">
+		<!-- Loading after edit volume -->
+		<section id="updating-window" class="loading-window">
+			<p>Updating volume...</p>
+		</section>
+		<!-- Loading after rename volume files -->
+		<section id="renaming-window" class="loading-window">
+			<p>Renaming volume files...</p>
+		</section>
+		<!-- Deleting volume -->
+		<section id="delete-window">
 			<div>
 				<h2>Delete volume</h2>
-				<button class="window-close"><img src="/static/img/cancel_search.svg" alt=""></button>
+				<button aria-label="Cancel deleting volume" title="Cancel deleting volume">
+					<img src="/static/img/cancel_search.svg" alt="">
+				</button>
 			</div>
 			<div>
-				<p class="adding-title">Are you sure you want to delete this volume?</p>
+				<p>Are you sure you want to delete this volume?</p>
 				<form id="delete-form">
 					<table>
 						<tr>
@@ -43,14 +55,13 @@
 				<button id="submit-delete" type="submit" form="delete-form">Delete</button>
 			</div>
 		</section>
-	</div>
-
-	<!-- Window for editing volume -->
-	<div class="window" id="editing-window">
-		<section>
+		<!-- Editing volume -->
+		<section id="edit-window" data-loading_window="updating-window">
 			<div>
 				<h2>Edit volume</h2>
-				<button class="window-close"><img src="/static/img/cancel_search.svg" alt=""></button>
+				<button aria-label="Cancel editing volume" title="Cancel editing volume">
+					<img src="/static/img/cancel_search.svg" alt="">
+				</button>
 			</div>
 			<div>
 				<form id="edit-form">
@@ -65,7 +76,7 @@
 							</td>
 						</tr>
 						<tr>
-							<th><label for="root-folder-input">Root Folder</label></th>
+							<th><label for="root-folder-input">Root folder</label></th>
 							<td>
 								<select id="root-folder-input">
 									<option value="true">Yes</option>
@@ -81,34 +92,17 @@
 				<button id="submit-edit" type="submit" form="edit-form">Update</button>
 			</div>
 		</section>
-	</div>
-
-	<!-- Window for loading after editing volume -->
-	<div class="window window-no-exit" id="edit-loading-window">
-		<section>
-			<div>
-				<h2>Edit volume</h2>
-				<button class="window-close"><img src="/static/img/cancel_search.svg" alt=""></button>
-			</div>
-			<div>
-				<p>Updating...</p>
-			</div>
-			<div>
-			</div>
-		</section>
-	</div>
-
-	<!-- Window for renaming volume files -->
-	<div class="window" id="renaming-window">
-		<section>
+		<!-- Renaming volume files -->
+		<section id="rename-window" class="wide-window" data-loading_window="renaming-window">
 			<div>
 				<h2>Rename volume files</h2>
-				<button class="window-close"><img src="/static/img/cancel_search.svg" alt=""></button>
+				<button aria-label="Cancel renaming volume files" title="Cancel renaming volume files">
+					<img src="/static/img/cancel_search.svg" alt="">
+				</button>
 			</div>
 			<div>
 				<table id="rename-preview">
-					<tbody>
-					</tbody>
+					<tbody></tbody>
 				</table>
 			</div>
 			<div>
@@ -116,14 +110,13 @@
 				<button id="submit-rename" type="submit">Rename</button>
 			</div>
 		</section>
-	</div>
-
-	<!-- Window for manual searching volume -->
-	<div class="window" id="manual-search-window">
-		<section>
+		<!-- Manually searching volume -->
+		<section id="manual-search-window" class="wide-window">
 			<div>
 				<h2>Manual Search</h2>
-				<button class="window-close"><img src="/static/img/cancel_search.svg" alt=""></button>
+				<button aria-label="Cancel manual search" title="Cancel manual search">
+					<img src="/static/img/cancel_search.svg" alt="">
+				</button>
 			</div>
 			<div>
 				<p id="searching-message">Searching...</p>
@@ -136,7 +129,7 @@
 							<th class="search-action-column">Action</th>
 						</tr>
 					</thead>
-					<tbody id="search-results">
+					<tbody>
 						
 					</tbody>
 				</table>
@@ -149,60 +142,72 @@
 	
 	<header>
 		<div class="menu-title-container">
-			<button class="toggle-nav" id="nav-button" aria-label="toggle menu">
-				<img src="/static/img/menu.svg" alt="Menu icon" class="nav-icon">
+			<button id="toggle-nav" aria-label="Toggle menu">
+				<img src="/static/img/menu.svg" alt="">
 			</button>
 			<h1>Kapowarr</h1>
 		</div>
 	</header>
 	<div class="nav-main">
-		<div id="nav">
+		<div id="nav-bar">
 			<nav>
-				<a href="/" class="nav-entry nav-side-line current-nav">Volumes</a>
-					<a href="/add" class="sub-nav-entry nav-side-line">Add Volume</a>
-				<a href="/activity/queue" class="nav-entry nav-side-line">Activity</a>
-				<a href="/settings" class="nav-entry nav-side-line">Settings</a>
-				<a href="/system/status" class="nav-entry nav-side-line">System</a>
+				<a href="/" class="current-nav">Volumes</a>
+					<a href="/add" class="sub-entry">Add Volume</a>
+				<a href="/activity/queue">Activity</a>
+				<a href="/settings">Settings</a>
+				<a href="/system/status">System</a>
 			</nav>
 			<div id="task-queue"></div>
 		</div>
 		<main>
 			<div class="tool-bar-container">
 				<div class="tool-bar">
-					<button class="tool-bar-button" id="refresh-button">
+					<button id="refresh-button" aria-label="Trigger a 'refresh and scan' for the volume" title="Trigger a 'refresh and scan' for the volume">
 						<img src="/static/img/refresh.svg" alt="">
-						<p>Refresh & Scan</p>
+						<div>
+							<p>Refresh & Scan</p>
+						</div>
 					</button>
-					<button class="tool-bar-button" id="autosearch-button">
+					<button id="autosearch-button" aria-label="Start searching for all monitored issues in the volume" title="Start searching for all monitored issues in the volume">
 						<img src="/static/img/search_white.svg" alt="">
-						<p>Search Monitored</p>
+						<div>
+							<p>Search Monitored</p>
+						</div>
 					</button>
-					<button class="tool-bar-button" id="manualsearch-button">
+					<button id="manualsearch-button" aria-label="Start a manual search for all issues in the volume" title="Start a manual search for all issues in the volume">
 						<img src="/static/img/manual_search_white.svg" alt="">
-						<p>Manual Search</p>
+						<div>
+							<p>Manual Search</p>
+						</div>
 					</button>
-					<button class="tool-bar-button" id="rename-button">
+					<button id="rename-button" aria-label="Preview how the files of the volume will be renamed" title="Preview how the files of the volume will be renamed">
 						<img src="/static/img/rename.svg" alt="">
-						<p>Preview Rename</p>
+						<div>
+							<p>Preview Rename</p>
+						</div>
 					</button>
-					<button class="tool-bar-button" id="edit-button">
+					<button id="edit-button" aria-label="Edit the volume" title="Edit the volume">
 						<img src="/static/img/edit.svg" alt="">
-						<p>Edit</p>
+						<div>
+							<p>Edit</p>
+						</div>
 					</button>
-					<button class="tool-bar-button" id="delete-button">
+					<button id="delete-button" aria-label="Delete the volume" title="Delete the volume">
 						<img src="/static/img/delete_white.svg" alt="">
-						<p>Delete</p>
+						<div>
+							<p>Delete</p>
+						</div>
 					</button>
 				</div>
 			</div>
 			<div id="volume-content">
 				<div class="volume-mobile-description-container">
 					<div class="volume-info">
-						<img src="" alt="" id="volume-cover">
+						<img src="" alt="">
 						<div class="volume-info-container">
 							<div class="volume-title-monitored">
-								<button id="volume-monitor"><img id="volume-monitor-icon" src=""></button>
-								<h2 id="volume-title"></h2>
+								<button id="volume-monitor"><img src="" alt=""></button>
+								<h2></h2>
 							</div>
 							<div id="volume-tags"></div>
 							<p id="volume-path"></p>
@@ -215,13 +220,12 @@
 					<table class="issues-table">
 						<thead>
 							<tr>
-								<th class="issues-header monitor-column"></th>
-								<th class="issues-header number-column">#</th>
-								<th class="issues-header title-column">Title</th>
-								<th class="issues-header date-column">Release Date</th>
-								<th class="issues-header download-column"><img src="/static/img/download.svg" alt="Downloaded" class="action-icon"></th>
-								<th class="issues-header action-column"><img class="action-icon" src="/static/img/settings.svg" alt="Settings"></th>
-								<th class="issues-header action-column"></th>
+								<th class="monitor-column" aria-label="Monitored status"></th>
+								<th class="number-column" aria-label="Issue number">#</th>
+								<th class="title-column">Title</th>
+								<th class="date-column">Release Date</th>
+								<th class="download-column" aria-label="Downloaded"><img src="/static/img/download.svg" alt=""></th>
+								<th class="action-column" aria-label="Actions"><img src="/static/img/settings.svg" alt=""></th>
 							</tr>
 						</thead>
 						<tbody id="issues-list">

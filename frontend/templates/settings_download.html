@@ -7,6 +7,7 @@
 
 	<link rel="stylesheet" href="/static/css/general.css">
 	<link rel="stylesheet" href="/static/css/settings.css">
+	<script src="/static/js/auth.js"></script>
 	<script src="/static/js/general.js" defer></script>
 	<script src="/static/js/settings_download.js" defer></script>
 
@@ -15,45 +16,50 @@
 <body>
 	<header>
 		<div class="menu-title-container">
-			<button class="toggle-nav" id="nav-button" aria-label="toggle menu">
-				<img src="/static/img/menu.svg" alt="Menu icon" class="nav-icon">
+			<button id="toggle-nav" aria-label="Toggle menu">
+				<img src="/static/img/menu.svg" alt="">
 			</button>
 			<h1>Kapowarr</h1>
 		</div>
 	</header>
 	<div class="nav-main">
-		<div id="nav">
+		<div id="nav-bar">
 			<nav>
-				<a href="/" class="nav-entry current-nav nav-side-line">Volumes</a>
-				<a href="/activity/queue" class="nav-entry nav-side-line">Activity</a>
-				<a href="/settings" class="nav-entry nav-side-line">Settings</a>
-					<a href="/settings/mediamanagement" class="sub-nav-entry nav-side-line">Media Management</a>
-					<a href="/settings/download" class="sub-nav-entry nav-side-line current-nav">Download</a>
-					<a href="/settings/general" class="sub-nav-entry nav-side-line">General</a>
-				<a href="/system/status" class="nav-entry nav-side-line">System</a>
+				<a href="/">Volumes</a>
+				<a href="/activity/queue">Activity</a>
+				<a href="/settings">Settings</a>
+					<a href="/settings/mediamanagement" class="sub-entry">Media Management</a>
+					<a href="/settings/download" class="sub-entry current-nav">Download</a>
+					<a href="/settings/general" class="sub-entry">General</a>
+				<a href="/system/status">System</a>
 			</nav>
 			<div id="task-queue"></div>
 		</div>
 		<main>
 			<div class="tool-bar-container">
 				<div class="tool-bar">
-					<button class="tool-bar-button" id="save-button" type="submit">
+					<button id="save-button" type="submit" aria-label="Save the changes made" title="Save the changes made">
 						<img src="/static/img/save.svg" alt="">
-						<p>Save</p>
+						<div>
+							<p>Save</p>
+						</div>
 					</button>
 				</div>
 			</div>
 			<div class="settings-container">
 				<form id="settings-form">
 					<h2>Download Location</h2>
-					<table>
-						<tr>
-							<th><label for="download-folder-input">Direct Download Temporary Folder</label></th>
-							<td>
-								<input type="text" id="download-folder-input" required spellcheck="false">
-								<p>The folder that direct downloads temporarily get downloaded to before being moved to the correct location</p>
-							</td>
-						</tr>
+					<table class="fold">
+						<tbody>
+							<tr>
+								<th><label for="download-folder-input">Direct Download Temporary Folder</label></th>
+								<td>
+									<input type="text" id="download-folder-input" required spellcheck="false">
+									<p>The folder that direct downloads temporarily get downloaded to before being moved to the correct location</p>
+								</td>
+							</tr>
+						</tbody>
+					</table>
 				</form>
 			</div>
 		</main>

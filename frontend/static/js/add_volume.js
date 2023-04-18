@@ -1,180 +1,191 @@
+// 
+// Searching
+// 
 function buildResults(results) {
-	const table = document.getElementById('search-results');
+	const table = document.querySelector('#search-results');
 	table.innerHTML = '';
-	for (i=0; i<results.length; i++) {
-		const obj = results[i];
-		
+	results.forEach(result => {
 		const entry = document.createElement('button');
 		entry.classList.add('search-entry');
-		entry.dataset.title = `${obj.title} (${obj.year})`;
-		entry.dataset.cover = obj.cover;
+		entry.dataset.title = `${result.title} (${result.year})`;
+		entry.dataset.cover = result.cover;
+		entry.dataset.comicvine_id = result.comicvine_id;
 
-		entry.id = obj.comicvine_id;
-		entry.addEventListener('click', e => {
-			fillAddWindow(obj.comicvine_id);
-			showWindow("add-window");
-		});
+		entry.addEventListener('click', e => showAddWindow(result.comicvine_id));
 
 		const cover_info_container = document.createElement('div');
 		cover_info_container.classList.add('cover-info-container');
 		entry.appendChild(cover_info_container);
 
+		const cover_container = document.createElement('div');
+		cover_info_container.appendChild(cover_container);
+		
 		const cover = document.createElement('img');
-		cover.classList.add('entry-cover');
-		cover.src = obj.cover;
-		cover_info_container.appendChild(cover);
+		cover.src = result.cover;
+		cover.alt = "";
+		cover.loading = "lazy";
+		cover_container.appendChild(cover);
 
 		const info_container = document.createElement('div');
 		info_container.classList.add('entry-info-container');
 		cover_info_container.appendChild(info_container);
-		
+
+		const complete_title = entry.dataset.title;
+		const start_year = complete_title.lastIndexOf('(');
+
 		const title = document.createElement("h2");
-		title.classList.add('entry-title');
-		title.innerText = entry.dataset.title;
+		title.innerText = complete_title.substring(0, start_year);
 		info_container.appendChild(title);
+		
+		const year = document.createElement("span");
+		year.innerText = complete_title.substring(start_year);
+		title.appendChild(year);
 		
 		const tags = document.createElement('div');
 		tags.classList.add('entry-tags');
 		info_container.appendChild(tags);
 
-		if (obj.volume_number !== null) {
+		if (result.volume_number !== null) {
 			const volume_number = document.createElement('p');
-			volume_number.classList.add('entry-tag');
-			volume_number.innerText = `Volume ${obj.volume_number}`;
+			volume_number.innerText = `Volume ${result.volume_number}`;
 			tags.appendChild(volume_number);
 		}
 
 		const publisher = document.createElement('p');
-		publisher.classList.add('entry-tag');
-		publisher.innerText = obj.publisher;
+		publisher.innerText = result.publisher;
 		tags.appendChild(publisher);
 
 		const issue_count = document.createElement('p');
-		issue_count.classList.add('entry-tag');
-		issue_count.innerText = `${obj.issue_count} issues`;
+		issue_count.innerText = `${result.issue_count} issues`;
 		tags.appendChild(issue_count);
 
 		const info_link = document.createElement('a');
-		info_link.classList.add('entry-tag');
-		info_link.href = obj.comicvine_info;
+		info_link.href = result.comicvine_info;
 		info_link.innerText = 'Link';
 		tags.appendChild(info_link);
 
-		if (obj.aliases.length > 0) {
+		if (result.aliases.length) {
 			const aliases = document.createElement('div');
 			aliases.classList.add('entry-aliases');
 			info_container.appendChild(aliases);
 			
-			for (j=0; j<obj.aliases.length; j++) {
+			result.aliases.forEach(alias_text => {
 				const alias = document.createElement('p');
-				alias.innerText = obj.aliases[j];
-				alias.classList.add('entry-alias');
+				alias.innerText = alias_text;
 				aliases.appendChild(alias);
-			}
-		}
+			});
+		};
 		
 		const description = document.createElement('div');
 		description.classList.add('entry-description', 'description');
-		description.innerHTML = obj.description;
+		description.innerHTML = result.description;
 		info_container.appendChild(description);
 
 		const spare_description = document.createElement('div');
 		spare_description.classList.add('entry-spare-description', 'description');
-		spare_description.innerHTML = obj.description;
+		spare_description.innerHTML = result.description;
 		entry.appendChild(spare_description);
 
 		table.appendChild(entry);
-	};
+	})
 	if (table.innerHTML === '') {
-		document.getElementById('search-empty').classList.remove('hidden');
+		document.querySelector('#search-empty').classList.remove('hidden');
 	};
 };
 
-function search() {
-	document.getElementById('search-explain').classList.add('hidden');
-	document.getElementById('search-empty').classList.add('hidden');
-	document.getElementById('search-failed').classList.add('hidden');
-	document.getElementById('search-input').blur();
+function search(api_key) {
+	if (!document.querySelector('#search-blocked').classList.contains('hidden'))
+		return;
+	document.querySelector('#search-explain').classList.add('hidden');
+	document.querySelector('#search-empty').classList.add('hidden');
+	document.querySelector('#search-failed').classList.add('hidden');
+	document.querySelector('#search-input').blur();
 
-	const query = document.getElementById('search-input').value;
+	const query = document.querySelector('#search-input').value;
 	fetch(`/api/volumes/search?api_key=${api_key}&query=${query}`)
 	.then(response => {
-		// catch errors
-		if (!response.ok) {
-			return Promise.reject(response.status);
-		};
-
+		if (!response.ok) return Promise.reject(response.status);
 		return response.json();
 	})
-	.then(json => {
-		const results = json.result;
-		buildResults(results);
-	})
+	.then(json => buildResults(json.result))
 	.catch(e => {
-		if (e === 400) {
-			document.getElementById('search-failed').classList.remove('hidden');
+		if (e === 400) document.querySelector('#search-failed').classList.remove('hidden');
+	});
+};
+
+function clearSearch(e) {
+	document.querySelector('#search-results').innerHTML = '';
+	document.querySelector('#search-empty').classList.add('hidden');
+	document.querySelector('#search-failed').classList.add('hidden');
+	if (document.querySelector('#search-blocked').classList.contains('hidden'))
+		document.querySelector('#search-explain').classList.remove('hidden');
+	else
+		document.querySelector('#search-explain').classList.add('hidden');
+	document.querySelector('#search-input').value = '';
+};
+
+// 
+// Adding
+//
+function fillRootFolderInput(api_key) {
+	const root_folder_list = document.querySelector('#rootfolder-input');
+	fetch(`/api/rootfolder?api_key=${api_key}`)
+	.then(response => response.json())
+	.then(json => {
+		if (json.result.length) {
+			json.result.forEach(folder => {
+				const option = document.createElement('option');
+				option.value = folder.id;
+				option.innerText = folder.folder;
+				root_folder_list.appendChild(option);
+			});
+		} else {
+			document.querySelector('#search-blocked').classList.remove('hidden');
 		};
 	});
 };
 
-function clearSearch() {
-	document.getElementById('search-results').innerHTML = '';
-	document.getElementById('search-empty').classList.add('hidden');
-	document.getElementById('search-failed').classList.add('hidden');
-	document.getElementById('search-explain').classList.remove('hidden');
-	document.getElementById('search-input').value = '';
+function showAddWindow(comicvine_id) {
+	var volume_data = document.querySelector(`button[data-comicvine_id="${comicvine_id}"]`).dataset;
+
+	document.querySelector('#add-title').innerText = volume_data.title;
+	document.querySelector('#add-cover').src = volume_data.cover;
+	document.querySelector('#comicvine-input').value = comicvine_id;
+	
+	showWindow("add-window");
 };
-
-function searchShortcut(e) {
-	if (e.key === 'Enter') {
-		search();
-	};
-};
-
-function fillAddWindow(comicvine_id) {
-	var el = document.getElementById(comicvine_id).dataset;
-
-	document.getElementById('add-title').innerText = el.title;
-	document.getElementById('add-cover').src = el.cover;
-	document.getElementById('comicvine-input').value = comicvine_id;
-	return;
-}
 
 function addVolume() {
-	showWindow("adding-window");
-	const comicvine_id = document.getElementById('comicvine-input').value;
-	const root_folder_id = document.getElementById('rootfolder-input').value;
-	const monitor_value = document.getElementById('monitor-input').value;
-	fetch(`/api/volumes?api_key=${api_key}&comicvine_id=${comicvine_id}&monitor=${monitor_value}&root_folder_id=${root_folder_id}`, {
-		'method': 'POST'
-	})
-	.then(response => {
-		return response.json();
-	})
-	.then(json => {
-		window.location.href = `/volumes/${json.result.id}`;
-	})
-}
+	showLoadWindow("add-window");
+	const comicvine_id = document.querySelector('#comicvine-input').value;
+	const root_folder_id = document.querySelector('#rootfolder-input').value;
+	const monitor_value = document.querySelector('#monitor-input').value;
+	usingApiKey()
+	.then(api_key => {
+		fetch(`/api/volumes?api_key=${api_key}&comicvine_id=${comicvine_id}&monitor=${monitor_value}&root_folder_id=${root_folder_id}`, {
+			'method': 'POST'
+		})
+		.then(response => {
+			if (!response.ok) return Promise.reject(response.status);
+			else return response.json();
+		})
+		.then(json => window.location.href = `/volumes/${json.result.id}`)
+		.catch(e => {
+			if (e === 401) window.location.href = `/login?redirect=${window.location.pathname}`;
+			else {
+				console.log(e);
+			};
+		});
+	});
+};
 
 // code run on load
-const api_key = sessionStorage.getItem('api_key');
+addEventListener('#search-cancel-button', 'click', clearSearch);
+setAttribute('#add-form', 'action', 'javascript:addVolume()');
 
-document.getElementById('search-button').addEventListener('click', e => search());
-document.getElementById('search-input').addEventListener('keydown', e => searchShortcut(e));
-document.getElementById('search-cancel-button').addEventListener('click', e => clearSearch());
-document.getElementById('add-form').setAttribute('action', 'javascript:addVolume()');
-
-const root_folder_list = document.getElementById('rootfolder-input');
-fetch(`/api/rootfolder?api_key=${api_key}`)
-.then(response => {
-	return response.json();
-})
-.then(json => {
-	for (i=0; i<json.result.length; i++) {
-		const folder = json.result[i];
-		const option = document.createElement('option');
-		option.value = folder.id;
-		option.innerText = folder.folder;
-		root_folder_list.appendChild(option);
-	}
-})
+usingApiKey()
+.then(api_key => {
+	fillRootFolderInput(api_key);
+	addEventListener('#search-button', 'click', e => search(api_key));
+	addEventListener('#search-input', 'keydown', e => e.code === 'Enter' ? search(api_key) : null);
+});

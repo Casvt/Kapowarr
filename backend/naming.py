@@ -218,14 +218,14 @@ def check_format(format: str, type: str) -> None:
 	if type in ('file_naming', 'file_naming_tpb'):
 		naming_keys = issue_formatting_keys if type == 'file_naming' else formatting_keys
 		if r'/' in format or r'\\' in format:
-			raise InvalidSettingValue('Path seperator found')
+			raise InvalidSettingValue(type, format)
 	else:
 		naming_keys = formatting_keys
 
 	for format_key in keys:
 		if not format_key in naming_keys:
-			raise InvalidSettingValue('{' + format_key + '}')
-			
+			raise InvalidSettingValue(type, format)
+
 	return
 
 #=====================

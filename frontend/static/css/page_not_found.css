@@ -1,0 +1,9 @@
+body {
+	justify-content: center;
+}
+
+h1 {
+	color: var(--accent-color);
+	text-align: center;
+	font-size: min(12vw, 5rem);
+}

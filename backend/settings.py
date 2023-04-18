@@ -34,7 +34,7 @@ private_settings = {
 	'comicvine_api_url': 'https://comicvine.gamespot.com/api',
 	'getcomics_url': 'https://getcomics.org',
 	'hosting_threads': 10,
-	'version': '1.0.0-beta-2',
+	'version': '1.0.0-beta-6',
 	'python_version': ".".join(str(i) for i in list(version_info))
 }
 
@@ -104,7 +104,7 @@ class Settings:
 		setting_changes = []
 		for key, value in settings.items():
 			if key == 'port' and not value.isdigit():
-				raise InvalidSettingValue(key)
+				raise InvalidSettingValue(key, value)
 
 			elif key == 'api_key':
 				raise InvalidSettingModification(key, 'POST /settings/api_key')
@@ -116,7 +116,7 @@ class Settings:
 				check_format(value, key)
 
 			elif key == 'log_level' and not value in ('info', 'debug'):
-				raise InvalidSettingValue(key)
+				raise InvalidSettingValue(key, value)
 
 			elif key not in default_settings.keys():
 				raise InvalidSettingKey(key)

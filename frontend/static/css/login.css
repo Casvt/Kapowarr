@@ -16,7 +16,7 @@ body {
 
 	color: var(--accent-color);
 
-	font-size: 8rem;
+	font-size: min(20vw, 8rem);
 }
 
 #text-container p {

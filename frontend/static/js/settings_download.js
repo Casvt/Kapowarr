@@ -1,10 +1,15 @@
-function fillSettings(data) {
-	document.getElementById('download-folder-input').value = data.download_folder;
+function fillSettings(api_key) {
+	fetch(`/api/settings?api_key=${api_key}`)
+	.then(response => response.json())
+	.then(json => {
+		document.querySelector('#download-folder-input').value = json.result.download_folder;
+	});
 };
 
-function saveSettings() {
+function saveSettings(api_key) {
+	document.querySelector('#download-folder-input').classList.remove('error-input');
 	const data = {
-		'download_folder': document.getElementById('download-folder-input').value
+		'download_folder': document.querySelector('#download-folder-input').value
 	};
 	fetch(`/api/settings?api_key=${api_key}`, {
 		'method': 'PUT',
@@ -12,27 +17,20 @@ function saveSettings() {
 		'headers': {'Content-Type': 'application/json'}
 	})
 	.then(response => {
-		return response.json();
-	})
-	.then(json => {
-		// catch errors
-		if (!json.error === null) {
-			return Promise.reject(json);
-		};
+		if (!response.ok) return Promise.reject(response.status);
 	})
 	.catch(e => {
-		console.log(e.error);
+		if (e === 404) {
+			document.querySelector('#download-folder-input').classList.add('error-input');
+		} else {
+			console.log(e);
+		};
 	});
 };
 
 // code run on load
-
-const api_key = sessionStorage.getItem('api_key');
-
-fetch(`/api/settings?api_key=${api_key}`)
-.then(response => {
-	return response.json();
-})
-.then(json => {
-	fillSettings(json.result);
+usingApiKey()
+.then(api_key => {
+	fillSettings(api_key);
+	addEventListener('#save-button', 'click', e => saveSettings(api_key))
 });

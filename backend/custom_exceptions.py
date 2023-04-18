@@ -141,14 +141,15 @@ class InvalidSettingKey(Exception):
 class InvalidSettingValue(Exception):
 	"""The setting value is invalid
 	"""
-	def __init__(self, key: str=''):
+	def __init__(self, key: str='', value: str=''):
 		self.key = key
+		self.value = value
 		super().__init__(self.key)
-		logging.warning(f'The value for this setting is invalid: {key}')
+		logging.warning(f'The value for this setting is invalid: {key}: {value}')
 		
 	@property
 	def api_response(self):
-		return {'error': 'InvalidSettingValue', 'result': {'key': self.key}, 'code': 400}
+		return {'error': 'InvalidSettingValue', 'result': {'key': self.key, 'value': self.value}, 'code': 400}
 
 class InvalidSettingModification(Exception):
 	"""The setting is not allowed to be changed this way

@@ -43,6 +43,16 @@ class Task(ABC):
 	def category(self) -> str:
 		return
 
+	@property
+	@abstractmethod
+	def volume_id(self) -> int:
+		return
+	
+	@property
+	@abstractmethod
+	def issue_id(self) -> int:
+		return
+
 	@abstractmethod
 	def run(self) -> Union[None, List[tuple]]:
 		"""Run the task
@@ -64,6 +74,8 @@ class AutoSearchIssue(Task):
 	action = 'auto_search_issue'
 	display_title = 'Auto Search'
 	category = 'download'
+	volume_id = None
+	issue_id = None
 	
 	def __init__(self, volume_id: int, issue_id: int):
 		"""Create the task
@@ -73,7 +85,7 @@ class AutoSearchIssue(Task):
 			issue_id (int): The id of the issue to search for
 		"""
 		self.volume_id = volume_id
-		self.id = issue_id
+		self.issue_id = issue_id
 	
 	def run(self) -> List[tuple]:
 		title = get_db().execute(
@@ -86,7 +98,7 @@ class AutoSearchIssue(Task):
 			WHERE i.id = ?
 			LIMIT 1;
 			""",
-			(self.id,)
+			(self.issue_id,)
 		).fetchone()
 		if title[1] is None:
 			self.message = f'Searching for {title[0]} #{title[2]}'
@@ -94,9 +106,9 @@ class AutoSearchIssue(Task):
 			self.message = f'Searching for {title[0]}: {title[1]}'
 
 		# Get search results and download them
-		results = auto_search(self.volume_id, self.id)
+		results = auto_search(self.volume_id, self.issue_id)
 		if results:
-			return [(result['link'], self.volume_id, self.id) for result in results]
+			return [(result['link'], self.volume_id, self.issue_id) for result in results]
 		return []
 
 #=====================
@@ -110,6 +122,8 @@ class AutoSearchVolume(Task):
 	action = 'auto_search'
 	display_title = 'Auto Search'
 	category = 'download'
+	volume_id = None
+	issue_id = None
 	
 	def __init__(self, volume_id: int):
 		"""Create the task
@@ -117,19 +131,19 @@ class AutoSearchVolume(Task):
 		Args:
 			volume_id (int): The id of the volume to search for
 		"""
-		self.id = volume_id
+		self.volume_id = volume_id
 	
 	def run(self) -> List[tuple]:
 		title = get_db().execute(
 			"SELECT title FROM volumes WHERE id = ? LIMIT 1",
-			(self.id,)
+			(self.volume_id,)
 		).fetchone()[0]
 		self.message = f'Searching for {title}'
 
 		# Get search results and download them
-		results = auto_search(self.id)
+		results = auto_search(self.volume_id)
 		if results:
-			return [(result['link'], self.id) for result in results]
+			return [(result['link'], self.volume_id) for result in results]
 		return []
 
 class RefreshAndScanVolume(Task):
@@ -140,6 +154,8 @@ class RefreshAndScanVolume(Task):
 	action = 'refresh_and_scan'
 	display_title = 'Refresh And Scan'
 	category = ''
+	volume_id = None
+	issue_id = None
 	
 	def __init__(self, volume_id: int):
 		"""Create the task
@@ -147,17 +163,17 @@ class RefreshAndScanVolume(Task):
 		Args:
 			volume_id (int): The id of the volume for which to perform the task
 		"""		
-		self.id = volume_id
+		self.volume_id = volume_id
 
 	def run(self) -> None:
 		title = get_db().execute(
 			"SELECT title FROM volumes WHERE id = ?", 
-			(self.id,)
+			(self.volume_id,)
 		).fetchone()[0]
 		self.message = f'Updating info on {title}'
 
 		try:
-			refresh_and_scan_volume(self.id)
+			refresh_and_scan_volume(self.volume_id)
 		except InvalidComicVineApiKey:
 			pass
 
@@ -174,6 +190,8 @@ class UpdateAll(Task):
 	action = 'update_all'
 	display_title = 'Update All'
 	category = ''
+	volume_id = None
+	issue_id = None
 
 	def run(self) -> None:
 		volume_ids = get_db().execute(
@@ -197,6 +215,8 @@ class SearchAll(Task):
 	action = 'search_all'
 	display_title = 'Search All'
 	category = 'download'
+	volume_id = None
+	issue_id = None
 
 	def run(self) -> List[tuple]:
 		volume_ids = get_db().execute(
@@ -367,7 +387,9 @@ class TaskHandler:
 			'action': t['task'].action,
 			'display_title': t['task'].display_title,
 			'status': t['status'],
-			'message': t['task'].message
+			'message': t['task'].message,
+			'volume_id': t['task'].volume_id,
+			'issue_id': t['task'].issue_id
 		}
 
 	def get_all(self) -> List[dict]:
@@ -444,7 +466,7 @@ def get_task_history(offset: int=0) -> List[dict]:
 			LIMIT 50
 			OFFSET ?;
 			""",
-			(offset,)
+			(offset * 50,)
 		).fetchall()
 	))
 	return result
