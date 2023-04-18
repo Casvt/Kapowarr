@@ -90,7 +90,7 @@ class ComicVine:
 			'title': volume_data['name'],
 			'year': int(volume_data['start_year'].replace('-', '0')) if volume_data['start_year'] is not None else None,
 			'cover': volume_data['image']['small_url'],
-			'publisher': volume_data['publisher']['name'],
+			'publisher': volume_data['publisher']['name'] if volume_data['publisher'] is not None else None,
 			'issue_count': int(volume_data['count_of_issues'])
 		}
 		

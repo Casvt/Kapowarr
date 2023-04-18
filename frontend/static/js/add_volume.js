@@ -7,7 +7,7 @@ function buildResults(results) {
 	results.forEach(result => {
 		const entry = document.createElement('button');
 		entry.classList.add('search-entry');
-		entry.dataset.title = `${result.title} (${result.year})`;
+		entry.dataset.title = result.year !== null ? `${result.title} (${result.year})` : result.title;
 		entry.dataset.cover = result.cover;
 		entry.dataset.comicvine_id = result.comicvine_id;
 
@@ -30,16 +30,15 @@ function buildResults(results) {
 		info_container.classList.add('entry-info-container');
 		cover_info_container.appendChild(info_container);
 
-		const complete_title = entry.dataset.title;
-		const start_year = complete_title.lastIndexOf('(');
-
 		const title = document.createElement("h2");
-		title.innerText = complete_title.substring(0, start_year);
+		title.innerText = result.title;
 		info_container.appendChild(title);
 		
-		const year = document.createElement("span");
-		year.innerText = complete_title.substring(start_year);
-		title.appendChild(year);
+		if (result.year !== null) {
+			const year = document.createElement("span");
+			year.innerText = ` (${result.year})`;
+			title.appendChild(year);
+		}
 		
 		const tags = document.createElement('div');
 		tags.classList.add('entry-tags');
@@ -49,10 +48,10 @@ function buildResults(results) {
 			const volume_number = document.createElement('p');
 			volume_number.innerText = `Volume ${result.volume_number}`;
 			tags.appendChild(volume_number);
-		}
+		};
 
 		const publisher = document.createElement('p');
-		publisher.innerText = result.publisher;
+		publisher.innerText = result.publisher || 'Publisher Unknown';
 		tags.appendChild(publisher);
 
 		const issue_count = document.createElement('p');
