@@ -336,13 +336,10 @@ def _purify_link(link: str) -> dict:
 			return {'link': "magnet:?xt=urn:btih:" + hash + "&tr=udp://tracker.cyberia.is:6969/announce&tr=udp://tracker.port443.xyz:6969/announce&tr=http://tracker3.itzmx.com:6961/announce&tr=udp://tracker.moeking.me:6969/announce&tr=http://vps02.net.orel.ru:80/announce&tr=http://tracker.openzim.org:80/announce&tr=udp://tracker.skynetcloud.tk:6969/announce&tr=https://1.tracker.eu.org:443/announce&tr=https://3.tracker.eu.org:443/announce&tr=http://re-tracker.uz:80/announce&tr=https://tracker.parrotsec.org:443/announce&tr=udp://explodie.org:6969/announce&tr=udp://tracker.filemail.com:6969/announce&tr=udp://tracker.nyaa.uk:6969/announce&tr=udp://retracker.netbynet.ru:2710/announce&tr=http://tracker.gbitt.info:80/announce&tr=http://tracker2.dler.org:80/announce",
 						'target': None}
 
-		elif gc_regex.search(link):
-			# Link is direct download from getcomics ('Main Server')
-			r = get(link, headers={'user-agent': 'Kapowarr'}, allow_redirects=True, stream=True)
-			return {'link': r.url, 'target': DirectDownload}
+		# Link is direct download from getcomics ('Main Server')
+		r = get(link, headers={'user-agent': 'Kapowarr'}, allow_redirects=True, stream=True)
+		return {'link': r.url, 'target': DirectDownload}
 
-		else:
-			raise LinkBroken(2, blocklist_reasons[2])
 	else:
 		raise LinkBroken(2, blocklist_reasons[2])
 
