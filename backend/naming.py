@@ -6,7 +6,7 @@
 import logging
 from os import listdir
 from os.path import basename, dirname, isdir, isfile, join, splitext
-from re import escape, match
+from re import compile, escape, match
 from string import Formatter
 from typing import Dict, List
 
@@ -32,9 +32,23 @@ issue_formatting_keys = formatting_keys + (
 	'issue_release_date'
 )
 
+filename_cleaner = compile(r'(<|>|:|\"|\||\?|\*|\x00|(\s|\.)+$)')
+
 #=====================
 # Name generation
 #=====================
+def _make_filename_safe(unsafe_filename: str) -> str:
+	"""Make a filename safe to use in a filesystem. It removes illegal characters.
+
+	Args:
+		unsafe_filename (str): The filename to be made safe.
+
+	Returns:
+		str: The filename, now with characters removed/replaced so that it's filesystem-safe.
+	"""
+	safe_filename = filename_cleaner.sub('', unsafe_filename)
+	return safe_filename
+
 def _get_formatting_data(volume_id: int, issue_id: int=None) -> dict:
 	"""Get the values of the formatting keys for a volume or issue
 
@@ -74,8 +88,8 @@ def _get_formatting_data(volume_id: int, issue_id: int=None) -> dict:
 		clean_title = volume_data.get('title') or 'Unknown'
 	
 	formatting_data = {
-		'series_name': volume_data.get('title') or 'Unknown',
-		'clean_series_name': clean_title,
+		'series_name': (volume_data.get('title') or 'Unknown').replace('/', '').replace(r'\\', ''),
+		'clean_series_name': clean_title.replace('/', '').replace(r'\\', ''),
 		'volume_number': volume_data.get('volume_number') or 'Unknown',
 		'comicvine_id': volume_data.get('comicvine_id') or 'Unknown',
 		'year': volume_data.get('year') or 'Unknown',
@@ -100,7 +114,7 @@ def _get_formatting_data(volume_id: int, issue_id: int=None) -> dict:
 		formatting_data.update({
 			'issue_comicvine_id': issue_data.get('comicvine_id') or 'Unknown',
 			'issue_number': issue_data.get('issue_number') or 'Unknown',
-			'issue_title': issue_data.get('title') or 'Unknown',
+			'issue_title': (issue_data.get('title') or 'Unknown').replace('/', '').replace(r'\\', ''),
 			'issue_release_date': issue_data.get('date') or 'Unknown'
 		})
 		
@@ -119,7 +133,8 @@ def generate_volume_folder_name(volume_id: int) -> str:
 	format: str = Settings().get_settings()['volume_folder_naming']
 
 	name = format.format(**formatting_data)
-	return name
+	save_name = _make_filename_safe(name)
+	return save_name
 
 def generate_tpb_name(volume_id: int) -> str:
 	"""Generate a TPB name based on the format string
@@ -134,7 +149,8 @@ def generate_tpb_name(volume_id: int) -> str:
 	format: str = Settings().get_settings()['file_naming_tpb']
 
 	name = format.format(**formatting_data)
-	return name
+	save_name = _make_filename_safe(name)
+	return save_name
 
 def generate_issue_range_name(
 	volume_id: int,
@@ -182,7 +198,8 @@ def generate_issue_range_name(
 	formatting_data['issue_number'] = f'{issue_number_start[0]}-{issue_number_end[0]}'
 	
 	name = format.format(**formatting_data)
-	return name
+	save_name = _make_filename_safe(name)
+	return save_name
 
 def generate_issue_name(volume_id: int, issue_id: int) -> str:
 	"""Generate a issue name based on the format string
@@ -198,7 +215,8 @@ def generate_issue_name(volume_id: int, issue_id: int) -> str:
 	format: str = Settings().get_settings()['file_naming']
 
 	name = format.format(**formatting_data)
-	return name
+	save_name = _make_filename_safe(name)
+	return save_name
 
 #=====================
 # Checking formats
