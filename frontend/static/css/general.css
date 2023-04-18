@@ -233,6 +233,10 @@ main > *:not(.tool-bar-container) {
 	opacity: .9;
 }
 
+.description > *:not(:last-child) {
+	margin-bottom: .75rem;
+}
+
 .description a {
 	color: var(--accent-color);
 }

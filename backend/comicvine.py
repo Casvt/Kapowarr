@@ -17,6 +17,8 @@ from backend.files import process_issue_number
 from backend.settings import Settings, private_settings
 
 volume_search = compile(r'(?i)(?:v(?:ol(?:ume)?)?[\.\s]*)(\d+)')
+headers = ('h2', 'h3', 'h4', 'h5', 'h6')
+lists = ('ul', 'ol')
 
 def _clean_description(description: str) -> str:
 	"""Reduce size of description (written in html) to only essential information
@@ -32,14 +34,40 @@ def _clean_description(description: str) -> str:
 		return description
 
 	soup = BeautifulSoup(description, 'html.parser')
-	# Remove images, titles and lists
-	for el in soup.find_all(["figure","img","h2","h3","h4","h5","h6","ul","ol","p"]):
-		if el.name == 'p':
-			above_els = [e for e in getattr(el, 'children', [])]
-			if not (1 <= len(above_els) <= 2 and above_els[0].name in ('b','i')):
+
+	# Remove images
+	for el in soup.find_all(["figure", "img"]):
+		el.decompose()
+		
+	# Remove everything after the first title with list
+	removed_elements = []
+	for el in soup:
+		if removed_elements or el.name in lists:
+			removed_elements.append(el)
+			continue
+
+		children = list(getattr(el, 'children', []))
+		if (el.name in headers
+      		or (1 <= len(children) <= 2 and children[0].name in ('b', 'i', 'strong'))):
+			# Element is header or fake header
+			sib = el.next_sibling
+			if sib is None:
+				# Header at the end of description
+				removed_elements.append(el)
+				continue
+				
+			if sib.name in lists or sib.name in headers:
+				# Header above list or other header
+				removed_elements.append(el)
+				continue
+			
+			children = list(getattr(sib, 'children', []))
+			if 1 <= len(children) <= 2 and children[0].name in ('b', 'i', 'strong'):
+				# Header above fake header (<p> => <b> | <i>)
+				removed_elements.append(el)
 				continue
 
-		el.decompose()
+	for el in removed_elements: el.decompose()
 
 	# Fix links
 	for link in soup.find_all('a'):
