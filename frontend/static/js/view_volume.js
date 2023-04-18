@@ -431,13 +431,22 @@ function editVolume() {
 // Deleting
 // 
 function deleteVolume() {
+	const delete_error = document.querySelector('#volume-downloading-error');
+	delete_error.classList.add('hidden');
 	const delete_folder = document.querySelector('#delete-folder-input').value;
 	usingApiKey()
 	.then(api_key => {
 		fetch(`/api/volumes/${id}?api_key=${api_key}&delete_folder=${delete_folder}`, {
 			'method': 'DELETE'
 		})
-		.then(response => window.location.href = '/');
+		.then(response => {
+			if (!response.ok) return Promise.reject(response.status);
+			window.location.href = '/'
+		})
+		.catch(e => {
+			if (e === 400) delete_error.classList.remove('hidden');
+			else console.log(e);
+		});
 	});
 };
 

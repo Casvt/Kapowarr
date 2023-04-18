@@ -59,6 +59,19 @@ class VolumeAlreadyAdded(Exception):
 	def __init__(self) -> None:
 		logging.warning('Volume is already added')
 		return
+	
+class VolumeDownloadedFor(Exception):
+	"""The volume is desired to be deleted but there is a download for it going
+	"""	
+	def __init__(self, volume_id: int):
+		self.volume_id = volume_id
+		super().__init__(self.volume_id)
+		logging.warning(f'Deleting volume failed because there is a download for the volume: {self.id}')
+		return
+		
+	@property
+	def api_response(self):
+		return {'error': 'VoolumeDownloadedFor', 'result': {'volume_id': self.volume_id}, 'code': 400}
 
 class IssueNotFound(Exception):
 	"""The issue with the given id was not found
@@ -121,6 +134,7 @@ class LinkBroken(Exception):
 		self.reason_id = reason_id
 		self.reason_text = reason_text
 		super().__init__(self.reason_id)
+		return
 	
 	@property
 	def api_response(self):
@@ -133,6 +147,7 @@ class InvalidSettingKey(Exception):
 		self.key = key
 		super().__init__(self.key)
 		logging.warning(f'No setting matched the given key: {key}')
+		return
 
 	@property
 	def api_response(self):
@@ -146,6 +161,7 @@ class InvalidSettingValue(Exception):
 		self.value = value
 		super().__init__(self.key)
 		logging.warning(f'The value for this setting is invalid: {key}: {value}')
+		return
 		
 	@property
 	def api_response(self):
@@ -159,7 +175,8 @@ class InvalidSettingModification(Exception):
 		self.instead = instead
 		super().__init__(key)
 		logging.warning(f'This setting is not allowed to be changed this way: {key}. Instead: {instead}')
-		
+		return
+
 	@property
 	def api_response(self):
 		return {'error': 'InvalidSettingModification', 'result': {'key': self.key, 'instead': self.instead}, 'code': 400}
@@ -171,7 +188,8 @@ class KeyNotFound(Exception):
 		self.key = key
 		super().__init__(self.key)
 		logging.warning(f'This key was not found in the API request, eventhough it\'s required: {key}')
-	
+		return
+
 	@property
 	def api_response(self):
 		return {'error': 'KeyNotFound', 'result': {'key': self.key}, 'code': 400}
@@ -184,7 +202,8 @@ class InvalidKeyValue(Exception):
 		self.value = value
 		super().__init__(self.key)
 		logging.warning(f'This key in the API request has an invalid value: {key} = {value}')
-	
+		return
+
 	@property
 	def api_response(self):
 		return {'error': 'InvalidKeyValue', 'result': {'key': self.key, 'value': self.value}, 'code': 400}

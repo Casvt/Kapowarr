@@ -8,7 +8,7 @@ from io import BytesIO
 from typing import List
 
 from backend.comicvine import ComicVine
-from backend.custom_exceptions import (IssueNotFound, VolumeAlreadyAdded,
+from backend.custom_exceptions import (IssueNotFound, VolumeAlreadyAdded, VolumeDownloadedFor,
                                        VolumeNotFound)
 from backend.db import get_db
 from backend.files import (create_volume_folder, delete_volume_folder,
@@ -276,6 +276,10 @@ class Volume:
 
 		Args:
 			delete_folder (bool, optional): Also delete the volume folder and it's contents. Defaults to False.
+
+		Raises:
+			VolumeDownloadedFor: There is a download in the queue for the volume
+			
 		"""
 		logging.info(f'Deleting volume {self.id} with delete_folder set to {delete_folder}')
 		cursor = get_db()
@@ -284,9 +288,18 @@ class Volume:
 		if delete_folder:
 			delete_volume_folder(self.id)
 
+		# Check if nothing is downloading for the volume
+		downloading_for_volume = cursor.execute("""
+			SELECT 1
+			FROM download_queue
+			WHERE volume_id = ?
+			LIMIT 1;
+		""", (self.id,)).fetchone()
+		if downloading_for_volume:
+			raise VolumeDownloadedFor(self.id)
+
 		# Delete file entries
-		# Due to ON DELETE CASCADE, deleting from files will also
-		# delete from issues_files automatically
+		# ON DELETE CASCADE will take care of issues_files
 		cursor.execute(
 			"""
 			DELETE FROM files
@@ -299,7 +312,7 @@ class Volume:
 			(self.id,)
 		)
 		# Delete metadata entries
-		# ON DELETE CASCADE will take care of issue deletion
+		# ON DELETE CASCADE will take care of issues
 		cursor.execute("DELETE FROM volumes WHERE id = ?", (self.id,))
 
 		return

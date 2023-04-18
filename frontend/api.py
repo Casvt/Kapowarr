@@ -17,7 +17,7 @@ from backend.custom_exceptions import (BlocklistEntryNotFound,
                                        KeyNotFound, RootFolderInUse,
                                        RootFolderNotFound, TaskNotDeletable,
                                        TaskNotFound, VolumeAlreadyAdded,
-                                       VolumeNotFound)
+                                       VolumeDownloadedFor, VolumeNotFound)
 from backend.db import close_db
 from backend.download import (DownloadHandler, delete_download_history,
                               get_download_history)
@@ -25,7 +25,7 @@ from backend.naming import mass_rename, preview_mass_rename
 from backend.root_folders import RootFolders
 from backend.search import manual_search
 from backend.settings import Settings, about_data, blocklist_reasons
-from backend.tasks import (TaskHandler, TaskHandler, delete_task_history, get_task_history,
+from backend.tasks import (TaskHandler, delete_task_history, get_task_history,
                            get_task_planning, task_library)
 from backend.volumes import Library, search_volumes
 
@@ -58,7 +58,7 @@ def error_handler(method):
 				KeyNotFound, RootFolderInUse,
 				RootFolderNotFound, TaskNotDeletable,
 				TaskNotFound, VolumeAlreadyAdded,
-				VolumeNotFound) as e:
+				VolumeDownloadedFor, VolumeNotFound) as e:
 			return return_api(**e.api_response)
 	
 	wrapper.__name__ = method.__name__
