@@ -20,11 +20,12 @@ volume_search = compile(r'(?i)(?:v(?:ol(?:ume)?)?[\.\s]*)(\d+)')
 headers = ('h2', 'h3', 'h4', 'h5', 'h6')
 lists = ('ul', 'ol')
 
-def _clean_description(description: str) -> str:
+def _clean_description(description: str, short: bool=False) -> str:
 	"""Reduce size of description (written in html) to only essential information
 
 	Args:
-		description (str): The description (written in html) to clean
+		description (str): The description (written in html) to clean.
+		short (bool, optional): Only remove images and fix links. Defaults to False.
 
 	Returns:
 		str: The cleaned description (written in html)
@@ -38,37 +39,38 @@ def _clean_description(description: str) -> str:
 	# Remove images
 	for el in soup.find_all(["figure", "img"]):
 		el.decompose()
-		
-	# Remove everything after the first title with list
-	removed_elements = []
-	for el in soup:
-		if el.name is None: continue
-		if removed_elements or el.name in lists:
-			removed_elements.append(el)
-			continue
-
-		children = list(getattr(el, 'children', []))
-		if (el.name in headers
-      		or (1 <= len(children) <= 2 and children[0].name in ('b', 'i', 'strong'))):
-			# Element is header or fake header
-			sib = el.next_sibling
-			if sib is None:
-				# Header at the end of description
+	
+	if not short:
+		# Remove everything after the first title with list
+		removed_elements = []
+		for el in soup:
+			if el.name is None: continue
+			if removed_elements or el.name in lists:
 				removed_elements.append(el)
 				continue
+
+			children = list(getattr(el, 'children', []))
+			if (el.name in headers
+				or (1 <= len(children) <= 2 and children[0].name in ('b', 'i', 'strong'))):
+				# Element is header or fake header
+				sib = el.next_sibling
+				if sib is None:
+					# Header at the end of description
+					removed_elements.append(el)
+					continue
+					
+				if sib.name in lists or sib.name in headers:
+					# Header above list or other header
+					removed_elements.append(el)
+					continue
 				
-			if sib.name in lists or sib.name in headers:
-				# Header above list or other header
-				removed_elements.append(el)
-				continue
-			
-			children = list(getattr(sib, 'children', []))
-			if 1 <= len(children) <= 2 and children[0].name in ('b', 'i', 'strong'):
-				# Header above fake header (<p> => <b> | <i>)
-				removed_elements.append(el)
-				continue
+				children = list(getattr(sib, 'children', []))
+				if 1 <= len(children) <= 2 and children[0].name in ('b', 'i', 'strong'):
+					# Header above fake header (<p> => <b> | <i>)
+					removed_elements.append(el)
+					continue
 
-	for el in removed_elements: el.decompose()
+		for el in removed_elements: el.decompose()
 
 	# Fix links
 	for link in soup.find_all('a'):
@@ -160,7 +162,7 @@ class ComicVine:
 			'calculated_issue_number': process_issue_number(issue_data['issue_number']),
 			'title': issue_data['name'] or None,
 			'date': issue_data['cover_date'] or None,
-			'description': _clean_description(issue_data['description'])
+			'description': _clean_description(issue_data['description'], short=True)
 		}
 		logging.debug(f'Formatted issue output result: {result}')
 		return result
