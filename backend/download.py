@@ -622,11 +622,11 @@ class DownloadHandler:
 			download['instance'].run()
 			
 			if download['instance'].state == CANCELED_STATE:
-				PostProcessing(download).short()
+				PostProcessing(download, self.queue).short()
 				return
 			# else
 			download['instance'].state = IMPORTING_STATE
-			PostProcessing(download).full()
+			PostProcessing(download, self.queue).full()
 			
 			self.queue.pop(0)
 			self._process_queue()
@@ -681,17 +681,17 @@ class DownloadHandler:
 					volume_id, issue_id
 				FROM download_queue;
 			""")
-			while True:
-				download = cursor.fetchmany()
-				if not download: break
+			download = cursor.fetchmany()
+			while download:
 				logging.debug(f'Download from database: {download}')
 				self.add(download[0]['link'], download[0]['volume_id'], download[0]['issue_id'], download[0]['id'])
+				download = cursor.fetchmany()
 		return
 
 	def add(self,
 		link: str,
 		volume_id: int, issue_id: int=None,
-		_download_id_override: int=None
+		_download_db_id_override: int=None
 	) -> List[dict]:
 		"""Add a download to the queue
 
@@ -699,7 +699,7 @@ class DownloadHandler:
 			link (str): A getcomics link to download from
 			volume_id (int): The id of the volume for which the download is intended
 			issue_id (int, optional): The id of the issue for which the download is intended. Defaults to None.
-			_download_id_override (int, optional): Internal use only. Leave to None. Defaults to None.
+			_download_db_id_override (int, optional): Internal use only. Don't use. Defaults to None.
 
 		Returns:
 			List[dict]: Queue entries that were added from the link.
@@ -720,21 +720,25 @@ class DownloadHandler:
 		result = []
 		with self.context():
 			cursor = get_db()
+			
+			# Register download in database
+			if _download_db_id_override is None:
+				db_id = cursor.execute("""
+					INSERT INTO download_queue(link, volume_id, issue_id)
+					VALUES (?,?,?);
+					""",
+					(link, volume_id, issue_id)
+				).lastrowid
+			else:
+				db_id = _download_db_id_override
+
 			for download in downloads:
 				download['original_link'] = link
 				download['volume_id'] = volume_id
 				download['issue_id'] = issue_id
+				download['id'] = self.queue[-1]['id'] + 1 if self.queue else 1
+				download['db_id'] = db_id
 				download['thread'] = Thread(target=self.__run_download, args=(download,), name="Download Handler")
-				
-				if _download_id_override:
-					download['id'] = _download_id_override
-				else:
-					download['id'] = cursor.execute("""
-						INSERT INTO download_queue(link, volume_id, issue_id)
-						VALUES (?,?,?);
-						""",
-						(link, volume_id, issue_id)
-					).lastrowid
 
 				# Add to queue
 				result.append(self.__format_entry(download))
@@ -791,11 +795,6 @@ class DownloadHandler:
 			DownloadNotFound: The id doesn't map to any download in the queue
 		"""	
 		logging.info(f'Removing download with id {download_id}')
-		# Delete download from database
-		get_db().execute(
-			"DELETE FROM download_queue WHERE id = ?",
-			(download_id,)
-		)
 
 		# Delete download from queue
 		for download in self.queue:
@@ -804,10 +803,12 @@ class DownloadHandler:
 					download['instance'].stop()
 					download['thread'].join()
 				self.queue.remove(download)
+				PostProcessing(download, self.queue)._remove_from_queue()
 				break
 		else:
 			raise DownloadNotFound
-		
+
+		self._process_queue()
 		return
 
 #=====================

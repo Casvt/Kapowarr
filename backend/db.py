@@ -14,7 +14,7 @@ from time import time
 
 from flask import g
 
-__DATABASE_VERSION__ = 1
+__DATABASE_VERSION__ = 2
 
 class Singleton(type):
 	_instances = {}
@@ -98,7 +98,11 @@ def migrate_db(current_db_version: int) -> None:
 	to the newest version supported by the Kapowarr version installed.
 	"""
 	logging.info('Migrating database to newer version...')
-	
+	cursor = get_db()
+	if current_db_version == 1:
+		cursor.executescript("DELETE FROM download_queue;")
+		
+		current_db_version = 2
 	return
 
 def setup_db() -> None:

@@ -9,9 +9,11 @@ from os import remove
 from os.path import basename, isfile, join
 from shutil import move
 from time import time
+from typing import List
 
 from backend.db import get_db
 from backend.volumes import Volume, scan_files
+
 
 class PostProcessor(ABC):
 	@abstractmethod
@@ -30,12 +32,13 @@ class PostProcessor(ABC):
 class PostProcessing(PostProcessor):
 	"""For processing a file after downloading it
 	"""	
-	def __init__(self, download: dict) -> None:
+	def __init__(self, download: dict, queue: List[dict]) -> None:
 		"""Setup a post processor for the download
 
 		Args:
 			download (dict): The download queue entry for which to setup the processor.
 			Value should be from download.DownloadHandler.queue
+			queue (List[dict]): The download queue. Value should be download.DownloadHandler.queue
 		"""
 		self.actions_short = [
 			self._delete_file
@@ -55,15 +58,20 @@ class PostProcessing(PostProcessor):
 		]
 		
 		self.download = download
+		self.queue = queue
 		return
 
 	def _remove_from_queue(self) -> None:
 		"""Delete the download from the queue in the database
-		"""		
-		get_db().execute(
-			"DELETE FROM download_queue WHERE id = ?",
-			(self.download['id'],)
-		)
+		"""
+		for entry in self.queue:
+			if entry['db_id'] == self.download['db_id'] and entry['id'] != self.download['id']:
+				break
+		else:
+			get_db().execute(
+				"DELETE FROM download_queue WHERE id = ?",
+				(self.download['db_id'],)
+			)
 		return
 
 	def _add_to_history(self) -> None:
