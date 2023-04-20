@@ -42,6 +42,7 @@ def _clean_description(description: str) -> str:
 	# Remove everything after the first title with list
 	removed_elements = []
 	for el in soup:
+		if el.name is None: continue
 		if removed_elements or el.name in lists:
 			removed_elements.append(el)
 			continue
