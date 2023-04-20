@@ -14,7 +14,7 @@ from time import time
 
 from flask import g
 
-__DATABASE_VERSION__ = 2
+__DATABASE_VERSION__ = 3
 
 class Singleton(type):
 	_instances = {}
@@ -100,9 +100,64 @@ def migrate_db(current_db_version: int) -> None:
 	logging.info('Migrating database to newer version...')
 	cursor = get_db()
 	if current_db_version == 1:
+		# V1 -> V2
 		cursor.executescript("DELETE FROM download_queue;")
 		
 		current_db_version = 2
+
+	if current_db_version == 2:
+		# V2 -> V3
+		cursor.executescript("""
+			BEGIN TRANSACTION;
+			PRAGMA defer_foreign_keys = ON;
+			
+			-- Issues
+			CREATE TEMPORARY TABLE temp_issues AS
+				SELECT * FROM issues;
+			DROP TABLE issues;
+
+			CREATE TABLE issues(
+				id INTEGER PRIMARY KEY,
+				volume_id INTEGER NOT NULL,
+				comicvine_id INTEGER NOT NULL,
+				issue_number VARCHAR(20) NOT NULL,
+				calculated_issue_number FLOAT(20) NOT NULL,
+				title VARCHAR(255),
+				date VARCHAR(10),
+				description TEXT,
+				monitored BOOL NOT NULL DEFAULT 1,
+
+				FOREIGN KEY (volume_id) REFERENCES volumes(id)
+					ON DELETE CASCADE
+			);
+			INSERT INTO issues
+				SELECT * FROM temp_issues;
+
+			-- Issues files				
+			CREATE TEMPORARY TABLE temp_issues_files AS
+				SELECT * FROM issues_files;
+			DROP TABLE issues_files;
+			
+			CREATE TABLE issues_files(
+				file_id INTEGER NOT NULL,
+				issue_id INTEGER NOT NULL,
+
+				FOREIGN KEY (file_id) REFERENCES files(id)
+					ON DELETE CASCADE,
+				FOREIGN KEY (issue_id) REFERENCES issues(id),
+				CONSTRAINT PK_issues_files PRIMARY KEY (
+					file_id,
+					issue_id
+				)
+			);
+			INSERT INTO issues_files
+				SELECT * FROM temp_issues_files;
+
+			COMMIT;
+		""")
+		
+		current_db_version = 3
+	
 	return
 
 def setup_db() -> None:
