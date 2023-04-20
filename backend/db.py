@@ -158,6 +158,22 @@ def migrate_db(current_db_version: int) -> None:
 		
 		current_db_version = 3
 	
+	if current_db_version == 3:
+		# V3 -> V4
+		
+		cursor.execute("""
+			DELETE FROM files
+			WHERE rowid IN (
+				SELECT f.rowid
+				FROM files f
+				LEFT JOIN issues_files if
+				ON f.id = if.file_id
+				WHERE if.file_id IS NULL
+			);
+		""")
+
+		current_db_version = 4
+	
 	return
 
 def setup_db() -> None:

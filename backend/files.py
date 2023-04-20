@@ -413,7 +413,7 @@ def scan_files(volume_data: dict) -> None:
 		WHERE rowid IN (
 			SELECT f.rowid
 			FROM files f
-			INNER JOIN issues_files if
+			LEFT JOIN issues_files if
 			ON f.id = if.file_id
 			WHERE if.file_id IS NULL
 		);
