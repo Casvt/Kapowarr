@@ -14,7 +14,7 @@ from time import time
 
 from flask import g
 
-__DATABASE_VERSION__ = 3
+__DATABASE_VERSION__ = 4
 
 class Singleton(type):
 	_instances = {}
