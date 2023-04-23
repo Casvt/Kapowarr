@@ -393,7 +393,8 @@ class Library:
 		'title': 'title, year, volume_number',
 		'year': 'year, title, volume_number',
 		'volume_number': 'volume_number, title, year',
-		'recently_added': 'id DESC, title, year, volume_number'
+		'recently_added': 'id DESC, title, year, volume_number',
+		'publisher': 'publisher, title, year, volume_number'
 	}
 	
 	def __format_lib_output(self, library: List[dict]) -> List[dict]:
@@ -414,7 +415,7 @@ class Library:
 		"""Get all volumes in the library
 
 		Args:
-			sort (str, optional): How to sort the list. `title`, `year`, `volume_number` and `recently_added` allowed. Defaults to 'title'.
+			sort (str, optional): How to sort the list. `title`, `year`, `volume_number`, `recently_added` and `publisher` allowed. Defaults to 'title'.
 
 		Returns:
 			List[dict]: The list of volumes in the library.
@@ -454,7 +455,7 @@ class Library:
 
 		Args:
 			query (str): The query to search with
-			sort (str, optional): How to sort the list. `title`, `year`, `volume_number` and `recently_added` allowed. Defaults to 'title'.
+			sort (str, optional): How to sort the list. `title`, `year`, `volume_number`, `recently_added` and `publisher` allowed. Defaults to 'title'.
 
 		Returns:
 			List[dict]: The resulting list of matching volumes in the library
