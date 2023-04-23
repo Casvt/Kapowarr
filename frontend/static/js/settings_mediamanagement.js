@@ -91,7 +91,7 @@ function addRootFolder(api_key) {
 		if (!response.ok) return Promise.reject(response.status);
 		
 		fillRootFolder(api_key);
-		toggleAddRootFolder();
+		toggleAddRootFolder(1);
 	})
 	.catch(e => {
 		if (e === 404) document.querySelector('#folder-error').classList.remove('hidden');
