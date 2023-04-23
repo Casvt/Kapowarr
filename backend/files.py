@@ -21,7 +21,7 @@ from backend.db import get_db
 alphabet = 'abcdefghijklmnopqrstuvwxyz'
 supported_extensions = ('.png','.jpeg','.jpg','.webp','.gif','.cbz','.zip','.rar','.cbr','.tar.gz','.7zip','.7z','.cb7','.cbt','.epub','.pdf')
 file_extensions = r'\.(' + '|'.join(e[1:] for e in supported_extensions) + r')$'
-volume_regex_snippet = r'(?:v(?:ol|olume)?)(?:\.\s|[\.\-\s])?(\d+|I{1,3})'
+volume_regex_snippet = r'\b(?:v(?:ol|olume)?)(?:\.\s|[\.\-\s])?(\d+|I{1,3})\b'
 year_regex_snippet = r'(?:(\d{4})(?:-\d{2}){0,2}|(\d{4})-\d{4}|(?:\d{2}-){1,2}(\d{4})|(\d{4})[\s\.\-]Edition|(\d{4})-\d{4}\s{3}\d{4})'
 
 # Cleaning the filename
@@ -40,7 +40,6 @@ japanese_volume_regex = compile(r'(\d+(?:\-\d+)?)巻', IGNORECASE)
 special_version_regex = compile(r'(?:\b|\()(tpb|os|one\-shot|ogn|gn)(?:\b|\))', IGNORECASE)
 volume_regex = compile(volume_regex_snippet, IGNORECASE)
 volume_folder_regex = compile(r'^(\d+)$|' + volume_regex_snippet, IGNORECASE)
-series_folder_regex = compile(r'(^.*)(?= ' + volume_regex_snippet + r')', IGNORECASE)
 issue_regex = compile(r'(?:c(?:hapter)?|issue)s?[\s\-\.]?#?(\d+(?:\.\d{1,2})?(?:[\s\.]?\-[\s\.]?\d+(?:\.\d{1,2})?)?)', IGNORECASE)
 issue_regex_2 = compile(r'#(\d+(?:\.\d{1,2})?)[\s\.](?!(\-[\s\.]?|\d+))')
 issue_regex_3 = compile(r'#?(\d+(?:\.\d{1,2})?[\s\.]?-[\s\.]?\d+(?:\.\d{1,2})?)[\s\.]')
