@@ -60,6 +60,33 @@
 							</tr>
 						</tbody>
 					</table>
+					<h2>Credentials</h2>
+					<p>Credentials of service accounts can be added here. Kapowarr will log into the account for the service and download with it, taking advantage of the (probably) larger bandwidth and download quota.</p>
+					<div id="cred-container">
+						<table id="cred-table">
+							<thead>
+								<tr>
+									<th>Service</th>
+									<th>Email</th>
+									<th>Password</th>
+									<th class="action-column">Action</th>
+								</tr>
+							</thead>
+							<tbody id="cred-list"></tbody>
+							<tbody>
+								<tr id="add-row" class="hidden">
+									<td>
+										<select id="cred-service-input"></select>
+										<p class="error hidden" id="cred-error">*The credentials aren't valid (Kapowarr can't login)</p>
+									</td>
+									<td><input type="email" id="cred-email-input"></td>
+									<td><input type="text" id="cred-password-input"></td>
+									<td><button id="add-cred" type="button">Add</button></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<button type="button" id="toggle-cred">Add credential</button>
 				</form>
 			</div>
 		</main>

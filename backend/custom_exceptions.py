@@ -207,3 +207,41 @@ class InvalidKeyValue(Exception):
 	@property
 	def api_response(self):
 		return {'error': 'InvalidKeyValue', 'result': {'key': self.key, 'value': self.value}, 'code': 400}
+
+class CredentialNotFound(Exception):
+	"""The credential with the given id was not found
+	"""	
+	api_response = {'error': 'CredentialNotFound', 'result': {}, 'code': 404}
+	
+	def __init__(self) -> None:
+		logging.warning('Credential with given id not found')
+		return
+
+class CredentialSourceNotFound(Exception):
+	"""The credential source with the given string was not found
+	"""	
+	def __init__(self, string: str) -> None:
+		self.string = string
+		logging.warning(f'Credential source with given string not found: {string}')
+		return
+
+	@property
+	def api_response(self):
+		return {'error': 'CredentialSourceNotFound', 'result': {'string': self.string}, 'code': 404}
+
+class CredentialAlreadyAdded(Exception):
+	"""A credential for the given source is already added
+	"""	
+	api_response = {'error': 'CredentialAlreadyAdded', 'result': {}, 'code': 400}
+	
+	def __init__(self) -> None:
+		logging.warning('A credential for the given source is already added')
+		return
+
+class CredentialInvalid(Exception):
+	"""A credential is incorrect (can't login with it)
+	"""
+	api_response = {'error': 'CredentialInvalid', 'result': {}, 'code': 400}
+	
+	def __init__(self) -> None:
+		return

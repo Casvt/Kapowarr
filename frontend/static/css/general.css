@@ -246,8 +246,8 @@ main > *:not(.tool-bar-container) {
 }
 
 .error {
-	color: var(--error-color);
-	font-size: .9rem;
+	color: var(--error-color) !important;
+	font-size: .9rem !important;
 }
 
 .error-input {

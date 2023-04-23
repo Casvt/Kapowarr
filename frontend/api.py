@@ -9,6 +9,9 @@ from backend.blocklist import (add_to_blocklist, delete_blocklist,
                                delete_blocklist_entry, get_blocklist,
                                get_blocklist_entry)
 from backend.custom_exceptions import (BlocklistEntryNotFound,
+                                       CredentialAlreadyAdded,
+                                       CredentialInvalid, CredentialNotFound,
+                                       CredentialSourceNotFound,
                                        DownloadNotFound, FolderNotFound,
                                        InvalidComicVineApiKey, InvalidKeyValue,
                                        InvalidSettingKey,
@@ -19,8 +22,8 @@ from backend.custom_exceptions import (BlocklistEntryNotFound,
                                        TaskNotFound, VolumeAlreadyAdded,
                                        VolumeDownloadedFor, VolumeNotFound)
 from backend.db import close_db
-from backend.download import (DownloadHandler, delete_download_history,
-                              get_download_history)
+from backend.download import (DownloadHandler, credentials,
+                              delete_download_history, get_download_history)
 from backend.naming import mass_rename, preview_mass_rename
 from backend.root_folders import RootFolders
 from backend.search import manual_search
@@ -50,6 +53,9 @@ def error_handler(method):
 		try:
 			return method(*args, **kwargs)
 		except (BlocklistEntryNotFound,
+				CredentialAlreadyAdded,
+				CredentialInvalid, CredentialNotFound,
+				CredentialSourceNotFound,
 				DownloadNotFound, FolderNotFound,
 				InvalidComicVineApiKey, InvalidKeyValue,
 				InvalidSettingKey,
@@ -529,4 +535,41 @@ def api_blocklist_entry(id: int):
 
 	elif request.method == 'DELETE':
 		delete_blocklist_entry(id)
+		return return_api({})
+
+#=====================
+# Credentials
+#=====================
+@api.route('/credentials', methods=['GET', 'POST'])
+@error_handler
+@auth
+def api_credentials():
+	if request.method == 'GET':
+		result = credentials.get_all()
+		return return_api(result)
+	
+	elif request.method == 'POST':
+		source = extract_key(request, 'source')
+		email = extract_key(request, 'email')
+		password = extract_key(request, 'password')
+		result = credentials.add(source, email, password)
+		return return_api(result, code=201)
+
+@api.route('/credentials/open', methods=['GET'])
+@error_handler
+@auth
+def api_open_credentials():
+	result = credentials.get_open()
+	return return_api(result)
+	
+@api.route('/credentials/<int:id>', methods=['GET', 'DELETE'])
+@error_handler
+@auth
+def api_credential(id: int):
+	if request.method == 'GET':
+		result = credentials.get_one(id)
+		return return_api(result)
+	
+	elif request.method == 'DELETE':
+		credentials.delete(id)
 		return return_api({})

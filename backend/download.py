@@ -18,6 +18,7 @@ from requests import get
 from requests.exceptions import ConnectionError as requests_ConnectionError
 
 from backend.blocklist import add_to_blocklist, blocklist_contains
+from backend.credentials import Credentials
 from backend.custom_exceptions import DownloadNotFound, LinkBroken
 from backend.db import get_db
 from backend.files import extract_filename_data
@@ -40,6 +41,7 @@ supported_source_strings = (('mega', 'mega link'),
 							('mediafire', 'mediafire link'),
 							('direct', 'download now','main server','mirror download'))
 source_preference_order = list(s[0] for s in supported_source_strings)
+credentials = Credentials()
 
 #=====================
 # Download implementations
@@ -208,8 +210,9 @@ class MegaDownload(BaseDownload):
 		if not self.__r.ok:
 			raise LinkBroken(1, blocklist_reasons[1])
 		self.__filename_body = filename_body.rstrip('.')
+		cred = credentials.get_one_from_source('mega')
 		try:
-			self._mega = Mega(link)
+			self._mega = Mega(link, cred['email'], cred['password'])
 		except RequestError:
 			raise LinkBroken(1, blocklist_reasons[1])
 

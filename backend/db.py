@@ -179,8 +179,8 @@ def migrate_db(current_db_version: int) -> None:
 def setup_db() -> None:
 	"""Setup the database tables and default config when they aren't setup yet
 	"""
-	from backend.settings import (Settings, blocklist_reasons, default_settings,
-	                              task_intervals)
+	from backend.settings import (Settings, blocklist_reasons, credential_sources,
+	                              default_settings, task_intervals)
 
 	cursor = get_db()
 
@@ -277,6 +277,19 @@ def setup_db() -> None:
 
 			FOREIGN KEY (reason) REFERENCES blocklist_reasons(id)
 		);
+		CREATE TABLE IF NOT EXISTS credentials_sources(
+			id INTEGER PRIMARY KEY,
+			source VARCHAR(30) NOT NULL UNIQUE
+		);
+		CREATE TABLE IF NOT EXISTS credentials(
+			id INTEGER PRIMARY KEY,
+			source INTEGER NOT NULL UNIQUE,
+			email VARCHAR(255) NOT NULL,
+			password VARCHAR(255) NOT NULL,
+			
+			FOREIGN KEY (source) REFERENCES credentials_sources(id)
+				ON DELETE CASCADE
+		);
 	"""
 	logging.debug('Creating database tables')
 	cursor.executescript(setup_commands)
@@ -330,6 +343,16 @@ def setup_db() -> None:
 		VALUES (?,?);
 		""",
 		blocklist_reasons.items()
+	)
+	
+	# Add credentials sources
+	logging.debug(f'Inserting credentials sources: {list(map(lambda c: (c,), credential_sources))}')
+	cursor.executemany(
+		"""
+		INSERT OR IGNORE INTO credentials_sources(source)
+		VALUES (?);
+		""",
+		map(lambda c: (c,), credential_sources)
 	)
 
 	return

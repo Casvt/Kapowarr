@@ -39,6 +39,7 @@ h2:not(:first-of-type) {
 
 .settings-container table tr > td select,
 .settings-container table tr > td input[type="text"],
+.settings-container table tr > td input[type="email"],
 .settings-container table tr > td input[type="password"] {
 	width: min(50rem, 100%);
 
@@ -107,7 +108,8 @@ h2:not(:first-of-type) {
 	padding-block: 0;
 }
 
-#add-row input {
+#add-row input,
+#add-row select {
 	width: 20rem;
 
 	padding-inline: .3rem;
@@ -118,6 +120,45 @@ h2:not(:first-of-type) {
 	border-radius: 4px;
 	color: var(--dark-color);
 	background-color: var(--accent-color);
+}
+
+/*  */
+/* Credentials list */
+/*  */
+#cred-container {
+	margin-top: 1rem;
+	overflow-x: auto;
+}
+
+#cred-table {
+	min-width: 33rem;
+	border-spacing: 0px;
+}
+
+#cred-table th {
+	text-align: left;
+	padding-top: 0rem;
+	width: unset;
+}
+
+#cred-list > tr > * {
+	border-top: 1px solid var(--border-color);
+}
+
+#cred-table #add-row select,
+#cred-table #add-row input {
+	width: min(100%, 20rem);
+}
+
+#toggle-cred {
+	margin-top: .5rem;
+
+	padding: .8rem;
+	border-radius: 4px;
+	color: var(--dark-color);
+	background-color: var(--accent-color);
+	
+	font-weight: 600;
 }
 
 /*  */

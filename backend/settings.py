@@ -60,6 +60,8 @@ blocklist_reasons = {
 	4: 'Added by user'
 }
 
+credential_sources = ('mega',)
+
 class Settings:
 	"""For interacting with the settings
 	"""	

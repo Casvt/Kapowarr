@@ -26,7 +26,9 @@ DIFFERENCES:
 from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
 from codecs import latin_1_decode, latin_1_encode
+from hashlib import pbkdf2_hmac
 from json import dumps, loads
+import logging
 from math import ceil
 from random import randint
 from re import findall, search
@@ -123,6 +125,28 @@ def aes_cbc_decrypt_a32(data, key):
 	return str_to_a32(aes_cbc_decrypt(a32_to_str(data), a32_to_str(key)))
 
 
+def stringhash(str, aeskey):
+	s32 = str_to_a32(str)
+	h32 = [0, 0, 0, 0]
+	for i in range(len(s32)):
+		h32[i % 4] ^= s32[i]
+	for r in range(0x4000):
+		h32 = aes_cbc_encrypt_a32(h32, aeskey)
+	return a32_to_base64((h32[0], h32[2]))
+
+
+def prepare_key(arr):
+	pkey = [0x93C467E3, 0x7DB0C7A4, 0xD1BE3F81, 0x0152CB56]
+	for r in range(0x10000):
+		for j in range(0, len(arr), 4):
+			key = [0, 0, 0, 0]
+			for i in range(4):
+				if i + j < len(arr):
+					key[i] = arr[i + j]
+			pkey = aes_cbc_encrypt_a32(pkey, key)
+	return pkey
+
+
 def encrypt_key(a, key):
 	return sum((aes_cbc_encrypt_a32(a[i:i + 4], key)
 				for i in range(0, len(a), 4)), ())
@@ -213,40 +237,87 @@ def decrypt_attr(attr, key):
 
 
 class Mega:
-	def __init__(self, url: str):
+	def __init__(self, url: str, email: str=None, password: str=None, only_check_login: bool=False):
 		self.downloading: bool = False
 		self.progress: float = 0.0
 		self.speed: float = 0.0
 		self.size: int = 0
 
-		self.url = url		
+		self.url = url
 		self.schema = 'https'
 		self.domain = 'mega.co.nz'
 		self.timeout = 160  # max secs to wait for resp from api requests
 		self.sid = None
 		self.sequence_num = randint(0, 0xFFFFFFFF)
-		
+
+		logged_in = False
 		try:
-			self.login_anonymous()
+			if email is not None:
+				self._login_user(email, password)
+				if only_check_login:
+					return
+				logged_in = True
 		except JSONDecodeError:
-			raise RequestError(-18)
+			logging.error('Login credentials for mega are invalid. Login failed.')
+			raise RequestError(-16)
+		if not logged_in:
+			try:
+				self.login_anonymous()
+			except JSONDecodeError:
+				raise RequestError(-16)
 		
-		self.parsed_url = self._parse_url(url).split('!')
+		file_id, file_key = self._parse_url(url).split('!')
 		try:
-			self.file_data = self._api_request({
+			file_data = self._api_request({
 				'a': 'g',
 				'g': 1,
-				'p': self.parsed_url[0]
+				'p': file_id
 			})
 		except JSONDecodeError:
 			raise RequestError(-18)
-		self.parsed_url[1] = base64_to_a32(self.parsed_url[1])
-		self.k = (self.parsed_url[1][0] ^ self.parsed_url[1][4], self.parsed_url[1][1] ^ self.parsed_url[1][5],
-				self.parsed_url[1][2] ^ self.parsed_url[1][6], self.parsed_url[1][3] ^ self.parsed_url[1][7])
 
-		attribs = base64_url_decode(self.file_data['at'])
+		# Seems to happens sometime... When this occurs, files are
+		# inaccessible also in the official also in the official web app.
+		# Strangely, files can come back later.
+		if not 'g' in file_data:
+			raise RequestError('File not accessible anymore')
+
+		self.size = file_data['s']
+		self._url = file_data['g']
+
+		file_key = base64_to_a32(file_key)
+		self.k = (file_key[0] ^ file_key[4], file_key[1] ^ file_key[5],
+				file_key[2] ^ file_key[6], file_key[3] ^ file_key[7])
+		self.iv = file_key[4:6] + (0, 0)
+		self.meta_mac = file_key[6:8]
+
+		attribs = base64_url_decode(file_data['at'])
 		attribs = decrypt_attr(attribs, self.k)
 		self.mega_filename = attribs.get('n', '')
+
+	def _login_user(self, email: str, password: str):
+		email = email.lower()
+		get_user_salt_resp = self._api_request({'a': 'us0', 'user': email})
+		user_salt = None
+		try:
+			user_salt = base64_to_a32(get_user_salt_resp['s'])
+		except KeyError:
+			# v1 user account
+			password_aes = prepare_key(str_to_a32(password))
+			user_hash = stringhash(email, password_aes)
+		else:
+			# v2 user account
+			pbkdf2_key = pbkdf2_hmac(hash_name='sha512',
+									password=password.encode(),
+									salt=a32_to_str(user_salt),
+									iterations=100000,
+									dklen=32)
+			password_aes = str_to_a32(pbkdf2_key[:16])
+			user_hash = base64_url_encode(pbkdf2_key[-16:])
+		resp = self._api_request({'a': 'us', 'user': email, 'uh': user_hash})
+		if isinstance(resp, int):
+			raise RequestError(resp)
+		self._login_process(resp, password_aes)
 
 	def login_anonymous(self):
 		master_key = [randint(0, 0xFFFFFFFF)] * 4
@@ -377,28 +448,19 @@ class Mega:
 
 	def download_url(self, filename: str):
 		self.downloading = True
-		iv = self.parsed_url[1][4:6] + (0, 0)
-		meta_mac = self.parsed_url[1][6:8]
 
-		# Seems to happens sometime... When this occurs, files are
-		# inaccessible also in the official also in the official web app.
-		# Strangely, files can come back later.
-		if not 'g' in self.file_data:
-			raise RequestError('File not accessible anymore')
-		self.size = self.file_data['s']
-
-		input_file = get(self.file_data['g'], stream=True).raw
+		input_file = get(self._url, stream=True).raw
 		size_downloaded = 0
 		with open(filename, 'wb') as f:
 			k_str = a32_to_str(self.k)
 			counter = Counter.new(128,
-								  initial_value=((iv[0] << 32) + iv[1]) << 64)
+								  initial_value=((self.iv[0] << 32) + self.iv[1]) << 64)
 			aes = AES.new(k_str, AES.MODE_CTR, counter=counter)
 
 			mac_str = '\0' * 16
 			mac_encryptor = AES.new(k_str, AES.MODE_CBC,
 									mac_str.encode("utf8"))
-			iv_str = a32_to_str([iv[0], iv[1], iv[0], iv[1]])
+			iv_str = a32_to_str([self.iv[0], self.iv[1], self.iv[0], self.iv[1]])
 
 			start_time = perf_counter()
 			for chunk_size in get_chunks(self.size):
@@ -434,7 +496,7 @@ class Mega:
 			file_mac = str_to_a32(mac_str)
 			# check mac integrity
 			if (file_mac[0] ^ file_mac[1],
-					file_mac[2] ^ file_mac[3]) != meta_mac:
+					file_mac[2] ^ file_mac[3]) != self.meta_mac:
 				raise ValueError('Mismatched mac')
 
 		return
