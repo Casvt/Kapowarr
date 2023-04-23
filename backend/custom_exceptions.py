@@ -245,3 +245,16 @@ class CredentialInvalid(Exception):
 	
 	def __init__(self) -> None:
 		return
+
+class DownloadLimitReached(Exception):
+	"""The download limit (download quota) for the service is reached
+	"""
+	def __init__(self, string: str) -> None:
+		self.string = string
+		logging.warning(f'Credential source {string} has reached it\'s download limit')
+		return
+	
+	@property
+	def api_response(self):
+		return {'error': 'DownloadLimitReached', 'result': {'string': self.string}, 'code': 509}
+	

@@ -42,6 +42,8 @@ from requests import get, post
 from simplejson.errors import JSONDecodeError
 from tenacity import retry, retry_if_exception_type, wait_exponential
 
+from backend.custom_exceptions import DownloadLimitReached
+
 _CODE_TO_DESCRIPTIONS = {
 	-1: ('EINTERNAL',
 		 ('An internal error has occurred. Please submit a bug report, '
@@ -99,6 +101,8 @@ class RequestError(Exception):
 		return self.message
 
 
+EMPTY_IV = b'\0' * 16
+
 def makebyte(x):
 	return latin_1_encode(x)[0]
 
@@ -108,13 +112,11 @@ def makestring(x):
 
 
 def aes_cbc_encrypt(data, key):
-	aes_cipher = AES.new(key, AES.MODE_CBC, makebyte('\0' * 16))
-	return aes_cipher.encrypt(data)
+	return AES.new(key, AES.MODE_CBC, EMPTY_IV).encrypt(data)
 
 
 def aes_cbc_decrypt(data, key):
-	aes_cipher = AES.new(key, AES.MODE_CBC, makebyte('\0' * 16))
-	return aes_cipher.decrypt(data)
+	return AES.new(key, AES.MODE_CBC, EMPTY_IV).decrypt(data)
 
 
 def aes_cbc_encrypt_a32(data, key):
@@ -283,7 +285,13 @@ class Mega:
 			raise RequestError('File not accessible anymore')
 
 		self.size = file_data['s']
-		self._url = file_data['g']
+
+		r = get(file_data['g'], stream=True)
+		if r.status_code == 509:
+			# Download limit reached
+			raise DownloadLimitReached('mega')
+
+		self.input_file = r.raw
 
 		file_key = base64_to_a32(file_key)
 		self.k = (file_key[0] ^ file_key[4], file_key[1] ^ file_key[5],
@@ -449,7 +457,6 @@ class Mega:
 	def download_url(self, filename: str):
 		self.downloading = True
 
-		input_file = get(self._url, stream=True).raw
 		size_downloaded = 0
 		with open(filename, 'wb') as f:
 			k_str = a32_to_str(self.k)
@@ -457,43 +464,42 @@ class Mega:
 								  initial_value=((self.iv[0] << 32) + self.iv[1]) << 64)
 			aes = AES.new(k_str, AES.MODE_CTR, counter=counter)
 
-			mac_str = '\0' * 16
+			mac_bytes = b'\0' * 16
 			mac_encryptor = AES.new(k_str, AES.MODE_CBC,
-									mac_str.encode("utf8"))
+									mac_bytes)
 			iv_str = a32_to_str([self.iv[0], self.iv[1], self.iv[0], self.iv[1]])
 
 			start_time = perf_counter()
 			for chunk_size in get_chunks(self.size):
 				if not self.downloading:
 					break
-				chunk = input_file.read(chunk_size)
+				chunk = self.input_file.read(chunk_size)
 				chunk = aes.decrypt(chunk)
 				f.write(chunk)
 
 				encryptor = AES.new(k_str, AES.MODE_CBC, iv_str)
-				for i in range(0, len(chunk) - 16, 16):
-					block = chunk[i:i + 16]
-					encryptor.encrypt(block)
 
-				# fix for files under 16 bytes failing
-				if self.size > 16:
-					i += 16
-				else:
-					i = 0
-
-				block = chunk[i:i + 16]
-				if len(block) % 16:
-					block += b'\0' * (16 - (len(block) % 16))
-				mac_str = mac_encryptor.encrypt(encryptor.encrypt(block))
-
+				mv = memoryview(chunk)
 				chunk_length = len(chunk)
+				modchunk = chunk_length % 16
+				if not modchunk:
+					modchunk = 16
+					last_block = chunk[-modchunk:]
+				else:
+					last_block = chunk[-modchunk:] + (b'\0' * (16 - modchunk))
+				rest_of_chunk = mv[:-modchunk]
+				
+				encryptor.encrypt(rest_of_chunk)
+				input_to_mac = encryptor.encrypt(last_block)
+				mac_bytes = mac_encryptor.encrypt(input_to_mac)
+
 				size_downloaded += chunk_length
 				self.speed = round(chunk_length / (perf_counter() - start_time), 2)
 				self.progress = round(size_downloaded / self.size * 100, 2)
 				start_time = perf_counter()
 
 		if self.downloading:
-			file_mac = str_to_a32(mac_str)
+			file_mac = str_to_a32(mac_bytes)
 			# check mac integrity
 			if (file_mac[0] ^ file_mac[1],
 					file_mac[2] ^ file_mac[3]) != self.meta_mac:

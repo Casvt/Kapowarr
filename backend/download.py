@@ -10,7 +10,7 @@ from os.path import basename, join, splitext
 from re import IGNORECASE, compile
 from threading import Thread
 from time import perf_counter
-from typing import Dict, List, Union
+from typing import Dict, List, Tuple, Union
 
 from bencoding import bdecode, bencode
 from bs4 import BeautifulSoup
@@ -19,7 +19,7 @@ from requests.exceptions import ConnectionError as requests_ConnectionError
 
 from backend.blocklist import add_to_blocklist, blocklist_contains
 from backend.credentials import Credentials
-from backend.custom_exceptions import DownloadNotFound, LinkBroken
+from backend.custom_exceptions import DownloadLimitReached, DownloadNotFound, LinkBroken
 from backend.db import get_db
 from backend.files import extract_filename_data
 from backend.naming import (generate_issue_name, generate_issue_range_name,
@@ -485,7 +485,7 @@ def _test_paths(
 	link_paths: List[List[Dict[str, dict]]],
 	volume_id: int,
 	issue_id: int=None
-) -> List[dict]:
+) -> Tuple[List[dict], bool]:
 	"""Test the links of the paths and determine based on which links work which path to go for
 
 	Args:
@@ -494,9 +494,17 @@ def _test_paths(
 		issue_id (int, optional): The id of the issue. Defaults to None.
 
 	Returns:
-		List[dict]: A list of downloads.
+		Tuple[List[dict], bool]: A list of downloads and wether or not the download limit for a service on the page is reached.
+
+		If the list is empty and the bool is False, the page doesn't have any working links and can be blacklisted.
+
+		If the list is empty and the bool is True, the page has working links but the service of the links has reached it's download limit, so nothing on the page can be downloaded.
+		However, the page shouldn't be blacklisted because the links _are_ working.
+		
+		If the list has content, the page has working links that can be used.
 	"""
 	logging.debug('Testing paths')
+	limit_reached = False
 	downloads = []
 	for path in link_paths:
 		for download in path:
@@ -525,6 +533,9 @@ def _test_paths(
 					except LinkBroken as lb:
 						# Link is broken
 						add_to_blocklist(link, lb.reason_id)
+					except DownloadLimitReached:
+						# Link works but the download limit for the service is reached
+						limit_reached = True
 					else:
 						downloads.append({'name': name, 'link': link, 'instance': dl_instance})
 						break
@@ -543,9 +554,9 @@ def _test_paths(
 		downloads = []
 	
 	logging.debug(f'Chosen links: {downloads}')
-	return downloads
+	return downloads, limit_reached
 		
-def _extract_download_links(link: str, volume_id: int, issue_id: int=None) -> List[dict]:
+def _extract_download_links(link: str, volume_id: int, issue_id: int=None) -> Tuple[List[dict], bool]:
 	"""Filter, select and setup downloads from a getcomic page
 
 	Args:
@@ -554,10 +565,16 @@ def _extract_download_links(link: str, volume_id: int, issue_id: int=None) -> Li
 		issue_id (int, optional): The id of the issue for which the getcomics page is. Defaults to None.
 
 	Returns:
-		List[dict]: List of downloads
+		Tuple[List[dict], bool]: List of downloads and wether or not the download limit for a service on the page is reached.
+
+		If the list is empty and the bool is False, the page doesn't have any working links and can be blacklisted.
+
+		If the list is empty and the bool is True, the page has working links but the service of the links has reached it's download limit, so nothing on the page can be downloaded.
+		However, the page shouldn't be blacklisted because the links _are_ working.
+		
+		If the list has content, the page has working links that can be used.
 	"""	
 	logging.debug(f'Extracting download links from {link} for volume {volume_id} and issue {issue_id}')
-	links = []
 
 	try:
 		r = get(link, headers={'user-agent': 'Kapowarr'}, stream=True)
@@ -588,13 +605,12 @@ def _extract_download_links(link: str, volume_id: int, issue_id: int=None) -> Li
 
 		# Decide which path to take by testing the links
 		# [{'name': 'Filename', 'link': 'link_on_getcomics_page', 'instance': Download_instance}]
-		links = _test_paths(link_paths, volume_id, issue_id)
+		return _test_paths(link_paths, volume_id, issue_id)
 
-	else:
-		# Link is a torrent file or magnet link
-		pass
+	#else
+	# Link is a torrent file or magnet link
 
-	return links
+	return [], False
 
 #=====================
 # Download handling
@@ -713,11 +729,18 @@ class DownloadHandler:
 		
 		# Extract download links and convert into Download instances
 		# [{'name': 'Filename', 'link': 'link_on_getcomics_page', 'instance': Download_instance}]
-		downloads = _extract_download_links(link, volume_id, issue_id)
+		downloads, limit_reached = _extract_download_links(link, volume_id, issue_id)
 		if not downloads:
-			# No links extracted from page so add it to blocklist
-			add_to_blocklist(link, 3)
+			if not limit_reached:
+				# No links extracted from page so add it to blocklist
+				add_to_blocklist(link, 3)
 			logging.warning('Unable to extract download links from source')
+			if _download_db_id_override:
+				with self.context():
+					get_db().execute(
+						"DELETE FROM download_queue WHERE id = ?",
+						(_download_db_id_override,)
+					)
 			return []
 
 		result = []
