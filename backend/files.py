@@ -46,6 +46,7 @@ issue_regex_2 = compile(r'#(\d+(?:\.\d{1,2})?)[\s\.](?!(\-[\s\.]?|\d+))')
 issue_regex_3 = compile(r'#?(\d+(?:\.\d{1,2})?[\s\.]?-[\s\.]?\d+(?:\.\d{1,2})?)[\s\.]')
 issue_regex_4 = compile(r'(?:\s|\-|\.)(\d+(?:\.\d{1,2})?)(?:\s|\-|\.)')
 issue_regex_5 = compile(r'^(\d+(?:\.\d{1,2})?)$')
+issue_regex_6 = compile(r'^(\d+(?:\.\d{1,2})?)')
 year_regex = compile(r'\(' + year_regex_snippet + r'\)|--' + year_regex_snippet + r'--|, ' + year_regex_snippet + r'\s{3}', IGNORECASE)
 
 def process_issue_number(issue_number: str) -> Union[float, Tuple[float, float], None]:
@@ -108,150 +109,143 @@ def process_issue_number(issue_number: str) -> Union[float, Tuple[float, float],
 	logging.debug(f'Processing issue number result: {result}')
 	return result
 
-def extract_filename_data(file: str, assume_volume_number: bool=True) -> dict:
+def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dict:
 	"""Extract data and present in a formatted way from a filename (or title of getcomics page).
 
 	Args:
-		file (str): The filename (or any other unformatted text) to extract from
+		filepath (str): The filepath or just filename (or any other unformatted text) to extract from
 		assume_volume_number (bool, optional): If no volume number was found, should `1` be assumed? When a series has only one volume, often the volume number isn't included in the filename. Defaults to True.
 
 	Returns:
 		dict: The extracted data in a formatted way
 	"""	
-	logging.debug(f'Extracting filename data: {file}')
+	logging.debug(f'Extracting filename data: {filepath}')
 	series, year, volume_number, special_version, issue_number = None, None, None, None, None
 
 	# Generalise filename
-	file = file.replace('+',' ').replace('_',' ')
-	if 'Том' in file:
-		file = russian_volume_regex.sub(r'Volume \1', file)
-		file = russian_volume_regex_2.sub(r'Volume \1', file)
-	if '第' in file or '卷' in file or '册' in file:
-		file = chinese_volume_regex.sub(r'Volume \1', file)
-		file = chinese_volume_regex_2.sub(r'Volume \1', file)
-	if '권' in file:
-		file = korean_volume_regex.sub(r'Volume \1', file)
-	if '巻' in file:
-		file = japanese_volume_regex.sub(r'Volume \1', file)
+	filepath = unquote(filepath).replace('+',' ').replace('_',' ')
+	if 'Том' in filepath:
+		filepath = russian_volume_regex.sub(r'Volume \1', filepath)
+		filepath = russian_volume_regex_2.sub(r'Volume \1', filepath)
+	if '第' in filepath or '卷' in filepath or '册' in filepath:
+		filepath = chinese_volume_regex.sub(r'Volume \1', filepath)
+		filepath = chinese_volume_regex_2.sub(r'Volume \1', filepath)
+	if '권' in filepath:
+		filepath = korean_volume_regex.sub(r'Volume \1', filepath)
+	if '巻' in filepath:
+		filepath = japanese_volume_regex.sub(r'Volume \1', filepath)
 	# Only keep filename
-	filename = unquote(basename(file))
+	filename = basename(filepath)
 	# Fix some inconsistencies
 	filename = filename.replace('_28','(').replace('_29',')').replace('–', '-')
-	
+
 	# Keep stripped version of filename without (), {}, [] and extensions
-	stripped_filename = strip_filename_regex.sub(lambda m: " " * len(m.group()), filename)
-	fully_stripped_filename = strip_filename_regex_2.sub('', stripped_filename)
-	stripped_filename_temp = strip_filename_regex_2.sub(r' \1', stripped_filename)
-	if stripped_filename_temp == stripped_filename:
-		stripped_filename += ' '
+	clean_filename = strip_filename_regex.sub(lambda m: " " * len(m.group()), filename)
+	no_ext_clean_filename = strip_filename_regex_2.sub('', clean_filename)
+
+	# Add space before extension for regex matching
+	# If there is no extension, append space to the end
+	stripped_filename_temp = strip_filename_regex_2.sub(r' \1', clean_filename)
+	if stripped_filename_temp == clean_filename:
+		clean_filename += ' '
 	else:
-		stripped_filename = stripped_filename_temp
+		clean_filename = stripped_filename_temp
+		
+	foldername = basename(dirname(filepath))
 
 	# Get volume number
-	volume_result = volume_regex.search(stripped_filename)
+	volume_result = volume_regex.search(clean_filename)
 	if volume_result:
-		# Volume number found (e.g. Series Volume 1.ext)
+		# Volume number found (e.g. Series Volume 1 Issue 6.ext)
 		volume_number = volume_result.group(1)
 		volume_pos = volume_result.end(1)
 		# Because volume was found in filename, try to find series name in filename too
 		if volume_result.start(0) > 0:
-			# Series found (e.g. Series Volume 1.ext)
-			series = stripped_filename[:volume_result.start(0) - 1].strip()
+			# Series assumed as everything before the volume number match (e.g. Series <-|Volume 1 Issue 6.ext)
+			series = clean_filename[:volume_result.start(0) - 1].strip()
 
 	else:
 		# No volume number found; check if folder name is volume number
-		volume_result = volume_folder_regex.search(basename(dirname(file)))
 		volume_pos = 0
+		volume_result = volume_folder_regex.search(foldername)
 		if volume_result:
-			# Volume number found in folder name (e.g. Series Volume 1/Issue 1.ext); assume series is also in folder name
+			# Volume number found in folder name (e.g. Series Volume 1/Issue 6.ext)
 			volume_number = volume_result.group(1) or volume_result.group(2)
+			if volume_result.start(0) > 0:
+				# Assume series is also in folder name (e.g. Series <-|Volume 1/Issue 6.ext)
+				series = foldername[:volume_result.start(0) - 1].strip()
 		else:
 			# No volume number found in folder name so assume that folder name is series name
-			series = strip_filename_regex.sub('', basename(dirname(file))).strip() or None
+			series = strip_filename_regex.sub('', foldername).strip() or None
 			if assume_volume_number:
-				volume_number = 1
+				volume_number = '1'
 
 	# Check if it's a special version
 	special_result = special_version_regex.search(filename)
 	if special_result:
 		special_version = special_result.group(1).lower()
-		if special_result.start(0) > 0 and series == None:
-			series = stripped_filename[:special_result.start(1) - 1].strip()
+		if not series:
+			pos = min(special_result.start(1), volume_result.start(0))
+			if pos > 0:
+				# Series assumed as everything before the special version- or volume match (e.g. Series/Series Volume 1)
+				series = clean_filename[:pos - 1].strip()
+
 	else:
 		# No special version so find issue number; assume to the right of volume number (if found)
 		for regex in (issue_regex, issue_regex_2, issue_regex_3, issue_regex_4):
-			issue_result = regex.search(stripped_filename, pos=volume_pos)
+			issue_result = regex.search(clean_filename, pos=volume_pos)
 			if issue_result:
 				# Issue number found
 				issue_number = issue_result.group(1)
 				if (
 					not series
 					and issue_result.start(0) > 0
-					and ((volume_result != None
+					and ((volume_result
 							and volume_result.start(0) > 0)
-						or volume_result == None
+						or not volume_result
 					)
 				):
 					# Series name is probably left of issue number (no volume number found)
-					series = stripped_filename[:issue_result.start(0) - 1].strip()
+					series = clean_filename[:issue_result.start(0) - 1].strip()
 				break
 		else:
-			issue_result = issue_regex_5.search(fully_stripped_filename)
+			issue_result = issue_regex_5.search(no_ext_clean_filename)
 			if issue_result:
 				issue_number = issue_result.group(1)
-	
+
 	if not series:
-		# Series +? volume number in folder name or series name in upper folder name
-		if volume_folder_regex.search(basename(dirname(file))):
-			# Volume number in folder name
-			series_result = series_folder_regex.search(basename(dirname(file)))
-			if series_result:
-				series = series_result.group(0) or None
-			if not series:
-				# Series name is in upper folder name
-				series = strip_filename_regex.sub('', basename(dirname(dirname(file)))).strip()
-		else:
-			# No volume number in folder name so it's series name
-			series = strip_filename_regex.sub('', basename(dirname(file))).strip()
+		# Series name is assumed to be in upper folder name
+		series = strip_filename_regex.sub('', basename(dirname(dirname(filepath)))).strip()
 
 	# Get year
-	year_result = year_regex.search(filename)
-	if year_result:
-		# Year found
-		for y in year_result.groups():
-			if y is not None:
-				year = y
-				break
-	else:
-		year_result = year_regex.search(basename(dirname(file)))
+	for location in (filename, foldername, basename(dirname(dirname(filepath)))):
+		year_result = year_regex.search(location)
 		if year_result:
-			# Year found in upper folder
 			for y in year_result.groups():
 				if y is not None:
 					year = y
 					break
-		else:
-			year_result = year_regex.search(basename(dirname(dirname(file))))
-			if year_result:
-				# Year found in upper upper folder
-				for y in year_result.groups():
-					if y is not None:
-						year = y
-						break
+			break
 
-	if issue_number == None and special_version == None:
-		special_version = 'tpb'
-		# Because file is special version, series name is probably just complete filename
-		if not series:
-			series = stripped_filename.replace('  ', ' ').strip()
+	if issue_number is None and special_version is None:
+		issue_result = issue_regex_6.search(clean_filename)
+		if issue_result:
+			# Issue number found. File starts with issue number (e.g. Series/Volume N/{issue_number}.ext)
+			issue_number = issue_result.group(1)
+		else:
+			special_version = 'tpb'
+			# Because file is special version, series name is probably just complete clean filename
+			if not series:
+				series = clean_filename.replace('  ', ' ').strip()
 
 	# Format output
-	if isinstance(volume_number, str):
+	if volume_number:
 		if volume_number.isdigit():
 			volume_number = int(volume_number)
-
-		elif volume_number.lower().count('i') == len(volume_number):
-			volume_number = volume_number.lower().count('i')
+		else:
+			i_count = volume_number.lower().count('i')
+			if i_count == len(volume_number):
+				volume_number = i_count
 
 	calculated_issue_number = process_issue_number(issue_number) if issue_number else issue_number
 	year = int(year) if year else year
