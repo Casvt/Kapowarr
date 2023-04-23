@@ -185,7 +185,10 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 	if special_result:
 		special_version = special_result.group(1).lower()
 		if not series:
-			pos = min(special_result.start(1), volume_result.start(0))
+			if volume_result:
+				pos = min(special_result.start(0), volume_result.start(0))
+			else:
+				pos = special_result.start(0)
 			if pos > 0:
 				# Series assumed as everything before the special version- or volume match (e.g. Series/Series Volume 1)
 				series = clean_filename[:pos - 1].strip()
