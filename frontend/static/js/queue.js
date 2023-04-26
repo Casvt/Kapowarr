@@ -28,6 +28,11 @@ function fillQueue(api_key) {
 				title.appendChild(title_link);
 				entry.appendChild(title);
 
+				const source = document.createElement('td');
+				source.classList.add('status-column');
+				source.innerText = obj.source.charAt(0).toUpperCase() + obj.source.slice(1);
+				entry.appendChild(source);
+				
 				const size = document.createElement('td');
 				size.classList.add('number-column');
 				size.innerText = convertSize(obj.size);

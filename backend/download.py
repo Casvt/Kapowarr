@@ -61,6 +61,7 @@ class Download(ABC):
 	speed: float
 	link: int
 	file: str
+	source: str
 
 	@abstractmethod
 	def run(self) -> None:
@@ -77,12 +78,13 @@ class BaseDownload(Download):
 class DirectDownload(BaseDownload):
 	"""For downloading a file directly from a link
 	"""	
-	def __init__(self, link: str, filename_body: str):
+	def __init__(self, link: str, filename_body: str, source: str):
 		"""Setup the direct download
 
 		Args:
 			link (str): The link (that leads to a file) that should be used
 			filename_body (str): The body of the filename to write to
+			source (str): The name of the source of the link
 
 		Raises:
 			LinkBroken: The link doesn't work
@@ -92,6 +94,7 @@ class DirectDownload(BaseDownload):
 		self.progress: float = 0.0
 		self.speed: float = 0.0
 		self.link = link
+		self.source = source
 
 		self.size: int = 0
 		self.__r = get(self.link, stream=True)
@@ -192,7 +195,7 @@ class MegaDownload(BaseDownload):
 	def size(self) -> int:
 		return self._mega.size
 
-	def __init__(self, link: str, filename_body: str):
+	def __init__(self, link: str, filename_body: str, source: str='mega'):
 		"""Setup the mega download
 
 		Args:
@@ -205,6 +208,7 @@ class MegaDownload(BaseDownload):
 		logging.debug(f'Creating mega download: {link}, {filename_body}')
 		super().__init__()
 		self.link = link
+		self.source = source
 		
 		self.__r = get(self.link, stream=True)
 		if not self.__r.ok:
@@ -289,7 +293,7 @@ def _purify_link(link: str) -> dict:
 		LinkBroken: Link is invalid, not supported or broken
 
 	Returns:
-		dict: The pure link and a download instance for the correct service (e.g. DirectDownload or MegaDownload)
+		dict: The pure link, a download instance for the correct service (e.g. DirectDownload or MegaDownload) and the source title
 	"""
 	logging.debug(f'Purifying link: {link}')
 	# Go through every link and get it all down to direct download or magnet links
@@ -304,18 +308,18 @@ def _purify_link(link: str) -> dict:
 
 		if mega_regex.search(link):
 			# Link is mega
-			return {'link': link, 'target': MegaDownload}
+			return {'link': link, 'target': MegaDownload, 'source': 'mega'}
 
 		elif mega_regex.search(r.headers.get('Location', '')):
 			# Link is mega
-			return {'link': r.headers['Location'], 'target': MegaDownload}
+			return {'link': r.headers['Location'], 'target': MegaDownload, 'source': 'mega'}
 
 		elif mediafire_regex.search(link):
 			# Link is mediafire
 			soup = BeautifulSoup(r.text, 'html.parser')
 			button = soup.find('a', {'id': 'downloadButton'})
 			if button:
-				return {'link': button['href'], 'target': DirectDownload}
+				return {'link': button['href'], 'target': DirectDownload, 'source': 'mediafire'}
 			raise LinkBroken(1, blocklist_reasons[1])
 
 		elif mediafire_regex.search(r.headers.get('Location', '')):
@@ -324,7 +328,7 @@ def _purify_link(link: str) -> dict:
 			soup = BeautifulSoup(r.text, 'html.parser')
 			button = soup.find('a', {'id': 'downloadButton'})
 			if button:
-				return {'link': button['href'], 'target': DirectDownload}
+				return {'link': button['href'], 'target': DirectDownload, 'source': 'mediafire'}
 			raise LinkBroken(1, blocklist_reasons[1])
 
 		elif r.headers.get('Location','').startswith('magnet:?'):
@@ -341,7 +345,7 @@ def _purify_link(link: str) -> dict:
 
 		# Link is direct download from getcomics ('Main Server')
 		r = get(link, headers={'user-agent': 'Kapowarr'}, allow_redirects=True, stream=True)
-		return {'link': r.url, 'target': DirectDownload}
+		return {'link': r.url, 'target': DirectDownload, 'source': 'getcomics'}
 
 	else:
 		raise LinkBroken(2, blocklist_reasons[2])
@@ -529,7 +533,7 @@ def _test_paths(
 				for link in links:
 					try:
 						pure_link = _purify_link(link)
-						dl_instance = pure_link['target'](link=pure_link['link'], filename_body=name)
+						dl_instance = pure_link['target'](link=pure_link['link'], filename_body=name, source=pure_link['source'])
 					except LinkBroken as lb:
 						# Link is broken
 						add_to_blocklist(link, lb.reason_id)
@@ -678,6 +682,7 @@ class DownloadHandler:
 			'status': d['instance'].state,
 			'link': d['instance'].link,
 			'original_link': d['original_link'],
+			'source': d['instance'].source,
 			'file': d['instance'].file,
 			'size': d['instance'].size,
 			'title': d['instance'].title,
