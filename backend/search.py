@@ -33,9 +33,9 @@ def _check_matching_titles(title1: str, title2: str) -> bool:
 		bool: `True` if the titles match, otherwise `False`.
 	"""
 	pre_clean_title = clean_title_regex_2.sub('', title1.lower())
-	clean_reference_title = strip_spaces.sub(' ', pre_clean_title).strip()
+	clean_reference_title = strip_spaces.sub(' ', pre_clean_title).strip().replace('&', 'and')
 	pre_clean_title = clean_title_regex_2.sub('', title2.lower())
-	clean_title = strip_spaces.sub(' ', pre_clean_title).strip()
+	clean_title = strip_spaces.sub(' ', pre_clean_title).strip().replace('&', 'and')
 
 	result = clean_reference_title == clean_title
 	logging.debug(f'Matching titles ({title1}, {title2}): {result}')
