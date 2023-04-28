@@ -7,6 +7,8 @@ function fillSettings(api_key) {
 };
 
 function saveSettings(api_key) {
+	savePrefOrder(api_key);
+
 	document.querySelector('#download-folder-input').classList.remove('error-input');
 	const data = {
 		'download_folder': document.querySelector('#download-folder-input').value
@@ -25,6 +27,55 @@ function saveSettings(api_key) {
 		} else {
 			console.log(e);
 		};
+	});
+};
+
+//
+// Service preference
+//
+function fillPref(api_key) {
+	const selects = document.querySelectorAll('#pref-table select');
+	fetch(`/api/settings/servicepreference?api_key=${api_key}`)
+	.then(response => response.json())
+	.then(json => {
+		for (let i = 0; i < json.result.length; i++) {
+			const service = json.result[i];
+			const select = selects[i];
+			select.addEventListener('change', updatePrefOrder);
+			json.result.forEach(option => {
+				const entry = document.createElement('option');
+				entry.value = option;
+				entry.innerText = option.charAt(0).toUpperCase() + option.slice(1);
+				if (option === service) entry.selected = true;
+				select.appendChild(entry);
+			});
+		};
+	});
+};
+
+function updatePrefOrder(e) {
+	const other_selects = document.querySelectorAll(
+		`#pref-table select:not([data-place="${e.target.dataset.place}"])`
+	);
+	// Find select that has the value of the target select
+	for (let i = 0; i < other_selects.length; i++) {
+		if (other_selects[i].value === e.target.value) {
+			// Set it to old value of target select
+			all_values = [...document.querySelector('#pref-table select').options].map(e => e.value)
+			used_values = new Set([...document.querySelectorAll('#pref-table select')].map(s => s.value));
+			open_value = all_values.filter(e => !used_values.has(e))[0];
+			other_selects[i].value = open_value;
+			break;
+		};
+	};
+};
+
+function savePrefOrder(api_key) {
+	const order = [...document.querySelectorAll('#pref-table select')].map(e => e.value);
+	fetch(`/api/settings/servicepreference?api_key=${api_key}`, {
+		'method': 'PUT',
+		'headers': {'Content-Type': 'application/json'},
+		'body': JSON.stringify({'order': order})
 	});
 };
 
@@ -143,6 +194,7 @@ function deleteCredential(id, api_key) {
 usingApiKey()
 .then(api_key => {
 	fillSettings(api_key);
+	fillPref(api_key);
 	fillServices(api_key);
 	fillCredentials(api_key);
 	

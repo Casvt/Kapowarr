@@ -180,7 +180,8 @@ def setup_db() -> None:
 	"""Setup the database tables and default config when they aren't setup yet
 	"""
 	from backend.settings import (Settings, blocklist_reasons, credential_sources,
-	                              default_settings, task_intervals)
+	                              default_settings, supported_source_strings,
+	                              task_intervals)
 
 	cursor = get_db()
 
@@ -290,6 +291,10 @@ def setup_db() -> None:
 			FOREIGN KEY (source) REFERENCES credentials_sources(id)
 				ON DELETE CASCADE
 		);
+		CREATE TABLE IF NOT EXISTS service_preference(
+			source VARCHAR(30) UNIQUE NOT NULL,
+			pref INTEGER UNIQUE CHECK (pref >= 1)
+		);
 	"""
 	logging.debug('Creating database tables')
 	cursor.executescript(setup_commands)
@@ -353,6 +358,17 @@ def setup_db() -> None:
 		VALUES (?);
 		""",
 		map(lambda c: (c,), credential_sources)
+	)
+
+	# Add service preferences
+	order = list(zip(map(lambda s: s[0], supported_source_strings), range(1, len(supported_source_strings) + 1)))
+	logging.debug(f'Inserting service preferences: {order}')
+	cursor.executemany(
+		"""
+		INSERT OR IGNORE INTO service_preference(source, pref)
+		VALUES (?,?);
+		""",
+		order
 	)
 
 	return

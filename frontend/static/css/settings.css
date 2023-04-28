@@ -123,6 +123,17 @@ h2:not(:first-of-type) {
 }
 
 /*  */
+/* Service preference */
+/*  */
+#pref-table th {
+	width: 2rem;
+}
+
+#pref-table select {
+	width: min(20rem, 100%);
+}
+
+/*  */
 /* Credentials list */
 /*  */
 #cred-container {

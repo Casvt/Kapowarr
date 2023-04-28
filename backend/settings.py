@@ -8,6 +8,7 @@ from os import urandom
 from os.path import isdir
 from os.path import sep as path_sep
 from sys import version_info
+from typing import List
 
 from backend.custom_exceptions import (FolderNotFound, InvalidSettingKey,
                                        InvalidSettingModification,
@@ -61,6 +62,10 @@ blocklist_reasons = {
 }
 
 credential_sources = ('mega',)
+
+supported_source_strings = (('mega', 'mega link'),
+							('mediafire', 'mediafire link'),
+							('getcomics', 'download now','main server','mirror download'))
 
 class Settings:
 	"""For interacting with the settings
@@ -179,3 +184,37 @@ class Settings:
 		logging.info(f'Setting api key regenerated: {api_key}')
 
 		return self.get_settings(use_cache=False)
+
+	def get_service_preference(self) -> List[str]:
+		"""Get the preference of each service
+
+		Returns:
+			List[str]: The services in order of preference
+		"""	
+		result = list(map(
+			lambda s: s[0],
+	   		get_db().execute(
+				"SELECT source FROM service_preference ORDER BY pref;"
+			).fetchall()
+		))
+		return result
+
+	def set_service_preference(self, order: List[str]) -> None:
+		"""Update the service preference
+
+		Args:
+			order (List[str]): A list with the services, in order of preference
+		"""
+		logging.info(f'Updating service preference: {order}')
+		cursor = get_db()
+		cursor.connection.isolation_level = None
+		cursor.execute("BEGIN TRANSACTION;")
+		cursor.execute("UPDATE service_preference SET pref = NULL;")
+		cursor.executemany(
+			"UPDATE service_preference SET pref = ? WHERE source = ?;",
+			zip(range(1, len(order) + 1), order)
+		)
+		cursor.execute("COMMIT;")
+		cursor.connection.isolation_level = ""
+
+		return

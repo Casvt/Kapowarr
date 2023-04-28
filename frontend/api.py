@@ -138,7 +138,7 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 				value = False
 			else:
 				raise InvalidKeyValue(key, value)
-
+			
 	else:
 		# Default value
 		if key == 'sort':
@@ -289,6 +289,28 @@ def api_settings():
 def api_settings_api_key():
 	result = settings.generate_api_key()
 	return return_api(result)
+
+@api.route('/settings/servicepreference', methods=['GET', 'PUT'])
+@error_handler
+@auth
+def api_settings_service_preference():
+	if request.method == 'GET':
+		result = settings.get_service_preference()
+		return return_api(result)
+	
+	elif request.method == 'PUT':
+		data = request.get_json()
+		if not 'order' in data:
+			raise KeyNotFound('order')
+		if not isinstance(data['order'], list):
+			raise InvalidKeyValue('order', data['order'])
+		current_order = settings.get_service_preference()
+		for entry in data['order']:
+			if not entry in current_order:
+				raise InvalidKeyValue('order', data['order'])
+
+		settings.set_service_preference(data['order'])
+		return return_api({})
 
 @api.route('/rootfolder', methods=['GET','POST'])
 @error_handler

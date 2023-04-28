@@ -19,28 +19,24 @@ from requests.exceptions import ConnectionError as requests_ConnectionError
 
 from backend.blocklist import add_to_blocklist, blocklist_contains
 from backend.credentials import Credentials
-from backend.custom_exceptions import DownloadLimitReached, DownloadNotFound, LinkBroken
+from backend.custom_exceptions import (DownloadLimitReached, DownloadNotFound,
+                                       LinkBroken)
 from backend.db import get_db
 from backend.files import extract_filename_data
 from backend.naming import (generate_issue_name, generate_issue_range_name,
                             generate_tpb_name)
 from backend.post_processing import PostProcessing
 from backend.search import _check_matching_titles
-from backend.settings import Settings, blocklist_reasons, private_settings
+from backend.settings import (Settings, blocklist_reasons, private_settings,
+                              supported_source_strings)
 
 from .lib.mega import Mega, RequestError
 
 file_extension_regex = compile(r'(?<=\.)[\w\d]{2,4}(?=$|;|\s)|(?<=\/)[\w\d]{2,4}(?=$|;|\s)', IGNORECASE)
-issue_range_regex = compile(r'#?(\d+)\s?-\s?(\d+)', IGNORECASE)
 mega_regex = compile(r'https?://mega\.(nz|io)/(#\!|file/)')
 mediafire_regex = compile(r'https?://www\.mediafire\.com/file/')
 gc_regex = compile(r'https?://(\w+\.)?getcomics\.(org|info)/(?!links)')
 download_chunk_size = 4194304 # 4MB Chunks
-# Below is in order of preference
-supported_source_strings = (('mega', 'mega link'),
-							('mediafire', 'mediafire link'),
-							('direct', 'download now','main server','mirror download'))
-source_preference_order = list(s[0] for s in supported_source_strings)
 credentials = Credentials()
 
 #=====================
@@ -440,6 +436,7 @@ def _process_extracted_get_comics_links(
 		download links grouped together with their service.
 	"""	
 	logging.debug('Creating link paths')
+	service_preference_order = dict((v, k) for k, v in enumerate(Settings().get_service_preference()))
 	link_paths: List[List[dict]] = []
 	for desc, sources in download_groups.items():
 		processed_desc = extract_filename_data(desc, assume_volume_number=False)
@@ -450,7 +447,7 @@ def _process_extracted_get_comics_links(
 		and (processed_desc['special_version'] or processed_desc['issue_number'])
 		):
 			# Group matches/contains what is desired to be downloaded
-			sources = {s: sources[s] for s in sorted(list(sources.keys()), key=lambda k: source_preference_order.index(k))}
+			sources = {s: sources[s] for s in sorted(sources, key=lambda k: service_preference_order[k])}
 			if processed_desc['special_version']:
 				link_paths.append([{'info': processed_desc, 'links': sources}])
 			else:
