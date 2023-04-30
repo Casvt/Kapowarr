@@ -19,6 +19,8 @@ from urllib.parse import unquote
 from backend.db import get_db
 
 alphabet = 'abcdefghijklmnopqrstuvwxyz'
+alphabet = {letter: str(alphabet.index(letter) + 1).zfill(2) for letter in alphabet}
+digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 supported_extensions = ('.png','.jpeg','.jpg','.webp','.gif','.cbz','.zip','.rar','.cbr','.tar.gz','.7zip','.7z','.cb7','.cbt','.epub','.pdf')
 file_extensions = r'\.(' + '|'.join(e[1:] for e in supported_extensions) + r')$'
 volume_regex_snippet = r'\b(?:v(?:ol|olume)?)(?:\.\s|[\.\-\s])?(\d+|I{1,3})\b'
@@ -49,8 +51,46 @@ issue_regex_6 = compile(r'^(\d+(?:\.\d{1,2})?)$')
 issue_regex_7 = compile(r'^(\d+(?:\.\d{1,2})?)')
 year_regex = compile(r'\(' + year_regex_snippet + r'\)|--' + year_regex_snippet + r'--|, ' + year_regex_snippet + r'\s{3}', IGNORECASE)
 
+def _calc_float_issue_number(issue_number: str) -> Union[float, None]:
+	"""Convert an issue number from string to representive float
+
+	Args:
+		issue_number (str): The issue number to convert
+
+	Returns:
+		Union[float, None]: Either the float version or `None` if it failed to convert
+	"""
+	try:
+		# Targets numbers that are already valid float numbers, just in string form
+		return float(issue_number)
+	except ValueError:
+		pass
+
+	# Issue has special number notation
+	issue_number = issue_number.replace(',','.').rstrip('.')
+	dot = True
+	converted_issue_number = ''
+	for c in issue_number:
+		if c in digits:
+			converted_issue_number += c
+
+		else:
+			if dot:
+				converted_issue_number += '.'
+				dot = False
+
+			if c == '½':
+				converted_issue_number += '5'
+
+			elif c in alphabet:
+				converted_issue_number += alphabet[c]
+
+	if converted_issue_number:
+		return float(converted_issue_number)
+	return
+
 def process_issue_number(issue_number: str) -> Union[float, Tuple[float, float], None]:
-	"""Convert an issue number to a float
+	"""Convert an issue number or issue range to a (tuple of) float
 
 	Args:
 		issue_number (str): The issue number
@@ -59,55 +99,19 @@ def process_issue_number(issue_number: str) -> Union[float, Tuple[float, float],
 		Union[float, Tuple[float, float], None]: Either a float representing the issue number,
 		a tuple of floats representing the issue numbers when the original issue number was a range of numbers (e.g. 1a-5b)
 		or None if it wasn't succesfull in converting.
-	"""	
-	logging.debug(f'Processing issue number: {issue_number}')
-	if '-' in issue_number and not issue_number.startswith('-'):
-		entries = issue_number.split('-')
-	else:
-		entries = (issue_number,)
+	"""
+	if '-' in issue_number[1:]:
+		entries = issue_number.split('-', 1)
+		entries = _calc_float_issue_number(entries[0]), _calc_float_issue_number(entries[1])
+		if entries[0] is None:
+			if entries[1] is None:
+				return None
+			return entries[1]
+		if entries[1] is None:
+			return entries[0]
+		return entries
 
-	result = []
-	for entry in entries:
-		entry = entry.replace(',','.').rstrip('.')
-		try:
-			# Targets numbers that are already valid float numbers, just in string form
-			result.append(float(entry))
-			continue
-		except ValueError:
-			pass
-		
-		# Issue has special number notation
-		converted_issue_number = ''
-		for c in list(entry):
-			if c.isdigit():
-				converted_issue_number += c
-
-			else:
-				if not '.' in converted_issue_number:
-					converted_issue_number += '.'
-
-				if c == '½':
-					converted_issue_number += '5'
-
-				elif c in alphabet:
-					converted_issue_number += str(int(
-						(alphabet.index(c) + 1) / 0.26
-					)).zfill(3)
-
-		try:
-			result.append(float(converted_issue_number))
-		except ValueError:
-			pass
-	
-	if result:
-		if len(result) == 1:
-			result = result[0]
-		else:
-			result = tuple(result)
-	else:
-		result = None
-	logging.debug(f'Processing issue number result: {result}')
-	return result
+	return _calc_float_issue_number(issue_number)
 
 def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dict:
 	"""Extract data and present in a formatted way from a filename (or title of getcomics page).

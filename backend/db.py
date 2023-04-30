@@ -14,7 +14,7 @@ from time import time
 
 from flask import g
 
-__DATABASE_VERSION__ = 4
+__DATABASE_VERSION__ = 5
 
 class Singleton(type):
 	_instances = {}
@@ -52,20 +52,24 @@ def set_db_location(db_file_location: str) -> None:
 	DBConnection.file = db_file_location
 	return
 
-def get_db(output_type='tuple'):
+def get_db(output_type='tuple', temp: bool=False):
 	"""Get a database cursor instance or create a new one if needed
 
 	Args:
 		output_type ('tuple'|'dict', optional): The type of output the cursor should have. Defaults to 'tuple'.
+		temp (bool, optional): Decides if a new manually handled cursor is returned instead of the cached one. Defaults to False.
 
 	Returns:
 		Cursor: Database cursor instance with desired output type set
 	"""
-	try:
-		cursor = g.cursor
-	except AttributeError:
-		db = DBConnection(timeout=20.0)
-		cursor = g.cursor = db.cursor()
+	if temp:
+		cursor = DBConnection(timeout=20.0).cursor()
+	else:
+		try:
+			cursor = g.cursor
+		except AttributeError:
+			db = DBConnection(timeout=20.0)
+			cursor = g.cursor = db.cursor()
 		
 	if output_type == 'dict':
 		cursor.row_factory = Row
@@ -173,6 +177,24 @@ def migrate_db(current_db_version: int) -> None:
 		""")
 
 		current_db_version = 4
+	
+	if current_db_version == 4:
+		# V4 -> V5
+		from backend.files import process_issue_number
+
+		cursor2 = get_db('tuple', True)
+		for result in cursor.execute("SELECT id, issue_number FROM issues;"):
+			calc_issue_number = process_issue_number(result[1])
+			cursor2.execute(
+				"UPDATE issues SET calculated_issue_number = ? WHERE id = ?;",
+				(calc_issue_number, result[0])
+			)
+
+		db = cursor2.connection
+		cursor2.close()
+		db.commit()
+		
+		current_db_version = 5
 	
 	return
 
