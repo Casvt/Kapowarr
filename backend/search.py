@@ -18,8 +18,7 @@ from backend.db import get_db
 from backend.files import extract_filename_data, process_issue_number
 from backend.settings import private_settings
 
-clean_title_regex_1 = compile(r'[/:]')
-clean_title_regex_2 = compile(r'(\-|\+|,|\!|:|\bthe\b)')
+clean_title_regex_1 = compile(r'(\-|\+|,|\!|:|\bthe\b)')
 strip_spaces = compile(r'\s+')
 
 def _check_matching_titles(title1: str, title2: str) -> bool:
@@ -32,9 +31,9 @@ def _check_matching_titles(title1: str, title2: str) -> bool:
 	Returns:
 		bool: `True` if the titles match, otherwise `False`.
 	"""
-	pre_clean_title = clean_title_regex_2.sub('', title1.lower())
+	pre_clean_title = clean_title_regex_1.sub('', title1.lower())
 	clean_reference_title = strip_spaces.sub(' ', pre_clean_title).strip().replace('&', 'and')
-	pre_clean_title = clean_title_regex_2.sub('', title2.lower())
+	pre_clean_title = clean_title_regex_1.sub('', title2.lower())
 	clean_title = strip_spaces.sub(' ', pre_clean_title).strip().replace('&', 'and')
 
 	result = clean_reference_title == clean_title
@@ -242,7 +241,7 @@ def manual_search(
 		calculated_issue_number = None
 
 	# Prepare query
-	title = clean_title_regex_1.sub('', title)
+	title = title.replace(':', '')
 
 	if issue_number is None:
 		query_formats = (
