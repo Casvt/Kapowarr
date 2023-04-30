@@ -41,12 +41,13 @@ def _check_matching_titles(title1: str, title2: str) -> bool:
 	logging.debug(f'Matching titles ({title1}, {title2}): {result}')
 	return result
 
-def _check_match(result: dict, title: str, calculated_issue_number: float=None, year: int=None) -> dict:
+def _check_match(result: dict, title: str, volume_number: int, calculated_issue_number: float=None, year: int=None) -> dict:
 	"""Determine if a result is a match with what is searched for
 
 	Args:
 		result (dict): A result in SearchSources.search_results
 		title (str): Title of volume
+		volume_number (int): The volume number of the volume
 		calculated_issue_number (float, optional): The calculated issue number of the issue 
 		(output of files.process_issue_number()). Defaults to None.
 		year (int, optional): The year of the volume. Defaults to None.
@@ -60,7 +61,10 @@ def _check_match(result: dict, title: str, calculated_issue_number: float=None, 
 
 	if not _check_matching_titles(title, result['series']):
 		return {'match': False, 'match_issue': 'Title doesn\'t match'}
-	
+
+	if result['volume_number'] != volume_number:
+		return {'match': False, 'match_issue': 'Volume number doesn\'t match'}
+
 	issue_number_is_equal = (
 		calculated_issue_number is None
 		or
@@ -273,7 +277,7 @@ def manual_search(
 
 	# Decide what is a match and what not
 	for result in results:
-		result.update(_check_match(result, title, calculated_issue_number, year))
+		result.update(_check_match(result, title, volume_number, calculated_issue_number, year))
 
 	# Sort results; put best result at top
 	results.sort(key=lambda r: _sort_search_results(r, title, year, calculated_issue_number))
