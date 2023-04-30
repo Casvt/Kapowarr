@@ -371,7 +371,8 @@ def _extract_get_comics_links(
 	"""
 	logging.debug('Extracting download groups')
 	download_groups = {}
-	for result in soup.find_all(link_filter_1):
+	body = soup.find('article', {'class': 'post-body'})
+	for result in body.find_all(link_filter_1):
 		group_title: str = result.get_text('\x00').partition('\x00')[0]
 		group_links = {}
 		for e in result.next_sibling.next_elements:
@@ -386,7 +387,7 @@ def _extract_get_comics_links(
 		if group_links:
 			download_groups.update({group_title: group_links})
 
-	for result in soup.find_all(link_filter_2):
+	for result in body.find_all(link_filter_2):
 		group_title: str = result.get_text('\x00').partition('\x00')[0]
 		group_links = {}
 		for group_link in result.find_all('a'):
