@@ -179,7 +179,7 @@ class SearchSources:
 		).text
 		soup = BeautifulSoup(search_results, 'html.parser')
 		pages = soup.find_all(['a','span'], {"class": 'page-numbers'})
-		pages = max(int(pages[-1].get_text(strip=True)), 10) if pages else 1
+		pages = min(int(pages[-1].get_text(strip=True)), 10) if pages else 1
 
 		results = []
 		for page in range(1, pages + 1):
