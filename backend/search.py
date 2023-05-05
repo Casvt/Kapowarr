@@ -7,9 +7,11 @@ Inspired by Mylar3:
 """
 
 import logging
+from asyncio import create_task, gather, run
 from re import compile
 from typing import List
 
+from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 from requests import get
 
@@ -168,6 +170,23 @@ class SearchSources:
 			self.search_results += source()
 		return
 
+	async def __fetch_one(self, session, url: str, params: dict, headers: dict):
+		async with session.get(url, params=params, headers=headers) as response:
+			return await response.text()
+
+	async def __fetch_GC_pages(self, pages: range):
+		async with ClientSession() as session:
+			tasks = [
+				create_task(self.__fetch_one(
+					session,
+					f'{private_settings["getcomics_url"]}/page/{p}',
+					{'s': self.query},
+					{'user-agent': 'Kapowarr'}
+				)) for p in pages
+			]
+			responses = await gather(*tasks)
+			return [BeautifulSoup(r, 'html.parser') for r in responses]
+
 	def get_comics(self) -> List[dict]:
 		"""Search for the query in getcomics
 
@@ -185,16 +204,9 @@ class SearchSources:
 		pages = min(int(pages[-1].get_text(strip=True)), 10) if pages else 1
 
 		results = []
-		for page in range(1, pages + 1):
-			if page > 1:
-				search_results = get(
-					f'{private_settings["getcomics_url"]}/page/{page}',
-					params={'s': self.query},
-					headers={'user-agent': 'Kapowarr'},
-					timeout=30
-				).text
-				soup = BeautifulSoup(search_results, 'html.parser')
-			results += soup.find_all('article', {"class": "post"})
+		parsed_results = run(self.__fetch_GC_pages(range(2, pages + 1)))
+		for page in [soup] + parsed_results:
+			results += page.find_all('article', {'class': 'post'})
 
 		formatted_results = []
 		for result in results:
