@@ -284,10 +284,6 @@ class Volume:
 		logging.info(f'Deleting volume {self.id} with delete_folder set to {delete_folder}')
 		cursor = get_db()
 
-		# Delete volume folder
-		if delete_folder:
-			delete_volume_folder(self.id)
-
 		# Check if nothing is downloading for the volume
 		downloading_for_volume = cursor.execute("""
 			SELECT 1
@@ -298,14 +294,20 @@ class Volume:
 		if downloading_for_volume:
 			raise VolumeDownloadedFor(self.id)
 
+		# Delete volume folder
+		if delete_folder:
+			delete_volume_folder(self.id)
+
 		# Delete file entries
 		# ON DELETE CASCADE will take care of issues_files
 		cursor.execute(
 			"""
 			DELETE FROM files
 			WHERE id IN (
-				SELECT id
-				FROM issues
+				SELECT DISTINCT file_id
+				FROM issues_files
+				INNER JOIN issues
+				ON issues_files.issue_id = issues.id
 				WHERE volume_id = ?
 			);
 			""",
