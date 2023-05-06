@@ -11,7 +11,9 @@ function buildResults(results) {
 		entry.dataset.cover = result.cover;
 		entry.dataset.comicvine_id = result.comicvine_id;
 
-		entry.addEventListener('click', e => showAddWindow(result.comicvine_id));
+		// Only allow adding volume if it isn't already added
+		if (!result.already_added)
+			entry.addEventListener('click', e => showAddWindow(result.comicvine_id));
 
 		const cover_info_container = document.createElement('div');
 		cover_info_container.classList.add('cover-info-container');
@@ -38,7 +40,14 @@ function buildResults(results) {
 			const year = document.createElement("span");
 			year.innerText = ` (${result.year})`;
 			title.appendChild(year);
-		}
+		};
+		
+		if (result.already_added) {
+			const aa_icon = document.createElement('img');
+			aa_icon.alt = 'Volume is already added';
+			aa_icon.src = '/static/img/check_circle.svg';
+			title.appendChild(aa_icon);
+		};
 		
 		const tags = document.createElement('div');
 		tags.classList.add('entry-tags');

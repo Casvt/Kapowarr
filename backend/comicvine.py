@@ -118,6 +118,7 @@ class ComicVine:
 		logging.debug(f'Formating volume output: {volume_data}')
 		result = {
 			'comicvine_id': int(volume_data['id']),
+			'already_added': volume_data['already_added'],
 			'title': volume_data['name'],
 			'year': int(volume_data['start_year'].replace('-', '0').replace('?', '')) if volume_data['start_year'] is not None else None,
 			'cover': volume_data['image']['small_url'],
@@ -236,7 +237,7 @@ class ComicVine:
 				query = '4050-' + query
 			if not query.replace('-','0').isdigit():
 				return []
-			results = [
+			results: List[dict] = [
 				self.ssn.get(
 					f'{self.api_url}/volume/{query}',
 					params={'field_list': self.search_field_list}
@@ -245,7 +246,7 @@ class ComicVine:
 			if results == [[]]:
 				return []
 		else:
-			results = self.ssn.get(
+			results: List[dict] = self.ssn.get(
 				f'{self.api_url}/volumes',
 				params={'filter': f'name:{query}',
 						'limit': 50,
@@ -255,14 +256,15 @@ class ComicVine:
 				return []
 
 		# Remove entries that are already added
-		logging.debug('Removing entries that are already added')
+		logging.debug('Marking entries that are already added')
 		volume_ids = cursor.execute(
 			"SELECT comicvine_id FROM volumes;"
 		).fetchall()
-		results = list(filter(
-			lambda v: not (v['id'],) in volume_ids,
-			results
-		))
+		for result in results:
+			if (result['id'],) in volume_ids:
+				result.update({'already_added': True})
+			else:
+				result.update({'already_added': False})
 		
 		# Format results
 		for i, result in enumerate(results):

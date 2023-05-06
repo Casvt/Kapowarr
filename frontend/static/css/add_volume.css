@@ -138,6 +138,12 @@ main > div {
 	color: var(--mid-color);
 }
 
+.entry-info-container h2 img {
+	margin-left: 1rem;
+	width: 1.5rem;
+	aspect-ratio: 1/1;
+}
+
 .entry-tags,
 .entry-aliases {
 	display: flex;
