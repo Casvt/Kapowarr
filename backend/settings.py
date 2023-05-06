@@ -50,8 +50,8 @@ about_data = {
 task_intervals = {
 	# Tasks at the same interval, but that should be
 	# run after each other should be put in that order in this dict
-	'update_all': 86400, # 1 day
-	'search_all': 86400 # 1 day
+	'update_all': 3600, # every hour
+	'search_all': 86400 # every day
 }
 
 blocklist_reasons = {

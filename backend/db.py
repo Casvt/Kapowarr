@@ -14,7 +14,7 @@ from time import time
 
 from flask import g
 
-__DATABASE_VERSION__ = 5
+__DATABASE_VERSION__ = 6
 
 class Singleton(type):
 	_instances = {}
@@ -196,6 +196,57 @@ def migrate_db(current_db_version: int) -> None:
 		
 		current_db_version = 5
 	
+	if current_db_version == 5:
+		# V5 -> V6
+		from backend.comicvine import ComicVine
+		
+		cursor.executescript("""
+			BEGIN TRANSACTION;
+			PRAGMA defer_foreign_keys = ON;
+
+			-- Issues
+			CREATE TEMPORARY TABLE temp_issues AS
+				SELECT * FROM issues;
+			DROP TABLE issues;
+
+			CREATE TABLE IF NOT EXISTS issues(
+				id INTEGER PRIMARY KEY,
+				volume_id INTEGER NOT NULL,
+				comicvine_id INTEGER UNIQUE NOT NULL,
+				issue_number VARCHAR(20) NOT NULL,
+				calculated_issue_number FLOAT(20) NOT NULL,
+				title VARCHAR(255),
+				date VARCHAR(10),
+				description TEXT,
+				monitored BOOL NOT NULL DEFAULT 1,
+
+				FOREIGN KEY (volume_id) REFERENCES volumes(id)
+					ON DELETE CASCADE
+			);
+			INSERT INTO issues
+				SELECT * FROM temp_issues;
+				
+			-- Volumes
+			ALTER TABLE volumes
+				ADD last_cv_update VARCHAR(255);
+			ALTER TABLE volumes
+				ADD last_cv_fetch INTEGER(8) DEFAULT 0;
+				
+			COMMIT;
+		""")
+
+		volume_ids = [
+			str(v[0])
+			for v in cursor.execute("SELECT comicvine_id FROM volumes;").fetchall()
+		]
+		updates = ((r['date_last_updated'], r['comicvine_id']) for r in ComicVine().fetch_volumes(volume_ids))
+		cursor.executemany(
+			"UPDATE volumes SET last_cv_update = ? WHERE comicvine_id = ?;",
+			updates
+		)
+
+		current_db_version = 6
+	
 	return
 
 def setup_db() -> None:
@@ -228,13 +279,15 @@ def setup_db() -> None:
 			monitored BOOL NOT NULL DEFAULT 0,
 			root_folder INTEGER NOT NULL,
 			folder TEXT,
+			last_cv_update VARCHAR(255),
+			last_cv_fetch INTEGER(8) DEFAULT 0,
 			
 			FOREIGN KEY (root_folder) REFERENCES root_folders(id)
 		);
 		CREATE TABLE IF NOT EXISTS issues(
 			id INTEGER PRIMARY KEY,
 			volume_id INTEGER NOT NULL,
-			comicvine_id INTEGER NOT NULL,
+			comicvine_id INTEGER NOT NULL UNIQUE,
 			issue_number VARCHAR(20) NOT NULL,
 			calculated_issue_number FLOAT(20) NOT NULL,
 			title VARCHAR(255),
@@ -356,10 +409,14 @@ def setup_db() -> None:
 	logging.debug(f'Inserting task intervals: {task_intervals}')
 	cursor.executemany(
 		"""
-		INSERT OR IGNORE INTO task_intervals
-		VALUES (?,?,?);
+		INSERT INTO task_intervals
+		VALUES (?,?,?)
+		ON CONFLICT(task_name) DO
+		UPDATE
+		SET
+			interval = ?;
 		""",
-		((k, v, current_time) for k, v in task_intervals.items())
+		((k, v, current_time, v) for k, v in task_intervals.items())
 	)
 	
 	# Add blocklist reasons

@@ -14,7 +14,7 @@ from backend.custom_exceptions import (InvalidComicVineApiKey,
 from backend.db import get_db
 from backend.download import DownloadHandler
 from backend.search import auto_search
-from backend.volumes import refresh_and_scan_volume
+from backend.volumes import refresh_and_scan
 
 
 class Task(ABC):
@@ -167,13 +167,13 @@ class RefreshAndScanVolume(Task):
 
 	def run(self) -> None:
 		title = get_db().execute(
-			"SELECT title FROM volumes WHERE id = ?", 
+			"SELECT title FROM volumes WHERE id = ? LIMIT 1", 
 			(self.volume_id,)
 		).fetchone()[0]
 		self.message = f'Updating info on {title}'
 
 		try:
-			refresh_and_scan_volume(self.volume_id)
+			refresh_and_scan(self.volume_id)
 		except InvalidComicVineApiKey:
 			pass
 
@@ -194,16 +194,11 @@ class UpdateAll(Task):
 	issue_id = None
 
 	def run(self) -> None:
-		volume_ids = get_db().execute(
-			"SELECT id, title FROM volumes;"
-		).fetchall()
-		for volume_id, volume_title in volume_ids:
-			if self.stop: break
-			self.message = f'Updating info on {volume_title}'
-			try:
-				refresh_and_scan_volume(volume_id)
-			except InvalidComicVineApiKey:
-				break
+		self.message = f'Updating info on all volumes'
+		try:
+			refresh_and_scan()
+		except InvalidComicVineApiKey:
+			pass
 
 		return
 
@@ -219,11 +214,12 @@ class SearchAll(Task):
 	issue_id = None
 
 	def run(self) -> List[tuple]:
-		volume_ids = get_db().execute(
+		cursor = get_db(temp=True)
+		cursor.execute(
 			"SELECT id, title FROM volumes WHERE monitored = 1;"
-		).fetchall()
+		)
 		downloads = []
-		for volume_id, volume_title in volume_ids:
+		for volume_id, volume_title in cursor:
 			if self.stop: break
 			self.message = f'Searching for {volume_title}'
 			# Get search results and download them

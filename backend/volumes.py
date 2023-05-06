@@ -5,11 +5,12 @@
 
 import logging
 from io import BytesIO
+from time import time
 from typing import List
 
 from backend.comicvine import ComicVine
-from backend.custom_exceptions import (IssueNotFound, VolumeAlreadyAdded, VolumeDownloadedFor,
-                                       VolumeNotFound)
+from backend.custom_exceptions import (IssueNotFound, VolumeAlreadyAdded,
+                                       VolumeDownloadedFor, VolumeNotFound)
 from backend.db import get_db
 from backend.files import (create_volume_folder, delete_volume_folder,
                            move_volume_folder, scan_files)
@@ -319,71 +320,123 @@ class Volume:
 
 		return
 
-def refresh_and_scan_volume(volume_id: int) -> None:
-	"""Refresh and scan a volume
+def refresh_and_scan(volume_id: int=None) -> None:
+	"""Refresh and scan one or more volumes
 
 	Args:
-		volume_id (int): The id of the volume for which to perform the action
+		volume_id (int, optional): The id of the volume if it is desired to only refresh and scan one. If left to `None`, all volumes are refreshed and scanned. Defaults to None.
 	"""
 	cursor = get_db()
+	cv = ComicVine()
 
-	comicvine_id = str(cursor.execute(
-		"SELECT comicvine_id FROM volumes WHERE id = ? LIMIT 1;",
-		(volume_id,)
-	).fetchone()[0])
+	one_day_ago = round(time()) - 86400
+	if volume_id:
+		ids = dict((r[0], (r[1], r[2])) for r in cursor.execute(
+			"SELECT comicvine_id, id, last_cv_update FROM volumes WHERE id = ? LIMIT 1;",
+			(volume_id,)
+		))
+	else:
+		ids = dict((r[0], (r[1], r[2])) for r in cursor.execute("""
+				SELECT comicvine_id, id, last_cv_update
+				FROM volumes
+				WHERE last_cv_fetch <= ?
+				ORDER BY last_cv_fetch ASC;
+				""",
+				(one_day_ago,)))
+	str_ids = [str(i) for i in ids]
 
-	# Get volume info
-	volume_data = ComicVine().fetch_volume(comicvine_id)
-
-	cursor.execute(
-		"""
-		UPDATE volumes
-		SET
-			title = ?,
-			year = ?,
-			publisher = ?,
-			volume_number = ?,
-			description = ?,
-			cover = ?
-		WHERE id = ?;
-		""",
-		(
-			volume_data['title'],
-			volume_data['year'],
-			volume_data['publisher'],
-			volume_data['volume_number'],
-			volume_data['description'],
-			volume_data['cover'],
-			volume_id
+	# Update volumes
+	volume_datas = cv.fetch_volumes(str_ids)
+	update_volumes_issues = []
+	for volume_data in volume_datas:
+		if not volume_id and volume_data['date_last_updated'] == ids[volume_data['comicvine_id']][1]:
+			# Volume hasn't been updated since last fetch so skip
+			cursor.execute(
+				"UPDATE volumes SET last_cv_fetch = ? WHERE id = ?",
+				(one_day_ago + 86400, ids[volume_data['comicvine_id']][0])
+			)
+			continue
+		
+		# Volume needs to be updated
+		cursor.execute(
+			"""
+			UPDATE volumes
+			SET
+				title = ?,
+				year = ?,
+				publisher = ?,
+				volume_number = ?,
+				description = ?,
+				cover = ?
+			WHERE id = ?;
+			""",
+			(
+				volume_data['title'],
+				volume_data['year'],
+				volume_data['publisher'],
+				volume_data['volume_number'],
+				volume_data['description'],
+				volume_data['cover'],
+				ids[volume_data['comicvine_id']][0]
+			)
 		)
-	)
-
-	# Scan for files
-	scan_files(Volume(volume_id).get_info())
-
-	volume_data['issues'] = map(
-		lambda i: (
-			i['issue_number'],
-			i['calculated_issue_number'],
-			i['title'],
-			i['date'],
-			i['description'],
-			i['comicvine_id']
-		),
-		volume_data['issues']
-	)
+		
+		# It's issues too
+		update_volumes_issues.append(volume_data['comicvine_id'])
+		
+	# Update issues
+	issue_datas = cv.fetch_issues(str_ids)
+	issue_updates = [(
+			ids[issue_data['volume_id']][0],
+			issue_data['comicvine_id'],
+			issue_data['issue_number'],
+			issue_data['calculated_issue_number'],
+			issue_data['title'],
+			issue_data['date'],
+			issue_data['description'],
+			True,
+			
+			issue_data['issue_number'],
+			issue_data['calculated_issue_number'],
+			issue_data['title'],
+			issue_data['date'],
+			issue_data['description']
+		) for issue_data in issue_datas]
 
 	cursor.executemany("""
-		UPDATE issues
+		INSERT INTO issues(
+			volume_id, 
+			comicvine_id,
+			issue_number,
+			calculated_issue_number,
+			title,
+			date,
+			description,
+			monitored
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(comicvine_id) DO
+		UPDATE
 		SET
 			issue_number = ?,
 			calculated_issue_number = ?,
 			title = ?,
 			date = ?,
-			description = ?
-		WHERE
-			comicvine_id = ?;
-	""", volume_data['issues'])
+			description = ?;
+	""", issue_updates)
+	
+	# Update update-times
+	for volume_data in volume_datas:
+		if volume_data['comicvine_id'] in update_volumes_issues:
+			cursor.execute(
+				"UPDATE volumes SET last_cv_update = ?, last_cv_fetch = ? WHERE id = ?;",
+				(volume_data['date_last_updated'], one_day_ago + 86400, ids[volume_data['comicvine_id']][0])
+			)
+
+	# Scan for files
+	cursor2 = get_db(temp=True)
+	cursor2.execute("SELECT id FROM volumes;")
+	for volume in cursor2:
+		scan_files(Volume(volume[0]).get_info())
 
 	return
 
@@ -507,6 +560,7 @@ class Library:
 
 		Raises:
 			VolumeAlreadyAdded: The volume already exists in the library
+			CVRateLimitReached: The ComicVine API rate limit is reached
 
 		Returns:
 			int: The new id of the volume
@@ -543,9 +597,11 @@ class Library:
 				description,
 				cover,
 				monitored,
-				root_folder
+				root_folder,
+				last_cv_update,
+				last_cv_fetch
 			) VALUES (
-				?, ?, ?, ?, ?, ?, ?, ?, ?
+				?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 			);
 			""",
 			(
@@ -557,7 +613,9 @@ class Library:
 				volume_data['description'],
 				volume_data['cover'],
 				volume_data['monitored'],
-				volume_data['root_folder']
+				volume_data['root_folder'],
+				volume_data['date_last_updated'],
+				round(time())
 			)
 		)
 		volume_id = cursor.lastrowid

@@ -51,6 +51,15 @@ class VolumeNotMatched(Exception):
 		logging.warning('Volume not matched with comicvine database')
 		return
 
+class CVRateLimitReached(Exception):
+	"""The rate limit of the ComicVine API is reached
+	"""	
+	api_response = {'error': 'CVRateLimitReached', 'result': {}, 'code': 509}
+	
+	def __init__(self) -> None:
+		logging.warning('Comic Vine API rate limit reached')
+		return
+
 class VolumeAlreadyAdded(Exception):
 	"""The volume that is desired to be added is already added
 	"""
