@@ -152,3 +152,6 @@ LICENSE
 
 # Tests
 tests/
+
+# Project management files
+release.sh

@@ -136,3 +136,6 @@ dmypy.json
 
 # downloads
 temp_downloads/*
+
+# Project management files
+release.sh
