@@ -335,8 +335,9 @@ class ComicVine:
 				return []
 		else:
 			results: List[dict] = self.ssn.get(
-				f'{self.api_url}/volumes',
-				params={'filter': f'name:{query}',
+				f'{self.api_url}/search',
+				params={'query': query,
+	    				'resources': 'volume',
 						'limit': 50,
 						'field_list': self.search_field_list}
 			).json()['results']
