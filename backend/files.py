@@ -9,14 +9,15 @@ extract_filename_data is inspired by the file parsing of Kavita and Comictagger:
 
 import logging
 from os import listdir, makedirs, scandir, stat
-from os.path import (abspath, basename, dirname, join, relpath, samefile,
-                     splitext)
+from os.path import (abspath, basename, dirname, isdir, join, relpath,
+                     samefile, splitext)
 from re import IGNORECASE, compile
 from shutil import move, rmtree
 from typing import List, Tuple, Union
 from urllib.parse import unquote
 
 from backend.db import get_db
+from backend.root_folders import RootFolders
 
 alphabet = 'abcdefghijklmnopqrstuvwxyz'
 alphabet = {letter: str(alphabet.index(letter) + 1).zfill(2) for letter in alphabet}
@@ -335,6 +336,10 @@ def scan_files(volume_data: dict) -> None:
 	"""	
 	logging.debug(f'Scanning for files for {volume_data["id"]}')
 	cursor = get_db()
+
+	if not isdir(volume_data['folder']):
+		root_folder = RootFolders().get_one(volume_data['root_folder'], use_cache=False)['folder']
+		create_volume_folder(root_folder, volume_data['id'])
 
 	file_to_issue_map = []
 	volume_files = _list_files(folder=volume_data['folder'], ext=supported_extensions)
