@@ -318,11 +318,11 @@ class ComicVine:
 		cursor = get_db()
 
 		# Fetch comicvine results
-		results: list
-		if query.startswith('cv:'):
-			query = query.partition(':')[2]
-			if not query.startswith('4050-'):
-				query = '4050-' + query
+		if query.startswith('4050-') or query.startswith('cv:'):
+			if query.startswith('cv:'):
+				query = query.partition(':')[2]
+				if not query.startswith('4050-'):
+					query = '4050-' + query
 			if not query.replace('-','0').isdigit():
 				return []
 			results: List[dict] = [
