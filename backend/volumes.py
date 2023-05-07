@@ -433,9 +433,7 @@ def refresh_and_scan(volume_id: int=None) -> None:
 			)
 
 	# Scan for files
-	cursor2 = get_db(temp=True)
-	cursor2.execute("SELECT id FROM volumes;")
-	for volume in cursor2:
+	for volume in ids.values():
 		scan_files(Volume(volume[0]).get_info())
 
 	return
