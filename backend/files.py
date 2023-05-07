@@ -44,13 +44,13 @@ japanese_volume_regex = compile(r'(\d+)巻', IGNORECASE)
 special_version_regex = compile(r'(?:\b|\()(tpb|os|one\-shot|ogn|gn)(?:\b|\))', IGNORECASE)
 volume_regex = compile(volume_regex_snippet, IGNORECASE)
 volume_folder_regex = compile(volume_regex_snippet + r'|^(\d+)$', IGNORECASE)
-issue_regex = compile(r'\b(?:c(?:hapter)?|issue)s?[\s\-\.]?#?(' + issue_regex_snippet + r'(?:[\s\.]?\-[\s\.]?' + issue_regex_snippet + r')?)', IGNORECASE)
+issue_regex = compile(r'\b(?:c(?:hapter)?|issue)s?[\s\-\.]?#?(\-?' + issue_regex_snippet + r'(?:[\s\.]?\-[\s\.]?\-?' + issue_regex_snippet + r')?)', IGNORECASE)
 issue_regex_2 = compile(r'(' + issue_regex_snippet + r')\(?[\s\-\.]?of[\s\-\.]?' + issue_regex_snippet + r'\)?', IGNORECASE)
-issue_regex_3 = compile(r'#(' + issue_regex_snippet + r')[\s\.](?!(\-[\s\.]?\d+))')
+issue_regex_3 = compile(r'#(\-?' + issue_regex_snippet + r')[\s\.](?!(\-[\s\.]?\-?\d+))')
 issue_regex_4 = compile(r'#?(' + issue_regex_snippet + r'[\s\.]?-[\s\.]?' + issue_regex_snippet + r')[\s\.]')
 issue_regex_5 = compile(r'(?:\s|\-|\.)(' + issue_regex_snippet + r')(?:\s|\-|\.)')
-issue_regex_6 = compile(r'^(' + issue_regex_snippet + r')$')
-issue_regex_7 = compile(r'^(' + issue_regex_snippet + r')')
+issue_regex_6 = compile(r'^(-?' + issue_regex_snippet + r')$')
+issue_regex_7 = compile(r'^(-?' + issue_regex_snippet + r')')
 year_regex = compile(r'\(' + year_regex_snippet + r'\)|--' + year_regex_snippet + r'--|, ' + year_regex_snippet + r'\s{3}', IGNORECASE)
 
 def _calc_float_issue_number(issue_number: str) -> Union[float, None]:
@@ -70,8 +70,11 @@ def _calc_float_issue_number(issue_number: str) -> Union[float, None]:
 
 	# Issue has special number notation
 	issue_number = issue_number.replace(',','.').rstrip('.').lower()
+	if issue_number.startswith('-'):
+		converted_issue_number = '-'
+	else:
+		converted_issue_number = ''
 	dot = True
-	converted_issue_number = ''
 	for c in issue_number:
 		if c in digits:
 			converted_issue_number += c
@@ -103,7 +106,8 @@ def process_issue_number(issue_number: str) -> Union[float, Tuple[float, float],
 		or None if it wasn't succesfull in converting.
 	"""
 	if '-' in issue_number[1:]:
-		entries = issue_number.split('-', 1)
+		entries = issue_number[1:].split('-', 1)
+		entries[0] = issue_number[0] + entries[0]
 		entries = _calc_float_issue_number(entries[0]), _calc_float_issue_number(entries[1])
 		if entries[0] is None:
 			if entries[1] is None:
