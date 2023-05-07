@@ -182,18 +182,14 @@ def migrate_db(current_db_version: int) -> None:
 		# V4 -> V5
 		from backend.files import process_issue_number
 
-		cursor2 = get_db('tuple', True)
-		for result in cursor.execute("SELECT id, issue_number FROM issues;"):
+		cursor2 = get_db(temp=True)
+		for result in cursor2.execute("SELECT id, issue_number FROM issues;"):
 			calc_issue_number = process_issue_number(result[1])
-			cursor2.execute(
+			cursor.execute(
 				"UPDATE issues SET calculated_issue_number = ? WHERE id = ?;",
 				(calc_issue_number, result[0])
 			)
 
-		db = cursor2.connection
-		cursor2.close()
-		db.commit()
-		
 		current_db_version = 5
 	
 	if current_db_version == 5:
@@ -237,7 +233,7 @@ def migrate_db(current_db_version: int) -> None:
 
 		volume_ids = [
 			str(v[0])
-			for v in cursor.execute("SELECT comicvine_id FROM volumes;").fetchall()
+			for v in cursor.execute("SELECT comicvine_id FROM volumes;")
 		]
 		updates = ((r['date_last_updated'], r['comicvine_id']) for r in ComicVine().fetch_volumes(volume_ids))
 		cursor.executemany(
@@ -397,10 +393,10 @@ def setup_db() -> None:
 		)
 
 	# Generate api key
-	api_key = cursor.execute(
-		"SELECT value FROM config WHERE key = 'api_key' LIMIT 1;"
-	).fetchone()
-	if api_key is None:
+	api_key = (1,) in cursor.execute(
+		"SELECT 1 FROM config WHERE key = 'api_key' LIMIT 1;"
+	)
+	if not api_key:
 		cursor.execute("INSERT INTO config VALUES ('api_key', '');")
 		Settings().generate_api_key()
 
@@ -440,7 +436,10 @@ def setup_db() -> None:
 	)
 
 	# Add service preferences
-	order = list(zip(map(lambda s: s[0], supported_source_strings), range(1, len(supported_source_strings) + 1)))
+	order = list(zip(
+		map(lambda s: s[0], supported_source_strings),
+		range(1, len(supported_source_strings) + 1)
+	))
 	logging.debug(f'Inserting service preferences: {order}')
 	cursor.executemany(
 		"""

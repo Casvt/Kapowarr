@@ -23,20 +23,22 @@ def get_blocklist(offset: int=0) -> List[dict]:
 		List[dict]: A list of dicts where each dict is a blocklist entry
 	"""	
 	logging.debug(f'Fetching blocklist with offset {offset}')
-	entries = get_db('dict').execute("""
-		SELECT
-			bl.id,
-			bl.link,
-			blr.reason,
-			bl.added_at
-		FROM blocklist bl
-		INNER JOIN blocklist_reasons blr
-		ON bl.reason = blr.id
-		ORDER BY bl.id DESC
-		LIMIT 50
-		OFFSET ?;
-	""", (offset * 50,)).fetchall()
-	entries = list(map(dict, entries))
+	entries = list(map(
+		dict,
+		get_db('dict').execute("""
+			SELECT
+				bl.id,
+				bl.link,
+				blr.reason,
+				bl.added_at
+			FROM blocklist bl
+			INNER JOIN blocklist_reasons blr
+			ON bl.reason = blr.id
+			ORDER BY bl.id DESC
+			LIMIT 50
+			OFFSET ?;
+		""", (offset * 50,))
+	))
 	
 	return entries
 
@@ -107,11 +109,11 @@ def blocklist_contains(link: str) -> bool:
 	Returns:
 		bool: `True` if the link is in the blocklist, otherwise `False`.
 	"""	
-	result = get_db().execute(
+	result = (1,) in get_db().execute(
 		"SELECT 1 FROM blocklist WHERE link = ? LIMIT 1",
 		(link,)
-	).fetchone()
-	return result is not None
+	)
+	return result
 
 def add_to_blocklist(link: str, reason_id: int) -> dict:
 	"""Add a link to the blocklist
@@ -128,7 +130,7 @@ def add_to_blocklist(link: str, reason_id: int) -> dict:
 	"""	
 	logging.info(f'Adding {link} to blocklist with reason "{blocklist_reasons[reason_id]}"')
 	cursor = get_db()
-	
+
 	# Try to add link to blocklist
 	try:
 		id = cursor.execute(

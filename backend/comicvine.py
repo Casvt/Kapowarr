@@ -349,14 +349,14 @@ class ComicVine:
 
 		# Mark entries that are already added
 		logging.debug('Marking entries that are already added')
-		volume_ids = cursor.execute(
-			"SELECT comicvine_id FROM volumes;"
-		).fetchall()
+		volume_ids = set(map(lambda c: c[0], cursor.execute(f"""
+			SELECT comicvine_id
+			FROM volumes
+			WHERE {' OR '.join('comicvine_id = ' + str(r['comicvine_id']) for r in results)}
+			LIMIT 50;
+		""")))
 		for result in results:
-			if (result['comicvine_id'],) in volume_ids:
-				result.update({'already_added': True})
-			else:
-				result.update({'already_added': False})
+			result.update({'already_added': result['comicvine_id'] in volume_ids})
 		
 		# Sort results (prefer direct title matches and then sort those on volume number)
 		if len(results) > 1:

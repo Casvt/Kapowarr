@@ -31,7 +31,7 @@ class RootFolders:
 		if not use_cache or not self.cache:
 			root_folders = get_db('dict').execute(
 				"SELECT id, folder FROM root_folders;"
-			).fetchall()
+			)
 			self.cache = {r['id']: dict(r) for r in root_folders}
 		return list(self.cache.values())
 
@@ -100,9 +100,9 @@ class RootFolders:
 
 		# Remove from database
 		try:
-			if cursor.execute(
+			if not cursor.execute(
 				"DELETE FROM root_folders WHERE id = ?", (id,)
-			).rowcount == 0:
+			).rowcount:
 				raise RootFolderNotFound
 		except IntegrityError:
 			raise RootFolderInUse

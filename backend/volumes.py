@@ -36,8 +36,8 @@ class Issue:
 		issue_found = get_db().execute(
 			"SELECT 1 FROM issues WHERE id = ? LIMIT 1",
 			(id,)
-		).fetchone()
-		if not issue_found:
+		)
+		if not (1,) in issue_found:
 			raise IssueNotFound
 		
 	def get_info(self) -> dict:
@@ -75,7 +75,7 @@ class Issue:
 				WHERE issue_id = ?;
 				""",
 				(self.id,)
-			).fetchall()
+			)
 		))
 		data['monitored'] = data['monitored'] == 1
 		return data
@@ -119,9 +119,9 @@ class Volume:
 		volume_found = get_db().execute(
 			"SELECT 1 FROM volumes WHERE id = ? LIMIT 1",
 			(id,)
-		).fetchone()
+		)
 
-		if not volume_found:
+		if not (1,) in volume_found:
 			raise VolumeNotFound
 
 	def get_info(self, complete: bool=True) -> dict:
@@ -383,6 +383,7 @@ def refresh_and_scan(volume_id: int=None) -> None:
 		
 		# It's issues too
 		update_volumes_issues.append(volume_data['comicvine_id'])
+	cursor.connection.commit()
 		
 	# Update issues
 	issue_datas = cv.fetch_issues(str_ids)
@@ -431,6 +432,7 @@ def refresh_and_scan(volume_id: int=None) -> None:
 				"UPDATE volumes SET last_cv_update = ?, last_cv_fetch = ? WHERE id = ?;",
 				(volume_data['date_last_updated'], one_day_ago + 86400, ids[volume_data['comicvine_id']][0])
 			)
+	cursor.connection.commit()
 
 	# Scan for files
 	for volume in ids.values():
@@ -497,7 +499,7 @@ class Library:
 				) AS issues_downloaded
 			FROM volumes
 			ORDER BY {sort};
-		""").fetchall()))
+		""")))
 
 		volumes = self.__format_lib_output(volumes)
 		

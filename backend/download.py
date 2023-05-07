@@ -695,19 +695,17 @@ class DownloadHandler:
 		"""		
 		logging.debug('Loading downloads from database')
 		with self.context():
-			cursor = get_db('dict')
-			cursor.execute("""
+			cursor2 = get_db('dict', temp=True)
+			cursor2.execute("""
 				SELECT
 					id,
 					link,
 					volume_id, issue_id
 				FROM download_queue;
 			""")
-			download = cursor.fetchmany()
-			while download:
-				logging.debug(f'Download from database: {download}')
-				self.add(download[0]['link'], download[0]['volume_id'], download[0]['issue_id'], download[0]['id'])
-				download = cursor.fetchmany()
+			for download in cursor2:
+				logging.debug(f'Download from database: {dict(download)}')
+				self.add(download['link'], download['volume_id'], download['issue_id'], download['id'])
 		return
 
 	def add(self,
@@ -748,11 +746,9 @@ class DownloadHandler:
 
 		result = []
 		with self.context():
-			cursor = get_db()
-			
 			# Register download in database
 			if _download_db_id_override is None:
-				db_id = cursor.execute("""
+				db_id = get_db().execute("""
 					INSERT INTO download_queue(link, volume_id, issue_id)
 					VALUES (?,?,?);
 					""",
@@ -864,7 +860,7 @@ def get_download_history(offset: int=0) -> List[dict]:
 			OFFSET ?;
 			""",
 			(offset * 50,)
-		).fetchall()
+		)
 	))
 	return result
 

@@ -347,7 +347,7 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 			""",
 			(volume_id,)
 		)
-		searchable_issues = tuple(map(lambda i: i[0], cursor.fetchall()))
+		searchable_issues = tuple(map(lambda i: i[0], cursor))
 		if not searchable_issues:
 			result = []
 			logging.debug(f'Auto search results: {result}')
@@ -369,7 +369,7 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 				"SELECT 1 FROM issues_files WHERE issue_id = ? LIMIT 1",
 				(issue_id,)
 			)
-			if cursor.fetchone() is not None:
+			if (1,) in cursor:
 				# Auto search for issue but issue already has file
 				result = []
 				logging.debug(f'Auto search results: {result}')
@@ -380,9 +380,9 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 		manual_search(title, volume_number, year, issue_number)
 	)
 	if issue_number is not None:
-		result = [next(iter(results), {})]
-		if result == [{}]:
-			result = []
+		result = []
+		if results:
+			result[0] = results[0]
 		logging.debug(f'Auto search results: {result}')
 		return result
 	else:

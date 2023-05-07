@@ -30,15 +30,18 @@ class Credentials:
 			List[dict]: The list of credentials
 		"""		
 		if not use_cache or not self.cache or self.__load_first:
-			cred = dict(map(lambda c: (c['id'], dict(c)), get_db('dict').execute("""
-				SELECT
-					c.id, cs.source,
-					c.email, c.password
-				FROM credentials c
-				INNER JOIN credentials_sources cs
-				ON c.source = cs.id;
-				"""
-			).fetchall()))
+			cred = dict(map(
+				lambda c: (c['id'], dict(c)),
+				get_db('dict').execute("""
+					SELECT
+						c.id, cs.source,
+						c.email, c.password
+					FROM credentials c
+					INNER JOIN credentials_sources cs
+					ON c.source = cs.id;
+					"""
+				)
+			))
 			self.cache = cred
 			self.__load_first = False
 
@@ -142,9 +145,9 @@ class Credentials:
 		"""
 		logging.info(f'Deleting credential: {cred_id}')
 		
-		if get_db().execute(
+		if not get_db().execute(
 			"DELETE FROM credentials WHERE id = ?", (cred_id,)
-		).rowcount == 0:
+		).rowcount:
 			raise CredentialNotFound
 
 		self.get_all(use_cache=False)
@@ -156,13 +159,15 @@ class Credentials:
 		Returns:
 			List[str]: The list of service strings
 		"""
-		result = get_db().execute("""
-			SELECT cs.source
-			FROM credentials_sources cs
-			LEFT JOIN credentials c
-			ON cs.id = c.source
-			WHERE c.id IS NULL;
-		""").fetchall()
+		result = list(map(
+			lambda s: s[0],
+			get_db().execute("""
+				SELECT cs.source
+				FROM credentials_sources cs
+				LEFT JOIN credentials c
+				ON cs.id = c.source
+				WHERE c.id IS NULL;
+			""")
+		))
 		
-		result = list(map(lambda s: s[0], result))
 		return result

@@ -84,7 +84,7 @@ class Settings:
 		if not use_cache or not self.cache:
 			settings = dict(get_db().execute(
 				"SELECT key, value FROM config;"
-			).fetchall())
+			))
 			self.cache.update(settings)
 
 		return self.cache
@@ -195,7 +195,7 @@ class Settings:
 			lambda s: s[0],
 	   		get_db().execute(
 				"SELECT source FROM service_preference ORDER BY pref;"
-			).fetchall()
+			)
 		))
 		return result
 

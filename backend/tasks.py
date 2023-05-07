@@ -463,7 +463,7 @@ def get_task_history(offset: int=0) -> List[dict]:
 			OFFSET ?;
 			""",
 			(offset * 50,)
-		).fetchall()
+		)
 	))
 	return result
 
@@ -497,7 +497,7 @@ def get_task_planning() -> List[dict]:
 		) h
 		ON i.task_name = h.task_name;
 		"""
-	).fetchall()
+	)
 	result = [{
 		'task_name': task['task_name'],
 		'display_name': task_library[task['task_name']].display_title,

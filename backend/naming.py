@@ -166,8 +166,9 @@ def generate_issue_range_name(
 
 	Returns:
 		str: The issue range name
-	"""	
-	issue_id = get_db().execute("""
+	"""
+	cursor = get_db()
+	issue_id = cursor.execute("""
 		SELECT id
 		FROM issues
 		WHERE volume_id = ?
@@ -178,7 +179,7 @@ def generate_issue_range_name(
 	format: str = Settings().get_settings()['file_naming']
 	
 	# Override issue number to range
-	issue_number_start, issue_number_end = get_db().execute("""
+	issue_number_start, issue_number_end = cursor.execute("""
 		SELECT issue_number
 		FROM issues
 		WHERE
