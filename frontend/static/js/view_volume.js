@@ -456,8 +456,12 @@ const id = window.location.pathname.split('/').at(-1);
 usingApiKey()
 .then(api_key => {
 	fetch(`/api/volumes/${id}?api_key=${api_key}`)
-	.then(response => response.json())
-	.then(json => fillPage(json.result, api_key));
+	.then(response => {
+		if (!response.ok) return Promise.reject(response.status);
+		return response.json();
+	})
+	.then(json => fillPage(json.result, api_key))
+	.catch(e => window.location.href = '/');
 
 	addEventListener('#refresh-button', 'click', e => refreshVolume(api_key));
 	addEventListener('#autosearch-button', 'click', e => autosearchVolume(api_key));
