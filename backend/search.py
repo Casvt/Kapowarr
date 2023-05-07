@@ -20,7 +20,7 @@ from backend.db import get_db
 from backend.files import extract_filename_data, process_issue_number
 from backend.settings import private_settings
 
-clean_title_regex = compile(r'((?!\s)\-(?!\s)|\+|,|\!|:|\bthe\b|’|\'|\")')
+clean_title_regex = compile(r'((?!\s)\-(?!\s)|\+|,|\!|:|\bthe\s|’|\'|\")')
 clean_title_regex_2 = compile(r'(\s-\s|\s+|/)')
 
 def _check_matching_titles(title1: str, title2: str) -> bool:
