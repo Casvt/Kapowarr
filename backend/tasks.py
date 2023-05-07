@@ -327,7 +327,7 @@ class TaskHandler:
 			interval_tasks = cursor.execute(
 				"SELECT task_name, interval, next_run FROM task_intervals;"
 			).fetchall()
-			logging.debug(f'Task intervals: {interval_tasks}')
+			logging.debug(f'Task intervals: {list(map(dict, interval_tasks))}')
 			for task in interval_tasks:
 				if task['next_run'] <= current_time:
 					# Add task to queue
