@@ -26,6 +26,7 @@ supported_extensions = ('.png','.jpeg','.jpg','.webp','.gif','.cbz','.zip','.rar
 file_extensions = r'\.(' + '|'.join(e[1:] for e in supported_extensions) + r')$'
 volume_regex_snippet = r'\b(?:v(?:ol|olume)?)(?:\.\s|[\.\-\s])?(\d+|I{1,3})\b'
 year_regex_snippet = r'(?:(\d{4})(?:-\d{2}){0,2}|(\d{4})-\d{4}|(?:\d{2}-){1,2}(\d{4})|(\d{4})[\s\.\-]Edition|(\d{4})-\d{4}\s{3}\d{4})'
+issue_regex_snippet = r'\d+(?:\.\d{1,2}|\w{1,2}|½)?'
 
 # Cleaning the filename
 strip_filename_regex = compile(r'\(.*?\)|\[.*?\]|\{.*?\}', IGNORECASE)
@@ -37,19 +38,19 @@ russian_volume_regex_2 = compile(r'(\d+)[\s\.]?Томa?', IGNORECASE)
 chinese_volume_regex = compile(r'第(\d+)(?:卷|册)', IGNORECASE)
 chinese_volume_regex_2 = compile(r'(?:卷|册)(\d+)', IGNORECASE)
 korean_volume_regex = compile(r'제?(\d+)권', IGNORECASE)
-japanese_volume_regex = compile(r'(\d+(?:\-\d+)?)巻', IGNORECASE)
+japanese_volume_regex = compile(r'(\d+)巻', IGNORECASE)
 
 # Extract data from (stripped)filename
 special_version_regex = compile(r'(?:\b|\()(tpb|os|one\-shot|ogn|gn)(?:\b|\))', IGNORECASE)
 volume_regex = compile(volume_regex_snippet, IGNORECASE)
 volume_folder_regex = compile(volume_regex_snippet + r'|^(\d+)$', IGNORECASE)
-issue_regex = compile(r'\b(?:c(?:hapter)?|issue)s?[\s\-\.]?#?(\d+(?:\.\d{1,2})?(?:[\s\.]?\-[\s\.]?\d+(?:\.\d{1,2})?)?)', IGNORECASE)
-issue_regex_2 = compile(r'(\d+(?:\.\d{1,2})?)\(?[\s\-\.]?of[\s\-\.]?\d+\)?', IGNORECASE)
-issue_regex_3 = compile(r'#(\d+(?:\.\d{1,2})?)[\s\.](?!(\-[\s\.]?|\d+))')
-issue_regex_4 = compile(r'#?(\d+(?:\.\d{1,2})?[\s\.]?-[\s\.]?\d+(?:\.\d{1,2})?)[\s\.]')
-issue_regex_5 = compile(r'(?:\s|\-|\.)(\d+(?:\.\d{1,2})?)(?:\s|\-|\.)')
-issue_regex_6 = compile(r'^(\d+(?:\.\d{1,2})?)$')
-issue_regex_7 = compile(r'^(\d+(?:\.\d{1,2})?)')
+issue_regex = compile(r'\b(?:c(?:hapter)?|issue)s?[\s\-\.]?#?(' + issue_regex_snippet + r'(?:[\s\.]?\-[\s\.]?' + issue_regex_snippet + r')?)', IGNORECASE)
+issue_regex_2 = compile(r'(' + issue_regex_snippet + r')\(?[\s\-\.]?of[\s\-\.]?' + issue_regex_snippet + r'\)?', IGNORECASE)
+issue_regex_3 = compile(r'#(' + issue_regex_snippet + r')[\s\.](?!(\-[\s\.]?\d+))')
+issue_regex_4 = compile(r'#?(' + issue_regex_snippet + r'[\s\.]?-[\s\.]?' + issue_regex_snippet + r')[\s\.]')
+issue_regex_5 = compile(r'(?:\s|\-|\.)(' + issue_regex_snippet + r')(?:\s|\-|\.)')
+issue_regex_6 = compile(r'^(' + issue_regex_snippet + r')$')
+issue_regex_7 = compile(r'^(' + issue_regex_snippet + r')')
 year_regex = compile(r'\(' + year_regex_snippet + r'\)|--' + year_regex_snippet + r'--|, ' + year_regex_snippet + r'\s{3}', IGNORECASE)
 
 def _calc_float_issue_number(issue_number: str) -> Union[float, None]:
@@ -68,7 +69,7 @@ def _calc_float_issue_number(issue_number: str) -> Union[float, None]:
 		pass
 
 	# Issue has special number notation
-	issue_number = issue_number.replace(',','.').rstrip('.')
+	issue_number = issue_number.replace(',','.').rstrip('.').lower()
 	dot = True
 	converted_issue_number = ''
 	for c in issue_number:
