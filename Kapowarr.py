@@ -3,15 +3,16 @@
 
 import logging
 from os import makedirs, urandom
+from sqlite3 import OperationalError
 from sys import version_info
 
 from flask import Flask, render_template, request
 from waitress.server import create_server
 
-from backend.db import close_db, set_db_location, setup_db
+from backend.db import close_db, get_db, set_db_location, setup_db
 from backend.files import folder_path
 from backend.logging import set_log_level, setup_logging
-from backend.settings import private_settings
+from backend.settings import private_settings, default_settings
 from frontend.api import (about_data, api, download_handler, settings,
                           task_handler)
 from frontend.ui import ui
@@ -24,7 +25,6 @@ def _create_app() -> Flask:
 	Returns:
 		Flask: The app instance
 	"""
-	logging.debug('Creating app instance')
 	app = Flask(
 		__name__,
 		template_folder=folder_path('frontend','templates'),
@@ -81,13 +81,22 @@ def Kapowarr() -> None:
 	with app.app_context():
 		set_db_location(folder_path(*DB_FILENAME))
 		about_data.update({'database_location': folder_path(*DB_FILENAME)})
+		
+		# Set log level
+		try:
+			log_level = get_db().execute(
+				"SELECT value FROM config WHERE key = 'log_level' LIMIT 1;"
+			).fetchone()[0]
+			set_log_level(log_level)
+		except OperationalError:
+			set_log_level(default_settings['log_level'])
+
+		# Setup db
 		setup_db()
 
+		# Create download folder if needed
 		logging.debug('Creating download folder if needed')
 		makedirs(settings.get_settings()['download_folder'], exist_ok=True)
-
-		# Setup logging
-		set_log_level(settings.get_settings()['log_level'])
 
 	# Now that database is setup, start handlers
 	download_handler.load_downloads()
