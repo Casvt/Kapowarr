@@ -202,16 +202,23 @@ def generate_issue_range_name(
 	save_name = _make_filename_safe(name)
 	return save_name
 
-def generate_issue_name(volume_id: int, issue_id: int) -> str:
+def generate_issue_name(volume_id: int, calculated_issue_number: float) -> str:
 	"""Generate a issue name based on the format string
 
 	Args:
 		volume_id (int): The id of the volume of the issue
-		issue_id (int): The id of the issue for which to generate the string
+		calculated_issue_number (float): The issue number (output of files.process_issue_number())
 
 	Returns:
 		str: The issue name
 	"""	
+	issue_id = get_db().execute("""
+		SELECT id
+		FROM issues
+		WHERE volume_id = ?
+			AND calculated_issue_number = ?
+		LIMIT 1;
+	""", (volume_id, calculated_issue_number)).fetchone()[0]
 	formatting_data = _get_formatting_data(volume_id, issue_id)
 	format: str = Settings().get_settings()['file_naming']
 
@@ -359,7 +366,7 @@ def preview_mass_rename(volume_id: int, issue_id: int=None) -> List[Dict[str, st
 		# Find the issues that the file covers
 		issues = cursor.execute("""
 			SELECT
-				calculated_issue_number, issue_id
+				calculated_issue_number
 			FROM issues
 			INNER JOIN issues_files
 			ON id = issue_id
@@ -377,7 +384,7 @@ def preview_mass_rename(volume_id: int, issue_id: int=None) -> List[Dict[str, st
 				suggested_name = generate_issue_range_name(volume_id, issues[0][0], issues[-1][0])
 		else:
 			# File covers one issue
-			suggested_name = generate_issue_name(volume_id, issues[0][1])
+			suggested_name = generate_issue_name(volume_id, issues[0][0])
 
 		# Add number to filename if other file has the same name
 		suggested_name = same_name_indexing(suggested_name, file['filepath'], folder, result)

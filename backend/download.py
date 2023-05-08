@@ -485,15 +485,13 @@ def _process_extracted_get_comics_links(
 
 def _test_paths(
 	link_paths: List[List[Dict[str, dict]]],
-	volume_id: int,
-	issue_id: int=None
+	volume_id: int
 ) -> Tuple[List[dict], bool]:
 	"""Test the links of the paths and determine based on which links work which path to go for
 
 	Args:
 		link_paths (List[List[Dict[str, dict]]]): The link paths (output of download._process_extracted_get_comics_links())
 		volume_id (int): The id of the volume
-		issue_id (int, optional): The id of the issue. Defaults to None.
 
 	Returns:
 		Tuple[List[dict], bool]: A list of downloads and wether or not the download limit for a service on the page is reached.
@@ -524,7 +522,7 @@ def _test_paths(
 			
 			else:
 				# Link for single issue
-				name = generate_issue_name(volume_id, issue_id)
+				name = generate_issue_name(volume_id, download['info']['issue_number'])
 
 			# Find working link
 			for links in download['links'].values():
@@ -607,7 +605,7 @@ def _extract_download_links(link: str, volume_id: int, issue_id: int=None) -> Tu
 
 		# Decide which path to take by testing the links
 		# [{'name': 'Filename', 'link': 'link_on_getcomics_page', 'instance': Download_instance}]
-		return _test_paths(link_paths, volume_id, issue_id)
+		return _test_paths(link_paths, volume_id)
 
 	#else
 	# Link is a torrent file or magnet link
