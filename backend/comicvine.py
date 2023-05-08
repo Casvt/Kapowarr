@@ -10,8 +10,11 @@ from typing import List
 from bs4 import BeautifulSoup
 from requests import Session
 from requests.exceptions import ConnectionError as requests_ConnectionError
+from simplejson import JSONDecodeError
 
-from backend.custom_exceptions import CVRateLimitReached, InvalidComicVineApiKey, VolumeNotMatched
+from backend.custom_exceptions import (CVRateLimitReached,
+                                       InvalidComicVineApiKey,
+                                       VolumeNotMatched)
 from backend.db import get_db
 from backend.files import process_issue_number
 from backend.settings import Settings, private_settings
@@ -236,13 +239,16 @@ class ComicVine:
 		
 		volume_infos = []
 		for i in range(0, len(ids), 100):
-			results = self.ssn.get(
-				f'{self.api_url}/volumes',
-				params={
-					'field_list': self.volume_field_list,
-					'filter': f'id:{"|".join(ids[i:i+100])}'
-				}
-			).json()
+			try:
+				results = self.ssn.get(
+					f'{self.api_url}/volumes',
+					params={
+						'field_list': self.volume_field_list,
+						'filter': f'id:{"|".join(ids[i:i+100])}'
+					}
+				).json()
+			except JSONDecodeError:
+				break
 			if results['status_code'] == 107:
 				# Rate limit reached
 				break
