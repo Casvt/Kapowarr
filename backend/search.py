@@ -412,7 +412,7 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 							AND calculated_issue_number >= ?
 							AND calculated_issue_number <= ?;
 					""", (volume_id, *result['issue_number']))))
-					if filter(lambda i: not i in searchable_issues, covered_issues):
+					if any(not i in searchable_issues for i in covered_issues):
 						continue
 				else:
 					# Release is a specific issue
