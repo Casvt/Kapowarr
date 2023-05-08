@@ -352,6 +352,13 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 			result = []
 			logging.debug(f'Auto search results: {result}')
 			return result
+
+		total_count = cursor.execute(
+			"SELECT COUNT(1) FROM issues WHERE volume_id = ?",
+			(volume_id,)
+		).fetchone()[0]
+		all_open = len(searchable_issues) == total_count
+		
 	else:
 		# Auto search issue
 		cursor.execute(
@@ -375,32 +382,37 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 				logging.debug(f'Auto search results: {result}')
 				return result
 
-	results = filter(
+	results = list(filter(
 		lambda r: r['match'],
 		manual_search(title, volume_number, year, issue_number)
-	)
+	))
 	if issue_number is not None:
 		result = []
 		if results:
-			result[0] = results[0]
+			result.append(results[0])
 		logging.debug(f'Auto search results: {result}')
 		return result
 	else:
 		volume_parts = []
 		for result in results:
-			if result['special_version'] is not None:
+			if all_open and result['special_version'] is not None:
 				result = [result]
 				logging.debug(f'Auto search results: {result}')
 				return result
+
 			elif result['issue_number'] is not None:
 				if isinstance(result['issue_number'], tuple):
 					# Release is an issue range
-					# If all issues in the range this release covers are not open for search, 
-					# don't include release
-					if not filter(
-						lambda i: result['issue_number'][0] <= i <= result['issue_number'][1],
-						searchable_issues
-					):
+					# Only allow range if all the issues that the range covers are open
+					covered_issues = tuple(map(lambda i: i[0], cursor.execute("""
+						SELECT calculated_issue_number
+						FROM issues
+						WHERE
+							volume_id = ?
+							AND calculated_issue_number >= ?
+							AND calculated_issue_number <= ?;
+					""", (volume_id, *result['issue_number']))))
+					if filter(lambda i: not i in searchable_issues, covered_issues):
 						continue
 				else:
 					# Release is a specific issue
