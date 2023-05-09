@@ -6,6 +6,7 @@
 import logging
 from abc import ABC, abstractmethod
 from hashlib import sha1
+from os import listdir, remove
 from os.path import basename, join, splitext
 from re import IGNORECASE, compile
 from threading import Thread
@@ -832,6 +833,19 @@ class DownloadHandler:
 			raise DownloadNotFound
 
 		self._process_queue()
+		return
+	
+	def empty_download_folder(self) -> None:
+		"""Empty the temporary download folder of files that aren't being downloaded.
+		Handy in the case that a crash left half-downloaded files behind in the folder.
+		"""
+		logging.info(f'Emptying the temporary download folder')
+		folder = Settings().get_settings()['download_folder']
+		files_in_queue = [basename(download['instance'].file) for download in self.queue]
+		files_in_folder = listdir(folder)
+		ghost_files = [join(folder, f) for f in files_in_folder if not f in files_in_queue]
+		for f in ghost_files:
+			remove(f)
 		return
 
 #=====================

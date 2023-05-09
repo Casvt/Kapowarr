@@ -30,6 +30,18 @@ function saveSettings(api_key) {
 	});
 };
 
+// 
+// Empty download folder
+// 
+function emptyFolder(api_key) {
+	fetch(`/api/activity/folder?api_key=${api_key}`, {
+		'method': 'DELETE'
+	})
+	.then(response => {
+		document.querySelector('#empty-download-folder').innerText = 'Done';
+	});
+};
+
 //
 // Service preference
 //
@@ -199,6 +211,7 @@ usingApiKey()
 	fillCredentials(api_key);
 	
 	addEventListener('#save-button', 'click', e => saveSettings(api_key));
+	addEventListener('#empty-download-folder', 'click', e => emptyFolder(api_key));
 	addEventListener('#add-cred', 'click', e => addCredential(api_key));
 	addEventListener('#toggle-cred', 'click', toggleAddCredential);
 });

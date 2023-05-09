@@ -40,7 +40,8 @@ h2:not(:first-of-type) {
 .settings-container table tr > td select,
 .settings-container table tr > td input[type="text"],
 .settings-container table tr > td input[type="email"],
-.settings-container table tr > td input[type="password"] {
+.settings-container table tr > td input[type="password"],
+.settings-container table tr > td button[type="button"] {
 	width: min(50rem, 100%);
 
 	padding: .5rem .75rem;
@@ -119,6 +120,14 @@ h2:not(:first-of-type) {
 	padding: .4rem .6rem;
 	border-radius: 4px;
 	color: var(--dark-color);
+	background-color: var(--accent-color);
+}
+
+/*  */
+/* Empty download folder */
+/*  */
+#empty-download-folder {
+	width: 6rem;
 	background-color: var(--accent-color);
 }
 

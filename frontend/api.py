@@ -525,6 +525,13 @@ def api_download_history():
 		delete_download_history()
 		return return_api({})
 
+@api.route('/activity/folder', methods=['DELETE'])
+@error_handler
+@auth
+def api_empty_download_folder():
+	download_handler.empty_download_folder()
+	return return_api({})
+
 #=====================
 # Blocklist
 #=====================
