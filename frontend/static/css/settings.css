@@ -41,7 +41,7 @@ h2:not(:first-of-type) {
 .settings-container table tr > td input[type="text"],
 .settings-container table tr > td input[type="email"],
 .settings-container table tr > td input[type="password"],
-.settings-container table tr > td button[type="button"] {
+#empty-download-folder {
 	width: min(50rem, 100%);
 
 	padding: .5rem .75rem;
