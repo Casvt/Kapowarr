@@ -386,7 +386,7 @@ def refresh_and_scan(volume_id: int=None) -> None:
 	cursor.connection.commit()
 		
 	# Update issues
-	issue_datas = cv.fetch_issues(str_ids)
+	issue_datas = cv.fetch_issues([str(i) for i in update_volumes_issues])
 	issue_updates = [(
 			ids[issue_data['volume_id']][0],
 			issue_data['comicvine_id'],
