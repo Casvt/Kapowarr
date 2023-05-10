@@ -70,7 +70,7 @@ def _check_match(result: dict, title: str, volume_number: int, calculated_issue_
 	if not _check_matching_titles(title, result['series']):
 		return {'match': False, 'match_issue': 'Title doesn\'t match'}
 
-	if result['volume_number'] != volume_number:
+	if result['volume_number'] != volume_number and (result['volume_number'] is not None or year is None):
 		return {'match': False, 'match_issue': 'Volume number doesn\'t match'}
 
 	issue_number_is_equal = (
@@ -220,7 +220,7 @@ class SearchSources:
 			link = result.find('a')['href']
 			title = result.find("h1", {"class": "post-title"}).get_text(strip=True)
 
-			data = extract_filename_data(title)
+			data = extract_filename_data(title, False)
 			data.update({
 				'link': link,
 				'display_title': title,
