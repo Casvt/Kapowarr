@@ -33,13 +33,15 @@ h2 {
 	margin-left: 1rem;
 }
 
-.donate-list {
+.donate-list,
+.contact-list {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 1rem;
 }
 
-.donate-list > a {
+.donate-list > a,
+.contact-list > a {
 	height: 5rem;
 	
 	display: flex;
@@ -56,7 +58,8 @@ h2 {
 	text-decoration: none;
 }
 
-.donate-list > a > img {
+.donate-list > a > img,
+.contact-list > a > img {
 	width: 2.5rem;
 }
 
