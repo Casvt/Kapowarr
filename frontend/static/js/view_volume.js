@@ -45,6 +45,7 @@ function fillTable(issues, api_key) {
 		const title = document.createElement('td');
 		title.classList.add('issue-title','title-column');
 		title.innerText = obj.title;
+		title.addEventListener('click', e => showIssueInfo(obj.id, api_key));
 		entry.append(title);
 
 		// Release date
@@ -331,8 +332,18 @@ function blockManualSearch(link, button, match, api_key) {
 // 
 // Renaming
 // 
-function showRename(api_key) {
-	fetch(`/api/volumes/${id}/rename?api_key=${api_key}`)
+function showRename(api_key, issue_id=null) {
+	let url;
+	if (issue_id === null) {
+		// Preview volume rename
+		url = `/api/volumes/${id}/rename?api_key=${api_key}`;
+		document.querySelector('#submit-rename').dataset.issue_id = '';
+	} else {
+		// Preview issue rename
+		url = `/api/issues/${issue_id}/rename?api_key=${api_key}`;
+		document.querySelector('#submit-rename').dataset.issue_id = issue_id;
+	};
+	fetch(url)
 	.then(response => response.json())
 	.then(json => {
 		const table = document.querySelector('#rename-preview > tbody');
@@ -377,9 +388,12 @@ function showRename(api_key) {
 	});
 };
 
-function renameVolume(api_key) {
+function renameVolume(api_key, issue_id=null) {
 	showLoadWindow('rename-window');
-	fetch(`/api/volumes/${id}/rename?api_key=${api_key}`, {
+	let url;
+	if (issue_id === null) url = `/api/volumes/${id}/rename?api_key=${api_key}`;
+	else url = `/api/issues/${issue_id}/rename?api_key=${api_key}`;
+	fetch(url, {
 		'method': 'POST'
 	})
 	.then(response => window.location.reload());
@@ -450,6 +464,34 @@ function deleteVolume() {
 	});
 };
 
+// 
+// Issue info
+// 
+function showIssueInfo(id, api_key) {
+	document.querySelector('#issue-rename-selector').dataset.issue_id = id;
+	fetch(`/api/issues/${id}?api_key=${api_key}`)
+	.then(response => response.json())
+	.then(json => {
+		document.querySelector('#issue-info-title').innerText = `${json.result.title} - #${json.result.issue_number} - ${json.result.date}`;
+		document.querySelector('#issue-info-desc').innerHTML = json.result.description;
+		const files_table = document.querySelector('#issue-files');
+		files_table.innerHTML = '';
+		json.result.files.forEach(f => {
+			const entry = document.createElement('div');
+			entry.innerText = f;
+			files_table.appendChild(entry);
+		});
+		showWindow('issue-info-window');
+	});
+};
+
+function showInfoWindow(window) {
+	document.querySelectorAll(
+		`#issue-info-window > div:nth-child(2) > div:not(#issue-info-selectors)`
+	).forEach(w => w.classList.add('hidden'));
+	document.querySelector(`#${window}`).classList.remove('hidden');
+};
+
 // code run on load
 const id = window.location.pathname.split('/').at(-1);
 
@@ -468,18 +510,21 @@ usingApiKey()
 	addEventListener('#manualsearch-button', 'click', e => showManualSearch(api_key));
 
 	addEventListener('#rename-button', 'click', e => showRename(api_key));
-	addEventListener('#submit-rename', 'click', e => renameVolume(api_key));
+	addEventListener('#submit-rename', 'click', e => renameVolume(api_key, e.target.dataset.issue_id || null));
 
 	addEventListener('#edit-button', 'click', e => showEdit(api_key));
+	
+	addEventListener('#issue-rename-selector', 'click', e => showRename(api_key, e.target.dataset.issue_id));
 });
 
-document.querySelector('#cancel-search').addEventListener('click', e => closeWindow());
-
-document.querySelector('#cancel-rename').addEventListener('click', e => closeWindow());
+addEventListener('#cancel-search', 'click', e => closeWindow());
+addEventListener('#cancel-rename', 'click', e => closeWindow());
+addEventListener('#cancel-edit', 'click', e => closeWindow());
+addEventListener('#delete-button', 'click', e => showWindow('delete-window'));
+addEventListener('#cancel-delete', 'click', e => closeWindow());
+addEventListener('#cancel-info', 'click', e => closeWindow());
+addEventListener('#issue-info-selector', 'click', e => showInfoWindow('issue-info'));
+addEventListener('#issue-files-selector', 'click', e => showInfoWindow('issue-files'));
 
 document.querySelector('#edit-form').setAttribute('action', 'javascript:editVolume();');
-document.querySelector('#cancel-edit').addEventListener('click', e => closeWindow());
-
-document.querySelector('#delete-button').addEventListener('click', e => showWindow('delete-window'));
 document.querySelector('#delete-form').setAttribute('action', 'javascript:deleteVolume();');
-document.querySelector('#cancel-delete').addEventListener('click', e => closeWindow());

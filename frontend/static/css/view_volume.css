@@ -100,7 +100,7 @@
 	width: 2.5rem;
 }
 .number-column {
-	width: 2.5rem;
+	width: 3.5rem;
 }
 .date-column {
 	width: 6.5rem;
@@ -140,6 +140,11 @@
 	border-top: 2px solid var(--border-color);
 }
 
+.issue-title:hover {
+	text-decoration: underline;
+	cursor: pointer;
+}
+
 .issue-entry button {
 	height: 18px;
 	padding: 0;
@@ -162,7 +167,8 @@
 #cancel-delete,
 #cancel-edit,
 #cancel-rename,
-#cancel-search {
+#cancel-search,
+#cancel-info {
 	background-color: var(--error-color);
 }
 
@@ -313,6 +319,35 @@
 
 #rename-preview p:not(:first-child) {
 	margin-top: .2rem;
+}
+
+/*  */
+/* Issue info window */
+/*  */
+.window > section#issue-info-window > div:nth-child(2) {
+	justify-content: flex-start;
+}
+
+#issue-info-selectors {
+	display: flex;
+	gap: .75rem;
+	flex-wrap: wrap;
+}
+
+#issue-info-selectors button {
+	padding: .5rem 1rem;
+	border-radius: 6px;
+	background-color: var(--accent-color);
+}
+
+#issue-files {
+	display: flex;
+	flex-direction: column;
+}
+
+#issue-files > div {
+	padding: .25rem .5rem;
+	border-top: 1px solid var(--border-color);
 }
 
 @media (max-width: 520px) {
