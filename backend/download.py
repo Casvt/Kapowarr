@@ -35,7 +35,9 @@ from .lib.mega import Mega, RequestError
 
 file_extension_regex = compile(r'(?<=\.)[\w\d]{2,4}(?=$|;|\s)|(?<=\/)[\w\d]{2,4}(?=$|;|\s)', IGNORECASE)
 mega_regex = compile(r'https?://mega\.(nz|io)/(#\!|file/)')
+mega_catch_regex = compile(r'https?://mega\.(nz|io)/')
 mediafire_regex = compile(r'https?://www\.mediafire\.com/file/')
+mediafire_catch_regex = compile(r'https?://www\.mediafire\.com')
 gc_regex = compile(r'https?://(\w+\.)?getcomics\.(org|info)/(?!links)')
 download_chunk_size = 4194304 # 4MB Chunks
 credentials = Credentials()
@@ -311,6 +313,10 @@ def _purify_link(link: str) -> dict:
 			# Link is mega
 			return {'link': r.headers['Location'], 'target': MegaDownload, 'source': 'mega'}
 
+		elif mega_catch_regex.search(link) or mega_catch_regex.search(r.headers.get('Location', '')):
+			# Link is mega but not supported (folder most likely)
+			raise LinkBroken(2, blocklist_reasons[2])
+
 		elif mediafire_regex.search(link):
 			# Link is mediafire
 			soup = BeautifulSoup(r.text, 'html.parser')
@@ -327,6 +333,10 @@ def _purify_link(link: str) -> dict:
 			if button:
 				return {'link': button['href'], 'target': DirectDownload, 'source': 'mediafire'}
 			raise LinkBroken(1, blocklist_reasons[1])
+		
+		elif mediafire_catch_regex.search(link) or mediafire_catch_regex.search(r.headers.get('Location', '')):
+			# Link is mediafire but not supported (folder most likely)
+			raise LinkBroken(2, blocklist_reasons[2])
 
 		elif r.headers.get('Location','').startswith('magnet:?'):
 			# Link is magnet link
