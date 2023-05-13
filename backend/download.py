@@ -96,14 +96,14 @@ class DirectDownload(BaseDownload):
 		self.source = source
 
 		self.size: int = 0
-		self.__r = get(self.link, stream=True)
-		if not self.__r.ok:
+		r = get(self.link, stream=True)
+		if not r.ok:
 			raise LinkBroken(1, blocklist_reasons[1])
 		self.__filename_body = filename_body.rstrip('.')
 
-		self.file = self.__build_filename(self.__r)
+		self.file = self.__build_filename(r)
 		self.title = splitext(basename(self.file))[0]
-		self.size = int(self.__r.headers.get('content-length',-1))
+		self.size = int(r.headers.get('content-length',-1))
 
 	def __extract_extension(self, content_type: str, content_disposition: str, url: str) -> str:
 		"""Find the extension of the file behind the link
@@ -153,9 +153,10 @@ class DirectDownload(BaseDownload):
 		self.state = DOWNLOADING_STATE
 		size_downloaded = 0
 
+		r = get(self.link, stream=True)
 		with open(self.file, 'wb') as f:
 			start_time = perf_counter()
-			for chunk in self.__r.iter_content(chunk_size=download_chunk_size):
+			for chunk in r.iter_content(chunk_size=download_chunk_size):
 				if self.state == CANCELED_STATE:
 					break
 

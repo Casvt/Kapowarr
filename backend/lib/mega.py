@@ -285,13 +285,12 @@ class Mega:
 			raise RequestError('File not accessible anymore')
 
 		self.size = file_data['s']
+		self.__direct_url = file_data['g']
 
 		r = get(file_data['g'], stream=True)
 		if r.status_code == 509:
 			# Download limit reached
 			raise DownloadLimitReached('mega')
-
-		self.input_file = r.raw
 
 		file_key = base64_to_a32(file_key)
 		self.k = (file_key[0] ^ file_key[4], file_key[1] ^ file_key[5],
@@ -457,6 +456,7 @@ class Mega:
 	def download_url(self, filename: str):
 		self.downloading = True
 
+		r = get(self.__direct_url, stream=True).raw
 		size_downloaded = 0
 		with open(filename, 'wb') as f:
 			k_str = a32_to_str(self.k)
@@ -473,7 +473,7 @@ class Mega:
 			for chunk_size in get_chunks(self.size):
 				if not self.downloading:
 					break
-				chunk = self.input_file.read(chunk_size)
+				chunk = r.read(chunk_size)
 				chunk = aes.decrypt(chunk)
 				f.write(chunk)
 
