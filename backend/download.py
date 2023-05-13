@@ -101,6 +101,7 @@ class DirectDownload(BaseDownload):
 
 		self.file = self.__build_filename(self.__r)
 		self.title = splitext(basename(self.file))[0]
+		self.size = int(self.__r.headers.get('content-length',-1))
 
 	def __extract_extension(self, content_type: str, content_disposition: str, url: str) -> str:
 		"""Find the extension of the file behind the link
@@ -150,7 +151,6 @@ class DirectDownload(BaseDownload):
 		self.state = DOWNLOADING_STATE
 		size_downloaded = 0
 
-		self.size = int(self.__r.headers.get('content-length',-1))
 		with open(self.file, 'wb') as f:
 			start_time = perf_counter()
 			for chunk in self.__r.iter_content(chunk_size=download_chunk_size):
