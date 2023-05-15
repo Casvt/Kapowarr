@@ -31,7 +31,8 @@ function populateLibrary(volumes, api_key) {
 		entry.appendChild(progress);
 
 		const title = document.createElement("h2");
-		title.innerText = volume.title;
+		title.innerText = `${volume.title} (${volume.year})`;
+		title.title = `${volume.title} (${volume.year})`;
 		entry.appendChild(title);
 
 		const volume_number = document.createElement("p");
