@@ -65,7 +65,7 @@ credential_sources = ('mega',)
 
 supported_source_strings = (('mega', 'mega link'),
 							('mediafire', 'mediafire link'),
-							('getcomics', 'download now','main server','mirror download'))
+							('getcomics', 'download now','main server','mirror download','link 1','link 2'))
 
 class Settings:
 	"""For interacting with the settings
