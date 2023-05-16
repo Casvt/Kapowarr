@@ -716,6 +716,7 @@ class DownloadHandler:
 			for download in cursor2:
 				logging.debug(f'Download from database: {dict(download)}')
 				self.add(download['link'], download['volume_id'], download['issue_id'], download['id'])
+				get_db().connection.commit()
 		return
 
 	def add(self,
