@@ -17,7 +17,7 @@ function fillTable(issues, api_key) {
 		monitored_container.classList.add('issue-monitored','monitor-column');
 		const monitored = document.createElement('button');
 		monitored.dataset.monitored = obj.monitored;
-		monitored.id = obj.id;
+		monitored.dataset.id = obj.id;
 		monitored.addEventListener('click', e => toggleMonitoredIssue(obj.id, api_key));
 		const monitored_icon = document.createElement('img');
 		if (obj.monitored) {
@@ -176,15 +176,19 @@ function toggleMonitored(api_key) {
 };
 
 function toggleMonitoredIssue(issue_id, api_key) {
-	const issue = document.querySelector(`#${issue_id}`);
+	const issue = document.querySelector(`button[data-id="${issue_id}"]`);
 	const icon = issue.querySelector('img');
-	const monitor = issue.dataset.monitored !== 'true';
-	fetch(`/api/issues/${issue_id}?api_key=${api_key}&monitor=${monitor}`, {
+	data = {
+		'monitor': issue.dataset.monitored !== 'true'
+	};
+	fetch(`/api/issues/${issue_id}?api_key=${api_key}`, {
 		'method': 'PUT',
+		'body': JSON.stringify(data),
+		'headers': {'Content-Type': 'application/json'}
 	})
 	.then(response => {
-		issue.dataset.monitored = monitor;
-		icon.src = monitor ? '/static/img/monitored.svg' : '/static/img/unmonitored.svg';
+		issue.dataset.monitored = data.monitor;
+		icon.src = data.monitor ? '/static/img/monitored.svg' : '/static/img/unmonitored.svg';
 	});
 };
 
