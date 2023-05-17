@@ -635,6 +635,7 @@ class DownloadHandler:
 			context (Flask): A flask app instance
 		"""		
 		self.context = context.app_context
+		self.load_download_thread = Thread(target=self.__load_downloads, name="Download Importer")
 		return
 
 	def __run_download(self, download: dict) -> None:
@@ -696,7 +697,7 @@ class DownloadHandler:
 			'issue_id': d['issue_id']
 		}
 
-	def load_downloads(self) -> None:
+	def __load_downloads(self) -> None:
 		"""Load downloads from the database and add them to the queue for re-downloading
 		"""		
 		logging.debug('Loading downloads from database')

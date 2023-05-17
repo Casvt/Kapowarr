@@ -99,7 +99,7 @@ def Kapowarr() -> None:
 		makedirs(settings.get_settings()['download_folder'], exist_ok=True)
 
 	# Now that database is setup, start handlers
-	download_handler.load_downloads()
+	download_handler.load_download_thread.start()
 	task_handler.handle_intervals()
 
 	# Create waitress server and run
