@@ -386,6 +386,8 @@ def _extract_get_comics_links(
 	body = soup.find('article', {'class': 'post-body'})
 	for result in body.find_all(link_filter_1):
 		group_title: str = result.get_text('\x00').partition('\x00')[0]
+		if 'variant cover' in group_title.lower():
+			continue
 		group_links = {}
 		for e in result.next_sibling.next_elements:
 			if e.name == 'hr':
@@ -401,6 +403,8 @@ def _extract_get_comics_links(
 
 	for result in body.find_all(link_filter_2):
 		group_title: str = result.get_text('\x00').partition('\x00')[0]
+		if 'variant cover' in group_title.lower():
+			continue
 		group_links = {}
 		for group_link in result.find_all('a'):
 			link_title = group_link.text.strip().lower()
@@ -449,6 +453,7 @@ def _process_extracted_get_comics_links(
 		download links grouped together with their service.
 	"""	
 	logging.debug('Creating link paths')
+	annual = 'annual' in volume_title.lower()
 	service_preference_order = dict((v, k) for k, v in enumerate(Settings().get_service_preference()))
 	link_paths: List[List[dict]] = []
 	for desc, sources in download_groups.items():
@@ -458,6 +463,7 @@ def _process_extracted_get_comics_links(
 			or
 			processed_desc['volume_number'] == volume_number)
 		and (processed_desc['special_version'] or processed_desc['issue_number'])
+		and processed_desc['annual'] == annual
 		):
 			# Group matches/contains what is desired to be downloaded
 			sources = {s: sources[s] for s in sorted(sources, key=lambda k: service_preference_order[k])}
@@ -540,6 +546,9 @@ def _test_paths(
 			for links in download['links'].values():
 				for link in links:
 					try:
+						# Maybe make purify link async so that all links can be purified 'at the same time'?
+						# https://www.youtube.com/watch?v=nFn4_nA_yk8&t=1053s
+						# https://stackoverflow.com/questions/53336675/get-aiohttp-results-as-string
 						pure_link = _purify_link(link)
 						dl_instance = pure_link['target'](link=pure_link['link'], filename_body=name, source=pure_link['source'])
 					except LinkBroken as lb:
@@ -713,10 +722,11 @@ class DownloadHandler:
 					volume_id, issue_id
 				FROM download_queue;
 			""")
+			cursor = get_db()
 			for download in cursor2:
 				logging.debug(f'Download from database: {dict(download)}')
 				self.add(download['link'], download['volume_id'], download['issue_id'], download['id'])
-				get_db().connection.commit()
+				cursor.connection.commit()
 		return
 
 	def add(self,

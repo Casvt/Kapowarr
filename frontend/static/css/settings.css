@@ -54,6 +54,11 @@ h2:not(:first-of-type) {
 	font-family: "Ubuntu Mono", Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
+.settings-container table tr > td input[type="checkbox"] {
+	width: 1.15rem;
+	aspect-ratio: 1/1;
+}
+
 .settings-container table tr > td p {
 	margin-top: .3rem;
 	color: var(--mid-color);

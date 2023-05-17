@@ -217,6 +217,12 @@ function autosearchVolume(api_key) {
 	});
 };
 
+function unzipVolume(api_key) {
+	fetch(`/api/system/tasks?api_key=${api_key}&cmd=unzip&volume_id=${id}`, {
+		'method': 'POST'
+	});
+};
+
 function autosearchIssue(issue_id, api_key) {
 	const button_info = task_to_button[`auto_search_issue#${id}#${issue_id}`];
 	const icon = button_info.button.querySelector('img');
@@ -512,6 +518,7 @@ usingApiKey()
 	addEventListener('#refresh-button', 'click', e => refreshVolume(api_key));
 	addEventListener('#autosearch-button', 'click', e => autosearchVolume(api_key));
 	addEventListener('#manualsearch-button', 'click', e => showManualSearch(api_key));
+	addEventListener('#unzip-button', 'click', e => unzipVolume(api_key));
 
 	addEventListener('#rename-button', 'click', e => showRename(api_key));
 	addEventListener('#submit-rename', 'click', e => renameVolume(api_key, e.target.dataset.issue_id || null));

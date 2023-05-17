@@ -301,12 +301,13 @@ def same_name_indexing(
 
 	return suggested_name
 
-def preview_mass_rename(volume_id: int, issue_id: int=None) -> List[Dict[str, str]]:
+def preview_mass_rename(volume_id: int, issue_id: int=None, filepath_filter: List[str]=None) -> List[Dict[str, str]]:
 	"""Preview what naming.mass_rename() will do.
 
 	Args:
 		volume_id (int): The id of the volume for which to check the renaming.
 		issue_id (int, optional): The id of the issue for which to check the renaming. Defaults to None.
+		filepath_filter (List[str], optional): Only process files that are in the list. Defaults to None.
 
 	Returns:
 		List[Dict[str, str]]: The renaming proposals.
@@ -352,6 +353,9 @@ def preview_mass_rename(volume_id: int, issue_id: int=None) -> List[Dict[str, st
 			(issue_id,)
 		).fetchall()
 		folder = dirname(file_infos[0]['filepath'])
+		
+	if filepath_filter is not None:
+		file_infos = filter(lambda f: f['filepath'] in filepath_filter, file_infos)
 
 	issues_in_volume = cursor.execute(
 		"SELECT COUNT(*) FROM issues WHERE volume_id = ?",
@@ -400,15 +404,16 @@ def preview_mass_rename(volume_id: int, issue_id: int=None) -> List[Dict[str, st
 		
 	return result
 
-def mass_rename(volume_id: int, issue_id: int=None) -> None:
+def mass_rename(volume_id: int, issue_id: int=None, filepath_filter: List[str]=None) -> None:
 	"""Carry out proposal of naming.preview_mass_rename()
 
 	Args:
-		volume_id (int): The id of the volume for which to rename
+		volume_id (int): The id of the volume for which to rename.
 		issue_id (int, optional): The id of the issue for which to rename. Defaults to None.
-	"""	
+		filepath_filter (List[str], optional): Only rename files that are in the list. Defaults to None.
+	"""
 	cursor = get_db()
-	renames = preview_mass_rename(volume_id, issue_id)
+	renames = preview_mass_rename(volume_id, issue_id, filepath_filter)
 	if not issue_id and renames:
 		cursor.execute(
 			"UPDATE volumes SET folder = ? WHERE id = ?",

@@ -8,6 +8,7 @@ function fillSettings(api_key) {
 		document.querySelector('#volume-folder-naming-input').value = json.result.volume_folder_naming;
 		document.querySelector('#file-naming-input').value = json.result.file_naming;
 		document.querySelector('#file-naming-tpb-input').value = json.result.file_naming_tpb;
+		document.querySelector('#unzip-input').checked = json.result.unzip;
 	});
 };
 
@@ -17,7 +18,8 @@ function saveSettings(api_key) {
 	const data = {
 		'volume_folder_naming': document.querySelector('#volume-folder-naming-input').value,
 		'file_naming': document.querySelector('#file-naming-input').value,
-		'file_naming_tpb': document.querySelector('#file-naming-tpb-input').value
+		'file_naming_tpb': document.querySelector('#file-naming-tpb-input').value,
+		'unzip': document.querySelector('#unzip-input').checked
 	};
 	fetch(`/api/settings?api_key=${api_key}`, {
 		'method': 'PUT',

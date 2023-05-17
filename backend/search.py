@@ -63,9 +63,14 @@ def _check_match(result: dict, title: str, volume_number: int, calculated_issue_
 	Returns:
 		dict: A dict with the key `match` having a bool value for if it matches or not and
 		the key `match_issue` with the reason for why it isn't a match if that's the case (otherwise `None`).
-	"""	
+	"""
+	annual = 'annual' in title.lower()
+
 	if blocklist_contains(result['link']):
 		return {'match': False, 'match_issue': 'Link is blocklisted'}
+
+	if result['annual'] != annual:
+		return {'match': False, 'match_issue': 'Annual conflict'}
 
 	if not _check_matching_titles(title, result['series']):
 		return {'match': False, 'match_issue': 'Title doesn\'t match'}

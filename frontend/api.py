@@ -216,7 +216,7 @@ def api_tasks():
 	elif request.method == 'POST':
 		task = extract_key(request, 'cmd')
 
-		if task.action in ('auto_search_issue', 'auto_search', 'refresh_and_scan'):
+		if task.action in ('auto_search_issue', 'auto_search', 'refresh_and_scan', 'unzip'):
 			volume_id = extract_key(request, 'volume_id')
 
 			if task.action in ('auto_search_issue',):

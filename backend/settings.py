@@ -15,7 +15,7 @@ from backend.custom_exceptions import (FolderNotFound, InvalidSettingKey,
                                        InvalidSettingValue)
 from backend.db import __DATABASE_VERSION__, get_db
 from backend.files import folder_path
-from backend.logging import set_log_level
+from backend.logging import log_levels, set_log_level
 
 default_settings = {
 	'host': '0.0.0.0',
@@ -27,7 +27,8 @@ default_settings = {
 	'file_naming_tpb': '{series_name} ({year}) Volume {volume_number} TPB',
 	'download_folder': folder_path('temp_downloads'),
 	'log_level': 'info',
-	'database_version': __DATABASE_VERSION__
+	'database_version': __DATABASE_VERSION__,
+	'unzip': False
 }
 
 private_settings = {
@@ -85,6 +86,7 @@ class Settings:
 			settings = dict(get_db().execute(
 				"SELECT key, value FROM config;"
 			))
+			settings['unzip'] = settings['unzip'] == 1
 			self.cache.update(settings)
 
 		return self.cache
@@ -122,7 +124,7 @@ class Settings:
 			elif key in ('volume_folder_naming','file_naming','file_naming_tpb'):
 				check_format(value, key)
 
-			elif key == 'log_level' and not value in ('info', 'debug'):
+			elif key == 'log_level' and not value in log_levels:
 				raise InvalidSettingValue(key, value)
 
 			elif key not in default_settings.keys():
@@ -142,7 +144,7 @@ class Settings:
 			result = self.get_settings(use_cache=False)
 		else:
 			result = self.get_settings()
-		logging.info(f'Settings changed: {", ".join(s[1] + "->" + s[0] for s in setting_changes)}')
+		logging.info(f'Settings changed: {", ".join(str(s[1]) + "->" + str(s[0]) for s in setting_changes)}')
 
 		return result
 
