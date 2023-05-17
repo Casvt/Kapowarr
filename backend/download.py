@@ -34,7 +34,7 @@ from backend.settings import (Settings, blocklist_reasons, private_settings,
 from .lib.mega import Mega, RequestError
 
 file_extension_regex = compile(r'(?<=\.)[\w\d]{2,4}(?=$|;|\s)|(?<=\/)[\w\d]{2,4}(?=$|;|\s)', IGNORECASE)
-mega_regex = compile(r'https?://mega\.(nz|io)/#(F\!|\!)', IGNORECASE)
+mega_regex = compile(r'https?://mega\.(nz|io)/(#(F\!|\!)|folder/)', IGNORECASE)
 mediafire_regex = compile(r'https?://www\.mediafire\.com/', IGNORECASE)
 
 download_chunk_size = 4194304 # 4MB Chunks
@@ -306,7 +306,7 @@ def _purify_link(link: str) -> dict:
 		
 		if mega_regex.search(url):
 			# Link is mega
-			if not '#F!' in url:
+			if not '#F!' in url and not '/folder/' in url:
 				return {'link': url, 'target': MegaDownload, 'source': 'mega'}
 			# else
 			# Link is not supported (folder most likely)
