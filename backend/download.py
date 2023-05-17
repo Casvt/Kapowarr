@@ -31,14 +31,14 @@ from backend.search import _check_matching_titles
 from backend.settings import (Settings, blocklist_reasons, private_settings,
                               supported_source_strings)
 
-from .lib.mega import Mega, RequestError
+from .lib.mega import Mega, RequestError, sids
 
 file_extension_regex = compile(r'(?<=\.)[\w\d]{2,4}(?=$|;|\s)|(?<=\/)[\w\d]{2,4}(?=$|;|\s)', IGNORECASE)
-mega_regex = compile(r'https?://mega\.(nz|io)/(#(F\!|\!)|folder/)', IGNORECASE)
+mega_regex = compile(r'https?://mega\.(nz|io)/(#(F\!|\!)|folder/|file/)', IGNORECASE)
 mediafire_regex = compile(r'https?://www\.mediafire\.com/', IGNORECASE)
 
 download_chunk_size = 4194304 # 4MB Chunks
-credentials = Credentials()
+credentials = Credentials(sids)
 
 #=====================
 # Download implementations
@@ -95,6 +95,7 @@ class DirectDownload(BaseDownload):
 
 		self.size: int = 0
 		r = get(self.link, stream=True)
+		r.close()
 		if not r.ok:
 			raise LinkBroken(1, blocklist_reasons[1])
 		self.__filename_body = filename_body.rstrip('.')
@@ -151,26 +152,26 @@ class DirectDownload(BaseDownload):
 		self.state = DOWNLOADING_STATE
 		size_downloaded = 0
 
-		r = get(self.link, stream=True)
-		with open(self.file, 'wb') as f:
-			start_time = perf_counter()
-			for chunk in r.iter_content(chunk_size=download_chunk_size):
-				if self.state == CANCELED_STATE:
-					break
-
-				f.write(chunk)
-
-				# Update progress
-				chunk_size = len(chunk)
-				size_downloaded += chunk_size
-				self.speed = round(chunk_size / (perf_counter() - start_time), 2)
-				if self.size == -1:
-					# Total size of file is not given so set progress to amount downloaded
-					self.progress = size_downloaded
-				else:
-					# Total size of file is given so calculate progress and speed
-					self.progress = round(size_downloaded / self.size * 100, 2)
+		with get(self.link, stream=True) as r:
+			with open(self.file, 'wb') as f:
 				start_time = perf_counter()
+				for chunk in r.iter_content(chunk_size=download_chunk_size):
+					if self.state == CANCELED_STATE:
+						break
+
+					f.write(chunk)
+
+					# Update progress
+					chunk_size = len(chunk)
+					size_downloaded += chunk_size
+					self.speed = round(chunk_size / (perf_counter() - start_time), 2)
+					if self.size == -1:
+						# Total size of file is not given so set progress to amount downloaded
+						self.progress = size_downloaded
+					else:
+						# Total size of file is given so calculate progress and speed
+						self.progress = round(size_downloaded / self.size * 100, 2)
+					start_time = perf_counter()
 
 		return
 
@@ -207,10 +208,7 @@ class MegaDownload(BaseDownload):
 		super().__init__()
 		self.link = link
 		self.source = source
-		
-		self.__r = get(self.link, stream=True)
-		if not self.__r.ok:
-			raise LinkBroken(1, blocklist_reasons[1])
+
 		self.__filename_body = filename_body.rstrip('.')
 		cred = credentials.get_one_from_source('mega')
 		try:
@@ -227,8 +225,7 @@ class MegaDownload(BaseDownload):
 		Returns:
 			str: The extension of the file, including the `.`
 		"""
-		extension = splitext(self._mega.mega_filename)[1]
-		return extension
+		return splitext(self._mega.mega_filename)[1]
 
 	def __build_filename(self) -> str:
 		"""Build the filename from the download folder, filename body and extension

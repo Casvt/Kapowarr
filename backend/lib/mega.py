@@ -33,7 +33,7 @@ from math import ceil
 from random import randint
 from re import findall, search
 from struct import pack, unpack
-from time import perf_counter
+from time import perf_counter, time
 
 from Crypto.Cipher import AES
 from Crypto.PublicKey import RSA
@@ -237,7 +237,7 @@ def decrypt_attr(attr, key):
 	attr = attr.rstrip('\0')
 	return loads(attr[4:]) if attr[:6] == 'MEGA{"' else False
 
-
+sids = {}
 class Mega:
 	def __init__(self, url: str, email: str=None, password: str=None, only_check_login: bool=False):
 		self.downloading: bool = False
@@ -255,7 +255,11 @@ class Mega:
 		logged_in = False
 		try:
 			if email is not None:
-				self._login_user(email, password)
+				if not email in sids or only_check_login:
+					# No sid fetched for user yet
+					self._login_user(email, password)
+					sids.update({email: (self.sid, None)})
+				self.sid = sids[email][0]
 				if only_check_login:
 					return
 				logged_in = True
@@ -264,7 +268,18 @@ class Mega:
 			raise RequestError(-16)
 		if not logged_in:
 			try:
-				self.login_anonymous()
+				if not -1 in sids:
+					# No sid fetched for user yet
+					# Make it "expire" after an hour
+					self.login_anonymous()
+					sids.update({-1: (self.sid, time() + 3600)})
+				expire_time = sids[-1][1]
+				if expire_time <= time():
+					# Current sid is "expired"
+					self.login_anonymous()
+					sids.update({-1: (self.sid, time() + 3600)})
+				self.sid = sids[-1][0]
+					
 			except JSONDecodeError:
 				raise RequestError(-16)
 		
@@ -303,6 +318,7 @@ class Mega:
 		self.mega_filename = attribs.get('n', '')
 
 	def _login_user(self, email: str, password: str):
+		logging.debug('Logging into Mega with user account')
 		email = email.lower()
 		get_user_salt_resp = self._api_request({'a': 'us0', 'user': email})
 		user_salt = None
@@ -327,6 +343,7 @@ class Mega:
 		self._login_process(resp, password_aes)
 
 	def login_anonymous(self):
+		logging.debug('Logging into Mega anonymously')
 		master_key = [randint(0, 0xFFFFFFFF)] * 4
 		password_key = [randint(0, 0xFFFFFFFF)] * 4
 		session_self_challenge = [randint(0, 0xFFFFFFFF)] * 4

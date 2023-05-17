@@ -20,6 +20,15 @@ class Credentials:
 	cache = {}
 	__load_first = True
 	
+	def __init__(self, sids: dict) -> None:
+		"""Set up the credential class
+
+		Args:
+			sids (dict): The sids variable at backend.lib.mega.sids
+		"""
+		self.sids = sids
+		return
+	
 	def get_all(self, use_cache: bool=True) -> List[dict]:
 		"""Get all credentials
 
@@ -151,6 +160,7 @@ class Credentials:
 			raise CredentialNotFound
 
 		self.get_all(use_cache=False)
+		self.sids.clear()
 		return
 
 	def get_open(self) -> List[str]:
