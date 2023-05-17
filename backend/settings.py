@@ -36,7 +36,7 @@ private_settings = {
 	'comicvine_api_url': 'https://comicvine.gamespot.com/api',
 	'getcomics_url': 'https://getcomics.org',
 	'hosting_threads': 10,
-	'version': 'v1.0.0-beta-18a',
+	'version': 'v1.0.0-beta-19',
 	'python_version': ".".join(str(i) for i in list(version_info))
 }
 
