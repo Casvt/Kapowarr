@@ -268,12 +268,12 @@ class Mega:
 			except JSONDecodeError:
 				raise RequestError(-16)
 		
-		file_id, file_key = self._parse_url(url).split('!')
+		self.file_id, file_key = self._parse_url(url).split('!')
 		try:
 			file_data = self._api_request({
 				'a': 'g',
 				'g': 1,
-				'p': file_id
+				'p': self.file_id
 			})
 		except JSONDecodeError:
 			raise RequestError(-18)
@@ -285,9 +285,9 @@ class Mega:
 			raise RequestError('File not accessible anymore')
 
 		self.size = file_data['s']
-		self.__direct_url = file_data['g']
 
 		r = get(file_data['g'], stream=True)
+		r.close()
 		if r.status_code == 509:
 			# Download limit reached
 			raise DownloadLimitReached('mega')
@@ -456,7 +456,13 @@ class Mega:
 	def download_url(self, filename: str):
 		self.downloading = True
 
-		r = get(self.__direct_url, stream=True).raw
+		url = self._api_request({
+			'a': 'g',
+			'g': 1,
+			'p': self.file_id
+		})['g']
+
+		r = get(url, stream=True).raw
 		size_downloaded = 0
 		with open(filename, 'wb') as f:
 			k_str = a32_to_str(self.k)
@@ -464,7 +470,7 @@ class Mega:
 								  initial_value=((self.iv[0] << 32) + self.iv[1]) << 64)
 			aes = AES.new(k_str, AES.MODE_CTR, counter=counter)
 
-			mac_bytes = b'\0' * 16
+			mac_bytes = EMPTY_IV
 			mac_encryptor = AES.new(k_str, AES.MODE_CBC,
 									mac_bytes)
 			iv_str = a32_to_str([self.iv[0], self.iv[1], self.iv[0], self.iv[1]])
