@@ -34,11 +34,9 @@ from backend.settings import (Settings, blocklist_reasons, private_settings,
 from .lib.mega import Mega, RequestError
 
 file_extension_regex = compile(r'(?<=\.)[\w\d]{2,4}(?=$|;|\s)|(?<=\/)[\w\d]{2,4}(?=$|;|\s)', IGNORECASE)
-mega_regex = compile(r'https?://mega\.(nz|io)/(#\!|file/)')
-mega_catch_regex = compile(r'https?://mega\.(nz|io)/')
-mediafire_regex = compile(r'https?://www\.mediafire\.com/file/')
-mediafire_catch_regex = compile(r'https?://www\.mediafire\.com')
-gc_regex = compile(r'https?://(\w+\.)?getcomics\.(org|info)/(?!links)')
+mega_regex = compile(r'https?://mega\.(nz|io)/#(F\!|\!)', IGNORECASE)
+mediafire_regex = compile(r'https?://www\.mediafire\.com/', IGNORECASE)
+
 download_chunk_size = 4194304 # 4MB Chunks
 credentials = Credentials()
 
@@ -302,47 +300,40 @@ def _purify_link(link: str) -> dict:
 		raise LinkBroken(2, blocklist_reasons[2])
 
 	elif link.startswith('http'):
-		r = get(link, headers={'User-Agent': 'Kapowarr'}, allow_redirects=False, stream=True)
-		if r.headers.get('Location', '').startswith(private_settings['getcomics_url'] + '/links/'):
-			r = get(r.headers['Location'], headers={'User-Agent': 'Kapowarr'}, allow_redirects=False, stream=True)
-
-		if mega_regex.search(link):
-			# Link is mega
-			return {'link': link, 'target': MegaDownload, 'source': 'mega'}
-
-		elif mega_regex.search(r.headers.get('Location', '')):
-			# Link is mega
-			return {'link': r.headers['Location'], 'target': MegaDownload, 'source': 'mega'}
-
-		elif mega_catch_regex.search(link) or mega_catch_regex.search(r.headers.get('Location', '')):
-			# Link is mega but not supported (folder most likely)
-			raise LinkBroken(2, blocklist_reasons[2])
-
-		elif mediafire_regex.search(link):
-			# Link is mediafire
-			soup = BeautifulSoup(r.text, 'html.parser')
-			button = soup.find('a', {'id': 'downloadButton'})
-			if button:
-				return {'link': button['href'], 'target': DirectDownload, 'source': 'mediafire'}
-			raise LinkBroken(1, blocklist_reasons[1])
-
-		elif mediafire_regex.search(r.headers.get('Location', '')):
-			# Link is mediafire
-			r = get(link)
-			soup = BeautifulSoup(r.text, 'html.parser')
-			button = soup.find('a', {'id': 'downloadButton'})
-			if button:
-				return {'link': button['href'], 'target': DirectDownload, 'source': 'mediafire'}
-			raise LinkBroken(1, blocklist_reasons[1])
+		r = get(link, headers={'User-Agent': 'Kapowarr'}, stream=True)
+		r.close()
+		url = r.url
 		
-		elif mediafire_catch_regex.search(link) or mediafire_catch_regex.search(r.headers.get('Location', '')):
-			# Link is mediafire but not supported (folder most likely)
+		if mega_regex.search(url):
+			# Link is mega
+			if not '#F!' in url:
+				return {'link': url, 'target': MegaDownload, 'source': 'mega'}
+			# else
+			# Link is not supported (folder most likely)
 			raise LinkBroken(2, blocklist_reasons[2])
+		
+		elif mediafire_regex.search(url):
+			# Link is mediafire
+			if 'error.php' in url:
+				# Link is broken
+				raise LinkBroken(1, blocklist_reasons[1])
+			
+			elif '/folder/' in url:
+				# Link is not supported (folder most likely)
+				raise LinkBroken(2, blocklist_reasons[2])
+			
+			soup = BeautifulSoup(r.text, 'html.parser')
+			button = soup.find('a', {'id': 'downloadButton'})
+			if button:
+				return {'link': button['href'], 'target': DirectDownload, 'source': 'mediafire'}
 
-		elif r.headers.get('Location','').startswith('magnet:?'):
+			# Link is not broken and not a folder but we still can't find the download button...
+			raise LinkBroken(1, blocklist_reasons[1])
+
+		elif url.startswith('magnet:?'):
 			# Link is magnet link
 			raise LinkBroken(2, blocklist_reasons[2])
-			return {'link': r.headers['Location'], 'target': None}
+			return {'link': url, 'target': None, 'source': 'torrent'}
 
 		elif r.headers.get('Content-Type','') == 'application/x-bittorrent':
 			# Link is torrent file
@@ -351,9 +342,8 @@ def _purify_link(link: str) -> dict:
 			return {'link': "magnet:?xt=urn:btih:" + hash + "&tr=udp://tracker.cyberia.is:6969/announce&tr=udp://tracker.port443.xyz:6969/announce&tr=http://tracker3.itzmx.com:6961/announce&tr=udp://tracker.moeking.me:6969/announce&tr=http://vps02.net.orel.ru:80/announce&tr=http://tracker.openzim.org:80/announce&tr=udp://tracker.skynetcloud.tk:6969/announce&tr=https://1.tracker.eu.org:443/announce&tr=https://3.tracker.eu.org:443/announce&tr=http://re-tracker.uz:80/announce&tr=https://tracker.parrotsec.org:443/announce&tr=udp://explodie.org:6969/announce&tr=udp://tracker.filemail.com:6969/announce&tr=udp://tracker.nyaa.uk:6969/announce&tr=udp://retracker.netbynet.ru:2710/announce&tr=http://tracker.gbitt.info:80/announce&tr=http://tracker2.dler.org:80/announce",
 						'target': None}
 
-		# Link is direct download from getcomics ('Main Server')
-		r = get(link, headers={'user-agent': 'Kapowarr'}, allow_redirects=True, stream=True)
-		return {'link': r.url, 'target': DirectDownload, 'source': 'getcomics'}
+		# Link is direct download from getcomics ('Main Server', 'Mirror Server', 'Link 1', 'Link 2', etc.)
+		return {'link': url, 'target': DirectDownload, 'source': 'getcomics'}
 
 	else:
 		raise LinkBroken(2, blocklist_reasons[2])
