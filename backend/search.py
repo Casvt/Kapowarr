@@ -99,14 +99,15 @@ def _check_match(result: dict, title: str, volume_number: int, calculated_issue_
 		
 	return {'match': True, 'match_issue': None}
 
-def _sort_search_results(result: dict, title: str, year: int=None, issue_number: int=None) -> List[int]:
+def _sort_search_results(result: dict, title: str, volume_number: int, year: int=None, calculated_issue_number: float=None) -> List[int]:
 	"""Sort the search results
 
 	Args:
 		result (dict): A result in SearchSources.search_results
 		title (str): Title of volume
+		volume_number (int): The volume number of the volume
 		year (int, optional): The year of the volume. Defaults to None.
-		issue_number (int, optional): The issue number of the issue. Defaults to None.
+		calculated_issue_number (float, optional): The calculated_issue_number of the issue. Defaults to None.
 
 	Returns:
 		List[int]: A list of numbers which determines the ranking of the result.
@@ -121,24 +122,21 @@ def _sort_search_results(result: dict, title: str, year: int=None, issue_number:
 	split_title = title.split(' ')
 	rating.append(len([word for word in result['series'].split(' ') if not word in split_title]))
 
-	# Bonus if the year matches
-	if year is not None:
-		if result['year'] == year:
-			rating.append(0)
-		else:
-			rating.append(1)
+	# Prefer volume number or year matches, even better if both match
+	v_match = int(not (result['volume_number'] is not None and result['volume_number'] == volume_number))
+	y_match = int(not (year is not None and result['year'] is not None and year - 1 <= result['year'] <= year + 1))
+	rating.append(v_match + y_match)
 
 	# Sort on issue number fitting
-	if issue_number is not None:
-		if isinstance(result['issue_number'], float) and issue_number == result['issue_number']:
+	if calculated_issue_number is not None:
+		if isinstance(result['issue_number'], float) and calculated_issue_number == result['issue_number']:
 			# Issue number is direct match
 			rating.append(0)
 
-		elif isinstance(result['issue_number'], str):
-			split_issue_number = tuple(map(float, result['issue_number'].split('-')))
-			if split_issue_number[0] <= issue_number <= split_issue_number[1]:
+		elif isinstance(result['issue_number'], tuple):
+			if result['issue_number'][0] <= calculated_issue_number <= result['issue_number'][1]:
 				# Issue number falls between range
-				rating.append(1 - (1 / (split_issue_number[1] - split_issue_number[0] + 1)))
+				rating.append(1 - (1 / (result['issue_number'][1] - result['issue_number'][0] + 1)))
 			else:
 				# Issue number falls outside so release is not usefull
 				rating.append(3)
@@ -150,9 +148,8 @@ def _sort_search_results(result: dict, title: str, year: int=None, issue_number:
 		else:
 			rating.append(3)
 	else:
-		if isinstance(result['issue_number'], str):
-			split_issue_number = tuple(map(float, result['issue_number'].split('-')))
-			rating.append(1.0 / (split_issue_number[1] - split_issue_number[0] + 1))
+		if isinstance(result['issue_number'], tuple):
+			rating.append(1.0 / (result['issue_number'][1] - result['issue_number'][0] + 1))
 
 		elif isinstance(result['issue_number'], float):
 			rating.append(1)
@@ -303,7 +300,7 @@ def manual_search(
 		result.update(_check_match(result, title, volume_number, calculated_issue_number, year))
 
 	# Sort results; put best result at top
-	results.sort(key=lambda r: _sort_search_results(r, title, year, calculated_issue_number))
+	results.sort(key=lambda r: _sort_search_results(r, title, volume_number, year, calculated_issue_number))
 		
 	logging.debug(f'Manual search results: {results}')
 	return results
