@@ -79,22 +79,30 @@ def _check_match(result: dict, title: str, volume_number: int, issue_numbers: st
 	if result['volume_number'] != volume_number and (result['volume_number'] is not None or year is None):
 		return {'match': False, 'match_issue': 'Volume number doesn\'t match'}
 
+	# The reason that the list of calculated_issue_numbers of the volume is a '|'-seperated string instead of just an array
+	# is that checking if a calculated_issue_number is in a string is way faster (+-2.3x) than in an array.
 	issue_number_is_equal = (
 		(
-			calculated_issue_number is None # Search result for volume
+			# Search result for volume
+			calculated_issue_number is None
 			and
 			(
-				(isinstance(result['issue_number'], float) and str(result['issue_number']) in issue_numbers) # Issue number is in volume
-				or (isinstance(result['issue_number'], tuple) and all(str(i) in issue_numbers for i in result['issue_number'])) # Issue range's start and end are both in volume
+				# Issue number is in volume
+				(isinstance(result['issue_number'], float) and str(result['issue_number']) in issue_numbers)
+				# Issue range's start and end are both in volume
+				or (isinstance(result['issue_number'], tuple) and all(str(i) in issue_numbers for i in result['issue_number']))
 			)
 		)
 		or
 		(
-			calculated_issue_number is not None # Search result for issue
+			# Search result for issue
+			calculated_issue_number is not None
 			and
 			(
-				(isinstance(result['issue_number'], float) and result['issue_number'] == calculated_issue_number) # Issue number equals issue that is searched for
-				or (result['issue_number'] is None and not '|' in issue_numbers) # No issue number but only one issue in volume
+				# Issue number equals issue that is searched for
+				(isinstance(result['issue_number'], float) and result['issue_number'] == calculated_issue_number)
+				# No issue number but only one issue in volume
+				or (result['issue_number'] is None and not '|' in issue_numbers)
 			)
 		)
 	)
