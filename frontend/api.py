@@ -162,7 +162,10 @@ def auth(method):
 	"""Used as decorator and, if applied to route, restricts the route to authorized users only
 	"""
 	def wrapper(*args,**kwargs):
-		logging.debug(f'{request.method} {request.path}')
+		if not (
+			request.method == 'GET' and request.path in ('/api/system/tasks', '/api/activity/queue')
+		):
+			logging.debug(f'{request.method} {request.path}')
 		try:
 			extract_key(request, 'api_key')
 		except (KeyNotFound, InvalidKeyValue):
