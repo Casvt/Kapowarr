@@ -17,7 +17,7 @@ from requests import get
 
 from backend.blocklist import blocklist_contains
 from backend.db import get_db
-from backend.files import extract_filename_data, process_issue_number
+from backend.files import extract_filename_data
 from backend.settings import private_settings
 
 clean_title_regex = compile(r'((?<=annual)s|(?!\s)\-(?!\s)|\+|,|\!|:|\bthe\s|’|\'|\")')
@@ -49,13 +49,14 @@ def _check_matching_titles(title1: str, title2: str) -> bool:
 	logging.debug(f'Matching titles ({title1}, {title2}): {result}')
 	return result
 
-def _check_match(result: dict, title: str, volume_number: int, calculated_issue_number: float=None, year: int=None) -> dict:
+def _check_match(result: dict, title: str, volume_number: int, issue_numbers: str, calculated_issue_number: float=None, year: int=None) -> dict:
 	"""Determine if a result is a match with what is searched for
 
 	Args:
 		result (dict): A result in SearchSources.search_results
 		title (str): Title of volume
 		volume_number (int): The volume number of the volume
+		issue_numbers (str): A string containing all calculated_issue_numbers of a volume, joined by a '|'
 		calculated_issue_number (float, optional): The calculated issue number of the issue 
 		(output of files.process_issue_number()). Defaults to None.
 		year (int, optional): The year of the volume. Defaults to None.
@@ -79,11 +80,22 @@ def _check_match(result: dict, title: str, volume_number: int, calculated_issue_
 		return {'match': False, 'match_issue': 'Volume number doesn\'t match'}
 
 	issue_number_is_equal = (
-		calculated_issue_number is None
+		(
+			calculated_issue_number is None # Search result for volume
+			and
+			(
+				(isinstance(result['issue_number'], float) and str(result['issue_number']) in issue_numbers) # Issue number is in volume
+				or (isinstance(result['issue_number'], tuple) and all(str(i) in issue_numbers for i in result['issue_number'])) # Issue range's start and end are both in volume
+			)
+		)
 		or
 		(
-			isinstance(result['issue_number'], float)
-			and calculated_issue_number == result['issue_number']
+			calculated_issue_number is not None # Search result for issue
+			and
+			(
+				(isinstance(result['issue_number'], float) and result['issue_number'] == calculated_issue_number) # Issue number equals issue that is searched for
+				or (result['issue_number'] is None and not '|' in issue_numbers) # No issue number but only one issue in volume
+			)
 		)
 	)
 	if not issue_number_is_equal:
@@ -236,30 +248,49 @@ class SearchSources:
 		return []
 
 def manual_search(
-	title: str,
-	volume_number: int,
-	year: int=None,
-	issue_number: str=None
+	volume_id: int,
+	issue_id: int=None
 ) -> List[dict]:
 	"""Do a manual search for a volume or issue
 
 	Args:
-		title (str): The title of the volume
-		volume_number (int): The volume number of the volume
-		year (int, optional): The year of the volume. Defaults to None.
-		issue_number (str, optional): The issue number of the issue (if you want to search for an issue instead of for the volume). Defaults to None.
-
+		volume_id (int): The id of the volume to search for
+		issue_id (int, optional): The id of the issue to search for (in the case that you want to search for an issue instead of a volume).
+		Defaults to None.
+	
 	Returns:
 		List[dict]: List with search results.
-	"""	
+	"""
+	cursor = get_db()
+	cursor.execute("""
+		SELECT
+			title,
+			volume_number, year
+		FROM volumes
+		WHERE id = ?
+		LIMIT 1;
+	""", (volume_id,))
+	title, volume_number, year = cursor.fetchone()
+	title: str
+	volume_number: int
+	year: int
+	if issue_id:
+		cursor.execute("""
+			SELECT
+				issue_number, calculated_issue_number
+			FROM issues
+			WHERE id = ?
+			LIMIT 1;
+		""", (issue_id,))
+		issue_number, calculated_issue_number = cursor.fetchone()
+	else:
+		issue_number, calculated_issue_number = None, None
+	issue_number: int
+	calculated_issue_number: int
+	
 	logging.info(
 		f'Starting manual search: {title} ({year}) {"#" + issue_number if issue_number else ""}'
 	)
-
-	if issue_number is not None:
-		calculated_issue_number = process_issue_number(issue_number)
-	else:
-		calculated_issue_number = None
 
 	# Prepare query
 	title = title.replace(':', '')
@@ -296,8 +327,13 @@ def manual_search(
 	results: List[dict] = list({r['link']: r for r in results}.values())
 
 	# Decide what is a match and what not
+	cursor.execute(
+		"SELECT calculated_issue_number FROM issues WHERE volume_id = ?;",
+		(volume_id,)
+	)
+	issue_numbers = '|'.join(map(str, cursor))
 	for result in results:
-		result.update(_check_match(result, title, volume_number, calculated_issue_number, year))
+		result.update(_check_match(result, title, volume_number, issue_numbers, calculated_issue_number, year))
 
 	# Sort results; put best result at top
 	results.sort(key=lambda r: _sort_search_results(r, title, volume_number, year, calculated_issue_number))
@@ -320,16 +356,14 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 	cursor = get_db()
 	cursor.execute("""
 		SELECT
-			title,
-			volume_number, year,
 			monitored
 		FROM volumes
 		WHERE id = ?
-		LIMIT 1
+		LIMIT 1;
 		""",
 		(volume_id,)
 	)
-	title, volume_number, year, volume_monitored = cursor.fetchone()
+	volume_monitored = cursor.fetchone()[0]
 	logging.info(
 		f'Starting auto search for volume {volume_id} {f"issue {issue_id}" if issue_id else ""}'
 	)
@@ -393,7 +427,7 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 
 	results = list(filter(
 		lambda r: r['match'],
-		manual_search(title, volume_number, year, issue_number)
+		manual_search(volume_id, issue_id)
 	))
 	if issue_number is not None:
 		result = []

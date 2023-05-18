@@ -457,8 +457,8 @@ def api_rename_issue(id: int):
 @error_handler
 @auth
 def api_volume_manual_search(id: int):
-	volume_info = library.get_volume(id).get_info(complete=False)
-	result = manual_search(volume_info['title'], volume_info['volume_number'], volume_info['year'])
+	library.get_volume(id)
+	result = manual_search(id)
 	return return_api(result)
 
 @api.route('/volumes/<int:id>/download', methods=['POST'])
@@ -475,12 +475,9 @@ def api_volume_download(id: int):
 @auth
 def api_issue_manual_search(id: int):
 	issue_info = library.get_issue(id).get_info()
-	volume_info = library.get_volume(issue_info['volume_id']).get_info(complete=False)
 	result = manual_search(
-		volume_info['title'],
-		volume_info['volume_number'],
-		volume_info['year'],
-		issue_info['issue_number']
+		issue_info['volume_id'],
+		id
 	)
 	return return_api(result)
 
