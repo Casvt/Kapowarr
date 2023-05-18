@@ -90,7 +90,8 @@ def _check_match(result: dict, title: str, volume_number: int, issue_numbers: st
 				# Issue number is in volume
 				(isinstance(result['issue_number'], float) and str(result['issue_number']) in issue_numbers)
 				# Issue range's start and end are both in volume
-				or (isinstance(result['issue_number'], tuple) and all(str(i) in issue_numbers for i in result['issue_number']))
+				# Result is a TPB
+				or (result['special_version'] is not None)
 			)
 		)
 		or
