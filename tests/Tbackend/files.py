@@ -37,7 +37,10 @@ class extract_filename_data(unittest.TestCase):
 				{'series': 'John Constantine, Hellblazer: 30th Anniversary Celebration', 'year': 2018, 'volume_number': 1, 'special_version': None, 'issue_number': 5.0, 'annual': False},
 
 			'Team 7 v1 (2012)/Team 7 (0-8) GetComics.INFO/Team 7 008.cbr':
-				{'series': 'Team 7', 'year': 2012, 'volume_number': 1, 'special_version': None, 'issue_number': 8.0, 'annual': False}
+				{'series': 'Team 7', 'year': 2012, 'volume_number': 1, 'special_version': None, 'issue_number': 8.0, 'annual': False},
+				
+			'Infinity Gauntlet #1 – 6 (1991-1992)':
+				{'series': 'Infinity Gauntlet', 'year': 1991, 'volume_number': 1, 'special_version': None, 'issue_number': (1.0, 6.0), 'annual': False}
 		}
 		self.run_cases(cases)
 

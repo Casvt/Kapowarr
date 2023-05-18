@@ -232,7 +232,11 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 						if issue_scd_result:
 							# Issue number found
 							issue_number = issue_scd_result.group(1)
-							issue_pos = issue_result.start(0)
+							issue_pos = issue_scd_result.start(0)
+							break
+					else:
+						continue
+					break
 
 				else:
 					# Issue number found
