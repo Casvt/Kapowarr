@@ -52,7 +52,7 @@ issue_regex_5 = compile(r'#?(' + issue_regex_snippet + r'[\s\.]?-[\s\.]?' + issu
 issue_regex_6 = compile(r'(?<!\()\b(' + issue_regex_snippet + r')\b(?!\))', IGNORECASE)
 issue_regex_7 = compile(r'^(-?' + issue_regex_snippet + r')$', IGNORECASE)
 year_regex = compile(r'\(' + year_regex_snippet + r'\)|--' + year_regex_snippet + r'--|, ' + year_regex_snippet + r'\s{3}|\b(?:(?:\d{2}-){1,2}(\d{4})|(\d{4})(?:-\d{2}){1,2})\b', IGNORECASE)
-series_regex = compile(r'(^(\d+\.?)?\s+|[\s,]+$)')
+series_regex = compile(r'(^(\d+\.?)?\s+|\s(?=\s)|[\s,]+$)')
 annual_regex = compile(r'(?<!\+\s)(?<!\+\.)(?<!\+\-)(?<!\+)annual(?![\s\.\-]?\+)', IGNORECASE)
 
 def _calc_float_issue_number(issue_number: str) -> Union[float, None]:
