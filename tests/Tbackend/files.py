@@ -34,7 +34,10 @@ class extract_filename_data(unittest.TestCase):
 				{'series': 'The Incredible Hulk', 'year': 2022, 'volume_number': 3, 'special_version': None, 'issue_number': (5.0, 6.0), 'annual': False},
 
 			'John Constantine, Hellblazer: 30th Anniversary Celebration (2018)/John Constantine, Hellblazer: 30th Anniversary Celebration (2018) - 5.zip':
-				{'series': 'John Constantine, Hellblazer: 30th Anniversary Celebration', 'year': 2018, 'volume_number': 1, 'special_version': None, 'issue_number': 5.0, 'annual': False}
+				{'series': 'John Constantine, Hellblazer: 30th Anniversary Celebration', 'year': 2018, 'volume_number': 1, 'special_version': None, 'issue_number': 5.0, 'annual': False},
+
+			'Team 7 v1 (2012)/Team 7 (0-8) GetComics.INFO/Team 7 008.cbr':
+				{'series': 'Team 7', 'year': 2012, 'volume_number': 1, 'special_version': None, 'issue_number': 8.0, 'annual': False}
 		}
 		self.run_cases(cases)
 

@@ -221,7 +221,9 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 	else:
 		# No special version so find issue number; assume to the right of volume number (if found)
 		for regex in (issue_regex, issue_regex_2, issue_regex_3, issue_regex_4, issue_regex_5, issue_regex_6):
-			issue_result = regex.search(filename, pos=volume_end)
+			issue_result = None
+			r = regex.finditer(filename, pos=volume_end)
+			for issue_result in r: pass
 			if issue_result:
 				if (year_pos <= issue_result.start(0) <= year_end
 				or year_pos <= issue_result.end(0) <= year_end):
