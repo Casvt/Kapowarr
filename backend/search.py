@@ -9,7 +9,7 @@ Inspired by Mylar3:
 import logging
 from asyncio import create_task, gather, run
 from re import compile
-from typing import List
+from typing import Dict, List
 
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
@@ -49,14 +49,14 @@ def _check_matching_titles(title1: str, title2: str) -> bool:
 	logging.debug(f'Matching titles ({title1}, {title2}): {result}')
 	return result
 
-def _check_match(result: dict, title: str, volume_number: int, issue_numbers: str, calculated_issue_number: float=None, year: int=None) -> dict:
+def _check_match(result: dict, title: str, volume_number: int, issue_numbers: Dict[float, int], calculated_issue_number: float=None, year: int=None) -> dict:
 	"""Determine if a result is a match with what is searched for
 
 	Args:
 		result (dict): A result in SearchSources.search_results
 		title (str): Title of volume
 		volume_number (int): The volume number of the volume
-		issue_numbers (str): A string containing all calculated_issue_numbers of a volume, joined by a '|'
+		issue_numbers (Dict[float, int]): calculated_issue_number to release year for all issues of volume
 		calculated_issue_number (float, optional): The calculated issue number of the issue 
 		(output of files.process_issue_number()). Defaults to None.
 		year (int, optional): The year of the volume. Defaults to None.
@@ -79,8 +79,6 @@ def _check_match(result: dict, title: str, volume_number: int, issue_numbers: st
 	if result['volume_number'] != volume_number and (result['volume_number'] is not None or year is None):
 		return {'match': False, 'match_issue': 'Volume number doesn\'t match'}
 
-	# The reason that the list of calculated_issue_numbers of the volume is a '|'-seperated string instead of just an array
-	# is that checking if a calculated_issue_number is in a string is way faster (+-2.3x) than in an array.
 	issue_number_is_equal = (
 		(
 			# Search result for volume
@@ -88,8 +86,9 @@ def _check_match(result: dict, title: str, volume_number: int, issue_numbers: st
 			and
 			(
 				# Issue number is in volume
-				(isinstance(result['issue_number'], float) and str(result['issue_number']) in issue_numbers)
+				(isinstance(result['issue_number'], float) and result['issue_number'] in issue_numbers)
 				# Issue range's start and end are both in volume
+				or (isinstance(result['issue_number'], tuple) and all(i in issue_numbers for i in result['issue_number']))
 				# Result is a TPB
 				or (result['special_version'] is not None)
 			)
@@ -103,7 +102,7 @@ def _check_match(result: dict, title: str, volume_number: int, issue_numbers: st
 				# Issue number equals issue that is searched for
 				(isinstance(result['issue_number'], float) and result['issue_number'] == calculated_issue_number)
 				# No issue number but only one issue in volume
-				or (result['issue_number'] is None and not '|' in issue_numbers)
+				or (result['issue_number'] is None and len(issue_numbers) == 1)
 			)
 		)
 	)
@@ -113,7 +112,12 @@ def _check_match(result: dict, title: str, volume_number: int, issue_numbers: st
 	year_is_equal = (
 		year is None
 		or result['year'] is None
-		or year - 1 <= result['year'] <= year + 1
+		or (
+			year - 1 <= result['year'] <= year + 1 # Year in volume release year
+			# Year in issue release year
+			or (isinstance(result['issue_number'], float) and issue_numbers.get(result['issue_number']) == result['year']) 
+			or (isinstance(result['issue_number'], float) and issue_numbers.get(result['issue_number'][0]) == result['year'])
+		)
 	)
 	if not year_is_equal:
 		return {'match': False, 'match_issue': 'Year doesn\'t match'}
@@ -337,10 +341,10 @@ def manual_search(
 
 	# Decide what is a match and what not
 	cursor.execute(
-		"SELECT calculated_issue_number FROM issues WHERE volume_id = ?;",
+		"SELECT calculated_issue_number, date FROM issues WHERE volume_id = ?;",
 		(volume_id,)
 	)
-	issue_numbers = '|'.join(map(str, cursor))
+	issue_numbers = {i[0]: int(i[1].split('-')[0]) for i in cursor}
 	for result in results:
 		result.update(_check_match(result, title, volume_number, issue_numbers, calculated_issue_number, year))
 
