@@ -255,15 +255,15 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 	if series_pos:
 		# Series name is assumed to be in the filename, left of all other information
 		series = no_ext_clean_filename[:series_pos - 1]
-		series = series_regex.sub('', series)
 	else:
 		series_folder_pos = min(year_folderpos, volume_folderpos)
 		if series_folder_pos:
 			# Series name is assumed to be in the foldername, left of all other information
-			series = series_regex.sub('', foldername[:series_folder_pos - 1])
+			series = foldername[:series_folder_pos - 1]
 		else:
 			# Series name is assumed to be the upper foldername
-			series = series_regex.sub('', strip_filename_regex.sub('', upper_foldername))
+			series = strip_filename_regex.sub('', upper_foldername)
+	series = series_regex.sub('', series)
 
 	# Format output
 	if volume_number:
