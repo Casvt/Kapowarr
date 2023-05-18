@@ -54,6 +54,7 @@ issue_regex_7 = compile(r'^(-?' + issue_regex_snippet + r')$', IGNORECASE)
 year_regex = compile(r'\(' + year_regex_snippet + r'\)|--' + year_regex_snippet + r'--|, ' + year_regex_snippet + r'\s{3}|\b(?:(?:\d{2}-){1,2}(\d{4})|(\d{4})(?:-\d{2}){1,2})\b', IGNORECASE)
 series_regex = compile(r'(^(\d+\.?)?\s+|\s(?=\s)|[\s,]+$)')
 annual_regex = compile(r'(?<!\+\s)(?<!\+\.)(?<!\+\-)(?<!\+)annual(?![\s\.\-]?\+)', IGNORECASE)
+annual_regex = compile(r'\+[\s\.]?annuals?|annuals?[\s\.]?\+|^((?!annuals?).)*$', IGNORECASE)
 
 def _calc_float_issue_number(issue_number: str) -> Union[float, None]:
 	"""Convert an issue number from string to representive float
@@ -135,14 +136,11 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 	series, year, volume_number, special_version, issue_number = None, None, None, None, None
 	
 	# Determine annual or not
-	annual = False
+	annual = True
 	annual_result = annual_regex.search(basename(filepath))
-	if annual_result:
-		annual = True
-	else:
-		annual_result = annual_regex.search(basename(dirname(filepath)))
-		if annual_result:
-			annual = True
+	annual_folder_result = annual_regex.search(basename(dirname(filepath)))
+	if annual_result and annual_folder_result:
+		annual = False
 
 	# Generalise filename
 	filepath = (unquote(filepath)
