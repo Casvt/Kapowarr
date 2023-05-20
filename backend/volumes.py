@@ -662,22 +662,12 @@ class Library:
 	def get_stats(self) -> Dict[str, int]:
 		cursor = get_db('dict')
 		cursor.execute("""
-			WITH stats AS (
+			WITH v_stats AS (
 				SELECT
 					COUNT(*) AS volumes,
 					SUM(volumes.monitored) AS monitored
 				FROM volumes
-			)
-			SELECT
-				volumes,
-				monitored,
-				volumes - monitored AS unmonitored
-			FROM stats;
-		""")
-		stats = dict(cursor.fetchone())
-		
-		cursor.execute("""
-			WITH stats AS (
+			), i_stats AS (
 				SELECT
 					COUNT(DISTINCT issues.id) AS issues,
 					SUM(CASE WHEN issues_files.issue_id IS NOT NULL
@@ -687,18 +677,21 @@ class Library:
 				FROM issues
 				LEFT JOIN issues_files
 				ON issues.id = issues_files.issue_id
-			) 
+			)
 			SELECT
-				issues,
+				volumes,
+				monitored,
+				volumes - monitored AS unmonitored,
+				issues, 
 				downloaded_issues,
-				COUNT(files.id) AS files,
+				COUNT(files.id) AS files, 
 				SUM(files.size) AS total_file_size
 			FROM
-				stats,
+				v_stats,
+				i_stats,
 				files;
 		""")
-		stats.update(dict(cursor.fetchone()))
-		return stats
+		return dict(cursor.fetchone())
 
 def search_volumes(query: str) -> List[dict]:
 	"""Search for a volume in the ComicVine database
