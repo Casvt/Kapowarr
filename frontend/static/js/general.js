@@ -122,6 +122,37 @@ function showNav(e) {
 	document.querySelector('#nav-bar').classList.toggle('show-nav');
 };
 
+//
+// Size conversion
+//
+function convertSize(size) {
+	const sizes = {
+		'B': 1,
+		'KB': 1000,
+		'MB': 1000000,
+		'GB': 1000000000,
+		'TB': 1000000000000
+	};
+	for (const [term, division_size] of Object.entries(sizes)) {
+		let resulting_size = size / division_size
+		if (0 <= resulting_size && resulting_size <= 1000) {
+			size = (
+				Math.round(
+					(size / division_size * 100)
+				) / 100
+			).toString() + term;
+			return size;
+		};
+	};
+	size = (
+		Math.round(
+			(size / sizes.TB * 100)
+		) / 100
+	).toString() + 'TB';
+
+	return size;
+};
+
 // code run on load
 
 const volume_id = parseInt(window.location.pathname.split('/').at(-1)) || null;

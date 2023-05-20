@@ -6,7 +6,7 @@
 import logging
 from io import BytesIO
 from time import time
-from typing import List
+from typing import Dict, List
 
 from backend.comicvine import ComicVine
 from backend.custom_exceptions import (IssueNotFound, VolumeAlreadyAdded,
@@ -658,6 +658,47 @@ class Library:
 
 		logging.info(f'Added volume with comicvine id {comicvine_id} and id {volume_id}')
 		return volume_id
+
+	def get_stats(self) -> Dict[str, int]:
+		cursor = get_db('dict')
+		cursor.execute("""
+			WITH stats AS (
+				SELECT
+					COUNT(*) AS volumes,
+					SUM(volumes.monitored) AS monitored
+				FROM volumes
+			)
+			SELECT
+				volumes,
+				monitored,
+				volumes - monitored AS unmonitored
+			FROM stats;
+		""")
+		stats = dict(cursor.fetchone())
+		
+		cursor.execute("""
+			WITH stats AS (
+				SELECT
+					COUNT(DISTINCT issues.id) AS issues,
+					SUM(CASE WHEN issues_files.issue_id IS NOT NULL
+						THEN 1
+						ELSE 0
+					END) AS downloaded_issues
+				FROM issues
+				LEFT JOIN issues_files
+				ON issues.id = issues_files.issue_id
+			) 
+			SELECT
+				issues,
+				downloaded_issues,
+				COUNT(files.id) AS files,
+				SUM(files.size) AS total_file_size
+			FROM
+				stats,
+				files;
+		""")
+		stats.update(dict(cursor.fetchone()))
+		return stats
 
 def search_volumes(query: str) -> List[dict]:
 	"""Search for a volume in the ComicVine database

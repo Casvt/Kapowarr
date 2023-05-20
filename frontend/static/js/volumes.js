@@ -3,7 +3,8 @@
 //
 function populateLibrary(volumes, api_key) {
 	const table = document.querySelector('#library');
-	table.innerHTML = '';
+	const space_taker = document.querySelector('.space-taker');
+	table.querySelectorAll('a').forEach(e => e.remove())
 	volumes.forEach(volume => {
 		const entry = document.createElement("a");
 		entry.href = `/volumes/${volume.id}`;
@@ -43,12 +44,8 @@ function populateLibrary(volumes, api_key) {
 		monitored.innerText = volume.monitored ? 'Monitored' : 'Unmonitored';
 		entry.appendChild(monitored);
 
-		table.appendChild(entry);
+		table.insertBefore(entry, space_taker);
 	});
-	
-	const space_taker = document.createElement('div');
-	space_taker.classList.add('space-taker');
-	table.appendChild(space_taker);
 };
 
 function fetchLibrary(api_key) {
@@ -69,6 +66,20 @@ function searchLibrary(api_key) {
 function clearSearch(api_key) {
 	document.querySelector('#search-input').value = '';
 	fetchLibrary(api_key);
+};
+
+function fetchStats(api_key) {
+	fetch(`/api/volumes/stats?api_key=${api_key}`)
+	.then(response => response.json())
+	.then(json => {
+		document.querySelector('#volume-count').innerText = json.result.volumes;
+		document.querySelector('#volume-monitored-count').innerText = json.result.monitored;
+		document.querySelector('#volume-unmonitored-count').innerText = json.result.unmonitored;
+		document.querySelector('#issue-count').innerText = json.result.issues;
+		document.querySelector('#issue-download-count').innerText = json.result.downloaded_issues;
+		document.querySelector('#file-count').innerText = json.result.files;
+		document.querySelector('#total-file-size').innerText = convertSize(json.result.total_file_size);
+	});
 };
 
 //
@@ -93,6 +104,7 @@ function searchAll(api_key) {
 usingApiKey()
 .then(api_key => {
 	fetchLibrary(api_key);
+	fetchStats(api_key);
 
 	addEventListener('#clear-search', 'click', e => clearSearch(api_key));
 	addEventListener('#start-search', 'click', e => searchLibrary(api_key));

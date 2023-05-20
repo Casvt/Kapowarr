@@ -133,9 +133,41 @@
 	flex-grow: 127;
 }
 
+/*  */
+/* Lib stats */
+/*  */
+.lib-stats {
+	width: 100%;
+	display: flex;
+	flex-wrap: wrap;
+	gap: clamp(.5rem, 4vw, 3rem);
+
+	padding-top: 2rem;
+
+	font-size: .8rem;
+}
+
+.lib-stats table {
+	border-spacing: 0px;
+}
+
+.lib-stats th {
+	padding-right: 1rem;
+	padding-block: .25rem;
+	text-align: right;
+}
+
 @media (max-width: 535px) {
 	header {
 		justify-content: flex-start;
+	}
+
+	.lib-stats {
+		flex-direction: column;
+	}
+
+	.lib-stats th {
+		width: 50%;
 	}
 }
 

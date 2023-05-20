@@ -374,6 +374,13 @@ def api_volumes():
 		volume_info = library.get_volume(volume_id).get_info()
 		return return_api(volume_info, code=201)
 
+@api.route('/volumes/stats', methods=['GET'])
+@error_handler
+@auth
+def api_volumes_stats():
+	result = library.get_stats()
+	return return_api(result)
+
 @api.route('/volumes/<int:id>', methods=['GET','PUT','DELETE'])
 @error_handler
 @auth
