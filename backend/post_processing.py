@@ -211,12 +211,17 @@ def unzip_volume(volume_id: int, file: str=None) -> None:
 			if 'variant cover' in c.lower():
 				continue
 
-			result = extract_filename_data(c)
+			result = extract_filename_data(c, False)
 			if (_check_matching_titles(result['series'], volume_data[0])
 			and (
-				result['volume_number'] == volume_data[2]
-				or (result['year'] is not None
-					and volume_data[1] - 1 <= result['year'] <= volume_data[1] + 1)
+				# Year has to match
+				(result['year'] is not None
+     				and volume_data[1] - 1 <= result['year'] <= volume_data[1] + 1)
+				# Or volume number
+				or (result['volume_number'] is not None
+					and result['volume_number'] == volume_data[2])
+				# Or neither should be found (we play it safe so we keep those)
+				or (result['year'] is None and result['volume_number'] is None)
 			)
 			and result['annual'] == annual):
 				rel_files_append(c)
