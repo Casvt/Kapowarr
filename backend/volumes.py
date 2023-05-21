@@ -670,10 +670,7 @@ class Library:
 			), i_stats AS (
 				SELECT
 					COUNT(DISTINCT issues.id) AS issues,
-					SUM(CASE WHEN issues_files.issue_id IS NOT NULL
-						THEN 1
-						ELSE 0
-					END) AS downloaded_issues
+					COUNT(DISTINCT issues_files.issue_id) AS downloaded_issues
 				FROM issues
 				LEFT JOIN issues_files
 				ON issues.id = issues_files.issue_id
