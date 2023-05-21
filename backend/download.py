@@ -238,7 +238,11 @@ class MegaDownload(BaseDownload):
 		return join(folder, self.__filename_body + extension)
 
 	def run(self) -> None:
-		"""Start the download
+		"""
+		Start the download
+		
+		Raises:
+			DownloadLimitReached: The Mega download limit is reached mid-download
 		"""		
 		self.state = DOWNLOADING_STATE
 		self._mega.download_url(self.file)
@@ -647,16 +651,21 @@ class DownloadHandler:
 		logging.info(f'Starting download: {download["id"]}')
 		
 		with self.context():
-			download['instance'].run()
+			try:
+				download['instance'].run()
+			except DownloadLimitReached:
+				# Mega download limit reached mid-download
+				download['instance'].state == CANCELED_STATE
+				self.queue = [e for e in self.queue if not isinstance(e['instance'], MegaDownload)]
+			else:
+				if download['instance'].state == CANCELED_STATE:
+					PostProcessing(download, self.queue).short()
+					return
+				# else
+				download['instance'].state = IMPORTING_STATE
+				PostProcessing(download, self.queue).full()
 			
-			if download['instance'].state == CANCELED_STATE:
-				PostProcessing(download, self.queue).short()
-				return
-			# else
-			download['instance'].state = IMPORTING_STATE
-			PostProcessing(download, self.queue).full()
-			
-			self.queue.pop(0)
+				self.queue.pop(0)
 			self._process_queue()
 			return
 

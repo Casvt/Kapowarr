@@ -496,7 +496,12 @@ class Mega:
 			for chunk_size in get_chunks(self.size):
 				if not self.downloading:
 					break
+
 				chunk = r.read(chunk_size)
+				if not chunk:
+					# Download limit reached mid download
+					raise DownloadLimitReached('mega')
+
 				chunk = aes.decrypt(chunk)
 				f.write(chunk)
 
