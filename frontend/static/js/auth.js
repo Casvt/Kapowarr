@@ -2,7 +2,7 @@ async function usingApiKey(redirect=true) {
 	const api_key = sessionStorage.getItem('api_key');
 	if (api_key === null) {
 
-		return fetch(`/api/auth`, {'method': 'POST'})
+		return fetch(`${url_base}/api/auth`, {'method': 'POST'})
 			.then(response => {
 				if (!response.ok) return Promise.reject(response.status);
 				return response.json();
@@ -13,7 +13,7 @@ async function usingApiKey(redirect=true) {
 			})
 			.catch(e => {
 				if (e === 401) {
-					if (redirect) window.location.href = `/login?redirect=${window.location.pathname}`;
+					if (redirect) window.location.href = `${base_url}/login?redirect=${window.location.pathname}`;
 					else return null;
 				} else {
 					console.log(e);

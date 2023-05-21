@@ -1,5 +1,5 @@
 function fillSettings(api_key) {
-	fetch(`/api/settings?api_key=${api_key}`)
+	fetch(`${url_base}/api/settings?api_key=${api_key}`)
 	.then(response => response.json())
 	.then(json => {
 		document.querySelector('#download-folder-input').value = json.result.download_folder;
@@ -13,7 +13,7 @@ function saveSettings(api_key) {
 	const data = {
 		'download_folder': document.querySelector('#download-folder-input').value
 	};
-	fetch(`/api/settings?api_key=${api_key}`, {
+	fetch(`${url_base}/api/settings?api_key=${api_key}`, {
 		'method': 'PUT',
 		'body': JSON.stringify(data),
 		'headers': {'Content-Type': 'application/json'}
@@ -34,7 +34,7 @@ function saveSettings(api_key) {
 // Empty download folder
 // 
 function emptyFolder(api_key) {
-	fetch(`/api/activity/folder?api_key=${api_key}`, {
+	fetch(`${url_base}/api/activity/folder?api_key=${api_key}`, {
 		'method': 'DELETE'
 	})
 	.then(response => {
@@ -47,7 +47,7 @@ function emptyFolder(api_key) {
 //
 function fillPref(api_key) {
 	const selects = document.querySelectorAll('#pref-table select');
-	fetch(`/api/settings/servicepreference?api_key=${api_key}`)
+	fetch(`${url_base}/api/settings/servicepreference?api_key=${api_key}`)
 	.then(response => response.json())
 	.then(json => {
 		for (let i = 0; i < json.result.length; i++) {
@@ -84,7 +84,7 @@ function updatePrefOrder(e) {
 
 function savePrefOrder(api_key) {
 	const order = [...document.querySelectorAll('#pref-table select')].map(e => e.value);
-	fetch(`/api/settings/servicepreference?api_key=${api_key}`, {
+	fetch(`${url_base}/api/settings/servicepreference?api_key=${api_key}`, {
 		'method': 'PUT',
 		'headers': {'Content-Type': 'application/json'},
 		'body': JSON.stringify({'order': order})
@@ -95,7 +95,7 @@ function savePrefOrder(api_key) {
 // Credentials
 // 
 function fillCredentials(api_key) {
-	fetch(`/api/credentials?api_key=${api_key}`)
+	fetch(`${url_base}/api/credentials?api_key=${api_key}`)
 	.then(response => response.json())
 	.then(json => {
 		const table = document.querySelector('#cred-list');
@@ -122,7 +122,7 @@ function fillCredentials(api_key) {
 			delete_cred.addEventListener('click', e => deleteCredential(cred.id, api_key));
 			delete_cred.setAttribute('type', 'button');
 			const delete_cred_icon = document.createElement('img');
-			delete_cred_icon.src = '/static/img/delete.svg';
+			delete_cred_icon.src = `${url_base}/static/img/delete.svg`;
 			delete_cred.appendChild(delete_cred_icon);
 			delete_cred_container.appendChild(delete_cred);
 			entry.appendChild(delete_cred_container);
@@ -135,7 +135,7 @@ function fillCredentials(api_key) {
 function fillServices(api_key) {
 	const table = document.querySelector('#cred-service-input');
 	const button = document.querySelector('#toggle-cred');
-	fetch(`/api/credentials/open?api_key=${api_key}`)
+	fetch(`${url_base}/api/credentials/open?api_key=${api_key}`)
 	.then(response => response.json())
 	.then(json => {
 		if (!json.result.length) {
@@ -174,7 +174,7 @@ function addCredential(api_key) {
 	const email = document.querySelector('#cred-email-input').value;
 	const password = document.querySelector('#cred-password-input').value;
 
-	fetch(`/api/credentials?api_key=${api_key}&source=${service}&email=${email}&password=${password}`, {
+	fetch(`${url_base}/api/credentials?api_key=${api_key}&source=${service}&email=${email}&password=${password}`, {
 		'method': 'POST'
 	})
 	.then(response => {
@@ -190,7 +190,7 @@ function addCredential(api_key) {
 };
 
 function deleteCredential(id, api_key) {
-	fetch(`/api/credentials/${id}?api_key=${api_key}`, {
+	fetch(`${url_base}/api/credentials/${id}?api_key=${api_key}`, {
 		'method': 'DELETE'
 	})
 	.then(response => {

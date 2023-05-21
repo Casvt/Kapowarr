@@ -1,7 +1,7 @@
 // code run on load
 usingApiKey()
 .then(api_key => {
-	fetch(`/api/system/about?api_key=${api_key}`)
+	fetch(`${url_base}/api/system/about?api_key=${api_key}`)
 	.then(response => response.json())
 	.then(json => {
 		document.querySelector('#version').innerText = json.result.version;

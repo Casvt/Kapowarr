@@ -45,7 +45,7 @@ function buildResults(results) {
 		if (result.already_added) {
 			const aa_icon = document.createElement('img');
 			aa_icon.alt = 'Volume is already added';
-			aa_icon.src = '/static/img/check_circle.svg';
+			aa_icon.src = `${url_base}/static/img/check_circle.svg`;
 			title.appendChild(aa_icon);
 		};
 		
@@ -110,7 +110,7 @@ function search(api_key) {
 	document.querySelector('#search-input').blur();
 
 	const query = document.querySelector('#search-input').value;
-	fetch(`/api/volumes/search?api_key=${api_key}&query=${query}`)
+	fetch(`${url_base}/api/volumes/search?api_key=${api_key}&query=${query}`)
 	.then(response => {
 		if (!response.ok) return Promise.reject(response.status);
 		return response.json();
@@ -137,7 +137,7 @@ function clearSearch(e) {
 //
 function fillRootFolderInput(api_key) {
 	const root_folder_list = document.querySelector('#rootfolder-input');
-	fetch(`/api/rootfolder?api_key=${api_key}`)
+	fetch(`${url_base}/api/rootfolder?api_key=${api_key}`)
 	.then(response => response.json())
 	.then(json => {
 		if (json.result.length) {
@@ -170,16 +170,16 @@ function addVolume() {
 	const monitor_value = document.querySelector('#monitor-input').value;
 	usingApiKey()
 	.then(api_key => {
-		fetch(`/api/volumes?api_key=${api_key}&comicvine_id=${comicvine_id}&monitor=${monitor_value}&root_folder_id=${root_folder_id}`, {
+		fetch(`${url_base}/api/volumes?api_key=${api_key}&comicvine_id=${comicvine_id}&monitor=${monitor_value}&root_folder_id=${root_folder_id}`, {
 			'method': 'POST'
 		})
 		.then(response => {
 			if (!response.ok) return Promise.reject(response.status);
 			else return response.json();
 		})
-		.then(json => window.location.href = `/volumes/${json.result.id}`)
+		.then(json => window.location.href = `${base_url}/volumes/${json.result.id}`)
 		.catch(e => {
-			if (e === 401) window.location.href = `/login?redirect=${window.location.pathname}`;
+			if (e === 401) window.location.href = `${base_url}/login?redirect=${window.location.pathname}`;
 			else if (e === 509) document.querySelector('#add-volume').innerText = 'ComicVine API rate limit reached';
 			else {
 				console.log(e);

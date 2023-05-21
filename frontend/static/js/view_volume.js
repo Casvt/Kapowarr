@@ -22,12 +22,12 @@ function fillTable(issues, api_key) {
 		const monitored_icon = document.createElement('img');
 		if (obj.monitored) {
 			// Issue is monitored
-			monitored_icon.src = '/static/img/monitored.svg';
+			monitored_icon.src = `${url_base}/static/img/monitored.svg`;
 			monitored.setAttribute('aria-label', 'Issue is monitored. Click to unmonitor.');
 			monitored.setAttribute('title', 'Issue is monitored. Click to unmonitor.');
 		} else {
 			// Issue is unmonitored
-			monitored_icon.src = '/static/img/unmonitored.svg';
+			monitored_icon.src = `${url_base}/static/img/unmonitored.svg`;
 			monitored.setAttribute('aria-label', 'Issue is unmonitored. Click to monitor.');
 			monitored.setAttribute('title', 'Issue is unmonitored. Click to monitor.');
 		};
@@ -60,12 +60,12 @@ function fillTable(issues, api_key) {
 		const status_icon = document.createElement('img');
 		if (obj.files.length) {
 			// Downloaded
-			status_icon.src = '/static/img/check.svg';
+			status_icon.src = `${url_base}/static/img/check.svg`;
 			status.setAttribute('aria-label', 'Issue is downloaded.');
 			status.setAttribute('title', 'Issue is downloaded');
 		} else {
 			// Not downloaded
-			status_icon.src = '/static/img/cancel_search.svg';
+			status_icon.src = `${url_base}/static/img/cancel_search.svg`;
 			status.setAttribute('aria-label', 'Issue is not downloaded.');
 			status.setAttribute('title', 'Issue is not downloaded');
 		};
@@ -82,7 +82,7 @@ function fillTable(issues, api_key) {
 		auto_search.setAttribute('aria-label', 'Auto search for this issue');
 		auto_search.addEventListener('click', e => autosearchIssue(obj.id, api_key));
 		const auto_search_icon = document.createElement('img');
-		auto_search_icon.src = '/static/img/search.svg';
+		auto_search_icon.src = `${url_base}/static/img/search.svg`;
 		auto_search.appendChild(auto_search_icon);
 		actions.appendChild(auto_search);
 
@@ -92,7 +92,7 @@ function fillTable(issues, api_key) {
 		manual_search.setAttribute('aria-label', 'Manually search for this issue');
 		manual_search.addEventListener('click', e => showManualSearch(api_key, obj.id));		
 		const manual_search_icon = document.createElement('img');
-		manual_search_icon.src = '/static/img/manual_search.svg';
+		manual_search_icon.src = `${url_base}/static/img/manual_search.svg`;
 		manual_search.appendChild(manual_search_icon);
 		actions.appendChild(manual_search);
 		entry.appendChild(actions);
@@ -120,12 +120,12 @@ function fillPage(data, api_key) {
 	monitor.addEventListener('click', e => toggleMonitored(api_key));
 	if (data.monitored) {
 		// Volume is monitored
-		monitor_icon.src = '/static/img/monitored_light.svg';
+		monitor_icon.src = `${url_base}/static/img/monitored_light.svg`;
 		monitor.setAttribute('aria-label', 'Volume is monitored. Click to unmonitor.');
 		monitor.setAttribute('title', 'Volume is monitored. Click to unmonitor.');
 	} else {
 		// Volume is unmonitored
-		monitor_icon.src = '/static/img/unmonitored_light.svg';
+		monitor_icon.src = `${url_base}/static/img/unmonitored_light.svg`;
 		monitor.setAttribute('aria-label', 'Volume is unmonitored. Click to monitor.');
 		monitor.setAttribute('title', 'Volume is unmonitored. Click to monitor.');
 	};
@@ -164,14 +164,14 @@ function toggleMonitored(api_key) {
 	data = {
 		'monitor': button.dataset.monitored !== 'true'
 	};
-	fetch(`/api/volumes/${id}?api_key=${api_key}`, {
+	fetch(`${url_base}/api/volumes/${id}?api_key=${api_key}`, {
 		'method': 'PUT',
 		'body': JSON.stringify(data),
 		'headers': {'Content-Type': 'application/json'}
 	})
 	.then(response => {
 		button.dataset.monitored = data.monitor;
-		icon.src = data.monitor ? '/static/img/monitored_light.svg' : '/static/img/unmonitored_light.svg';
+		icon.src = data.monitor ? `${url_base}/static/img/monitored_light.svg` : `${url_base}/static/img/unmonitored_light.svg`;
 	});
 };
 
@@ -181,14 +181,14 @@ function toggleMonitoredIssue(issue_id, api_key) {
 	data = {
 		'monitor': issue.dataset.monitored !== 'true'
 	};
-	fetch(`/api/issues/${issue_id}?api_key=${api_key}`, {
+	fetch(`${url_base}/api/issues/${issue_id}?api_key=${api_key}`, {
 		'method': 'PUT',
 		'body': JSON.stringify(data),
 		'headers': {'Content-Type': 'application/json'}
 	})
 	.then(response => {
 		issue.dataset.monitored = data.monitor;
-		icon.src = data.monitor ? '/static/img/monitored.svg' : '/static/img/unmonitored.svg';
+		icon.src = data.monitor ? `${url_base}/static/img/monitored.svg` : `${url_base}/static/img/unmonitored.svg`;
 	});
 };
 
@@ -201,7 +201,7 @@ function refreshVolume(api_key) {
 	icon.src = button_info.loading_icon;
 	icon.classList.add('spinning');
 
-	fetch(`/api/system/tasks?api_key=${api_key}&cmd=refresh_and_scan&volume_id=${id}`, {
+	fetch(`${url_base}/api/system/tasks?api_key=${api_key}&cmd=refresh_and_scan&volume_id=${id}`, {
 		'method': 'POST'
 	});
 };
@@ -212,13 +212,13 @@ function autosearchVolume(api_key) {
 	icon.src = button_info.loading_icon;
 	icon.classList.add('spinning');
 
-	fetch(`/api/system/tasks?api_key=${api_key}&cmd=auto_search&volume_id=${id}`, {
+	fetch(`${url_base}/api/system/tasks?api_key=${api_key}&cmd=auto_search&volume_id=${id}`, {
 		'method': 'POST'
 	});
 };
 
 function unzipVolume(api_key) {
-	fetch(`/api/system/tasks?api_key=${api_key}&cmd=unzip&volume_id=${id}`, {
+	fetch(`${url_base}/api/system/tasks?api_key=${api_key}&cmd=unzip&volume_id=${id}`, {
 		'method': 'POST'
 	});
 };
@@ -229,7 +229,7 @@ function autosearchIssue(issue_id, api_key) {
 	icon.src = button_info.loading_icon;
 	icon.classList.add('spinning');
 	
-	fetch(`/api/system/tasks?api_key=${api_key}&cmd=auto_search_issue&volume_id=${id}&issue_id=${issue_id}`, {
+	fetch(`${url_base}/api/system/tasks?api_key=${api_key}&cmd=auto_search_issue&volume_id=${id}&issue_id=${issue_id}`, {
 		'method': 'POST'
 	});
 };
@@ -250,7 +250,7 @@ function showManualSearch(api_key, issue_id=null) {
 
 	// Start search
 	tbody.innerHTML = '';
-	const url = issue_id ? `/api/issues/${issue_id}/manualsearch` : `/api/volumes/${id}/manualsearch`;
+	const url = issue_id ? `${url_base}/api/issues/${issue_id}/manualsearch` : `${url_base}/api/volumes/${id}/manualsearch`;
 	fetch(`${url}?api_key=${api_key}`)
 	.then(response => response.json())
 	.then(json => {
@@ -262,9 +262,9 @@ function showManualSearch(api_key, issue_id=null) {
 			match.classList.add('match-column');
 			const match_icon = document.createElement('img');
 			if (result.match) {
-				match_icon.src = '/static/img/check.svg';
+				match_icon.src = `${url_base}/static/img/check.svg`;
 			} else {
-				match_icon.src = '/static/img/cancel_search.svg';
+				match_icon.src = `${url_base}/static/img/cancel_search.svg`;
 				match.title = result.match_issue;
 			};
 			match.appendChild(match_icon);
@@ -289,7 +289,7 @@ function showManualSearch(api_key, issue_id=null) {
 			add_entry.title = 'Download';
 			add_entry.addEventListener('click', e => addManualSearch(result.link, add_entry, api_key, issue_id));
 			const add_entry_icon = document.createElement('img');
-			add_entry_icon.src = '/static/img/download.svg';
+			add_entry_icon.src = `${url_base}/static/img/download.svg`;
 			add_entry.appendChild(add_entry_icon);
 			action.appendChild(add_entry);
 			if (result.match_issue === null || !result.match_issue.includes('blocklist')) {
@@ -297,7 +297,7 @@ function showManualSearch(api_key, issue_id=null) {
 				blocklist_entry.title = 'Add to blocklist';
 				blocklist_entry.addEventListener('click', e => blockManualSearch(result.link, blocklist_entry, match, api_key));
 				const blocklist_entry_icon = document.createElement('img');
-				blocklist_entry_icon.src = '/static/img/blocklist.svg';
+				blocklist_entry_icon.src = `${url_base}/static/img/blocklist.svg`;
 				blocklist_entry.appendChild(blocklist_entry_icon);
 				action.appendChild(blocklist_entry);
 			};
@@ -313,27 +313,27 @@ function showManualSearch(api_key, issue_id=null) {
 
 function addManualSearch(link, button, api_key, issue_id=null) {
 	const img = button.querySelector('img');
-	img.src = '/static/img/loading.svg';
+	img.src = `${url_base}/static/img/loading.svg`;
 	img.classList.add('spinning');
 
-	const url = issue_id ? `/api/issues/${issue_id}/download` : `/api/volumes/${id}/download`;
+	const url = issue_id ? `${url_base}/api/issues/${issue_id}/download` : `${url_base}/api/volumes/${id}/download`;
 	fetch(`${url}?api_key=${api_key}&link=${link}`, {
 		'method': 'POST'
 	})
 	.then(response => response.json())
 	.then(json => {
 		img.classList.remove('spinning');
-		if (json.result.length) img.src = '/static/img/check.svg';
-		else img.src = '/static/img/download_failed.svg';
+		if (json.result.length) img.src = `${url_base}/static/img/check.svg`;
+		else img.src = `${url_base}/static/img/download_failed.svg`;
 	});
 };
 
 function blockManualSearch(link, button, match, api_key) {
-	fetch(`/api/blocklist?api_key=${api_key}&link=${link}&reason_id=4`, {
+	fetch(`${url_base}/api/blocklist?api_key=${api_key}&link=${link}&reason_id=4`, {
 		'method': 'POST'
 	})
 	.then(response => {
-		button.querySelector('img').src = '/static/img/check.svg';
+		button.querySelector('img').src = `${url_base}/static/img/check.svg`;
 		match.innerText = 'No';
 		match.title = 'Link is blocklisted';
 	});
@@ -346,11 +346,11 @@ function showRename(api_key, issue_id=null) {
 	let url;
 	if (issue_id === null) {
 		// Preview volume rename
-		url = `/api/volumes/${id}/rename?api_key=${api_key}`;
+		url = `${url_base}/api/volumes/${id}/rename?api_key=${api_key}`;
 		document.querySelector('#submit-rename').dataset.issue_id = '';
 	} else {
 		// Preview issue rename
-		url = `/api/issues/${issue_id}/rename?api_key=${api_key}`;
+		url = `${url_base}/api/issues/${issue_id}/rename?api_key=${api_key}`;
 		document.querySelector('#submit-rename').dataset.issue_id = issue_id;
 	};
 	fetch(url)
@@ -401,8 +401,8 @@ function showRename(api_key, issue_id=null) {
 function renameVolume(api_key, issue_id=null) {
 	showLoadWindow('rename-window');
 	let url;
-	if (issue_id === null) url = `/api/volumes/${id}/rename?api_key=${api_key}`;
-	else url = `/api/issues/${issue_id}/rename?api_key=${api_key}`;
+	if (issue_id === null) url = `${url_base}/api/volumes/${id}/rename?api_key=${api_key}`;
+	else url = `${url_base}/api/issues/${issue_id}/rename?api_key=${api_key}`;
 	fetch(url, {
 		'method': 'POST'
 	})
@@ -415,7 +415,7 @@ function renameVolume(api_key, issue_id=null) {
 function showEdit(api_key) {
 	document.querySelector('#monitored-input').value = document.querySelector('#volume-monitor').dataset.monitored;
 	const volume_root_folder = parseInt(document.querySelector('#volume-path').dataset.root_folder);
-	fetch(`/api/rootfolder?api_key=${api_key}`)
+	fetch(`${url_base}/api/rootfolder?api_key=${api_key}`)
 	.then(response => response.json())
 	.then(json => {
 		const table = document.querySelector('#root-folder-input');
@@ -442,7 +442,7 @@ function editVolume() {
 	}
 	usingApiKey()
 	.then(api_key => {
-		fetch(`/api/volumes/${id}?api_key=${api_key}`, {
+		fetch(`${url_base}/api/volumes/${id}?api_key=${api_key}`, {
 			'method': 'PUT',
 			'body': JSON.stringify(data),
 			'headers': {'Content-Type': 'application/json'}
@@ -460,12 +460,12 @@ function deleteVolume() {
 	const delete_folder = document.querySelector('#delete-folder-input').value;
 	usingApiKey()
 	.then(api_key => {
-		fetch(`/api/volumes/${id}?api_key=${api_key}&delete_folder=${delete_folder}`, {
+		fetch(`${url_base}/api/volumes/${id}?api_key=${api_key}&delete_folder=${delete_folder}`, {
 			'method': 'DELETE'
 		})
 		.then(response => {
 			if (!response.ok) return Promise.reject(response.status);
-			window.location.href = '/'
+			window.location.href = url_base;
 		})
 		.catch(e => {
 			if (e === 400) delete_error.classList.remove('hidden');
@@ -479,7 +479,7 @@ function deleteVolume() {
 // 
 function showIssueInfo(id, api_key) {
 	document.querySelector('#issue-rename-selector').dataset.issue_id = id;
-	fetch(`/api/issues/${id}?api_key=${api_key}`)
+	fetch(`${url_base}/api/issues/${id}?api_key=${api_key}`)
 	.then(response => response.json())
 	.then(json => {
 		document.querySelector('#issue-info-title').innerText = `${json.result.title} - #${json.result.issue_number} - ${json.result.date}`;
@@ -507,13 +507,13 @@ const id = window.location.pathname.split('/').at(-1);
 
 usingApiKey()
 .then(api_key => {
-	fetch(`/api/volumes/${id}?api_key=${api_key}`)
+	fetch(`${url_base}/api/volumes/${id}?api_key=${api_key}`)
 	.then(response => {
 		if (!response.ok) return Promise.reject(response.status);
 		return response.json();
 	})
 	.then(json => fillPage(json.result, api_key))
-	.catch(e => window.location.href = '/');
+	.catch(e => window.location.href = url_base);
 
 	addEventListener('#refresh-button', 'click', e => refreshVolume(api_key));
 	addEventListener('#autosearch-button', 'click', e => autosearchVolume(api_key));

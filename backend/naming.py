@@ -352,6 +352,7 @@ def preview_mass_rename(volume_id: int, issue_id: int=None, filepath_filter: Lis
 			""",
 			(issue_id,)
 		).fetchall()
+		if not file_infos: return result
 		folder = dirname(file_infos[0]['filepath'])
 		
 	if filepath_filter is not None:

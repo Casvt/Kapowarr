@@ -14,7 +14,7 @@ function login() {
 	error.classList.add('hidden');
 
 	const password_input = document.querySelector('#password-input');
-	fetch(`/api/auth?password=${password_input.value}`, {'method': 'POST'})
+	fetch(`${url_base}/api/auth?password=${password_input.value}`, {'method': 'POST'})
 	.then(response => {
 		if (!response.ok) return Promise.reject(response.status);
 		return response.json();
@@ -31,6 +31,8 @@ function login() {
 };
 
 // code run on load
+
+const url_base = document.querySelector('#url_base').dataset.value;
 
 usingApiKey(false)
 .then(api_key => {

@@ -2,7 +2,7 @@
 // Filling data
 // 
 function fillQueue(api_key) {
-	fetch(`/api/activity/queue?api_key=${api_key}`)
+	fetch(`${url_base}/api/activity/queue?api_key=${api_key}`)
 		.then(response => {
 			if (!response.ok) return Promise.reject(response.status);
 			return response.json();
@@ -54,7 +54,7 @@ function fillQueue(api_key) {
 				delete_button.addEventListener('click', e => deleteEntry(obj.id, api_key));
 				delete_entry.appendChild(delete_button);
 				const delete_icon = document.createElement('img');
-				delete_icon.src = '/static/img/delete.svg';
+				delete_icon.src = `${url_base}/static/img/delete.svg`;
 				delete_button.appendChild(delete_icon);
 				entry.append(delete_entry);
 
@@ -62,7 +62,7 @@ function fillQueue(api_key) {
 			});
 		})
 		.catch(e => {
-			if (e === 401) window.location.href = '/';
+			if (e === 401) window.location.href = url_base;
 		});
 };
 
@@ -70,7 +70,7 @@ function fillQueue(api_key) {
 // Actions
 // 
 function deleteEntry(id, api_key) {
-	fetch(`/api/activity/queue/${id}?api_key=${api_key}`, {
+	fetch(`${url_base}/api/activity/queue/${id}?api_key=${api_key}`, {
 		'method': 'DELETE'
 	});
 };

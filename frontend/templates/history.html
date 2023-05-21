@@ -4,12 +4,13 @@
 	<meta charset="UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta id="url_base" data-value="{{url_base}}">
 
-	<link rel="stylesheet" href="/static/css/general.css">
-	<link rel="stylesheet" href="/static/css/history.css">
-	<script src="/static/js/auth.js"></script>
-	<script src="/static/js/general.js" defer></script>
-	<script src="/static/js/history.js" defer></script>
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/history.css') }}">
+	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/general.js') }}" defer></script>
+	<script src="{{ url_for('static', filename='js/history.js') }}" defer></script>
 
 	<title>History - Kapowarr</title>
 </head>
@@ -17,7 +18,7 @@
 	<header>
 		<div class="menu-title-container">
 			<button id="toggle-nav" aria-label="Toggle menu">
-				<img src="/static/img/menu.svg" alt="">
+				<img src="{{url_base}}/static/img/menu.svg" alt="">
 			</button>
 			<h1>Kapowarr</h1>
 		</div>
@@ -25,13 +26,13 @@
 	<div class="nav-main">
 		<div id="nav-bar">
 			<nav>
-				<a href="/">Volumes</a>
-				<a href="/activity/queue">Activity</a>
-					<a href="/activity/queue" class="sub-entry">Queue</a>
-					<a href="/activity/history" class="sub-entry current-nav">History</a>
-					<a href="/activity/blocklist" class="sub-entry">Blocklist</a>
-				<a href="/settings">Settings</a>
-				<a href="/system/status">System</a>
+				<a href="{{url_base}}/">Volumes</a>
+				<a href="{{url_base}}/activity/queue">Activity</a>
+					<a href="{{url_base}}/activity/queue" class="sub-entry">Queue</a>
+					<a href="{{url_base}}/activity/history" class="sub-entry current-nav">History</a>
+					<a href="{{url_base}}/activity/blocklist" class="sub-entry">Blocklist</a>
+				<a href="{{url_base}}/settings">Settings</a>
+				<a href="{{url_base}}/system/status">System</a>
 			</nav>
 			<div id="task-queue"></div>
 		</div>
@@ -39,13 +40,13 @@
 			<div class="tool-bar-container">
 				<div class="tool-bar">
 					<button id="refresh-button" aria-label="Refresh the list" title="Refresh the list">
-						<img src="/static/img/refresh.svg" alt="">
+						<img src="{{url_base}}/static/img/refresh.svg" alt="">
 						<div>
 							<p>Refresh</p>
 						</div>
 					</button>
 					<button id="clear-button" aria-label="Delete all history" title="Delete all history">
-						<img src="/static/img/delete_white.svg" alt="">
+						<img src="{{url_base}}/static/img/delete_white.svg" alt="">
 						<div>
 							<p>Clear History</p>
 						</div>

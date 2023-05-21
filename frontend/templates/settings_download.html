@@ -4,12 +4,13 @@
 	<meta charset="UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta id="url_base" data-value="{{url_base}}">
 
-	<link rel="stylesheet" href="/static/css/general.css">
-	<link rel="stylesheet" href="/static/css/settings.css">
-	<script src="/static/js/auth.js"></script>
-	<script src="/static/js/general.js" defer></script>
-	<script src="/static/js/settings_download.js" defer></script>
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/general.js') }}" defer></script>
+	<script src="{{ url_for('static', filename='js/settings_download.js') }}" defer></script>
 
 	<title>Download Settings - Kapowarr</title>
 </head>
@@ -17,7 +18,7 @@
 	<header>
 		<div class="menu-title-container">
 			<button id="toggle-nav" aria-label="Toggle menu">
-				<img src="/static/img/menu.svg" alt="">
+				<img src="{{url_base}}/static/img/menu.svg" alt="">
 			</button>
 			<h1>Kapowarr</h1>
 		</div>
@@ -25,13 +26,13 @@
 	<div class="nav-main">
 		<div id="nav-bar">
 			<nav>
-				<a href="/">Volumes</a>
-				<a href="/activity/queue">Activity</a>
-				<a href="/settings">Settings</a>
-					<a href="/settings/mediamanagement" class="sub-entry">Media Management</a>
-					<a href="/settings/download" class="sub-entry current-nav">Download</a>
-					<a href="/settings/general" class="sub-entry">General</a>
-				<a href="/system/status">System</a>
+				<a href="{{url_base}}/">Volumes</a>
+				<a href="{{url_base}}/activity/queue">Activity</a>
+				<a href="{{url_base}}/settings">Settings</a>
+					<a href="{{url_base}}/settings/mediamanagement" class="sub-entry">Media Management</a>
+					<a href="{{url_base}}/settings/download" class="sub-entry current-nav">Download</a>
+					<a href="{{url_base}}/settings/general" class="sub-entry">General</a>
+				<a href="{{url_base}}/system/status">System</a>
 			</nav>
 			<div id="task-queue"></div>
 		</div>
@@ -39,7 +40,7 @@
 			<div class="tool-bar-container">
 				<div class="tool-bar">
 					<button id="save-button" type="submit" aria-label="Save the changes made" title="Save the changes made">
-						<img src="/static/img/save.svg" alt="">
+						<img src="{{url_base}}/static/img/save.svg" alt="">
 						<div>
 							<p>Save</p>
 						</div>

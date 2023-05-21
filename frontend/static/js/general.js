@@ -21,36 +21,36 @@ function mapButtons(id) {
 	if (id === null) {
 		task_to_button['search_all'] = {
 			'button': document.querySelector('#searchall-button'),
-			'icon': '/static/img/search_white.svg',
-			'loading_icon': '/static/img/loading_white.svg'
+			'icon': `${url_base}/static/img/search_white.svg`,
+			'loading_icon': `${url_base}/static/img/loading_white.svg`
 		};
 		task_to_button['update_all'] = {
 			'button': document.querySelector('#updateall-button'),
-			'icon': '/static/img/refresh.svg',
-			'loading_icon': '/static/img/loading_white.svg'
+			'icon': `${url_base}/static/img/refresh.svg`,
+			'loading_icon': `${url_base}/static/img/loading_white.svg`
 		};
 	} else {
 		task_to_button[`refresh_and_scan#${id}`] = {
 			'button': document.querySelector('#refresh-button'),
-			'icon': '/static/img/refresh.svg',
-			'loading_icon': '/static/img/loading_white.svg'
+			'icon': `${url_base}/static/img/refresh.svg`,
+			'loading_icon': `${url_base}/static/img/loading_white.svg`
 		};
 		task_to_button[`auto_search#${id}`] = {
 			'button': document.querySelector('#autosearch-button'),
-			'icon': '/static/img/search_white.svg',
-			'loading_icon': '/static/img/loading_white.svg'
+			'icon': `${url_base}/static/img/search_white.svg`,
+			'loading_icon': `${url_base}/static/img/loading_white.svg`
 		};
 		task_to_button[`unzip#${id}`] = {
 			'button': document.querySelector('#unzip-button'),
-			'icon': '/static/img/unzip.svg',
-			'loading_icon': '/static/img/loading_white.svg'
+			'icon': `${url_base}/static/img/unzip.svg`,
+			'loading_icon': `${url_base}/static/img/loading_white.svg`
 		};
 		document.querySelectorAll('.issue-entry').forEach(entry => {
 			const button = entry.querySelector('.action-column > button:first-child');
 			task_to_button[`auto_search_issue#${id}#${entry.dataset.id}`] = {
 				'button': button,
-				'icon': '/static/img/search.svg',
-				'loading_icon': '/static/img/loading.svg'
+				'icon': `${url_base}/static/img/search.svg`,
+				'loading_icon': `${url_base}/static/img/loading.svg`
 			};
 		});
 	};
@@ -93,7 +93,7 @@ function spinButtons(result, id) {
 };
 
 function fillTaskQueue(api_key, id) {
-	fetch(`/api/system/tasks?api_key=${api_key}`, {
+	fetch(`${url_base}/api/system/tasks?api_key=${api_key}`, {
 		'priority': 'low'
 	})
 	.then(response => {
@@ -111,7 +111,7 @@ function fillTaskQueue(api_key, id) {
 		spinButtons(json.result, id);
 	})
 	.catch(e => {
-		if (e === 401) window.location.href = `/login?redirect=${window.location.pathname}`;
+		if (e === 401) window.location.href = `${base_url}/login?redirect=${window.location.pathname}`;
 	});
 };
 
@@ -155,6 +155,7 @@ function convertSize(size) {
 
 // code run on load
 
+const url_base = document.querySelector('#url_base').dataset.value;
 const volume_id = parseInt(window.location.pathname.split('/').at(-1)) || null;
 if (volume_id === null) mapButtons(volume_id);
 

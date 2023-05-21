@@ -13,7 +13,7 @@ function convertTime(epoch, future) {
 };
 
 function fillPlanning(api_key) {
-	fetch(`/api/system/tasks/planning?api_key=${api_key}`)
+	fetch(`${url_base}/api/system/tasks/planning?api_key=${api_key}`)
 	.then(response => response.json())
 	.then(json => {
 		const table = document.querySelector('#task-intervals');
@@ -46,7 +46,7 @@ function fillPlanning(api_key) {
 // Task history
 // 
 function fillHistory(api_key) {
-	fetch(`/api/system/tasks/history?api_key=${api_key}`)
+	fetch(`${url_base}/api/system/tasks/history?api_key=${api_key}`)
 		.then(response => {
 			if (!response.ok) return Promise.reject(response.status);
 			return response.json();
@@ -72,12 +72,12 @@ function fillHistory(api_key) {
 			});
 		})
 		.catch(e => {
-			if (e === 401) window.location.href = '/';
+			if (e === 401) window.location.href = url_base;
 		});
 };
 
 function clearHistory(api_key) {
-	fetch(`/api/system/tasks/history?api_key=${api_key}`, {
+	fetch(`${url_base}/api/system/tasks/history?api_key=${api_key}`, {
 		'method': 'DELETE'
 	})
 	document.querySelector('#history').innerHTML = '';

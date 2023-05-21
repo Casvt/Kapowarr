@@ -1,7 +1,7 @@
 var offset = 0;
 
 function fillList(api_key) {
-	fetch(`/api/blocklist?api_key=${api_key}&offset=${offset}`)
+	fetch(`${url_base}/api/blocklist?api_key=${api_key}&offset=${offset}`)
 	.then(response => response.json())
 	.then(json => {
 		const table = document.querySelector('#blocklist');
@@ -35,7 +35,7 @@ function fillList(api_key) {
 			const delete_entry = document.createElement('td');
 			const delete_button = document.createElement('button');
 			const delete_icon = document.createElement('img');
-			delete_icon.src = '/static/img/delete.svg';
+			delete_icon.src = `${url_base}/static/img/delete.svg`;
 			delete_icon.classList.add('delete-entry-icon');
 			delete_button.appendChild(delete_icon);
 			delete_button.classList.add('delete-entry');
@@ -50,14 +50,14 @@ function fillList(api_key) {
 };
 
 function deleteEntry(id, api_key) {
-	fetch(`/api/blocklist/${id}?api_key=${api_key}`, {
+	fetch(`${url_base}/api/blocklist/${id}?api_key=${api_key}`, {
 		'method': 'DELETE'
 	})
 	.then(response => fillList(api_key));
 };
 
 function clearList(api_key) {
-	fetch(`/api/blocklist?api_key=${api_key}`, {
+	fetch(`${url_base}/api/blocklist?api_key=${api_key}`, {
 		'method': 'DELETE'
 	});
 	offset = 0;

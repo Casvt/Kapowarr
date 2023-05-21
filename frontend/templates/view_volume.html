@@ -4,14 +4,15 @@
 	<meta charset="UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta id="url_base" data-value="{{url_base}}">
 
-	<link rel="stylesheet" href="/static/css/general.css">
-	<link rel="stylesheet" href="/static/css/window.css">
-	<link rel="stylesheet" href="/static/css/view_volume.css">
-	<script src="/static/js/auth.js"></script>
-	<script src="/static/js/general.js" defer></script>
-	<script src="/static/js/window.js" defer></script>
-	<script src="/static/js/view_volume.js" defer></script>
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/window.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/view_volume.css') }}">
+	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/general.js') }}" defer></script>
+	<script src="{{ url_for('static', filename='js/window.js') }}" defer></script>
+	<script src="{{ url_for('static', filename='js/view_volume.js') }}" defer></script>
 
 	<title>Volume - Kapowarr</title>
 </head>
@@ -31,7 +32,7 @@
 			<div>
 				<h2>Delete volume</h2>
 				<button aria-label="Cancel deleting volume" title="Cancel deleting volume">
-					<img src="/static/img/cancel_search.svg" alt="">
+					<img src="{{url_base}}/static/img/cancel_search.svg" alt="">
 				</button>
 			</div>
 			<div>
@@ -61,7 +62,7 @@
 			<div>
 				<h2>Edit volume</h2>
 				<button aria-label="Cancel editing volume" title="Cancel editing volume">
-					<img src="/static/img/cancel_search.svg" alt="">
+					<img src="{{url_base}}/static/img/cancel_search.svg" alt="">
 				</button>
 			</div>
 			<div>
@@ -98,7 +99,7 @@
 			<div>
 				<h2>Rename volume files</h2>
 				<button aria-label="Cancel renaming volume files" title="Cancel renaming volume files">
-					<img src="/static/img/cancel_search.svg" alt="">
+					<img src="{{url_base}}/static/img/cancel_search.svg" alt="">
 				</button>
 			</div>
 			<div>
@@ -116,7 +117,7 @@
 			<div>
 				<h2>Manual Search</h2>
 				<button aria-label="Cancel manual search" title="Cancel manual search">
-					<img src="/static/img/cancel_search.svg" alt="">
+					<img src="{{url_base}}/static/img/cancel_search.svg" alt="">
 				</button>
 			</div>
 			<div>
@@ -144,7 +145,7 @@
 			<div>
 				<h2>Issue Info</h2>
 				<button aria-label="Close window" title="Close window">
-					<img src="/static/img/cancel_search.svg" alt="">
+					<img src="{{url_base}}/static/img/cancel_search.svg" alt="">
 				</button>
 			</div>
 			<div>
@@ -169,7 +170,7 @@
 	<header>
 		<div class="menu-title-container">
 			<button id="toggle-nav" aria-label="Toggle menu">
-				<img src="/static/img/menu.svg" alt="">
+				<img src="{{url_base}}/static/img/menu.svg" alt="">
 			</button>
 			<h1>Kapowarr</h1>
 		</div>
@@ -177,11 +178,11 @@
 	<div class="nav-main">
 		<div id="nav-bar">
 			<nav>
-				<a href="/" class="current-nav">Volumes</a>
-					<a href="/add" class="sub-entry">Add Volume</a>
-				<a href="/activity/queue">Activity</a>
-				<a href="/settings">Settings</a>
-				<a href="/system/status">System</a>
+				<a href="{{url_base}}/" class="current-nav">Volumes</a>
+					<a href="{{url_base}}/add" class="sub-entry">Add Volume</a>
+				<a href="{{url_base}}/activity/queue">Activity</a>
+				<a href="{{url_base}}/settings">Settings</a>
+				<a href="{{url_base}}/system/status">System</a>
 			</nav>
 			<div id="task-queue"></div>
 		</div>
@@ -189,43 +190,43 @@
 			<div class="tool-bar-container">
 				<div class="tool-bar">
 					<button id="refresh-button" aria-label="Trigger a 'refresh and scan' for the volume" title="Trigger a 'refresh and scan' for the volume">
-						<img src="/static/img/refresh.svg" alt="">
+						<img src="{{url_base}}/static/img/refresh.svg" alt="">
 						<div>
 							<p>Refresh & Scan</p>
 						</div>
 					</button>
 					<button id="autosearch-button" aria-label="Start searching for all monitored issues in the volume" title="Start searching for all monitored issues in the volume">
-						<img src="/static/img/search_white.svg" alt="">
+						<img src="{{url_base}}/static/img/search_white.svg" alt="">
 						<div>
 							<p>Search Monitored</p>
 						</div>
 					</button>
 					<button id="manualsearch-button" aria-label="Start a manual search for all issues in the volume" title="Start a manual search for all issues in the volume">
-						<img src="/static/img/manual_search_white.svg" alt="">
+						<img src="{{url_base}}/static/img/manual_search_white.svg" alt="">
 						<div>
 							<p>Manual Search</p>
 						</div>
 					</button>
 					<button id="unzip-button" aria-label="Unzip all zip files for the volume" title="Unzip all zip files for the volume">
-						<img src="/static/img/unzip.svg" alt="">
+						<img src="{{url_base}}/static/img/unzip.svg" alt="">
 						<div>
 							<p>Unzip</p>
 						</div>
 					</button>
 					<button id="rename-button" aria-label="Preview how the files of the volume will be renamed" title="Preview how the files of the volume will be renamed">
-						<img src="/static/img/rename.svg" alt="">
+						<img src="{{url_base}}/static/img/rename.svg" alt="">
 						<div>
 							<p>Preview Rename</p>
 						</div>
 					</button>
 					<button id="edit-button" aria-label="Edit the volume" title="Edit the volume">
-						<img src="/static/img/edit.svg" alt="">
+						<img src="{{url_base}}/static/img/edit.svg" alt="">
 						<div>
 							<p>Edit</p>
 						</div>
 					</button>
 					<button id="delete-button" aria-label="Delete the volume" title="Delete the volume">
-						<img src="/static/img/delete_white.svg" alt="">
+						<img src="{{url_base}}/static/img/delete_white.svg" alt="">
 						<div>
 							<p>Delete</p>
 						</div>
@@ -256,8 +257,8 @@
 								<th class="number-column" aria-label="Issue number">#</th>
 								<th class="title-column">Title</th>
 								<th class="date-column">Release Date</th>
-								<th class="download-column" aria-label="Downloaded"><img src="/static/img/download.svg" alt=""></th>
-								<th class="action-column" aria-label="Actions"><img src="/static/img/settings.svg" alt=""></th>
+								<th class="download-column" aria-label="Downloaded"><img src="{{url_base}}/static/img/download.svg" alt=""></th>
+								<th class="action-column" aria-label="Actions"><img src="{{url_base}}/static/img/settings.svg" alt=""></th>
 							</tr>
 						</thead>
 						<tbody id="issues-list">

@@ -1,7 +1,7 @@
 var offset = 0;
 
 function fillHistory(api_key) {
-	fetch(`/api/activity/history?api_key=${api_key}&offset=${offset}`)
+	fetch(`${url_base}/api/activity/history?api_key=${api_key}&offset=${offset}`)
 	.then(response => response.json())
 	.then(json => {
 		const table = document.querySelector('#history');
@@ -30,7 +30,7 @@ function fillHistory(api_key) {
 };
 
 function clearHistory(api_key) {
-	fetch(`/api/activity/history?api_key=${api_key}`, {
+	fetch(`${url_base}/api/activity/history?api_key=${api_key}`, {
 		'method': 'DELETE'
 	});
 	offset = 0;

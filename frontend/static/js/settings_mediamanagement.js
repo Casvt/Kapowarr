@@ -2,7 +2,7 @@
 // Settings
 // 
 function fillSettings(api_key) {
-	fetch(`/api/settings?api_key=${api_key}`)
+	fetch(`${url_base}/api/settings?api_key=${api_key}`)
 	.then(response => response.json())
 	.then(json => {
 		document.querySelector('#volume-folder-naming-input').value = json.result.volume_folder_naming;
@@ -21,7 +21,7 @@ function saveSettings(api_key) {
 		'file_naming_tpb': document.querySelector('#file-naming-tpb-input').value,
 		'unzip': document.querySelector('#unzip-input').checked
 	};
-	fetch(`/api/settings?api_key=${api_key}`, {
+	fetch(`${url_base}/api/settings?api_key=${api_key}`, {
 		'method': 'PUT',
 		'body': JSON.stringify(data),
 		'headers': {'Content-Type': 'application/json'}
@@ -46,7 +46,7 @@ function saveSettings(api_key) {
 // Root folders
 // 
 function fillRootFolder(api_key) {
-	fetch(`/api/rootfolder?api_key=${api_key}`)
+	fetch(`${url_base}/api/rootfolder?api_key=${api_key}`)
 	.then(response => response.json())
 	.then(json => {
 		const table = document.querySelector('#root-folder-list');
@@ -65,7 +65,7 @@ function fillRootFolder(api_key) {
 			delete_root_folder.addEventListener('click', e => deleteRootFolder(root_folder.id, api_key));
 			delete_root_folder.setAttribute('type', 'button');
 			const delete_root_folder_icon = document.createElement('img');
-			delete_root_folder_icon.src = '/static/img/delete.svg';
+			delete_root_folder_icon.src = `${url_base}/static/img/delete.svg`;
 			delete_root_folder.appendChild(delete_root_folder_icon);
 			delete_root_folder_container.appendChild(delete_root_folder);
 			entry.appendChild(delete_root_folder_container);
@@ -86,7 +86,7 @@ function addRootFolder(api_key) {
 	const folder = folder_input.value;
 	folder_input.value = '';
 
-	fetch(`/api/rootfolder?api_key=${api_key}&folder=${folder}`, {
+	fetch(`${url_base}/api/rootfolder?api_key=${api_key}&folder=${folder}`, {
 		'method': 'POST'
 	})
 	.then(response => {
@@ -101,7 +101,7 @@ function addRootFolder(api_key) {
 };
 
 function deleteRootFolder(id, api_key) {
-	fetch(`/api/rootfolder/${id}?api_key=${api_key}`, {
+	fetch(`${url_base}/api/rootfolder/${id}?api_key=${api_key}`, {
 		'method': 'DELETE'
 	})
 	.then(response => {

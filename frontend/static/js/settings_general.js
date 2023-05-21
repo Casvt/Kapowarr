@@ -1,9 +1,10 @@
 function fillSettings(api_key) {
-	fetch(`/api/settings?api_key=${api_key}`)
+	fetch(`${url_base}/api/settings?api_key=${api_key}`)
 	.then(response => response.json())
 	.then(json => {
 		document.querySelector('#bind-address-input').value = json.result.host;
 		document.querySelector('#port-input').value = json.result.port;
+		document.querySelector('#url-base-input').value = json.result.url_base;
 		document.querySelector('#password-input').value = json.result.auth_password;
 		document.querySelector('#api-input').value = api_key;
 		document.querySelector('#cv-input').value = json.result.comicvine_api_key;
@@ -16,11 +17,12 @@ function saveSettings(api_key) {
 	const data = {
 		'host': document.querySelector('#bind-address-input').value,
 		'port': document.querySelector('#port-input').value,
+		'url_base': document.querySelector('#url-base-input').value,
 		'auth_password': document.querySelector('#password-input').value,
 		'comicvine_api_key': document.querySelector('#cv-input').value,
 		'log_level': document.querySelector('#log-level-input').value
 	};
-	fetch(`/api/settings?api_key=${api_key}`, {
+	fetch(`${url_base}/api/settings?api_key=${api_key}`, {
 		'method': 'PUT',
 		'body': JSON.stringify(data),
 		'headers': {'Content-Type': 'application/json'}
@@ -35,7 +37,7 @@ function saveSettings(api_key) {
 };
 
 function generateApiKey(api_key) {
-	fetch(`/api/settings/api_key?api_key=${api_key}`, {
+	fetch(`${url_base}/api/settings/api_key?api_key=${api_key}`, {
 		'method': 'POST'
 	})
 	.then(response => response.json())

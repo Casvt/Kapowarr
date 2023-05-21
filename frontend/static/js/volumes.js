@@ -7,7 +7,7 @@ function populateLibrary(volumes, api_key) {
 	table.querySelectorAll('a').forEach(e => e.remove())
 	volumes.forEach(volume => {
 		const entry = document.createElement("a");
-		entry.href = `/volumes/${volume.id}`;
+		entry.href = `${url_base}/volumes/${volume.id}`;
 
 		const cover = document.createElement("img");
 		cover.src = `${volume.cover}?api_key=${api_key}`;
@@ -50,7 +50,7 @@ function populateLibrary(volumes, api_key) {
 
 function fetchLibrary(api_key) {
 	const sort = document.querySelector('#sort-button').value;
-	fetch(`/api/volumes?api_key=${api_key}&sort=${sort}`)
+	fetch(`${url_base}/api/volumes?api_key=${api_key}&sort=${sort}`)
 	.then(response => response.json())
 	.then(json => populateLibrary(json.result, api_key));
 };
@@ -58,7 +58,7 @@ function fetchLibrary(api_key) {
 function searchLibrary(api_key) {
 	const query = document.querySelector('#search-input').value;
 	const sort = document.querySelector('#sort-button').value;
-	fetch(`/api/volumes?api_key=${api_key}&query=${query}&sort=${sort}`)
+	fetch(`${url_base}/api/volumes?api_key=${api_key}&query=${query}&sort=${sort}`)
 	.then(response => response.json())
 	.then(json => populateLibrary(json.result, api_key));
 };
@@ -69,7 +69,7 @@ function clearSearch(api_key) {
 };
 
 function fetchStats(api_key) {
-	fetch(`/api/volumes/stats?api_key=${api_key}`)
+	fetch(`${url_base}/api/volumes/stats?api_key=${api_key}`)
 	.then(response => response.json())
 	.then(json => {
 		document.querySelector('#volume-count').innerText = json.result.volumes;
@@ -89,14 +89,14 @@ function updateAll(api_key) {
 	const icon = document.querySelector('#updateall-button > img');
 	icon.src = task_to_button['update_all'].loading_icon;
 	icon.classList.add('spinning');
-	fetch(`/api/system/tasks?api_key=${api_key}&cmd=update_all`, {'method': 'POST'});
+	fetch(`${url_base}/api/system/tasks?api_key=${api_key}&cmd=update_all`, {'method': 'POST'});
 };
 
 function searchAll(api_key) {
 	const icon = document.querySelector('#searchall-button > img');
 	icon.src = task_to_button['search_all'].loading_icon;
 	icon.classList.add('spinning');
-	fetch(`/api/system/tasks?api_key=${api_key}&cmd=search_all`, {'method': 'POST'});
+	fetch(`${url_base}/api/system/tasks?api_key=${api_key}&cmd=search_all`, {'method': 'POST'});
 };
 
 // code run on load

@@ -4,14 +4,15 @@
 	<meta charset="UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta id="url_base" data-value="{{url_base}}">
 
-	<link rel="stylesheet" href="/static/css/general.css">
-	<link rel="stylesheet" href="/static/css/window.css">
-	<link rel="stylesheet" href="/static/css/add_volume.css">
-	<script src="/static/js/auth.js"></script>
-	<script src="/static/js/general.js" defer></script>
-	<script src="/static/js/window.js" defer></script>
-	<script src="/static/js/add_volume.js" defer></script>
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/window.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/add_volume.css') }}">
+	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/general.js') }}" defer></script>
+	<script src="{{ url_for('static', filename='js/window.js') }}" defer></script>
+	<script src="{{ url_for('static', filename='js/add_volume.js') }}" defer></script>
 
 	<title>Add Volume - Kapowarr</title>
 </head>
@@ -25,7 +26,7 @@
 			<div>
 				<h2 id="add-title"></h2>
 				<button aria-label="Cancel adding volume" title="Cancel adding volume">
-					<img src="/static/img/cancel_search.svg" alt="">
+					<img src="{{url_base}}/static/img/cancel_search.svg" alt="">
 				</button>
 			</div>
 			<div>
@@ -61,7 +62,7 @@
 	<header>
 		<div class="menu-title-container">
 			<button id="toggle-nav" aria-label="Toggle menu">
-				<img src="/static/img/menu.svg" alt="">
+				<img src="{{url_base}}/static/img/menu.svg" alt="">
 			</button>
 			<h1>Kapowarr</h1>
 		</div>
@@ -70,11 +71,11 @@
 	<div class="nav-main">
 		<div id="nav-bar">
 			<nav>
-				<a href="/">Volumes</a>
-					<a href="/add" class="sub-entry current-nav">Add Volume</a>
-				<a href="/activity/queue">Activity</a>
-				<a href="/settings">Settings</a>
-				<a href="/system/status">System</a>
+				<a href="{{url_base}}/">Volumes</a>
+					<a href="{{url_base}}/add" class="sub-entry current-nav">Add Volume</a>
+				<a href="{{url_base}}/activity/queue">Activity</a>
+				<a href="{{url_base}}/settings">Settings</a>
+				<a href="{{url_base}}/system/status">System</a>
 			</nav>
 			<div id="task-queue"></div>
 		</div>
@@ -82,11 +83,11 @@
 			<div>
 				<section class="search-bar">
 					<button id="search-button" aria-label="Start the search" title="Start the search">
-						<img src="/static/img/search.svg" alt="">
+						<img src="{{url_base}}/static/img/search.svg" alt="">
 					</button>
 					<input type="text" id="search-input" autofocus aria-label="Search term">
 					<button id="search-cancel-button" aria-label="Clear search" title="Clear search">
-						<img src="/static/img/cancel_search.svg" alt="">
+						<img src="{{url_base}}/static/img/cancel_search.svg" alt="">
 					</button>
 				</section>
 				<section id="search-explain">

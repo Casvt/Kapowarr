@@ -15,7 +15,7 @@ from backend.db import get_db
 from backend.files import (create_volume_folder, delete_volume_folder,
                            move_volume_folder, scan_files)
 from backend.root_folders import RootFolders
-
+from frontend.ui import ui_vars
 
 #=====================
 # Main issue class
@@ -161,7 +161,7 @@ class Volume:
 		""", (self.id,))
 		volume_info = dict(cursor.fetchone())
 		volume_info['monitored'] = volume_info['monitored'] == 1
-		volume_info['cover'] = f'/api/volumes/{volume_info["id"]}/cover'
+		volume_info['cover'] = f'{ui_vars["url_base"]}/api/volumes/{volume_info["id"]}/cover'
 
 		if complete:
 			# Get issue info
@@ -468,7 +468,7 @@ class Library:
 		"""
 		for entry in library:
 			entry['monitored'] = entry['monitored'] == 1
-			entry['cover'] = f'/api/volumes/{entry["id"]}/cover'
+			entry['cover'] = f'{ui_vars["url_base"]}/api/volumes/{entry["id"]}/cover'
 		return library
 	
 	def get_volumes(self, sort: str='title') -> List[dict]:

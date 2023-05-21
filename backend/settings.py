@@ -20,6 +20,7 @@ from backend.logging import log_levels, set_log_level
 default_settings = {
 	'host': '0.0.0.0',
 	'port': 5656,
+	'url_base': '',
 	'comicvine_api_key': '',
 	'auth_password': '',
 	'volume_folder_naming': '{series_name}' + path_sep + 'Volume {volume_number} ({year})',
@@ -126,6 +127,12 @@ class Settings:
 
 			elif key == 'log_level' and not value in log_levels:
 				raise InvalidSettingValue(key, value)
+
+			elif key == 'url_base':
+				if value:
+					if not value.startswith('/'):
+						value = '/' + value
+					value = value.rstrip('/')
 
 			elif key not in default_settings.keys():
 				raise InvalidSettingKey(key)
