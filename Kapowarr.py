@@ -97,7 +97,6 @@ def Kapowarr() -> None:
 		setup_db()
 		
 		# Set url base if needed
-#		url_base = cursor.execute("SELECT value FROM config WHERE key = 'url_base' LIMIT 1;").fetchone()[0]
 		url_base = settings.get_settings()['url_base']
 		app.config['APPLICATION_ROOT'] = url_base
 		app.wsgi_app = DispatcherMiddleware(Flask(__name__), {url_base: app.wsgi_app})
