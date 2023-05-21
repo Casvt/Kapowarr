@@ -25,7 +25,7 @@ digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 supported_extensions = ('.png','.jpeg','.jpg','.webp','.gif','.cbz','.zip','.rar','.cbr','.tar.gz','.7zip','.7z','.cb7','.cbt','.epub','.pdf')
 file_extensions = r'\.(' + '|'.join(e[1:] for e in supported_extensions) + r')$'
 volume_regex_snippet = r'\b(?:v(?:ol|olume)?)(?:\.\s|[\.\-\s])?(\d+|I{1,3})\b'
-year_regex_snippet = r'(?:(\d{4})(?:-\d{2}){0,2}|(\d{4})-\d{4}|(?:\d{2}-){1,2}(\d{4})|(\d{4})[\s\.\-]Edition|(\d{4})-\d{4}\s{3}\d{4})'
+year_regex_snippet = r'(?:(\d{4})(?:-\d{2}){0,2}|(\d{4})[\s\.]?-[\s\.]?\d{4}|(?:\d{2}-){1,2}(\d{4})|(\d{4})[\s\.\-]Edition|(\d{4})-\d{4}\s{3}\d{4})'
 issue_regex_snippet = r'(?!\d+(?:th|rd|st))\d+(?:\.\d{1,2}|\w{1,2}|[\s\-\.]?½)?'
 
 # Cleaning the filename
