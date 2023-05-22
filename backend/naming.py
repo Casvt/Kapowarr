@@ -6,14 +6,14 @@
 import logging
 from os import listdir
 from os.path import basename, dirname, isdir, isfile, join, splitext
-from re import compile, escape, match
+from re import IGNORECASE, compile, escape, match
 from string import Formatter
 from typing import Dict, List
 
 from backend.custom_exceptions import (InvalidSettingValue, IssueNotFound,
                                        VolumeNotFound)
 from backend.db import get_db
-from backend.files import rename_file
+from backend.files import image_extensions, rename_file
 from backend.settings import Settings
 
 formatting_keys = (
@@ -33,6 +33,8 @@ issue_formatting_keys = formatting_keys + (
 )
 
 filename_cleaner = compile(r'(<|>|:|\"|\||\?|\*|\x00|(\s|\.)+$)')
+page_regex = compile(r'^(\d+)$|page[\s\.\-]?(\d+)', IGNORECASE)
+page_regex_2 = compile(r'(\d+)')
 
 #=====================
 # Name generation
@@ -391,6 +393,21 @@ def preview_mass_rename(volume_id: int, issue_id: int=None, filepath_filter: Lis
 			# File covers one issue
 			suggested_name = generate_issue_name(volume_id, issues[0][0])
 
+		# If file is image, it's probably a page instead of a whole issue/tpb.
+		# So put it in it's own folder together with the other images.
+		if file['filepath'].endswith(image_extensions):
+			page_number = None
+			page_result = page_regex.search(file['filepath'])
+			if page_result:
+				page_number = next(r for r in page_result.groups() if r is not None)
+			else:
+				page_result = None
+				r = page_regex_2.finditer(file['filepath'])
+				for page_result in r: pass
+				if page_result:
+					page_number = page_result.group(1)
+			suggested_name = join(suggested_name, page_number or '1')
+
 		# Add number to filename if other file has the same name
 		suggested_name = same_name_indexing(suggested_name, file['filepath'], folder, result)
 
@@ -416,9 +433,14 @@ def mass_rename(volume_id: int, issue_id: int=None, filepath_filter: List[str]=N
 	cursor = get_db()
 	renames = preview_mass_rename(volume_id, issue_id, filepath_filter)
 	if not issue_id and renames:
+		file = renames[0]['after']
+		if file.endswith(image_extensions):
+			folder = dirname(dirname(file))
+		else:
+			folder = dirname(file)
 		cursor.execute(
 			"UPDATE volumes SET folder = ? WHERE id = ?",
-			(dirname(renames[0]['after']), volume_id)
+			(folder, volume_id)
 		)
 	for r in renames:
 		rename_file(r['before'], r['after'])

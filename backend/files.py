@@ -22,7 +22,8 @@ from backend.root_folders import RootFolders
 alphabet = 'abcdefghijklmnopqrstuvwxyz'
 alphabet = {letter: str(alphabet.index(letter) + 1).zfill(2) for letter in alphabet}
 digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
-supported_extensions = ('.png','.jpeg','.jpg','.webp','.gif','.cbz','.zip','.rar','.cbr','.tar.gz','.7zip','.7z','.cb7','.cbt','.epub','.pdf')
+image_extensions = ('.png','.jpeg','.jpg','.webp','.gif')
+supported_extensions = image_extensions + ('.cbz','.zip','.rar','.cbr','.tar.gz','.7zip','.7z','.cb7','.cbt','.epub','.pdf')
 file_extensions = r'\.(' + '|'.join(e[1:] for e in supported_extensions) + r')$'
 volume_regex_snippet = r'\b(?:v(?:ol|olume)?)(?:\.\s|[\.\-\s])?(\d+|I{1,3})\b'
 year_regex_snippet = r'(?:(\d{4})(?:-\d{2}){0,2}|(\d{4})[\s\.]?-[\s\.]?\d{4}|(?:\d{2}-){1,2}(\d{4})|(\d{4})[\s\.\-]Edition|(\d{4})-\d{4}\s{3}\d{4})'
@@ -45,7 +46,7 @@ special_version_regex = compile(r'(?:\b|\()(tpb|os|one\-shot|ogn|gn)(?:\b|\))', 
 volume_regex = compile(volume_regex_snippet, IGNORECASE)
 volume_folder_regex = compile(volume_regex_snippet + r'|^(\d+)$', IGNORECASE)
 issue_regex = compile(r'\( (-?' + issue_regex_snippet + r')\)', IGNORECASE)
-issue_regex_2 = compile(r'(?<!\()\b(?:c(?:hapter)?|issue)s?[\s\-\.]?#?(\-?' + issue_regex_snippet + r'(?:[\s\.]?\-[\s\.]?\-?' + issue_regex_snippet + r')?)\b(?!\))', IGNORECASE)
+issue_regex_2 = compile(r'(?<!\()\b(?:c(?:hapter)?|issue|page)s?[\s\-\.]?#?(\-?' + issue_regex_snippet + r'(?:[\s\.]?\-[\s\.]?\-?' + issue_regex_snippet + r')?)\b(?!\))', IGNORECASE)
 issue_regex_3 = compile(r'(' + issue_regex_snippet + r')[\s\-\.]?\(?[\s\-\.]?of[\s\-\.]?' + issue_regex_snippet + r'\)?', IGNORECASE)
 issue_regex_4 = compile(r'#(\-?' + issue_regex_snippet + r')\b(?![\s\.]?\-[\s\.]?' + issue_regex_snippet + r')', IGNORECASE)
 issue_regex_5 = compile(r'#?(' + issue_regex_snippet + r'[\s\.]?-[\s\.]?' + issue_regex_snippet + r')\b', IGNORECASE)
@@ -249,6 +250,9 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 				# Issue number found. File starts with issue number (e.g. Series/Volume N/{issue_number}.ext)
 				issue_number = issue_result.group(1)
 				issue_pos = issue_result.start(0)
+				
+		if filename.endswith(image_extensions):
+			issue_number = None
 
 	if not issue_number and not special_version:
 		special_version = 'tpb'

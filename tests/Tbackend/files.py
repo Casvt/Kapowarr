@@ -24,9 +24,6 @@ class extract_filename_data(unittest.TestCase):
 			'Tales of the Teen Titans v2 (1984)/Issue 51-58 - Tales of the Teen Titans (1985-03-01)':
 				{'series': 'Tales of the Teen Titans', 'year': 1984, 'volume_number': 2, 'special_version': None, 'issue_number': (51.0, 58.0), 'annual': False},
 
-			'150.jpg':
-				{'series': '', 'year': None, 'volume_number': 1, 'special_version': None, 'issue_number': 150.0, 'annual': False},
-
 			'Doctor Strange, Sorcerer Supreme Volume 2 Issues #4.0-4.5 (03-2022)':
 				{'series': 'Doctor Strange, Sorcerer Supreme', 'year': 2022, 'volume_number': 2, 'special_version': None, 'issue_number': (4.0, 4.5), 'annual': False},
 
@@ -76,5 +73,18 @@ class extract_filename_data(unittest.TestCase):
 
 			'Avengers + Annuals (1996) v3/c #6-7 ½ + annual.cbr':
 				{'series': 'Avengers Annuals', 'year': 1996, 'volume_number': 3, 'special_version': None, 'issue_number': (6.0, 7.5), 'annual': False}
+		}
+		self.run_cases(cases)
+
+	def test_page_vs_issue(self):
+		cases = {
+			'Silver Surfer - Rebirth (2022) (HD-WebRip) Volume 2/Silver Surfer - Rebirth (2022) (HD-WebRip) - 011.jpg':
+				{'series': 'Silver Surfer - Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
+			'Silver Surfer - Rebirth (2022) (HD-WebRip) Volume 2/Silver Surfer - Rebirth (2022) (HD-WebRip) - 011.cbr':
+				{'series': 'Silver Surfer - Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': None, 'issue_number': 11.0, 'annual': False},
+			'Silver Surfer - Rebirth (2022) (HD-WebRip) Volume 2/Page-100.cbr':
+				{'series': 'Silver Surfer - Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': None, 'issue_number': 100.0, 'annual': False},
+			'Silver Surfer - Rebirth (2022) (HD-WebRip) Volume 2/Page-100.jpg':
+				{'series': 'Silver Surfer - Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': 'tpb', 'issue_number': None, 'annual': False}
 		}
 		self.run_cases(cases)
