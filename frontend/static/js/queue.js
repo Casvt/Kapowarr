@@ -62,7 +62,7 @@ function fillQueue(api_key) {
 			});
 		})
 		.catch(e => {
-			if (e === 401) window.location.href = url_base;
+			if (e === 401) window.location.href = `${url_base}/`;
 		});
 };
 

@@ -465,7 +465,7 @@ function deleteVolume() {
 		})
 		.then(response => {
 			if (!response.ok) return Promise.reject(response.status);
-			window.location.href = url_base;
+			window.location.href = `${url_base}/`;
 		})
 		.catch(e => {
 			if (e === 400) delete_error.classList.remove('hidden');
@@ -513,7 +513,7 @@ usingApiKey()
 		return response.json();
 	})
 	.then(json => fillPage(json.result, api_key))
-	.catch(e => window.location.href = url_base);
+	.catch(e => { window.location.href = `${url_base}/` });
 
 	addEventListener('#refresh-button', 'click', e => refreshVolume(api_key));
 	addEventListener('#autosearch-button', 'click', e => autosearchVolume(api_key));
