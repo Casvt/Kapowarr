@@ -111,7 +111,7 @@ function fillTaskQueue(api_key, id) {
 		spinButtons(json.result, id);
 	})
 	.catch(e => {
-		if (e === 401) window.location.href = `${base_url}/login?redirect=${window.location.pathname}`;
+		if (e === 401) window.location.href = `${url_base}/login?redirect=${window.location.pathname}`;
 	});
 };
 

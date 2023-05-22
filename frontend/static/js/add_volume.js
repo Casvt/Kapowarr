@@ -177,9 +177,9 @@ function addVolume() {
 			if (!response.ok) return Promise.reject(response.status);
 			else return response.json();
 		})
-		.then(json => window.location.href = `${base_url}/volumes/${json.result.id}`)
+		.then(json => window.location.href = `${url_base}/volumes/${json.result.id}`)
 		.catch(e => {
-			if (e === 401) window.location.href = `${base_url}/login?redirect=${window.location.pathname}`;
+			if (e === 401) window.location.href = `${url_base}/login?redirect=${window.location.pathname}`;
 			else if (e === 509) document.querySelector('#add-volume').innerText = 'ComicVine API rate limit reached';
 			else {
 				console.log(e);

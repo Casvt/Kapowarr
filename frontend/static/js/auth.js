@@ -13,7 +13,7 @@ async function usingApiKey(redirect=true) {
 			})
 			.catch(e => {
 				if (e === 401) {
-					if (redirect) window.location.href = `${base_url}/login?redirect=${window.location.pathname}`;
+					if (redirect) window.location.href = `${url_base}/login?redirect=${window.location.pathname}`;
 					else return null;
 				} else {
 					console.log(e);

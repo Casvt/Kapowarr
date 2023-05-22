@@ -196,7 +196,8 @@ class KeyNotFound(Exception):
 	def __init__(self, key: str=''):
 		self.key = key
 		super().__init__(self.key)
-		logging.warning(f'This key was not found in the API request, eventhough it\'s required: {key}')
+		if key != 'password':
+			logging.warning(f'This key was not found in the API request, eventhough it\'s required: {key}')
 		return
 
 	@property
@@ -210,7 +211,8 @@ class InvalidKeyValue(Exception):
 		self.key = key
 		self.value = value
 		super().__init__(self.key)
-		logging.warning(f'This key in the API request has an invalid value: {key} = {value}')
+		if value != 'undefined':
+			logging.warning(f'This key in the API request has an invalid value: {key} = {value}')
 		return
 
 	@property
