@@ -1,0 +1,4 @@
+/* Extend maximum page width to 1440px */
+.md-grid {
+    max-width: 1440px;
+  }
