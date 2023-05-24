@@ -6,29 +6,31 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The Official Kapowarr Documentation!">
+        <meta name="description" content="The official guide for Kapowarr">
       
       
         <meta name="author" content="MrCas">
       
       
       
+        <link rel="prev" href="../installation/">
       
-        <link rel="next" href="installation/">
       
-      <link rel="icon" href="assets/images/favicon.png">
+        <link rel="next" href="../setup_after_installation/">
+      
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.14">
     
     
       
-        <title>Kapowarr Docs</title>
+        <title>Rate Limiting - Kapowarr Docs</title>
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.85bb2934.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.85bb2934.min.css">
       
         
-        <link rel="stylesheet" href="assets/stylesheets/palette.a6bdf11c.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.a6bdf11c.min.css">
       
       
 
@@ -44,11 +46,11 @@
       
     
     
-      <link rel="stylesheet" href="css/timeago.css">
+      <link rel="stylesheet" href="../css/timeago.css">
     
-      <link rel="stylesheet" href="assets/stylesheets/extra.css">
+      <link rel="stylesheet" href="../assets/stylesheets/extra.css">
     
-    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -77,7 +79,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#kapowarr-docs" class="md-skip">
+        <a href="#rate-limiting" class="md-skip">
           Skip to content
         </a>
       
@@ -93,7 +95,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="Kapowarr Docs" class="md-header__button md-logo" aria-label="Kapowarr Docs" data-md-component="logo">
+    <a href=".." title="Kapowarr Docs" class="md-header__button md-logo" aria-label="Kapowarr Docs" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -112,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Home
+              Rate Limiting
             
           </span>
         </div>
@@ -204,12 +206,10 @@
         
   
   
-    
-  
 
 
   <li class="md-tabs__item">
-    <a href="." class="md-tabs__link md-tabs__link--active">
+    <a href=".." class="md-tabs__link">
       Home
     </a>
   </li>
@@ -224,7 +224,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="installation/" class="md-tabs__link">
+      <a href="../installation/" class="md-tabs__link">
         Getting Started
       </a>
     </li>
@@ -237,7 +237,7 @@
 
 
   <li class="md-tabs__item">
-    <a href="faq/" class="md-tabs__link">
+    <a href="../faq/" class="md-tabs__link">
       FAQ
     </a>
   </li>
@@ -246,13 +246,15 @@
         
   
   
+    
+  
 
 
   
   
   
     <li class="md-tabs__item">
-      <a href="api/" class="md-tabs__link">
+      <a href="../api/" class="md-tabs__link md-tabs__link--active">
         All Docs
       </a>
     </li>
@@ -276,9 +278,7 @@
           
             
               
-                
-              
-              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" hidden>
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
                     
@@ -288,7 +288,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="Kapowarr Docs" class="md-nav__button md-logo" aria-label="Kapowarr Docs" data-md-component="logo">
+    <a href=".." title="Kapowarr Docs" class="md-nav__button md-logo" aria-label="Kapowarr Docs" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -317,66 +317,11 @@
 
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          Home
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="." class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
         Home
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#workings" class="md-nav__link">
-    Workings
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#features" class="md-nav__link">
-    Features
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#contact" class="md-nav__link">
-    Contact
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -424,7 +369,7 @@
   
   
     <li class="md-nav__item">
-      <a href="installation/" class="md-nav__link">
+      <a href="../installation/" class="md-nav__link">
         Installation
       </a>
     </li>
@@ -438,7 +383,7 @@
   
   
     <li class="md-nav__item">
-      <a href="setup_after_installation/" class="md-nav__link">
+      <a href="../setup_after_installation/" class="md-nav__link">
         Setup After Installation
       </a>
     </li>
@@ -460,7 +405,7 @@
   
   
     <li class="md-nav__item">
-      <a href="faq/" class="md-nav__link">
+      <a href="../faq/" class="md-nav__link">
         FAQ
       </a>
     </li>
@@ -473,16 +418,16 @@
 
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
       
       
-        
-      
-      <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
       
       
         
@@ -503,7 +448,7 @@
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
         <label class="md-nav__title" for="__nav_4">
           <span class="md-nav__icon md-icon"></span>
           All Docs
@@ -516,7 +461,7 @@
   
   
     <li class="md-nav__item">
-      <a href="api/" class="md-nav__link">
+      <a href="../api/" class="md-nav__link">
         API
       </a>
     </li>
@@ -530,7 +475,7 @@
   
   
     <li class="md-nav__item">
-      <a href="faq/" class="md-nav__link">
+      <a href="../faq/" class="md-nav__link">
         FAQ
       </a>
     </li>
@@ -544,7 +489,7 @@
   
   
     <li class="md-nav__item">
-      <a href="installation/" class="md-nav__link">
+      <a href="../installation/" class="md-nav__link">
         Installation
       </a>
     </li>
@@ -556,11 +501,59 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="rate_limiting/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Rate Limiting
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Rate Limiting
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#comicvine" class="md-nav__link">
+    ComicVine
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mega" class="md-nav__link">
+    Mega
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -572,7 +565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="setup_after_installation/" class="md-nav__link">
+      <a href="../setup_after_installation/" class="md-nav__link">
         Setup After Installation
       </a>
     </li>
@@ -594,9 +587,7 @@
             
             
               
-                
-              
-              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" hidden>
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
                     
@@ -615,22 +606,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#workings" class="md-nav__link">
-    Workings
+  <a href="#comicvine" class="md-nav__link">
+    ComicVine
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#features" class="md-nav__link">
-    Features
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#contact" class="md-nav__link">
-    Contact
+  <a href="#mega" class="md-nav__link">
+    Mega
   </a>
   
 </li>
@@ -653,53 +637,26 @@
   
 
 
-<h1 id="kapowarr-docs">Kapowarr Docs<a class="headerlink" href="#kapowarr-docs" title="Permanent link">&para;</a></h1>
-<p><strong>Kapowarr is a software to build and manage a comic book library, fitting in the *arr suite of software.</strong></p>
-<p><em>Please note the docs are maintained by MrCas and the Kapowarr team. As the software is constantly changing, the docs may not be completely up-to-date. Bear with us.</em>  </p>
-<p>Getting started:</p>
-<ul>
-<li><a href="installation/">Installation</a></li>
-<li><a href="setup_after_installation/">Setup After Installation</a></li>
-</ul>
-<p>General Information:</p>
-<ul>
-<li><a href="faq/">FAQ</a></li>
-<li><a href="api/">API Docs</a></li>
-</ul>
-<h2 id="workings">Workings<a class="headerlink" href="#workings" title="Permanent link">&para;</a></h2>
-<p>Kapowarr allows you to build a digital library of comics. You can add volumes, map them to a folder and start managing! Download issues of the volume (or TPB's), rename them and move them. The whole process is automised and is all customisable in the settings.</p>
-<p>Each day, each volume is checked to see if a new issue has come out and if so, it will immediately be downloaded and added to your library.</p>
-<h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Import your current library right into Kapowarr</li>
-<li>Get loads of metadata about the volumes and issues in your library</li>
-<li>Run a "Search Monitored" to download whole volumes with one click</li>
-<li>Or use "Manual Search" to decide yourself what to download</li>
-<li>Support for downloading directly from servers, via MediaFire and Mega</li>
-<li>Downloaded files automatically get moved wherever you want and renamed in the format you desire</li>
-<li>Zip files can be extracted and it's contents renamed after downloading or with a single click</li>
-<li>The recognisable UI from the *arr suite of software</li>
-</ul>
-<h2 id="contact">Contact<a class="headerlink" href="#contact" title="Permanent link">&para;</a></h2>
-<ul>
-<li>For support, a <a href="https://discord.gg/KTsTu5epus">discord server</a> is available</li>
-<li>Alternatively, <a href="https://github.com/Casvt/Kapowarr/issues">make an issue</a></li>
-</ul>
+<h1 id="rate-limiting">Rate limiting<a class="headerlink" href="#rate-limiting" title="Permanent link">&para;</a></h1>
+<p>This page covers how Kapowarr handles with the rate limits of services it uses.</p>
+<h2 id="comicvine">ComicVine<a class="headerlink" href="#comicvine" title="Permanent link">&para;</a></h2>
+<p>Hourly, Kapowarr finds the volumes that haven't had a metadata fetch for more than a day. It tries to fetch for as many volumes as possible. If it can't fetch for them all in one go, the ones that didn't get fetched, get preference the next hour. For the fetched volumes, Kapowarr checks when the last time was that the metadata was updated and compares it to it's stored date. If it determines that the metadata for the volume has been updated since the last fetch, it applies the fetched metadata for the volume and fetches the metadata for all issues of the volume and apply that too.</p>
+<p>With this setup, all volumes (unless you have an absurdly big library) get updated every day and as little as possible requests are made. When we still surpass the limit, the volumes that need to fetched the most (the ones that haven't been updated for the longest) get preference to ensure that they "keep up". With this setup, worst case scenario, 25.000 volumes and 25.000 issues can be updated per hour. However, because metadata of a volume doesn't get updated often, Kapowarr only needs to update a few volumes <em>per day</em>, assuming you have a library of a few thousand volumes.</p>
+<h2 id="mega">Mega<a class="headerlink" href="#mega" title="Permanent link">&para;</a></h2>
+<p>If a Mega download reaches the rate limit of the account mid-download (no way to calculate this beforehand), the download is canceled and all other Mega downloads in the download queue are removed. From that point on, Mega downloads are skipped until we can download from it again. Alternative services like MediaFire and GetComics are used instead of Mega while we wait for the limit to go down again. If you have a Mega account that offers higher limits, it's advised to add it at Settings -&gt; Download -&gt; Credentials, so that Kapowarr can take advantage of it.</p>
 
   <hr>
 <div class="md-source-file">
   <small>
     
       Last update:
-      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-05-24T15:22:12+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-05-24</span>
+      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-05-24T21:40:49+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-05-24</span>
       
     
   </small>
 </div>
 
 
-
-  
 
 
 
@@ -742,14 +699,14 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": ".", "features": ["content.tabs.link", "header.autohide", "navigation.expand", "navigation.indexes", "navigation.instant", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking"], "search": "assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.tabs.link", "header.autohide", "navigation.expand", "navigation.indexes", "navigation.instant", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking"], "search": "../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="assets/javascripts/bundle.b4d07000.min.js"></script>
+      <script src="../assets/javascripts/bundle.b4d07000.min.js"></script>
       
-        <script src="js/timeago.min.js"></script>
+        <script src="../js/timeago.min.js"></script>
       
-        <script src="js/timeago_mkdocs_material.js"></script>
+        <script src="../js/timeago_mkdocs_material.js"></script>
       
     
   </body>
