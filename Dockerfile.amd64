@@ -2,8 +2,6 @@
 
 FROM python:3.8-slim-buster
 
-RUN mkdir /content
-
 WORKDIR /app
 
 COPY requirements.txt requirements.txt

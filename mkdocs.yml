@@ -79,8 +79,13 @@ plugins:
 # Navigation Layout
 nav:
   - Home: index.md
-  - FAQ: faq.md
   - Getting Started:
     - Installation: installation.md
     - Setup After Installation: setup_after_installation.md
-  - API: api.md
+  - FAQ: faq.md
+  - All Docs:
+    - API: api.md
+    - FAQ: faq.md
+    - Installation: installation.md
+    - Rate Limiting: rate_limiting.md
+    - Setup After Installation: setup_after_installation.md
