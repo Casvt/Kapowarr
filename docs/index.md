@@ -1,25 +1,19 @@
 ---
-description: The Official Ombi Documentation!
+description: The Official Kapowarr Documentation!
 hide:
   - navigation
   - toc
 ---
-# Ombi Docs
+# Kapowarr Docs
 
---8<-- "assets/glossary.md"
+**Welcome to the official Kapowarr Documentation!**
 
-**Welcome to the official Ombi Documentation!**
-
-Please note the docs are maintained by TidusJar and the Ombi-app team.  
+Please note the docs are maintained by MrCas and the Kapowarr team.  
 
 Getting started:
 
-- [Installation](./guides/installation)
-- [Updating](./guides/updating)
-- [Mobile Apps](./guides/mobile-app)
+- [Installation](./installation)
 
 General Information:
 
-- [FAQ](./info/faq)
-- [Common Errors](./info/common-errors)
-- [Known Faults](./info/known-faults)
+- [FAQ](./faq)
