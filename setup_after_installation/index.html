@@ -705,10 +705,22 @@
 <p>The first thing to do is decide if you want to leave Kapowarr on the default port of 5656. If you <em>do</em>, you can go to the next step. If you want to <em>change</em> the port, continue reading.</p>
 <p>If you manually installed Kapowarr, go to Settings -&gt; General -&gt; Host -&gt; Port Number in the web-ui and change the value to the desired port. Then, restart Kapowarr.</p>
 <p>If you run Kapowarr using Docker, you can change the port in two ways:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Docker CLI</label><label for="__tabbed_1_2">Docker Compose</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
 <ol>
 <li>Go to Settings -&gt; General -&gt; Host -&gt; Port Number in the web-ui, change the value to the desired port and restart the container.</li>
 <li>Alter the command to run the container and replace <code class="highlight">-p 5656:5656</code> with <code class="highlight">-p 5656:{PORT}</code>, where <code class="highlight">{PORT}</code> is the desired port (e.g. <code class="highlight">-p 5656:8009</code>). Then run the container with the new version of the command.</li>
 </ol>
+</div>
+<div class="tabbed-block">
+<ol>
+<li>Go to Settings -&gt; General -&gt; Host -&gt; Port Number in the web-ui, change the value to the desired port and restart the container.</li>
+<li>Alter the file to run the container and replace <code class="highlight">- 5656:5656</code> with <code class="highlight">- 5656:{PORT}</code>, where <code class="highlight">{PORT}</code> is the desired port (e.g. <code class="highlight">- 5656:8009</code>). Then run the container with the new version of the file.</li>
+</ol>
+</div>
+</div>
+</div>
 <h2 id="authentication">Authentication<a class="headerlink" href="#authentication" title="Permanent link">&para;</a></h2>
 <p>You might want to set a password to restrain access to the web-ui (and API). Setting a password is optional. A password can be set at Settings -&gt; General -&gt; Security -&gt; Login Password. Don't forget to save. From then on, it is required to enter a password in order to gain access to the web-ui (and the API). If you want to disable the password, set an empty value for the setting and save.</p>
 <h2 id="comicvine-api-key">ComicVine API key<a class="headerlink" href="#comicvine-api-key" title="Permanent link">&para;</a></h2>
@@ -750,7 +762,7 @@
   <small>
     
       Last update:
-      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-05-24T21:40:49+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-05-24</span>
+      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-05-24T22:15:16+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-05-24</span>
       
     
   </small>
