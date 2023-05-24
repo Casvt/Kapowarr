@@ -79,5 +79,8 @@ plugins:
 # Navigation Layout
 nav:
   - Home: index.md
+  - FAQ: faq.md
   - Getting Started:
     - Installation: installation.md
+    - Setup After Installation: setup_after_installation.md
+  - API: api.md
