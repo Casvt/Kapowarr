@@ -4,7 +4,8 @@ services:
         container_name: kapowarr
         volumes:
             - 'kapowarr-db:/app/db'
-            - '{LOCAL FOLDER}:/content'
+            - '{DOWNLOADFOLDER}:/app/temp_downloads'
+            - '{ROOTFOLDER}:/content'
         ports:
             - '5656:5656'
         image: 'mrcas/kapowarr:latest'
