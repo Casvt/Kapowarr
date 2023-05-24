@@ -35,5 +35,5 @@ Each day, each volume is checked to see if a new issue has come out and if so, i
 - The recognizable UI from the *arr suite of software
 
 ## Contact
-- For support, a [discord server](https://discord.gg/KTsTu5epus) is available
+- For support, a [discord server](https://discord.gg/nMNdgG7vsE) is available
 - Alternatively, [make an issue](https://github.com/Casvt/Kapowarr/issues)
