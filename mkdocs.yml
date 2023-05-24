@@ -82,10 +82,10 @@ nav:
   - Getting Started:
     - Installation: installation.md
 #    - Adding Volumes: addvolume.md
-#  - Settings: 
-#    - Media Management: settings/mediamanagement.md
+  - Settings: 
+    - Media Management: settings/mediamanagement.md
 #    - Download: settings/download.md
 #    - General: settings/general.md
-#  - System: 
+  - System: 
 #    - Status: system/status.md
-#    - Tasks: system/tasks.md
+    - Tasks: system/tasks.md
