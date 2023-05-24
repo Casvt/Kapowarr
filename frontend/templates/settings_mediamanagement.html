@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta id="url_base" data-value="{{url_base}}">
+
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/general.js') }}" defer></script>
+	<script src="{{ url_for('static', filename='js/settings_mediamanagement.js') }}" defer></script>
+
+	<title>Media Management Settings - Kapowarr</title>
+</head>
+<body>
+	<header>
+		<div class="menu-title-container">
+			<button id="toggle-nav" aria-label="Toggle menu">
+				<img src="{{url_base}}/static/img/menu.svg" alt="">
+			</button>
+			<h1>Kapowarr</h1>
+		</div>
+	</header>
+	<div class="nav-main">
+		<div id="nav-bar">
+			<nav>
+				<a href="{{url_base}}/">Volumes</a>
+				<a href="{{url_base}}/activity/queue">Activity</a>
+				<a href="{{url_base}}/settings">Settings</a>
+					<a href="{{url_base}}/settings/mediamanagement" class="sub-entry current-nav">Media Management</a>
+					<a href="{{url_base}}/settings/download" class="sub-entry">Download</a>
+					<a href="{{url_base}}/settings/general" class="sub-entry">General</a>
+				<a href="{{url_base}}/system/status">System</a>
+			</nav>
+			<div id="task-queue"></div>
+		</div>
+		<main>
+			<div class="tool-bar-container">
+				<div class="tool-bar">
+					<button id="save-button" type="submit" aria-label="Save the changes made" title="Save the changes made">
+						<img src="{{url_base}}/static/img/save.svg" alt="">
+						<div>
+							<p>Save</p>
+						</div>
+					</button>
+				</div>
+			</div>
+			<div class="settings-container">
+				<form id="settings-form">
+					<h2>File Naming</h2>
+					<table class="fold">
+						<tbody>
+							<tr>
+								<th><label for="volume-folder-naming-input">Volume Folder Naming</label></th>
+								<td>
+									<input type="text" id="volume-folder-naming-input" required spellcheck="false">
+									<p>The naming format for the volume folder (folder structure allowed)</p>
+									<p>Available variables are: {series_name}, {clean_series_name}, {volume_number}, {comicvine_id}, {year} and {publisher}</p>
+								</td>
+							</tr>
+							<tr>
+								<th><label for="file-naming-input">File Naming</label></th>
+								<td>
+									<input type="text" id="file-naming-input" required spellcheck="false">
+									<p>The naming format for the file itself</p>
+									<p>Available variables are: {series_name}, {clean_series_name}, {volume_number}, {comicvine_id}, {year}, {publisher}, {issue_comicvine_id}, {issue_number}, {issue_title} and {issue_release_date}</p>
+								</td>
+							</tr>
+							<tr>
+								<th><label for="file-naming-tpb-input">File Naming For TPB</label></th>
+								<td>
+									<input type="text" id="file-naming-tpb-input" required spellcheck="false">
+									<p>The naming format for the file itself if it's a TPB</p>
+									<p>Available variables are: {series_name}, {clean_series_name}, {volume_number}, {comicvine_id}, {year} and {publisher}</p>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+					<h2>Unzipping</h2>
+					<table class="fold">
+						<tbody>
+							<tr>
+								<th><label for="unzip-input">Unzip downloads</label></th>
+								<td>
+									<input type="checkbox" id="unzip-input">
+									<p>Unzip zip files after they've been downloaded</p>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+					<h2>Root Folders</h2>
+					<div id="root-folder-container">
+						<table id="root-folder-table">
+							<thead>
+								<tr>
+									<th>Path</th>
+									<th class="action-column">Action</th>
+								</tr>
+							</thead>
+							<tbody id="root-folder-list"></tbody>
+							<tbody>
+								<tr id="add-row" class="hidden">
+									<td>
+										<input type="text" id="folder-input">
+										<p class="error" id="folder-error">*Folder doesn't exist</p>
+									</td>
+									<td><button id="add-folder" type="button">Add</button></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<button type="button" id="toggle-root-folder">Add Root Folder</button>
+				</form>
+			</div>
+		</main>
+	</div>
+
+</body>
+</html>

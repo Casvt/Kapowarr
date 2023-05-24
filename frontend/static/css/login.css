@@ -1,0 +1,68 @@
+body {
+	height: 100vh;
+
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 8rem;
+}
+
+#text-container {
+	text-align: center;
+}
+
+#text-container h1 {
+	margin-bottom: .5rem;
+
+	color: var(--accent-color);
+
+	font-size: min(20vw, 8rem);
+}
+
+#text-container p {
+	color: var(--dark-color);
+}
+
+#login-form {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1rem;
+}
+
+#password-input {
+	margin-bottom: .3rem;
+	
+	padding: .6rem;
+	outline: 0;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	color: var(--dark-color);
+
+	font-size: 1rem;
+	
+	transition: border .3s ease-in;
+}
+
+#password-input:focus {
+	border: 1px solid var(--accent-color);
+}
+
+#password-input::placeholder {
+	font-size: .6rem;
+	text-align: right;
+	transition: color .3s ease-out;
+}
+
+#password-input:focus::placeholder {
+	color: transparent;
+}
+
+#login-form button {
+	padding: .4rem;
+	border-radius: 4px;
+	color: var(--dark-color);
+	background-color: var(--accent-color);
+	
+	font-size: 1rem;
+}

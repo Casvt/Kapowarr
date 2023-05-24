@@ -1,0 +1,22 @@
+.main-window {
+	padding: 1rem;
+}
+
+.main-window > div:nth-child(2) {
+	overflow-x: auto;
+}
+
+table {
+	width: 100%;
+	min-width: 30rem;
+	border-spacing: 0px;
+	text-align: left;
+}
+
+th, td {
+	padding: .5rem;
+}
+
+.history-entry > * {
+	border-top: 1px solid var(--border-color);
+}

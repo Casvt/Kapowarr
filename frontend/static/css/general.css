@@ -1,0 +1,281 @@
+*, *::before, *::after {
+	box-sizing: border-box;
+	margin: 0px;
+	border: 0px;
+}
+
+img {
+	width: 100%;
+}
+
+button:hover,
+select:hover {
+	cursor: pointer;
+}
+
+:root {
+	--light-color: #ffffff;
+	--off-light-color: #f6f6f6;
+	--dark-hover-color: #f9f9f9;
+	--border-color: #dde6e9;
+	--mid-color: #808080;
+	--dark-color: #464b51;
+
+	--accent-color: #ebc700;
+	--success-color: #54db68;
+	--error-color: #db5461;
+
+	--header-height: 65px;
+	--tool-bar-height: 3.5rem;
+	--nav-width: clamp(160px, 20vw, 210px);
+}
+
+body {
+	height: 100vh;
+	display: flex;
+	flex-direction: column;
+	overflow-y: auto;
+	background-color: var(--off-light-color);
+	font-family: 'Roboto', 'open sans', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+}
+
+/*  */
+/* Header */
+/*  */
+header {
+	height: var(--header-height);
+	display: flex;
+	justify-content: space-between;
+	gap: .75rem;
+	padding: 1rem;
+	background-color: var(--accent-color);
+	color: var(--dark-color);
+	font-size: .9rem;
+}
+
+.menu-title-container {
+	display: flex;
+	gap: .5rem;
+	align-items: flex-start;
+}
+
+#toggle-nav {
+	height: 100%;
+	width: 2rem;
+	display: none;
+	padding: 0;
+	background-color: transparent;
+}
+
+#toggle-nav img {
+	height: 100%;
+	aspect-ratio: 1/1;
+	transform: scale(0.6);
+}
+
+/*  */
+/* Nav bar */
+/*  */
+#nav-bar {
+	width: var(--nav-width);
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	flex: 0 0 auto;
+	/* Z-index avoids button animations from showing in front of the nav */
+	z-index: 2;
+	background-color: var(--dark-color);
+	color: var(--light-color);
+}
+
+nav {
+	display: flex;
+	flex-direction: column;
+}
+
+nav a {
+	color: var(--light-color);
+	text-decoration: none;
+	padding: .9rem;
+	padding-left: 1.3rem;
+	font-size: .9rem;
+	border-left: 3px solid var(--accent-color);
+}
+
+nav a:hover {
+	color: var(--accent-color);	
+}
+
+.sub-entry {
+	padding-left: 2.3rem;
+	font-size: .8rem;
+}
+
+.current-nav {
+	color: var(--accent-color);
+}
+
+#task-queue {
+	padding: 1rem;
+	font-size: .8rem;
+}
+
+/*  */
+/* Main window */
+/*  */
+.nav-main {
+	position: relative;
+	flex-grow: 1;
+	display: flex;
+}
+
+main {
+	height: calc(100vh - var(--header-height));
+	width: 100%;
+	
+	display: flex;
+	flex-direction: column;
+}
+
+main > *:not(.tool-bar-container) {
+	overflow-y: auto;
+	flex: 1;
+}
+
+/*  */
+/* Tool bar */
+/*  */
+.tool-bar-container {
+	height: var(--tool-bar-height);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	overflow-x: auto;
+	padding-inline: clamp(.3rem, 2.6vw, 1.5rem);
+	background-color: var(--mid-color);
+}
+
+.tool-bar {
+	display: flex;
+}
+
+.tool-bar > * {
+	height: 3.5rem;
+	width: 4rem;
+
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: .125rem;
+
+	padding: .5rem;
+	color: var(--light-color);
+	background-color: var(--mid-color);
+}
+
+.tool-bar > select {
+	height: unset;
+	width: 100%;
+}
+
+.tool-bar img {
+	height: 1.15rem;
+}
+
+.tool-bar div {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex: 1;
+}
+
+.tool-bar div > p {
+	word-wrap: normal;
+	font-size: .65rem;
+}
+
+/*  */
+/* Page turner */
+/*  */
+.page-turner {
+	display: flex;
+	justify-content: center;
+	align-items: stretch;
+}
+
+.page-turner > button {
+	padding: 0rem .75rem;
+	border: 3px solid var(--accent-color);
+	background-color: var(--accent-color);
+	color: var(--dark-color);
+}
+
+#previous-page {
+	border-top-left-radius: 4px;
+	border-bottom-left-radius: 4px;
+}
+
+#next-page {
+	border-top-right-radius: 4px;
+	border-bottom-right-radius: 4px;
+}
+
+#page-number {
+	border-block: 3px solid var(--accent-color);
+	padding: .5rem .75rem;
+}
+
+/*  */
+/* Utility classes */
+/*  */
+.description {
+	font-size: .9rem;
+	opacity: .9;
+}
+
+.description > *:not(:last-child) {
+	margin-bottom: .75rem;
+}
+
+.description a {
+	color: var(--accent-color);
+}
+
+.hidden {
+	display: none !important;
+}
+
+.error {
+	color: var(--error-color) !important;
+	font-size: .9rem !important;
+}
+
+.error-input {
+	border-color: var(--error-color) !important;
+}
+
+.spinning {
+	animation: spin-element 2.5s linear infinite forwards;
+}
+
+@keyframes spin-element {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+@media (max-width: 720px) {
+	#toggle-nav {
+		display: block;
+	}
+	#nav-bar {
+		position: absolute;
+		inset: 0 auto 0 -100%;
+	}
+	#nav-bar.show-nav {
+		left: 0;
+	}
+}

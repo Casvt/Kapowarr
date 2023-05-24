@@ -1,0 +1,235 @@
+.settings-container {
+	overflow-x: auto;
+	color: var(--dark-color);
+	padding: 1rem;
+}
+
+/*  */
+/* Sections titles */
+/*  */
+h2 {
+	font-size: 1.5rem;
+	border-bottom: 1px solid var(--border-color);
+	margin-bottom: 1rem;
+	font-weight: 500;
+}
+
+h2:not(:first-of-type) {
+	margin-top: 1rem;
+}
+
+/*  */
+/* Setting tables */
+/*  */
+.settings-container table {
+	width: 100%;
+	border-spacing: 0px;
+}
+
+.settings-container table tr > * {
+	padding: .5rem;
+}
+
+.settings-container table tr > th {
+	width: clamp(9rem, 24vw, 14rem);
+	text-align: right;
+	vertical-align: top;
+	padding-top: 1.1rem;
+}
+
+.settings-container table tr > td select,
+.settings-container table tr > td input[type="text"],
+.settings-container table tr > td input[type="email"],
+.settings-container table tr > td input[type="password"],
+#empty-download-folder {
+	width: min(50rem, 100%);
+
+	padding: .5rem .75rem;
+	border-radius: 6px;
+	border: 2px solid var(--border-color);
+	background-color: var(--light-color);
+	color: var(--dark-color);
+
+	font-size: 1rem;
+	font-family: "Ubuntu Mono", Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+.settings-container table tr > td input[type="checkbox"] {
+	width: 1.15rem;
+	aspect-ratio: 1/1;
+}
+
+.settings-container table tr > td p {
+	margin-top: .3rem;
+	color: var(--mid-color);
+}
+
+/*  */
+/* Root folder list */
+/*  */
+#root-folder-container {
+	overflow-x: auto;
+}
+
+#root-folder-table {
+	min-width: 27rem;
+	border-spacing: 0px;
+}
+
+#root-folder-table th {
+	text-align: left;
+	padding-top: 0rem;
+	width: unset;
+}
+
+#root-folder-list > tr > * {
+	border-top: 1px solid var(--border-color);
+}
+
+.action-column {
+	width: 4.5rem;
+}
+
+.action-column button {
+	background-color: transparent;
+	padding: 0;
+}
+
+.action-column img {
+	width: 1.4rem;
+}
+
+#toggle-root-folder {
+	margin-top: .5rem;
+
+	padding: .8rem;
+	border-radius: 4px;
+	color: var(--dark-color);
+	background-color: var(--accent-color);
+	
+	font-weight: 600;
+}
+
+#add-row td {
+	padding-block: 0;
+}
+
+#add-row input,
+#add-row select {
+	width: 20rem;
+
+	padding-inline: .3rem;
+}
+
+#add-row button {
+	padding: .4rem .6rem;
+	border-radius: 4px;
+	color: var(--dark-color);
+	background-color: var(--accent-color);
+}
+
+/*  */
+/* Empty download folder */
+/*  */
+#empty-download-folder {
+	width: 6rem;
+	background-color: var(--accent-color);
+}
+
+/*  */
+/* Service preference */
+/*  */
+#pref-table th {
+	width: 2rem;
+}
+
+#pref-table select {
+	width: min(20rem, 100%);
+}
+
+/*  */
+/* Credentials list */
+/*  */
+#cred-container {
+	margin-top: 1rem;
+	overflow-x: auto;
+}
+
+#cred-table {
+	min-width: 33rem;
+	border-spacing: 0px;
+}
+
+#cred-table th {
+	text-align: left;
+	padding-top: 0rem;
+	width: unset;
+}
+
+#cred-list > tr > * {
+	border-top: 1px solid var(--border-color);
+}
+
+#cred-table #add-row select,
+#cred-table #add-row input {
+	width: min(100%, 20rem);
+}
+
+#toggle-cred {
+	margin-top: .5rem;
+
+	padding: .8rem;
+	border-radius: 4px;
+	color: var(--dark-color);
+	background-color: var(--accent-color);
+	
+	font-weight: 600;
+}
+
+/*  */
+/* Api key bar */
+/*  */
+#api-container {
+	display: flex;
+	width: min(50rem, 100%);
+}
+
+#api-input {
+	overflow-x: auto;
+	border-right: none;
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+}
+
+#generate-api {
+	width: 3rem;
+	
+	flex: 0 0 auto;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+
+	border-top-right-radius: 6px;
+	border-bottom-right-radius: 6px;
+	background-color: var(--error-color);
+}
+
+#generate-api img {
+	height: 1.5rem;
+}
+
+@media (max-width: 1000px) {
+	table.fold tbody {
+		display: flex;
+		flex-direction: column;
+	}
+	table.fold tr {
+		display: inline-flex;
+		flex-direction: column;
+	}
+	table.fold tr > th,
+	table.fold tr > td {
+		width: 100%;
+		text-align: left;
+	}
+}

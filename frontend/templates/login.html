@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta id="url_base" data-value="{{url_base}}">
+
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/login.js') }}" defer></script>
+
+	<title>Login - Kapowarr</title>
+</head>
+<body>
+	<div id="text-container">
+		<h1>Kapowarr</h1>
+		<p>Please log in</p>
+	</div>
+	<form id="login-form">
+		<div class="input-container">
+			<input type="password" id="password-input" autocomplete="current-password" placeholder="Password" autofocus>
+			<p id="error-message" class="error hidden">*Password invalid</p>
+		</div>
+		<button>Login</button>
+	</form>
+</body>
+</html>

@@ -1,0 +1,10 @@
+version: '3.3'
+services:
+    kapowarr:
+        container_name: kapowarr
+        volumes:
+            - 'kapowarr-db:/app/db'
+            - '{LOCAL FOLDER}:/content'
+        ports:
+            - '5656:5656'
+        image: 'mrcas/kapowarr:latest'

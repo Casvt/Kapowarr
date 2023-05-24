@@ -1,0 +1,39 @@
+main {
+	overflow-x: hidden;
+}
+
+table {
+	width: 100%;
+	min-width: 50rem;
+	border-spacing: 0px;
+	padding: 1rem;
+	text-align: left;
+}
+
+th, td {
+	padding: .5rem;
+}
+
+.queue-entry > * {
+	border-top: 1px solid var(--border-color);
+}
+
+.status-column {
+	width: 7.5rem;
+}
+
+.number-column {
+	width: 6.5rem;
+}
+
+.option-column {
+	width: 3.5rem;
+}
+
+.option-column button {
+	background-color: transparent;
+}
+
+.option-column button img {
+	width: 20px;
+}

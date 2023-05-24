@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta id="url_base" data-value="{{url_base}}">
+
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/queue.css') }}">
+	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/general.js') }}" defer></script>
+	<script src="{{ url_for('static', filename='js/queue.js') }}" defer></script>
+
+	<title>Queue - Kapowarr</title>
+</head>
+<body>
+	<header>
+		<div class="menu-title-container">
+			<button id="toggle-nav" aria-label="Toggle menu">
+				<img src="{{url_base}}/static/img/menu.svg" alt="">
+			</button>
+			<h1>Kapowarr</h1>
+		</div>
+	</header>
+	<div class="nav-main">
+		<div id="nav-bar">
+			<nav>
+				<a href="{{url_base}}/">Volumes</a>
+				<a href="{{url_base}}/activity/queue">Activity</a>
+					<a href="{{url_base}}/activity/queue" class="sub-entry current-nav">Queue</a>
+					<a href="{{url_base}}/activity/history" class="sub-entry">History</a>
+					<a href="{{url_base}}/activity/blocklist" class="sub-entry">Blocklist</a>
+				<a href="{{url_base}}/settings">Settings</a>
+				<a href="{{url_base}}/system/status">System</a>
+			</nav>
+			<div id="task-queue"></div>
+		</div>
+		<main>
+			<div class="tool-bar-container">
+				<div class="tool-bar">
+					<button id="refresh-button" aria-label="Refresh the queue" title="Refresh the queue">
+						<img src="{{url_base}}/static/img/refresh.svg" alt="">
+						<div>
+							<p>Refresh</p>
+						</div>
+					</button>
+				</div>
+			</div>
+			<div class="main-window">
+				<table>
+					<thead>
+						<tr>
+							<th class="status-column">Status</th>
+							<th>Title</th>
+							<th class="status-column">Source</th>
+							<th class="number-column">Size</th>
+							<th class="number-column">Speed</th>
+							<th class="number-column">Progress</th>
+							<th class="option-column">Delete</th>
+						</tr>
+					</thead>
+					<tbody id="queue">
+						
+					</tbody>
+				</table>
+			</div>
+		</main>
+	</div>
+</body>
+</html>

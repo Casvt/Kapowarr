@@ -1,0 +1,179 @@
+/*  */
+/* Search bar */
+/*  */
+#search-container {
+	height: 100%;
+	display: flex;
+	gap: .5rem;
+	justify-content: center;
+	align-items: center;
+	
+	border-bottom: 1px solid var(--dark-color);
+}
+
+#start-search,
+#clear-search {
+	height: 100%;
+	width: 2rem;
+	padding: 0;
+	background-color: transparent;
+}
+
+#start-search img,
+#clear-search img {
+	height: 100%;
+	aspect-ratio: 1/1;
+	transform: scale(0.6);
+}
+
+#clear-search {
+	opacity: 0;
+	transition: opacity 0.3s ease-out;
+}
+
+#clear-search img {
+	transform: scale(0.45);
+}
+
+#search-container:focus-within #clear-search {
+	opacity: 1;
+}
+
+#search-input {
+	width: min(20vw, 12rem);
+	padding-block: .3rem;
+	outline: 0;
+	background-color: transparent;
+	color: var(--dark-color);
+	font-size: .9rem;
+	transition: border 0.3s ease-out;
+}
+
+#search-input::placeholder {
+	color: var(--dark-color);
+	transition: color 0.2s ease-out;
+}
+
+#search-input:focus::placeholder {
+	color: transparent;
+}
+
+/*  */
+/* Library window */
+/*  */
+#library {
+	--entry-width: clamp(7rem, 11%, 9rem);
+	padding: 1.5rem;
+	display: flex;
+	align-items: flex-start;
+	flex-wrap: wrap;
+	gap: 1rem;
+}
+
+#library > a {
+	flex-grow: 1;
+	width: var(--entry-width);
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+
+	text-decoration: none;
+	color: var(--dark-color);
+	background-color: var(--light-color);
+	border-radius: 1px;
+
+	transition: box-shadow 200ms ease-in;
+}
+
+#library > a:hover {
+	box-shadow: 0 0 12px #000;
+}
+
+#library > a img {
+	aspect-ratio: 2/3;
+}
+
+#library > a h2,
+#library > a p {
+	padding: .1rem .2rem;
+	text-align: center;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow-x: hidden;
+	font-size: clamp(.65rem, .8vw, .75rem);
+	font-weight: 400;
+}
+
+#library > a > div {
+	position: relative;
+	display: flex;
+	justify-content: center;
+
+	color: var(--light-color);
+	background-color: var(--dark-color);
+
+	text-align: center;
+	font-size: clamp(.65rem, .8vw, .75rem);
+}
+
+#library > a div > :first-child {
+	position: absolute;
+	inset: 0;
+	background-color: var(--error-color);
+}
+
+#library > a div > :nth-child(2) {
+	z-index: 1;
+}
+
+.space-taker {
+	height: 1rem;
+	max-width: 100%;
+	width: var(--entry-width);
+	flex-grow: 127;
+}
+
+/*  */
+/* Lib stats */
+/*  */
+.lib-stats {
+	width: 100%;
+	display: flex;
+	flex-wrap: wrap;
+	gap: clamp(.5rem, 4vw, 3rem);
+
+	padding-top: 2rem;
+
+	font-size: .8rem;
+}
+
+.lib-stats table {
+	border-spacing: 0px;
+}
+
+.lib-stats th {
+	padding-right: 1rem;
+	padding-block: .25rem;
+	text-align: right;
+}
+
+@media (max-width: 535px) {
+	header {
+		justify-content: flex-start;
+	}
+
+	.lib-stats {
+		flex-direction: column;
+	}
+
+	.lib-stats th {
+		width: 50%;
+	}
+}
+
+@media (max-width: 442px) {
+	#library {
+		padding: 1rem;
+		gap: .75rem;
+	}
+}

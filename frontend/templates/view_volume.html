@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta id="url_base" data-value="{{url_base}}">
+
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/window.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/view_volume.css') }}">
+	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/general.js') }}" defer></script>
+	<script src="{{ url_for('static', filename='js/window.js') }}" defer></script>
+	<script src="{{ url_for('static', filename='js/view_volume.js') }}" defer></script>
+
+	<title>Volume - Kapowarr</title>
+</head>
+<body>
+	<!-- Windows -->
+	<div class="window">
+		<!-- Loading after edit volume -->
+		<section id="updating-window" class="loading-window">
+			<p>Updating volume...</p>
+		</section>
+		<!-- Loading after rename volume files -->
+		<section id="renaming-window" class="loading-window">
+			<p>Renaming volume files...</p>
+		</section>
+		<!-- Deleting volume -->
+		<section id="delete-window">
+			<div>
+				<h2>Delete volume</h2>
+				<button aria-label="Cancel deleting volume" title="Cancel deleting volume">
+					<img src="{{url_base}}/static/img/cancel_search.svg" alt="">
+				</button>
+			</div>
+			<div>
+				<p>Are you sure you want to delete this volume?</p>
+				<p id="volume-downloading-error" class="error hidden">*There is a download in the queue for this volume</p>
+				<form id="delete-form">
+					<table>
+						<tr>
+							<th><label for="delete-folder-input">Delete folder</label></th>
+							<td>
+								<select id="delete-folder-input">
+									<option value="true">Yes</option>
+									<option value="false" selected>No</option>
+								</select>
+							</td>
+						</tr>
+					</table>
+				</form>
+			</div>
+			<div>
+				<button id="cancel-delete">Cancel</button>
+				<button id="submit-delete" type="submit" form="delete-form">Delete</button>
+			</div>
+		</section>
+		<!-- Editing volume -->
+		<section id="edit-window" data-loading_window="updating-window">
+			<div>
+				<h2>Edit volume</h2>
+				<button aria-label="Cancel editing volume" title="Cancel editing volume">
+					<img src="{{url_base}}/static/img/cancel_search.svg" alt="">
+				</button>
+			</div>
+			<div>
+				<form id="edit-form">
+					<table>
+						<tr>
+							<th><label for="monitored-input">Monitored</label></th>
+							<td>
+								<select id="monitored-input">
+									<option value="true">Yes</option>
+									<option value="false" selected>No</option>
+								</select>
+							</td>
+						</tr>
+						<tr>
+							<th><label for="root-folder-input">Root folder</label></th>
+							<td>
+								<select id="root-folder-input">
+									<option value="true">Yes</option>
+									<option value="false" selected>No</option>
+								</select>
+							</td>
+						</tr>
+					</table>
+				</form>
+			</div>
+			<div>
+				<button id="cancel-edit">Cancel</button>
+				<button id="submit-edit" type="submit" form="edit-form">Update</button>
+			</div>
+		</section>
+		<!-- Renaming volume files -->
+		<section id="rename-window" class="wide-window" data-loading_window="renaming-window">
+			<div>
+				<h2>Rename volume files</h2>
+				<button aria-label="Cancel renaming volume files" title="Cancel renaming volume files">
+					<img src="{{url_base}}/static/img/cancel_search.svg" alt="">
+				</button>
+			</div>
+			<div>
+				<table id="rename-preview">
+					<tbody></tbody>
+				</table>
+			</div>
+			<div>
+				<button id="cancel-rename">Cancel</button>
+				<button id="submit-rename" type="submit">Rename</button>
+			</div>
+		</section>
+		<!-- Manually searching volume -->
+		<section id="manual-search-window" class="wide-window">
+			<div>
+				<h2>Manual Search</h2>
+				<button aria-label="Cancel manual search" title="Cancel manual search">
+					<img src="{{url_base}}/static/img/cancel_search.svg" alt="">
+				</button>
+			</div>
+			<div>
+				<p id="searching-message">Searching...</p>
+				<table id="search-result-table">
+					<thead>
+						<tr>
+							<th class="match-column">Match</th>
+							<th>Title</th>
+							<th class="source-column">Source</th>
+							<th class="search-action-column">Action</th>
+						</tr>
+					</thead>
+					<tbody>
+						
+					</tbody>
+				</table>
+			</div>
+			<div>
+				<button id="cancel-search">Cancel</button>
+			</div>
+		</section>
+		<!-- Issue info window -->
+		<section id="issue-info-window">
+			<div>
+				<h2>Issue Info</h2>
+				<button aria-label="Close window" title="Close window">
+					<img src="{{url_base}}/static/img/cancel_search.svg" alt="">
+				</button>
+			</div>
+			<div>
+				<div id="issue-info-selectors">
+					<button id="issue-info-selector">Info</button>
+					<button id="issue-files-selector">Files</button>
+					<button id="issue-rename-selector">Rename</button>
+				</div>
+				<div id="issue-info">
+					<h3 id="issue-info-title"></h3>
+					<p id="issue-info-desc" class="description"></p>
+				</div>
+				<div id="issue-files" class="hidden">
+				</div>
+			</div>
+			<div>
+				<button id="cancel-info">Close</button>
+			</div>
+		</section>
+	</div>
+	
+	<header>
+		<div class="menu-title-container">
+			<button id="toggle-nav" aria-label="Toggle menu">
+				<img src="{{url_base}}/static/img/menu.svg" alt="">
+			</button>
+			<h1>Kapowarr</h1>
+		</div>
+	</header>
+	<div class="nav-main">
+		<div id="nav-bar">
+			<nav>
+				<a href="{{url_base}}/" class="current-nav">Volumes</a>
+					<a href="{{url_base}}/add" class="sub-entry">Add Volume</a>
+				<a href="{{url_base}}/activity/queue">Activity</a>
+				<a href="{{url_base}}/settings">Settings</a>
+				<a href="{{url_base}}/system/status">System</a>
+			</nav>
+			<div id="task-queue"></div>
+		</div>
+		<main>
+			<div class="tool-bar-container">
+				<div class="tool-bar">
+					<button id="refresh-button" aria-label="Trigger a 'refresh and scan' for the volume" title="Trigger a 'refresh and scan' for the volume">
+						<img src="{{url_base}}/static/img/refresh.svg" alt="">
+						<div>
+							<p>Refresh & Scan</p>
+						</div>
+					</button>
+					<button id="autosearch-button" aria-label="Start searching for all monitored issues in the volume" title="Start searching for all monitored issues in the volume">
+						<img src="{{url_base}}/static/img/search_white.svg" alt="">
+						<div>
+							<p>Search Monitored</p>
+						</div>
+					</button>
+					<button id="manualsearch-button" aria-label="Start a manual search for all issues in the volume" title="Start a manual search for all issues in the volume">
+						<img src="{{url_base}}/static/img/manual_search_white.svg" alt="">
+						<div>
+							<p>Manual Search</p>
+						</div>
+					</button>
+					<button id="unzip-button" aria-label="Unzip all zip files for the volume" title="Unzip all zip files for the volume">
+						<img src="{{url_base}}/static/img/unzip.svg" alt="">
+						<div>
+							<p>Unzip</p>
+						</div>
+					</button>
+					<button id="rename-button" aria-label="Preview how the files of the volume will be renamed" title="Preview how the files of the volume will be renamed">
+						<img src="{{url_base}}/static/img/rename.svg" alt="">
+						<div>
+							<p>Preview Rename</p>
+						</div>
+					</button>
+					<button id="edit-button" aria-label="Edit the volume" title="Edit the volume">
+						<img src="{{url_base}}/static/img/edit.svg" alt="">
+						<div>
+							<p>Edit</p>
+						</div>
+					</button>
+					<button id="delete-button" aria-label="Delete the volume" title="Delete the volume">
+						<img src="{{url_base}}/static/img/delete_white.svg" alt="">
+						<div>
+							<p>Delete</p>
+						</div>
+					</button>
+				</div>
+			</div>
+			<div id="volume-content">
+				<div class="volume-mobile-description-container">
+					<div class="volume-info">
+						<img src="" alt="">
+						<div class="volume-info-container">
+							<div class="volume-title-monitored">
+								<button id="volume-monitor"><img src="" alt=""></button>
+								<h2></h2>
+							</div>
+							<div id="volume-tags"></div>
+							<p id="volume-path"></p>
+							<p id="volume-description" class="description"></p>
+						</div>
+					</div>
+					<p id="volume-description-mobile" class="description"></p>
+				</div>
+				<div class="issues-table-container">
+					<table class="issues-table">
+						<thead>
+							<tr>
+								<th class="monitor-column" aria-label="Monitored status"></th>
+								<th class="number-column" aria-label="Issue number">#</th>
+								<th class="title-column">Title</th>
+								<th class="date-column">Release Date</th>
+								<th class="download-column" aria-label="Downloaded"><img src="{{url_base}}/static/img/download.svg" alt=""></th>
+								<th class="action-column" aria-label="Actions"><img src="{{url_base}}/static/img/settings.svg" alt=""></th>
+							</tr>
+						</thead>
+						<tbody id="issues-list">
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</main>
+	</div>
+</body>
+</html>

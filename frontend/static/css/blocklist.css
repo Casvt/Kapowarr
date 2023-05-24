@@ -1,0 +1,55 @@
+.main-window {
+	padding: 1rem;
+}
+
+.main-window > div:nth-child(2) {
+	overflow-x: auto;
+}
+
+table {
+	width: 100%;
+	min-width: 33.3rem;
+	text-align: left;
+	border-spacing: 0px;
+	table-layout: fixed;
+}
+
+table a {
+	text-decoration: none;
+}
+
+table a:hover {
+	text-decoration: underline;
+}
+
+th, td {
+	padding: .5rem .9rem;
+}
+
+.link-column {
+	overflow: auto;
+}
+
+.reason-column {
+	width: 9rem;
+}
+
+.date-column {
+	width: 11rem;
+}
+
+.option-column {
+	width: 4.5rem;
+}
+
+.list-entry > * {
+	border-top: 1px solid var(--border-color);
+}
+
+.delete-entry {
+	background-color: transparent;
+}
+
+.delete-entry-icon {
+	width: 20px;
+}
