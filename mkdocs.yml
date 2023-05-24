@@ -13,6 +13,7 @@ theme:
   code_wrap: true
   features:
     - content.tabs.link
+    - content.code.copy
     - header.autohide
     - navigation.expand
     - navigation.indexes
