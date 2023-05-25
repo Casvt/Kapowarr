@@ -116,7 +116,7 @@ def _check_match(result: dict, title: str, volume_number: int, issue_numbers: Di
 			year - 1 <= result['year'] <= year + 1 # Year in volume release year
 			# Year in issue release year
 			or (isinstance(result['issue_number'], float) and issue_numbers.get(result['issue_number']) == result['year']) 
-			or (isinstance(result['issue_number'], float) and issue_numbers.get(result['issue_number'][0]) == result['year'])
+			or (isinstance(result['issue_number'], tuple) and issue_numbers.get(result['issue_number'][0]) == result['year'])
 		)
 	)
 	if not year_is_equal:
