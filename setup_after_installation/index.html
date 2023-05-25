@@ -703,21 +703,16 @@
 <p>After installing Kapowarr, you should have access to the web-ui. Kapowarr needs some configuration in order for it to work properly.</p>
 <h2 id="port">Port<a class="headerlink" href="#port" title="Permanent link">&para;</a></h2>
 <p>The first thing to do is decide if you want to leave Kapowarr on the default port of 5656. If you <em>do</em>, you can go to the next step. If you want to <em>change</em> the port, continue reading.</p>
-<p>If you manually installed Kapowarr, go to Settings -&gt; General -&gt; Host -&gt; Port Number in the web-ui and change the value to the desired port. Then, restart Kapowarr.</p>
-<p>If you run Kapowarr using Docker, you can change the port in two ways:</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Docker CLI</label><label for="__tabbed_1_2">Docker Compose</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Docker CLI</label><label for="__tabbed_1_2">Docker Compose</label><label for="__tabbed_1_3">Manual Install</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<ol>
-<li>Go to Settings -&gt; General -&gt; Host -&gt; Port Number in the web-ui, change the value to the desired port and restart the container.</li>
-<li>Alter the command to run the container and replace <code class="highlight">-p 5656:5656</code> with <code class="highlight">-p 5656:{PORT}</code>, where <code class="highlight">{PORT}</code> is the desired port (e.g. <code class="highlight">-p 5656:8009</code>). Then run the container with the new version of the command.</li>
-</ol>
+<p>Alter the command to run the container and replace <code class="highlight">-p 5656:5656</code> with <code class="highlight">-p 5656:{PORT}</code>, where <code class="highlight">{PORT}</code> is the desired port (e.g. <code class="highlight">-p 5656:8009</code>). Then run the container with the new version of the command.</p>
 </div>
 <div class="tabbed-block">
-<ol>
-<li>Go to Settings -&gt; General -&gt; Host -&gt; Port Number in the web-ui, change the value to the desired port and restart the container.</li>
-<li>Alter the file to run the container and replace <code class="highlight">- 5656:5656</code> with <code class="highlight">- 5656:{PORT}</code>, where <code class="highlight">{PORT}</code> is the desired port (e.g. <code class="highlight">- 5656:8009</code>). Then run the container with the new version of the file.</li>
-</ol>
+<p>Alter the file to run the container and replace <code class="highlight">- 5656:5656</code> with <code class="highlight">- 5656:{PORT}</code>, where <code class="highlight">{PORT}</code> is the desired port (e.g. <code class="highlight">- 5656:8009</code>). Then run the container with the new version of the file.</p>
+</div>
+<div class="tabbed-block">
+<p>Edit the port number at Settings -&gt; General -&gt; Host -&gt; Port Number in the web-ui and change the value to the desired port. Then, restart Kapowarr.</p>
 </div>
 </div>
 </div>
@@ -745,7 +740,10 @@
 <p>Kapowarr has the ability to download from services like MediaFire and Mega. These services apply limits to how much you can download per day, or a download speed limit. An (paid) account for one of these services often offers higher limits. Kapowarr can take advantage of these extra features that these accounts offer. Under the credentials section, you can add credentials of accounts, which Kapowarr will use when downloading, taking advantage of the extra features. </p>
 <h2 id="building-up-a-library">Building up a library<a class="headerlink" href="#building-up-a-library" title="Permanent link">&para;</a></h2>
 <p>Now you're ready to build a library. At Volumes -&gt; Add Volume, you can search for volumes and add them to your library. Once you add one, a folder is automatically created for the volume in the root folder selected (see Settings -&gt; Media Management -&gt; File Naming -&gt; Volume Folder Naming). Then you can start downloading content for the volume, and all files will be put in this volume folder. The naming of the files follows the format set in the settings (see Settings -&gt; Media Management -&gt; File Naming).</p>
+<details class="unzipping">
+<summary>Unzipping</summary>
 <p>Kapowarr has unzipping built-in. This means that it can extract zip files, filter the content to find the files that are actually desired, delete the other files, move the files to the correct location and name them correctly, delete the zip folder and delete the zip file. This can be done automatically for all downloaded zip files by enabling Settings -&gt; Media Management -&gt; Unzipping -&gt; Unzip downloads. Unzipping can also be done for all zip files of a volume by pressing the "Unzip" button when viewing a volume.</p>
+</details>
 <p>Importing an already existing library into Kapowarr is currently not very fluid (the "Library Import" feature found in Radarr/Sonarr is not yet implemented in Kapowarr). The advised way to get Kapowarr working with your current library:</p>
 <ol>
 <li>Add a volume in Kapowarr.</li>
@@ -762,7 +760,7 @@
   <small>
     
       Last update:
-      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-05-24T22:15:16+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-05-24</span>
+      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-05-25T09:00:38+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-05-25</span>
       
     
   </small>
