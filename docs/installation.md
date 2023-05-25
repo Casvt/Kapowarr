@@ -9,16 +9,16 @@ The recommended way to install Kapowarr is using Docker. After installing Kapowa
 	docker run -d \
 		--name kapowarr \
 		-v kapowarr-db:/app/db \
-		-v {DOWNLOADFOLDER}:/app/temp_downloads \
-		-v {ROOTFOLDER}:/content \
+		-v /path/to/download_folder:/app/temp_downloads \
+		-v /path/to/root_folder:/content \
 		-p 5656:5656
 		mrcas/kapowarr:latest
 	```
 	A few notes about this command:
 
-	1. Replace `{DOWNLOADFOLDER}` with the path to your desired download folder. Everything is downloaded to this folder and when completed, moved out of to their final destination. It's smart to set this on a disk that can sustain more writes than normal. Ideally something like a _non_-network mounted ssd.
-	2. Replace `{ROOTFOLDER}` with the path to your desired root folder. Then, this folder will get mapped to `/content` inside the docker container. When adding a root folder in Kapowarr, you'll then set it's location as `/content`, mapping it this way to where ever `{ROOTFOLDER}` may be.
-	3. You can map multiple root folders by repeating `-v {ROOTFOLDER}:/content` in the command, but then supplying different values for `{ROOTFOLDER}` and `/content`.
+	1. Replace `/path/to/download_folder` with the path to your desired download folder. Everything is downloaded to this folder and when completed, moved out of to their final destination. It's smart to set this on a disk that can sustain more writes than normal. Ideally something like a _non_-network mounted ssd.
+	2. Replace `/path/to/root_folder` with the path to your desired root folder. Then, this folder will get mapped to `/content` inside the docker container. When adding a root folder in Kapowarr, you'll then set it's location as `/content`, mapping it this way to where ever `/path/to/root_folder` may be.
+	3. You can map multiple root folders by repeating `-v /path/to/root_folder:/content` in the command, but then supplying different values for `/path/to/root_folder` and `/content`.
 	4. Information on how to change the port can be found on the [Setup After Installation page](./setup_after_installation.md#port).
 
 === "Docker Compose"
@@ -30,17 +30,17 @@ The recommended way to install Kapowarr is using Docker. After installing Kapowa
 			container_name: kapowarr
 			volumes:
 				- 'kapowarr-db:/app/db'
-				- '{DOWNLOADFOLDER}:/app/temp_downloads'
-				- '{ROOTFOLDER}:/content'
+				- '/path/to/download_folder:/app/temp_downloads'
+				- '/path/to/root_folder:/content'
 			ports:
 				- '5656:5656'
 			image: 'mrcas/kapowarr:latest'
 	```
 	A few notes about this file:
 
-	1. Replace `{DOWNLOADFOLDER}` with the path to your desired download folder. Everything is downloaded to this folder and when completed, moved out of to their final destination. It's smart to set this on a disk that can sustain more writes than normal. Ideally something like a _non_-network mounted ssd.
-	2. Replace `{ROOTFOLDER}` with the path to your desired root folder. Then, this folder will get mapped to `/content` inside the docker container. When adding a root folder in Kapowarr, you'll then set it's location as `/content`, mapping it this way to where ever `{ROOTFOLDER}` may be.
-	3. You can map multiple root folders by repeating `- {ROOTFOLDER}:/content` in the file, but then supplying different values for `{ROOTFOLDER}` and `/content`.
+	1. Replace `/path/to/download_folder` with the path to your desired download folder. Everything is downloaded to this folder and when completed, moved out of to their final destination. It's smart to set this on a disk that can sustain more writes than normal. Ideally something like a _non_-network mounted ssd.
+	2. Replace `/path/to/root_folder` with the path to your desired root folder. Then, this folder will get mapped to `/content` inside the docker container. When adding a root folder in Kapowarr, you'll then set it's location as `/content`, mapping it this way to where ever `/path/to/root_folder` may be.
+	3. You can map multiple root folders by repeating `- /path/to/root_folder:/content` in the file, but then supplying different values for `/path/to/root_folder` and `/content`.
 	4. Information on how to change the port can be found on the [Setup After Installation page](./setup_after_installation.md#port).
 
 ### Docker example
