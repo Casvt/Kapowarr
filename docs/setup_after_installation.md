@@ -10,12 +10,10 @@ If you manually installed Kapowarr, go to Settings -> General -> Host -> Port Nu
 If you run Kapowarr using Docker, you can change the port in two ways:
 
 === "Docker CLI"
-	1. Go to Settings -> General -> Host -> Port Number in the web-ui, change the value to the desired port and restart the container.
-	2. Alter the command to run the container and replace `-p 5656:5656` with `-p 5656:{PORT}`, where `{PORT}` is the desired port (e.g. `-p 5656:8009`). Then run the container with the new version of the command.
+	Alter the command to run the container and replace `-p 5656:5656` with `-p 5656:{PORT}`, where `{PORT}` is the desired port (e.g. `-p 5656:8009`). Then run the container with the new version of the command.
 
 === "Docker Compose"
-	1. Go to Settings -> General -> Host -> Port Number in the web-ui, change the value to the desired port and restart the container.
-	2. Alter the file to run the container and replace `- 5656:5656` with `- 5656:{PORT}`, where `{PORT}` is the desired port (e.g. `- 5656:8009`). Then run the container with the new version of the file.
+	Alter the file to run the container and replace `- 5656:5656` with `- 5656:{PORT}`, where `{PORT}` is the desired port (e.g. `- 5656:8009`). Then run the container with the new version of the file.
 
 ## Authentication
 You might want to set a password to restrain access to the web-ui (and API). Setting a password is optional. A password can be set at Settings -> General -> Security -> Login Password. Don't forget to save. From then on, it is required to enter a password in order to gain access to the web-ui (and the API). If you want to disable the password, set an empty value for the setting and save.
