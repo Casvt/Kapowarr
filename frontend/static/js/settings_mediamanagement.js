@@ -86,8 +86,10 @@ function addRootFolder(api_key) {
 	const folder = folder_input.value;
 	folder_input.value = '';
 
-	fetch(`${url_base}/api/rootfolder?api_key=${api_key}&folder=${folder}`, {
-		'method': 'POST'
+	fetch(`${url_base}/api/rootfolder?api_key=${api_key}`, {
+		'method': 'POST',
+		'headers': {'Content-Type': 'application/json'},
+		'body': JSON.stringify({'folder': folder})
 	})
 	.then(response => {
 		if (!response.ok) return Promise.reject(response.status);

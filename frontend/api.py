@@ -324,7 +324,9 @@ def api_rootfolder():
 		return return_api(result)
 
 	elif request.method == 'POST':
-		folder = extract_key(request, 'folder')
+		data: dict = request.get_json()
+		folder = data.get('folder')
+		if folder is None: raise KeyNotFound('folder')
 		root_folder = root_folders.add(folder)
 		return return_api(root_folder, code=201)
 
