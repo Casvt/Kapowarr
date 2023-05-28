@@ -28,6 +28,7 @@ formatting_keys = (
 issue_formatting_keys = formatting_keys + (
 	'issue_comicvine_id',
 	'issue_number',
+	'issue_number_000',
 	'issue_title',
 	'issue_release_date'
 )
@@ -116,6 +117,7 @@ def _get_formatting_data(volume_id: int, issue_id: int=None) -> dict:
 		formatting_data.update({
 			'issue_comicvine_id': issue_data.get('comicvine_id') or 'Unknown',
 			'issue_number': issue_data.get('issue_number') or 'Unknown',
+			'issue_number_000': issue_data.get('issue_number').zfill(3) or 'Unknown',
 			'issue_title': (issue_data.get('title') or 'Unknown').replace('/', '').replace(r'\\', ''),
 			'issue_release_date': issue_data.get('date') or 'Unknown'
 		})
