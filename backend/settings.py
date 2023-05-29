@@ -137,7 +137,10 @@ class Settings:
 					value = value.rstrip('/')
 
 			elif key in ('issue_padding', 'volume_padding'):
-				if value not in ('1', '2', '3'):
+				try:
+					if not (1 <= value <= 3):
+						raise InvalidSettingValue(key, value)
+				except TypeError:
 					raise InvalidSettingValue(key, value)
 
 			elif key not in default_settings.keys():

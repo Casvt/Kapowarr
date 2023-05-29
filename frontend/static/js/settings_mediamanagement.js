@@ -22,8 +22,8 @@ function saveSettings(api_key) {
 		'file_naming': document.querySelector('#file-naming-input').value,
 		'file_naming_tpb': document.querySelector('#file-naming-tpb-input').value,
 		'unzip': document.querySelector('#unzip-input').checked,
-		'issue_padding': document.querySelector('#issue-padding').value,
-		'volume_padding': document.querySelector('#volume-padding').value
+		'issue_padding': parseInt(document.querySelector('#issue-padding').value),
+		'volume_padding': parseInt(document.querySelector('#volume-padding').value)
 	};
 	fetch(`${url_base}/api/settings?api_key=${api_key}`, {
 		'method': 'PUT',

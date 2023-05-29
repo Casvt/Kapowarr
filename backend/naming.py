@@ -89,8 +89,8 @@ def _get_formatting_data(volume_id: int, issue_id: int=None) -> dict:
 	else:
 		clean_title = volume_data.get('title') or 'Unknown'
 
-	volume_padding = int(Settings().get_settings()['volume_padding'])
-	issue_padding = int(Settings().get_settings()['issue_padding'])
+	volume_padding = Settings().get_settings()['volume_padding']
+	issue_padding = Settings().get_settings()['issue_padding']
 
 	formatting_data = {
 		'series_name': (volume_data.get('title') or 'Unknown').replace('/', '').replace(r'\\', ''),
