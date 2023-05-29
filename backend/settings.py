@@ -29,7 +29,9 @@ default_settings = {
 	'download_folder': folder_path('temp_downloads'),
 	'log_level': 'info',
 	'database_version': __DATABASE_VERSION__,
-	'unzip': False
+	'unzip': False,
+	'volume_padding': 2,
+	'issue_padding': 3
 }
 
 private_settings = {
@@ -133,6 +135,10 @@ class Settings:
 					if not value.startswith('/'):
 						value = '/' + value
 					value = value.rstrip('/')
+
+			elif key in ('issue_padding', 'volume_padding'):
+				if value not in ('1', '2', '3'):
+					raise InvalidSettingValue(key, value)
 
 			elif key not in default_settings.keys():
 				raise InvalidSettingKey(key)
