@@ -28,7 +28,6 @@ formatting_keys = (
 issue_formatting_keys = formatting_keys + (
 	'issue_comicvine_id',
 	'issue_number',
-	'issue_number_000',
 	'issue_title',
 	'issue_release_date'
 )
@@ -89,11 +88,14 @@ def _get_formatting_data(volume_id: int, issue_id: int=None) -> dict:
 		clean_title = volume_data.get('title') + ', A'
 	else:
 		clean_title = volume_data.get('title') or 'Unknown'
-	
+
+	volume_padding = int(Settings().get_settings()['volume_padding'])
+	issue_padding = int(Settings().get_settings()['issue_padding'])
+
 	formatting_data = {
 		'series_name': (volume_data.get('title') or 'Unknown').replace('/', '').replace(r'\\', ''),
 		'clean_series_name': clean_title.replace('/', '').replace(r'\\', ''),
-		'volume_number': volume_data.get('volume_number') or 'Unknown',
+		'volume_number': str(volume_data.get('volume_number')).zfill(volume_padding) or 'Unknown',
 		'comicvine_id': volume_data.get('comicvine_id') or 'Unknown',
 		'year': volume_data.get('year') or 'Unknown',
 		'publisher': volume_data.get('publisher') or 'Unknown'
@@ -116,8 +118,7 @@ def _get_formatting_data(volume_id: int, issue_id: int=None) -> dict:
 			
 		formatting_data.update({
 			'issue_comicvine_id': issue_data.get('comicvine_id') or 'Unknown',
-			'issue_number': issue_data.get('issue_number') or 'Unknown',
-			'issue_number_000': issue_data.get('issue_number').zfill(3) or 'Unknown',
+			'issue_number': str(issue_data.get('issue_number')).zfill(issue_padding) or 'Unknown',
 			'issue_title': (issue_data.get('title') or 'Unknown').replace('/', '').replace(r'\\', ''),
 			'issue_release_date': issue_data.get('date') or 'Unknown'
 		})
