@@ -40,7 +40,7 @@ class extract_filename_data(unittest.TestCase):
 				{'series': 'Infinity Gauntlet', 'year': 1991, 'volume_number': 1, 'special_version': None, 'issue_number': (1.0, 6.0), 'annual': False},
 
 			'100 Bullets #1 - 100 (1999-2009)':
-				{'annual': False, 'issue_number': (1.0, 100.0), 'series': '100 Bullets', 'special_version': None, 'volume_number': None, 'year': 1999}
+				{'annual': False, 'issue_number': (1.0, 100.0), 'series': '100 Bullets', 'special_version': None, 'volume_number': 1, 'year': 1999}
 		}
 		self.run_cases(cases)
 
