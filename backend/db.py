@@ -14,7 +14,7 @@ from time import time
 
 from flask import g
 
-__DATABASE_VERSION__ = 6
+__DATABASE_VERSION__ = 7
 
 class Singleton(type):
 	_instances = {}
@@ -242,7 +242,16 @@ def migrate_db(current_db_version: int) -> None:
 		)
 
 		current_db_version = 6
-	
+
+	if current_db_version == 6:
+		# V6 -> V7
+		cursor.executescript("""
+			BEGIN TRANSACTION;
+			ALTER TABLE volumes
+				ADD issues_as_volumes BOOL NOT NULL DEFAULT 0;
+			COMMIT;
+		""")
+		current_db_version = 7
 	return
 
 def setup_db() -> None:
