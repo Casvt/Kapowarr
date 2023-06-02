@@ -103,6 +103,7 @@ function fillTable(issues, api_key) {
 
 function fillPage(data, api_key) {
 	// Set volume data
+	console.log(data)
 	const monitor = document.querySelector('#volume-monitor');
 	const monitor_icon = monitor.querySelector('img');
 	const title = document.querySelector('.volume-title-monitored > h2');
@@ -111,6 +112,7 @@ function fillPage(data, api_key) {
 	const path = document.querySelector('#volume-path');
 	const description = document.querySelector('#volume-description');
 	const mobile_description = document.querySelector('#volume-description-mobile');
+	const issues_as_volumes = document.querySelector('#issues-as-volumes-input')
 
 	// Cover
 	cover.src = `${data.cover}?api_key=${api_key}`;
@@ -148,6 +150,9 @@ function fillPage(data, api_key) {
 	// Descriptions
 	description.innerHTML = data.description;
 	mobile_description.innerHTML = data.description;
+
+	//Issues as Volumes
+	issues_as_volumes.dataset.issues_as_volumes = data.issues_as_volumes
 
 	// fill issue lists
 	fillTable(data.issues, api_key);
@@ -415,6 +420,7 @@ function renameVolume(api_key, issue_id=null) {
 function showEdit(api_key) {
 	document.querySelector('#monitored-input').value = document.querySelector('#volume-monitor').dataset.monitored;
 	const volume_root_folder = parseInt(document.querySelector('#volume-path').dataset.root_folder);
+	document.querySelector('#issues-as-volumes-input').value = document.querySelector('#issues-as-volumes-input').dataset.issues_as_volumes
 	fetch(`${url_base}/api/rootfolder?api_key=${api_key}`)
 	.then(response => response.json())
 	.then(json => {
@@ -437,8 +443,9 @@ function editVolume() {
 	showLoadWindow('edit-window');
 
 	const data = {
-		'monitor': document.querySelector('#monitored-input').value == 'true',
-		'root_folder_id': parseInt(document.querySelector('#root-folder-input').value)
+		'monitor': document.querySelector('#monitored-input').value === 'true',
+		'root_folder_id': parseInt(document.querySelector('#root-folder-input').value),
+		'issues_as_volumes': document.querySelector('#issues-as-volumes-input').value === 'true'
 	}
 	usingApiKey()
 	.then(api_key => {

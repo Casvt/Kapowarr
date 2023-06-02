@@ -142,7 +142,7 @@ class Volume:
 				title, year, publisher,
 				volume_number, description,
 				monitored,
-				folder, root_folder,
+				folder, root_folder, issues_as_volumes,
 				(
 					SELECT COUNT(*)
 					FROM issues
@@ -161,6 +161,7 @@ class Volume:
 		""", (self.id,))
 		volume_info = dict(cursor.fetchone())
 		volume_info['monitored'] = volume_info['monitored'] == 1
+		volume_info['issues_as_volumes'] = volume_info['issues_as_volumes'] == 1
 		volume_info['cover'] = f'{ui_vars["url_base"]}/api/volumes/{volume_info["id"]}/cover'
 
 		if complete:
@@ -213,16 +214,42 @@ class Volume:
 		"""
 		logging.debug(f'Editing volume {self.id}: {edits}')
 		monitored = edits.get('monitor')
-		if monitored == True:
+		if monitored:
 			self._monitor()
-		elif monitored == False:
+		else:
 			self._unmonitor()
 		
 		root_folder_id = edits.get('root_folder_id')
 		if root_folder_id:
 			self._edit_root_folder(root_folder_id)
 
+		issues_as_volumes = edits.get('issues_as_volumes')
+		if issues_as_volumes:
+			self._set_issues_as_volumes()
+		else:
+			self._unset_issues_as_volumes()
+
 		return self.get_info()
+
+	def _set_issues_as_volumes(self) -> None:
+		"""Set the volume to "monitored"
+		"""
+		logging.info(f'Setting volume {self.id} issues to volumes')
+		get_db().execute(
+			"UPDATE volumes SET issues_as_volumes = 1 WHERE id = ?",
+			(self.id,)
+		)
+		return
+
+	def _unset_issues_as_volumes(self) -> None:
+		"""Set the volume to "monitored"
+		"""
+		logging.info(f'Setting volume {self.id} issues to issues')
+		get_db().execute(
+			"UPDATE volumes SET issues_as_volumes = 0 WHERE id = ?",
+			(self.id,)
+		)
+		return
 
 	def _monitor(self) -> None:
 		"""Set the volume to "monitored"
