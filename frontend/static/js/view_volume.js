@@ -103,7 +103,6 @@ function fillTable(issues, api_key) {
 
 function fillPage(data, api_key) {
 	// Set volume data
-	console.log(data)
 	const monitor = document.querySelector('#volume-monitor');
 	const monitor_icon = monitor.querySelector('img');
 	const title = document.querySelector('.volume-title-monitored > h2');
