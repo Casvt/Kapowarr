@@ -6,16 +6,16 @@ After installing Kapowarr, you should have access to the web-ui. Kapowarr needs 
 The first thing to do is decide if you want to leave Kapowarr on the default port of 5656. If you _do_, you can go to the next step. If you want to _change_ the port, continue reading.
 
 === "Docker CLI"
-	Alter the command to run the container and replace `-p 5656:5656` with `-p 5656:{PORT}`, where `{PORT}` is the desired port (e.g. `-p 5656:8009`). Then run the container with the new version of the command.
+	Alter the command to run the container and replace `-p 5656:5656` with `-p {PORT}:5656`, where `{PORT}` is the desired port (e.g. `-p 8009:5656`). Then run the container with the new version of the command.
 
 === "Docker Compose"
-	Alter the file to run the container and replace `- 5656:5656` with `- 5656:{PORT}`, where `{PORT}` is the desired port (e.g. `- 5656:8009`). Then run the container with the new version of the file.
+	Alter the file to run the container and replace `- 5656:5656` with `- {PORT}:5656`, where `{PORT}` is the desired port (e.g. `- 8009:5656`). Then run the container with the new version of the file.
 
 === "Manual Install"
 	Edit the port number at Settings -> General -> Host -> Port Number in the web-ui and change the value to the desired port. Then, restart Kapowarr.
 
 ## Authentication
-You might want to set a password to restrain access to the web-ui (and API). Setting a password is optional. A password can be set at Settings -> General -> Security -> Login Password. Don't forget to save. From then on, it is required to enter a password in order to gain access to the web-ui (and the API). If you want to disable the password, set an empty value for the setting and save.
+You might want to set a password to restrict access to the web-ui (and API). Setting a password is optional. A password can be set at Settings -> General -> Security -> Login Password. Don't forget to save. From then on, it is required to enter a password in order to gain access to the web-ui (and the API). If you want to disable the password, set an empty value for the setting and save.
 
 ## ComicVine API key
 Kapowarr uses ComicVine as it's metadata source. To fetch the metadata from ComicVine, Kapowarr needs access to the API, which requires an API key.
