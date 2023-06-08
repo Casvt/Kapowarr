@@ -20,6 +20,7 @@ The recommended way to install Kapowarr is using Docker. After installing Kapowa
 	2. Replace `/path/to/root_folder` with the path to your desired root folder. Then, this folder will get mapped to `/content` inside the docker container. When adding a root folder in Kapowarr, you'll then set it's location as `/content`, mapping it this way to where ever `/path/to/root_folder` may be.
 	3. You can map multiple root folders by repeating `-v /path/to/root_folder:/content` in the command, but then supplying different values for `/path/to/root_folder` and `/content`.
 	4. Information on how to change the port can be found on the [Setup After Installation page](./setup_after_installation.md#port).
+	5. Using a named volume in docker requires you to create the volume before you can use it (refer to [Named Volumes](#named-volumes)).
 
 === "Docker Compose"
 	The contents of the docker-compose.yml file would look like this:
@@ -42,6 +43,7 @@ The recommended way to install Kapowarr is using Docker. After installing Kapowa
 	2. Replace `/path/to/root_folder` with the path to your desired root folder. Then, this folder will get mapped to `/content` inside the docker container. When adding a root folder in Kapowarr, you'll then set it's location as `/content`, mapping it this way to where ever `/path/to/root_folder` may be.
 	3. You can map multiple root folders by repeating `- /path/to/root_folder:/content` in the file, but then supplying different values for `/path/to/root_folder` and `/content`.
 	4. Information on how to change the port can be found on the [Setup After Installation page](./setup_after_installation.md#port).
+	5. Using a named volume in docker requires you to create the volume before you can use it (refer to [Named Volumes](#named-volumes))
 
 ### Docker example
 === "Docker CLI"
@@ -73,6 +75,24 @@ The recommended way to install Kapowarr is using Docker. After installing Kapowa
 	```
 
 In this example, we set `/home/cas/media/Downloads` as the download folder and we map the folder `/home/cas/media/Comics` to `/RF` and `/home/cas/media/Comics-2` to `/RF-2`. In Kapowarr, you'd then add `/RF` and `/RF-2` as root folders.
+
+### Named volumes
+=== "Docker CLI"
+    ```bash
+    docker volume create kapowarr-db
+    ```
+
+=== "Portainer"
+    - Open `Volumes`
+    - Click `Add Volume`
+    - Enter name matching the one you'll use in compose (`kapowarr-db`, in the above example)
+    - Click `Create the volume`
+    - Open `Stacks`
+    - Create the stack with the named volume in it.
+
+Both of these options will create a named volume that you can then use in the examples above.  
+If you'd prefer to use a local folder on the host machine for storing config, Linux standards would suggest putting that in `/opt/application_name`, as the `/opt` directory is where program options should be stored. 
+In this case, you'd create the desired folder with something like `mkdir /opt/kapowarr/db`, and replace 'kapowarr-db:/app/db' with '/opt/kapowarr/db:/app/db'.
 
 ## Manual Install
 Coming soon
