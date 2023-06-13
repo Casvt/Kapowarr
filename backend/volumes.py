@@ -214,9 +214,9 @@ class Volume:
 		"""
 		logging.debug(f'Editing volume {self.id}: {edits}')
 		monitored = edits.get('monitor')
-		if monitored:
+		if monitored == True:
 			self._monitor()
-		else:
+		elif monitored == False:
 			self._unmonitor()
 		
 		root_folder_id = edits.get('root_folder_id')
@@ -224,9 +224,9 @@ class Volume:
 			self._edit_root_folder(root_folder_id)
 
 		issues_as_volumes = edits.get('issues_as_volumes')
-		if issues_as_volumes:
+		if issues_as_volumes == True:
 			self._set_issues_as_volumes()
-		else:
+		elif issues_as_volumes == False:
 			self._unset_issues_as_volumes()
 
 		return self.get_info()

@@ -150,7 +150,7 @@ function fillPage(data, api_key) {
 	description.innerHTML = data.description;
 	mobile_description.innerHTML = data.description;
 
-	//Issues as Volumes
+	// Issues as volumes
 	issues_as_volumes.dataset.issues_as_volumes = data.issues_as_volumes
 
 	// fill issue lists

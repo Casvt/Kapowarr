@@ -153,6 +153,9 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 		elif key == 'offset':
 			value = 0
 
+		elif key == 'issues_as_volumes':
+			value = False
+
 	return value
 
 #=====================
