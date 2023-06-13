@@ -71,7 +71,7 @@ def _get_formatting_data(volume_id: int, issue_id: int=None) -> dict:
 		SELECT
 			comicvine_id,
 			title, year, publisher,
-			volume_number
+			volume_number, issues_as_volumes
 		FROM volumes
 		WHERE id = ?
 		LIMIT 1;
@@ -90,12 +90,13 @@ def _get_formatting_data(volume_id: int, issue_id: int=None) -> dict:
 		clean_title = volume_data.get('title') or 'Unknown'
 	
 	formatting_data = {
-		'series_name': (volume_data.get('title') or 'Unknown').replace('/', '').replace(r'\\', ''),
+		'series_name': volume_data.get('title', 'Unknown').replace('/', '').replace(r'\\', ''),
 		'clean_series_name': clean_title.replace('/', '').replace(r'\\', ''),
-		'volume_number': volume_data.get('volume_number') or 'Unknown',
-		'comicvine_id': volume_data.get('comicvine_id') or 'Unknown',
-		'year': volume_data.get('year') or 'Unknown',
-		'publisher': volume_data.get('publisher') or 'Unknown'
+		'volume_number': volume_data.get('volume_number', 'Unknown'),
+		'comicvine_id': volume_data.get('comicvine_id', 'Unknown'),
+		'year': volume_data.get('year', 'Unknown'),
+		'publisher': volume_data.get('publisher', 'Unknown'),
+		'issues_as_volumes': bool(volume_data.get('issues_as_volumes', False))
 	}
 	
 	if issue_id:
@@ -114,12 +115,12 @@ def _get_formatting_data(volume_id: int, issue_id: int=None) -> dict:
 		issue_data = dict(issue_data)
 			
 		formatting_data.update({
-			'issue_comicvine_id': issue_data.get('comicvine_id') or 'Unknown',
-			'issue_number': issue_data.get('issue_number') or 'Unknown',
-			'issue_title': (issue_data.get('title') or 'Unknown').replace('/', '').replace(r'\\', ''),
-			'issue_release_date': issue_data.get('date') or 'Unknown'
+			'issue_comicvine_id': issue_data.get('comicvine_id', 'Unknown'),
+			'issue_number': issue_data.get('issue_number', 'Unknown'),
+			'issue_title': issue_data.get('title', 'Unknown').replace('/', '').replace(r'\\', ''),
+			'issue_release_date': issue_data.get('date', 'Unknown')
 		})
-		
+
 	return formatting_data
 
 def generate_volume_folder_name(volume_id: int) -> str:
@@ -138,7 +139,7 @@ def generate_volume_folder_name(volume_id: int) -> str:
 	save_name = _make_filename_safe(name)
 	return save_name
 
-def generate_tpb_name(volume_id: int) -> str:
+def generate_tpb_name(volume_id: int, issues_id: int = None) -> str:
 	"""Generate a TPB name based on the format string
 
 	Args:
@@ -147,9 +148,11 @@ def generate_tpb_name(volume_id: int) -> str:
 	Returns:
 		str: The TPB name
 	"""
-	formatting_data = _get_formatting_data(volume_id)
+	formatting_data = _get_formatting_data(volume_id, issues_id)
 	format: str = Settings().get_settings()['file_naming_tpb']
 
+	if formatting_data['issues_as_volumes']:
+		formatting_data['volume_number'] = formatting_data['issue_number']
 	name = format.format(**formatting_data)
 	save_name = _make_filename_safe(name)
 	return save_name
@@ -179,26 +182,29 @@ def generate_issue_range_name(
 	""", (volume_id, calculated_issue_number_start)).fetchone()[0]
 	formatting_data = _get_formatting_data(volume_id, issue_id)
 	format: str = Settings().get_settings()['file_naming']
-	
-	# Override issue number to range
-	issue_number_start, issue_number_end = cursor.execute("""
-		SELECT issue_number
-		FROM issues
-		WHERE
-			volume_id = ?
-			AND
-			(
-				calculated_issue_number = ?
-				OR calculated_issue_number = ?
-			)
-		ORDER BY calculated_issue_number
-		LIMIT 2;
-		""",
-		(volume_id,
-		calculated_issue_number_start,
-		calculated_issue_number_end)
-	).fetchall()
-	formatting_data['issue_number'] = f'{issue_number_start[0]}-{issue_number_end[0]}'
+
+	if formatting_data['issues_as_volumes']:
+		formatting_data['volume_number'] = formatting_data['issue_number']
+	else:
+		# Override issue number to range
+		issue_number_start, issue_number_end = cursor.execute("""
+			SELECT issue_number
+			FROM issues
+			WHERE
+				volume_id = ?
+				AND
+				(
+					calculated_issue_number = ?
+					OR calculated_issue_number = ?
+				)
+			ORDER BY calculated_issue_number
+			LIMIT 2;
+			""",
+			(volume_id,
+			calculated_issue_number_start,
+			calculated_issue_number_end)
+		).fetchall()
+		formatting_data['issue_number'] = f'{issue_number_start[0]}-{issue_number_end[0]}'
 	
 	name = format.format(**formatting_data)
 	save_name = _make_filename_safe(name)

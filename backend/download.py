@@ -63,7 +63,7 @@ class Download(ABC):
 	@abstractmethod
 	def run(self) -> None:
 		return
-		
+
 	@abstractmethod
 	def stop(self) -> None:
 		return
@@ -74,7 +74,7 @@ class BaseDownload(Download):
 
 class DirectDownload(BaseDownload):
 	"""For downloading a file directly from a link
-	"""	
+	"""
 	def __init__(self, link: str, filename_body: str, source: str):
 		"""Setup the direct download
 
@@ -114,7 +114,7 @@ class DirectDownload(BaseDownload):
 
 		Returns:
 			str: The extension of the file, including the `.`
-		"""		
+		"""
 		match = file_extension_regex.findall(
 			' '.join((
 				content_type,
@@ -137,7 +137,7 @@ class DirectDownload(BaseDownload):
 
 		Returns:
 			str: The filename
-		"""		
+		"""
 		folder = Settings().get_settings()['download_folder']
 		extension = self.__extract_extension(
 			r.headers.get('Content-Type', ''),
@@ -148,7 +148,7 @@ class DirectDownload(BaseDownload):
 
 	def run(self) -> None:
 		"""Start the download
-		"""		
+		"""
 		self.state = DOWNLOADING_STATE
 		size_downloaded = 0
 
@@ -218,7 +218,7 @@ class MegaDownload(BaseDownload):
 
 		self.file = self.__build_filename()
 		self.title = splitext(basename(self.file))[0]
-		
+
 	def __extract_extension(self) -> str:
 		"""Find the extension of the file behind the link
 
@@ -243,13 +243,13 @@ class MegaDownload(BaseDownload):
 		
 		Raises:
 			DownloadLimitReached: The Mega download limit is reached mid-download
-		"""		
+		"""
 		self.state = DOWNLOADING_STATE
 		self._mega.download_url(self.file)
 
 	def stop(self) -> None:
 		"""Interrupt the download
-		"""		
+		"""
 		self.state = CANCELED_STATE
 		self._mega.downloading = False
 
@@ -265,7 +265,7 @@ def _check_download_link(link_text: str, link: str) -> Union[str, None]:
 
 	Returns:
 		Union[str, None]: Either the name of the service (e.g. `mega`) or `None` if it's not allowed
-	"""	
+	"""
 	logging.debug(f'Checking download link: {link}, {link_text}')
 	if not link:
 		return
@@ -304,7 +304,7 @@ def _purify_link(link: str) -> dict:
 		r = get(link, headers={'User-Agent': 'Kapowarr'}, stream=True)
 		r.close()
 		url = r.url
-		
+
 		if mega_regex.search(url):
 			# Link is mega
 			if not '#F!' in url and not '/folder/' in url:
@@ -312,17 +312,17 @@ def _purify_link(link: str) -> dict:
 			# else
 			# Link is not supported (folder most likely)
 			raise LinkBroken(2, blocklist_reasons[2])
-		
+
 		elif mediafire_regex.search(url):
 			# Link is mediafire
 			if 'error.php' in url:
 				# Link is broken
 				raise LinkBroken(1, blocklist_reasons[1])
-			
+
 			elif '/folder/' in url:
 				# Link is not supported (folder most likely)
 				raise LinkBroken(2, blocklist_reasons[2])
-			
+
 			soup = BeautifulSoup(r.text, 'html.parser')
 			button = soup.find('a', {'id': 'downloadButton'})
 			if button:
@@ -416,11 +416,11 @@ def _sort_link_paths(p: List[dict]) -> int:
 
 	Returns:
 		int: The rating (lower is better)
-	"""	
+	"""
 	if p[0]['info']['special_version']:
 		return 0
 	return 1 / len(p)
-	
+
 def _process_extracted_get_comics_links(
 	download_groups: Dict[str, Dict[str, List[str]]],
 	volume_title: str,
@@ -442,7 +442,7 @@ def _process_extracted_get_comics_links(
 		List[List[Dict[str, dict]]]: The list contains all paths. Each path is a list of download groups. The `info` key has
 		as it's value the output of files.extract_filename_data() for the title of the group. The `links` key contains the
 		download links grouped together with their service.
-	"""	
+	"""
 	logging.debug('Creating link paths')
 	annual = 'annual' in volume_title.lower()
 	service_preference_order = dict((v, k) for k, v in enumerate(Settings().get_service_preference()))
@@ -486,7 +486,7 @@ def _process_extracted_get_comics_links(
 						break
 				else:
 					link_paths.append([{'info': processed_desc, 'links': sources}])
-	
+
 	link_paths.sort(key=_sort_link_paths)
 
 	logging.debug(f'Link paths: {link_paths}')
@@ -494,13 +494,15 @@ def _process_extracted_get_comics_links(
 
 def _test_paths(
 	link_paths: List[List[Dict[str, dict]]],
-	volume_id: int
+	volume_id: int,
+	issue_id: int = None
 ) -> Tuple[List[dict], bool]:
 	"""Test the links of the paths and determine based on which links work which path to go for
 
 	Args:
 		link_paths (List[List[Dict[str, dict]]]): The link paths (output of download._process_extracted_get_comics_links())
 		volume_id (int): The id of the volume
+		issue_id (int): The id of the issue
 
 	Returns:
 		Tuple[List[dict], bool]: A list of downloads and wether or not the download limit for a service on the page is reached.
@@ -520,7 +522,7 @@ def _test_paths(
 			# Generate name
 			if download['info']['special_version']:
 				# Link for TPB
-				name = generate_tpb_name(volume_id)
+				name = generate_tpb_name(volume_id, issue_id)
 
 			elif isinstance(download['info']['issue_number'], tuple):
 				# Link for issue range
@@ -528,7 +530,7 @@ def _test_paths(
 					volume_id,
 					*download['info']['issue_number']
 				)
-			
+
 			else:
 				# Link for single issue
 				name = generate_issue_name(volume_id, download['info']['issue_number'])
@@ -564,10 +566,10 @@ def _test_paths(
 		else:
 			break
 		downloads = []
-	
+
 	logging.debug(f'Chosen links: {downloads}')
 	return downloads, limit_reached
-		
+
 def _extract_download_links(link: str, volume_id: int, issue_id: int=None) -> Tuple[List[dict], bool]:
 	"""Filter, select and setup downloads from a getcomic page
 
@@ -585,7 +587,7 @@ def _extract_download_links(link: str, volume_id: int, issue_id: int=None) -> Tu
 		However, the page shouldn't be blacklisted because the links _are_ working.
 		
 		If the list has content, the page has working links that can be used.
-	"""	
+	"""
 	logging.debug(f'Extracting download links from {link} for volume {volume_id} and issue {issue_id}')
 
 	try:
@@ -601,7 +603,7 @@ def _extract_download_links(link: str, volume_id: int, issue_id: int=None) -> Tu
 
 		# Get info of volume
 		volume_info = get_db('dict').execute(
-			"SELECT title, volume_number FROM volumes WHERE id = ? LIMIT 1",
+			"SELECT title, volume_number, issues_as_volumes FROM volumes WHERE id = ? LIMIT 1",
 			(volume_id,)
 		).fetchone()
 
@@ -613,11 +615,19 @@ def _extract_download_links(link: str, volume_id: int, issue_id: int=None) -> Tu
 
 		# Filter incorrect download groups and combine them (or not) to create download paths
 		# [[{'info': {}, 'links': {}}, {'info': {}, 'links': {}}], [{'info': {}, 'links': {}}]]
-		link_paths = _process_extracted_get_comics_links(download_groups, volume_info['title'], volume_info['volume_number'])
+		if volume_info['issues_as_volumes'] and issue_id:
+			issue_info = get_db('dict').execute(
+				"SELECT issue_number FROM issues WHERE id = ? LIMIT 1",
+				(issue_id,)
+			).fetchone()
+			issue_number = int(issue_info['issue_number']) if issue_info['issue_number'].isdigit() else volume_info['volume_number']
+			link_paths = _process_extracted_get_comics_links(download_groups, volume_info['title'], issue_number)
+		else:
+			link_paths = _process_extracted_get_comics_links(download_groups, volume_info['title'], volume_info['volume_number'])
 
 		# Decide which path to take by testing the links
 		# [{'name': 'Filename', 'link': 'link_on_getcomics_page', 'instance': Download_instance}]
-		return _test_paths(link_paths, volume_id)
+		return _test_paths(link_paths, volume_id, issue_id)
 
 	#else
 	# Link is a torrent file or magnet link
@@ -629,15 +639,15 @@ def _extract_download_links(link: str, volume_id: int, issue_id: int=None) -> Tu
 #=====================
 class DownloadHandler:
 	"""Handles downloads
-	"""	
+	"""
 	queue: List[dict] = []
-	
+
 	def __init__(self, context) -> None:
 		"""Setup the download handler
 
 		Args:
 			context (Flask): A flask app instance
-		"""		
+		"""
 		self.context = context.app_context
 		self.load_download_thread = Thread(target=self.__load_downloads, name="Download Importer")
 		return
@@ -647,9 +657,9 @@ class DownloadHandler:
 
 		Args:
 			download (dict): The download to run. One of the entries in self.queue.
-		"""	
+		"""
 		logging.info(f'Starting download: {download["id"]}')
-		
+
 		with self.context():
 			try:
 				download['instance'].run()
@@ -664,7 +674,7 @@ class DownloadHandler:
 				# else
 				download['instance'].state = IMPORTING_STATE
 				PostProcessing(download, self.queue).full()
-			
+
 				self.queue.pop(0)
 			self._process_queue()
 			return
@@ -673,10 +683,10 @@ class DownloadHandler:
 		"""Handle the queue. In the case that there is something in the queue and it isn't already downloading,
 		start the download. This can safely be called multiple times while a download is going or while there is
 		nothing in the queue.
-		"""	
+		"""
 		if not self.queue:
 			return
-		
+
 		first_entry = self.queue[0]
 		if first_entry['instance'].state == QUEUED_STATE:
 			first_entry['thread'].start()
@@ -690,7 +700,7 @@ class DownloadHandler:
 
 		Returns:
 			dict: The formatted version
-		"""		
+		"""
 		return {
 			'id': d['id'],
 			'status': d['instance'].state,
@@ -708,7 +718,7 @@ class DownloadHandler:
 
 	def __load_downloads(self) -> None:
 		"""Load downloads from the database and add them to the queue for re-downloading
-		"""		
+		"""
 		logging.debug('Loading downloads from database')
 		with self.context():
 			cursor2 = get_db('dict', temp=True)
@@ -741,11 +751,11 @@ class DownloadHandler:
 
 		Returns:
 			List[dict]: Queue entries that were added from the link.
-		"""		
+		"""
 		logging.info(
 			f'Adding download for volume {volume_id}{f" issue {issue_id}" if issue_id else ""}: {link}'
 		)
-		
+
 		# Extract download links and convert into Download instances
 		# [{'name': 'Filename', 'link': 'link_on_getcomics_page', 'instance': Download_instance}]
 		downloads, limit_reached = _extract_download_links(link, volume_id, issue_id)
@@ -792,7 +802,7 @@ class DownloadHandler:
 
 	def stop_handle(self) -> None:
 		"""Cancel any running download and stop the handler
-		"""		
+		"""
 		logging.debug('Stopping download thread')
 		if self.queue:
 			self.queue[0]['instance'].stop()
@@ -804,13 +814,13 @@ class DownloadHandler:
 
 		Returns:
 			List[dict]: All queue entries, formatted after self.__format_entry()
-		"""		
+		"""
 		result = list(map(
 			self.__format_entry,
 			self.queue
 		))
 		return result
-	
+
 	def get_one(self, download_id: int) -> dict:
 		"""Get a queue entry based on it's id.
 
@@ -822,12 +832,12 @@ class DownloadHandler:
 
 		Returns:
 			dict: The queue entry, formatted after self.__format_entry()
-		"""		
+		"""
 		for entry in self.queue:
 			if entry['id'] == download_id:
 				return self.__format_entry(entry)
 		raise DownloadNotFound
-	
+
 	def remove(self, download_id: int) -> None:
 		"""Remove a download entry from the queue
 
@@ -836,7 +846,7 @@ class DownloadHandler:
 
 		Raises:
 			DownloadNotFound: The id doesn't map to any download in the queue
-		"""	
+		"""
 		logging.info(f'Removing download with id {download_id}')
 
 		# Delete download from queue
@@ -853,7 +863,7 @@ class DownloadHandler:
 
 		self._process_queue()
 		return
-	
+
 	def empty_download_folder(self) -> None:
 		"""Empty the temporary download folder of files that aren't being downloaded.
 		Handy in the case that a crash left half-downloaded files behind in the folder.
@@ -878,7 +888,7 @@ def get_download_history(offset: int=0) -> List[dict]:
 
 	Returns:
 		List[dict]: The history entries.
-	"""	
+	"""
 	result = list(map(
 		dict,
 		get_db('dict').execute(
