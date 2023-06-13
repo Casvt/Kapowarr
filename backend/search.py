@@ -49,7 +49,7 @@ def _check_matching_titles(title1: str, title2: str) -> bool:
 	logging.debug(f'Matching titles ({title1}, {title2}): {result}')
 	return result
 
-def _check_match(result: dict, title: str, volume_number: int, issue_numbers: Dict[float, int], calculated_issue_number: float=None, year: int=None) -> dict:
+def _check_match(result: dict, title: str, volume_number: int, issue_numbers: Dict[float, int], calculated_issue_number: float=None, year: int=None, issues_as_volumes: bool = False) -> dict:
 	"""Determine if a result is a match with what is searched for
 
 	Args:
@@ -76,7 +76,8 @@ def _check_match(result: dict, title: str, volume_number: int, issue_numbers: Di
 	if not _check_matching_titles(title, result['series']):
 		return {'match': False, 'match_issue': 'Title doesn\'t match'}
 
-	if result['volume_number'] != volume_number and (result['volume_number'] is not None or year is None):
+	if (result['volume_number'] not in issue_numbers if issues_as_volumes else result['volume_number'] != volume_number ) \
+			and (result['volume_number'] is not None or year is None):
 		return {'match': False, 'match_issue': 'Volume number doesn\'t match'}
 
 	issue_number_is_equal = (
@@ -104,6 +105,15 @@ def _check_match(result: dict, title: str, volume_number: int, issue_numbers: Di
 				# No issue number but only one issue in volume
 				or (result['issue_number'] is None and len(issue_numbers) == 1)
 			)
+		)
+		or
+		(
+			# Search result for issue
+				calculated_issue_number is not None
+				and
+				issues_as_volumes
+				and
+				isinstance(result['volume_number'], int) and result['volume_number'] == calculated_issue_number
 		)
 	)
 	if not issue_number_is_equal:
@@ -278,15 +288,16 @@ def manual_search(
 	cursor.execute("""
 		SELECT
 			title,
-			volume_number, year
+			volume_number, year, issues_as_volumes
 		FROM volumes
 		WHERE id = ?
 		LIMIT 1;
 	""", (volume_id,))
-	title, volume_number, year = cursor.fetchone()
+	title, volume_number, year, issues_as_volumes = cursor.fetchone()
 	title: str
 	volume_number: int
 	year: int
+	issues_as_volumes: bool
 	if issue_id:
 		cursor.execute("""
 			SELECT
@@ -346,7 +357,7 @@ def manual_search(
 	)
 	issue_numbers = {i[0]: int(i[1].split('-')[0]) for i in cursor}
 	for result in results:
-		result.update(_check_match(result, title, volume_number, issue_numbers, calculated_issue_number, year))
+		result.update(_check_match(result, title, volume_number, issue_numbers, calculated_issue_number, year, issues_as_volumes))
 
 	# Sort results; put best result at top
 	results.sort(key=lambda r: _sort_search_results(r, title, volume_number, year, calculated_issue_number))
