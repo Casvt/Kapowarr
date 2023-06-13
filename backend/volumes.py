@@ -582,13 +582,14 @@ class Library:
 		"""		
 		return Issue(issue_id)
 		
-	def add(self, comicvine_id: str, root_folder_id: int, monitor: bool=True) -> int:
+	def add(self, comicvine_id: str, root_folder_id: int, monitor: bool=True, issues_as_volumes: bool=False) -> int:
 		"""Add a volume to the library
 
 		Args:
 			comicvine_id (str): The ComicVine id of the volume
 			root_folder_id (int): The id of the rootfolder in which the volume folder will be
-			monitor (bool, optional): Wether or not to mark the volume as monitored. Defaults to True.
+			monitor (bool, optional): Whether to mark the volume as monitored. Defaults to True.
+			issues_as_volumes (bool, optional): Whether to mark the issues as volumes
 
 		Raises:
 			VolumeAlreadyAdded: The volume already exists in the library
@@ -616,6 +617,7 @@ class Library:
 		volume_data = ComicVine().fetch_volume(comicvine_id)
 		volume_data['monitored'] = monitor
 		volume_data['root_folder'] = root_folder_id
+		volume_data['issues_as_volumes'] = issues_as_volumes
 
 		# Insert volume
 		cursor.execute(
@@ -631,9 +633,10 @@ class Library:
 				monitored,
 				root_folder,
 				last_cv_update,
-				last_cv_fetch
+				last_cv_fetch,
+				issues_as_volumes
 			) VALUES (
-				?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+				?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 			);
 			""",
 			(
@@ -647,7 +650,8 @@ class Library:
 				volume_data['monitored'],
 				volume_data['root_folder'],
 				volume_data['date_last_updated'],
-				round(time())
+				round(time()),
+				volume_data['issues_as_volumes']
 			)
 		)
 		volume_id = cursor.lastrowid

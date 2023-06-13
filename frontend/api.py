@@ -131,7 +131,7 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 			if not value in blocklist_reasons:
 				raise InvalidKeyValue(key, value)
 
-		elif key in ('monitor', 'delete_folder'):
+		elif key in ('monitor', 'delete_folder', 'issues_as_volumes'):
 			if value == 'true':
 				value = True
 			elif value == 'false':
@@ -371,8 +371,9 @@ def api_volumes():
 		comicvine_id = extract_key(request, 'comicvine_id')
 		root_folder_id = extract_key(request, 'root_folder_id')
 		monitor = extract_key(request, 'monitor', False)
+		issues_as_volumes = extract_key(request, 'issues_as_volumes', False)
 
-		volume_id = library.add(comicvine_id, root_folder_id, monitor)
+		volume_id = library.add(comicvine_id, root_folder_id, monitor, issues_as_volumes)
 		volume_info = library.get_volume(volume_id).get_info()
 		return return_api(volume_info, code=201)
 

@@ -168,9 +168,10 @@ function addVolume() {
 	const comicvine_id = document.querySelector('#comicvine-input').value;
 	const root_folder_id = document.querySelector('#rootfolder-input').value;
 	const monitor_value = document.querySelector('#monitor-input').value;
+	const issues_as_volumes = document.querySelector('#issues-as-volumes-input').value;
 	usingApiKey()
 	.then(api_key => {
-		fetch(`${url_base}/api/volumes?api_key=${api_key}&comicvine_id=${comicvine_id}&monitor=${monitor_value}&root_folder_id=${root_folder_id}`, {
+		fetch(`${url_base}/api/volumes?api_key=${api_key}&comicvine_id=${comicvine_id}&monitor=${monitor_value}&root_folder_id=${root_folder_id}&issues_as_volumes=${issues_as_volumes}`, {
 			'method': 'POST'
 		})
 		.then(response => {
