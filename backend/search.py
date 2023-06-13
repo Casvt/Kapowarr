@@ -319,12 +319,19 @@ def manual_search(
 	# Prepare query
 	title = title.replace(':', '')
 
-	if issue_number is None:
+	if issue_number is None and not issues_as_volumes:
 		query_formats = (
 			'{title} Vol. {volume_number} ({year})',
 			'{title} ({year})',
 			'{title} Vol. {volume_number}'
 		)
+	elif issues_as_volumes:
+		query_formats = (
+			'{title} Vol. {issue_number} ({year})',
+			'{title} Vol. {issue_number}'
+		)
+		if issue_number is None:
+			issue_number = ''
 	else:
 		query_formats = (
 			'{title} #{issue_number} ({year})',
