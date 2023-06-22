@@ -286,6 +286,7 @@ def setup_db() -> None:
 			folder TEXT,
 			last_cv_update VARCHAR(255),
 			last_cv_fetch INTEGER(8) DEFAULT 0,
+			issues_as_volumes BOOL NOT NULL DEFAULT 0,
 			
 			FOREIGN KEY (root_folder) REFERENCES root_folders(id)
 		);
