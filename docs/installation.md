@@ -46,6 +46,27 @@ The recommended way to install Kapowarr is using Docker. After installing Kapowa
     4. Information on how to change the port can be found on the [Setup After Installation page](./setup_after_installation.md#port).
     5. Using a named volume in docker requires you to create the volume before you can use it (refer to [Named Volumes](#named-volumes))
 
+=== "Docker CLI (custom user)"
+    The command to get the docker container running can be found below:
+    ```bash
+    docker run -d \
+        --name kapowarr \
+        -e PUID:1000 \
+        - GUID:1000 \
+        -v kapowarr-db:/app/db \
+        -v /path/to/download_folder:/app/temp_downloads \
+        -v /path/to/root_folder:/content \
+        -p 5656:5656
+        mrcas/kapowarr:latest
+    ```
+    A few notes about this command:
+
+    1. Replace `/path/to/download_folder` with the path to your desired download folder. Everything is downloaded to this folder and when completed, moved out of to their final destination. It's smart to set this on a disk that can sustain more writes than normal. Ideally something like a _non_-network mounted ssd.
+    2. Replace `/path/to/root_folder` with the path to your desired root folder. Then, this folder will get mapped to `/content` inside the docker container. When adding a root folder in Kapowarr, you'll then set it's location as `/content`, mapping it this way to where ever `/path/to/root_folder` may be.
+    3. You can map multiple root folders by repeating `-v /path/to/root_folder:/content` in the command, but then supplying different values for `/path/to/root_folder` and `/content`.
+    4. Information on how to change the port can be found on the [Setup After Installation page](./setup_after_installation.md#port).
+    5. Using a named volume in docker requires you to create the volume before you can use it (refer to [Named Volumes](#named-volumes)).
+
 === "Docker Compose (custom user)"
     The contents of the docker-compose.yml file would look like this:
     ```yml
