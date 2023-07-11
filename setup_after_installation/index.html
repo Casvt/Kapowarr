@@ -19,7 +19,7 @@
         <link rel="next" href="../faq/">
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.14">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.85bb2934.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.26e3688c.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.a6bdf11c.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ecc896b0.min.css">
       
       
 
@@ -739,28 +739,24 @@
 <h3 id="credentials">Credentials<a class="headerlink" href="#credentials" title="Permanent link">&para;</a></h3>
 <p>Kapowarr has the ability to download from services like MediaFire and Mega. These services apply limits to how much you can download per day, or a download speed limit. An (paid) account for one of these services often offers higher limits. Kapowarr can take advantage of these extra features that these accounts offer. Under the credentials section, you can add credentials of accounts, which Kapowarr will use when downloading, taking advantage of the extra features. </p>
 <h2 id="building-up-a-library">Building up a library<a class="headerlink" href="#building-up-a-library" title="Permanent link">&para;</a></h2>
-<p>Now you're ready to build a library. At Volumes -&gt; Add Volume, you can search for volumes and add them to your library. Once you add one, a folder is automatically created for the volume in the root folder selected (see Settings -&gt; Media Management -&gt; File Naming -&gt; Volume Folder Naming). Then you can start downloading content for the volume, and all files will be put in this volume folder. The naming of the files follows the format set in the settings (see Settings -&gt; Media Management -&gt; File Naming).</p>
-<details class="unzipping">
-<summary>Unzipping</summary>
-<p>Kapowarr has unzipping built-in. This means that it can extract zip files, filter the content to find the files that are actually desired, delete the other files, move the files to the correct location and name them correctly, delete the zip folder and delete the zip file. This can be done automatically for all downloaded zip files by enabling Settings -&gt; Media Management -&gt; Unzipping -&gt; Unzip downloads. Unzipping can also be done for all zip files of a volume by pressing the "Unzip" button when viewing a volume.</p>
-</details>
+<p>Now you're ready to build a library. At Volumes -&gt; Add Volume, you can search for volumes and add them to your library. When adding a volume, the name of the folder for the volume is automatically generated and is the value of "Volume Folder". You can leave it to the automatically generated one (based on the format defined at Settings -&gt; Media Management -&gt; File Naming -&gt; Volume Folder Naming) or set a custom one. Then you can start downloading content for the volume, and all files will be put in this volume folder. The naming of the files follows the format set in the settings (see Settings -&gt; Media Management -&gt; File Naming).</p>
 <p>Importing an already existing library into Kapowarr is currently not very fluid (the "Library Import" feature found in Radarr/Sonarr is not yet implemented in Kapowarr). The advised way to get Kapowarr working with your current library:</p>
 <ol>
-<li>Add a volume in Kapowarr.</li>
-<li>Move the content for the volume from the current folder to the volume folder generated and created by Kapowarr.</li>
+<li>Move all current media into the root folder, where each volume has their own folder.</li>
+<li>Add a volume in Kapowarr and while adding, set the "Volume Folder" to the folder of the volume from step 1.</li>
 <li>Go to the volume in Kapowarr and click the "Refresh &amp; Scan" button. Kapowarr will scan the volume folder and import all files.</li>
 <li>Refresh the web-ui.</li>
 <li>(Optional) Click "Preview Rename" and Kapowarr will immediately propose new naming for the files, following the file naming format set in the settings.</li>
 <li>Repeat for all volumes that you have in your current library.</li>
 </ol>
-<p>There are plans to add support for custom volume folders and to add the "Library Import" feature, to make the process of importing an existing library easier.</p>
+<p>There are plans to add support for the "Library Import" feature, to make the process of importing an existing library easier.</p>
 
   <hr>
 <div class="md-source-file">
   <small>
     
       Last update:
-      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-05-25T15:45:56+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-05-25</span>
+      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-07-11T13:14:28+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-07-11</span>
       
     
   </small>
@@ -809,14 +805,18 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["content.tabs.link", "content.code.copy", "header.autohide", "navigation.expand", "navigation.indexes", "navigation.instant", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking"], "search": "../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.tabs.link", "content.code.copy", "header.autohide", "navigation.expand", "navigation.indexes", "navigation.instant", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking"], "search": "../assets/javascripts/workers/search.74e28a9f.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.b4d07000.min.js"></script>
+      <script src="../assets/javascripts/bundle.220ee61c.min.js"></script>
       
-        <script src="../js/timeago.min.js"></script>
+        
+          <script src="../js/timeago.min.js"></script>
+        
       
-        <script src="../js/timeago_mkdocs_material.js"></script>
+        
+          <script src="../js/timeago_mkdocs_material.js"></script>
+        
       
     
   </body>
