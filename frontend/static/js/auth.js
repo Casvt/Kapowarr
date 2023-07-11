@@ -2,7 +2,11 @@ async function usingApiKey(redirect=true) {
 	const api_key = sessionStorage.getItem('api_key');
 	if (api_key === null) {
 
-		return fetch(`${url_base}/api/auth`, {'method': 'POST'})
+		return fetch(`${url_base}/api/auth`, {
+			'method': 'POST',
+			'headers': {'Content-Type': 'application/json'},
+			'body': '{}'
+		})
 			.then(response => {
 				if (!response.ok) return Promise.reject(response.status);
 				return response.json();

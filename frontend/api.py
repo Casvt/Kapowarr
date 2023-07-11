@@ -112,11 +112,6 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 			if not value == settings.get_settings()['api_key']:
 				raise InvalidKeyValue(key, value)
 
-		elif key == 'password':
-			auth_password = settings.get_settings().get('auth_password', '')
-			if auth_password != '' and value != auth_password:
-				raise InvalidKeyValue(key, value)
-
 		elif key == 'sort':
 			if not value in library.sorting_orders.keys():
 				raise InvalidKeyValue(key, value)
