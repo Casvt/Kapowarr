@@ -222,10 +222,11 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 	else:
 		# No special version so find issue number; assume to the right of volume number (if found)
 		for regex in (issue_regex, issue_regex_2, issue_regex_3, issue_regex_4, issue_regex_5, issue_regex_6):
-			issue_result = None
-			r = regex.finditer(filename, pos=volume_end)
-			for issue_result in r: pass
-			if issue_result:
+			r = list(regex.finditer(filename, pos=volume_end))
+			if r:
+				r.sort(key=lambda e: (int(e.group(1)[-1] not in '0123456789'), 1 / e.start(0)))
+				issue_result = r[0]
+
 				if (year_pos <= issue_result.start(0) <= year_end
 				or year_pos <= issue_result.end(0) <= year_end):
 					for p in ({'endpos': issue_result.start(0)}, {'pos': issue_result.end(0)}):

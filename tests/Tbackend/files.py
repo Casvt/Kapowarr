@@ -35,9 +35,12 @@ class extract_filename_data(unittest.TestCase):
 
 			'Team 7 v1 (2012)/Team 7 (0-8) GetComics.INFO/Team 7 008.cbr':
 				{'series': 'Team 7', 'year': 2012, 'volume_number': 1, 'special_version': None, 'issue_number': 8.0, 'annual': False},
-				
+
 			'Infinity Gauntlet #1 – 6 (1991-1992)':
-				{'series': 'Infinity Gauntlet', 'year': 1991, 'volume_number': 1, 'special_version': None, 'issue_number': (1.0, 6.0), 'annual': False}
+				{'series': 'Infinity Gauntlet', 'year': 1991, 'volume_number': 1, 'special_version': None, 'issue_number': (1.0, 6.0), 'annual': False},
+
+			'Batman 026-050 (1945-1949) GetComics.INFO/Batman 048 52p ctc (08-1948) flattermann.cbr':
+				{'series': 'Batman', 'year': 1945, 'volume_number': 1, 'special_version': None, 'issue_number': 48.0, 'annual': False}
 		}
 		self.run_cases(cases)
 
