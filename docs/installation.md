@@ -52,7 +52,7 @@ The recommended way to install Kapowarr is using Docker. After installing Kapowa
     docker run -d \
         --name kapowarr \
         -e PUID:1000 \
-        -e GUID:1000 \
+        -e PGID:1000 \
         -v kapowarr-db:/app/db \
         -v /path/to/download_folder:/app/temp_downloads \
         -v /path/to/root_folder:/content \
@@ -92,7 +92,7 @@ The recommended way to install Kapowarr is using Docker. After installing Kapowa
     3. You can map multiple root folders by repeating `- /path/to/root_folder:/content` in the file, but then supplying different values for `/path/to/root_folder` and `/content`.
     4. Information on how to change the port can be found on the [Setup After Installation page](./setup_after_installation.md#port).
     5. Using a named volume in docker requires you to create the volume before you can use it (refer to [Named Volumes](#named-volumes))
-    6. If you define a custom PUID and GUID here, they must have permission on any folder you've mapped in. The default user ID of '1000' is the first non-root user created on any Debian-based system, and generally exists on the host. If you are unsure of the _UID_ of the user you'd like the container to present as, see [Custom User](#custom-user).
+    6. If you define a custom PUID and PGID here, they must have permission on any folder you've mapped in. The default user ID of '1000' is the first non-root user created on any Debian-based system, and generally exists on the host. If you are unsure of the _UID_ of the user you'd like the container to present as, see [Custom User](#custom-user).
 
 ### Docker example
 
@@ -134,7 +134,7 @@ The recommended way to install Kapowarr is using Docker. After installing Kapowa
     docker run -d \
         --name kapowarr \
         -e PUID:1000 \
-        -e GUID:1000 \
+        -e PGID:1000 \
         -v kapowarr-db:/app/db \
         -v /home/cas/media/Downloads:/app/temp_downloads \
         -v /home/cas/media/Comics:/RF \
@@ -184,7 +184,7 @@ The recommended way to install Kapowarr is using Docker. After installing Kapowa
     - Create the stack with the named volume in it.
 
 Both of these options will create a named volume that you can then use in the examples above.  
-If you'd prefer to use a local folder on the host machine for storing config, Linux standards would suggest putting that in `/opt/application_name`, as the `/opt` directory is where program options should be stored. 
+If you'd prefer to use a local folder on the host machine for storing config, Linux standards would suggest putting that in `/opt/application_name`, as the `/opt` directory is where program options should be stored.  
 In this case, you'd create the desired folder with something like `mkdir /opt/kapowarr/db`, and replace 'kapowarr-db:/app/db' with '/opt/kapowarr/db:/app/db'.
 
 ### Custom User
