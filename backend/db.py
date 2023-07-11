@@ -7,10 +7,11 @@ import logging
 from os import makedirs
 from os.path import dirname
 from sqlite3 import Connection, ProgrammingError, Row
-from threading import current_thread, main_thread
+from threading import current_thread
 from time import time
 
 from flask import g
+from waitress.task import ThreadedTaskDispatcher as OldThreadedTaskDispatcher
 
 __DATABASE_VERSION__ = 7
 
@@ -24,6 +25,18 @@ class Singleton(type):
 
 		return cls._instances[i]
 
+class ThreadedTaskDispatcher(OldThreadedTaskDispatcher):
+	def handler_thread(self, thread_no: int) -> None:
+		super().handler_thread(thread_no)
+		i = f'{DBConnection}{current_thread()}'
+		if i in Singleton._instances and not Singleton._instances[i].closed:
+			Singleton._instances[i].close()
+
+	def shutdown(self, cancel_pending: bool = True, timeout: int = 5) -> bool:
+		logging.info('Shutting down Kapowarr...')
+		super().shutdown(cancel_pending, timeout)
+		DBConnection(20.0).close()
+
 class DBConnection(Connection, metaclass=Singleton):
 	"For creating a connection with a database"	
 	file = ''
@@ -34,13 +47,14 @@ class DBConnection(Connection, metaclass=Singleton):
 		Args:
 			timeout (float): How long to wait before giving up on a command
 		"""
-		logging.debug(f'Creating a connection to a database: {self.file}')
+		logging.debug(f'Creating a connection to the database for thread {current_thread()}')
 		super().__init__(self.file, timeout=timeout)
 		super().cursor().execute("PRAGMA foreign_keys = ON;")
 		self.closed = False
 		return
 	
 	def close(self) -> None:
+		logging.debug(f'Closing a connection to the database for thread {current_thread()}')
 		self.closed = True
 		super().close()
 		return
@@ -96,7 +110,7 @@ def close_db(e: str=None):
 		cursor.close()
 		delattr(g, 'cursor')
 		db.commit()
-		if current_thread() is main_thread():
+		if not current_thread().name.startswith('waitress-'):
 			db.close()
 	except (AttributeError, ProgrammingError):
 		pass
@@ -196,6 +210,7 @@ def migrate_db(current_db_version: int) -> None:
 				"UPDATE issues SET calculated_issue_number = ? WHERE id = ?;",
 				(calc_issue_number, result[0])
 			)
+		cursor2.connection.close()
 
 		current_db_version = 5
 	
@@ -267,6 +282,7 @@ def setup_db() -> None:
 	                              task_intervals)
 
 	cursor = get_db()
+	cursor.execute("PRAGMA journal_mode = wal;")
 
 	setup_commands = """
 		CREATE TABLE IF NOT EXISTS config(

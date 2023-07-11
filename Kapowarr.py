@@ -10,7 +10,8 @@ from flask import Flask, render_template, request
 from waitress.server import create_server
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
-from backend.db import close_db, get_db, set_db_location, setup_db
+from backend.db import (ThreadedTaskDispatcher, close_db, get_db,
+                        set_db_location, setup_db)
 from backend.files import folder_path
 from backend.logging import set_log_level, setup_logging
 from backend.settings import default_settings, private_settings
@@ -112,8 +113,11 @@ def Kapowarr() -> None:
 
 	# Create waitress server and run
 	logging.debug('Creating server')
+	dispatcher = ThreadedTaskDispatcher()
+	dispatcher.set_thread_count(private_settings['hosting_threads'])
 	server = create_server(
 		app,
+		_dispatcher=dispatcher,
 		host=settings.cache['host'],
 		port=settings.cache['port'],
 		threads=private_settings['hosting_threads']
@@ -123,11 +127,9 @@ def Kapowarr() -> None:
 	server.run()
 
 	# Shutdown application
-	logging.info('Stopping Kapowarr')
 	download_handler.stop_handle()
 	task_handler.stop_handle()
 
-	logging.info('Thank you for using Kapowarr')
 	return
 
 if __name__ == "__main__":

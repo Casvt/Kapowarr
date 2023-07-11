@@ -710,20 +710,18 @@ class DownloadHandler:
 		"""Load downloads from the database and add them to the queue for re-downloading
 		"""		
 		logging.debug('Loading downloads from database')
-		with self.context():
-			cursor2 = get_db('dict', temp=True)
-			cursor2.execute("""
-				SELECT
-					id,
-					link,
-					volume_id, issue_id
-				FROM download_queue;
-			""")
-			cursor = get_db()
-			for download in cursor2:
-				logging.debug(f'Download from database: {dict(download)}')
-				self.add(download['link'], download['volume_id'], download['issue_id'], download['id'])
-				cursor.connection.commit()
+		cursor = get_db('dict', temp=True)
+		cursor.execute("""
+			SELECT
+				id,
+				link,
+				volume_id, issue_id
+			FROM download_queue;
+		""")
+		for download in cursor:
+			logging.debug(f'Download from database: {dict(download)}')
+			self.add(download['link'], download['volume_id'], download['issue_id'], download['id'])
+		cursor.connection.close()
 		return
 
 	def add(self,

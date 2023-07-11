@@ -256,6 +256,7 @@ class SearchAll(Task):
 			results = auto_search(volume_id)
 			if results:
 				downloads += [(result['link'], volume_id) for result in results]
+		cursor.connection.close()
 		return downloads
 
 #=====================
