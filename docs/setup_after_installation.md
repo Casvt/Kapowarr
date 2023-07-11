@@ -54,7 +54,8 @@ Kapowarr has the ability to download from services like MediaFire and Mega. Thes
 
 ## Building up a library
 
-Now you're ready to build a library. At Volumes -> Add Volume, you can search for volumes and add them to your library.  
+Now you're ready to build a library.  
+At Volumes -> Add Volume, you can search for volumes and add them to your library.  
 Once you add one, a folder is automatically created for the volume in the root folder selected (see Settings -> Media Management -> File Naming -> Volume Folder Naming).  
 Then you can start downloading content for the volume, and all files will be put in this volume folder.  
 The naming of the files follows the format set in the settings (see Settings -> Media Management -> File Naming).
