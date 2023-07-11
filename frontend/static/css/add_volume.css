@@ -68,7 +68,8 @@ main > div {
 /*  */
 #search-explain,
 #search-empty,
-#search-failed {
+#search-failed,
+#search-blocked {
 	color: var(--dark-color);
 	text-align: center;
 	font-size: 1.5rem;
