@@ -8,8 +8,8 @@ extract_filename_data is inspired by the file parsing of Kavita and Comictagger:
 """
 
 import logging
-from os import listdir, makedirs, scandir, stat
-from os.path import (abspath, basename, dirname, isdir, join, relpath,
+from os import listdir, makedirs, scandir, sep, stat
+from os.path import (abspath, basename, dirname, exists, isdir, join, relpath,
                      samefile, splitext)
 from re import IGNORECASE, compile
 from shutil import move, rmtree
@@ -462,10 +462,19 @@ def delete_empty_folders(top_folder: str, root_folder: str) -> None:
 		root_folder (str): The root folder to stop at in case we reach it
 	"""
 	logging.debug(f'Deleting folders from {top_folder} until {root_folder}')
-	while (not(
+
+	if not top_folder.startswith(abspath(root_folder) + sep):
+		logging.error(f'The folder {top_folder} is not in {root_folder}')
+		return
+		
+	while (not exists(top_folder) or not(
 		samefile(top_folder, root_folder)
 		or listdir(top_folder)
 	)):
+		if not exists(top_folder):
+			top_folder = dirname(top_folder)
+			continue
+
 		logging.debug(f'Deleting folder: {top_folder}')
 		rmtree(top_folder, ignore_errors=True)
 		top_folder = dirname(top_folder)
