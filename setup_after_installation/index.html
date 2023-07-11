@@ -706,10 +706,10 @@
 <div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Docker CLI</label><label for="__tabbed_1_2">Docker Compose</label><label for="__tabbed_1_3">Manual Install</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<p>Alter the command to run the container and replace <code class="highlight">-p 5656:5656</code> with <code class="highlight">-p 5656:{PORT}</code>, where <code class="highlight">{PORT}</code> is the desired port (e.g. <code class="highlight">-p 5656:8009</code>). Then run the container with the new version of the command.</p>
+<p>Alter the command to run the container and replace <code class="highlight">-p 5656:5656</code> with <code class="highlight"><span class="err">-</span>p <span class="p">{</span>PORT<span class="p">}:</span><span class="mi">5656</span></code>, where <code class="highlight">{PORT}</code> is the desired port (e.g. <code class="highlight">-p 8009:5656</code>). Then run the container with the new version of the command.</p>
 </div>
 <div class="tabbed-block">
-<p>Alter the file to run the container and replace <code class="highlight">- 5656:5656</code> with <code class="highlight">- 5656:{PORT}</code>, where <code class="highlight">{PORT}</code> is the desired port (e.g. <code class="highlight">- 5656:8009</code>). Then run the container with the new version of the file.</p>
+<p>Alter the file to run the container and replace <code class="highlight">- 5656:5656</code> with <code class="highlight"><span class="err">-</span> <span class="p">{</span>PORT<span class="p">}:</span><span class="mi">5656</span></code>, where <code class="highlight">{PORT}</code> is the desired port (e.g. <code class="highlight">- 8009:5656</code>). Then run the container with the new version of the file.</p>
 </div>
 <div class="tabbed-block">
 <p>Edit the port number at Settings -&gt; General -&gt; Host -&gt; Port Number in the web-ui and change the value to the desired port. Then, restart Kapowarr.</p>
@@ -717,7 +717,7 @@
 </div>
 </div>
 <h2 id="authentication">Authentication<a class="headerlink" href="#authentication" title="Permanent link">&para;</a></h2>
-<p>You might want to set a password to restrain access to the web-ui (and API). Setting a password is optional. A password can be set at Settings -&gt; General -&gt; Security -&gt; Login Password. Don't forget to save. From then on, it is required to enter a password in order to gain access to the web-ui (and the API). If you want to disable the password, set an empty value for the setting and save.</p>
+<p>You might want to set a password to restrict access to the web-ui (and API). Setting a password is optional. A password can be set at Settings -&gt; General -&gt; Security -&gt; Login Password. Don't forget to save. From then on, it is required to enter a password in order to gain access to the web-ui (and the API). If you want to disable the password, set an empty value for the setting and save.</p>
 <h2 id="comicvine-api-key">ComicVine API key<a class="headerlink" href="#comicvine-api-key" title="Permanent link">&para;</a></h2>
 <p>Kapowarr uses ComicVine as it's metadata source. To fetch the metadata from ComicVine, Kapowarr needs access to the API, which requires an API key.</p>
 <ol>
@@ -756,7 +756,7 @@
   <small>
     
       Last update:
-      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-07-11T13:14:28+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-07-11</span>
+      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-07-11T14:40:20+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-07-11</span>
       
     
   </small>

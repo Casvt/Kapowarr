@@ -417,6 +417,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#named-volumes" class="md-nav__link">
+    Named volumes
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -585,6 +592,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#named-volumes" class="md-nav__link">
+    Named volumes
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -636,6 +650,7 @@ A few notes about this command:</p>
 <li>Replace <code class="highlight">/path/to/root_folder</code> with the path to your desired root folder. Then, this folder will get mapped to <code class="highlight">/content</code> inside the docker container. When adding a root folder in Kapowarr, you'll then set it's location as <code class="highlight">/content</code>, mapping it this way to where ever <code class="highlight">/path/to/root_folder</code> may be.</li>
 <li>You can map multiple root folders by repeating <code class="highlight">-v /path/to/root_folder:/content</code> in the command, but then supplying different values for <code class="highlight">/path/to/root_folder</code> and <code class="highlight">/content</code>.</li>
 <li>Information on how to change the port can be found on the <a href="../setup_after_installation/#port">Setup After Installation page</a>.</li>
+<li>Using a named volume in docker requires you to create the volume before you can use it (refer to <a href="#named-volumes">Named Volumes</a>).</li>
 </ol>
 </div>
 <div class="tabbed-block">
@@ -658,6 +673,7 @@ A few notes about this file:</p>
 <li>Replace <code class="highlight">/path/to/root_folder</code> with the path to your desired root folder. Then, this folder will get mapped to <code class="highlight">/content</code> inside the docker container. When adding a root folder in Kapowarr, you'll then set it's location as <code class="highlight">/content</code>, mapping it this way to where ever <code class="highlight">/path/to/root_folder</code> may be.</li>
 <li>You can map multiple root folders by repeating <code class="highlight">- /path/to/root_folder:/content</code> in the file, but then supplying different values for <code class="highlight">/path/to/root_folder</code> and <code class="highlight">/content</code>.</li>
 <li>Information on how to change the port can be found on the <a href="../setup_after_installation/#port">Setup After Installation page</a>.</li>
+<li>Using a named volume in docker requires you to create the volume before you can use it (refer to <a href="#named-volumes">Named Volumes</a>)</li>
 </ol>
 </div>
 </div>
@@ -694,6 +710,28 @@ A few notes about this file:</p>
 </div>
 </div>
 <p>In this example, we set <code class="highlight"><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">cas</span><span class="o">/</span><span class="n">media</span><span class="o">/</span><span class="n">Downloads</span></code> as the download folder and we map the folder <code class="highlight">/home/cas/media/Comics</code> to <code class="highlight">/RF</code> and <code class="highlight">/home/cas/media/Comics-2</code> to <code class="highlight">/RF-2</code>. In Kapowarr, you'd then add <code class="highlight">/RF</code> and <code class="highlight">/RF-2</code> as root folders.</p>
+<h3 id="named-volumes">Named volumes<a class="headerlink" href="#named-volumes" title="Permanent link">&para;</a></h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Docker CLI</label><label for="__tabbed_3_2">Portainer</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>volume<span class="w"> </span>create<span class="w"> </span>kapowarr-db
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<ul>
+<li>Open <code class="highlight">Volumes</code></li>
+<li>Click <code class="highlight">Add Volume</code></li>
+<li>Enter name matching the one you'll use in compose (<code class="highlight">kapowarr-db</code>, in the above example)</li>
+<li>Click <code class="highlight">Create the volume</code></li>
+<li>Open <code class="highlight">Stacks</code></li>
+<li>Create the stack with the named volume in it.</li>
+</ul>
+</div>
+</div>
+</div>
+<p>Both of these options will create a named volume that you can then use in the examples above.<br />
+If you'd prefer to use a local folder on the host machine for storing config, Linux standards would suggest putting that in <code class="highlight">/opt/application_name</code>, as the <code class="highlight">/opt</code> directory is where program options should be stored. 
+In this case, you'd create the desired folder with something like <code class="highlight">mkdir /opt/kapowarr/db</code>, and replace 'kapowarr-db:/app/db' with '/opt/kapowarr/db:/app/db'.</p>
 <h2 id="manual-install">Manual Install<a class="headerlink" href="#manual-install" title="Permanent link">&para;</a></h2>
 <p>Coming soon</p>
 
@@ -702,7 +740,7 @@ A few notes about this file:</p>
   <small>
     
       Last update:
-      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-05-25T15:45:56+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-05-25</span>
+      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-06-08T23:11:14+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-06-08</span>
       
     
   </small>
