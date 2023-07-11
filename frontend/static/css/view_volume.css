@@ -374,7 +374,8 @@
 		width: 100%;
 		text-align: left;
 	}
-	.window > section > div:nth-child(2) form table tr > td > select {
+	.window > section > div:nth-child(2) form table tr > td > select,
+	.window > section > div:nth-child(2) form table tr > td > input[type="text"] {
 		width: 100%;
 	}
 }

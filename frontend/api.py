@@ -24,7 +24,8 @@ from backend.custom_exceptions import (BlocklistEntryNotFound,
 from backend.db import close_db
 from backend.download import (DownloadHandler, credentials,
                               delete_download_history, get_download_history)
-from backend.naming import mass_rename, preview_mass_rename
+from backend.naming import (generate_volume_folder_name, mass_rename,
+                            preview_mass_rename)
 from backend.root_folders import RootFolders
 from backend.search import manual_search
 from backend.settings import Settings, about_data, blocklist_reasons
@@ -120,7 +121,7 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 			if not value in library.sorting_orders.keys():
 				raise InvalidKeyValue(key, value)
 
-		elif key in ('root_folder_id', 'offset'):
+		elif key in ('root_folder_id', 'new_root_folder', 'offset'):
 			try:
 				value = int(value)
 			except (ValueError, TypeError):
@@ -345,13 +346,22 @@ def api_rootfolder_id(id: int):
 #=====================
 # Library + Volumes
 #=====================
-@api.route('/volumes/search', methods=['GET'])
+@api.route('/volumes/search', methods=['GET', 'POST'])
 @error_handler
 @auth
 def api_volumes_search():
-	query = extract_key(request, 'query')
-	search_results = search_volumes(query)
-	return return_api(search_results)
+	if request.method == 'GET':
+		query = extract_key(request, 'query')
+		search_results = search_volumes(query)
+		return return_api(search_results)
+	
+	elif request.method == 'POST':
+		data = request.get_json()
+		for key in ('comicvine_id', 'title', 'year', 'volume_number', 'publisher'):
+			if not key in data:
+				raise KeyNotFound(key)
+		folder = generate_volume_folder_name(-1, data)
+		return return_api({'folder': folder})
 
 @api.route('/volumes', methods=['GET','POST'])
 @error_handler
@@ -368,11 +378,16 @@ def api_volumes():
 		return return_api(volumes)
 
 	elif request.method == 'POST':
-		comicvine_id = extract_key(request, 'comicvine_id')
-		root_folder_id = extract_key(request, 'root_folder_id')
-		monitor = extract_key(request, 'monitor', False)
+		data: dict = request.get_json()
 
-		volume_id = library.add(comicvine_id, root_folder_id, monitor)
+		comicvine_id = data.get('comicvine_id')
+		if comicvine_id is None: raise KeyNotFound('comicvine_id')
+		root_folder_id = data.get('root_folder_id')
+		if root_folder_id is None: raise KeyNotFound('root_folder_id')
+		monitor = data.get('monitor', True)
+		volume_folder = data.get('volume_folder')
+
+		volume_id = library.add(comicvine_id, root_folder_id, monitor, volume_folder)
 		volume_info = library.get_volume(volume_id).get_info()
 		return return_api(volume_info, code=201)
 

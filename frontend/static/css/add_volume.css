@@ -207,7 +207,8 @@ main > div {
 		width: 100%;
 		text-align: left;
 	}
-	#add-form table tr > td > select {
+	#add-form table tr > td > select,
+	#add-form table tr > td > input[type="text"] {
 		width: 100%;
 	}
 }
