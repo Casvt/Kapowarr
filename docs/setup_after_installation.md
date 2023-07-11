@@ -56,11 +56,10 @@ Kapowarr has the ability to download from services like MediaFire and Mega. Thes
 
 Now you're ready to build a library. At Volumes -> Add Volume, you can search for volumes and add them to your library. Once you add one, a folder is automatically created for the volume in the root folder selected (see Settings -> Media Management -> File Naming -> Volume Folder Naming). Then you can start downloading content for the volume, and all files will be put in this volume folder. The naming of the files follows the format set in the settings (see Settings -> Media Management -> File Naming).
 
-### Unzipping
+## Importing a library
 
-Kapowarr has unzipping built-in. This means that it can extract zip files, filter the content to find the files that are actually desired, delete the other files, move the files to the correct location and name them correctly, delete the zip folder and delete the zip file. This can be done automatically for all downloaded zip files by enabling Settings -> Media Management -> Unzipping -> Unzip downloads. Unzipping can also be done for all zip files of a volume by pressing the "Unzip" button when viewing a volume.
-
-Importing an already existing library into Kapowarr is currently not very fluid (the "Library Import" feature found in Radarr/Sonarr is not yet implemented in Kapowarr). The advised way to get Kapowarr working with your current library:
+Importing an already existing library into Kapowarr is currently not very fluid (the "Library Import" feature found in Radarr/Sonarr is not yet implemented in Kapowarr).  
+The currently advised way to get Kapowarr working with your current library:
 
 1. Add a volume in Kapowarr.
 2. Move the content for the volume from the current folder to the volume folder generated and created by Kapowarr.
