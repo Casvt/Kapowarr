@@ -182,17 +182,18 @@ def auth(method):
 
 @api.route('/auth', methods=['POST'])
 def api_auth():
-	try:
-		if settings.get_settings()['auth_password']:
-			extract_key(request, 'password')
-	except InvalidKeyValue:
-		logging.warning(f'Login attempt failed from {request.remote_addr}')
-		return return_api({}, 'PasswordInvalid', 401)
-	except KeyNotFound:
-		return return_api({}, 'PasswordInvalid', 401)
-	else:
-		logging.info(f'Login attempt successful from {request.remote_addr}')
-		return return_api({'api_key': settings.get_settings()['api_key']})
+	if settings.get_settings()['auth_password']:
+		given_password = request.get_json().get('password')
+		if given_password is None:
+			return return_api({}, 'PasswordInvalid', 401)
+
+		auth_password = settings.get_settings().get('auth_password')
+		if auth_password is not None and given_password != auth_password:
+			logging.warning(f'Login attempt failed from {request.remote_addr}')
+			return return_api({}, 'PasswordInvalid', 401)
+		
+	logging.info(f'Login attempt successful from {request.remote_addr}')
+	return return_api({'api_key': settings.get_settings()['api_key']})
 
 @api.route('/auth/check', methods=['POST'])
 @error_handler

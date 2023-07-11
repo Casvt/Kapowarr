@@ -14,7 +14,14 @@ function login() {
 	error.classList.add('hidden');
 
 	const password_input = document.querySelector('#password-input');
-	fetch(`${url_base}/api/auth?password=${password_input.value}`, {'method': 'POST'})
+	const data = {
+		'password': password_input.value
+	};
+	fetch(`${url_base}/api/auth`, {
+		'method': 'POST',
+		'headers': {'Content-Type': 'application/json'},
+		'body': JSON.stringify(data)
+	})
 	.then(response => {
 		if (!response.ok) return Promise.reject(response.status);
 		return response.json();
