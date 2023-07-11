@@ -372,7 +372,8 @@ def scan_files(volume_data: dict) -> None:
 
 		# Check if file matches volume
 		if (file_data['volume_number'] is not None
-		and file_data['volume_number'] != volume_data['volume_number']):
+		and file_data['volume_number'] != volume_data['volume_number']
+		and file_data['volume_number'] != volume_data['year']):
 			continue
 
 		# If file is special version, it means it covers all issues in volume so add it to every issue
