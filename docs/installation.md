@@ -52,7 +52,7 @@ The recommended way to install Kapowarr is using Docker. After installing Kapowa
     docker run -d \
         --name kapowarr \
         -e PUID:1000 \
-        - GUID:1000 \
+        -e GUID:1000 \
         -v kapowarr-db:/app/db \
         -v /path/to/download_folder:/app/temp_downloads \
         -v /path/to/root_folder:/content \
@@ -108,6 +108,8 @@ The recommended way to install Kapowarr is using Docker. After installing Kapowa
         mrcas/kapowarr:latest
     ```
 
+    In this example, we set `/home/cas/media/Downloads` as the download folder and we map the folder `/home/cas/media/Comics` to `/RF` and `/home/cas/media/Comics-2` to `/RF-2`. In Kapowarr, you'd then add `/RF` and `/RF-2` as root folders.
+
 === "Docker Compose"
     ```yml
     version: '3.3'
@@ -124,7 +126,25 @@ The recommended way to install Kapowarr is using Docker. After installing Kapowa
             image: 'mrcas/kapowarr:latest'
     ```
 
-In this example, we set `/home/cas/media/Downloads` as the download folder and we map the folder `/home/cas/media/Comics` to `/RF` and `/home/cas/media/Comics-2` to `/RF-2`. In Kapowarr, you'd then add `/RF` and `/RF-2` as root folders.
+    In this example, we set `/home/cas/media/Downloads` as the download folder and we map the folder `/home/cas/media/Comics` to `/RF` and `/home/cas/media/Comics-2` to `/RF-2`. In Kapowarr, you'd then add `/RF` and `/RF-2` as root folders.
+
+=== "Docker CLI (custom user)"
+    The command to get the docker container running can be found below:
+    ```bash
+    docker run -d \
+        --name kapowarr \
+        -e PUID:1000 \
+        -e GUID:1000 \
+        -v kapowarr-db:/app/db \
+        -v /home/cas/media/Downloads:/app/temp_downloads \
+        -v /home/cas/media/Comics:/RF \
+        -v /home/cas/media/Comics-2:/RF-2 \
+        -p 5656:5656
+        mrcas/kapowarr:latest
+    ```
+    
+    In this example, we set `/home/cas/media/Downloads` as the download folder and we map the folder `/home/cas/media/Comics` to `/RF` and `/home/cas/media/Comics-2` to `/RF-2`. In Kapowarr, you'd then add `/RF` and `/RF-2` as root folders.  
+    We also have Kapowarr running with a user that has the user ID 1000 (the default non-root user for a linux server). If you have a user that has less permission than root that you'd like Kapowarr to run as, you'd define their user ID and group ID here.
 
 === "Docker Compose (custom user)"
     ```yml
@@ -145,8 +165,8 @@ In this example, we set `/home/cas/media/Downloads` as the download folder and w
             image: 'mrcas/kapowarr:latest'
     ```
 
-In this example, we set `/home/cas/media/Downloads` as the download folder and we map the folder `/home/cas/media/Comics` to `/RF` and `/home/cas/media/Comics-2` to `/RF-2`. In Kapowarr, you'd then add `/RF` and `/RF-2` as root folders.  
-We also have Kapowarr running with a user that has the user ID 1000 (the default non-root user for a linux server). If you have a user that has less permission than root that you'd like Kapowarr to run as, you'd define their user ID and group ID here.
+    In this example, we set `/home/cas/media/Downloads` as the download folder and we map the folder `/home/cas/media/Comics` to `/RF` and `/home/cas/media/Comics-2` to `/RF-2`. In Kapowarr, you'd then add `/RF` and `/RF-2` as root folders.  
+    We also have Kapowarr running with a user that has the user ID 1000 (the default non-root user for a linux server). If you have a user that has less permission than root that you'd like Kapowarr to run as, you'd define their user ID and group ID here.
 
 ### Named volumes
 
