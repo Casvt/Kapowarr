@@ -3,8 +3,6 @@
 """This file is for getting and setting up database connections
 """
 
-KAPOWARR_DATABASE_FILE = "Kapowarr.db"
-
 import logging
 from os import makedirs
 from os.path import dirname
@@ -14,7 +12,7 @@ from time import time
 
 from flask import g
 
-__DATABASE_VERSION__ = 6
+__DATABASE_VERSION__ = 7
 
 class Singleton(type):
 	_instances = {}
@@ -242,6 +240,13 @@ def migrate_db(current_db_version: int) -> None:
 		)
 
 		current_db_version = 6
+		
+	if current_db_version == 6:
+		# V6 -> V7
+		cursor.execute("""
+			ALTER TABLE volumes
+				ADD custom_folder BOOL NOT NULL DEFAULT 0;
+		""")
 	
 	return
 
@@ -275,6 +280,7 @@ def setup_db() -> None:
 			monitored BOOL NOT NULL DEFAULT 0,
 			root_folder INTEGER NOT NULL,
 			folder TEXT,
+			custom_folder BOOL NOT NULL DEFAULT 0,
 			last_cv_update VARCHAR(255),
 			last_cv_fetch INTEGER(8) DEFAULT 0,
 			

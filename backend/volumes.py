@@ -5,6 +5,7 @@
 
 import logging
 from io import BytesIO
+from os.path import relpath
 from time import time
 from typing import Dict, List
 
@@ -16,6 +17,7 @@ from backend.files import (create_volume_folder, delete_volume_folder,
                            move_volume_folder, scan_files)
 from backend.root_folders import RootFolders
 from frontend.ui import ui_vars
+
 
 #=====================
 # Main issue class
@@ -138,30 +140,35 @@ class Volume:
 		# Get volume info
 		cursor.execute("""
 			SELECT
-				id, comicvine_id,
+				v.id, comicvine_id,
 				title, year, publisher,
 				volume_number, description,
 				monitored,
-				folder, root_folder,
+				v.folder, root_folder,
+				rf.folder AS root_folder_path,
 				(
 					SELECT COUNT(*)
 					FROM issues
-					WHERE volume_id = volumes.id
+					WHERE volume_id = v.id
 				) AS issue_count,
 				(
 					SELECT COUNT(DISTINCT issue_id)
 					FROM issues i
 					INNER JOIN issues_files if
 					ON i.id = if.issue_id
-					WHERE volume_id = volumes.id
+					WHERE volume_id = v.id
 				) AS issues_downloaded
-			FROM volumes
-			WHERE id = ?
-			LIMIT 1
+			FROM volumes v
+			INNER JOIN root_folders rf
+			ON v.root_folder = rf.id
+			WHERE v.id = ?
+			LIMIT 1;
 		""", (self.id,))
 		volume_info = dict(cursor.fetchone())
 		volume_info['monitored'] = volume_info['monitored'] == 1
 		volume_info['cover'] = f'{ui_vars["url_base"]}/api/volumes/{volume_info["id"]}/cover'
+		volume_info['volume_folder'] = relpath(volume_info['folder'], volume_info['root_folder_path'])
+		del volume_info['root_folder_path']
 
 		if complete:
 			# Get issue info
@@ -206,7 +213,7 @@ class Volume:
 		"""Edit the volume
 
 		Args:
-			edits (dict): The keys and their new values for the volume settings (`monitor` and `root_folder_id` supported)
+			edits (dict): The keys and their new values for the volume settings (`monitor` and `new_root_folder` + `new_volume_folder` supported)
 
 		Returns:
 			dict: The new info of the volume
@@ -217,10 +224,11 @@ class Volume:
 			self._monitor()
 		elif monitored == False:
 			self._unmonitor()
-		
-		root_folder_id = edits.get('root_folder_id')
-		if root_folder_id:
-			self._edit_root_folder(root_folder_id)
+
+		new_root_folder = edits.get('new_root_folder')
+		new_volume_folder = edits.get('new_volume_folder')
+		if new_root_folder and (new_volume_folder or new_volume_folder in ('', None)):
+			self._edit_folder(new_root_folder, new_volume_folder)
 
 		return self.get_info()
 
@@ -244,31 +252,25 @@ class Volume:
 		)
 		return
 
-	def _edit_root_folder(self, root_folder_id: int) -> None:
+	def _edit_folder(self, new_root_folder: int, new_volume_folder: str) -> None:
 		"""Change the root folder of the volume
 
 		Args:
-			root_folder_id (int): The id of the new root folder to move the volume to
+			new_root_folder (int): The id of the new root folder to move the volume to
+			new_volume_folder (str): The new volume folder to move the volume to
 		"""
-		# Check that current root folder and new root folder aren't the same
-		current_root_folder_id, folder = get_db().execute(
+		current_root_folder, folder = get_db().execute(
 			"SELECT root_folder, folder FROM volumes WHERE id = ? LIMIT 1",
 			(self.id,)
 		).fetchone()
-		if current_root_folder_id == root_folder_id:
+
+		new_folder = move_volume_folder(self.id, new_root_folder, new_volume_folder)
+		if current_root_folder == new_root_folder and folder == new_folder:
 			return
-		logging.info(f'Changing root folder of volume {self.id} from {current_root_folder_id} to {root_folder_id}')
 
-		# Get paths and move
-		rf = RootFolders()
-		current_root_folder = rf.get_one(current_root_folder_id)['folder']
-		new_root_folder = rf.get_one(root_folder_id)['folder']
-		new_folder = move_volume_folder(folder, current_root_folder, new_root_folder)
-
-		# Set new location in DB		
 		get_db().execute(
 			"UPDATE volumes SET folder = ?, root_folder = ? WHERE id = ?",
-			(new_folder, root_folder_id, self.id)
+			(new_folder, new_root_folder, self.id)
 		)
 		return
 
@@ -555,22 +557,24 @@ class Library:
 		"""		
 		return Issue(issue_id)
 		
-	def add(self, comicvine_id: str, root_folder_id: int, monitor: bool=True) -> int:
+	def add(self, comicvine_id: str, root_folder_id: int, monitor: bool=True, volume_folder: str=None) -> int:
 		"""Add a volume to the library
 
 		Args:
 			comicvine_id (str): The ComicVine id of the volume
 			root_folder_id (int): The id of the rootfolder in which the volume folder will be
 			monitor (bool, optional): Wether or not to mark the volume as monitored. Defaults to True.
+			volume_folder (str, optional): Custom volume folder. Defaults to None.
 
 		Raises:
+			RootFolderNotFound: The root folder with the given id was not found
 			VolumeAlreadyAdded: The volume already exists in the library
 			CVRateLimitReached: The ComicVine API rate limit is reached
 
 		Returns:
 			int: The new id of the volume
 		"""
-		logging.debug(f'Adding a volume to the library: CV ID {comicvine_id}, RF ID {root_folder_id}, Monitor {monitor}')
+		logging.debug(f'Adding a volume to the library: CV ID {comicvine_id}, RF ID {root_folder_id}, Monitor {monitor}, VF {volume_folder}')
 		cursor = get_db()
 
 		# Check if volume isn't already added
@@ -583,7 +587,7 @@ class Library:
 
 		# Check if root folder exists
 		# Raises RootFolderNotFound when id is invalid
-		root_folder = RootFolders().get_one(root_folder_id, use_cache=False)['folder']
+		root_folder = RootFolders().get_one(root_folder_id)['folder']
 
 		# Get volume info
 		volume_data = ComicVine().fetch_volume(comicvine_id)
@@ -603,6 +607,7 @@ class Library:
 				cover,
 				monitored,
 				root_folder,
+				custom_folder,
 				last_cv_update,
 				last_cv_fetch
 			) VALUES (
@@ -619,14 +624,15 @@ class Library:
 				volume_data['cover'],
 				volume_data['monitored'],
 				volume_data['root_folder'],
+				int(volume_folder is not None),
 				volume_data['date_last_updated'],
 				round(time())
 			)
 		)
 		volume_id = cursor.lastrowid
-		
+
 		# Setup folder
-		create_volume_folder(root_folder, volume_id)
+		create_volume_folder(root_folder, volume_id, volume_folder)
 
 		# Prepare and insert issues
 		issue_list = map(

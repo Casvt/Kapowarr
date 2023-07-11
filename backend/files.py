@@ -361,7 +361,7 @@ def scan_files(volume_data: dict) -> None:
 	cursor = get_db()
 
 	if not isdir(volume_data['folder']):
-		root_folder = RootFolders().get_one(volume_data['root_folder'], use_cache=False)['folder']
+		root_folder = RootFolders().get_one(volume_data['root_folder'])['folder']
 		create_volume_folder(root_folder, volume_data['id'])
 
 	file_to_issue_map = []
@@ -454,22 +454,46 @@ def scan_files(volume_data: dict) -> None:
 
 	return
 
-def create_volume_folder(root_folder: str, volume_id: int) -> str:
+def delete_empty_folders(top_folder: str, root_folder: str) -> None:
+	"""Keep deleting empty folders until we reach a folder with content or the root folder
+
+	Args:
+		top_folder (str): The folder to start deleting from
+		root_folder (str): The root folder to stop at in case we reach it
+	"""
+	logging.debug(f'Deleting folders from {top_folder} until {root_folder}')
+	while (not(
+		samefile(top_folder, root_folder)
+		or listdir(top_folder)
+	)):
+		logging.debug(f'Deleting folder: {top_folder}')
+		rmtree(top_folder, ignore_errors=True)
+		top_folder = dirname(top_folder)
+	return
+
+def create_volume_folder(root_folder: str, volume_id: int, volume_folder: str=None) -> str:
 	"""Generate, register and create a folder for a volume
 
 	Args:
 		root_folder (str): The rootfolder (path, not id)
 		volume_id (int): The id of the volume for which the folder is
+		volume_folder (str, optional): Custom volume folder. Defaults to None.
 
 	Returns:
 		str: The path to the folder
 	"""	
-	from backend.naming import generate_volume_folder_name
-
 	# Generate and register folder
-	volume_folder = join(
-		root_folder, generate_volume_folder_name(volume_id)
-	)
+	if volume_folder is None:
+		from backend.naming import generate_volume_folder_name
+
+		volume_folder = join(
+			root_folder, generate_volume_folder_name(volume_id)
+		)
+	else:
+		from backend.naming import _make_filename_safe
+		volume_folder = join(
+			root_folder, _make_filename_safe(volume_folder)
+		)
 	get_db().execute(
 		"UPDATE volumes SET folder = ? WHERE id = ?",
 		(volume_folder, volume_id)
@@ -480,25 +504,78 @@ def create_volume_folder(root_folder: str, volume_id: int) -> str:
 
 	return volume_folder
 
-def move_volume_folder(folder: str, root_folder: str, new_root_folder: str) -> str:
+def move_volume_folder(volume_id: int, new_root_folder: int, new_volume_folder: str) -> str:
 	"""Move a volume to a new folder
 
 	Args:
-		folder (str): The current volume folder
-		root_folder (str): The current root folder
-		new_root_folder (str): The new desired root folder
+		volume_id (int): The id of the volume to move the folder for
+		new_root_folder (int): The id of the new desired root folder
+		new_volume_folder (str): The new desired volume folder
 
 	Returns:
 		str: The new location of the volume folder
 	"""
-	# Generate new folder path
-	new_folder = abspath(join(
-		new_root_folder, relpath(folder, root_folder))
-	)
-	logging.info(f'Moving volume folder {folder} to {new_folder}')
+	cursor = get_db()
+	current_folder, current_root_folder, custom_folder = cursor.execute("""
+		SELECT v.folder, rf.folder, v.custom_folder
+		FROM volumes v
+		INNER JOIN root_folders rf
+		ON v.root_folder = rf.id
+		WHERE v.id = ?
+		LIMIT 1;
+		""",
+		(volume_id,)
+	).fetchone()
+	current_volume_folder = relpath(current_folder, current_root_folder)
+	
+	# If new_volume_folder is empty or None, generate default folder and unset custom folder
+	if new_volume_folder in ('', None):
+		from backend.naming import generate_volume_folder_name
+		cursor.execute(
+			"UPDATE volumes SET custom_folder = 0 WHERE id = ?",
+			(volume_id,)
+		)
+		new_volume_folder = generate_volume_folder_name(volume_id)
+
+	# Not custom folder set + new_volume_folder is different
+	# 	-> setting custom folder for the first time so mark volume for custom folder
+	elif not custom_folder and new_volume_folder != current_volume_folder:
+		cursor.execute(
+			"UPDATE volumes SET custom_folder = 1 WHERE id = ?",
+			(volume_id,)
+		)
+
+	from backend.naming import _make_filename_safe
+	new_root_folder = RootFolders().get_one(new_root_folder)['folder']
+	new_volume_folder = _make_filename_safe(new_volume_folder)
+
+	new_folder = abspath(join(new_root_folder, new_volume_folder))
 	
 	# Create and move to new folder
-	move(folder, new_folder)
+	logging.info(f'Moving volume folder from {current_folder} to {new_folder}')
+	move(current_folder, new_folder)
+
+	cursor.execute("""
+			SELECT DISTINCT
+				f.id, f.filepath
+			FROM files f
+			INNER JOIN issues_files if
+			INNER JOIN issues i
+			ON
+				i.id = if.issue_id
+				AND if.file_id = f.id
+			WHERE i.volume_id = ?;
+			""",
+			(volume_id,)
+	)
+	renamed_files = [(join(new_folder, relpath(filepath, current_folder)), file_id) for file_id, filepath in cursor]
+	cursor.executemany(
+		"UPDATE files SET filepath = ? WHERE id = ?;",
+		renamed_files
+	)
+	
+	# Delete old folder
+	delete_empty_folders(dirname(current_folder), current_root_folder)
 
 	return new_folder
 
@@ -526,16 +603,7 @@ def delete_volume_folder(volume_id: int) -> None:
 		(volume_id,)
 	).fetchone()
 	
-	# Keep deleting empty folders until
-	# we reach a folder with content or the root folder
-	rmtree(folder, ignore_errors=True)
-	folder = dirname(folder)
-	while (not(
-		samefile(folder, root_folder)
-		or listdir(folder)
-	)):
-		rmtree(folder, ignore_errors=True)
-		folder = dirname(folder)
+	delete_empty_folders(folder, root_folder)
 	return
 	
 def rename_file(before: str, after: str) -> None:

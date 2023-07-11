@@ -51,12 +51,14 @@ def _make_filename_safe(unsafe_filename: str) -> str:
 	safe_filename = filename_cleaner.sub('', unsafe_filename)
 	return safe_filename
 
-def _get_formatting_data(volume_id: int, issue_id: int=None) -> dict:
+def _get_formatting_data(volume_id: int, issue_id: int=None, _volume_data: dict=None) -> dict:
 	"""Get the values of the formatting keys for a volume or issue
 
 	Args:
 		volume_id (int): The id of the volume
 		issue_id (int, optional): The id of the issue. Defaults to None.
+		_volume_data (dict, optional): Instead of fetching data based on the volume id,
+		work with the data given in this variable. Defaults to None.
 
 	Raises:
 		VolumeNotFound: The volume id doesn't map to any volume in the library
@@ -67,19 +69,22 @@ def _get_formatting_data(volume_id: int, issue_id: int=None) -> dict:
 	"""
 	# Fetch volume data and check if id is valid
 	cursor = get_db('dict')
-	volume_data = cursor.execute("""
-		SELECT
-			comicvine_id,
-			title, year, publisher,
-			volume_number
-		FROM volumes
-		WHERE id = ?
-		LIMIT 1;
-	""", (volume_id,)).fetchone()
-	
-	if not volume_data:
-		raise VolumeNotFound
-	volume_data = dict(volume_data)
+	if _volume_data is None:
+		volume_data = cursor.execute("""
+			SELECT
+				comicvine_id,
+				title, year, publisher,
+				volume_number
+			FROM volumes
+			WHERE id = ?
+			LIMIT 1;
+		""", (volume_id,)).fetchone()
+		
+		if not volume_data:
+			raise VolumeNotFound
+		volume_data = dict(volume_data)
+	else:
+		volume_data = _volume_data
 	
 	# Build formatted data
 	if volume_data.get('title').startswith('The '):
@@ -88,11 +93,15 @@ def _get_formatting_data(volume_id: int, issue_id: int=None) -> dict:
 		clean_title = volume_data.get('title') + ', A'
 	else:
 		clean_title = volume_data.get('title') or 'Unknown'
-	
+
+	s = Settings().get_settings()
+	volume_padding = s['volume_padding']
+	issue_padding = s['issue_padding']
+
 	formatting_data = {
 		'series_name': (volume_data.get('title') or 'Unknown').replace('/', '').replace(r'\\', ''),
 		'clean_series_name': clean_title.replace('/', '').replace(r'\\', ''),
-		'volume_number': volume_data.get('volume_number') or 'Unknown',
+		'volume_number': str(volume_data.get('volume_number')).zfill(volume_padding) or 'Unknown',
 		'comicvine_id': volume_data.get('comicvine_id') or 'Unknown',
 		'year': volume_data.get('year') or 'Unknown',
 		'publisher': volume_data.get('publisher') or 'Unknown'
@@ -115,23 +124,25 @@ def _get_formatting_data(volume_id: int, issue_id: int=None) -> dict:
 			
 		formatting_data.update({
 			'issue_comicvine_id': issue_data.get('comicvine_id') or 'Unknown',
-			'issue_number': issue_data.get('issue_number') or 'Unknown',
+			'issue_number': str(issue_data.get('issue_number')).zfill(issue_padding) or 'Unknown',
 			'issue_title': (issue_data.get('title') or 'Unknown').replace('/', '').replace(r'\\', ''),
 			'issue_release_date': issue_data.get('date') or 'Unknown'
 		})
 		
 	return formatting_data
 
-def generate_volume_folder_name(volume_id: int) -> str:
+def generate_volume_folder_name(volume_id: int, _volume_data: dict=None) -> str:
 	"""Generate a volume folder name based on the format string
 
 	Args:
 		volume_id (int): The id of the volume for which to generate the string
+		_volume_data (dict, optional): Instead of fetching data based on the volume id,
+		work with the data given in this variable. Defaults to None.
 
 	Returns:
 		str: The volume folder name
 	"""
-	formatting_data = _get_formatting_data(volume_id)
+	formatting_data = _get_formatting_data(volume_id, None, _volume_data)
 	format: str = Settings().get_settings()['volume_folder_naming']
 
 	name = format.format(**formatting_data)
@@ -331,8 +342,8 @@ def preview_mass_rename(volume_id: int, issue_id: int=None, filepath_filter: Lis
 			""",
 			(volume_id,)
 		).fetchall()
-		root_folder = cursor.execute("""
-			SELECT rf.folder
+		root_folder, custom_folder, folder = cursor.execute("""
+			SELECT rf.folder, v.custom_folder, v.folder
 			FROM
 				root_folders rf
 				JOIN volumes v
@@ -341,8 +352,9 @@ def preview_mass_rename(volume_id: int, issue_id: int=None, filepath_filter: Lis
 			LIMIT 1;
 			""",
 			(volume_id,)
-		).fetchone()[0]
-		folder = join(root_folder, generate_volume_folder_name(volume_id))
+		).fetchone()
+		if custom_folder == 0:
+			folder = join(root_folder, generate_volume_folder_name(volume_id))
 	else:
 		file_infos = cursor.execute("""
 			SELECT
@@ -356,7 +368,7 @@ def preview_mass_rename(volume_id: int, issue_id: int=None, filepath_filter: Lis
 		).fetchall()
 		if not file_infos: return result
 		folder = dirname(file_infos[0]['filepath'])
-		
+
 	if filepath_filter is not None:
 		file_infos = filter(lambda f: f['filepath'] in filepath_filter, file_infos)
 
@@ -365,7 +377,6 @@ def preview_mass_rename(volume_id: int, issue_id: int=None, filepath_filter: Lis
 		(volume_id,)
 	).fetchone()[0]
 	for file in file_infos:
-		# Determine what issue(s) the file covers
 		if not isfile(file['filepath']):
 			continue
 		logging.debug(f'Renaming: original filename: {file["filepath"]}')
@@ -432,6 +443,7 @@ def mass_rename(volume_id: int, issue_id: int=None, filepath_filter: List[str]=N
 	"""
 	cursor = get_db()
 	renames = preview_mass_rename(volume_id, issue_id, filepath_filter)
+
 	if not issue_id and renames:
 		file = renames[0]['after']
 		if file.endswith(image_extensions):
@@ -442,11 +454,13 @@ def mass_rename(volume_id: int, issue_id: int=None, filepath_filter: List[str]=N
 			"UPDATE volumes SET folder = ? WHERE id = ?",
 			(folder, volume_id)
 		)
+
 	for r in renames:
 		rename_file(r['before'], r['after'])
 		cursor.execute(
 			"UPDATE files SET filepath = ? WHERE filepath = ?;",
 			(r['after'], r['before'])
 		)
+
 	logging.info(f'Renamed volume {volume_id} {f"issue {issue_id}" if issue_id else ""}')
 	return
