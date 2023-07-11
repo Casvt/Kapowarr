@@ -54,18 +54,21 @@ Kapowarr has the ability to download from services like MediaFire and Mega. Thes
 
 ## Building up a library
 
-Now you're ready to build a library. At Volumes -> Add Volume, you can search for volumes and add them to your library. Once you add one, a folder is automatically created for the volume in the root folder selected (see Settings -> Media Management -> File Naming -> Volume Folder Naming). Then you can start downloading content for the volume, and all files will be put in this volume folder. The naming of the files follows the format set in the settings (see Settings -> Media Management -> File Naming).
+Now you're ready to build a library. At Volumes -> Add Volume, you can search for volumes and add them to your library.  
+Once you add one, a folder is automatically created for the volume in the root folder selected (see Settings -> Media Management -> File Naming -> Volume Folder Naming).  
+Then you can start downloading content for the volume, and all files will be put in this volume folder.  
+The naming of the files follows the format set in the settings (see Settings -> Media Management -> File Naming).
 
 ## Importing a library
 
 Importing an already existing library into Kapowarr is currently not very fluid (the "Library Import" feature found in Radarr/Sonarr is not yet implemented in Kapowarr).  
 The currently advised way to get Kapowarr working with your current library:
 
-1. Add a volume in Kapowarr.
-2. Move the content for the volume from the current folder to the volume folder generated and created by Kapowarr.
+1. Move all current media into the root folder, where each volume has their own folder.
+2. Add a volume in Kapowarr and while adding, set the "Volume Folder" to the folder of the volume from step 1.
 3. Go to the volume in Kapowarr and click the "Refresh & Scan" button. Kapowarr will scan the volume folder and import all files.
 4. Refresh the web-ui.
 5. (Optional) Click "Preview Rename" and Kapowarr will immediately propose new naming for the files, following the file naming format set in the settings.
 6. Repeat for all volumes that you have in your current library.
 
-There are plans to add support for custom volume folders and to add the "Library Import" feature, to make the process of importing an existing library easier.
+There are plans to add support for the "Library Import" feature, to make the process of importing an existing library easier.

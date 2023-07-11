@@ -144,6 +144,7 @@ function fillPage(data, api_key) {
 	// Path
 	path.innerText = data.folder;
 	path.dataset.root_folder = data.root_folder;
+	path.dataset.volume_folder = data.volume_folder;
 	
 	// Descriptions
 	description.innerHTML = data.description;
@@ -414,7 +415,8 @@ function renameVolume(api_key, issue_id=null) {
 // 
 function showEdit(api_key) {
 	document.querySelector('#monitored-input').value = document.querySelector('#volume-monitor').dataset.monitored;
-	const volume_root_folder = parseInt(document.querySelector('#volume-path').dataset.root_folder);
+	const volume_root_folder = parseInt(document.querySelector('#volume-path').dataset.root_folder),
+		volume_folder = document.querySelector('#volume-path').dataset.volume_folder;
 	fetch(`${url_base}/api/rootfolder?api_key=${api_key}`)
 	.then(response => response.json())
 	.then(json => {
@@ -431,6 +433,7 @@ function showEdit(api_key) {
 		});
 		showWindow('edit-window');
 	});
+	document.querySelector('#volumefolder-input').value = volume_folder;
 };
 
 function editVolume() {
@@ -438,8 +441,9 @@ function editVolume() {
 
 	const data = {
 		'monitor': document.querySelector('#monitored-input').value == 'true',
-		'root_folder_id': parseInt(document.querySelector('#root-folder-input').value)
-	}
+		'new_root_folder': parseInt(document.querySelector('#root-folder-input').value),
+		'new_volume_folder': document.querySelector('#volumefolder-input').value
+	};
 	usingApiKey()
 	.then(api_key => {
 		fetch(`${url_base}/api/volumes/${id}?api_key=${api_key}`, {

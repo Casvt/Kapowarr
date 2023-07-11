@@ -211,7 +211,7 @@ class InvalidKeyValue(Exception):
 		self.key = key
 		self.value = value
 		super().__init__(self.key)
-		if value != 'undefined':
+		if value not in ('undefined', 'null'):
 			logging.warning(f'This key in the API request has an invalid value: {key} = {value}')
 		return
 

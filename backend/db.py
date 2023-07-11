@@ -3,27 +3,39 @@
 """This file is for getting and setting up database connections
 """
 
-KAPOWARR_DATABASE_FILE = "Kapowarr.db"
-
 import logging
 from os import makedirs
 from os.path import dirname
-from sqlite3 import Connection, Row
+from sqlite3 import Connection, ProgrammingError, Row
 from threading import current_thread
 from time import time
 
 from flask import g
+from waitress.task import ThreadedTaskDispatcher as OldThreadedTaskDispatcher
 
-__DATABASE_VERSION__ = 6
+__DATABASE_VERSION__ = 7
 
 class Singleton(type):
 	_instances = {}
 	def __call__(cls, *args, **kwargs):
 		i = f'{cls}{current_thread()}'
-		if i not in cls._instances:
+		if (i not in cls._instances
+      		or cls._instances[i].closed):
 			cls._instances[i] = super(Singleton, cls).__call__(*args, **kwargs)
 
 		return cls._instances[i]
+
+class ThreadedTaskDispatcher(OldThreadedTaskDispatcher):
+	def handler_thread(self, thread_no: int) -> None:
+		super().handler_thread(thread_no)
+		i = f'{DBConnection}{current_thread()}'
+		if i in Singleton._instances and not Singleton._instances[i].closed:
+			Singleton._instances[i].close()
+
+	def shutdown(self, cancel_pending: bool = True, timeout: int = 5) -> bool:
+		logging.info('Shutting down Kapowarr...')
+		super().shutdown(cancel_pending, timeout)
+		DBConnection(20.0).close()
 
 class DBConnection(Connection, metaclass=Singleton):
 	"For creating a connection with a database"	
@@ -35,9 +47,16 @@ class DBConnection(Connection, metaclass=Singleton):
 		Args:
 			timeout (float): How long to wait before giving up on a command
 		"""
-		logging.debug(f'Creating a connection to a database: {self.file}')
+		logging.debug(f'Creating a connection to the database for thread {current_thread()}')
 		super().__init__(self.file, timeout=timeout)
 		super().cursor().execute("PRAGMA foreign_keys = ON;")
+		self.closed = False
+		return
+	
+	def close(self) -> None:
+		logging.debug(f'Closing a connection to the database for thread {current_thread()}')
+		self.closed = True
+		super().close()
 		return
 	
 def set_db_location(db_file_location: str) -> None:
@@ -87,11 +106,13 @@ def close_db(e: str=None):
 
 	try:
 		cursor = g.cursor
-		db = cursor.connection
+		db: DBConnection = cursor.connection
 		cursor.close()
 		delattr(g, 'cursor')
 		db.commit()
-	except AttributeError:
+		if not current_thread().name.startswith('waitress-'):
+			db.close()
+	except (AttributeError, ProgrammingError):
 		pass
 
 	return
@@ -189,6 +210,7 @@ def migrate_db(current_db_version: int) -> None:
 				"UPDATE issues SET calculated_issue_number = ? WHERE id = ?;",
 				(calc_issue_number, result[0])
 			)
+		cursor2.connection.close()
 
 		current_db_version = 5
 	
@@ -242,6 +264,13 @@ def migrate_db(current_db_version: int) -> None:
 		)
 
 		current_db_version = 6
+		
+	if current_db_version == 6:
+		# V6 -> V7
+		cursor.execute("""
+			ALTER TABLE volumes
+				ADD custom_folder BOOL NOT NULL DEFAULT 0;
+		""")
 	
 	return
 
@@ -253,6 +282,7 @@ def setup_db() -> None:
 	                              task_intervals)
 
 	cursor = get_db()
+	cursor.execute("PRAGMA journal_mode = wal;")
 
 	setup_commands = """
 		CREATE TABLE IF NOT EXISTS config(
@@ -275,6 +305,7 @@ def setup_db() -> None:
 			monitored BOOL NOT NULL DEFAULT 0,
 			root_folder INTEGER NOT NULL,
 			folder TEXT,
+			custom_folder BOOL NOT NULL DEFAULT 0,
 			last_cv_update VARCHAR(255),
 			last_cv_fetch INTEGER(8) DEFAULT 0,
 			
