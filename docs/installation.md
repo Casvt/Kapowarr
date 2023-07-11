@@ -142,7 +142,7 @@ The recommended way to install Kapowarr is using Docker. After installing Kapowa
         -p 5656:5656
         mrcas/kapowarr:latest
     ```
-    
+
     In this example, we set `/home/cas/media/Downloads` as the download folder and we map the folder `/home/cas/media/Comics` to `/RF` and `/home/cas/media/Comics-2` to `/RF-2`. In Kapowarr, you'd then add `/RF` and `/RF-2` as root folders.  
     We also have Kapowarr running with a user that has the user ID 1000 (the default non-root user for a linux server). If you have a user that has less permission than root that you'd like Kapowarr to run as, you'd define their user ID and group ID here.
 
@@ -194,22 +194,21 @@ For a custom _group_, the same applies, but the group ID instead.
 
 === "Ubuntu"
     User ID: `id -u <username>`  
-    Replace '<username>' with the actual username you'd like it to run as.  
+    Replace `<username>` with the actual username you'd like it to run as.  
     Group ID: `id -g <username>`  
-    Replace '<username>' with the actual username you'd like to find the group of.
+    Replace `<username>` with the actual username you'd like to find the group of.
 
 === "Debian"
     User ID: `id -u <username>`  
-    Replace '<username>' with the actual username you'd like it to run as.  
+    Replace `<username>` with the actual username you'd like it to run as.  
     Group ID: `id -g <username>`  
-    Replace '<username>' with the actual username you'd like to find the group of.
+    Replace `<username>` with the actual username you'd like to find the group of.
 
 === "TrueNAS"
     User ID: In the web UI, go to Credentials -> Local Users.  
-    Find the relevant username you'd like to use, and look at the 'UID' column to find the UID.
+    - Find the relevant username you'd like to use, and look at the 'UID' column to find the UID.  
     Group ID: In the web UI, go to Credentials -> Local Groups.  
-    Find the relevant group you'd like to use, and look at the 'GID' column to find the GID.
-
+    - Find the relevant group you'd like to use, and look at the 'GID' column to find the GID.
 
 ## Manual Install
 
