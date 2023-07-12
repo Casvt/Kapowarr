@@ -13,6 +13,11 @@ RUN useradd -m -N -u $PUID -g $PGID $USER && \
 echo "${USER} ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers && \
 chmod 0440 /etc/sudoers && \
 chmod g+w /etc/passwd
+RUN mkdir /app && \
+mkdir /app/temp_downloads && \
+chmod g+w /app/temp_downloads && \
+mkdir /app/db && \
+chmod g+w /app/db
 
 USER $USER
 
