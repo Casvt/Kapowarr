@@ -13,7 +13,7 @@ from typing import Dict, List
 from backend.custom_exceptions import (InvalidSettingValue, IssueNotFound,
                                        VolumeNotFound)
 from backend.db import get_db
-from backend.files import image_extensions, rename_file
+from backend.files import delete_empty_folders, image_extensions, rename_file
 from backend.settings import Settings
 
 formatting_keys = (
@@ -449,14 +449,19 @@ def mass_rename(volume_id: int, issue_id: int=None, filepath_filter: List[str]=N
 	renames = preview_mass_rename(volume_id, issue_id, filepath_filter)
 
 	if not issue_id and renames:
-		file = renames[0]['after']
-		if file.endswith(image_extensions):
-			folder = dirname(dirname(file))
-		else:
-			folder = dirname(file)
+		folders = {
+			'before': None,
+			'after': None
+		}
+		for target in folders:
+			file = renames[0][target]
+			if file.endswith(image_extensions):
+				folders[target] = dirname(dirname(file))
+			else:
+				folders[target] = dirname(file)
 		cursor.execute(
 			"UPDATE volumes SET folder = ? WHERE id = ?",
-			(folder, volume_id)
+			(folders['after'], volume_id)
 		)
 
 	for r in renames:
@@ -465,6 +470,18 @@ def mass_rename(volume_id: int, issue_id: int=None, filepath_filter: List[str]=N
 			"UPDATE files SET filepath = ? WHERE filepath = ?;",
 			(r['after'], r['before'])
 		)
+	
+	if renames:
+		root_folder = get_db().execute("""
+		   SELECT rf.folder
+		   FROM root_folders rf
+		   INNER JOIN volumes v
+		   ON rf.id = v.root_folder
+		   WHERE v.id = ?
+		   """,
+		   (volume_id,)
+		).fetchone()[0]
+		delete_empty_folders(folders['before'], root_folder)
 
 	logging.info(f'Renamed volume {volume_id} {f"issue {issue_id}" if issue_id else ""}')
 	return
