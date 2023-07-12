@@ -29,7 +29,8 @@ issue_formatting_keys = formatting_keys + (
 	'issue_comicvine_id',
 	'issue_number',
 	'issue_title',
-	'issue_release_date'
+	'issue_release_date',
+	'issue_release_year'
 )
 
 filename_cleaner = compile(r'(<|>|:|\"|\||\?|\*|\x00|(\s|\.)+$)')
@@ -126,7 +127,8 @@ def _get_formatting_data(volume_id: int, issue_id: int=None, _volume_data: dict=
 			'issue_comicvine_id': issue_data.get('comicvine_id') or 'Unknown',
 			'issue_number': str(issue_data.get('issue_number')).zfill(issue_padding) or 'Unknown',
 			'issue_title': (issue_data.get('title') or 'Unknown').replace('/', '').replace(r'\\', ''),
-			'issue_release_date': issue_data.get('date') or 'Unknown'
+			'issue_release_date': issue_data.get('date') or 'Unknown',
+			'issue_release_year': (issue_data.get('date') or '').split('-')[0] or 'Unknown'
 		})
 		
 	return formatting_data
