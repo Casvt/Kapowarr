@@ -157,7 +157,8 @@ function convertSize(size) {
 // LocalStorage
 // 
 const default_values = {
-	'lib_sorting': 'title'
+	'lib_sorting': 'title',
+	'lib_view': 'posters'
 };
 
 function setupLocalStorage() {

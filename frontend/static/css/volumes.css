@@ -134,6 +134,88 @@
 }
 
 /*  */
+/* Library table window */
+/*  */
+.table-container {
+	width: 100%;
+	overflow-x: auto;
+	
+	color: var(--dark-color);
+}
+
+.table-container > table {
+	width: max(100%, 25rem);
+	
+	border-collapse: collapse;
+}
+
+.table-container th {
+	text-align: left;
+}
+
+.table-container tbody tr {
+	border-top: 1px solid var(--border-color);
+	transition: background-color 200ms ease-in-out;
+}
+
+.table-container tbody tr:hover {
+	background-color: var(--dark-hover-color);
+}
+
+.table-container tr > td,
+.table-container tr > th {
+	padding-inline: 1rem;
+	padding-block: .5rem;
+}
+
+.table-container a {
+	color: var(--dark-color);
+	text-decoration: none;
+}
+
+.table-container a:hover {
+	text-decoration: underline;
+}
+
+.table-container td > div {
+	position: relative;
+	min-width: 5rem;
+
+	overflow: hidden;
+	display: flex;
+	justify-content: center;
+
+	color: var(--light-color);
+	background-color: var(--dark-color);
+	border-radius: 4px;
+
+	text-align: center;
+	font-size: clamp(.65rem, .8vw, .75rem);
+}
+
+.table-container td > div > :first-child {
+	position: absolute;
+	inset: 0;
+	background-color: var(--error-color);
+}
+
+.table-container td > div > :nth-child(2) {
+	z-index: 1;
+}
+
+.table-container tr > td:last-of-type {
+	width: min-content;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.table-container img {
+	height: 1.5rem;
+	width: fit-content;
+}
+
+/*  */
 /* Lib stats */
 /*  */
 .lib-stats {
