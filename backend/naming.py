@@ -338,7 +338,8 @@ def preview_mass_rename(volume_id: int, issue_id: int=None, filepath_filter: Lis
 			ON
 				i.id = if.issue_id
 				AND if.file_id = f.id
-			WHERE i.volume_id = ?;
+			WHERE i.volume_id = ?
+			ORDER BY f.filepath;
 			""",
 			(volume_id,)
 		).fetchall()
@@ -362,7 +363,8 @@ def preview_mass_rename(volume_id: int, issue_id: int=None, filepath_filter: Lis
 			FROM files f
 			INNER JOIN issues_files if
 			ON if.file_id = f.id
-			WHERE if.issue_id = ?;
+			WHERE if.issue_id = ?
+			ORDER BY f.filepath;
 			""",
 			(issue_id,)
 		).fetchall()
