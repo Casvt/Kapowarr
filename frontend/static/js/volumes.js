@@ -50,15 +50,13 @@ function populateLibrary(volumes, api_key) {
 
 function fetchLibrary(api_key) {
 	const sort = document.querySelector('#sort-button').value;
-	fetch(`${url_base}/api/volumes?api_key=${api_key}&sort=${sort}`)
-	.then(response => response.json())
-	.then(json => populateLibrary(json.result, api_key));
-};
-
-function searchLibrary(api_key) {
 	const query = document.querySelector('#search-input').value;
-	const sort = document.querySelector('#sort-button').value;
-	fetch(`${url_base}/api/volumes?api_key=${api_key}&query=${query}&sort=${sort}`)
+	let url;
+	if (query === '')
+		url = `${url_base}/api/volumes?api_key=${api_key}&sort=${sort}`;
+	else
+		url = `${url_base}/api/volumes?api_key=${api_key}&sort=${sort}&query=${query}`;
+	fetch(url)
 	.then(response => response.json())
 	.then(json => populateLibrary(json.result, api_key));
 };
@@ -101,18 +99,19 @@ function searchAll(api_key) {
 
 // code run on load
 
+document.querySelector('#sort-button').value = getLocalStorage('lib_sorting')['lib_sorting'];
 usingApiKey()
 .then(api_key => {
 	fetchLibrary(api_key);
 	fetchStats(api_key);
 
 	addEventListener('#clear-search', 'click', e => clearSearch(api_key));
-	addEventListener('#start-search', 'click', e => searchLibrary(api_key));
-	addEventListener('#search-input', 'keydown', e => e.code === 'Enter' ? searchLibrary(api_key) : null);
+	addEventListener('#start-search', 'click', e => fetchLibrary(api_key));
+	addEventListener('#search-input', 'keydown', e => e.code === 'Enter' ? fetchLibrary(api_key) : null);
 	addEventListener('#updateall-button', 'click', e => updateAll(api_key));
 	addEventListener('#searchall-button', 'click', e => searchAll(api_key));
 	addEventListener('#sort-button', 'change', e => {
-		if (document.querySelector('#search-input').value) searchLibrary(api_key);
-		else fetchLibrary(api_key);
+		setLocalStorage({'lib_sorting': document.querySelector('#sort-button').value});
+		fetchLibrary(api_key);
 	});
 });
