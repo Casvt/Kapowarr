@@ -78,8 +78,8 @@
 	justify-content: center;
 
 	text-decoration: none;
-	color: var(--dark-color);
-	background-color: var(--light-color);
+	color: var(--library-entry-font-color);
+	background-color: var(--library-entry-color);
 	border-radius: 1px;
 
 	transition: box-shadow 200ms ease-in;
@@ -110,7 +110,7 @@
 	justify-content: center;
 
 	color: var(--light-color);
-	background-color: var(--dark-color);
+	background-color: var(--library-entry-progress-color);
 
 	text-align: center;
 	font-size: clamp(.65rem, .8vw, .75rem);
@@ -140,7 +140,7 @@
 	width: 100%;
 	overflow-x: auto;
 	
-	color: var(--dark-color);
+	color: var(--text-color);
 }
 
 .table-container > table {
@@ -169,7 +169,7 @@
 }
 
 .table-container a {
-	color: var(--dark-color);
+	color: var(--text-color);
 	text-decoration: none;
 }
 
@@ -186,7 +186,7 @@
 	justify-content: center;
 
 	color: var(--light-color);
-	background-color: var(--dark-color);
+	background-color: var(--library-entry-progress-color);
 	border-radius: 4px;
 
 	text-align: center;
@@ -225,6 +225,7 @@
 	gap: clamp(.5rem, 4vw, 3rem);
 
 	padding-top: 2rem;
+	color: var(--text-color);
 
 	font-size: .8rem;
 }

@@ -46,4 +46,7 @@ usingApiKey(false)
 	if (api_key) redirect();
 })
 
+if (JSON.parse(localStorage.getItem('kapowarr') || {'theme': 'light'})['theme'] === 'dark')
+	document.querySelector(':root').classList.add('dark-mode');
+
 document.querySelector('#login-form').setAttribute('action', 'javascript:login();');

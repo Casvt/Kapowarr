@@ -5,6 +5,8 @@ body {
 	justify-content: center;
 	align-items: center;
 	gap: 8rem;
+	
+	background-color: var(--background-color);
 }
 
 #text-container {
@@ -20,7 +22,7 @@ body {
 }
 
 #text-container p {
-	color: var(--dark-color);
+	color: var(--text-color);
 }
 
 #login-form {
@@ -39,7 +41,7 @@ body {
 	border-radius: 4px;
 	color: var(--dark-color);
 
-	font-size: 1rem;
+	font-size: 1.3rem;
 	
 	transition: border .3s ease-in;
 }
@@ -59,10 +61,10 @@ body {
 }
 
 #login-form button {
-	padding: .4rem;
-	border-radius: 4px;
+	padding: .5rem 1.6rem;
+	border-radius: 3px;
 	color: var(--dark-color);
 	background-color: var(--accent-color);
-	
-	font-size: 1rem;
+
+	font-size: 1.1rem;
 }

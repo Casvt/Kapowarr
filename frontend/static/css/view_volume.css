@@ -7,8 +7,12 @@
 	gap: clamp(1rem, 3.75vw, 2rem);	
 
 	padding: clamp(1rem, 3.75vw, 2rem);
-	background-color: rgba(0,0,0,.65);
+	background-color: var(--dark-color);
 	color: var(--light-color);
+}
+
+:root:not(.dark-mode) .volume-mobile-description-container {
+	background-color: rgba(0,0,0,.65);
 }
 
 .volume-info {
@@ -71,6 +75,7 @@
 .issues-table-container {
 	overflow-x: auto;
 	display: flex;
+	background-color: var(--dark-hover-color);
 }
 
 .issues-table {
@@ -81,8 +86,8 @@
 	border-spacing: 0px;
 	border: 2px solid var(--border-color);
 	border-radius: 6px;
-	background-color: var(--light-color);
-	color: var(--dark-color);
+	background-color: var(--inverted-text-color);
+	color: var(--text-color);
 }
 
 .issues-table th {
@@ -120,7 +125,7 @@
 }
 
 .issue-entry:hover {
-	background-color: var(--off-light-color);
+	background-color: var(--issue-entry-hover);
 }
 
 .issues-table > thead > tr > :first-child,
@@ -203,6 +208,7 @@
 }
 
 #search-result-table a {
+	color: var(--text-color);
 	text-decoration: none;
 }
 

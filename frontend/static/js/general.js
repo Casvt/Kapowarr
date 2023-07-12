@@ -158,7 +158,8 @@ function convertSize(size) {
 // 
 const default_values = {
 	'lib_sorting': 'title',
-	'lib_view': 'posters'
+	'lib_view': 'posters',
+	'theme': 'light'
 };
 
 function setupLocalStorage() {
@@ -219,4 +220,7 @@ usingApiKey()
 })
 
 setupLocalStorage();
-addEventListener('#toggle-nav', 'click', showNav)
+if (getLocalStorage('theme')['theme'] === 'dark')
+	document.querySelector(':root').classList.add('dark-mode');
+
+addEventListener('#toggle-nav', 'click', showNav);

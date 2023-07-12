@@ -12,10 +12,13 @@ table {
 	text-align: left;
 	border-spacing: 0px;
 	table-layout: fixed;
+	
+	color: var(--text-color);
 }
 
 table a {
 	text-decoration: none;
+	color: var(--text-color);
 }
 
 table a:hover {

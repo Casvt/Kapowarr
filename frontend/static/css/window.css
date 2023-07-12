@@ -22,8 +22,8 @@
 	transform: translate(-50%, -50%);
 	overflow: auto;
 	display: flex;
-	background-color: white;
-	color: var(--dark-color);
+	background-color: var(--background-color);
+	color: var(--text-color);
 }
 
 .window > section[show-window].wide-window {
@@ -105,6 +105,8 @@
 	padding: .5rem;
 	border: 2px solid var(--border-color);
 	border-radius: 2px;
+	background-color: var(--background-color);
+	color: var(--text-color);
 }
 
 .window > section > div:nth-child(2) form table tr > td > p {
