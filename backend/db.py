@@ -47,14 +47,14 @@ class DBConnection(Connection, metaclass=Singleton):
 		Args:
 			timeout (float): How long to wait before giving up on a command
 		"""
-		logging.debug(f'Creating a connection to the database for thread {current_thread()}')
+		logging.debug(f'Creating connection {self} to the database for thread {current_thread()}')
 		super().__init__(self.file, timeout=timeout)
 		super().cursor().execute("PRAGMA foreign_keys = ON;")
 		self.closed = False
 		return
 	
 	def close(self) -> None:
-		logging.debug(f'Closing a connection to the database for thread {current_thread()}')
+		logging.debug(f'Closing connection {self} to the database for thread {current_thread()}')
 		self.closed = True
 		super().close()
 		return
