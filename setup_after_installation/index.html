@@ -485,6 +485,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#importing-a-library" class="md-nav__link">
+    Importing a library
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -681,6 +688,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#importing-a-library" class="md-nav__link">
+    Importing a library
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -737,10 +751,16 @@
 <h3 id="service-preference">Service preference<a class="headerlink" href="#service-preference" title="Permanent link">&para;</a></h3>
 <p>Kapowarr has the ability to download directly from servers, but also to download from services like MediaFire and Mega. Websites like getcomics.org offer the same download via multiple services (multiple download links to download the same file, via different services). This settings determines what preference you have for each service. If multiple services are offered for the same download, Kapowarr will use this preference list to determine what service to pick (if the link of the top service doesn't work, Kapowarr falls back to the other options, in order). If you have an account for one of these services (see <a href="#credentials">Credentials</a> setting), you might want to put that one at the top, to make Kapowarr take advantage of the extra features that the account offers (extra bandwidth, higher rate limit, etc.).</p>
 <h3 id="credentials">Credentials<a class="headerlink" href="#credentials" title="Permanent link">&para;</a></h3>
-<p>Kapowarr has the ability to download from services like MediaFire and Mega. These services apply limits to how much you can download per day, or a download speed limit. An (paid) account for one of these services often offers higher limits. Kapowarr can take advantage of these extra features that these accounts offer. Under the credentials section, you can add credentials of accounts, which Kapowarr will use when downloading, taking advantage of the extra features. </p>
+<p>Kapowarr has the ability to download from services like MediaFire and Mega. These services apply limits to how much you can download per day, or a download speed limit. An (paid) account for one of these services often offers higher limits. Kapowarr can take advantage of these extra features that these accounts offer. Under the credentials section, you can add credentials of accounts, which Kapowarr will use when downloading, taking advantage of the extra features.</p>
 <h2 id="building-up-a-library">Building up a library<a class="headerlink" href="#building-up-a-library" title="Permanent link">&para;</a></h2>
-<p>Now you're ready to build a library. At Volumes -&gt; Add Volume, you can search for volumes and add them to your library. When adding a volume, the name of the folder for the volume is automatically generated and is the value of "Volume Folder". You can leave it to the automatically generated one (based on the format defined at Settings -&gt; Media Management -&gt; File Naming -&gt; Volume Folder Naming) or set a custom one. Then you can start downloading content for the volume, and all files will be put in this volume folder. The naming of the files follows the format set in the settings (see Settings -&gt; Media Management -&gt; File Naming).</p>
-<p>Importing an already existing library into Kapowarr is currently not very fluid (the "Library Import" feature found in Radarr/Sonarr is not yet implemented in Kapowarr). The advised way to get Kapowarr working with your current library:</p>
+<p>Now you're ready to build a library.<br />
+At Volumes -&gt; Add Volume, you can search for volumes and add them to your library.<br />
+Once you add one, a folder is automatically created for the volume in the root folder selected (see Settings -&gt; Media Management -&gt; File Naming -&gt; Volume Folder Naming).<br />
+Then you can start downloading content for the volume, and all files will be put in this volume folder.<br />
+The naming of the files follows the format set in the settings (see Settings -&gt; Media Management -&gt; File Naming).</p>
+<h2 id="importing-a-library">Importing a library<a class="headerlink" href="#importing-a-library" title="Permanent link">&para;</a></h2>
+<p>Importing an already existing library into Kapowarr is currently not very fluid (the "Library Import" feature found in Radarr/Sonarr is not yet implemented in Kapowarr).<br />
+The currently advised way to get Kapowarr working with your current library:</p>
 <ol>
 <li>Move all current media into the root folder, where each volume has their own folder.</li>
 <li>Add a volume in Kapowarr and while adding, set the "Volume Folder" to the folder of the volume from step 1.</li>
@@ -756,7 +776,7 @@
   <small>
     
       Last update:
-      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-07-11T14:40:20+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-07-11</span>
+      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-07-12T10:57:08+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-07-12</span>
       
     
   </small>
