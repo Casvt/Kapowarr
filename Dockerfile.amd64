@@ -3,6 +3,19 @@
 FROM python:3.8-slim-buster
 STOPSIGNAL SIGINT
 
+ARG USER=kapowarr
+
+ENV PUID 1000
+ENV PGID 1000
+
+RUN groupadd -g $PGID -o $USER
+RUN useradd -m -N -u $PUID -g $PGID $USER && \
+echo "${USER} ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers && \
+chmod 0440 /etc/sudoers && \
+chmod g+w /etc/passwd
+
+USER $USER
+
 WORKDIR /app
 
 COPY requirements.txt requirements.txt

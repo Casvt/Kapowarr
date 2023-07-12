@@ -50,12 +50,20 @@ Kapowarr has the ability to download directly from servers, but also to download
 
 ### Credentials
 
-Kapowarr has the ability to download from services like MediaFire and Mega. These services apply limits to how much you can download per day, or a download speed limit. An (paid) account for one of these services often offers higher limits. Kapowarr can take advantage of these extra features that these accounts offer. Under the credentials section, you can add credentials of accounts, which Kapowarr will use when downloading, taking advantage of the extra features. 
+Kapowarr has the ability to download from services like MediaFire and Mega. These services apply limits to how much you can download per day, or a download speed limit. An (paid) account for one of these services often offers higher limits. Kapowarr can take advantage of these extra features that these accounts offer. Under the credentials section, you can add credentials of accounts, which Kapowarr will use when downloading, taking advantage of the extra features.
 
 ## Building up a library
-Now you're ready to build a library. At Volumes -> Add Volume, you can search for volumes and add them to your library. When adding a volume, the name of the folder for the volume is automatically generated and is the value of "Volume Folder". You can leave it to the automatically generated one (based on the format defined at Settings -> Media Management -> File Naming -> Volume Folder Naming) or set a custom one. Then you can start downloading content for the volume, and all files will be put in this volume folder. The naming of the files follows the format set in the settings (see Settings -> Media Management -> File Naming).
 
-Importing an already existing library into Kapowarr is currently not very fluid (the "Library Import" feature found in Radarr/Sonarr is not yet implemented in Kapowarr). The advised way to get Kapowarr working with your current library:
+Now you're ready to build a library.  
+At Volumes -> Add Volume, you can search for volumes and add them to your library.  
+Once you add one, a folder is automatically created for the volume in the root folder selected (see Settings -> Media Management -> File Naming -> Volume Folder Naming).  
+Then you can start downloading content for the volume, and all files will be put in this volume folder.  
+The naming of the files follows the format set in the settings (see Settings -> Media Management -> File Naming).
+
+## Importing a library
+
+Importing an already existing library into Kapowarr is currently not very fluid (the "Library Import" feature found in Radarr/Sonarr is not yet implemented in Kapowarr).  
+The currently advised way to get Kapowarr working with your current library:
 
 1. Move all current media into the root folder, where each volume has their own folder.
 2. Add a volume in Kapowarr and while adding, set the "Volume Folder" to the folder of the volume from step 1.
