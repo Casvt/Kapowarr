@@ -1,5 +1,6 @@
 main > div {
 	padding: 1rem;
+	color: var(--text-color);
 }
 
 h2 {
@@ -11,7 +12,7 @@ h2 {
 
 .container {
 	overflow-x: auto;
-	color: var(--dark-color);
+	color: var(--text-color);
 }
 
 #about-table {

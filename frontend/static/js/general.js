@@ -153,6 +153,60 @@ function convertSize(size) {
 	return size;
 };
 
+// 
+// LocalStorage
+// 
+const default_values = {
+	'lib_sorting': 'title',
+	'lib_view': 'posters',
+	'theme': 'light'
+};
+
+function setupLocalStorage() {
+	if (!localStorage.getItem('kapowarr'))
+		localStorage.setItem('kapowarr', JSON.stringify(default_values));
+	
+	const missing_keys = [
+		...Object.keys(default_values)
+	].filter(e =>
+		![...Object.keys(JSON.parse(localStorage.getItem('kapowarr')))].includes(e)
+	)
+
+	if (missing_keys.length) {
+		const storage = JSON.parse(localStorage.getItem('kapowarr'));
+
+		missing_keys.forEach(missing_key => {
+			storage[missing_key] = default_values[missing_key]
+		})
+
+		localStorage.setItem('kapowarr', JSON.stringify(storage));
+	};
+	return;
+};
+
+function getLocalStorage(keys) {
+	const storage = JSON.parse(localStorage.getItem('kapowarr'));
+	const result = {};
+	if (typeof keys === 'string')
+		result[keys] = storage[keys];
+		
+	else if (typeof keys === 'object')
+		for (const key in keys)
+			result[key] = storage[key];
+
+	return result;
+};
+
+function setLocalStorage(keys_values) {
+	const storage = JSON.parse(localStorage.getItem('kapowarr'));
+
+	for (const [key, value] of Object.entries(keys_values))
+		storage[key] = value;
+	
+	localStorage.setItem('kapowarr', JSON.stringify(storage));
+	return;
+};
+
 // code run on load
 
 const url_base = document.querySelector('#url_base').dataset.value;
@@ -165,4 +219,8 @@ usingApiKey()
 	setInterval(() => fillTaskQueue(api_key, volume_id), 2000);
 })
 
-addEventListener('#toggle-nav', 'click', showNav)
+setupLocalStorage();
+if (getLocalStorage('theme')['theme'] === 'dark')
+	document.querySelector(':root').classList.add('dark-mode');
+
+addEventListener('#toggle-nav', 'click', showNav);

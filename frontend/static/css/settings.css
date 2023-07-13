@@ -1,6 +1,6 @@
 .settings-container {
 	overflow-x: auto;
-	color: var(--dark-color);
+	color: var(--text-color);
 	padding: 1rem;
 }
 
@@ -40,15 +40,14 @@ h2:not(:first-of-type) {
 .settings-container table tr > td select,
 .settings-container table tr > td input[type="text"],
 .settings-container table tr > td input[type="email"],
-.settings-container table tr > td input[type="password"],
-#empty-download-folder {
+.settings-container table tr > td input[type="password"] {
 	width: min(50rem, 100%);
 
 	padding: .5rem .75rem;
 	border-radius: 6px;
 	border: 2px solid var(--border-color);
-	background-color: var(--light-color);
-	color: var(--dark-color);
+	background-color: var(--inverted-text-color);
+	color: var(--text-color);
 
 	font-size: 1rem;
 	font-family: "Ubuntu Mono", Menlo, Monaco, Consolas, "Courier New", monospace;
@@ -61,7 +60,7 @@ h2:not(:first-of-type) {
 
 .settings-container table tr > td p {
 	margin-top: .3rem;
-	color: var(--mid-color);
+	color: var(--dark-text-color);
 }
 
 /*  */
@@ -99,8 +98,10 @@ h2:not(:first-of-type) {
 	width: 1.4rem;
 }
 
-#toggle-root-folder {
+#toggle-root-folder,
+#empty-download-folder {
 	margin-top: .5rem;
+	min-width: 5rem;
 
 	padding: .8rem;
 	border-radius: 4px;
@@ -125,14 +126,6 @@ h2:not(:first-of-type) {
 	padding: .4rem .6rem;
 	border-radius: 4px;
 	color: var(--dark-color);
-	background-color: var(--accent-color);
-}
-
-/*  */
-/* Empty download folder */
-/*  */
-#empty-download-folder {
-	width: 6rem;
 	background-color: var(--accent-color);
 }
 
@@ -215,7 +208,7 @@ h2:not(:first-of-type) {
 }
 
 #generate-api img {
-	height: 1.5rem;
+	height: 1.2rem;
 }
 
 @media (max-width: 1000px) {

@@ -129,6 +129,8 @@ dmypy.json
 
 # database
 *.db
+*.db-shm
+*.db-wal
 
 # vs-code
 *.code-workspace

@@ -28,6 +28,55 @@ select:hover {
 	--header-height: 65px;
 	--tool-bar-height: 3.5rem;
 	--nav-width: clamp(160px, 20vw, 210px);
+
+	--background-color: var(--off-light-color);
+	--text-color: var(--dark-color);
+	--dark-text-color: var(--mid-color);
+	--inverted-text-color: var(--light-color);
+	--header-color: var(--accent-color);
+	--nav-color: var(--dark-color);
+	--tool-bar-color: var(--mid-color);
+	
+	--library-entry-color: var(--light-color);
+	--library-entry-font-color: var(--dark-color);
+	--library-entry-progress-color: var(--dark-color);
+	
+	--search-bar-color: var(--light-color);
+	--search-bar-font-color: var(--dark-color);
+	--search-bar-button-color: var(--dark-hover-color);
+	--search-bar-desc-color: var(--dark-color);
+	--search-result-font-color: var(--text-color);
+	
+	--issue-entry-hover: var(--off-light-color);
+}
+
+:root.dark-mode {
+	--light-color: #dde6e9;
+	--off-light-color: #c5c5c5;
+	--border-color: #7f7f7f;
+	--gray-color: #2a2a2a;
+	--mid-color: #262626;
+	--dark-color: #202020;
+	--dark-hover-color: var(--mid-color);
+	
+	--light-accent-color: var(--border-color);
+
+	--background-color: var(--dark-color);
+	--text-color: var(--light-color);
+	--dark-text-color: var(--off-light-color);
+	--inverted-text-color: var(--mid-color);
+	--nav-color: var(--gray-color);
+
+	--library-entry-color: var(--gray-color);
+	--library-entry-font-color: var(--dark-text-color);
+	--library-entry-progress-color: var(--mid-color);
+	
+	--search-bar-color: var(--gray-color);
+	--search-bar-font-color: var(--text-color);
+	--search-bar-button-color: var(--mid-color);
+	--search-bar-desc-color: var(--dark-text-color);
+	
+	--issue-entry-hover: var(--dark-color);
 }
 
 body {
@@ -35,7 +84,7 @@ body {
 	display: flex;
 	flex-direction: column;
 	overflow-y: auto;
-	background-color: var(--off-light-color);
+	background-color: var(--background-color);
 	font-family: 'Roboto', 'open sans', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
 }
 
@@ -48,8 +97,8 @@ header {
 	justify-content: space-between;
 	gap: .75rem;
 	padding: 1rem;
-	background-color: var(--accent-color);
-	color: var(--dark-color);
+	background-color: var(--header-color);
+	color: var(--mid-color);
 	font-size: .9rem;
 }
 
@@ -84,8 +133,7 @@ header {
 	flex: 0 0 auto;
 	/* Z-index avoids button animations from showing in front of the nav */
 	z-index: 2;
-	background-color: var(--dark-color);
-	color: var(--light-color);
+	background-color: var(--nav-color);
 }
 
 nav {
@@ -100,6 +148,7 @@ nav a {
 	padding-left: 1.3rem;
 	font-size: .9rem;
 	border-left: 3px solid var(--accent-color);
+	transition: color 200ms ease-in-out;
 }
 
 nav a:hover {
@@ -152,7 +201,7 @@ main > *:not(.tool-bar-container) {
 	align-items: center;
 	overflow-x: auto;
 	padding-inline: clamp(.3rem, 2.6vw, 1.5rem);
-	background-color: var(--mid-color);
+	background-color: var(--tool-bar-color);
 }
 
 .tool-bar {
@@ -170,7 +219,7 @@ main > *:not(.tool-bar-container) {
 
 	padding: .5rem;
 	color: var(--light-color);
-	background-color: var(--mid-color);
+	background-color: transparent;
 }
 
 .tool-bar > select {
@@ -201,6 +250,8 @@ main > *:not(.tool-bar-container) {
 	display: flex;
 	justify-content: center;
 	align-items: stretch;
+	
+	color: var(--text-color);
 }
 
 .page-turner > button {

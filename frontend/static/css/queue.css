@@ -8,6 +8,7 @@ table {
 	border-spacing: 0px;
 	padding: 1rem;
 	text-align: left;
+	color: var(--text-color);
 }
 
 th, td {
@@ -36,4 +37,13 @@ th, td {
 
 .option-column button img {
 	width: 20px;
+}
+
+table a {
+	text-decoration: none;
+	color: var(--text-color);
+}
+
+table a:hover {
+	text-decoration: underline;
 }

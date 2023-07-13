@@ -10,7 +10,7 @@ function fillSettings(api_key) {
 		document.querySelector('#cv-input').value = json.result.comicvine_api_key;
 		document.querySelector('#log-level-input').value = json.result.log_level;
 	});
-	
+	document.querySelector('#theme-input').value = getLocalStorage('theme')['theme'];
 };
 
 function saveSettings(api_key) {
@@ -54,4 +54,13 @@ usingApiKey()
 	fillSettings(api_key);
 	addEventListener('#save-button', 'click', e => saveSettings(api_key));
 	addEventListener('#generate-api', 'click', e => generateApiKey(api_key));
+});
+
+addEventListener('#theme-input', 'change', e => {
+	const value = document.querySelector('#theme-input').value;
+	setLocalStorage({'theme': value});
+	if (value === 'dark')
+		document.querySelector(':root').classList.add('dark-mode');
+	else if (value === 'light')
+		document.querySelector(':root').classList.remove('dark-mode');
 });

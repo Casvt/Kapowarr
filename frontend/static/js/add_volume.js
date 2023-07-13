@@ -1,7 +1,7 @@
 // 
 // Searching
 // 
-function buildResults(results) {
+function buildResults(results, api_key) {
 	const table = document.querySelector('#search-results');
 	table.innerHTML = '';
 	results.forEach(result => {
@@ -10,10 +10,14 @@ function buildResults(results) {
 		entry.dataset.title = result.year !== null ? `${result.title} (${result.year})` : result.title;
 		entry.dataset.cover = result.cover;
 		entry.dataset.comicvine_id = result.comicvine_id;
+		entry.dataset._title = result.title;
+		entry.dataset._year = result.year;
+		entry.dataset._volume_number = result.volume_number;
+		entry.dataset._publisher = result.publisher;
 
 		// Only allow adding volume if it isn't already added
 		if (!result.already_added)
-			entry.addEventListener('click', e => showAddWindow(result.comicvine_id));
+			entry.addEventListener('click', e => showAddWindow(result.comicvine_id, api_key));
 
 		const cover_info_container = document.createElement('div');
 		cover_info_container.classList.add('cover-info-container');
@@ -115,7 +119,7 @@ function search(api_key) {
 		if (!response.ok) return Promise.reject(response.status);
 		return response.json();
 	})
-	.then(json => buildResults(json.result))
+	.then(json => buildResults(json.result, api_key))
 	.catch(e => {
 		if (e === 400) document.querySelector('#search-failed').classList.remove('hidden');
 	});
@@ -153,25 +157,52 @@ function fillRootFolderInput(api_key) {
 	});
 };
 
-function showAddWindow(comicvine_id) {
-	var volume_data = document.querySelector(`button[data-comicvine_id="${comicvine_id}"]`).dataset;
-
+function showAddWindow(comicvine_id, api_key) {
+	const volume_data = document.querySelector(`button[data-comicvine_id="${comicvine_id}"]`).dataset;
+	const body = {
+		'comicvine_id': volume_data.comicvine_id,
+		'title': volume_data._title,
+		'year': volume_data._year,
+		'volume_number': volume_data._volume_number,
+		'publisher': volume_data._publisher
+	};
+	
+	fetch(`${url_base}/api/volumes/search?api_key=${api_key}`, {
+		'method': 'POST',
+		'headers': {'Content-Type': 'application/json'},
+		'body': JSON.stringify(body)
+	})
+	.then(response => response.json())
+	.then(json => {
+		volume_data._volume_folder = json.result.folder;
+		document.getElementById('volumefolder-input').value = json.result.folder;
+		showWindow("add-window");
+	});
+	
 	document.querySelector('#add-title').innerText = volume_data.title;
 	document.querySelector('#add-cover').src = volume_data.cover;
 	document.querySelector('#comicvine-input').value = comicvine_id;
-	
-	showWindow("add-window");
 };
 
 function addVolume() {
 	showLoadWindow("add-window");
-	const comicvine_id = document.querySelector('#comicvine-input').value;
-	const root_folder_id = document.querySelector('#rootfolder-input').value;
-	const monitor_value = document.querySelector('#monitor-input').value;
+	const volume_folder = document.querySelector('#volumefolder-input').value;
+	
+	const data = {
+		'comicvine_id': document.querySelector('#comicvine-input').value,
+		'root_folder_id': parseInt(document.querySelector('#rootfolder-input').value),
+		'monitor_value': document.querySelector('#monitor-input').value == 'true'
+	}
+	if (volume_folder !== '' && volume_folder !== document.querySelector(`button[data-comicvine_id="${data.comicvine_id}"]`).dataset._volume_folder) {
+		// Custom volume folder
+		data.volume_folder = volume_folder;
+	};
 	usingApiKey()
 	.then(api_key => {
-		fetch(`${url_base}/api/volumes?api_key=${api_key}&comicvine_id=${comicvine_id}&monitor=${monitor_value}&root_folder_id=${root_folder_id}`, {
-			'method': 'POST'
+		fetch(`${url_base}/api/volumes?api_key=${api_key}`, {
+			'method': 'POST',
+			'headers': {'Content-Type': 'application/json'},
+			'body': JSON.stringify(data)
 		})
 		.then(response => {
 			if (!response.ok) return Promise.reject(response.status);

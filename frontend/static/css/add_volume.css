@@ -22,7 +22,7 @@ main > div {
 
 	padding: 0;
 	border: 1px solid var(--border-color);
-	background-color: var(--off-light-color);
+	background-color: var(--search-bar-button-color);
 }
 
 #search-button {
@@ -50,7 +50,8 @@ main > div {
 
 	padding: .4rem 1rem;
 	border: 1px solid var(--border-color);
-	color: var(--dark-color);
+	background-color: var(--search-bar-color);
+	color: var(--search-bar-font-color);
 
 	box-shadow: rgba(0, 0, 0, 0.075) 0px 1px 1px 0px inset;
 
@@ -68,8 +69,9 @@ main > div {
 /*  */
 #search-explain,
 #search-empty,
-#search-failed {
-	color: var(--dark-color);
+#search-failed,
+#search-blocked {
+	color: var(--search-bar-desc-color);
 	text-align: center;
 	font-size: 1.5rem;
 }
@@ -94,7 +96,7 @@ main > div {
 
 	padding: 1.3rem;
 	border-radius: 2px;
-	background-color: var(--light-color);
+	background-color: var(--search-bar-color);
 	color: var(--dark-color);
 
 	text-align: left;
@@ -103,7 +105,7 @@ main > div {
 }
 
 .search-entry:hover {
-	background-color: lightyellow;
+	background-color: var(--dark-hover-color);
 }
 
 .cover-info-container {
@@ -123,10 +125,13 @@ main > div {
 }
 
 .entry-info-container {
+	width: 100%;
+
 	display: flex;
 	flex-direction: column;
 	gap: .5rem;
-	width: 100%;
+
+	color: var(--search-result-font-color);
 }
 
 .entry-info-container h2 {
@@ -135,7 +140,7 @@ main > div {
 }
 
 .entry-info-container h2 span {
-	color: var(--mid-color);
+	opacity: .6;
 }
 
 .entry-info-container h2 img {
@@ -207,7 +212,8 @@ main > div {
 		width: 100%;
 		text-align: left;
 	}
-	#add-form table tr > td > select {
+	#add-form table tr > td > select,
+	#add-form table tr > td > input[type="text"] {
 		width: 100%;
 	}
 }

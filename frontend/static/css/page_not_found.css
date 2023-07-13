@@ -1,5 +1,6 @@
 body {
 	justify-content: center;
+	background-color: var(--background-color);
 }
 
 h1 {

@@ -11,6 +11,17 @@ table {
 	min-width: 30rem;
 	border-spacing: 0px;
 	text-align: left;
+	
+	color: var(--text-color);
+}
+
+table a {
+	text-decoration: none;
+	color: var(--text-color);
+}
+
+table a:hover {
+	text-decoration: underline;
 }
 
 th, td {

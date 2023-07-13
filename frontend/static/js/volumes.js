@@ -1,10 +1,11 @@
 //
 // Library
 //
-function populateLibrary(volumes, api_key) {
+function populatePosters(volumes, api_key) {
 	const table = document.querySelector('#library');
 	const space_taker = document.querySelector('.space-taker');
-	table.querySelectorAll('a').forEach(e => e.remove())
+	space_taker.classList.remove('hidden');
+	table.querySelectorAll('#library > a, #library > .table-container').forEach(e => e.remove());
 	volumes.forEach(volume => {
 		const entry = document.createElement("a");
 		entry.href = `${url_base}/volumes/${volume.id}`;
@@ -48,19 +49,93 @@ function populateLibrary(volumes, api_key) {
 	});
 };
 
-function fetchLibrary(api_key) {
-	const sort = document.querySelector('#sort-button').value;
-	fetch(`${url_base}/api/volumes?api_key=${api_key}&sort=${sort}`)
-	.then(response => response.json())
-	.then(json => populateLibrary(json.result, api_key));
+function populateTable(volumes) {
+	const space_taker = document.querySelector('.space-taker');
+	space_taker.classList.add('hidden');
+
+	const library = document.querySelector('#library');
+	library.querySelectorAll('#library > a, #library > .table-container').forEach(e => e.remove());
+
+	const table_container = document.createElement('div');
+	table_container.classList.add('table-container');
+	const table = document.createElement('table');
+	table_container.appendChild(table);
+	const thead = document.createElement('thead');
+	table.appendChild(thead);
+	const head_row = document.createElement('tr');
+	thead.appendChild(head_row);
+	['Volume Title', 'Year', 'Progress', 'Monitored'].forEach(h => {
+		const entry = document.createElement('th');
+		entry.innerText = h;
+		head_row.appendChild(entry);
+	});
+	const list = document.createElement('tbody');
+	table.appendChild(list);
+	library.insertBefore(table_container, space_taker);
+
+	volumes.forEach(volume => {
+		const entry = document.createElement('tr');
+
+		const title_container = document.createElement('td');
+		const title = document.createElement('a');
+		title.innerText = volume.title;
+		title.title = volume.title;
+		title.href = `${url_base}/volumes/${volume.id}`;
+		title_container.appendChild(title);
+		entry.appendChild(title_container);
+
+		const year = document.createElement('td');
+		year.innerText = volume.year;
+		entry.appendChild(year);
+		
+		const progress_container = document.createElement('td');
+		const progress = document.createElement('div');
+		const progress_bar = document.createElement('div');
+		const calc = volume.issues_downloaded / volume.issue_count * 100;
+		if (calc === 100) {
+			progress_bar.setAttribute('style', `width: ${calc}%; background-color: var(--success-color);`);
+		} else if (volume.monitored === true) {
+			progress_bar.setAttribute('style', `width: ${calc}%; background-color: var(--accent-color);`);
+		} else {
+			progress_bar.setAttribute('style', `width: ${calc}%; background-color: var(--error-color);`);
+		};
+		progress.appendChild(progress_bar);
+		const progress_text = document.createElement('div');
+		progress_text.innerText = `${volume.issues_downloaded}/${volume.issue_count}`;
+		progress.appendChild(progress_text);
+		progress_container.appendChild(progress);
+		entry.appendChild(progress_container);
+		
+		const monitored_container = document.createElement('td');
+		const monitored = document.createElement('img');
+		monitored.src = volume.monitored ? `${url_base}/static/img/monitored.svg` : `${url_base}/static/img/unmonitored.svg`;
+		monitored.title = volume.monitored ? 'Monitored' : 'Unmonitored';
+		monitored_container.appendChild(monitored);
+		entry.appendChild(monitored_container);
+		
+		list.appendChild(entry);
+	});
 };
 
-function searchLibrary(api_key) {
-	const query = document.querySelector('#search-input').value;
+function populateLibrary(volumes, api_key, view) {
+	if (view === 'posters')
+		populatePosters(volumes, api_key);
+	else if (view === 'table')
+		populateTable(volumes);
+};
+
+function fetchLibrary(api_key) {
 	const sort = document.querySelector('#sort-button').value;
-	fetch(`${url_base}/api/volumes?api_key=${api_key}&query=${query}&sort=${sort}`)
+	const view = document.querySelector('#view-button').value;
+	const query = document.querySelector('#search-input').value;
+	let url;
+	if (query === '')
+		url = `${url_base}/api/volumes?api_key=${api_key}&sort=${sort}`;
+	else
+		url = `${url_base}/api/volumes?api_key=${api_key}&sort=${sort}&query=${query}`;
+	fetch(url)
 	.then(response => response.json())
-	.then(json => populateLibrary(json.result, api_key));
+	.then(json => populateLibrary(json.result, api_key, view));
 };
 
 function clearSearch(api_key) {
@@ -101,18 +176,24 @@ function searchAll(api_key) {
 
 // code run on load
 
+document.querySelector('#sort-button').value = getLocalStorage('lib_sorting')['lib_sorting'];
+document.querySelector('#view-button').value = getLocalStorage('lib_view')['lib_view'];
 usingApiKey()
 .then(api_key => {
 	fetchLibrary(api_key);
 	fetchStats(api_key);
 
 	addEventListener('#clear-search', 'click', e => clearSearch(api_key));
-	addEventListener('#start-search', 'click', e => searchLibrary(api_key));
-	addEventListener('#search-input', 'keydown', e => e.code === 'Enter' ? searchLibrary(api_key) : null);
+	addEventListener('#start-search', 'click', e => fetchLibrary(api_key));
+	addEventListener('#search-input', 'keydown', e => e.code === 'Enter' ? fetchLibrary(api_key) : null);
 	addEventListener('#updateall-button', 'click', e => updateAll(api_key));
 	addEventListener('#searchall-button', 'click', e => searchAll(api_key));
 	addEventListener('#sort-button', 'change', e => {
-		if (document.querySelector('#search-input').value) searchLibrary(api_key);
-		else fetchLibrary(api_key);
+		setLocalStorage({'lib_sorting': document.querySelector('#sort-button').value});
+		fetchLibrary(api_key);
+	});
+	addEventListener('#view-button', 'change', e => {
+		setLocalStorage({'lib_view': document.querySelector('#view-button').value});
+		fetchLibrary(api_key);
 	});
 });
