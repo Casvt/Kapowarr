@@ -39,7 +39,13 @@ class extract_filename_data(unittest.TestCase):
 			'Infinity Gauntlet #1 – 6 (1991-1992)':
 				{'series': 'Infinity Gauntlet', 'year': 1991, 'volume_number': 1, 'special_version': None, 'issue_number': (1.0, 6.0), 'annual': False},
 
-			'Batman 026-050 (1945-1949) GetComics.INFO/Batman 048 52p ctc (08-1948) flattermann.cbr':
+      '1. Infinity Gauntlet #2 - 100 (1999-2009)':
+				{'series': 'Infinity Gauntlet', 'year': 1999, 'volume_number': 1, 'special_version': None, 'issue_number': (2.0, 100.0), 'annual': False},
+
+			'100 Bullets #1 - 101 (1999-2009)':
+				{'series': '100 Bullets', 'year': 1999, 'volume_number': 1, 'special_version': None, 'issue_number': (1.0, 101.0), 'annual': False},
+
+      'Batman 026-050 (1945-1949) GetComics.INFO/Batman 048 52p ctc (08-1948) flattermann.cbr':
 				{'series': 'Batman', 'year': 1945, 'volume_number': 1, 'special_version': None, 'issue_number': 48.0, 'annual': False}
 		}
 		self.run_cases(cases)
