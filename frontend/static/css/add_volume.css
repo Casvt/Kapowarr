@@ -167,6 +167,7 @@ main > div {
 
 .entry-spare-description {
 	display: none;
+	color: var(--search-result-font-color);
 }
 
 /*  */

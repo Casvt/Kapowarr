@@ -98,7 +98,7 @@ header {
 	gap: .75rem;
 	padding: 1rem;
 	background-color: var(--header-color);
-	color: var(--mid-color);
+	color: var(--library-entry-progress-color);
 	font-size: .9rem;
 }
 
