@@ -36,6 +36,7 @@ from .lib.mega import Mega, RequestError, sids
 file_extension_regex = compile(r'(?<=\.)[\w\d]{2,4}(?=$|;|\s)|(?<=\/)[\w\d]{2,4}(?=$|;|\s)', IGNORECASE)
 mega_regex = compile(r'https?://mega\.(nz|io)/(#(F\!|\!)|folder/|file/)', IGNORECASE)
 mediafire_regex = compile(r'https?://www\.mediafire\.com/', IGNORECASE)
+extract_mediafire_regex = compile(r'window.location.href\s?=\s?\'https://download\d+\.mediafire.com/.*?(?=\')', IGNORECASE)
 
 download_chunk_size = 4194304 # 4MB Chunks
 credentials = Credentials(sids)
@@ -302,7 +303,6 @@ def _purify_link(link: str) -> dict:
 
 	elif link.startswith('http'):
 		r = get(link, headers={'User-Agent': 'Kapowarr'}, stream=True)
-		r.close()
 		url = r.url
 		
 		if mega_regex.search(url):
@@ -322,11 +322,10 @@ def _purify_link(link: str) -> dict:
 			elif '/folder/' in url:
 				# Link is not supported (folder most likely)
 				raise LinkBroken(2, blocklist_reasons[2])
-			
-			soup = BeautifulSoup(r.text, 'html.parser')
-			button = soup.find('a', {'id': 'downloadButton'})
-			if button:
-				return {'link': button['href'], 'target': DirectDownload, 'source': 'mediafire'}
+
+			result = extract_mediafire_regex.search(r.text)
+			if result:
+				return {'link': result.group(0).split("'")[-1], 'target': DirectDownload, 'source': 'mediafire'}
 
 			# Link is not broken and not a folder but we still can't find the download button...
 			raise LinkBroken(1, blocklist_reasons[1])
