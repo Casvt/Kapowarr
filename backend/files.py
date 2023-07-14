@@ -561,10 +561,13 @@ def move_volume_folder(volume_id: int, new_root_folder: int, new_volume_folder: 
 	new_volume_folder = _make_filename_safe(new_volume_folder)
 
 	new_folder = abspath(join(new_root_folder, new_volume_folder))
-	
+
 	# Create and move to new folder
 	logging.info(f'Moving volume folder from {current_folder} to {new_folder}')
-	move(current_folder, new_folder)
+	if isdir(current_folder):
+		move(current_folder, new_folder)
+	else:
+		makedirs(new_folder, 0o664)
 
 	cursor.execute("""
 			SELECT DISTINCT
@@ -584,9 +587,10 @@ def move_volume_folder(volume_id: int, new_root_folder: int, new_volume_folder: 
 		"UPDATE files SET filepath = ? WHERE id = ?;",
 		renamed_files
 	)
-	
+
 	# Delete old folder
-	delete_empty_folders(dirname(current_folder), current_root_folder)
+	if not (new_folder + sep).startswith(current_folder.rstrip(sep) + sep):
+		delete_empty_folders(dirname(current_folder), current_root_folder)
 
 	return new_folder
 
