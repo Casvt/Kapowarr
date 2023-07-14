@@ -138,6 +138,10 @@ function fetchLibrary(api_key) {
 	.then(json => populateLibrary(json.result, api_key, view));
 };
 
+function searchLibrary() {
+	usingApiKey().then(api_key => fetchLibrary(api_key));
+};
+
 function clearSearch(api_key) {
 	document.querySelector('#search-input').value = '';
 	fetchLibrary(api_key);
@@ -184,8 +188,6 @@ usingApiKey()
 	fetchStats(api_key);
 
 	addEventListener('#clear-search', 'click', e => clearSearch(api_key));
-	addEventListener('#start-search', 'click', e => fetchLibrary(api_key));
-	addEventListener('#search-input', 'keydown', e => e.code === 'Enter' ? fetchLibrary(api_key) : null);
 	addEventListener('#updateall-button', 'click', e => updateAll(api_key));
 	addEventListener('#searchall-button', 'click', e => searchAll(api_key));
 	addEventListener('#sort-button', 'change', e => {
@@ -197,3 +199,4 @@ usingApiKey()
 		fetchLibrary(api_key);
 	});
 });
+document.querySelector('#search-container').setAttribute('action', 'javascript:searchLibrary();');

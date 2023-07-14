@@ -105,24 +105,25 @@ function buildResults(results, api_key) {
 	};
 };
 
-function search(api_key) {
+function search() {
 	if (!document.querySelector('#search-blocked').classList.contains('hidden'))
 		return;
+	usingApiKey().then(api_key => {
+		const query = document.querySelector('#search-input').value;
+		fetch(`${url_base}/api/volumes/search?api_key=${api_key}&query=${query}`)
+		.then(response => {
+			if (!response.ok) return Promise.reject(response.status);
+			return response.json();
+		})
+		.then(json => buildResults(json.result, api_key))
+		.catch(e => {
+			if (e === 400) document.querySelector('#search-failed').classList.remove('hidden');
+		});
+	});
 	document.querySelector('#search-explain').classList.add('hidden');
 	document.querySelector('#search-empty').classList.add('hidden');
 	document.querySelector('#search-failed').classList.add('hidden');
 	document.querySelector('#search-input').blur();
-
-	const query = document.querySelector('#search-input').value;
-	fetch(`${url_base}/api/volumes/search?api_key=${api_key}&query=${query}`)
-	.then(response => {
-		if (!response.ok) return Promise.reject(response.status);
-		return response.json();
-	})
-	.then(json => buildResults(json.result, api_key))
-	.catch(e => {
-		if (e === 400) document.querySelector('#search-failed').classList.remove('hidden');
-	});
 };
 
 function clearSearch(e) {
@@ -224,8 +225,5 @@ addEventListener('#search-cancel-button', 'click', clearSearch);
 setAttribute('#add-form', 'action', 'javascript:addVolume()');
 
 usingApiKey()
-.then(api_key => {
-	fillRootFolderInput(api_key);
-	addEventListener('#search-button', 'click', e => search(api_key));
-	addEventListener('#search-input', 'keydown', e => e.code === 'Enter' ? search(api_key) : null);
-});
+.then(api_key => fillRootFolderInput(api_key));
+document.querySelector('.search-bar').setAttribute('action', 'javascript:search();')
