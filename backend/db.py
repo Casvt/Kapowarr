@@ -58,17 +58,41 @@ class DBConnection(Connection, metaclass=Singleton):
 		self.closed = True
 		super().close()
 		return
+
+class TempDBConnection(Connection):
+	"""For creating a temporary connection with a database. The user needs to manually commit and close.
+	"""
+	file = ''
 	
+	def __init__(self, timeout: float) -> None:
+		"""Create a temporary connection with a database
+
+		Args:
+			timeout (float): How long to wait before giving up on a command
+		"""
+		logging.debug(f'Creating temporary connection {self} to the database for thread {current_thread()}')
+		super().__init__(self.file, timeout=timeout)
+		super().cursor().execute("PRAGMA foreign_keys = ON;")
+		self.closed = False
+		return
+	
+	def close(self) -> None:
+		logging.debug(f'Closing temporary connection {self} to the database for thread {current_thread()}')
+		self.closed = True
+		super().close()
+		return
+
 def set_db_location(db_file_location: str) -> None:
 	"""Setup database location. Create folder for database and set location for db.DBConnection
 
 	Args:
 		db_file_location (str): The absolute path to the database file
 	"""
-	# Create folder where file will be put in if it doesn't exist yet
 	logging.debug(f'Setting database location: {db_file_location}')
+	# Create folder where file will be put in if it doesn't exist yet
 	makedirs(dirname(db_file_location), exist_ok=True)
 	DBConnection.file = db_file_location
+	TempDBConnection.file = db_file_location
 	return
 
 def get_db(output_type='tuple', temp: bool=False):
@@ -82,7 +106,7 @@ def get_db(output_type='tuple', temp: bool=False):
 		Cursor: Database cursor instance with desired output type set
 	"""
 	if temp:
-		cursor = DBConnection(timeout=20.0).cursor()
+		cursor = TempDBConnection(timeout=20.0).cursor()
 	else:
 		try:
 			cursor = g.cursor
