@@ -134,7 +134,6 @@ dmypy.json
 
 # vs-code
 *.code-workspace
-.vscode/
 
 # downloads
 temp_downloads/*
