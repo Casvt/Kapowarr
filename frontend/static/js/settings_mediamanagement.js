@@ -5,6 +5,7 @@ function fillSettings(api_key) {
 	fetch(`${url_base}/api/settings?api_key=${api_key}`)
 	.then(response => response.json())
 	.then(json => {
+		document.querySelector('#renaming-input').checked = json.result.rename_downloaded_files;
 		document.querySelector('#volume-folder-naming-input').value = json.result.volume_folder_naming;
 		document.querySelector('#file-naming-input').value = json.result.file_naming;
 		document.querySelector('#file-naming-tpb-input').value = json.result.file_naming_tpb;
@@ -18,6 +19,7 @@ function saveSettings(api_key) {
 	document.querySelector('#file-naming-input').classList.remove('error-input');
 	document.querySelector('#file-naming-tpb-input').classList.remove('error-input');
 	const data = {
+		'rename_downloaded_files': document.querySelector('#renaming-input').checked,
 		'volume_folder_naming': document.querySelector('#volume-folder-naming-input').value,
 		'file_naming': document.querySelector('#file-naming-input').value,
 		'file_naming_tpb': document.querySelector('#file-naming-tpb-input').value,
@@ -40,9 +42,8 @@ function saveSettings(api_key) {
 				document.querySelector('#file-naming-input').classList.add('error-input');
 			else if (e.result.key === 'file_naming_tpb')
 				document.querySelector('#file-naming-tpb-input').classList.add('error-input');
-		} else {
+		} else
 			console.log(e.error);
-		};
 	});
 };
 
@@ -134,6 +135,6 @@ usingApiKey()
 	addEventListener('#save-button', 'click', e => saveSettings(api_key));
 	addEventListener('#add-folder', 'click', e => addRootFolder(api_key));
 	addEventListener('#folder-input', 'keydown', e => e.code === 'Enter' ? addRootFolder(api_key) : null);
-})
+});
 
 addEventListener('#toggle-root-folder', 'click', toggleAddRootFolder);

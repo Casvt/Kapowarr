@@ -12,6 +12,7 @@ from re import IGNORECASE, compile
 from threading import Thread
 from time import perf_counter
 from typing import Dict, List, Tuple, Union
+from urllib.parse import unquote_plus
 
 from bencoding import bdecode, bencode
 from bs4 import BeautifulSoup
@@ -76,13 +77,14 @@ class BaseDownload(Download):
 class DirectDownload(BaseDownload):
 	"""For downloading a file directly from a link
 	"""	
-	def __init__(self, link: str, filename_body: str, source: str):
+	def __init__(self, link: str, filename_body: str, source: str, custom_name: bool=True):
 		"""Setup the direct download
 
 		Args:
 			link (str): The link (that leads to a file) that should be used
 			filename_body (str): The body of the filename to write to
 			source (str): The name of the source of the link
+			custom_name (bool, optional): If the name supplied should be used or the default filename. Defaults to True.
 
 		Raises:
 			LinkBroken: The link doesn't work
@@ -99,7 +101,10 @@ class DirectDownload(BaseDownload):
 		r.close()
 		if not r.ok:
 			raise LinkBroken(1, blocklist_reasons[1])
-		self.__filename_body = filename_body.rstrip('.')
+		if custom_name:
+			self.__filename_body = filename_body.rstrip('.')
+		else:
+			self.__filename_body = splitext(unquote_plus(self.link.split('/')[-1]))[0]
 
 		self.file = self.__build_filename(r)
 		self.title = splitext(basename(self.file))[0]
@@ -195,12 +200,14 @@ class MegaDownload(BaseDownload):
 	def size(self) -> int:
 		return self._mega.size
 
-	def __init__(self, link: str, filename_body: str, source: str='mega'):
+	def __init__(self, link: str, filename_body: str, source: str='mega', custom_name: bool=True):
 		"""Setup the mega download
 
 		Args:
 			link (str): The mega link
 			filename_body (str): The body of the filename to write to
+			source (str, optional): The name of the source of the link. Defaults to 'mega'.
+			custom_name (bool, optional): If the name supplied should be used or the default filename. Defaults to True.
 
 		Raises:
 			LinkBroken: The link doesn't work
@@ -216,6 +223,9 @@ class MegaDownload(BaseDownload):
 			self._mega = Mega(link, cred['email'], cred['password'])
 		except RequestError:
 			raise LinkBroken(1, blocklist_reasons[1])
+
+		if not custom_name:
+			self.__filename_body = splitext(self._mega.mega_filename)[0]
 
 		self.file = self.__build_filename()
 		self.title = splitext(basename(self.file))[0]
@@ -514,23 +524,27 @@ def _test_paths(
 	logging.debug('Testing paths')
 	limit_reached = False
 	downloads = []
+	rename_downloaded_files = Settings().get_settings()['rename_downloaded_files']
 	for path in link_paths:
 		for download in path:
-			# Generate name
-			if download['info']['special_version']:
-				# Link for TPB
-				name = generate_tpb_name(volume_id)
+			if rename_downloaded_files:
+				# Generate name
+				if download['info']['special_version']:
+					# Link for TPB
+					name = generate_tpb_name(volume_id)
 
-			elif isinstance(download['info']['issue_number'], tuple):
-				# Link for issue range
-				name = generate_issue_range_name(
-					volume_id,
-					*download['info']['issue_number']
-				)
-			
+				elif isinstance(download['info']['issue_number'], tuple):
+					# Link for issue range
+					name = generate_issue_range_name(
+						volume_id,
+						*download['info']['issue_number']
+					)
+				
+				else:
+					# Link for single issue
+					name = generate_issue_name(volume_id, download['info']['issue_number'])
 			else:
-				# Link for single issue
-				name = generate_issue_name(volume_id, download['info']['issue_number'])
+				name = ''
 
 			# Find working link
 			for links in download['links'].values():
@@ -540,7 +554,7 @@ def _test_paths(
 						# https://www.youtube.com/watch?v=nFn4_nA_yk8&t=1053s
 						# https://stackoverflow.com/questions/53336675/get-aiohttp-results-as-string
 						pure_link = _purify_link(link)
-						dl_instance = pure_link['target'](link=pure_link['link'], filename_body=name, source=pure_link['source'])
+						dl_instance = pure_link['target'](link=pure_link['link'], filename_body=name, source=pure_link['source'], custom_name=rename_downloaded_files)
 					except LinkBroken as lb:
 						# Link is broken
 						add_to_blocklist(link, lb.reason_id)

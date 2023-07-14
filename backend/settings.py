@@ -31,7 +31,8 @@ default_settings = {
 	'database_version': __DATABASE_VERSION__,
 	'unzip': False,
 	'volume_padding': 2,
-	'issue_padding': 3
+	'issue_padding': 3,
+	'rename_downloaded_files': True
 }
 
 private_settings = {
@@ -90,6 +91,7 @@ class Settings:
 				"SELECT key, value FROM config;"
 			))
 			settings['unzip'] = settings['unzip'] == 1
+			settings['rename_downloaded_files'] = settings['rename_downloaded_files'] == 1
 			self.cache.update(settings)
 
 		return self.cache
@@ -123,6 +125,11 @@ class Settings:
 
 			elif key == 'download_folder' and not isdir(value):
 				raise FolderNotFound
+
+			elif key == 'rename_downloaded_files':
+				if not isinstance(value, bool):
+					raise InvalidSettingValue(key, value)
+				value = int(value)
 
 			elif key in ('volume_folder_naming','file_naming','file_naming_tpb'):
 				check_format(value, key)
