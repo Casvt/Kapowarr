@@ -1,10 +1,11 @@
 # Site Details
 site_name: Kapowarr Docs
 site_description: The official guide for Kapowarr 
-site_author: MrCas
-#edit_uri: https://github.com/??
+site_author: Casvt
 repo_url: https://github.com/Casvt/Kapowarr
+edit_uri: blob/development/docs/
 repo_name: Casvt/Kapowarr
+docs_dir: ../docs
 
 # Site appearance (logos, colours, icons)
 theme:

@@ -1,0 +1,33 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - development
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        
+    steps:
+      - uses: actions/checkout@v3
+        name: Set up checkout
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v4
+        name: Set up Python ${{ matrix.python-version }}
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - run: pip install -r requirements.txt
+        name: Install dependencies
+
+      - run: |
+          mkdir db
+          python -m unittest discover -s ./tests -p '*.py'
+        name: Run Tests

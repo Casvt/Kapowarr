@@ -8,13 +8,21 @@ on:
 jobs:
   deploy:
     name: Deploy docs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+        name: Setup checkout
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v2
+
+      - uses: actions/setup-python@v4
+        name: Setup python 3.8
         with:
-          python-version: 3.x
-      - run: pip install -r docs-requirements.txt
-      - run: mkdocs gh-deploy --force
+          python-version: 3.8
+          cache: 'pip'
+
+      - run: pip install -r project_management/docs-requirements.txt
+        name: Install dependencies
+
+      - run: mkdocs gh-deploy --force -f project_management/mkdocs.yml
+        name: Build docs
