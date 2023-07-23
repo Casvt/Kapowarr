@@ -195,8 +195,9 @@ function addVolume() {
 	const data = {
 		'comicvine_id': document.querySelector('#comicvine-input').value,
 		'root_folder_id': parseInt(document.querySelector('#rootfolder-input').value),
-		'monitor_value': document.querySelector('#monitor-input').value == 'true'
-	}
+		'monitor': document.querySelector('#monitor-input').value == 'true',
+		'volume_folder': ''
+	};
 	if (volume_folder !== '' && volume_folder !== document.querySelector(`button[data-comicvine_id="${data.comicvine_id}"]`).dataset._volume_folder) {
 		// Custom volume folder
 		data.volume_folder = volume_folder;

@@ -381,7 +381,7 @@ def api_volumes():
 		root_folder_id = data.get('root_folder_id')
 		if root_folder_id is None: raise KeyNotFound('root_folder_id')
 		monitor = data.get('monitor', True)
-		volume_folder = data.get('volume_folder')
+		volume_folder = data.get('volume_folder') or None
 
 		volume_id = library.add(comicvine_id, root_folder_id, monitor, volume_folder)
 		volume_info = library.get_volume(volume_id).get_info()
