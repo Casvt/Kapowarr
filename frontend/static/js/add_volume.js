@@ -1,6 +1,13 @@
 // 
 // Searching
 // 
+function addAlreadyAdded(title) {
+	const aa_icon = document.createElement('img');
+	aa_icon.alt = 'Volume is already added';
+	aa_icon.src = `${url_base}/static/img/check_circle.svg`;
+	title.appendChild(aa_icon);
+}
+
 function buildResults(results, api_key) {
 	const table = document.querySelector('#search-results');
 	table.innerHTML = '';
@@ -46,12 +53,8 @@ function buildResults(results, api_key) {
 			title.appendChild(year);
 		};
 		
-		if (result.already_added) {
-			const aa_icon = document.createElement('img');
-			aa_icon.alt = 'Volume is already added';
-			aa_icon.src = `${url_base}/static/img/check_circle.svg`;
-			title.appendChild(aa_icon);
-		};
+		if (result.already_added)
+			addAlreadyAdded(title);
 		
 		const tags = document.createElement('div');
 		tags.classList.add('entry-tags');
@@ -188,7 +191,7 @@ function showAddWindow(comicvine_id, api_key) {
 function addVolume() {
 	showLoadWindow("add-window");
 	const volume_folder = document.querySelector('#volumefolder-input').value;
-	
+
 	const data = {
 		'comicvine_id': document.querySelector('#comicvine-input').value,
 		'root_folder_id': parseInt(document.querySelector('#rootfolder-input').value),
@@ -207,9 +210,11 @@ function addVolume() {
 		})
 		.then(response => {
 			if (!response.ok) return Promise.reject(response.status);
-			else return response.json();
+
+			const title = document.querySelector(`button[data-comicvine_id="${data.comicvine_id}"] h2`);
+			addAlreadyAdded(title);
+			closeWindow();
 		})
-		.then(json => window.location.href = `${url_base}/volumes/${json.result.id}`)
 		.catch(e => {
 			if (e === 401) window.location.href = `${url_base}/login?redirect=${window.location.pathname}`;
 			else if (e === 509) document.querySelector('#add-volume').innerText = 'ComicVine API rate limit reached';
