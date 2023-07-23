@@ -8,16 +8,13 @@ ARG USER=kapowarr
 ENV PUID 1000
 ENV PGID 1000
 
-RUN groupadd -g $PGID -o $USER
-RUN useradd -m -N -u $PUID -g $PGID $USER && \
+RUN groupadd -g $PGID -o $USER && \
+useradd -m -N -u $PUID -g $PGID $USER && \
+usermod -aG sudo $USER && \
 echo "${USER} ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers && \
-chmod 0440 /etc/sudoers && \
-chmod g+w /etc/passwd
-RUN mkdir /app && \
-mkdir /app/temp_downloads && \
-chmod g+w /app/temp_downloads && \
-mkdir /app/db && \
-chmod g+w /app/db
+chmod 0440 /etc/sudoers && chmod g+w /etc/passwd && \
+mkdir /app && mkdir /app/temp_downloads && mkdir /app/db && \
+chmod 777 /app && chmod 777 /app/temp_downloads && chmod g+w /app/db
 
 USER $USER
 
