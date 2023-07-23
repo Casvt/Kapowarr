@@ -344,7 +344,7 @@ def manual_search(
 		"SELECT calculated_issue_number, date FROM issues WHERE volume_id = ?;",
 		(volume_id,)
 	)
-	issue_numbers = {i[0]: int(i[1].split('-')[0]) for i in cursor}
+	issue_numbers = {i[0]: int(i[1].split('-')[0]) if i[1] else None for i in cursor}
 	for result in results:
 		result.update(_check_match(result, title, volume_number, issue_numbers, calculated_issue_number, year))
 
