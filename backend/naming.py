@@ -411,16 +411,20 @@ def preview_mass_rename(volume_id: int, issue_id: int=None, filepath_filter: Lis
 		# If file is image, it's probably a page instead of a whole issue/tpb.
 		# So put it in it's own folder together with the other images.
 		if file['filepath'].endswith(image_extensions):
+			filename: str = basename(file['filepath'])
 			page_number = None
-			page_result = page_regex.search(file['filepath'])
-			if page_result:
-				page_number = next(r for r in page_result.groups() if r is not None)
+			if 'cover' in filename.lower():
+				page_number = 'Cover'
 			else:
-				page_result = None
-				r = page_regex_2.finditer(file['filepath'])
-				for page_result in r: pass
+				page_result = page_regex.search(filename)
 				if page_result:
-					page_number = page_result.group(1)
+					page_number = next(r for r in page_result.groups() if r is not None)
+				else:
+					page_result = None
+					r = page_regex_2.finditer(basename(file['filepath']))
+					for page_result in r: pass
+					if page_result:
+						page_number = page_result.group(1)
 			suggested_name = join(suggested_name, page_number or '1')
 
 		# Add number to filename if other file has the same name
