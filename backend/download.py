@@ -385,7 +385,12 @@ def _extract_get_comics_links(
 	download_groups = {}
 	body = soup.find('article', {'class': 'post-body'})
 	for result in body.find_all(link_filter_1):
-		group_title: str = result.get_text('\x00').partition('\x00')[0]
+		extracted_title = result.get_text('\x00')
+		group_title: str = extracted_title.partition('\x00')[0]
+		if "Year :\x00\xa0" in extracted_title:
+			# Append year to title
+			group_title += ' --' + result.get_text("\x00").split("Year :\x00\xa0")[1].split(" |")[0] + '--'
+
 		if 'variant cover' in group_title.lower():
 			continue
 		group_links = {}
@@ -433,7 +438,8 @@ def _sort_link_paths(p: List[dict]) -> int:
 def _process_extracted_get_comics_links(
 	download_groups: Dict[str, Dict[str, List[str]]],
 	volume_title: str,
-	volume_number: int
+	volume_number: int,
+	volume_year: int
 ) -> List[List[Dict[str, dict]]]:
 	"""Based on the download groups, find different "paths" to download the most amount of content.
 	On the same page, there might be a download for `TPB + Extra's`, `TPB`, `Issue A-B` and for `Issue C-D`.
@@ -446,6 +452,7 @@ def _process_extracted_get_comics_links(
 		download_groups (Dict[str, Dict[str, List[str]]]): The download groups (output of download._extract_get_comics_links())
 		volume_title (str): The name of the volume
 		volume_number (int): The volume number
+		volume_year (int): The year that the volume released
 
 	Returns:
 		List[List[Dict[str, dict]]]: The list contains all paths. Each path is a list of download groups. The `info` key has
@@ -462,6 +469,9 @@ def _process_extracted_get_comics_links(
 		and (processed_desc['volume_number'] is None
 			or
 			processed_desc['volume_number'] == volume_number)
+		and (processed_desc['year'] is None
+			or
+			processed_desc['year'] == volume_year)
 		and (processed_desc['special_version'] or processed_desc['issue_number'])
 		and processed_desc['annual'] == annual
 		):
@@ -614,7 +624,7 @@ def _extract_download_links(link: str, volume_id: int, issue_id: int=None) -> Tu
 
 		# Get info of volume
 		volume_info = get_db('dict').execute(
-			"SELECT title, volume_number FROM volumes WHERE id = ? LIMIT 1",
+			"SELECT title, volume_number, year FROM volumes WHERE id = ? LIMIT 1",
 			(volume_id,)
 		).fetchone()
 
@@ -626,7 +636,12 @@ def _extract_download_links(link: str, volume_id: int, issue_id: int=None) -> Tu
 
 		# Filter incorrect download groups and combine them (or not) to create download paths
 		# [[{'info': {}, 'links': {}}, {'info': {}, 'links': {}}], [{'info': {}, 'links': {}}]]
-		link_paths = _process_extracted_get_comics_links(download_groups, volume_info['title'], volume_info['volume_number'])
+		link_paths = _process_extracted_get_comics_links(
+			download_groups,
+			volume_info['title'],
+			volume_info['volume_number'],
+			volume_info['year']
+		)
 
 		# Decide which path to take by testing the links
 		# [{'name': 'Filename', 'link': 'link_on_getcomics_page', 'instance': Download_instance}]
