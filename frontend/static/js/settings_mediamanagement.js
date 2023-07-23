@@ -1,3 +1,15 @@
+const inputs = {
+	'renaming_input': document.querySelector('#renaming-input'),
+	'volume_folder_naming_input': document.querySelector('#volume-folder-naming-input'),
+	'file_naming_input': document.querySelector('#file-naming-input'),
+	'file_naming_tpb_input': document.querySelector('#file-naming-tpb-input'),
+	'file_naming_empty_input': document.querySelector('#file-naming-empty-input'),
+	'volume_as_empty_input': document.querySelector('#volume-as-empty-input'),
+	'unzip_input': document.querySelector('#unzip-input'),
+	'issue_padding_input': document.querySelector('#issue-padding-input'),
+	'volume_padding_input': document.querySelector('#volume-padding-input')
+};
+
 //
 // Settings
 // 
@@ -5,27 +17,32 @@ function fillSettings(api_key) {
 	fetch(`${url_base}/api/settings?api_key=${api_key}`)
 	.then(response => response.json())
 	.then(json => {
-		document.querySelector('#renaming-input').checked = json.result.rename_downloaded_files;
-		document.querySelector('#volume-folder-naming-input').value = json.result.volume_folder_naming;
-		document.querySelector('#file-naming-input').value = json.result.file_naming;
-		document.querySelector('#file-naming-tpb-input').value = json.result.file_naming_tpb;
-		document.querySelector('#unzip-input').checked = json.result.unzip;
-		document.querySelector('#issue-padding').value = json.result.issue_padding
-		document.querySelector('#volume-padding').value = json.result.volume_padding
+		inputs.renaming_input.checked = json.result.rename_downloaded_files;
+		inputs.volume_folder_naming_input.value = json.result.volume_folder_naming;
+		inputs.file_naming_input.value = json.result.file_naming;
+		inputs.file_naming_tpb_input.value = json.result.file_naming_tpb;
+		inputs.file_naming_empty_input.value = json.result.file_naming_empty;
+		inputs.volume_as_empty_input.checked = json.result.volume_as_empty;
+		inputs.unzip_input.checked = json.result.unzip;
+		inputs.issue_padding_input.value = json.result.issue_padding;
+		inputs.volume_padding_input.value = json.result.volume_padding;
 	});
 };
 
 function saveSettings(api_key) {
-	document.querySelector('#file-naming-input').classList.remove('error-input');
-	document.querySelector('#file-naming-tpb-input').classList.remove('error-input');
+	inputs.file_naming_input.classList.remove('error-input');
+	inputs.file_naming_tpb_input.classList.remove('error-input');
+	inputs.file_naming_empty_input.classList.remove('error-input');
 	const data = {
 		'rename_downloaded_files': document.querySelector('#renaming-input').checked,
 		'volume_folder_naming': document.querySelector('#volume-folder-naming-input').value,
-		'file_naming': document.querySelector('#file-naming-input').value,
-		'file_naming_tpb': document.querySelector('#file-naming-tpb-input').value,
-		'unzip': document.querySelector('#unzip-input').checked,
-		'issue_padding': parseInt(document.querySelector('#issue-padding').value),
-		'volume_padding': parseInt(document.querySelector('#volume-padding').value)
+		'file_naming': inputs.file_naming_input.value,
+		'file_naming_tpb': inputs.file_naming_tpb_input.value,
+		'file_naming_empty': inputs.file_naming_empty_input.value,
+		'volume_as_empty': inputs.volume_as_empty_input.checked,
+		'unzip': inputs.unzip_input.checked,
+		'issue_padding': parseInt(inputs.issue_padding_input.value),
+		'volume_padding': parseInt(inputs.volume_padding_input.value)
 	};
 	fetch(`${url_base}/api/settings?api_key=${api_key}`, {
 		'method': 'PUT',
@@ -39,9 +56,11 @@ function saveSettings(api_key) {
 	.catch(e => {
 		if (e.error === 'InvalidSettingValue') {
 			if (e.result.key === 'file_naming')
-				document.querySelector('#file-naming-input').classList.add('error-input');
+				inputs.file_naming_input.classList.add('error-input');
 			else if (e.result.key === 'file_naming_tpb')
-				document.querySelector('#file-naming-tpb-input').classList.add('error-input');
+				inputs.file_naming_tpb_input.classList.add('error-input');
+			else if (e.result.key === 'file_naming_empty')
+				inputs.file_naming_empty_input.classList.add('error-input');
 		} else
 			console.log(e.error);
 	});

@@ -32,7 +32,9 @@ default_settings = {
 	'unzip': False,
 	'volume_padding': 2,
 	'issue_padding': 3,
-	'rename_downloaded_files': True
+	'rename_downloaded_files': True,
+	'file_naming_empty': '{series_name} ({year}) Volume {volume_number} Issue {issue_number}',
+	'volume_as_empty': True
 }
 
 private_settings = {
@@ -92,6 +94,7 @@ class Settings:
 			))
 			settings['unzip'] = settings['unzip'] == 1
 			settings['rename_downloaded_files'] = settings['rename_downloaded_files'] == 1
+			settings['volume_as_empty'] = settings['volume_as_empty'] == 1
 			self.cache.update(settings)
 
 		return self.cache
@@ -126,12 +129,12 @@ class Settings:
 			elif key == 'download_folder' and not isdir(value):
 				raise FolderNotFound
 
-			elif key == 'rename_downloaded_files':
+			elif key in ('rename_downloaded_files', 'volumes_as_empty'):
 				if not isinstance(value, bool):
 					raise InvalidSettingValue(key, value)
 				value = int(value)
 
-			elif key in ('volume_folder_naming','file_naming','file_naming_tpb'):
+			elif key in ('volume_folder_naming','file_naming','file_naming_tpb','file_naming_empty'):
 				check_format(value, key)
 
 			elif key == 'log_level' and not value in log_levels:

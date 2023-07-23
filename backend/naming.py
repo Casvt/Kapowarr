@@ -191,8 +191,17 @@ def generate_issue_range_name(
 		LIMIT 1;
 	""", (volume_id, calculated_issue_number_start)).fetchone()[0]
 	formatting_data = _get_formatting_data(volume_id, issue_id)
-	format: str = Settings().get_settings()['file_naming']
-	
+	settings = Settings().get_settings()
+
+	if (formatting_data['issue_title'] == 'Unknown'
+		or (
+			settings['volume_as_empty']
+			and formatting_data['issue_title'].lower().startswith('volume ')
+		)):
+		format: str = settings['file_naming_empty']
+	else:
+		format: str = settings['file_naming']
+
 	# Override issue number to range
 	issue_number_start, issue_number_end = cursor.execute("""
 		SELECT issue_number
@@ -235,7 +244,16 @@ def generate_issue_name(volume_id: int, calculated_issue_number: float) -> str:
 		LIMIT 1;
 	""", (volume_id, calculated_issue_number)).fetchone()[0]
 	formatting_data = _get_formatting_data(volume_id, issue_id)
-	format: str = Settings().get_settings()['file_naming']
+	settings = Settings().get_settings()
+
+	if (formatting_data['issue_title'] == 'Unknown'
+		or (
+			settings['volume_as_empty']
+			and formatting_data['issue_title'].lower().startswith('volume ')
+		)):
+		format: str = settings['file_naming_empty']
+	else:
+		format: str = settings['file_naming']
 
 	name = format.format(**formatting_data)
 	save_name = _make_filename_safe(name)
@@ -256,8 +274,8 @@ def check_format(format: str, type: str) -> None:
 	"""	
 	keys = [fn for _, fn, _, _ in Formatter().parse(format) if fn is not None]
 
-	if type in ('file_naming', 'file_naming_tpb'):
-		naming_keys = issue_formatting_keys if type == 'file_naming' else formatting_keys
+	if type in ('file_naming', 'file_naming_tpb', 'file_naming_empty'):
+		naming_keys = formatting_keys if type == 'file_naming_tpb' else issue_formatting_keys
 		if r'/' in format or r'\\' in format:
 			raise InvalidSettingValue(type, format)
 	else:
