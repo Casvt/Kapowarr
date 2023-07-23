@@ -136,15 +136,13 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 	series, year, volume_number, special_version, issue_number = None, None, None, None, None
 	
 	# Determine annual or not
-	annual = True
 	annual_result = annual_regex.search(basename(filepath))
 	annual_folder_result = annual_regex.search(basename(dirname(filepath)))
-	if annual_result and annual_folder_result:
-		annual = False
+	annual = not (annual_result and annual_folder_result)
 
 	# Generalise filename
 	filepath = (unquote(filepath)
-	    .replace('+',' ')
+		.replace('+',' ')
 		.replace('_',' ')
 		.replace('_28','(')
 		.replace('_29',')')
@@ -225,26 +223,18 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 			r = list(regex.finditer(filename, pos=volume_end))
 			if r:
 				r.sort(key=lambda e: (int(e.group(1)[-1] not in '0123456789'), 1 / e.start(0) if e.start(0) else 0))
-				issue_result = r[0]
 
-				if (year_pos <= issue_result.start(0) <= year_end
-				or year_pos <= issue_result.end(0) <= year_end):
-					for p in ({'endpos': issue_result.start(0)}, {'pos': issue_result.end(0)}):
-						issue_scd_result = regex.search(filename, **p)
-						if issue_scd_result:
-							# Issue number found
-							issue_number = issue_scd_result.group(1)
-							issue_pos = issue_scd_result.start(0)
-							break
-					else:
-						continue
-					break
-
+				for result in r:
+					if not (year_pos <= result.start(0) <= year_end
+					or year_pos <= result.end(0) <= year_end):
+						# Issue number found
+						issue_number = result.group(1)
+						issue_pos = result.start(0)
+						break
 				else:
-					# Issue number found
-					issue_number = issue_result.group(1)
-					issue_pos = issue_result.start(0)
-					break
+					continue
+				break
+
 		else:
 			issue_result = issue_regex_7.search(no_ext_clean_filename)
 			if issue_result:

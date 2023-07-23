@@ -7,7 +7,7 @@ class extract_filename_data(unittest.TestCase):
 	def run_cases(self, cases: Dict[str, dict]):
 		self.longMessage = False
 		for input, output in cases.items():
-			self.assertEqual(ef(input), output, f"'{input}' isn't extracted properly")
+			self.assertEqual(ef(input), output, f"'{input}' isn't extracted properly: {output}")
 		return
 
 	def test_general(self):
@@ -48,8 +48,8 @@ class extract_filename_data(unittest.TestCase):
 			'Batman 026-050 (1945-1949) GetComics.INFO/Batman 048 52p ctc (08-1948) flattermann.cbr':
 				{'series': 'Batman', 'year': 1945, 'volume_number': 1, 'special_version': None, 'issue_number': 48.0, 'annual': False},
 			
-			'01. X-Men Vol. 2 (#05, #1 – 113 + Annuals) Part 1 — #1 – 25':
-				{'series': 'X-Men', 'year': None, 'volume_number': 2, 'special_version': None, 'issue_number': (1.0, 25.0), 'annual': False}
+			'01. X-Men Vol. 2 (#05, #1 – 113 + Annuals) Part 1 — #1 – 25 --2022-2023--':
+				{'series': 'X-Men', 'year': 2022, 'volume_number': 2, 'special_version': None, 'issue_number': (1.0, 25.0), 'annual': False}
 		}
 		self.run_cases(cases)
 
