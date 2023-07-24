@@ -336,6 +336,11 @@ def _purify_link(link: str) -> dict:
 			result = extract_mediafire_regex.search(r.text)
 			if result:
 				return {'link': result.group(0).split("'")[-1], 'target': DirectDownload, 'source': 'mediafire'}
+			
+			soup = BeautifulSoup(r.text, 'html.parser')
+			button = soup.find('a', {'id': 'downloadButton'})
+			if button:
+				return {'link': button['href'], 'target': DirectDownload, 'source': 'mediafire'}
 
 			# Link is not broken and not a folder but we still can't find the download button...
 			raise LinkBroken(1, blocklist_reasons[1])
