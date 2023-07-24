@@ -49,7 +49,10 @@ class extract_filename_data(unittest.TestCase):
 				{'series': 'Batman', 'year': 1945, 'volume_number': 1, 'special_version': None, 'issue_number': 48.0, 'annual': False},
 			
 			'01. X-Men Vol. 2 (#05, #1 – 113 + Annuals) Part 1 — #1 – 25 --2022-2023--':
-				{'series': 'X-Men', 'year': 2022, 'volume_number': 2, 'special_version': None, 'issue_number': (1.0, 25.0), 'annual': False}
+				{'series': 'X-Men', 'year': 2022, 'volume_number': 2, 'special_version': None, 'issue_number': (1.0, 25.0), 'annual': False},
+
+			'Batman ’66 Meets the Man From U.N.C.L.E. (2016)':
+				{'series': 'Batman ’66 Meets the Man From U.N.C.L.E.', 'year': 2016, 'volume_number': 1, 'special_version': 'tpb', 'issue_number': None, 'annual': False}
 		}
 		self.run_cases(cases)
 
