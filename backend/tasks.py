@@ -288,9 +288,9 @@ class TaskHandler:
 		Args:
 			task (Task): The task to run
 		"""
-		try:
-			logging.debug(f'Running task {task.display_title}')
-			with self.context():
+		logging.debug(f'Running task {task.display_title}')
+		with self.context():
+			try:
 				result = task.run()
 
 				# Note in history
@@ -304,11 +304,16 @@ class TaskHandler:
 						for download in result:
 							self.download_handler.add(*download)
 
+					logging.info(f'Finished task {task.display_title}')
+			except Exception:
+				logging.exception('An error occured while trying to run a task: ')
+				task.message = 'AN ERROR OCCURED'
+				sleep(1.5)
+			finally:
+				if not task.stop:
 					self.queue.pop(0)
 					self._process_queue()
-					logging.info(f'Finished task {task.display_title}')
-		except Exception:
-			logging.exception('An error occured while trying to run a task: ')
+
 		return
 		
 	def _process_queue(self) -> None:
