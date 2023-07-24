@@ -159,7 +159,9 @@ def auth(method):
 	"""
 	def wrapper(*args,**kwargs):
 		if not (
-			request.method == 'GET' and request.path in ('/api/system/tasks', '/api/activity/queue')
+			request.method == 'GET'
+			and (request.path in ('/api/system/tasks', '/api/activity/queue')
+				or request.path.endswith('/cover'))
 		):
 			logging.debug(f'{request.method} {request.path}')
 		try:
