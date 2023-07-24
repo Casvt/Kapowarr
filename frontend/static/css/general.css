@@ -166,6 +166,7 @@ nav a:hover {
 
 #task-queue {
 	padding: 1rem;
+	color: var(--text-color);
 	font-size: .8rem;
 }
 
