@@ -6,7 +6,7 @@
 import logging
 from abc import ABC, abstractmethod
 from threading import Thread, Timer
-from time import time
+from time import sleep, time
 from typing import Dict, List, Union
 
 from backend.custom_exceptions import (InvalidComicVineApiKey,
