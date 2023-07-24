@@ -398,6 +398,7 @@ def preview_mass_rename(volume_id: int, issue_id: int=None, filepath_filter: Lis
 		"SELECT COUNT(*) FROM issues WHERE volume_id = ?",
 		(volume_id,)
 	).fetchone()[0]
+	tpb_release = issues_in_volume == 1
 	for file in file_infos:
 		if not isfile(file['filepath']):
 			continue
@@ -415,13 +416,14 @@ def preview_mass_rename(volume_id: int, issue_id: int=None, filepath_filter: Lis
 			""",
 			(file['id'],)
 		).fetchall()
-		if len(issues) > 1:
-			if len(issues) == issues_in_volume:
-				# File is TPB
-				suggested_name = generate_tpb_name(volume_id)
-			else:
-				# File covers multiple issues
-				suggested_name = generate_issue_range_name(volume_id, issues[0][0], issues[-1][0])
+		if tpb_release:
+			# File is TPB
+			suggested_name = generate_tpb_name(volume_id)
+
+		elif len(issues) > 1:
+			# File covers multiple issues
+			suggested_name = generate_issue_range_name(volume_id, issues[0][0], issues[-1][0])
+		
 		else:
 			# File covers one issue
 			suggested_name = generate_issue_name(volume_id, issues[0][0])

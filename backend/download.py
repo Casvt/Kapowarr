@@ -442,9 +442,7 @@ def _sort_link_paths(p: List[dict]) -> int:
 	
 def _process_extracted_get_comics_links(
 	download_groups: Dict[str, Dict[str, List[str]]],
-	volume_title: str,
-	volume_number: int,
-	volume_year: int
+	volume_id: int
 ) -> List[List[Dict[str, dict]]]:
 	"""Based on the download groups, find different "paths" to download the most amount of content.
 	On the same page, there might be a download for `TPB + Extra's`, `TPB`, `Issue A-B` and for `Issue C-D`.
@@ -455,9 +453,7 @@ def _process_extracted_get_comics_links(
 
 	Args:
 		download_groups (Dict[str, Dict[str, List[str]]]): The download groups (output of download._extract_get_comics_links())
-		volume_title (str): The name of the volume
-		volume_number (int): The volume number
-		volume_year (int): The year that the volume released
+		volume_id (int): The id of the volume
 
 	Returns:
 		List[List[Dict[str, dict]]]: The list contains all paths. Each path is a list of download groups. The `info` key has
@@ -465,19 +461,45 @@ def _process_extracted_get_comics_links(
 		download links grouped together with their service.
 	"""	
 	logging.debug('Creating link paths')
+
+	# Get info of volume
+	volume_title: str
+	volume_number: int
+	volume_year: int
+	issue_count: int
+	volume_title, volume_number, volume_year, issue_count = get_db('dict').execute("""
+		SELECT
+			v.title,
+			volume_number,
+			year,
+			COUNT(1) AS issue_count
+		FROM volumes v
+		INNER JOIN issues i
+		ON v.id = i.volume_id
+		WHERE v.id = ?
+		LIMIT 1;
+		""",
+		(volume_id,)
+	).fetchone()
+	tpb_release = issue_count == 1
 	annual = 'annual' in volume_title.lower()
 	service_preference_order = dict((v, k) for k, v in enumerate(Settings().get_service_preference()))
+
 	link_paths: List[List[dict]] = []
 	for desc, sources in download_groups.items():
 		processed_desc = extract_filename_data(desc, assume_volume_number=False)
 		if (_check_matching_titles(volume_title, processed_desc['series'])
 		and (processed_desc['volume_number'] is None
 			or
-			processed_desc['volume_number'] == volume_number)
+			processed_desc['volume_number'] == volume_number
+			or
+			processed_desc['volume_number'] == volume_year)
 		and (processed_desc['year'] is None
 			or
 			processed_desc['year'] == volume_year)
-		and (processed_desc['special_version'] or processed_desc['issue_number'])
+		and (tpb_release == (processed_desc['special_version'] == 'tpb')
+			or
+			processed_desc['issue_number'])
 		and processed_desc['annual'] == annual
 		):
 			# Group matches/contains what is desired to be downloaded
@@ -626,13 +648,6 @@ def _extract_download_links(link: str, volume_id: int, issue_id: int=None) -> Tu
 
 	if link.startswith(private_settings['getcomics_url']) and not link.startswith(private_settings['getcomics_url'] + '/links/'):
 		# Link is to a getcomics page
-
-		# Get info of volume
-		volume_info = get_db('dict').execute(
-			"SELECT title, volume_number, year FROM volumes WHERE id = ? LIMIT 1",
-			(volume_id,)
-		).fetchone()
-
 		soup = BeautifulSoup(r.text, 'html.parser')
 
 		# Extract the download groups and filter invalid links
@@ -643,9 +658,7 @@ def _extract_download_links(link: str, volume_id: int, issue_id: int=None) -> Tu
 		# [[{'info': {}, 'links': {}}, {'info': {}, 'links': {}}], [{'info': {}, 'links': {}}]]
 		link_paths = _process_extracted_get_comics_links(
 			download_groups,
-			volume_info['title'],
-			volume_info['volume_number'],
-			volume_info['year']
+			volume_id
 		)
 
 		# Decide which path to take by testing the links
@@ -741,20 +754,21 @@ class DownloadHandler:
 
 	def __load_downloads(self) -> None:
 		"""Load downloads from the database and add them to the queue for re-downloading
-		"""		
+		"""
 		logging.debug('Loading downloads from database')
-		cursor = get_db('dict', temp=True)
-		cursor.execute("""
-			SELECT
-				id,
-				link,
-				volume_id, issue_id
-			FROM download_queue;
-		""")
-		for download in cursor:
-			logging.debug(f'Download from database: {dict(download)}')
-			self.add(download['link'], download['volume_id'], download['issue_id'], download['id'])
-		cursor.connection.close()
+		with self.context():
+			cursor = get_db('dict', temp=True)
+			cursor.execute("""
+				SELECT
+					id,
+					link,
+					volume_id, issue_id
+				FROM download_queue;
+			""")
+			for download in cursor:
+				logging.debug(f'Download from database: {dict(download)}')
+				self.add(download['link'], download['volume_id'], download['issue_id'], download['id'])
+			cursor.connection.close()
 		return
 
 	def add(self,
@@ -794,29 +808,25 @@ class DownloadHandler:
 			return []
 
 		result = []
-		with self.context():
-			# Register download in database
-			if _download_db_id_override is None:
-				db_id = get_db().execute("""
-					INSERT INTO download_queue(link, volume_id, issue_id)
-					VALUES (?,?,?);
-					""",
-					(link, volume_id, issue_id)
-				).lastrowid
-			else:
-				db_id = _download_db_id_override
+		# Register download in database
+		db_id = _download_db_id_override or get_db().execute("""
+			INSERT INTO download_queue(link, volume_id, issue_id)
+			VALUES (?,?,?);
+			""",
+			(link, volume_id, issue_id)
+		).lastrowid
 
-			for download in downloads:
-				download['original_link'] = link
-				download['volume_id'] = volume_id
-				download['issue_id'] = issue_id
-				download['id'] = self.queue[-1]['id'] + 1 if self.queue else 1
-				download['db_id'] = db_id
-				download['thread'] = Thread(target=self.__run_download, args=(download,), name="Download Handler")
+		for download in downloads:
+			download['original_link'] = link
+			download['volume_id'] = volume_id
+			download['issue_id'] = issue_id
+			download['id'] = self.queue[-1]['id'] + 1 if self.queue else 1
+			download['db_id'] = db_id
+			download['thread'] = Thread(target=self.__run_download, args=(download,), name="Download Handler")
 
-				# Add to queue
-				result.append(self.__format_entry(download))
-				self.queue.append(download)
+			# Add to queue
+			result.append(self.__format_entry(download))
+			self.queue.append(download)
 
 		self._process_queue()
 		return result

@@ -8,7 +8,7 @@ extract_filename_data is inspired by the file parsing of Kavita and Comictagger:
 """
 
 import logging
-from os import listdir, makedirs, scandir, sep, stat
+from os import listdir, makedirs, remove, scandir, sep, stat
 from os.path import (abspath, basename, dirname, exists, isdir, join, relpath,
                      samefile, splitext)
 from re import IGNORECASE, compile
@@ -355,6 +355,11 @@ def scan_files(volume_data: dict) -> None:
 		root_folder = RootFolders().get_one(volume_data['root_folder'])['folder']
 		create_volume_folder(root_folder, volume_data['id'])
 
+	tpb_release = cursor.execute(
+		"SELECT COUNT(1) FROM issues WHERE volume_id = ?",
+		(volume_data['id'],)
+	).fetchone()[0] == 1
+
 	file_to_issue_map = []
 	volume_files = _list_files(folder=volume_data['folder'], ext=supported_extensions)
 	for file in volume_files:
@@ -366,7 +371,8 @@ def scan_files(volume_data: dict) -> None:
 			and file_data['volume_number'] != volume_data['volume_number']
 			and file_data['volume_number'] != volume_data['year']
 		)
-		or file_data['special_version'] == 'cover'):
+		or file_data['special_version'] == 'cover'
+		or (tpb_release ^ (file_data['special_version'] == 'tpb'))):
 			continue
 
 		# If file is special version, it means it covers all issues in volume so add it to every issue
@@ -374,9 +380,7 @@ def scan_files(volume_data: dict) -> None:
 			# Add file to database if it isn't registered yet
 			file_id = _add_file(file)
 			
-			# Add file to every issue
-			for issue in volume_data['issues']:
-				file_to_issue_map.append([file_id, issue['id']])
+			file_to_issue_map.append([file_id, volume_data['issues'][0]['id']])
 
 		# Search for issue number
 		elif file_data['issue_number'] is not None:
@@ -557,14 +561,9 @@ def move_volume_folder(volume_id: int, new_root_folder: int, new_volume_folder: 
 
 	# Create and move to new folder
 	logging.info(f'Moving volume folder from {current_folder} to {new_folder}')
-	if isdir(current_folder):
-		move(current_folder, new_folder)
-	else:
-		makedirs(new_folder, 0o664)
-
 	cursor.execute("""
 			SELECT DISTINCT
-				f.id, f.filepath
+				f.filepath
 			FROM files f
 			INNER JOIN issues_files if
 			INNER JOIN issues i
@@ -575,15 +574,19 @@ def move_volume_folder(volume_id: int, new_root_folder: int, new_volume_folder: 
 			""",
 			(volume_id,)
 	)
-	renamed_files = [(join(new_folder, relpath(filepath, current_folder)), file_id) for file_id, filepath in cursor]
+	renamed_files = [(join(new_folder, relpath(filepath[0], current_folder)), filepath[0]) for filepath in cursor]
 	cursor.executemany(
-		"UPDATE files SET filepath = ? WHERE id = ?;",
+		"UPDATE files SET filepath = ? WHERE filepath = ?;",
 		renamed_files
 	)
 
+	makedirs(new_folder, 0o664, exist_ok=True)
+	for new_filepath, old_filepath in renamed_files:
+		move(old_filepath, new_filepath)
+
 	# Delete old folder
 	if not (new_folder + sep).startswith(current_folder.rstrip(sep) + sep):
-		delete_empty_folders(dirname(current_folder), current_root_folder)
+		delete_empty_folders(current_folder, current_root_folder)
 
 	return new_folder
 
@@ -597,7 +600,26 @@ def delete_volume_folder(volume_id: int) -> None:
 		volume_id (int): The id of the volume for which to delete it's folder.
 	"""
 	logging.info(f'Deleting volume folder of {volume_id}')
-	folder, root_folder = get_db().execute(
+	cursor = get_db()
+
+	# Delete volume files
+	cursor.execute("""
+		SELECT DISTINCT
+			f.filepath
+		FROM files f
+		INNER JOIN issues_files if
+		INNER JOIN issues i
+		ON
+			i.id = if.issue_id
+			AND if.file_id = f.id
+		WHERE i.volume_id = ?;
+		""",
+		(volume_id,)
+	)
+	for filepath in cursor:
+		remove(filepath[0])
+
+	folder, root_folder = cursor.execute(
 		"""
 		SELECT
 			volumes.folder, root_folders.folder
