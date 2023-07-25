@@ -104,15 +104,13 @@ def Kapowarr() -> None:
 		ui_vars.update({'url_base': url_base})
 
 		# Create download folder if needed
-		logging.debug('Creating download folder if needed')
 		makedirs(settings.cache['download_folder'], exist_ok=True)
 
 	# Now that database is setup, start handlers
 	download_handler.load_download_thread.start()
 	task_handler.handle_intervals()
 
-	# Create waitress server and run
-	logging.debug('Creating server')
+	# Create waitress server
 	dispatcher = ThreadedTaskDispatcher()
 	dispatcher.set_thread_count(private_settings['hosting_threads'])
 	server = create_server(
@@ -122,8 +120,8 @@ def Kapowarr() -> None:
 		port=settings.cache['port'],
 		threads=private_settings['hosting_threads']
 	)
+
 	logging.info(f'Kapowarr running on http://{settings.cache["host"]}:{settings.cache["port"]}{settings.cache["url_base"]}/')
-	# Below is run endlessly until CTRL+C
 	server.run()
 
 	# Shutdown application
