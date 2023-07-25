@@ -10,13 +10,14 @@ function addAlreadyAdded(title) {
 
 function buildResults(results, api_key) {
 	const table = document.querySelector('#search-results');
-	table.innerHTML = '';
+	table.querySelectorAll('button:not(.filter-bar)').forEach(e => e.remove());
 	results.forEach(result => {
 		const entry = document.createElement('button');
 		entry.classList.add('search-entry');
 		entry.dataset.title = result.year !== null ? `${result.title} (${result.year})` : result.title;
 		entry.dataset.cover = result.cover;
 		entry.dataset.comicvine_id = result.comicvine_id;
+		entry.dataset._translated = result.translated;
 		entry.dataset._title = result.title;
 		entry.dataset._year = result.year;
 		entry.dataset._volume_number = result.volume_number;
@@ -102,7 +103,8 @@ function buildResults(results, api_key) {
 		entry.appendChild(spare_description);
 
 		table.appendChild(entry);
-	})
+	});
+	applyTranslationFilter();
 	if (table.innerHTML === '') {
 		document.querySelector('#search-empty').classList.remove('hidden');
 	};
@@ -126,11 +128,12 @@ function search() {
 	document.querySelector('#search-explain').classList.add('hidden');
 	document.querySelector('#search-empty').classList.add('hidden');
 	document.querySelector('#search-failed').classList.add('hidden');
+	document.querySelector('.filter-bar').classList.remove('hidden');
 	document.querySelector('#search-input').blur();
 };
 
 function clearSearch(e) {
-	document.querySelector('#search-results').innerHTML = '';
+	document.querySelector('#search-results').querySelectorAll('button:not(.filter-bar)').forEach(e => e.remove());
 	document.querySelector('#search-empty').classList.add('hidden');
 	document.querySelector('#search-failed').classList.add('hidden');
 	if (document.querySelector('#search-blocked').classList.contains('hidden'))
@@ -138,6 +141,16 @@ function clearSearch(e) {
 	else
 		document.querySelector('#search-explain').classList.add('hidden');
 	document.querySelector('#search-input').value = '';
+	document.querySelector('.filter-bar').classList.add('hidden');
+};
+
+function applyTranslationFilter() {
+	const value = document.querySelector('#filter-translations').value;
+	setLocalStorage({'translated_filter': value});
+	if (value === 'all')
+		document.querySelectorAll('#search-results > button[data-_translated="true"]').forEach(e => e.classList.remove('hidden'));
+	else if (value == 'only-english')
+		document.querySelectorAll('#search-results > button[data-_translated="true"]').forEach(e => e.classList.add('hidden'));
 };
 
 // 
@@ -233,3 +246,5 @@ setAttribute('#add-form', 'action', 'javascript:addVolume()');
 usingApiKey()
 .then(api_key => fillRootFolderInput(api_key));
 document.querySelector('.search-bar').setAttribute('action', 'javascript:search();')
+document.querySelector(`#filter-translations > option[value="${getLocalStorage('translated_filter')['translated_filter']}"]`).setAttribute('selected', '');
+document.querySelector('#filter-translations').addEventListener('change', e => applyTranslationFilter());

@@ -159,7 +159,8 @@ function convertSize(size) {
 const default_values = {
 	'lib_sorting': 'title',
 	'lib_view': 'posters',
-	'theme': 'light'
+	'theme': 'light',
+	'translated_filter': 'all'
 };
 
 function setupLocalStorage() {

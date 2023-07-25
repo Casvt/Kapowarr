@@ -4,7 +4,7 @@
 """
 
 import logging
-from re import compile
+from re import IGNORECASE, compile
 from typing import List
 
 from bs4 import BeautifulSoup
@@ -20,6 +20,10 @@ from backend.files import process_issue_number
 from backend.settings import Settings, private_settings
 
 volume_search = compile(r'(?i)(?:v(?:ol(?:ume)?)?[\.\s]*)(\d+)')
+translation_regex = compile(
+	r'^<p>\w+ publication(\.?</p>$| \(in the \w+ language\))|^<p>published by the \w+ wing of|^<p>\w+ translations? of|from \w+</p>$|^<p>published in \w+|^<p>\w+ language',
+	IGNORECASE
+)
 headers = ('h2', 'h3', 'h4', 'h5', 'h6')
 lists = ('ul', 'ol')
 
@@ -128,13 +132,16 @@ class ComicVine:
 			'publisher': volume_data['publisher']['name'] if volume_data['publisher'] is not None else None,
 			'issue_count': int(volume_data['count_of_issues'])
 		}
-		
+
 		# Extract volume number
 		match = volume_search.search(volume_data['deck'] or '')
 		result['volume_number'] = int(match.group(1)) if match else 1
 		
 		# Format description
 		result['description'] = _clean_description(volume_data['description'])
+		
+		# Determine if result is a translation or not
+		result['translated'] = translation_regex.match(volume_data['description'] or '') is not None
 
 		# Turn aliases into list
 		if 'aliases' in volume_data:
@@ -142,14 +149,14 @@ class ComicVine:
 				result['aliases'] = volume_data['aliases'].split('\r\n')
 			else:
 				result['aliases'] = []
-				
+		
 		# Covert other keys if present
 		if 'site_detail_url' in volume_data:
 			result['comicvine_info'] = volume_data['site_detail_url']
 
 		logging.debug(f'Formatted volume output result: {result}')		
 		return result
-		
+
 	def __format_issue_output(self, issue_data: dict) -> dict:
 		"""Format the ComicVine API output containing the info about the issue to the "Kapowarr format"
 
@@ -372,7 +379,7 @@ class ComicVine:
 					v['volume_number'] or float('inf') if v['title'] == query else float('inf') + 1
 				)
 			)
-		
+
 		logging.debug(f'Searching for volumes with query result: {results}')
 		return results
 		

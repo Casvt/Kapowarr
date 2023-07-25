@@ -81,6 +81,22 @@ main > div {
 }
 
 /*  */
+/* FILTER BAR */
+/*  */
+.filter-bar {
+	display: flex;
+	gap: 1rem;
+	flex-wrap: wrap;
+}
+
+.filter-bar > * {
+	padding: 1rem;
+	border-radius: 4px;
+	background-color: var(--search-bar-color);
+	color: var(--search-bar-font-color);
+}
+
+/*  */
 /* SEARCH RESULTS */
 /*  */
 #search-results {
