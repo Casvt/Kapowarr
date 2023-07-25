@@ -179,6 +179,8 @@ def auth(method):
 
 @api.route('/auth', methods=['POST'])
 def api_auth():
+	ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+
 	if settings.get_settings()['auth_password']:
 		given_password = request.get_json().get('password')
 		if given_password is None:
@@ -186,10 +188,10 @@ def api_auth():
 
 		auth_password = settings.get_settings().get('auth_password')
 		if auth_password is not None and given_password != auth_password:
-			logging.warning(f'Login attempt failed from {request.remote_addr}')
+			logging.warning(f'Login attempt failed from {ip}')
 			return return_api({}, 'PasswordInvalid', 401)
-		
-	logging.info(f'Login attempt successful from {request.remote_addr}')
+
+	logging.info(f'Login attempt successful from {ip}')
 	return return_api({'api_key': settings.get_settings()['api_key']})
 
 @api.route('/auth/check', methods=['POST'])
