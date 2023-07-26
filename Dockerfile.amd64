@@ -14,7 +14,7 @@ usermod -aG sudo $USER && \
 echo "${USER} ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers && \
 chmod 0440 /etc/sudoers && chmod g+w /etc/passwd && \
 mkdir /app && mkdir /app/temp_downloads && mkdir /app/db && \
-chmod 777 /app && chmod 777 /app/temp_downloads && chmod g+w /app/db
+chmod 777 /app && chmod 666 /app/temp_downloads && chmod 777 /app/db
 
 USER $USER
 
