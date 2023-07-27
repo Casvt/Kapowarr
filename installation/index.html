@@ -19,7 +19,7 @@
         <link rel="next" href="../setup_after_installation/">
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.19">
+      <meta name="generator" content="mkdocs-1.5.0, mkdocs-material-9.1.21">
     
     
       
@@ -424,13 +424,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#custom-user" class="md-nav__link">
-    Custom User
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -606,13 +599,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#custom-user" class="md-nav__link">
-    Custom User
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -646,7 +632,7 @@
 <h1 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h1>
 <p>The recommended way to install Kapowarr is using Docker. After installing Kapowarr, it is advised to read the <a href="../setup_after_installation/">Setup After Installation page</a>.</p>
 <h2 id="docker">Docker<a class="headerlink" href="#docker" title="Permanent link">&para;</a></h2>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:4"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Docker CLI</label><label for="__tabbed_1_2">Docker Compose</label><label for="__tabbed_1_3">Docker CLI (custom user)</label><label for="__tabbed_1_4">Docker Compose (custom user)</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Docker CLI</label><label for="__tabbed_1_2">Docker Compose</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <p>The command to get the docker container running can be found below:
@@ -690,122 +676,38 @@ A few notes about this file:</p>
 <li>Using a named volume in docker requires you to create the volume before you can use it (refer to <a href="#named-volumes">Named Volumes</a>)</li>
 </ol>
 </div>
+</div>
+</div>
+<h3 id="docker-example">Docker example<a class="headerlink" href="#docker-example" title="Permanent link">&para;</a></h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Docker CLI</label><label for="__tabbed_2_2">Docker Compose</label></div>
+<div class="tabbed-content">
 <div class="tabbed-block">
-<p>The command to get the docker container running can be found below:
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span>--name<span class="w"> </span>kapowarr<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span>-e<span class="w"> </span>PUID:1000<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span>-e<span class="w"> </span>PGID:1000<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span>-v<span class="w"> </span>kapowarr-db:/app/db<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span>-v<span class="w"> </span>/path/to/download_folder:/app/temp_downloads<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span>-v<span class="w"> </span>/path/to/root_folder:/content<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">    </span>-p<span class="w"> </span><span class="m">5656</span>:5656
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span>mrcas/kapowarr:latest
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span>-v<span class="w"> </span>kapowarr-db:/app/db<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span>-v<span class="w"> </span>/home/cas/media/Downloads:/app/temp_downloads<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span>-v<span class="w"> </span>/home/cas/media/Comics:/RF<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span>-v<span class="w"> </span>/home/cas/media/Comics-2:/RF-2<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span>-p<span class="w"> </span><span class="m">5656</span>:5656
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">    </span>mrcas/kapowarr:latest
 </code></pre></div>
-A few notes about this command:</p>
-<ol>
-<li>Replace <code class="highlight"><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">download_folder</span></code> with the path to your desired download folder. Everything is downloaded to this folder and when completed, moved out of to their final destination. It's smart to set this on a disk that can sustain more writes than normal. Ideally something like a <em>non</em>-network mounted ssd.</li>
-<li>Replace <code class="highlight">/path/to/root_folder</code> with the path to your desired root folder. Then, this folder will get mapped to <code class="highlight">/content</code> inside the docker container. When adding a root folder in Kapowarr, you'll then set it's location as <code class="highlight">/content</code>, mapping it this way to where ever <code class="highlight">/path/to/root_folder</code> may be.</li>
-<li>You can map multiple root folders by repeating <code class="highlight">-v /path/to/root_folder:/content</code> in the command, but then supplying different values for <code class="highlight">/path/to/root_folder</code> and <code class="highlight">/content</code>.</li>
-<li>Information on how to change the port can be found on the <a href="../setup_after_installation/#port">Setup After Installation page</a>.</li>
-<li>Using a named volume in docker requires you to create the volume before you can use it (refer to <a href="#named-volumes">Named Volumes</a>).</li>
-</ol>
+<p>In this example, we set <code class="highlight"><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">cas</span><span class="o">/</span><span class="n">media</span><span class="o">/</span><span class="n">Downloads</span></code> as the download folder and we map the folder <code class="highlight">/home/cas/media/Comics</code> to <code class="highlight">/RF</code> and <code class="highlight">/home/cas/media/Comics-2</code> to <code class="highlight">/RF-2</code>. In Kapowarr, you'd then add <code class="highlight">/RF</code> and <code class="highlight">/RF-2</code> as root folders.</p>
 </div>
 <div class="tabbed-block">
-<p>The contents of the docker-compose.yml file would look like this:
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">version</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;3.3&#39;</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">services</span><span class="p">:</span>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="n">kapowarr</span><span class="p">:</span>
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">        </span><span class="n">container_name</span><span class="p">:</span><span class="w"> </span><span class="n">kapowarr</span>
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">        </span><span class="n">volumes</span><span class="p">:</span>
 <a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s1">&#39;kapowarr-db:/app/db&#39;</span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s1">&#39;/path/to/download_folder:/app/temp_downloads&#39;</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s1">&#39;/path/to/root_folder:/content&#39;</span>
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">        </span><span class="n">environment</span><span class="p">:</span>
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="n">PUID</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span>
-<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="n">PGID</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span>
-<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">        </span><span class="n">ports</span><span class="p">:</span>
-<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s1">&#39;5656:5656&#39;</span>
-<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">        </span><span class="n">image</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;mrcas/kapowarr:latest&#39;</span>
-</code></pre></div>
-A few notes about this file:</p>
-<ol>
-<li>Replace <code class="highlight"><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">download_folder</span></code> with the path to your desired download folder. Everything is downloaded to this folder and when completed, moved out of to their final destination. It's smart to set this on a disk that can sustain more writes than normal. Ideally something like a <em>non</em>-network mounted ssd.</li>
-<li>Replace <code class="highlight">/path/to/root_folder</code> with the path to your desired root folder. Then, this folder will get mapped to <code class="highlight">/content</code> inside the docker container. When adding a root folder in Kapowarr, you'll then set it's location as <code class="highlight">/content</code>, mapping it this way to where ever <code class="highlight">/path/to/root_folder</code> may be.</li>
-<li>You can map multiple root folders by repeating <code class="highlight">- /path/to/root_folder:/content</code> in the file, but then supplying different values for <code class="highlight">/path/to/root_folder</code> and <code class="highlight">/content</code>.</li>
-<li>Information on how to change the port can be found on the <a href="../setup_after_installation/#port">Setup After Installation page</a>.</li>
-<li>Using a named volume in docker requires you to create the volume before you can use it (refer to <a href="#named-volumes">Named Volumes</a>)</li>
-<li>If you define a custom PUID and PGID here, they must have permission on any folder you've mapped in. The default user ID of '1000' is the first non-root user created on any Debian-based system, and generally exists on the host. If you are unsure of the <em>UID</em> of the user you'd like the container to present as, see <a href="#custom-user">Custom User</a>.</li>
-</ol>
-</div>
-</div>
-</div>
-<h3 id="docker-example">Docker example<a class="headerlink" href="#docker-example" title="Permanent link">&para;</a></h3>
-<div class="tabbed-set tabbed-alternate" data-tabs="2:4"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><input id="__tabbed_2_4" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Docker CLI</label><label for="__tabbed_2_2">Docker Compose</label><label for="__tabbed_2_3">Docker CLI (custom user)</label><label for="__tabbed_2_4">Docker Compose (custom user)</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span>--name<span class="w"> </span>kapowarr<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span>-v<span class="w"> </span>kapowarr-db:/app/db<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span>-v<span class="w"> </span>/home/cas/media/Downloads:/app/temp_downloads<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span>-v<span class="w"> </span>/home/cas/media/Comics:/RF<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span>-v<span class="w"> </span>/home/cas/media/Comics-2:/RF-2<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span>-p<span class="w"> </span><span class="m">5656</span>:5656
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span>mrcas/kapowarr:latest
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s1">&#39;/home/cas/media/Downloads:/app/temp_downloads&#39;</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s1">&#39;/home/cas/media/Comics:/RF&#39;</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s1">&#39;/home/cas/media/Comics-2:/RF-2&#39;</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">        </span><span class="n">ports</span><span class="p">:</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s1">&#39;5656:5656&#39;</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">        </span><span class="n">image</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;mrcas/kapowarr:latest&#39;</span>
 </code></pre></div>
 <p>In this example, we set <code class="highlight"><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">cas</span><span class="o">/</span><span class="n">media</span><span class="o">/</span><span class="n">Downloads</span></code> as the download folder and we map the folder <code class="highlight">/home/cas/media/Comics</code> to <code class="highlight">/RF</code> and <code class="highlight">/home/cas/media/Comics-2</code> to <code class="highlight">/RF-2</code>. In Kapowarr, you'd then add <code class="highlight">/RF</code> and <code class="highlight">/RF-2</code> as root folders.</p>
-</div>
-<div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">version</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;3.3&#39;</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">services</span><span class="p">:</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="n">kapowarr</span><span class="p">:</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">        </span><span class="n">container_name</span><span class="p">:</span><span class="w"> </span><span class="n">kapowarr</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">        </span><span class="n">volumes</span><span class="p">:</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s1">&#39;kapowarr-db:/app/db&#39;</span>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s1">&#39;/home/cas/media/Downloads:/app/temp_downloads&#39;</span>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s1">&#39;/home/cas/media/Comics:/RF&#39;</span>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s1">&#39;/home/cas/media/Comics-2:/RF-2&#39;</span>
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">        </span><span class="n">ports</span><span class="p">:</span>
-<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s1">&#39;5656:5656&#39;</span>
-<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">        </span><span class="n">image</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;mrcas/kapowarr:latest&#39;</span>
-</code></pre></div>
-<p>In this example, we set <code class="highlight"><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">cas</span><span class="o">/</span><span class="n">media</span><span class="o">/</span><span class="n">Downloads</span></code> as the download folder and we map the folder <code class="highlight">/home/cas/media/Comics</code> to <code class="highlight">/RF</code> and <code class="highlight">/home/cas/media/Comics-2</code> to <code class="highlight">/RF-2</code>. In Kapowarr, you'd then add <code class="highlight">/RF</code> and <code class="highlight">/RF-2</code> as root folders.</p>
-</div>
-<div class="tabbed-block">
-<p>The command to get the docker container running can be found below:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span>--name<span class="w"> </span>kapowarr<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span>-e<span class="w"> </span>PUID:1000<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span>-e<span class="w"> </span>PGID:1000<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span>-v<span class="w"> </span>kapowarr-db:/app/db<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span>-v<span class="w"> </span>/home/cas/media/Downloads:/app/temp_downloads<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">    </span>-v<span class="w"> </span>/home/cas/media/Comics:/RF<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">    </span>-v<span class="w"> </span>/home/cas/media/Comics-2:/RF-2<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">    </span>-p<span class="w"> </span><span class="m">5656</span>:5656
-<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">    </span>mrcas/kapowarr:latest
-</code></pre></div></p>
-<p>In this example, we set <code class="highlight"><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">cas</span><span class="o">/</span><span class="n">media</span><span class="o">/</span><span class="n">Downloads</span></code> as the download folder and we map the folder <code class="highlight">/home/cas/media/Comics</code> to <code class="highlight">/RF</code> and <code class="highlight">/home/cas/media/Comics-2</code> to <code class="highlight">/RF-2</code>. In Kapowarr, you'd then add <code class="highlight">/RF</code> and <code class="highlight">/RF-2</code> as root folders.<br />
-We also have Kapowarr running with a user that has the user ID 1000 (the default non-root user for a linux server). If you have a user that has less permission than root that you'd like Kapowarr to run as, you'd define their user ID and group ID here.</p>
-</div>
-<div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">version</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;3.3&#39;</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">services</span><span class="p">:</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="n">kapowarr</span><span class="p">:</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">        </span><span class="n">container_name</span><span class="p">:</span><span class="w"> </span><span class="n">kapowarr</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">        </span><span class="n">volumes</span><span class="p">:</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s1">&#39;kapowarr-db:/app/db&#39;</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s1">&#39;/home/cas/media/Downloads:/app/temp_downloads&#39;</span>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s1">&#39;/home/cas/media/Comics:/RF&#39;</span>
-<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s1">&#39;/home/cas/media/Comics-2:/RF-2&#39;</span>
-<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">        </span><span class="n">environment</span><span class="p">:</span>
-<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="n">PUID</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span>
-<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="n">PGID</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span>
-<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">        </span><span class="n">ports</span><span class="p">:</span>
-<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s1">&#39;5656:5656&#39;</span>
-<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">        </span><span class="n">image</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;mrcas/kapowarr:latest&#39;</span>
-</code></pre></div>
-<p>In this example, we set <code class="highlight"><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">cas</span><span class="o">/</span><span class="n">media</span><span class="o">/</span><span class="n">Downloads</span></code> as the download folder and we map the folder <code class="highlight">/home/cas/media/Comics</code> to <code class="highlight">/RF</code> and <code class="highlight">/home/cas/media/Comics-2</code> to <code class="highlight">/RF-2</code>. In Kapowarr, you'd then add <code class="highlight">/RF</code> and <code class="highlight">/RF-2</code> as root folders.<br />
-We also have Kapowarr running with a user that has the user ID 1000 (the default non-root user for a linux server). If you have a user that has less permission than root that you'd like Kapowarr to run as, you'd define their user ID and group ID here.</p>
 </div>
 </div>
 </div>
@@ -813,7 +715,7 @@ We also have Kapowarr running with a user that has the user ID 1000 (the default
 <div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Docker CLI</label><label for="__tabbed_3_2">Portainer</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>docker<span class="w"> </span>volume<span class="w"> </span>create<span class="w"> </span>kapowarr-db
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>volume<span class="w"> </span>create<span class="w"> </span>kapowarr-db
 </code></pre></div>
 </div>
 <div class="tabbed-block">
@@ -831,31 +733,6 @@ We also have Kapowarr running with a user that has the user ID 1000 (the default
 <p>Both of these options will create a named volume that you can then use in the examples above.<br />
 If you'd prefer to use a local folder on the host machine for storing config, Linux standards would suggest putting that in <code class="highlight">/opt/application_name</code>, as the <code class="highlight">/opt</code> directory is where program options should be stored.<br />
 In this case, you'd create the desired folder with something like <code class="highlight">mkdir /opt/kapowarr/db</code>, and replace 'kapowarr-db:/app/db' with '/opt/kapowarr/db:/app/db'.</p>
-<h3 id="custom-user">Custom User<a class="headerlink" href="#custom-user" title="Permanent link">&para;</a></h3>
-<p>If you want to have Kapowarr run as a user other than root (for file permissions, or security purposes), you will need the user ID.<br />
-For a custom <em>group</em>, the same applies, but the group ID instead.  </p>
-<div class="tabbed-set tabbed-alternate" data-tabs="4:3"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><input id="__tabbed_4_3" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">Ubuntu</label><label for="__tabbed_4_2">Debian</label><label for="__tabbed_4_3">TrueNAS</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<p>User ID: <code class="highlight">id -u &lt;username&gt;</code><br />
-Replace <code class="highlight">&lt;username&gt;</code> with the actual username you'd like it to run as.<br />
-Group ID: <code class="highlight">id -g &lt;username&gt;</code><br />
-Replace <code class="highlight">&lt;username&gt;</code> with the actual username you'd like to find the group of.</p>
-</div>
-<div class="tabbed-block">
-<p>User ID: <code class="highlight">id -u &lt;username&gt;</code><br />
-Replace <code class="highlight">&lt;username&gt;</code> with the actual username you'd like it to run as.<br />
-Group ID: <code class="highlight">id -g &lt;username&gt;</code><br />
-Replace <code class="highlight">&lt;username&gt;</code> with the actual username you'd like to find the group of.</p>
-</div>
-<div class="tabbed-block">
-<p>User ID: In the web UI, go to Credentials -&gt; Local Users.<br />
-- Find the relevant username you'd like to use, and look at the 'UID' column to find the UID.<br />
-Group ID: In the web UI, go to Credentials -&gt; Local Groups.<br />
-- Find the relevant group you'd like to use, and look at the 'GID' column to find the GID.</p>
-</div>
-</div>
-</div>
 <h2 id="manual-install">Manual Install<a class="headerlink" href="#manual-install" title="Permanent link">&para;</a></h2>
 <p>Coming soon</p>
 
@@ -864,7 +741,7 @@ Group ID: In the web UI, go to Credentials -&gt; Local Groups.<br />
   <small>
     
       Last update:
-      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-07-12T10:57:08+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-07-12</span>
+      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-07-27T20:15:39+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-07-27</span>
       
     
   </small>
