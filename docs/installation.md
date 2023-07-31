@@ -1,6 +1,6 @@
 # Installation
 
-The recommended way to install Kapowarr is using Docker. After installing Kapowarr, it is advised to read the [Setup After Installation page](./setup_after_installation.md).
+The recommended way to install Kapowarr is using Docker. After installing Kapowarr, it is advised to read the [Setup After Installation page](../setup_after_installation).
 
 ## Docker
 
@@ -97,7 +97,8 @@ The recommended way to install Kapowarr is using Docker. After installing Kapowa
 
 Both of these options will create a named volume that you can then use in the examples above.  
 If you'd prefer to use a local folder on the host machine for storing config, Linux standards would suggest putting that in `/opt/application_name`, as the `/opt` directory is where program options should be stored.  
-In this case, you'd create the desired folder with something like `mkdir /opt/kapowarr/db`, and replace 'kapowarr-db:/app/db' with '/opt/kapowarr/db:/app/db'.
+In this case, you'd create the desired folder with something like `mkdir /opt/kapowarr/db`, and replace 'kapowarr-db:/app/db' with '/opt/kapowarr/db:/app/db'.  
+Note, the permissions on this folder need to allow the container to read, write, and execute inside it. See the [note in the FAQ](../faq/#kapowarr-unable-to-open-database-file/) for more info.
 
 ## Manual Install
 
