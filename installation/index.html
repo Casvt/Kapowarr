@@ -630,7 +630,7 @@
 
 
 <h1 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h1>
-<p>The recommended way to install Kapowarr is using Docker. After installing Kapowarr, it is advised to read the <a href="../setup_after_installation/">Setup After Installation page</a>.</p>
+<p>The recommended way to install Kapowarr is using Docker. After installing Kapowarr, it is advised to read the <a href="../setup_after_installation">Setup After Installation page</a>.</p>
 <h2 id="docker">Docker<a class="headerlink" href="#docker" title="Permanent link">&para;</a></h2>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Docker CLI</label><label for="__tabbed_1_2">Docker Compose</label></div>
 <div class="tabbed-content">
@@ -732,7 +732,8 @@ A few notes about this file:</p>
 </div>
 <p>Both of these options will create a named volume that you can then use in the examples above.<br />
 If you'd prefer to use a local folder on the host machine for storing config, Linux standards would suggest putting that in <code class="highlight">/opt/application_name</code>, as the <code class="highlight">/opt</code> directory is where program options should be stored.<br />
-In this case, you'd create the desired folder with something like <code class="highlight">mkdir /opt/kapowarr/db</code>, and replace 'kapowarr-db:/app/db' with '/opt/kapowarr/db:/app/db'.</p>
+In this case, you'd create the desired folder with something like <code class="highlight">mkdir /opt/kapowarr/db</code>, and replace 'kapowarr-db:/app/db' with '/opt/kapowarr/db:/app/db'.<br />
+Note, the permissions on this folder need to allow the container to read, write, and execute inside it. See the <a href="../faq/#kapowarr-unable-to-open-database-file/">note in the FAQ</a> for more info.</p>
 <h2 id="manual-install">Manual Install<a class="headerlink" href="#manual-install" title="Permanent link">&para;</a></h2>
 <p>Coming soon</p>
 
@@ -741,7 +742,7 @@ In this case, you'd create the desired folder with something like <code class="h
   <small>
     
       Last update:
-      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-07-27T20:15:39+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-07-27</span>
+      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-07-31T22:40:47+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-07-31</span>
       
     
   </small>

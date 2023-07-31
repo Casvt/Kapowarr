@@ -452,6 +452,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#kapowarr-unable-to-open-database-file" class="md-nav__link">
+    Kapowarr unable to open database file
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -571,6 +578,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#kapowarr-unable-to-open-database-file" class="md-nav__link">
+    Kapowarr unable to open database file
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -594,13 +608,19 @@
 <p>"XYZ" can be "Magazines" or "Manga" or something else. For now, there is a simple answer: if it can be found on ComicVine, you can add it to Kapowarr (and use features like renaming and unzipping). If getcomics offers downloads for it, you can also download for it.</p>
 <h2 id="when-will-xyz-be-added">When will XYZ be added?<a class="headerlink" href="#when-will-xyz-be-added" title="Permanent link">&para;</a></h2>
 <p>"XYZ" can be "Library Import" or "Exporting metadata" or something else. First, check out the <a href="https://github.com/users/Casvt/projects/5">project board</a> to see if it's already on there and if so, at what stage it is. If it's not, check if a feature request is already made for it on the <a href="https://github.com/Casvt/Kapowarr/issues">issues page</a> and otherwise make a feature request for it there.</p>
+<h2 id="kapowarr-unable-to-open-database-file">Kapowarr unable to open database file<a class="headerlink" href="#kapowarr-unable-to-open-database-file" title="Permanent link">&para;</a></h2>
+<p>If using Kapowarr with a mapped folder for the app-db rather than a docker volume, then Kapowarr will need to have permission on the folder being mapped in order to function.<br />
+The simplest way to achieve this is to give read, write, and execute permissions on the folder ('rwx'), and change ownership of the folder to the user that runs the docker container (usually user 1000).  </p>
+<p>This can be achieved by running <code class="highlight">chown 1000 /mapped/folder</code> to set the ownership, and <code class="highlight">chmod 770 /mapped/folder</code> to set the permissions.<br />
+If you are mapping in <code class="highlight">/opt/kapowarr/</code> (as in our installation example), these commands would be <code class="highlight">chown 1000 /opt/kapowarr/</code> and <code class="highlight">chmod 770 /opt/kapowarr</code>, respectively.</p>
+<p><em>If you are using an alternate folder, or an alternate user, switch out the relevant detail in the examples</em>.</p>
 
   <hr>
 <div class="md-source-file">
   <small>
     
       Last update:
-      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-06-08T23:11:14+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-06-08</span>
+      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-07-31T22:40:47+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-07-31</span>
       
     
   </small>
