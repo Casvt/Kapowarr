@@ -284,6 +284,10 @@ def _check_download_link(link_text: str, link: str) -> Union[str, None]:
 	# Check if link is in blocklist
 	if blocklist_contains(link):
 		return
+	
+	# Check if link is from a service that should be avoided
+	if link.startswith('https://sh.st/'):
+		return
 
 	# Check if link is from supported source
 	for source in supported_source_strings:
