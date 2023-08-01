@@ -47,12 +47,15 @@ class extract_filename_data(unittest.TestCase):
 
 			'Batman 026-050 (1945-1949) GetComics.INFO/Batman 048 52p ctc (08-1948) flattermann.cbr':
 				{'series': 'Batman', 'year': 1945, 'volume_number': 1, 'special_version': None, 'issue_number': 48.0, 'annual': False},
-			
+
 			'01. X-Men Vol. 2 (#05, #1 – 113 + Annuals) Part 1 — #1 – 25 --2022-2023--':
 				{'series': 'X-Men', 'year': 2022, 'volume_number': 2, 'special_version': None, 'issue_number': (1.0, 25.0), 'annual': False},
 
 			'Batman ’66 Meets the Man From U.N.C.L.E. (2016)':
-				{'series': 'Batman ’66 Meets the Man From U.N.C.L.E.', 'year': 2016, 'volume_number': 1, 'special_version': 'tpb', 'issue_number': None, 'annual': False}
+				{'series': 'Batman ’66 Meets the Man From U.N.C.L.E.', 'year': 2016, 'volume_number': 1, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
+
+			'Thor Vol. 3 #1 – 12 (Also known 588-599) + #600 – 621 (2007-2011) --2007-2011--':
+				{'series': 'Thor', 'year': 2007, 'volume_number': 3, 'special_version': None, 'issue_number': (600.0, 621.0), 'annual': False}
 		}
 		self.run_cases(cases)
 
@@ -95,10 +98,13 @@ class extract_filename_data(unittest.TestCase):
 		cases = {
 			'Silver Surfer - Rebirth (2022) (HD-WebRip) Volume 2/Silver Surfer - Rebirth (2022) (HD-WebRip) - 011.jpg':
 				{'series': 'Silver Surfer - Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
+
 			'Silver Surfer - Rebirth (2022) (HD-WebRip) Volume 2/Silver Surfer - Rebirth (2022) (HD-WebRip) - 011.cbr':
 				{'series': 'Silver Surfer - Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': None, 'issue_number': 11.0, 'annual': False},
+
 			'Silver Surfer - Rebirth (2022) (HD-WebRip) Volume 2/Page-100.cbr':
 				{'series': 'Silver Surfer - Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': None, 'issue_number': 100.0, 'annual': False},
+
 			'Silver Surfer - Rebirth (2022) (HD-WebRip) Volume 2/Page-100.jpg':
 				{'series': 'Silver Surfer - Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': 'tpb', 'issue_number': None, 'annual': False}
 		}
