@@ -75,7 +75,7 @@ class VolumeDownloadedFor(Exception):
 	def __init__(self, volume_id: int):
 		self.volume_id = volume_id
 		super().__init__(self.volume_id)
-		logging.warning(f'Deleting volume failed because there is a download for the volume: {self.id}')
+		logging.warning(f'Deleting volume failed because there is a download for the volume: {self.volume_id}')
 		return
 		
 	@property
