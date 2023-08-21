@@ -167,6 +167,11 @@ def generate_tpb_name(volume_id: int) -> str:
 	save_name = _make_filename_safe(name)
 	return save_name
 
+def generate_empty_name(volume_id: int) -> str:
+	save_tpb_name = generate_tpb_name(volume_id)
+	save_name = save_tpb_name.replace('tpb', '').replace('TPB', '').strip()
+	return save_name
+
 def generate_issue_range_name(
 	volume_id: int,
 	calculated_issue_number_start: float,
@@ -394,10 +399,10 @@ def preview_mass_rename(volume_id: int, issue_id: int=None, filepath_filter: Lis
 	if filepath_filter is not None:
 		file_infos = filter(lambda f: f['filepath'] in filepath_filter, file_infos)
 
-	tpb_release = cursor.execute(
+	special_version = cursor.execute(
 		"SELECT special_version FROM volumes WHERE id = ? LIMIT 1;",
 		(volume_id,)
-	).fetchone()[0] == 'tpb'
+	).fetchone()[0]
 
 	for file in file_infos:
 		if not isfile(file['filepath']):
@@ -416,9 +421,13 @@ def preview_mass_rename(volume_id: int, issue_id: int=None, filepath_filter: Lis
 			""",
 			(file['id'],)
 		).fetchall()
-		if tpb_release:
+		if special_version == 'tpb':
 			# File is TPB
 			suggested_name = generate_tpb_name(volume_id)
+
+		elif special_version:
+			# File is a special version
+			suggested_name = generate_empty_name(volume_id)
 
 		elif len(issues) > 1:
 			# File covers multiple issues

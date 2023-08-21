@@ -6,8 +6,9 @@
 import logging
 from io import BytesIO
 from os.path import relpath
+from re import IGNORECASE, compile
 from time import time
-from typing import Dict, List
+from typing import Dict, List, Union
 
 from backend.comicvine import ComicVine
 from backend.custom_exceptions import (IssueNotFound, VolumeAlreadyAdded,
@@ -18,6 +19,32 @@ from backend.files import (create_volume_folder, delete_volume_folder,
 from backend.root_folders import RootFolders
 from frontend.ui import ui_vars
 
+os_regex = compile(r'one[\- ]?shot', IGNORECASE)
+def determine_special_version(
+	volume_title: str,
+	issue_count: int,
+	first_issue_title: str
+) -> Union[str, None]:
+	"""Determine if a volume is a special version, like a TPB, One-Shot or Hard Cover.
+
+	Args:
+		volume_title (str): The title of the volume.
+		issue_count (int): The amount of issues in the volume.
+		first_issue_title (str): The title of the first issue in the volume.
+
+	Returns:
+		Union[str, None]: Either the type of special version or `None` if it's not a special version.
+	"""
+	if os_regex.search(volume_title):
+		return 'one-shot'
+
+	if first_issue_title.lower() == 'hc':
+		return 'hard-cover'
+
+	if issue_count == 1:
+		return 'tpb'
+
+	return None
 
 #=====================
 # Main issue class
@@ -590,17 +617,14 @@ class Library:
 		# Raises RootFolderNotFound when id is invalid
 		root_folder = RootFolders().get_one(root_folder_id)['folder']
 
-		# Get volume info
 		volume_data = ComicVine().fetch_volume(comicvine_id)
 		volume_data['monitored'] = monitor
 		volume_data['root_folder'] = root_folder_id
 		
-		# Determine special version
-		## Branchless
-		special_version = (
-			'one-shot' if 'one-shot' in volume_data['title'].lower() else
-			'tpb' if len(volume_data['issues']) == 1 else
-			None
+		special_version = determine_special_version(
+			volume_data['title'],
+			len(volume_data['issues']),
+			volume_data['issues'][0]['title']
 		)
 
 		# Insert volume

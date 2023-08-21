@@ -42,7 +42,7 @@ korean_volume_regex = compile(r'제?(\d+)권', IGNORECASE)
 japanese_volume_regex = compile(r'(\d+)巻', IGNORECASE)
 
 # Extract data from (stripped)filename
-special_version_regex = compile(r'(?:\b|\()(tpb|os|one[\- ]?shot|ogn|gn|cover)(?:\b|\))', IGNORECASE)
+special_version_regex = compile(r'(?:\b|\()(tpb|os|one[\- ]?shot|ogn|gn|hard[\- ]?cover|cover)(?:\b|\))', IGNORECASE)
 volume_regex = compile(volume_regex_snippet, IGNORECASE)
 volume_folder_regex = compile(volume_regex_snippet + r'|^(\d+)$', IGNORECASE)
 issue_regex = compile(r'\( (-?' + issue_regex_snippet + r')\)', IGNORECASE)
@@ -366,7 +366,13 @@ def scan_files(volume_data: dict) -> None:
 			and file_data['volume_number'] != volume_data['volume_number']
 			and file_data['volume_number'] != volume_data['year']
 		)
-		or volume_data['special_version'] != file_data['special_version']):
+		or (
+			volume_data['special_version'] != file_data['special_version']
+			and not (
+				volume_data['special_version'] == 'hard-cover'
+				and file_data['special_version'] == 'tpb'
+			)
+		)):
 			continue
 
 		# If file is special version, it means it covers all issues in volume so add it to every issue

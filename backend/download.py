@@ -25,7 +25,7 @@ from backend.custom_exceptions import (DownloadLimitReached, DownloadNotFound,
                                        LinkBroken)
 from backend.db import get_db
 from backend.files import extract_filename_data
-from backend.naming import (generate_issue_name, generate_issue_range_name,
+from backend.naming import (generate_empty_name, generate_issue_name, generate_issue_range_name,
                             generate_tpb_name)
 from backend.post_processing import PostProcessing
 from backend.search import _check_matching_titles
@@ -369,6 +369,7 @@ def _purify_link(link: str) -> dict:
 
 link_filter_1 = lambda e: e.name == 'p' and 'Language' in e.text and e.find('p') is None
 link_filter_2 = lambda e: e.name == 'li' and e.parent.name == 'ul' and ((0 < e.text.count('|') == len(e.find_all('a')) - 1) or (e.find('a') and _check_download_link(e.find('a').text.strip().lower(), e.find('a').attrs.get('href'))))
+check_year = compile(r'\b\d{4}\b')
 def _extract_get_comics_links(
 	soup: BeautifulSoup
 ) -> Dict[str, Dict[str, List[str]]]:
@@ -396,7 +397,7 @@ def _extract_get_comics_links(
 	for result in body.find_all(link_filter_1):
 		extracted_title = result.get_text('\x00')
 		group_title: str = extracted_title.partition('\x00')[0]
-		if "Year :\x00\xa0" in extracted_title:
+		if "Year :\x00\xa0" in extracted_title and not check_year.search(group_title):
 			# Append year to title
 			group_title += ' --' + result.get_text("\x00").split("Year :\x00\xa0")[1].split(" |")[0] + '--'
 
@@ -504,12 +505,16 @@ def _process_extracted_get_comics_links(
 			volume_year <= processed_desc['year'] <= last_year)
 		and (special_version == processed_desc['special_version']
 			or
+			(special_version == 'hard-cover' and processed_desc['special_version'] == 'tpb')
+			or
 			processed_desc['issue_number'])
 		and processed_desc['annual'] == annual
 		):
 			# Group matches/contains what is desired to be downloaded
 			sources = {s: sources[s] for s in sorted(sources, key=lambda k: service_preference_order[k])}
 			if processed_desc['special_version']:
+				if special_version == 'hard-cover':
+					processed_desc['special_version'] = 'hard-cover'
 				link_paths.append([{'info': processed_desc, 'links': sources}])
 			else:
 				# Find path with ranges and single issues that doesn't have a link that already covers this one
@@ -571,9 +576,13 @@ def _test_paths(
 		for download in path:
 			if rename_downloaded_files:
 				# Generate name
-				if download['info']['special_version']:
+				if download['info']['special_version'] == 'tpb':
 					# Link for TPB
 					name = generate_tpb_name(volume_id)
+
+				elif download['info']['special_version']:
+					# Link for special version
+					name = generate_empty_name(volume_id)
 
 				elif isinstance(download['info']['issue_number'], tuple):
 					# Link for issue range

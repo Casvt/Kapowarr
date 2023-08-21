@@ -80,7 +80,10 @@ def _check_match(result: dict, title: str, volume_number: int, special_version: 
 	if result['volume_number'] != volume_number and (result['volume_number'] is not None or year is None):
 		return {'match': False, 'match_issue': 'Volume number doesn\'t match'}
 
-	if special_version != result['special_version']:
+	if special_version != result['special_version'] and not (
+		special_version == 'hard-cover'
+		and result['special_version'] == 'tpb'
+	):
 		return {'match': False, 'match_issue': 'Special version conflict'}
 
 	if not special_version:
@@ -382,7 +385,7 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 		""",
 		(volume_id,)
 	)
-	volume_monitored, special_version = cursor.fetchone()[0]
+	volume_monitored, special_version = cursor.fetchone()
 	logging.info(
 		f'Starting auto search for volume {volume_id} {f"issue {issue_id}" if issue_id else ""}'
 	)
