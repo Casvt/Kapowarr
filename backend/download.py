@@ -814,11 +814,10 @@ class DownloadHandler:
 				add_to_blocklist(link, 3)
 			logging.warning('Unable to extract download links from source')
 			if _download_db_id_override:
-				with self.context():
-					get_db().execute(
-						"DELETE FROM download_queue WHERE id = ?",
-						(_download_db_id_override,)
-					)
+				get_db().execute(
+					"DELETE FROM download_queue WHERE id = ?",
+					(_download_db_id_override,)
+				)
 			return []
 
 		result = []
