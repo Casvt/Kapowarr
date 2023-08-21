@@ -17,6 +17,7 @@ from urllib.parse import unquote_plus
 from bencoding import bdecode, bencode
 from bs4 import BeautifulSoup
 from requests import get
+from requests.exceptions import ChunkedEncodingError
 from requests.exceptions import ConnectionError as requests_ConnectionError
 
 from backend.blocklist import add_to_blocklist, blocklist_contains
@@ -25,8 +26,8 @@ from backend.custom_exceptions import (DownloadLimitReached, DownloadNotFound,
                                        LinkBroken)
 from backend.db import get_db
 from backend.files import extract_filename_data
-from backend.naming import (generate_empty_name, generate_issue_name, generate_issue_range_name,
-                            generate_tpb_name)
+from backend.naming import (generate_empty_name, generate_issue_name,
+                            generate_issue_range_name, generate_tpb_name)
 from backend.post_processing import PostProcessing
 from backend.search import _check_matching_titles
 from backend.settings import (Settings, blocklist_reasons, private_settings,
@@ -161,23 +162,27 @@ class DirectDownload(BaseDownload):
 		with get(self.link, stream=True) as r:
 			with open(self.file, 'wb') as f:
 				start_time = perf_counter()
-				for chunk in r.iter_content(chunk_size=download_chunk_size):
-					if self.state == CANCELED_STATE:
-						break
+				try:
+					for chunk in r.iter_content(chunk_size=download_chunk_size):
+						if self.state == CANCELED_STATE:
+							break
 
-					f.write(chunk)
+						f.write(chunk)
 
-					# Update progress
-					chunk_size = len(chunk)
-					size_downloaded += chunk_size
-					self.speed = round(chunk_size / (perf_counter() - start_time), 2)
-					if self.size == -1:
-						# Total size of file is not given so set progress to amount downloaded
-						self.progress = size_downloaded
-					else:
-						# Total size of file is given so calculate progress and speed
-						self.progress = round(size_downloaded / self.size * 100, 2)
-					start_time = perf_counter()
+						# Update progress
+						chunk_size = len(chunk)
+						size_downloaded += chunk_size
+						self.speed = round(chunk_size / (perf_counter() - start_time), 2)
+						if self.size == -1:
+							# Total size of file is not given so set progress to amount downloaded
+							self.progress = size_downloaded
+						else:
+							# Total size of file is given so calculate progress and speed
+							self.progress = round(size_downloaded / self.size * 100, 2)
+						start_time = perf_counter()
+
+				except ChunkedEncodingError:
+					self.state = FAILED_STATE
 
 		return
 
@@ -721,11 +726,16 @@ class DownloadHandler:
 				if download['instance'].state == CANCELED_STATE:
 					PostProcessing(download, self.queue).short()
 					return
-				# else
-				download['instance'].state = IMPORTING_STATE
-				PostProcessing(download, self.queue).full()
-			
+
+				if download['instance'].state == FAILED_STATE:
+					PostProcessing(download, self.queue).error()
+				
+				if download['instance'].state == DOWNLOADING_STATE:
+					download['instance'].state = IMPORTING_STATE
+					PostProcessing(download, self.queue).full()
+					
 				self.queue.pop(0)
+
 			self._process_queue()
 			return
 
