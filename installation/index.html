@@ -19,7 +19,7 @@
         <link rel="next" href="../setup_after_installation/">
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.1, mkdocs-material-9.1.21">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.1.21">
     
     
       
@@ -671,7 +671,7 @@ A few notes about this file:</p>
 <ol>
 <li>Replace <code class="highlight"><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">download_folder</span></code> with the path to your desired download folder. Everything is downloaded to this folder and when completed, moved out of to their final destination. It's smart to set this on a disk that can sustain more writes than normal. Ideally something like a <em>non</em>-network mounted ssd.</li>
 <li>Replace <code class="highlight">/path/to/root_folder</code> with the path to your desired root folder. Then, this folder will get mapped to <code class="highlight">/content</code> inside the docker container. When adding a root folder in Kapowarr, you'll then set it's location as <code class="highlight">/content</code>, mapping it this way to where ever <code class="highlight">/path/to/root_folder</code> may be.</li>
-<li>You can map multiple root folders by repeating <code class="highlight">- /path/to/root_folder:/content</code> in the file, but then supplying different values for <code class="highlight">/path/to/root_folder</code> and <code class="highlight">/content</code>.</li>
+<li>You can map multiple root folders by repeating <code class="highlight"><span class="k">-</span> /path/to/root_folder:/content</code> in the file, but then supplying different values for <code class="highlight">/path/to/root_folder</code> and <code class="highlight">/content</code>.</li>
 <li>Information on how to change the port can be found on the <a href="../setup_after_installation/#port">Setup After Installation page</a>.</li>
 <li>Using a named volume in docker requires you to create the volume before you can use it (refer to <a href="#named-volumes">Named Volumes</a>)</li>
 </ol>
