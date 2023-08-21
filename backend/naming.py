@@ -394,11 +394,11 @@ def preview_mass_rename(volume_id: int, issue_id: int=None, filepath_filter: Lis
 	if filepath_filter is not None:
 		file_infos = filter(lambda f: f['filepath'] in filepath_filter, file_infos)
 
-	issues_in_volume = cursor.execute(
-		"SELECT COUNT(*) FROM issues WHERE volume_id = ?",
+	tpb_release = cursor.execute(
+		"SELECT special_version FROM volumes WHERE id = ? LIMIT 1;",
 		(volume_id,)
-	).fetchone()[0]
-	tpb_release = issues_in_volume == 1
+	).fetchone()[0] == 'tpb'
+
 	for file in file_infos:
 		if not isfile(file['filepath']):
 			continue

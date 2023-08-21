@@ -142,8 +142,8 @@ class Volume:
 			SELECT
 				v.id, comicvine_id,
 				title, year, publisher,
-				volume_number, description,
-				monitored,
+				volume_number, special_version,
+				description, monitored,
 				v.folder, root_folder,
 				rf.folder AS root_folder_path,
 				(
@@ -594,6 +594,14 @@ class Library:
 		volume_data = ComicVine().fetch_volume(comicvine_id)
 		volume_data['monitored'] = monitor
 		volume_data['root_folder'] = root_folder_id
+		
+		# Determine special version
+		## Branchless
+		special_version = (
+			'one-shot' if 'one-shot' in volume_data['title'].lower() else
+			'tpb' if len(volume_data['issues']) == 1 else
+			None
+		)
 
 		# Insert volume
 		cursor.execute(
@@ -610,9 +618,10 @@ class Library:
 				root_folder,
 				custom_folder,
 				last_cv_update,
-				last_cv_fetch
+				last_cv_fetch,
+				special_version
 			) VALUES (
-				?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+				?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 			);
 			""",
 			(
@@ -627,7 +636,8 @@ class Library:
 				volume_data['root_folder'],
 				int(volume_folder is not None),
 				volume_data['date_last_updated'],
-				round(time())
+				round(time()),
+				special_version
 			)
 		)
 		volume_id = cursor.lastrowid

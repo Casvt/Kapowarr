@@ -470,13 +470,13 @@ def _process_extracted_get_comics_links(
 	volume_title: str
 	volume_number: int
 	volume_year: int
-	issue_count: int
-	volume_title, volume_number, volume_year, issue_count, last_issue_date = get_db('dict').execute("""
+	special_version: int
+	volume_title, volume_number, volume_year, special_version, last_issue_date = get_db('dict').execute("""
 		SELECT
 			v.title,
 			volume_number,
 			year,
-			COUNT(1) AS issue_count,
+			special_version,
 			MAX(i.date) AS last_issue_date
 		FROM volumes v
 		INNER JOIN issues i
@@ -486,7 +486,6 @@ def _process_extracted_get_comics_links(
 		""",
 		(volume_id,)
 	).fetchone()
-	tpb_release = issue_count == 1
 	last_year: int = int(last_issue_date.split('-')[0])
 	annual = 'annual' in volume_title.lower()
 	service_preference_order = dict((v, k) for k, v in enumerate(Settings().get_service_preference()))
@@ -503,7 +502,7 @@ def _process_extracted_get_comics_links(
 		and (processed_desc['year'] is None
 			or
 			volume_year <= processed_desc['year'] <= last_year)
-		and (tpb_release == (processed_desc['special_version'] == 'tpb')
+		and (special_version == processed_desc['special_version']
 			or
 			processed_desc['issue_number'])
 		and processed_desc['annual'] == annual

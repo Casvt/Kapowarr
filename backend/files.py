@@ -42,7 +42,7 @@ korean_volume_regex = compile(r'제?(\d+)권', IGNORECASE)
 japanese_volume_regex = compile(r'(\d+)巻', IGNORECASE)
 
 # Extract data from (stripped)filename
-special_version_regex = compile(r'(?:\b|\()(tpb|os|one\-shot|ogn|gn|cover)(?:\b|\))', IGNORECASE)
+special_version_regex = compile(r'(?:\b|\()(tpb|os|one[\- ]?shot|ogn|gn|cover)(?:\b|\))', IGNORECASE)
 volume_regex = compile(volume_regex_snippet, IGNORECASE)
 volume_folder_regex = compile(volume_regex_snippet + r'|^(\d+)$', IGNORECASE)
 issue_regex = compile(r'\( (-?' + issue_regex_snippet + r')\)', IGNORECASE)
@@ -214,7 +214,7 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 	issue_pos, special_pos = 10_000, 10_000
 	special_result = special_version_regex.search(filename)
 	if special_result:
-		special_version = special_result.group(1).lower()
+		special_version = special_result.group(1).lower().replace(' ', '-')
 		special_pos = special_result.start(0)
 
 	else:
@@ -355,11 +355,6 @@ def scan_files(volume_data: dict) -> None:
 		root_folder = RootFolders().get_one(volume_data['root_folder'])['folder']
 		create_volume_folder(root_folder, volume_data['id'])
 
-	tpb_release = cursor.execute(
-		"SELECT COUNT(1) FROM issues WHERE volume_id = ?",
-		(volume_data['id'],)
-	).fetchone()[0] == 1
-
 	file_to_issue_map = []
 	volume_files = _list_files(folder=volume_data['folder'], ext=supported_extensions)
 	for file in volume_files:
@@ -371,8 +366,7 @@ def scan_files(volume_data: dict) -> None:
 			and file_data['volume_number'] != volume_data['volume_number']
 			and file_data['volume_number'] != volume_data['year']
 		)
-		or file_data['special_version'] == 'cover'
-		or (tpb_release ^ (file_data['special_version'] == 'tpb'))):
+		or volume_data['special_version'] != file_data['special_version']):
 			continue
 
 		# If file is special version, it means it covers all issues in volume so add it to every issue

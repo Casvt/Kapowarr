@@ -6,6 +6,7 @@
 import logging
 from os import makedirs
 from os.path import dirname
+from re import IGNORECASE, compile
 from sqlite3 import Connection, ProgrammingError, Row
 from threading import current_thread
 from time import time
@@ -13,7 +14,7 @@ from time import time
 from flask import g
 from waitress.task import ThreadedTaskDispatcher as OldThreadedTaskDispatcher
 
-__DATABASE_VERSION__ = 7
+__DATABASE_VERSION__ = 8
 
 class Singleton(type):
 	_instances = {}
@@ -295,7 +296,43 @@ def migrate_db(current_db_version: int) -> None:
 			ALTER TABLE volumes
 				ADD custom_folder BOOL NOT NULL DEFAULT 0;
 		""")
-	
+		
+		current_db_version = 7
+
+	if current_db_version == 7:
+		# V7 -> V8
+		cursor.execute("""
+			ALTER TABLE volumes
+				ADD special_version VARCHAR(255);
+		""")
+		
+		volumes = cursor.execute("""
+			SELECT
+				v.id,
+				v.title,
+				COUNT(*) AS issue_count
+			FROM volumes v
+			INNER JOIN issues i
+			ON v.id = i.volume_id
+			GROUP BY v.id;
+		""").fetchall()
+
+		os_regex = compile(r'one[\- ]?shot', IGNORECASE)
+		updates = (
+			(
+				'one-shot' if os_regex.search(v[1]) is not None else
+				'tpb' if v[2] == 1 else
+				None,
+				
+				v[0]
+			) for v in volumes
+		)
+
+		cursor.executemany(
+			"UPDATE volumes SET special_version = ? WHERE id = ?;",
+			updates
+		)
+
 	return
 
 def setup_db() -> None:
@@ -332,6 +369,7 @@ def setup_db() -> None:
 			custom_folder BOOL NOT NULL DEFAULT 0,
 			last_cv_update VARCHAR(255),
 			last_cv_fetch INTEGER(8) DEFAULT 0,
+			special_version VARCHAR(255),
 			
 			FOREIGN KEY (root_folder) REFERENCES root_folders(id)
 		);

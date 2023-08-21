@@ -140,6 +140,9 @@ function fillPage(data, api_key) {
 	const volume_number = document.createElement('p');
 	volume_number.innerText = `Volume ${data.volume_number || 1}`;
 	tags.appendChild(volume_number);
+	const special_version = document.createElement('p');
+	special_version.innerText = data.special_version?.toUpperCase() || 'Normal volume';
+	tags.appendChild(special_version);
 	
 	// Path
 	path.innerText = data.folder;
