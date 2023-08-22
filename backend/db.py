@@ -326,6 +326,8 @@ def migrate_db(current_db_version: int) -> None:
 			updates
 		)
 
+		current_db_version = 8
+
 	return
 
 def setup_db() -> None:
