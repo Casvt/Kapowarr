@@ -4,6 +4,10 @@
 	padding: 1rem;
 }
 
+.settings-container a {
+	color: var(--accent-color);
+}
+
 /*  */
 /* Sections titles */
 /*  */
