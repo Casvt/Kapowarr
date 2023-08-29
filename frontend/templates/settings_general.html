@@ -56,20 +56,21 @@
 							<th><label for="bind-address-input">Bind Address</label></th>
 							<td>
 								<input type="text" id="bind-address-input" required spellcheck="false">
-								<p>Valid IPv4 address or '0.0.0.0' for all interfaces</p>
+								<p>Valid IPv4 address (default is '0.0.0.0' for all available interfaces)</p>
 							</td>
 						</tr>
 						<tr>
 							<th><label for="port-input">Port Number</label></th>
 							<td>
 								<input type="text" id="port-input" required spellcheck="false">
+								<p>The port used to access the web UI (default is '5656')</p>
 							</td>
 						</tr>
 						<tr>
 							<th><label for="url-base-input">Base URL</label></th>
 							<td>
 								<input type="text" id="url-base-input" spellcheck="false">
-								<p>For reverse proxy support, default is empty</p>
+								<p>For reverse proxy support (default is empty).</p>
 							</td>
 						</tr>
 					</table>
@@ -79,7 +80,7 @@
 							<th><label for="password-input">Login Password</label></th>
 							<td>
 								<input type="password" id="password-input" required spellcheck="false" autocomplete="new-password">
-								<p>When set, password is required to be entered to get access to web-ui and api</p>
+								<p>When set, a password is required to be entered to get access to web-UI and API.</p>
 							</td>
 						</tr>
 						<tr>
@@ -98,7 +99,7 @@
 							<th><label for="cv-input">Comic Vine API Key</label></th>
 							<td>
 								<input type="text" id="cv-input" required spellcheck="false">
-								<p>The API key of the <a href="https://comicvine.gamespot.com/api" target="_blank">Comic Vine API</a>, which is required for Kapowarr to work</p>
+								<p>The API key of the <a href="https://comicvine.gamespot.com/api" target="_blank">Comic Vine API</a>, which is required for Kapowarr to work.</p>
 							</td>
 						</tr>
 					</table>
@@ -118,6 +119,7 @@
 					<table class="fold">
 						<tr>
 							<th><label for="log-level-input">Log Level</label></th>
+							<p>Change this to 'Debug' if detailed logging is needed for troubleshooting. Change it back to 'Info' when done.</p>
 							<td>
 								<select id="log-level-input" required>
 									<option value="info">Info</option>
