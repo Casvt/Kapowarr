@@ -338,7 +338,7 @@ function blockManualSearch(link, button, match, api_key) {
 	})
 	.then(response => {
 		button.querySelector('img').src = `${url_base}/static/img/check.svg`;
-		match.innerText = 'No';
+		match.src = '/static/img/cancel_search.svg';
 		match.title = 'Link is blocklisted';
 	});
 };

@@ -23,12 +23,12 @@ DIFFERENCES:
 		5. Made imports more specific
 """
 
+import logging
 from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
 from codecs import latin_1_decode, latin_1_encode
 from hashlib import pbkdf2_hmac
 from json import dumps, loads
-import logging
 from math import ceil
 from random import randint
 from re import findall, search

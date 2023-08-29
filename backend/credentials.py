@@ -1,14 +1,11 @@
 #-*- coding: utf-8 -*-
 
-"""This file contains the class for interracting with service credentials
-"""
-
 import logging
 from sqlite3 import IntegrityError
 from typing import List
 
-from backend.custom_exceptions import (CredentialAlreadyAdded, CredentialInvalid,
-                                       CredentialNotFound,
+from backend.custom_exceptions import (CredentialAlreadyAdded,
+                                       CredentialInvalid, CredentialNotFound,
                                        CredentialSourceNotFound)
 from backend.db import get_db
 from backend.lib.mega import Mega, RequestError
@@ -39,9 +36,9 @@ class Credentials:
 			List[dict]: The list of credentials
 		"""		
 		if not use_cache or not self.cache or self.__load_first:
-			cred = dict(map(
-				lambda c: (c['id'], dict(c)),
-				get_db('dict').execute("""
+			cred = dict(
+				(c['id'], dict(c))
+				for c in get_db('dict').execute("""
 					SELECT
 						c.id, cs.source,
 						c.email, c.password
@@ -50,7 +47,7 @@ class Credentials:
 					ON c.source = cs.id;
 					"""
 				)
-			))
+			)
 			self.cache = cred
 			self.__load_first = False
 
@@ -169,15 +166,15 @@ class Credentials:
 		Returns:
 			List[str]: The list of service strings
 		"""
-		result = list(map(
-			lambda s: s[0],
-			get_db().execute("""
+		result = [
+			s[0]
+			for s in get_db().execute("""
 				SELECT cs.source
 				FROM credentials_sources cs
 				LEFT JOIN credentials c
 				ON cs.id = c.source
 				WHERE c.id IS NULL;
 			""")
-		))
-		
+		]
+
 		return result

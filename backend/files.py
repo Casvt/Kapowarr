@@ -537,7 +537,7 @@ def move_volume_folder(volume_id: int, new_root_folder: int, new_volume_folder: 
 	current_volume_folder = relpath(current_folder, current_root_folder)
 	
 	# If new_volume_folder is empty or None, generate default folder and unset custom folder
-	if new_volume_folder in ('', None):
+	if not new_volume_folder:
 		from backend.naming import generate_volume_folder_name
 		cursor.execute(
 			"UPDATE volumes SET custom_folder = 0 WHERE id = ?",

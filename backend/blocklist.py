@@ -1,8 +1,5 @@
 #-*- coding: utf-8 -*-
 
-"""This file contains all functions to interract with the blocklist
-"""
-
 import logging
 from sqlite3 import IntegrityError
 from time import time
@@ -15,7 +12,7 @@ from backend.settings import blocklist_reasons
 
 def get_blocklist(offset: int=0) -> List[dict]:
 	"""Get the blocklist entries in blocks of 50
-	
+
 	Args:
 		offset (int, optional): The offset of the list. The higher the number, the deeper into the list you go. Defaults to 0.
 

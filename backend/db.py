@@ -13,6 +13,9 @@ from time import time
 from flask import g
 from waitress.task import ThreadedTaskDispatcher as OldThreadedTaskDispatcher
 
+from backend.logging import set_log_level
+
+__DATABASE_FILEPATH__ = 'db', 'Kapowarr.db'
 __DATABASE_VERSION__ = 8
 
 class Singleton(type):
@@ -47,20 +50,24 @@ class DBConnection(Connection, metaclass=Singleton):
 		Args:
 			timeout (float): How long to wait before giving up on a command
 		"""
-		logging.debug(f'Creating connection {self} to the database for thread {current_thread()}')
+		logging.debug(f'Creating connection {self}')
 		super().__init__(self.file, timeout=timeout)
 		super().cursor().execute("PRAGMA foreign_keys = ON;")
 		self.closed = False
 		return
 	
 	def close(self) -> None:
-		logging.debug(f'Closing connection {self} to the database for thread {current_thread()}')
+		logging.debug(f'Closing connection {self}')
 		self.closed = True
 		super().close()
 		return
 
+	def __repr__(self) -> str:
+		return f'<{self.__class__.__name__}; {current_thread().name}; {id(self)}>'
+
 class TempDBConnection(Connection):
-	"""For creating a temporary connection with a database. The user needs to manually commit and close.
+	"""For creating a temporary connection with a database.
+	The user needs to manually commit and close.
 	"""
 	file = ''
 	
@@ -70,17 +77,20 @@ class TempDBConnection(Connection):
 		Args:
 			timeout (float): How long to wait before giving up on a command
 		"""
-		logging.debug(f'Creating temporary connection {self} to the database for thread {current_thread()}')
+		logging.debug(f'Creating temporary connection {self}')
 		super().__init__(self.file, timeout=timeout)
 		super().cursor().execute("PRAGMA foreign_keys = ON;")
 		self.closed = False
 		return
 	
 	def close(self) -> None:
-		logging.debug(f'Closing temporary connection {self} to the database for thread {current_thread()}')
+		logging.debug(f'Closing temporary connection {self}')
 		self.closed = True
 		super().close()
 		return
+
+	def __repr__(self) -> str:
+		return f'<{self.__class__.__name__}; {current_thread().name}; {id(self)}>'
 
 def set_db_location(db_file_location: str) -> None:
 	"""Setup database location. Create folder for database and set location for db.DBConnection
@@ -89,10 +99,13 @@ def set_db_location(db_file_location: str) -> None:
 		db_file_location (str): The absolute path to the database file
 	"""
 	logging.debug(f'Setting database location: {db_file_location}')
+
 	# Create folder where file will be put in if it doesn't exist yet
 	makedirs(dirname(db_file_location), exist_ok=True)
+
 	DBConnection.file = db_file_location
 	TempDBConnection.file = db_file_location
+
 	return
 
 def get_db(output_type='tuple', temp: bool=False):
@@ -127,7 +140,6 @@ def close_db(e: str=None):
 	Args:
 		e (str, optional): Error. Defaults to None.
 	"""
-
 	try:
 		cursor = g.cursor
 		db: DBConnection = cursor.connection
@@ -139,6 +151,20 @@ def close_db(e: str=None):
 	except (AttributeError, ProgrammingError):
 		pass
 
+	return
+
+def update_db_version(desired_db_version: int) -> None:
+	"""Set the database version to the value of the parameter.
+
+	Args:
+		desired_db_version (int): The version that the database should be set to.
+	"""
+	cursor = get_db()
+	cursor.execute(
+		"UPDATE config SET value = ? WHERE key = 'database_version';",
+		(desired_db_version,)
+	)
+	cursor.connection.commit()
 	return
 
 def migrate_db(current_db_version: int) -> None:
@@ -153,6 +179,7 @@ def migrate_db(current_db_version: int) -> None:
 		cursor.executescript("DELETE FROM download_queue;")
 		
 		current_db_version = 2
+		update_db_version(current_db_version)
 
 	if current_db_version == 2:
 		# V2 -> V3
@@ -206,6 +233,7 @@ def migrate_db(current_db_version: int) -> None:
 		""")
 		
 		current_db_version = 3
+		update_db_version(current_db_version)
 	
 	if current_db_version == 3:
 		# V3 -> V4
@@ -222,6 +250,7 @@ def migrate_db(current_db_version: int) -> None:
 		""")
 
 		current_db_version = 4
+		update_db_version(current_db_version)
 	
 	if current_db_version == 4:
 		# V4 -> V5
@@ -237,6 +266,7 @@ def migrate_db(current_db_version: int) -> None:
 		cursor2.connection.close()
 
 		current_db_version = 5
+		update_db_version(current_db_version)
 	
 	if current_db_version == 5:
 		# V5 -> V6
@@ -288,6 +318,7 @@ def migrate_db(current_db_version: int) -> None:
 		)
 
 		current_db_version = 6
+		update_db_version(current_db_version)
 		
 	if current_db_version == 6:
 		# V6 -> V7
@@ -297,6 +328,7 @@ def migrate_db(current_db_version: int) -> None:
 		""")
 		
 		current_db_version = 7
+		update_db_version(current_db_version)
 
 	if current_db_version == 7:
 		# V7 -> V8
@@ -311,6 +343,7 @@ def migrate_db(current_db_version: int) -> None:
 			SELECT
 				v.id,
 				v.title,
+				v.description,
 				COUNT(*) AS issue_count,
 				i.title AS first_issue_title
 			FROM volumes v
@@ -319,12 +352,15 @@ def migrate_db(current_db_version: int) -> None:
 			GROUP BY v.id;
 		""").fetchall()
 
-		updates = ((determine_special_version(v[1], v[2], v[3]) ,v[0]) for v in volumes)
+		updates = ((determine_special_version(v[1], v[2], v[3], v[4]) ,v[0]) for v in volumes)
 
 		cursor.executemany(
 			"UPDATE volumes SET special_version = ? WHERE id = ?;",
 			updates
 		)
+		
+		current_db_version = 8
+		update_db_version(current_db_version)
 
 	return
 
@@ -453,11 +489,10 @@ def setup_db() -> None:
 			pref INTEGER UNIQUE CHECK (pref >= 1)
 		);
 	"""
-	logging.debug('Creating database tables')
 	cursor.executescript(setup_commands)
 
-	# Insert default setting values
-	logging.debug(f'Inserting default settings: {default_settings}')
+	# Insert default setting values for keys that
+	# don't have a value yet or have newly been added
 	cursor.executemany(
 		"""
 		INSERT OR IGNORE INTO config
@@ -465,34 +500,37 @@ def setup_db() -> None:
 		""",
 		default_settings.items()
 	)
+	
+	set_log_level(cursor.execute(
+		"SELECT value FROM config WHERE key = 'log_level' LIMIT 1;"
+	).fetchone()[0])
 
 	# Migrate database if needed
 	current_db_version = int(cursor.execute(
 		"SELECT value FROM config WHERE key = 'database_version' LIMIT 1;"
 	).fetchone()[0])
-	logging.debug(f'Database migration: {current_db_version} -> {__DATABASE_VERSION__}')
+
 	if current_db_version < __DATABASE_VERSION__:
+		logging.debug(f'Database migration: {current_db_version} -> {__DATABASE_VERSION__}')
 		migrate_db(current_db_version)
-		cursor.execute(
-			"UPDATE config SET value = ? WHERE key = 'database_version' LIMIT 1;",
-			(__DATABASE_VERSION__,)
-		)
+		# Redundant but just to be sure, in case
+		# the version isn't updated in the last migration of the function
+		update_db_version(__DATABASE_VERSION__)
 
 	# Generate api key
-	api_key = (1,) in cursor.execute(
-		"SELECT 1 FROM config WHERE key = 'api_key' LIMIT 1;"
+	api_key_exists = (None,) not in cursor.execute(
+		"SELECT value FROM config WHERE key = 'api_key' LIMIT 1;"
 	)
-	if not api_key:
-		cursor.execute("INSERT INTO config VALUES ('api_key', '');")
+	if not api_key_exists:
 		Settings().generate_api_key()
 
 	# Add task intervals
-	current_time = round(time())
 	logging.debug(f'Inserting task intervals: {task_intervals}')
+	current_time = round(time())
 	cursor.executemany(
 		"""
 		INSERT INTO task_intervals
-		VALUES (?,?,?)
+		VALUES (?, ?, ?)
 		ON CONFLICT(task_name) DO
 		UPDATE
 		SET
@@ -512,20 +550,17 @@ def setup_db() -> None:
 	)
 	
 	# Add credentials sources
-	logging.debug(f'Inserting credentials sources: {list(map(lambda c: (c,), credential_sources))}')
+	logging.debug(f'Inserting credentials sources: {credential_sources}')
 	cursor.executemany(
 		"""
 		INSERT OR IGNORE INTO credentials_sources(source)
 		VALUES (?);
 		""",
-		map(lambda c: (c,), credential_sources)
+		[(s,) for s in credential_sources]
 	)
 
 	# Add service preferences
-	order = list(zip(
-		map(lambda s: s[0], supported_source_strings),
-		range(1, len(supported_source_strings) + 1)
-	))
+	order = [(names[0], place + 1) for place, names in enumerate(supported_source_strings)]
 	logging.debug(f'Inserting service preferences: {order}')
 	cursor.executemany(
 		"""

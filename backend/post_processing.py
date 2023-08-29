@@ -9,7 +9,6 @@ from os import remove
 from os.path import basename, isfile, join
 from shutil import move, rmtree
 from time import time
-from typing import List
 from zipfile import ZipFile
 
 from backend.db import get_db
@@ -37,11 +36,11 @@ class PostProcessor(ABC):
 class PostProcessing(PostProcessor):
 	"""For processing a file after downloading it
 	"""	
-	def __init__(self, download: dict, queue: List[dict]) -> None:
+	def __init__(self, download, queue: list) -> None:
 		"""Setup a post processor for the download
 
 		Args:
-			download (dict): The download queue entry for which to setup the processor.
+			download (Download): The download queue entry for which to setup the processor.
 			Value should be from download.DownloadHandler.queue
 			queue (List[dict]): The download queue. Value should be download.DownloadHandler.queue
 		"""
@@ -71,12 +70,12 @@ class PostProcessing(PostProcessor):
 		"""Delete the download from the queue in the database
 		"""
 		for entry in self.queue:
-			if entry['db_id'] == self.download['db_id'] and entry['id'] != self.download['id']:
+			if entry.db_id == self.download.db_id and entry.id != self.download.id:
 				break
 		else:
 			get_db().execute(
 				"DELETE FROM download_queue WHERE id = ?",
-				(self.download['db_id'],)
+				(self.download.db_id,)
 			)
 		return
 
@@ -88,7 +87,7 @@ class PostProcessing(PostProcessor):
 			INSERT INTO download_history(original_link, title, downloaded_at)
 			VALUES (?,?,?);
 			""",
-			(self.download['original_link'], self.download['instance'].title, round(time()))
+			(self.download.page_link, self.download.title, round(time()))
 		)
 		return
 		
@@ -96,36 +95,36 @@ class PostProcessing(PostProcessor):
 		"""Move file from download folder to final destination
 		"""
 		logging.debug(f'Moving download to final destination: {self.download}')
-		if isfile(self.download['instance'].file):
+		if isfile(self.download.file):
 			folder = get_db().execute(
 				"SELECT folder FROM volumes WHERE id = ? LIMIT 1",
-				(self.download['volume_id'],)
+				(self.download.volume_id,)
 			).fetchone()[0]
-			file_dest = join(folder, basename(self.download['instance'].file))
+			file_dest = join(folder, basename(self.download.file))
 			if isfile(file_dest):
 				remove(file_dest)
-			move(self.download['instance'].file, file_dest)
-			self.download['instance'].file = file_dest
+			move(self.download.file, file_dest)
+			self.download.file = file_dest
 		return
 		
 	def _unzip_file(self) -> None:
-		if self.download['instance'].file.lower().endswith('.zip'):
+		if self.download.file.lower().endswith('.zip'):
 			unzip = get_db().execute("SELECT value FROM config WHERE key = 'unzip';").fetchone()[0]
 			if unzip:
-				unzip_volume(self.download['volume_id'], self.download['instance'].file)
+				unzip_volume(self.download['volume_id'], self.download.file)
 		return
 
 	def _delete_file(self) -> None:
 		"""Delete file from download folder
 		"""		
-		if isfile(self.download['instance'].file):
-			remove(self.download['instance'].file)
+		if isfile(self.download.file):
+			remove(self.download.file)
 		return
 	
 	def _add_file_to_database(self) -> None:
 		"""Register file in database and match to a volume/issue
 		"""
-		scan_files(Volume(self.download['volume_id']).get_info())
+		scan_files(Volume(self.download.volume_id).get_info())
 		return
 
 	def __run_actions(self, actions: list) -> None:
@@ -141,25 +140,34 @@ class PostProcessing(PostProcessor):
 	def short(self) -> None:
 		"""Process the file with the 'short'-program. Intended for when the application is shutting down.
 		"""
-		logging.info(f'Post-download short processing: {self.download["id"]}')
+		logging.info(f'Post-download short processing: {self.download.id}')
 		self.__run_actions(self.actions_short)
 		return	
 	
 	def full(self) -> None:
 		"""Process the file with the 'full'-program. Intended for standard handling of the file.
 		"""
-		logging.info(f'Post-download processing: {self.download["id"]}')
+		logging.info(f'Post-download processing: {self.download.id}')
 		self.__run_actions(self.actions_full)
 		return
 		
 	def error(self) -> None:
 		"""Process the file with the 'error'-program. Intended for when the download had an error.
 		"""
-		logging.info(f'Post-download error processing: {self.download["id"]}')
+		logging.info(f'Post-download error processing: {self.download.id}')
 		self.__run_actions(self.actions_error)
 		return
 
 def unzip_volume(volume_id: int, file: str=None) -> None:
+	"""Get the zip files of a volume and unzip them.
+	This process unzips the file, deletes the original zip file,
+	deletes files not relevant for the volume, and renames them.
+
+	Args:
+		volume_id (int): The id of the volume to unzip for.
+		file (str, optional): Instead of unzipping all zip files for the volume,
+		only unzip the given file. Defaults to None.
+	"""	
 	cursor = get_db()
 	if file:
 		logging.info(f'Unzipping the following file for volume {volume_id}: {file}')
@@ -232,14 +240,14 @@ def unzip_volume(volume_id: int, file: str=None) -> None:
 			if not c in rel_files:
 				remove(c)
 
-		# 5. Move restant files to main folder and delete zip folder
+		# 5. Move remaining files to main folder and delete zip folder
 		for c in rel_files:
 			dest = join(volume_data[3], basename(c))
 			move(c, dest)
 			resulting_files_append(dest)
 		rmtree(zip_folder, ignore_errors=True)
 
-	# 6. Rename restant files
+	# 6. Rename remaining files
 	scan_files(Volume(volume_id).get_info())
 	if resulting_files:
 		mass_rename(volume_id, filepath_filter=resulting_files)

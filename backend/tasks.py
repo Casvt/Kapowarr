@@ -92,7 +92,7 @@ class AutoSearchIssue(Task):
 		title = get_db().execute(
 			"""
 			SELECT
-				v.title, i.title, i.issue_number
+				v.title, i.issue_number
 			FROM volumes v
 			INNER JOIN issues i
 			ON i.volume_id = v.id
@@ -101,10 +101,7 @@ class AutoSearchIssue(Task):
 			""",
 			(self.issue_id,)
 		).fetchone()
-		if title[1] is None:
-			self.message = f'Searching for {title[0]} #{title[2]}'
-		else:
-			self.message = f'Searching for {title[0]}: {title[1]}'
+		self.message = f'Searching for {title[0]} #{title[1]}'
 
 		# Get search results and download them
 		results = auto_search(self.volume_id, self.issue_id)
@@ -276,7 +273,8 @@ class TaskHandler:
 
 		Args:
 			context (Flask): A Flask app instance
-			download_handler (DownloadHandler): An instance of the download.DownloadHandler class to which any download instructions are sent
+			download_handler (DownloadHandler): An instance of the `download.DownloadHandler` class
+			to which any download instructions are sent
 		"""
 		self.context = context.app_context
 		self.download_handler = download_handler
@@ -305,10 +303,12 @@ class TaskHandler:
 							self.download_handler.add(*download)
 
 					logging.info(f'Finished task {task.display_title}')
+
 			except Exception:
 				logging.exception('An error occured while trying to run a task: ')
 				task.message = 'AN ERROR OCCURED'
 				sleep(1.5)
+
 			finally:
 				if not task.stop:
 					self.queue.pop(0)
@@ -340,7 +340,7 @@ class TaskHandler:
 			int: The id of the entry in the queue
 		"""
 		logging.debug(f'Adding task to queue: {task.display_title}')
-		id = next(iter(self.queue[::-1]), {'id': 0})['id'] + 1
+		id = self.queue[-1]['id'] + 1 if self.queue else 1
 		task_data = {
 			'task': task,
 			'id': id,
@@ -390,7 +390,7 @@ class TaskHandler:
 		timedelta = next_run - round(time()) + 1
 		logging.debug(f'Next interval task is in {timedelta} seconds')
 		
-		# Create sleep thread for that time and that will run __check_intervals
+		# Create sleep thread for that time and that will run self.__check_intervals.
 		self.task_interval_waiter = Timer(timedelta, self.__check_intervals)
 		self.task_interval_waiter.start()
 		return
@@ -405,7 +405,7 @@ class TaskHandler:
 			self.queue[0]['thread'].join()
 		return
 	
-	def __format_entry(self, t: dict) -> dict:
+	def __format_entry(self, task: dict) -> dict:
 		"""Format a queue entry for API response
 
 		Args:
@@ -415,26 +415,22 @@ class TaskHandler:
 			dict: The formatted queue entry
 		"""
 		return {
-			'id': t['id'],
-			'action': t['task'].action,
-			'display_title': t['task'].display_title,
-			'status': t['status'],
-			'message': t['task'].message,
-			'volume_id': t['task'].volume_id,
-			'issue_id': t['task'].issue_id
+			'id': task['id'],
+			'action': task['task'].action,
+			'display_title': task['task'].display_title,
+			'status': task['status'],
+			'message': task['task'].message,
+			'volume_id': task['task'].volume_id,
+			'issue_id': task['task'].issue_id
 		}
 
 	def get_all(self) -> List[dict]:
 		"""Get all tasks in the queue
 
 		Returns:
-			List[dict]: A list with all tasks in the queue (formatted using self.__format_entry())
+			List[dict]: A list with all tasks in the queue (formatted using `self.__format_entry()`)
 		"""		
-		result = list(map(
-			self.__format_entry,
-			self.queue
-		))
-		return result
+		return [self.__format_entry(t) for t in self.queue]
 
 	def get_one(self, task_id: int) -> dict:
 		"""Get one task from the queue based on it's id
@@ -446,7 +442,7 @@ class TaskHandler:
 			TaskNotFound: The id doesn't match with any task in the queue
 
 		Returns:
-			dict: The info of the task in the queue (formatted using self.__format_entry())
+			dict: The info of the task in the queue (formatted using `self.__format_entry()`)
 		"""
 		for entry in self.queue:
 			if entry['id'] == task_id:
@@ -471,7 +467,6 @@ class TaskHandler:
 		if self.queue[0] == task:
 			raise TaskNotDeletable
 
-		# Task exists and is allowed to be deleted so delete
 		task['task'].stop = True
 		task['thread'].join()
 		self.queue.remove(task)
@@ -518,7 +513,6 @@ def get_task_planning() -> List[dict]:
 	"""
 	cursor = get_db('dict')
 
-	# Get name, interval, last run and next run of each interval task
 	tasks = cursor.execute(
 		"""
 		SELECT

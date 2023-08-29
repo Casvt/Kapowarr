@@ -31,7 +31,7 @@ from backend.search import manual_search
 from backend.settings import Settings, about_data, blocklist_reasons
 from backend.tasks import (TaskHandler, delete_task_history, get_task_history,
                            get_task_planning, task_library)
-from backend.volumes import Library, search_volumes, ui_vars
+from backend.volumes import Library, search_volumes
 
 api = Blueprint('api', __name__)
 root_folders = RootFolders()

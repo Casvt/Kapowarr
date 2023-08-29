@@ -2,68 +2,28 @@
 #-*- coding: utf-8 -*-
 
 import logging
-from os import makedirs, urandom
-from sqlite3 import OperationalError
 from sys import version_info
 
-from flask import Flask, render_template, request
-from waitress.server import create_server
-from werkzeug.middleware.dispatcher import DispatcherMiddleware
-
-from backend.db import (ThreadedTaskDispatcher, close_db, get_db,
-                        set_db_location, setup_db)
+from backend.db import __DATABASE_FILEPATH__, set_db_location, setup_db
 from backend.files import folder_path
-from backend.logging import set_log_level, setup_logging
-from backend.settings import default_settings, private_settings
-from frontend.api import (about_data, api, download_handler, settings,
-                          task_handler, ui_vars)
-from frontend.ui import ui
+from backend.logging import setup_logging
+from backend.server import create_app, create_waitress_server, set_url_base
+from frontend.api import download_handler, settings, task_handler
 
-DB_FILENAME = 'db', 'Kapowarr.db'
 
-def _create_app() -> Flask:
-	"""Creates an flask app instance that can be used to start a web server
+def _check_python_version() -> bool:
+	"""Check if the python version that is used is a minimum version.
 
 	Returns:
-		Flask: The app instance
+		bool: Whether or not the python version is version 3.8 or above or not.
 	"""
-	app = Flask(
-		__name__,
-		template_folder=folder_path('frontend','templates'),
-		static_folder=folder_path('frontend','static'),
-		static_url_path='/static'
-	)
-	app.config['SECRET_KEY'] = urandom(32)
-	app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
-	app.config['JSON_SORT_KEYS'] = False
-
-	# Add error handlers
-	@app.errorhandler(404)
-	def not_found(e):
-		if request.path.startswith('/api'):
-			return {'error': 'NotFound', 'result': {}}, 404
-		return render_template('page_not_found.html')
-
-	@app.errorhandler(400)
-	def bad_request(e):
-		return {'error': 'BadRequest', 'result': {}}, 400
-
-	@app.errorhandler(405)
-	def method_not_allowed(e):
-		return {'error': 'MethodNotAllowed', 'result': {}}, 405
-
-	@app.errorhandler(500)
-	def internal_error(e):
-		return {'error': 'InternalError', 'result': {}}, 500
-
-	# Add endpoints
-	app.register_blueprint(ui)
-	app.register_blueprint(api, url_prefix="/api")
-
-	# Setup db handling
-	app.teardown_appcontext(close_db)
-
-	return app
+	if not (version_info.major == 3 and version_info.minor >= 8):
+		logging.critical(
+			'The minimum python version required is python3.8 ' + 
+			'(currently ' + version_info.major + '.' + version_info.minor + '.' + version_info.micro + ').'
+		)
+		return False
+	return True
 
 def Kapowarr() -> None:
 	"""The main function of Kapowarr
@@ -71,60 +31,32 @@ def Kapowarr() -> None:
 	setup_logging()
 	logging.info('Starting up Kapowarr')
 
-	# Check python version
-	if (version_info.major < 3) or (version_info.major == 3 and version_info.minor < 7):
-		logging.critical('The minimum python version required is python3.7 (currently ' + version_info.major + '.' + version_info.minor + '.' + version_info.micro + ')')
+	if not _check_python_version():
 		exit(1)
 
-	# Register web server
-	app = _create_app()
+	set_db_location(folder_path(*__DATABASE_FILEPATH__))
 
-	# Setup database, folders and logging
+	app = create_app()
+
 	with app.app_context():
-		set_db_location(folder_path(*DB_FILENAME))
-		about_data.update({'database_location': folder_path(*DB_FILENAME)})
-		
-		# Set log level
-		cursor = get_db()
-		try:
-			log_level = cursor.execute(
-				"SELECT value FROM config WHERE key = 'log_level' LIMIT 1;"
-			).fetchone()[0]
-			set_log_level(log_level)
-		except OperationalError:
-			set_log_level(default_settings['log_level'])
-
-		# Setup db
 		setup_db()
 		
-		# Set url base if needed
 		url_base = settings.get_settings()['url_base']
-		app.config['APPLICATION_ROOT'] = url_base
-		app.wsgi_app = DispatcherMiddleware(Flask(__name__), {url_base: app.wsgi_app})
-		ui_vars.update({'url_base': url_base})
+		set_url_base(app, url_base)
 
-		# Create download folder if needed
-		makedirs(settings.cache['download_folder'], exist_ok=True)
+		download_handler.create_download_folder()
 
-	# Now that database is setup, start handlers
 	download_handler.load_download_thread.start()
 	task_handler.handle_intervals()
 
-	# Create waitress server
-	dispatcher = ThreadedTaskDispatcher()
-	dispatcher.set_thread_count(private_settings['hosting_threads'])
-	server = create_server(
-		app,
-		_dispatcher=dispatcher,
-		host=settings.cache['host'],
-		port=settings.cache['port'],
-		threads=private_settings['hosting_threads']
-	)
-
-	logging.info(f'Kapowarr running on http://{settings.cache["host"]}:{settings.cache["port"]}{settings.cache["url_base"]}/')
+	host: str = settings.cache['host']
+	port: int = settings.cache['port']
+	server = create_waitress_server(app, host, port)
+	logging.info(f'Kapowarr running on http://{host}:{port}{url_base}/')
+	# =================
 	server.run()
+	# =================
 
-	# Shutdown application
 	download_handler.stop_handle()
 	task_handler.stop_handle()
 

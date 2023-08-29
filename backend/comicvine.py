@@ -1,6 +1,6 @@
 #-*- coding: utf-8 -*-
 
-"""This file contains functions to interract with the comicvine api
+"""Search for volumes/issues and fetch metadata for them on ComicVine
 """
 
 import logging
@@ -16,16 +16,15 @@ from backend.custom_exceptions import (CVRateLimitReached,
                                        InvalidComicVineApiKey,
                                        VolumeNotMatched)
 from backend.db import get_db
-from backend.files import process_issue_number
+from backend.files import process_issue_number, volume_regex
 from backend.settings import Settings, private_settings
 
-volume_search = compile(r'(?i)(?:v(?:ol(?:ume)?)?[\.\s]*)(\d+)')
 translation_regex = compile(
 	r'^<p>\w+ publication(\.?</p>$| \(in the \w+ language\))|^<p>published by the \w+ wing of|^<p>\w+ translations? of|from \w+</p>$|^<p>published in \w+|^<p>\w+ language',
 	IGNORECASE
 )
-headers = ('h2', 'h3', 'h4', 'h5', 'h6')
-lists = ('ul', 'ol')
+headers = {'h2', 'h3', 'h4', 'h5', 'h6'}
+lists = {'ul', 'ol'}
 
 def _clean_description(description: str, short: bool=False) -> str:
 	"""Reduce size of description (written in html) to only essential information
@@ -58,7 +57,11 @@ def _clean_description(description: str, short: bool=False) -> str:
 
 			children = list(getattr(el, 'children', []))
 			if (el.name in headers
-				or (1 <= len(children) <= 2 and children[0].name in ('b', 'i', 'strong'))):
+			or (
+				1 <= len(children) <= 2
+       			and
+				children[0].name in ('b', 'i', 'strong')
+			)):
 				# Element is header or fake header
 				sib = el.next_sibling
 				if sib is None:
@@ -126,21 +129,18 @@ class ComicVine:
 		logging.debug(f'Formating volume output: {volume_data}')
 		result = {
 			'comicvine_id': int(volume_data['id']),
-			'title': volume_data['name'],
+			'title': volume_data['name'].strip(),
 			'year': int(volume_data['start_year'].replace('-', '0').replace('?', '')) if volume_data['start_year'] is not None else None,
 			'cover': volume_data['image']['small_url'],
 			'publisher': volume_data['publisher']['name'] if volume_data['publisher'] is not None else None,
 			'issue_count': int(volume_data['count_of_issues'])
 		}
 
-		# Extract volume number
-		match = volume_search.search(volume_data['deck'] or '')
+		match = volume_regex.search(volume_data['deck'] or '')
 		result['volume_number'] = int(match.group(1)) if match else 1
 		
-		# Format description
 		result['description'] = _clean_description(volume_data['description'])
 		
-		# Determine if result is a translation or not
 		result['translated'] = translation_regex.match(volume_data['description'] or '') is not None
 
 		# Turn aliases into list
@@ -150,7 +150,6 @@ class ComicVine:
 			else:
 				result['aliases'] = []
 		
-		# Covert other keys if present
 		if 'site_detail_url' in volume_data:
 			result['comicvine_info'] = volume_data['site_detail_url']
 
@@ -196,7 +195,6 @@ class ComicVine:
 			id = '4050-' + id
 		logging.debug(f'Fetching volume data for {id}')
 		
-		# Fetch volume info
 		result = self.ssn.get(
 			f'{self.api_url}/volume/{id}',
 			params={'field_list': self.volume_field_list}
@@ -209,7 +207,6 @@ class ComicVine:
 		volume_info = self.__format_volume_output(result['results'])
 		volume_info['date_last_updated'] = result['results']['date_last_updated']
 
-		# Fetch cover
 		try:
 			volume_info['cover'] = self.ssn.get(volume_info['cover']).content
 		except requests_ConnectionError:
@@ -225,6 +222,7 @@ class ComicVine:
 	    			'field_list': self.issue_field_list,
 					'offset': offset}
 			).json()['results']
+
 			for issue in results:
 				volume_info['issues'].append(
 					self.__format_issue_output(issue)
@@ -263,7 +261,6 @@ class ComicVine:
 				volume_info = self.__format_volume_output(result)
 				volume_info['date_last_updated'] = result['date_last_updated']
 
-				# Fetch cover
 				try:
 					volume_info['cover'] = self.ssn.get(volume_info['cover']).content
 				except requests_ConnectionError:
@@ -330,7 +327,6 @@ class ComicVine:
 		logging.debug(f'Searching for volumes with the query {query}')
 		cursor = get_db()
 
-		# Fetch comicvine results
 		if query.startswith('4050-') or query.startswith('cv:'):
 			if query.startswith('cv:'):
 				query = query.partition(':')[2]
@@ -357,22 +353,20 @@ class ComicVine:
 			if not results:
 				return []
 		
-		# Format results
 		results = list(map(self.__format_volume_output, results))
 
 		# Mark entries that are already added
-		logging.debug('Marking entries that are already added')
-		volume_ids = set(map(lambda c: c[0], cursor.execute(f"""
+		volume_ids = set(c[0] for c in cursor.execute(f"""
 			SELECT comicvine_id
 			FROM volumes
 			WHERE {' OR '.join('comicvine_id = ' + str(r['comicvine_id']) for r in results)}
 			LIMIT 50;
-		""")))
+		"""))
 		for result in results:
 			result.update({'already_added': result['comicvine_id'] in volume_ids})
-		
+
 		# Sort results (prefer direct title matches and then sort those on volume number)
-		if len(results) > 1:
+		if results:
 			results.sort(
 				key=lambda v: (
 					0 if v['title'] == query else 1,

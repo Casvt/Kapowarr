@@ -1,9 +1,6 @@
 #-*- coding: utf-8 -*-
 
 """This file contains functions regarding searching for a volume or issue with getcomics.org as the source
-
-Inspired by Mylar3:
-	https://github.com/mylar3/mylar3/blob/master/mylar/getcomics.py#L163
 """
 
 import logging
@@ -49,7 +46,15 @@ def _check_matching_titles(title1: str, title2: str) -> bool:
 	logging.debug(f'Matching titles ({title1}, {title2}): {result}')
 	return result
 
-def _check_match(result: dict, title: str, volume_number: int, special_version: Union[str, None], issue_numbers: Dict[float, int], calculated_issue_number: float=None, year: int=None) -> dict:
+def _check_match(
+	result: dict,
+	title: str,
+	volume_number: int,
+	special_version: Union[str, None],
+	issue_numbers: Dict[float, int],
+	calculated_issue_number: float=None,
+	year: int=None
+) -> dict:
 	"""Determine if a result is a match with what is searched for
 
 	Args:
@@ -126,11 +131,17 @@ def _check_match(result: dict, title: str, volume_number: int, special_version: 
 		
 	return {'match': True, 'match_issue': None}
 
-def _sort_search_results(result: dict, title: str, volume_number: int, year: int=None, calculated_issue_number: float=None) -> List[int]:
+def _sort_search_results(
+	result: dict,
+	title: str,
+	volume_number: int,
+	year: int=None,
+	calculated_issue_number: float=None
+) -> List[int]:
 	"""Sort the search results
 
 	Args:
-		result (dict): A result in SearchSources.search_results
+		result (dict): A result in from `search.SearchSources.search_all`.
 		title (str): Title of volume
 		volume_number (int): The volume number of the volume
 		year (int, optional): The year of the volume. Defaults to None.
@@ -192,21 +203,27 @@ class SearchSources:
 		Args:
 			query (str): The search string to search for in the sources
 		"""
-		self.search_results: List[dict] = []
 		self.query = query
 		self.source_list = [
-			self.get_comics,
-			self.indexers
+			self._get_comics,
+			self._indexers
 		]
 
-	def search_all(self) -> None:
-		"""Search all sources for the query and store the results in `self.search_results`.
+	def search_all(self) -> List[dict]:
+		"""Search all sources for the query.
 		"""
+		result = []
 		for source in self.source_list:
-			self.search_results += source()
-		return
+			result += source()
+		return result
 
-	async def __fetch_one(self, session, url: str, params: dict, headers: dict):
+	async def __fetch_one(
+		self,
+		session: ClientSession,
+		url: str,
+		params: dict,
+		headers: dict
+	):
 		async with session.get(url, params=params, headers=headers) as response:
 			return await response.text()
 
@@ -223,7 +240,7 @@ class SearchSources:
 			responses = await gather(*tasks)
 			return [BeautifulSoup(r, 'html.parser') for r in responses]
 
-	def get_comics(self) -> List[dict]:
+	def _get_comics(self) -> List[dict]:
 		"""Search for the query in getcomics
 
 		Returns:
@@ -259,7 +276,7 @@ class SearchSources:
 		
 		return formatted_results
 	
-	def indexers(self) -> List[dict]:
+	def _indexers(self) -> List[dict]:
 		return []
 
 def manual_search(
@@ -270,7 +287,8 @@ def manual_search(
 
 	Args:
 		volume_id (int): The id of the volume to search for
-		issue_id (int, optional): The id of the issue to search for (in the case that you want to search for an issue instead of a volume).
+		issue_id (int, optional): The id of the issue to search for
+		(in the case that you want to search for an issue instead of a volume).
 		Defaults to None.
 
 	Returns:
@@ -341,8 +359,7 @@ def manual_search(
 				title=title, volume_number=volume_number, year=year, issue_number=issue_number
 			)
 		)
-		search.search_all()
-		results += search.search_results
+		results += search.search_all()
 
 	# Remove duplicates 
 	# because multiple formats can return the same result
@@ -355,7 +372,9 @@ def manual_search(
 	)
 	issue_numbers = {i[0]: int(i[1].split('-')[0]) if i[1] else None for i in cursor}
 	for result in results:
-		result.update(_check_match(result, title, volume_number, special_version, issue_numbers, calculated_issue_number, year))
+		result.update(
+			_check_match(result, title, volume_number, special_version, issue_numbers, calculated_issue_number, year)
+		)
 
 	# Sort results; put best result at top
 	results.sort(key=lambda r: _sort_search_results(r, title, volume_number, year, calculated_issue_number))
@@ -368,7 +387,8 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 
 	Args:
 		volume_id (int): The id of the volume to search for
-		issue_id (int, optional): The id of the issue to search for (in the case that you want to search for an issue instead of a volume). 
+		issue_id (int, optional): The id of the issue to search for
+		(in the case that you want to search for an issue instead of a volume). 
 		Defaults to None.
 
 	Returns:

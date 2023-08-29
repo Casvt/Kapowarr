@@ -19,9 +19,11 @@ from backend.files import (create_volume_folder, delete_volume_folder,
 from backend.root_folders import RootFolders
 from frontend.ui import ui_vars
 
-os_regex = compile(r'one[\- ]?shot', IGNORECASE)
+os_regex = compile(r'(?<!>)\bone[\- ]?shot\b(?!<)', IGNORECASE)
+hc_regex = compile(r'(?<!>)\bhard[\- ]?cover\b(?!<)', IGNORECASE)
 def determine_special_version(
 	volume_title: str,
+	volume_description: str,
 	issue_count: int,
 	first_issue_title: str
 ) -> Union[str, None]:
@@ -29,6 +31,7 @@ def determine_special_version(
 
 	Args:
 		volume_title (str): The title of the volume.
+		volume_description (str): The description of the volume.
 		issue_count (int): The amount of issues in the volume.
 		first_issue_title (str): The title of the first issue in the volume.
 
@@ -38,8 +41,20 @@ def determine_special_version(
 	if os_regex.search(volume_title):
 		return 'one-shot'
 
-	if first_issue_title.lower() == 'hc':
+	if (first_issue_title or '').lower() == 'hc':
 		return 'hard-cover'
+
+	if volume_description and len(volume_description.split('. ')) == 1:
+		# Description is only one sentence, so it's allowed to
+		# look in description for special version.
+		# Only one sentence is allowed because otherwise the description
+		# could be referencing a special version that isn't this one,
+		# leading to a false hit.
+		if os_regex.search(volume_description):
+			return 'one-shot'
+		
+		if hc_regex.search(volume_description):
+			return 'hard-cover'
 
 	if issue_count == 1:
 		return 'tpb'
@@ -93,9 +108,8 @@ class Issue:
 		).fetchone())
 
 		# Get all files linked to issue
-		data['files'] = tuple(map(
-			lambda f: f[0],
-			cursor.execute(
+		data['files'] = [
+			f[0] for f in cursor.execute(
 				"""
 				SELECT filepath
 				FROM files
@@ -105,7 +119,7 @@ class Issue:
 				""",
 				(self.id,)
 			)
-		))
+		]
 		data['monitored'] = data['monitored'] == 1
 		return data
 		
@@ -164,7 +178,6 @@ class Volume:
 		"""	
 		cursor = get_db('dict')
 
-		# Get volume info
 		cursor.execute("""
 			SELECT
 				v.id, comicvine_id,
@@ -199,28 +212,33 @@ class Volume:
 
 		if complete:
 			# Get issue info
-			issues = list(map(dict, cursor.execute("""
-				SELECT
-					id, volume_id, comicvine_id,
-					issue_number, calculated_issue_number,
-					title, date, description,
-					monitored
-				FROM issues
-				WHERE volume_id = ?
-				ORDER BY date, calculated_issue_number
-			""", (self.id,)).fetchall()))
+			issues = [
+				dict(i) for i in cursor.execute("""
+					SELECT
+						id, volume_id, comicvine_id,
+						issue_number, calculated_issue_number,
+						title, date, description,
+						monitored
+					FROM issues
+					WHERE volume_id = ?
+					ORDER BY date, calculated_issue_number
+					""",
+					(self.id,)
+				)
+			]
 			for issue in issues:
 				issue['monitored'] = issue['monitored'] == 1
-				cursor.execute("""
-					SELECT f.filepath
-					FROM issues_files if
-					INNER JOIN files f
-					ON if.file_id = f.id
-					WHERE if.issue_id = ?;
-					""",
-					(issue['id'],)
-				)
-				issue['files'] = list(f[0] for f in cursor.fetchall())
+				issue['files'] = [
+					f[0] for f in cursor.execute("""
+						SELECT f.filepath
+						FROM issues_files if
+						INNER JOIN files f
+						ON if.file_id = f.id
+						WHERE if.issue_id = ?;
+						""",
+						(issue['id'],)
+					)
+				]
 			volume_info['issues'] = issues
 		return volume_info
 
@@ -240,7 +258,8 @@ class Volume:
 		"""Edit the volume
 
 		Args:
-			edits (dict): The keys and their new values for the volume settings (`monitor` and `new_root_folder` + `new_volume_folder` supported)
+			edits (dict): The keys and their new values for the volume settings
+			(`monitor` and `new_root_folder` + `new_volume_folder` supported)
 
 		Returns:
 			dict: The new info of the volume
@@ -254,7 +273,7 @@ class Volume:
 
 		new_root_folder = edits.get('new_root_folder')
 		new_volume_folder = edits.get('new_volume_folder')
-		if new_root_folder and (new_volume_folder or new_volume_folder in ('', None)):
+		if new_root_folder and (new_volume_folder or not new_volume_folder):
 			self._edit_folder(new_root_folder, new_volume_folder)
 
 		return self.get_info()
@@ -324,7 +343,6 @@ class Volume:
 		if downloading_for_volume:
 			raise VolumeDownloadedFor(self.id)
 
-		# Delete volume folder
 		if delete_folder:
 			delete_volume_folder(self.id)
 
@@ -353,7 +371,8 @@ def refresh_and_scan(volume_id: int=None) -> None:
 	"""Refresh and scan one or more volumes
 
 	Args:
-		volume_id (int, optional): The id of the volume if it is desired to only refresh and scan one. If left to `None`, all volumes are refreshed and scanned. Defaults to None.
+		volume_id (int, optional): The id of the volume if it is desired to only refresh and scan one.
+		If left to `None`, all volumes are refreshed and scanned. Defaults to None.
 	"""
 	cursor = get_db()
 	cv = ComicVine()
@@ -377,41 +396,53 @@ def refresh_and_scan(volume_id: int=None) -> None:
 	# Update volumes
 	volume_datas = cv.fetch_volumes(str_ids)
 	update_volumes_issues = []
+	update_volumes = []
+	update_skipped_volumes = []
 	for volume_data in volume_datas:
 		if not volume_id and volume_data['date_last_updated'] == ids[volume_data['comicvine_id']][1]:
 			# Volume hasn't been updated since last fetch so skip
-			cursor.execute(
-				"UPDATE volumes SET last_cv_fetch = ? WHERE id = ?",
+			update_skipped_volumes.append(
 				(one_day_ago + 86400, ids[volume_data['comicvine_id']][0])
 			)
 			continue
 		
 		# Volume needs to be updated
-		cursor.execute(
-			"""
-			UPDATE volumes
-			SET
-				title = ?,
-				year = ?,
-				publisher = ?,
-				volume_number = ?,
-				description = ?,
-				cover = ?
-			WHERE id = ?;
-			""",
-			(
+		update_volumes.append((
 				volume_data['title'],
 				volume_data['year'],
 				volume_data['publisher'],
 				volume_data['volume_number'],
 				volume_data['description'],
 				volume_data['cover'],
+				volume_data['date_last_updated'],
+				one_day_ago + 86400,
+
 				ids[volume_data['comicvine_id']][0]
-			)
-		)
+		))
 		
 		# It's issues too
 		update_volumes_issues.append(volume_data['comicvine_id'])
+
+	cursor.executemany(
+		"UPDATE volumes SET last_cv_fetch = ? WHERE id = ?",
+		update_skipped_volumes
+	)
+	cursor.executemany(
+		"""
+		UPDATE volumes
+		SET
+			title = ?,
+			year = ?,
+			publisher = ?,
+			volume_number = ?,
+			description = ?,
+			cover = ?,
+			last_cv_update = ?,
+			last_cv_fetch = ?
+		WHERE id = ?;
+		""",
+		update_volumes
+	)
 	cursor.connection.commit()
 		
 	# Update issues
@@ -453,14 +484,7 @@ def refresh_and_scan(volume_id: int=None) -> None:
 			date = ?,
 			description = ?;
 	""", issue_updates)
-	
-	# Update update-times
-	for volume_data in volume_datas:
-		if volume_data['comicvine_id'] in update_volumes_issues:
-			cursor.execute(
-				"UPDATE volumes SET last_cv_update = ?, last_cv_fetch = ? WHERE id = ?;",
-				(volume_data['date_last_updated'], one_day_ago + 86400, ids[volume_data['comicvine_id']][0])
-			)
+
 	cursor.connection.commit()
 
 	# Scan for files
@@ -505,36 +529,39 @@ class Library:
 		"""Get all volumes in the library
 
 		Args:
-			sort (str, optional): How to sort the list. `title`, `year`, `volume_number`, `recently_added` and `publisher` allowed. Defaults to 'title'.
+			sort (str, optional): How to sort the list.
+			`title`, `year`, `volume_number`, `recently_added` and `publisher` allowed.
+			Defaults to 'title'.
 
 		Returns:
 			List[dict]: The list of volumes in the library.
 		"""		
-		# Determine sorting order
 		sort = self.sorting_orders[sort]
 
-		# Fetch all volumes
-		volumes = list(map(dict, get_db('dict').execute(f"""
-			SELECT
-				id, comicvine_id,
-				title, year, publisher,
-				volume_number, description,
-				monitored,
-				(
-					SELECT COUNT(*)
-					FROM issues
-					WHERE volume_id = volumes.id
-				) AS issue_count,
-				(
-					SELECT COUNT(DISTINCT issue_id)
-					FROM issues i
-					INNER JOIN issues_files if
-					ON i.id = if.issue_id
-					WHERE volume_id = volumes.id
-				) AS issues_downloaded
-			FROM volumes
-			ORDER BY {sort};
-		""")))
+		volumes = [
+			dict(v) for v in get_db('dict').execute(f"""
+				SELECT
+					id, comicvine_id,
+					title, year, publisher,
+					volume_number, description,
+					monitored,
+					(
+						SELECT COUNT(*)
+						FROM issues
+						WHERE volume_id = volumes.id
+					) AS issue_count,
+					(
+						SELECT COUNT(DISTINCT issue_id)
+						FROM issues i
+						INNER JOIN issues_files if
+						ON i.id = if.issue_id
+						WHERE volume_id = volumes.id
+					) AS issues_downloaded
+				FROM volumes
+				ORDER BY {sort};
+				"""
+			)
+		]
 
 		volumes = self.__format_lib_output(volumes)
 		
@@ -545,15 +572,14 @@ class Library:
 
 		Args:
 			query (str): The query to search with
-			sort (str, optional): How to sort the list. `title`, `year`, `volume_number`, `recently_added` and `publisher` allowed. Defaults to 'title'.
+			sort (str, optional): How to sort the list.
+			`title`, `year`, `volume_number`, `recently_added` and `publisher` allowed.
+			Defaults to 'title'.
 
 		Returns:
 			List[dict]: The resulting list of matching volumes in the library
 		"""
-		volumes = list(filter(
-			lambda v: query.lower() in v['title'].lower(),
-			self.get_volumes(sort)
-		))
+		volumes = [v for v in self.get_volumes(sort) if query.lower() in v['title'].lower()]
 		
 		return volumes
 
@@ -602,7 +628,10 @@ class Library:
 		Returns:
 			int: The new id of the volume
 		"""
-		logging.debug(f'Adding a volume to the library: CV ID {comicvine_id}, RF ID {root_folder_id}, Monitor {monitor}, VF {volume_folder}')
+		logging.debug(
+			'Adding a volume to the library: ' +
+			f'CV ID {comicvine_id}, RF ID {root_folder_id}, Monitor {monitor}, VF {volume_folder}'
+		)
 		cursor = get_db()
 
 		# Check if volume isn't already added
@@ -623,11 +652,11 @@ class Library:
 		
 		special_version = determine_special_version(
 			volume_data['title'],
+			volume_data['description'],
 			len(volume_data['issues']),
 			volume_data['issues'][0]['title']
 		)
 
-		# Insert volume
 		cursor.execute(
 			"""
 			INSERT INTO volumes(
@@ -666,12 +695,11 @@ class Library:
 		)
 		volume_id = cursor.lastrowid
 
-		# Setup folder
 		create_volume_folder(root_folder, volume_id, volume_folder)
 
 		# Prepare and insert issues
-		issue_list = map(
-			lambda i: (
+		issue_list = (
+			(
 				volume_id,
 				i['comicvine_id'],
 				i['issue_number'],
@@ -680,8 +708,8 @@ class Library:
 				i['date'],
 				i['description'],
 				True
-			),
-			volume_data['issues']
+			)
+			for i in volume_data['issues']
 		)
 		
 		cursor.executemany("""

@@ -1,8 +1,5 @@
 #-*- coding: utf-8 -*-
 
-"""This file contains custom exceptions
-"""
-
 import logging
 
 

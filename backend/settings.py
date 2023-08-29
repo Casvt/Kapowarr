@@ -1,6 +1,6 @@
 #-*- coding: utf-8 -*-
 
-"""This file contains functions regarding the settings
+"""Settings-like data, interacting with the settings and service preference
 """
 
 import logging
@@ -13,7 +13,7 @@ from typing import List
 from backend.custom_exceptions import (FolderNotFound, InvalidSettingKey,
                                        InvalidSettingModification,
                                        InvalidSettingValue)
-from backend.db import __DATABASE_VERSION__, get_db
+from backend.db import __DATABASE_FILEPATH__, __DATABASE_VERSION__, get_db
 from backend.files import folder_path
 from backend.logging import log_levels, set_log_level
 
@@ -21,6 +21,7 @@ default_settings = {
 	'host': '0.0.0.0',
 	'port': 5656,
 	'url_base': '',
+	'api_key': None,
 	'comicvine_api_key': '',
 	'auth_password': '',
 	'volume_folder_naming': '{series_name}' + path_sep + 'Volume {volume_number} ({year})',
@@ -50,13 +51,13 @@ about_data = {
 	'version': private_settings['version'],
 	'python_version': private_settings['python_version'],
 	'database_version': __DATABASE_VERSION__,
-	'database_location': None,
+	'database_location': folder_path(*__DATABASE_FILEPATH__),
 	'data_folder': folder_path()
 }
 
 task_intervals = {
-	# Tasks at the same interval, but that should be
-	# run after each other should be put in that order in this dict
+	# If there are tasks that should be run at the same time,
+	# but per se after each other, put them in that order in the dict.
 	'update_all': 3600, # every hour
 	'search_all': 86400 # every day
 }
@@ -142,9 +143,7 @@ class Settings:
 
 			elif key == 'url_base':
 				if value:
-					if not value.startswith('/'):
-						value = '/' + value
-					value = value.rstrip('/')
+					value = ('/' + value.lstrip('/')).rstrip('/')
 
 			elif key in ('issue_padding', 'volume_padding'):
 				try:
@@ -218,13 +217,13 @@ class Settings:
 
 		Returns:
 			List[str]: The services in order of preference
-		"""	
-		result = list(map(
-			lambda s: s[0],
+		"""
+		result = [
+			s[0] for s in
 	   		get_db().execute(
 				"SELECT source FROM service_preference ORDER BY pref;"
 			)
-		))
+		]
 		return result
 
 	def set_service_preference(self, order: List[str]) -> None:
