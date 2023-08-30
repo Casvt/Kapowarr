@@ -6,6 +6,8 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta id="url_base" data-value="{{url_base}}">
 
+	<link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/x-icon">
+
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/status.css') }}">
 	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
@@ -20,7 +22,7 @@
 			<button id="toggle-nav" aria-label="Toggle menu">
 				<img src="{{url_base}}/static/img/menu.svg" alt="">
 			</button>
-			<h1>Kapowarr</h1>
+			<img src="{{ url_for('static', filename='img/favicon.svg') }}" alt="">
 		</div>
 	</header>
 	<div class="nav-main">

@@ -96,7 +96,7 @@ header {
 	display: flex;
 	justify-content: space-between;
 	gap: .75rem;
-	padding: 1rem;
+	padding: .5rem;
 	background-color: var(--header-color);
 	color: var(--library-entry-progress-color);
 	font-size: .9rem;
@@ -105,7 +105,8 @@ header {
 .menu-title-container {
 	display: flex;
 	gap: .5rem;
-	align-items: flex-start;
+	align-items: center;
+	justify-content: flex-start;
 }
 
 #toggle-nav {
@@ -120,6 +121,10 @@ header {
 	height: 100%;
 	aspect-ratio: 1/1;
 	transform: scale(0.6);
+}
+
+.menu-title-container > img {
+	width: 3rem;
 }
 
 /*  */

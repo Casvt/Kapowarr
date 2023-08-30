@@ -2,7 +2,7 @@
 /* Search bar */
 /*  */
 #search-container {
-	height: 100%;
+	margin: .5rem;
 	display: flex;
 	gap: .5rem;
 	justify-content: center;

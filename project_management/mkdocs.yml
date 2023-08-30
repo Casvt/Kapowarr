@@ -7,6 +7,9 @@ edit_uri: blob/development/docs/
 repo_name: Casvt/Kapowarr
 docs_dir: ../docs
 
+extra_css:
+  - assets/css/extra.css
+
 # Site appearance (logos, colours, icons)
 theme:
   name: material
@@ -24,8 +27,8 @@ theme:
     - navigation.tabs.sticky
     - navigation.top
     - navigation.tracking
-  #favicon: assets/logo/favicon.ico
-  #logo: assets/logo/kapowarr-logo.png?
+  favicon: assets/img/favicon.svg
+  logo: assets/img/favicon.svg
   palette:
     # Light mode
     - media: "(prefers-color-scheme: light)"
@@ -43,10 +46,6 @@ theme:
       toggle:
         icon: material/toggle-switch
         name: Switch to light mode
-
-# Extra CSS
-extra_css:
-  - assets/stylesheets/extra.css
 
 # Markdown extensions
 markdown_extensions:
