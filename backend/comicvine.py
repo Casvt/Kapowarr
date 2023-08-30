@@ -20,7 +20,7 @@ from backend.files import process_issue_number, volume_regex
 from backend.settings import Settings, private_settings
 
 translation_regex = compile(
-	r'^<p>\w+ publication(\.?</p>$| \(in the \w+ language\))|^<p>published by the \w+ wing of|^<p>\w+ translations? of|from \w+</p>$|^<p>published in \w+|^<p>\w+ language',
+	r'^<p>\w+ publication(\.?</p>$| \(in the \w+ language\)|, translates )|^<p>published by the \w+ wing of|^<p>\w+ translations? of|from \w+</p>$|^<p>published in \w+|^<p>\w+ language|^<p>\w+ edition of |^<p>\w+ reprint of ',
 	IGNORECASE
 )
 headers = {'h2', 'h3', 'h4', 'h5', 'h6'}
@@ -205,7 +205,6 @@ class ComicVine:
 			raise CVRateLimitReached
 
 		volume_info = self.__format_volume_output(result['results'])
-		volume_info['date_last_updated'] = result['results']['date_last_updated']
 
 		try:
 			volume_info['cover'] = self.ssn.get(volume_info['cover']).content
@@ -352,7 +351,7 @@ class ComicVine:
 			if not results:
 				return []
 		
-		results = list(map(self.__format_volume_output, results))
+		results = [self.__format_volume_output(r) for r in results]
 
 		# Mark entries that are already added
 		volume_ids = set(c[0] for c in cursor.execute(f"""

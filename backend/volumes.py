@@ -653,11 +653,10 @@ class Library:
 				monitored,
 				root_folder,
 				custom_folder,
-				last_cv_update,
 				last_cv_fetch,
 				special_version
 			) VALUES (
-				?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+				?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 			);
 			""",
 			(
@@ -671,7 +670,6 @@ class Library:
 				volume_data['monitored'],
 				volume_data['root_folder'],
 				int(volume_folder is not None),
-				volume_data['date_last_updated'],
 				round(time()),
 				special_version
 			)

@@ -333,19 +333,22 @@ def manual_search(
 			'{title} Vol. {volume_number} ({year}) TPB',
 			'{title} ({year}) TPB',
 			'{title} Vol. {volume_number} TPB',
-			'{title} Vol. {volume_number}'
+			'{title} Vol. {volume_number}',
+			'{title}'
 		)
 	elif issue_number is None:
 		query_formats = (
 			'{title} Vol. {volume_number} ({year})',
 			'{title} ({year})',
-			'{title} Vol. {volume_number}'
+			'{title} Vol. {volume_number}',
+			'{title}'
 		)
 	else:
 		query_formats = (
 			'{title} #{issue_number} ({year})',
 			'{title} Vol. {volume_number} #{issue_number}',
-			'{title} #{issue_number}'
+			'{title} #{issue_number}',
+			'{title}'
 		)
 
 	if year is None:
