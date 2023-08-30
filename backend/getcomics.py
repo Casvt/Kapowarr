@@ -259,10 +259,10 @@ def _create_link_paths(
 			or
 			processed_desc['volume_number'] == volume_number
 			or
-			processed_desc['volume_number'] == volume_year)
+			volume_year - 1 <= processed_desc['volume_number'] <= volume_year)
 		and (processed_desc['year'] is None
 			or
-			volume_year <= processed_desc['year'] <= last_year)
+			volume_year - 1 <= processed_desc['year'] <= last_year)
 		and (special_version == processed_desc['special_version']
 			or
 			(special_version == 'hard-cover' and processed_desc['special_version'] == 'tpb')
