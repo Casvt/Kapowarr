@@ -123,6 +123,11 @@ class DownloadHandler:
 			f'Adding download for volume {volume_id}{f" issue {issue_id}" if issue_id else ""}: {link}'
 		)
 
+		# Check if link isn't already in queue
+		if any(d for d in self.queue if link in (d.page_link, d.download_link)):
+			logging.info('Download already in queue')
+			return []
+
 		is_gc_link = link.startswith(private_settings['getcomics_url'])
 
 		downloads: List[Download] = []
