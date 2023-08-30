@@ -97,7 +97,7 @@ def _clean_description(description: str, short: bool=False) -> str:
 class ComicVine:
 	"""Used for interacting with ComicVine
 	"""	
-	volume_field_list = ','.join(('deck', 'description', 'id', 'image', 'issues', 'name', 'publisher', 'start_year', 'count_of_issues', 'date_last_updated'))
+	volume_field_list = ','.join(('deck', 'description', 'id', 'image', 'issues', 'name', 'publisher', 'start_year', 'count_of_issues'))
 	issue_field_list = ','.join(('id', 'issue_number', 'name', 'cover_date', 'description', 'volume'))
 	search_field_list = ','.join(('aliases', 'count_of_issues', 'deck', 'description', 'id', 'image', 'name', 'publisher', 'site_detail_url', 'start_year'))
 	
@@ -259,7 +259,6 @@ class ComicVine:
 				break
 			for result in results['results']:
 				volume_info = self.__format_volume_output(result)
-				volume_info['date_last_updated'] = result['date_last_updated']
 
 				try:
 					volume_info['cover'] = self.ssn.get(volume_info['cover']).content

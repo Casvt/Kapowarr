@@ -16,14 +16,14 @@ from waitress.task import ThreadedTaskDispatcher as OldThreadedTaskDispatcher
 from backend.logging import set_log_level
 
 __DATABASE_FILEPATH__ = 'db', 'Kapowarr.db'
-__DATABASE_VERSION__ = 8
+__DATABASE_VERSION__ = 9
 
 class Singleton(type):
 	_instances = {}
 	def __call__(cls, *args, **kwargs):
 		i = f'{cls}{current_thread()}'
 		if (i not in cls._instances
-      		or cls._instances[i].closed):
+		or cls._instances[i].closed):
 			cls._instances[i] = super(Singleton, cls).__call__(*args, **kwargs)
 
 		return cls._instances[i]
@@ -362,6 +362,48 @@ def migrate_db(current_db_version: int) -> None:
 		current_db_version = 8
 		update_db_version(current_db_version)
 
+	if current_db_version == 8:
+		# V8 -> V9
+		cursor.executescript("""
+			PRAGMA foreign_keys = OFF;
+
+			CREATE TABLE new_volumes(
+				id INTEGER PRIMARY KEY,
+				comicvine_id INTEGER NOT NULL,
+				title VARCHAR(255) NOT NULL,
+				year INTEGER(5),
+				publisher VARCHAR(255),
+				volume_number INTEGER(8) DEFAULT 1,
+				description TEXT,
+				cover BLOB,
+				monitored BOOL NOT NULL DEFAULT 0,
+				root_folder INTEGER NOT NULL,
+				folder TEXT,
+				custom_folder BOOL NOT NULL DEFAULT 0,
+				last_cv_fetch INTEGER(8) DEFAULT 0,
+				special_version VARCHAR(255),
+				
+				FOREIGN KEY (root_folder) REFERENCES root_folders(id)
+			);
+
+			INSERT INTO new_volumes
+				SELECT
+					id, comicvine_id, title, year, publisher,
+					volume_number, description, cover, monitored,
+					root_folder, folder, custom_folder,
+					0 AS last_cv_fetch, special_version
+				FROM volumes;
+		
+			DROP TABLE volumes;
+
+			ALTER TABLE new_volumes RENAME TO volumes;
+
+			PRAGMA foreign_keys = ON;
+		""")
+
+		current_db_version = 9
+		update_db_version(current_db_version)
+
 	return
 
 def setup_db() -> None:
@@ -396,7 +438,6 @@ def setup_db() -> None:
 			root_folder INTEGER NOT NULL,
 			folder TEXT,
 			custom_folder BOOL NOT NULL DEFAULT 0,
-			last_cv_update VARCHAR(255),
 			last_cv_fetch INTEGER(8) DEFAULT 0,
 			special_version VARCHAR(255),
 			

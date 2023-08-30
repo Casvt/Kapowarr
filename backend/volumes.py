@@ -379,53 +379,35 @@ def refresh_and_scan(volume_id: int=None) -> None:
 
 	one_day_ago = round(time()) - 86400
 	if volume_id:
-		ids = dict((r[0], (r[1], r[2])) for r in cursor.execute(
-			"SELECT comicvine_id, id, last_cv_update FROM volumes WHERE id = ? LIMIT 1;",
+		ids = dict(cursor.execute(
+			"SELECT comicvine_id, id FROM volumes WHERE id = ? LIMIT 1;",
 			(volume_id,)
 		))
 	else:
-		ids = dict((r[0], (r[1], r[2])) for r in cursor.execute("""
-				SELECT comicvine_id, id, last_cv_update
-				FROM volumes
-				WHERE last_cv_fetch <= ?
-				ORDER BY last_cv_fetch ASC;
-				""",
-				(one_day_ago,)))
+		ids = dict(cursor.execute("""
+			SELECT comicvine_id, id
+			FROM volumes
+			WHERE last_cv_fetch <= ?
+			ORDER BY last_cv_fetch ASC;
+			""",
+			(one_day_ago,)
+		))
 	str_ids = [str(i) for i in ids]
 
 	# Update volumes
 	volume_datas = cv.fetch_volumes(str_ids)
-	update_volumes_issues = []
-	update_volumes = []
-	update_skipped_volumes = []
-	for volume_data in volume_datas:
-		if not volume_id and volume_data['date_last_updated'] == ids[volume_data['comicvine_id']][1]:
-			# Volume hasn't been updated since last fetch so skip
-			update_skipped_volumes.append(
-				(one_day_ago + 86400, ids[volume_data['comicvine_id']][0])
-			)
-			continue
-		
-		# Volume needs to be updated
-		update_volumes.append((
+	update_volumes = ((
 				volume_data['title'],
 				volume_data['year'],
 				volume_data['publisher'],
 				volume_data['volume_number'],
 				volume_data['description'],
 				volume_data['cover'],
-				volume_data['date_last_updated'],
 				one_day_ago + 86400,
 
-				ids[volume_data['comicvine_id']][0]
-		))
-		
-		# It's issues too
-		update_volumes_issues.append(volume_data['comicvine_id'])
-
-	cursor.executemany(
-		"UPDATE volumes SET last_cv_fetch = ? WHERE id = ?",
-		update_skipped_volumes
+				ids[volume_data['comicvine_id']]
+		)
+		for volume_data in volume_datas
 	)
 	cursor.executemany(
 		"""
@@ -437,7 +419,6 @@ def refresh_and_scan(volume_id: int=None) -> None:
 			volume_number = ?,
 			description = ?,
 			cover = ?,
-			last_cv_update = ?,
 			last_cv_fetch = ?
 		WHERE id = ?;
 		""",
@@ -446,9 +427,9 @@ def refresh_and_scan(volume_id: int=None) -> None:
 	cursor.connection.commit()
 		
 	# Update issues
-	issue_datas = cv.fetch_issues([str(i) for i in update_volumes_issues])
-	issue_updates = [(
-			ids[issue_data['volume_id']][0],
+	issue_datas = cv.fetch_issues([str(v['comicvine_id']) for v in volume_datas])
+	issue_updates = ((
+			ids[issue_data['volume_id']],
 			issue_data['comicvine_id'],
 			issue_data['issue_number'],
 			issue_data['calculated_issue_number'],
@@ -462,7 +443,9 @@ def refresh_and_scan(volume_id: int=None) -> None:
 			issue_data['title'],
 			issue_data['date'],
 			issue_data['description']
-		) for issue_data in issue_datas]
+		)
+		for issue_data in issue_datas
+	)
 
 	cursor.executemany("""
 		INSERT INTO issues(
