@@ -111,7 +111,7 @@ class PostProcessing(PostProcessor):
 		if self.download.file.lower().endswith('.zip'):
 			unzip = get_db().execute("SELECT value FROM config WHERE key = 'unzip';").fetchone()[0]
 			if unzip:
-				unzip_volume(self.download['volume_id'], self.download.file)
+				unzip_volume(self.download.volume_id, self.download.file)
 		return
 
 	def _delete_file(self) -> None:
