@@ -16,7 +16,7 @@ from waitress.task import ThreadedTaskDispatcher as OldThreadedTaskDispatcher
 from backend.logging import set_log_level
 
 __DATABASE_FILEPATH__ = 'db', 'Kapowarr.db'
-__DATABASE_VERSION__ = 9
+__DATABASE_VERSION__ = 10
 
 class Singleton(type):
 	_instances = {}
@@ -402,6 +402,23 @@ def migrate_db(current_db_version: int) -> None:
 		""")
 
 		current_db_version = 9
+		update_db_version(current_db_version)
+
+	if current_db_version == 9:
+		# V9 -> V10
+		
+		# Nothing is changed in the database
+		# It's just that this code needs to run once
+		# and the DB migration system does exactly that:
+		# run pieces of code once.
+		from backend.settings import update_manifest
+
+		url_base: str = cursor.execute(
+			"SELECT value FROM config WHERE key = 'url_base' LIMIT 1;"
+		).fetchone()[0]
+		update_manifest(url_base)
+		
+		current_db_version = 10
 		update_db_version(current_db_version)
 
 	return

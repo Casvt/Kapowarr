@@ -1,0 +1,16 @@
+{
+    "name": "Kapowarr",
+    "short_name": "Kapowarr",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#464b51",
+    "theme_color": "#ebc700",
+    "orientation": "portrait-primary",
+    "icons": [
+        {
+            "src": "/static/img/favicon.svg",
+            "type": "image/svg+xml",
+            "sizes": "64x64 32x32 24x24 16x16"
+        }
+    ]
+}

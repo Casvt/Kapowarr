@@ -4,6 +4,7 @@
 """
 
 import logging
+from json import dumps, loads
 from os import urandom
 from os.path import isdir
 from os.path import sep as path_sep
@@ -75,6 +76,15 @@ supported_source_strings = (('mega', 'mega link'),
 							('mediafire', 'mediafire link'),
 							('getcomics', 'download now','main server','mirror download','link 1','link 2'))
 
+def update_manifest(url_base: str) -> None:
+	with open(folder_path('frontend', 'static', 'json', 'manifest.json'), 'r+') as f:
+		manifest = loads(f.read())
+		manifest['start_url'] = url_base + '/'
+		manifest['icons'][0]['src'] = f'{url_base}/static/img/favicon.svg'
+		f.seek(0)
+		f.write(dumps(manifest, indent=4))
+	return
+
 class Settings:
 	"""For interacting with the settings
 	"""	
@@ -144,6 +154,7 @@ class Settings:
 			elif key == 'url_base':
 				if value:
 					value = ('/' + value.lstrip('/')).rstrip('/')
+					settings['url_base'] = value
 
 			elif key in ('issue_padding', 'volume_padding'):
 				try:
@@ -165,6 +176,9 @@ class Settings:
 
 			if 'log_level' in settings:
 				set_log_level(settings['log_level'])
+
+			if 'url_base' in settings:
+				update_manifest(settings['url_base'])
 
 			result = self.get_settings(use_cache=False)
 		else:
