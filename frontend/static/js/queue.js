@@ -11,6 +11,7 @@ function fillQueue(api_key) {
 			const table = document.getElementById('queue');
 			table.innerHTML = '';
 			json.result.forEach(obj => {
+				console.log(obj);
 				const entry = document.createElement('tr');
 				entry.classList.add('queue-entry');
 				entry.id = obj.id;
@@ -23,7 +24,7 @@ function fillQueue(api_key) {
 				const title = document.createElement('td');
 				const title_link = document.createElement('a');
 				title_link.innerText = obj.title;
-				title_link.href = obj.original_link;
+				title_link.href = obj.page_link;
 				title_link.target = '_blank';
 				title.appendChild(title_link);
 				entry.appendChild(title);
