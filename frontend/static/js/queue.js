@@ -11,7 +11,6 @@ function fillQueue(api_key) {
 			const table = document.getElementById('queue');
 			table.innerHTML = '';
 			json.result.forEach(obj => {
-				console.log(obj);
 				const entry = document.createElement('tr');
 				entry.classList.add('queue-entry');
 				entry.id = obj.id;
