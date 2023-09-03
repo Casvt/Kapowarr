@@ -85,7 +85,7 @@ class BaseDownload(Download):
 		}
 	
 	def __repr__(self) -> str:
-		return f'<{self.__class__.__name__}, {self.download_link}>'
+		return f'<{self.__class__.__name__}, {self.download_link}, {self.file}>'
 
 class DirectDownload(BaseDownload):
 	"""For downloading a file directly from a link
