@@ -101,14 +101,20 @@ class ComicVine:
 	issue_field_list = ','.join(('id', 'issue_number', 'name', 'cover_date', 'description', 'volume'))
 	search_field_list = ','.join(('aliases', 'count_of_issues', 'deck', 'description', 'id', 'image', 'name', 'publisher', 'site_detail_url', 'start_year'))
 	
-	def __init__(self) -> None:
+	def __init__(self, comicvine_api_key: str=None) -> None:
 		"""Start interacting with ComicVine
+
+		Args:
+			comicvine_api_key (str, optional): Override the API key that is used. Defaults to None.
 
 		Raises:
 			InvalidComicVineApiKey: No ComicVine API key is set in the settings
 		"""
 		self.api_url = private_settings['comicvine_api_url']
-		api_key = Settings().get_settings()['comicvine_api_key']
+		if comicvine_api_key:
+			api_key = comicvine_api_key
+		else:
+			api_key = Settings().get_settings()['comicvine_api_key']
 		if not api_key:
 			raise InvalidComicVineApiKey
 
@@ -116,6 +122,23 @@ class ComicVine:
 		self.ssn.params.update({'format': 'json', 'api_key': api_key})
 		self.ssn.headers.update({'user-agent': 'Kapowarr'})
 		return
+
+	def test_token(self) -> bool:
+		"""Test if the token works
+
+		Returns:
+			bool: Whether or not the token works.
+		"""
+		try:
+			result = self.ssn.get(
+				f'{self.api_url}/publisher/4010-31',
+				params={'field_list': 'id'}
+			).json()
+			if result['status_code'] != 1:
+				return False
+		except Exception:
+			return False
+		return True
 
 	def __format_volume_output(self, volume_data: dict) -> dict:
 		"""Format the ComicVine API output containing the info about the volume to the "Kapowarr format"

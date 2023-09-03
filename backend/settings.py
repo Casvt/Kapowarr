@@ -137,6 +137,11 @@ class Settings:
 			elif key == 'api_key':
 				raise InvalidSettingModification(key, 'POST /settings/api_key')
 
+			elif key == 'comicvine_api_key':
+				from backend.comicvine import ComicVine
+				if not ComicVine(value).test_token():
+					raise InvalidSettingValue(key, value)
+
 			elif key == 'download_folder' and not isdir(value):
 				raise FolderNotFound
 

@@ -14,6 +14,7 @@ function fillSettings(api_key) {
 };
 
 function saveSettings(api_key) {
+	document.querySelector('#cv-input').classList.remove('error-input');
 	const data = {
 		'host': document.querySelector('#bind-address-input').value,
 		'port': document.querySelector('#port-input').value,
@@ -32,7 +33,11 @@ function saveSettings(api_key) {
 		if (json.error !== null) return Promise.reject(json);
 	})
 	.catch(e => {
-		console.log(e.error);
+		if (e.error === 'InvalidSettingValue') {
+			if (e.result.key === 'comicvine_api_key')
+				document.querySelector('#cv-input').classList.add('error-input');
+		} else 
+			console.log(e.error);
 	});
 };
 
