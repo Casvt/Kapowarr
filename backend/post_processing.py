@@ -102,6 +102,7 @@ class PostProcessing(PostProcessor):
 			).fetchone()[0]
 			file_dest = join(folder, basename(self.download.file))
 			if isfile(file_dest):
+				logging.warning(f'The file {file_dest} already exists; replacing with downloaded file')
 				remove(file_dest)
 			move(self.download.file, file_dest)
 			self.download.file = file_dest
