@@ -361,17 +361,24 @@ def scan_files(volume_data: dict) -> None:
 		file_data = extract_filename_data(file)
 
 		# Check if file matches volume
-		if ((
+		if not ((
 			file_data['volume_number'] is not None
-			and file_data['volume_number'] != volume_data['volume_number']
-			and file_data['volume_number'] != volume_data['year']
+			and file_data['volume_number'] in (
+				volume_data['volume_number'], volume_data['year']
+			)
 		)
 		or (
-			volume_data['special_version'] != file_data['special_version']
-			and not (
-				volume_data['special_version'] == 'hard-cover'
-				and file_data['special_version'] == 'tpb'
-			)
+			file_data['year'] is not None
+			and file_data['year'] == volume_data['year']
+		)
+		or (
+			volume_data['special_version']
+			and (
+				file_data['special_version'] == volume_data['special_version']
+				or (
+					volume_data['special_version'] == 'hard-cover'
+					and file_data['special_version'] == 'tpb'
+			))
 		)):
 			continue
 
