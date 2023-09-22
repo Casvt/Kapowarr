@@ -34,7 +34,7 @@ On the documentation page about [rate limiting](./rate_limiting.md), information
 
 Root folders are the base folders that Kapowarr works in. All content is put in these folders. When adding a volume (or when editing one), you choose in which root folder all content for that volume is put. Kapowarr will never touch any files outside the root folders (except in the [download folder](#download-folder)). You might have multiple root folders because you store your comics on multiple drives or want different access rights to certain volumes, to name a few reasons.
 
-Root folders can be added at Settings -> Media Management -> Root Folders. Note: If you use docker to run Kapowarr and have followed the example given in the [installation instructions](../installation/#docker), this is where you would enter `/content`, `/content2`, `/RF`, `/RF2`, etc.
+Root folders can be added at Settings -> Media Management -> Root Folders. Note: If you use docker to run Kapowarr and have followed the example given in the [installation instructions](../installation/#docker), this is where you would enter `/comics-1` and `/comics-2`.
 
 ## Downloading
 
