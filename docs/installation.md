@@ -102,4 +102,16 @@ Note, the permissions on this folder need to allow the container to read, write,
 
 ## Manual Install
 
-Coming soon
+=== "Windows"
+    _Coming soon._  
+    On Windows, there are a couple steps involved.  
+    1. [Download and install Python](https://www.python.org/downloads/). This is the framework Kapowarr runs on top of.
+    2. Download (or clone) the [latest Kapowarr release].
+
+
+=== "Ubuntu"
+    _Coming soon._
+
+=== "macOS"
+    Use docker.  
+    Permissions on macOS (and GateKeeper) make this needlessly complex.  
