@@ -67,7 +67,7 @@ markdown_extensions:
   - sane_lists
   - toc:
       permalink: true
-      toc_depth: 5
+      toc_depth: 3
 
 # mkdocs function extensions
 plugins:
@@ -83,7 +83,9 @@ nav:
   - Getting Started:
     - Installation: installation.md
     - Setup After Installation: setup_after_installation.md
-  - FAQ: faq.md
+  - Settings: settings.md
   - Other Docs:
     - API: api.md
+    - FAQ: faq.md
     - Rate Limiting: rate_limiting.md
+  - FAQ: faq.md
