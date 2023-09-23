@@ -218,22 +218,32 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 		special_pos = special_result.start(0)
 
 	else:
-		# No special version so find issue number; assume to the right of volume number (if found)
-		for regex in (issue_regex, issue_regex_2, issue_regex_3, issue_regex_4, issue_regex_5, issue_regex_6):
-			r = list(regex.finditer(filename, pos=volume_end))
-			if r:
-				r.sort(key=lambda e: (int(e.group(1)[-1] not in '0123456789'), 1 / e.start(0) if e.start(0) else 0))
+		# No special version so find issue number
+		pos_options = (
+			({'pos': volume_end},
+				(issue_regex, issue_regex_2, issue_regex_3, issue_regex_4, issue_regex_5, issue_regex_6)),
+			({'endpos': volume_pos},
+				(issue_regex, issue_regex_2, issue_regex_3, issue_regex_4, issue_regex_5))
+		)
+		for pos_option, regex_list in pos_options:
+			for regex in regex_list:
+				r = list(regex.finditer(filename, **pos_option))
+				if r:
+					r.sort(key=lambda e: (int(e.group(1)[-1] not in '0123456789'), 1 / e.start(0) if e.start(0) else 0))
 
-				for result in r:
-					if not (year_pos <= result.start(0) <= year_end
-					or year_pos <= result.end(0) <= year_end):
-						# Issue number found
-						issue_number = result.group(1)
-						issue_pos = result.start(0)
-						break
-				else:
-					continue
-				break
+					for result in r:
+						if not (year_pos <= result.start(0) <= year_end
+						or year_pos <= result.end(0) <= year_end):
+							# Issue number found
+							issue_number = result.group(1)
+							issue_pos = result.start(0)
+							break
+					else:
+						continue
+					break
+			else:
+				continue
+			break
 
 		else:
 			issue_result = issue_regex_7.search(no_ext_clean_filename)
