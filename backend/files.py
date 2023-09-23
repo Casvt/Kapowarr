@@ -386,8 +386,7 @@ def scan_files(volume_data: dict) -> None:
 		)
 		and
 		(
-			volume_data['special_version'] is None
-			or file_data['special_version'] == volume_data['special_version']
+			file_data['special_version'] == volume_data['special_version']
 			or (
 				volume_data['special_version'] == 'hard-cover'
 				and file_data['special_version'] == 'tpb'
