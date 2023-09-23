@@ -89,18 +89,24 @@ class DownloadHandler:
 		"""
 		logging.debug('Loading downloads from database')
 		with self.context():
-			cursor = get_db('dict', temp=True)
-			cursor.execute("""
+			cursor = get_db()
+			cursor2 = get_db('dict', temp=True)
+			cursor2.execute("""
 				SELECT
 					id,
 					link,
 					volume_id, issue_id
 				FROM download_queue;
 			""")
-			for download in cursor:
+			for download in cursor2:
 				logging.debug(f'Download from database: {dict(download)}')
-				self.add(download['link'], download['volume_id'], download['issue_id'], download['id'])
-			cursor.connection.close()
+				result = self.add(download['link'], download['volume_id'], download['issue_id'], download['id'])
+				if not result:
+					# Link is broken, which triggers a write to the database
+					# To avoid the database being locked for a long time while importing
+					# we commit in-between.
+					cursor.connection.commit()
+			cursor2.connection.close()
 		return
 
 	def add(self,
