@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta id="url_base" data-value="{{url_base}}">
+
+	<link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/x-icon">
+
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/window.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/library_import.css') }}">
+	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/general.js') }}" defer></script>
+	<script src="{{ url_for('static', filename='js/window.js') }}" defer></script>
+	<script src="{{ url_for('static', filename='js/library_import.js') }}" defer></script>
+
+	<title>Library Import - Kapowarr</title>
+</head>
+<body>
+	<div class="window">
+		<section id="cv-window">
+			<div>
+				<h2>Edit ComicVine Match</h2>
+				<button aria-label="Cancel editing match" title="Cancel editing match">
+					<img src="{{url_base}}/static/img/cancel_search.svg" alt="">
+				</button>
+			</div>
+			<div>
+				<form class="search-bar">
+					<input type="text" id="search-input">
+					<button type="submit">
+						<img src="{{url_base}}/static/img/search.svg" alt="">
+					</button>
+				</form>
+				<div class="search-results-container">
+					<table>
+						<thead>
+							<th>Search Result</th>
+							<th>Action</th>
+						</thead>
+						<tbody class="search-results"></tbody>
+					</table>
+				</div>
+			</div>
+		</section>
+	</div>
+	
+	<header>
+		<div class="menu-title-container">
+			<button id="toggle-nav" aria-label="Toggle menu">
+				<img src="{{url_base}}/static/img/menu.svg" alt="">
+			</button>
+			<img src="{{ url_for('static', filename='img/favicon.svg') }}" alt="">
+		</div>
+	</header>
+
+	<div class="nav-main">
+		<div id="nav-bar">
+			<nav>
+				<a href="{{url_base}}/">Volumes</a>
+					<a href="{{url_base}}/add" class="sub-entry">Add Volume</a>
+					<a href="{{url_base}}/library-import" class="sub-entry current-nav">Library Import</a>
+				<a href="{{url_base}}/activity/queue">Activity</a>
+				<a href="{{url_base}}/settings">Settings</a>
+				<a href="{{url_base}}/system/status">System</a>
+			</nav>
+			<div id="task-queue"></div>
+		</div>
+		<main>
+			<div class="tool-bar-container">
+				<div class="tool-bar">
+					<button id="refresh-button" aria-label="Refresh the list">
+						<img src="{{url_base}}/static/img/refresh.svg" alt="">
+						<div>
+							<p>Refresh</p>
+						</div>
+					</button>
+				</div>
+			</div>
+			<div class="action-container">
+				<button id="run-button">Run</button>
+				<button id="import-button" class="hidden">Import</button>
+			</div>
+			<div class="table-container hidden">
+				<table>
+					<thead>
+						<th>File</th>
+						<th>Match</th>
+						<th>Action</th>
+					</thead>
+					<tbody class="proposal-list">
+						
+					</tbody>
+				</table>
+			</div>
+		</main>
+	</div>
+</body>
+</html>

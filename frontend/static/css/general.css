@@ -202,6 +202,7 @@ main > *:not(.tool-bar-container) {
 /*  */
 .tool-bar-container {
 	height: var(--tool-bar-height);
+	flex: 0 0 auto;
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
