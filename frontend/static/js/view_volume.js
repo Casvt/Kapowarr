@@ -370,10 +370,20 @@ function showRename(api_key, issue_id=null) {
 			message.innerText = 'Nothing to rename';
 			table.appendChild(message);
 			rename_button.classList.add('hidden');
+			table.parentNode.querySelector('thead').classList.add('hidden');
 		} else {
 			rename_button.classList.remove('hidden');
+			table.parentNode.querySelector('thead').classList.remove('hidden');
 			json.result.forEach(rename_entry => {
 				const before = document.createElement('tr');
+				
+				const checkbox = document.createElement('td');
+				checkbox.setAttribute('rowspan', '2');
+				const checkbox_input = document.createElement('input');
+				checkbox_input.type = 'checkbox';
+				checkbox_input.checked = true;
+				checkbox.appendChild(checkbox_input);
+				before.appendChild(checkbox);
 				
 				const before_icon = document.createElement('td');
 				before_icon.innerText = '-';
@@ -402,14 +412,36 @@ function showRename(api_key, issue_id=null) {
 	});
 };
 
+function toggleAllRenames() {
+	const checked = document.querySelector('#selectall-input').checked;
+	document.querySelectorAll('#rename-preview > tbody input[type="checkbox"]').forEach(e => e.checked = checked);
+};
+
 function renameVolume(api_key, issue_id=null) {
+	if ([...document.querySelectorAll('#rename-preview > tbody input[type="checkbox"]')].every(e => !e.checked)) {
+		closeWindow();
+		return;
+	};
+
 	showLoadWindow('rename-window');
 	let url;
 	if (issue_id === null) url = `${url_base}/api/volumes/${id}/rename?api_key=${api_key}`;
 	else url = `${url_base}/api/issues/${issue_id}/rename?api_key=${api_key}`;
-	fetch(url, {
-		'method': 'POST'
-	})
+
+	let args;
+	if ([...document.querySelectorAll('#rename-preview > tbody input[type="checkbox"]')].every(e => e.checked))
+		args = { 'method': 'POST' };
+	else
+		args = {
+			'method': 'POST',
+			'headers': {'Content-Type': 'application/json'},
+			'body': JSON.stringify(
+				[...document.querySelectorAll('#rename-preview > tbody > tr > td > input[type="checkbox"]:checked')]
+					.map(e => e.parentNode.nextSibling.nextSibling.innerText)
+			)
+		}
+
+	fetch(url, args)
 	.then(response => window.location.reload());
 };
 
@@ -543,6 +575,7 @@ addEventListener('#cancel-delete', 'click', e => closeWindow());
 addEventListener('#cancel-info', 'click', e => closeWindow());
 addEventListener('#issue-info-selector', 'click', e => showInfoWindow('issue-info'));
 addEventListener('#issue-files-selector', 'click', e => showInfoWindow('issue-files'));
+addEventListener('#selectall-input', 'change', e => toggleAllRenames());
 
 document.querySelector('#edit-form').setAttribute('action', 'javascript:editVolume();');
 document.querySelector('#delete-form').setAttribute('action', 'javascript:deleteVolume();');

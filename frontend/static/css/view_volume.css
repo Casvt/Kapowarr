@@ -278,6 +278,14 @@
 	border-spacing: 0px;
 }
 
+#rename-preview th {
+	text-align: left;
+}
+
+#rename-preview tr > td:first-child {
+	padding-right: .5rem;
+}
+
 #rename-preview tr:nth-child(odd) > td {
 	padding-top: .75rem;
 	padding-bottom: .25rem;
@@ -288,20 +296,22 @@
 	padding-top: .25rem;
 }
 
+#rename-preview tr:nth-child(odd):not(:nth-last-child(2)) > td:first-child,
 #rename-preview tr:nth-child(even):not(:last-child) > td {
 	border-bottom: 1px solid var(--border-color);
 }
 
-#rename-preview tr > :first-child {
+#rename-preview tr:nth-child(odd) > td:nth-child(2),
+#rename-preview tr:nth-child(even) > td:first-child {
 	text-align: center;
 	padding-right: .5rem;
 }
 
-#rename-preview tr:nth-child(odd) > :first-child {
+#rename-preview tr:nth-child(odd) > td:nth-child(2) {
 	color: var(--error-color);
 }
 
-#rename-preview tr:nth-child(even) > :first-child {
+#rename-preview tr:nth-child(even) > td:first-child {
 	color: var(--success-color);
 }
 
