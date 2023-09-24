@@ -58,16 +58,15 @@ main > .action-container {
 	padding: .5rem 1rem;
 }
 
+.proposal-list td:first-child {
+	width: 3rem;
+}
+
 .proposal-list td a {
 	color: var(--accent-color);
 }
 
-.proposal-list td:last-of-type {
-	min-width: 8rem;
-}
-
 .proposal-list button {
-	margin-right: .75rem;
 	background-color: transparent;
 }
 

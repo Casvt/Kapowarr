@@ -7,6 +7,13 @@ function loadProposal(api_key) {
 		json.result.forEach(result => {
 			const entry = document.createElement('tr');
 			entry.dataset.cv_id = result.cv.id || '';
+			
+			const select = document.createElement('td');
+			const select_button = document.createElement('input');
+			select_button.type = 'checkbox';
+			select_button.checked = true;
+			select.appendChild(select_button);
+			entry.appendChild(select);
 
 			const title = document.createElement('td');
 			title.innerText = result.file_title;
@@ -32,15 +39,6 @@ function loadProposal(api_key) {
 			change_match.addEventListener('click', e => editCVMatch(result.filepath));
 			actions.appendChild(change_match);
 
-			const remove_row = document.createElement('button');
-			remove_row.title = 'Remove entry';
-			const remove_row_icon = document.createElement('img');
-			remove_row_icon.src = '/static/img/delete.svg';
-			remove_row_icon.alt = '';
-			remove_row.appendChild(remove_row_icon);
-			remove_row.addEventListener('click', e => entry.remove());
-			actions.appendChild(remove_row);
-
 			entry.appendChild(actions);
 			
 			table.appendChild(entry);
@@ -50,6 +48,11 @@ function loadProposal(api_key) {
 		document.querySelector('#run-button').innerText = 'Run';
 		document.querySelector('#import-button').classList.remove('hidden');
 	});
+};
+
+function toggleSelectAll() {
+	const checked = document.querySelector('#selectall-input').checked;
+	document.querySelectorAll('.proposal-list input[type="checkbox"]').forEach(e => e.checked = checked);
 };
 
 function editCVMatch(filepath) {
@@ -108,10 +111,10 @@ function searchCV() {
 
 function importLibrary(api_key) {
 	const import_button = document.querySelector('#import-button');
-	const data = [...document.querySelectorAll('.proposal-list > tr:not([data-cv_id=""])')]
+	const data = [...document.querySelectorAll('.proposal-list > tr:not([data-cv_id=""]) input[type="checkbox"]:checked')]
 		.map(e => { return {
-			'filepath': e.querySelector('td').title,
-			'id': parseInt(e.dataset.cv_id)
+			'filepath': e.parentNode.nextSibling.title,
+			'id': parseInt(e.parentNode.parentNode.dataset.cv_id)
 		} });
 	
 	import_button.innerText = 'Importing';
@@ -137,5 +140,7 @@ usingApiKey()
 	});
 	addEventListener('#refresh-button', 'click', e => loadProposal(api_key));
 	addEventListener('#import-button', 'click', e => importLibrary(api_key));
-	setAttribute('.search-bar', 'action', 'javascript:searchCV();');
 });
+
+setAttribute('.search-bar', 'action', 'javascript:searchCV();');
+addEventListener('#selectall-input', 'change', e => toggleSelectAll());
