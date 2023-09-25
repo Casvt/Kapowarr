@@ -40,7 +40,7 @@ Available variables are:
 - {issue_release_date}
 - {issue_release_year}
 
-For example, `{series_name} ({year}) Volume {volume_number} Issue {issue_number}` would come out as "Invincible Iron Man (2019) Volume 01 Issue 001.cbz".
+For example, `{series_name} ({year}) Volume {volume_number} Issue {issue_number} {issue_title}` would come out as "Invincible Iron Man (2008) Volume 01 Issue 001 The Five Nightmares Part 1 Armageddon Days.cbz".
 
 #### File Naming For TPB
 
@@ -55,6 +55,24 @@ Available variables are:
 - {publisher}
 
 For example, `{series_name} ({year}) Volume {volume_number} TPB` would come out as "Invincible Iron Man (2019) Volume 01 TPB.cbz"
+
+#### File Naming For Issues Without Title
+
+The naming format for the file itself if there is no issue-specific title.  
+Available variables are:
+
+- {series_name}
+- {clean_series_name}
+- {volume_number}
+- {comicvine_id}
+- {year}
+- {publisher}
+- {issue_comicvine_id}
+- {issue_number}
+- {issue_release_date}
+- {issue_release_year}
+
+For example, `{series_name} ({year}) Volume {volume_number} Issue {issue_number}` would come out as "Invincible Iron Man (2008) Volume 01 Issue 001.cbz".
 
 #### Issue Padding
 
