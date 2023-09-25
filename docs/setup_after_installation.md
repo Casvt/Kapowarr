@@ -5,7 +5,7 @@ After installing Kapowarr, you should have access to the web-ui. Kapowarr needs 
 ## Port
 
 The first thing to do is decide if you want to leave Kapowarr on the default port of 5656. If you _do_, you can go to the next step.  
-If you want to _change_ the port, refer to [port](../settings/#port-number) on the Setting page. 
+If you want to _change_ the port, refer to [port](../settings/#port-number) on the Setting page.  
 
 ## Authentication
 
