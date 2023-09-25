@@ -112,7 +112,7 @@ Note, the permissions on this folder need to allow the container to read, write,
        We suggest something straightforward - `C:\services\Kapowarr` is what we'll use as an example.
     4. Install the required python modules (found in `requirements.txt`).
        This can be achieved from a command prompt, by changing to the folder you've extracted Kapowarr to and running a python command.
-       ```
+       ```powershell
        cd C:\services\Kapowarr
        python -m pip install -r requirements.txt
        ```
