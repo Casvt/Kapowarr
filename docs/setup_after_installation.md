@@ -17,7 +17,7 @@ _Note: If you are exposing Kapowarr to the internet, we highly recommend this._
 Kapowarr uses ComicVine as its metadata source. To fetch the metadata from ComicVine, Kapowarr needs access to the API, which requires an API key.  
 See [Comic Vine API Key](../settings/#comic-vine-api-key) on the Settings page for how to get one.  
 
-On the documentation page about [rate limiting](../rate_limiting), information can be found about the handling of the ComicVine API rate limit.
+Once you've entered your key and hit "Save", move on to Root Folders.  
 
 ## Root Folders
 
