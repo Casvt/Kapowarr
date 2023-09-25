@@ -21,14 +21,10 @@ You might want to set a password to restrict access to the web-ui (and API). Set
 
 ## ComicVine API key
 
-Kapowarr uses ComicVine as it's metadata source. To fetch the metadata from ComicVine, Kapowarr needs access to the API, which requires an API key.
+Kapowarr uses ComicVine as its metadata source. To fetch the metadata from ComicVine, Kapowarr needs access to the API, which requires an API key.  
+See [Comic Vine API Key](../settings/#comic-vine-api-key) on the Settings page for how to get one.  
 
-1. Go to [the API page of ComicVine](https://comicvine.gamespot.com/api/).
-2. If you don't have a free account at ComicVine already, sign up and once logged in, revisit the linked page.
-3. You'll see your ComicVine API key, which is 40 characters long and contains the letters a-f and numbers 0-9 (e.g. `da39a3ee5e6b4b0d3255bfef95601890afd80709`).
-4. Copy that API key and enter it as the value of Settings -> General -> Comic Vine API -> Comic Vine API Key in the web-ui. Don't forget to save.
-
-On the documentation page about [rate limiting](./rate_limiting.md), information can be found about the handling of the ComicVine API rate limit.
+On the documentation page about [rate limiting](../rate_limiting), information can be found about the handling of the ComicVine API rate limit.
 
 ## Root Folders
 

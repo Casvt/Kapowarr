@@ -203,7 +203,7 @@ Documentation for the API itself will be coming in due course.
 
 ### Comic Vine API Key
 
-Kapowarr uses ComicVine as it's metadata source. To fetch the metadata from ComicVine, Kapowarr needs access to the API, which requires an API key.
+Kapowarr uses ComicVine as its metadata source. To fetch the metadata from ComicVine, Kapowarr needs access to the API, which requires an API key.
 
 1. Go to [the API page of ComicVine](https://comicvine.gamespot.com/api/).
 2. If you don't have a free account at ComicVine already, sign up and once logged in, revisit the linked page.
