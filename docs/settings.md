@@ -110,7 +110,7 @@ This is useful for 'pack' style downloads, where the download contains multiple 
 ### Root Folders
 
 A 'root folder' is the path that Kapowarr will use to create volume folders and store files.  
-If you've mounted the container using the example paths, this will likely be `/content`.  
+If you've mounted the container using the example paths, this will likely be `/comics-1`.  
 _Note: at least one of these must be set before you are able to add any volumes to monitor, as without it Kapowarr cannot know where to put the files._
 
 ## Download
