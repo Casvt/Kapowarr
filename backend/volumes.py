@@ -115,7 +115,8 @@ class Issue:
 				FROM files
 				INNER JOIN issues_files
 				ON file_id = id
-				WHERE issue_id = ?;
+				WHERE issue_id = ?
+				ORDER BY filepath;
 				""",
 				(self.id,)
 			)
@@ -234,7 +235,8 @@ class Volume:
 						FROM issues_files if
 						INNER JOIN files f
 						ON if.file_id = f.id
-						WHERE if.issue_id = ?;
+						WHERE if.issue_id = ?
+						ORDER BY f.filepath;
 						""",
 						(issue['id'],)
 					)
