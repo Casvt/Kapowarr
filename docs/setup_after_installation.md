@@ -36,11 +36,15 @@ In most cases, the default of `/app/temp_downloads` works best. If you wish to c
 
 ### Service preference
 
-Kapowarr has the ability to download directly from servers, but also to download from services like MediaFire and Mega. Websites like getcomics.org offer the same download via multiple services (multiple download links to download the same file, via different services). This settings determines what preference you have for each service. If multiple services are offered for the same download, Kapowarr will use this preference list to determine what service to pick (if the link of the top service doesn't work, Kapowarr falls back to the other options, in order). If you have an account for one of these services (see [Credentials](#credentials) setting), you might want to put that one at the top, to make Kapowarr take advantage of the extra features that the account offers (extra bandwidth, higher rate limit, etc.).
+If you have an account with one of the supported download services (MediaFire and Mega), set that service as the priority and add a credential for it.  
+The other services will then be used as a fallback option for if a link fails.
+
+For a full explanation, see [Service Preference](../settings/#service-preference).  
 
 ### Credentials
 
-Kapowarr has the ability to download from services like MediaFire and Mega. These services apply limits to how much you can download per day, or a download speed limit. An (paid) account for one of these services often offers higher limits. Kapowarr can take advantage of these extra features that these accounts offer. Under the credentials section, you can add credentials of accounts, which Kapowarr will use when downloading, taking advantage of the extra features.
+This only applies if you have an account with MediaFire or Mega.  
+Refer to [Credentials](../settings/#credentials) for more info.
 
 ## Building up a library
 
