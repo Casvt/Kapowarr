@@ -27,12 +27,12 @@ _Note: at least one of these must be set before you are able to add any volumes 
 
 ## Downloading
 
-One of Kapowarr's biggest features is being able to download comics. The Settings -> Download section has all settings regarding the downloading.
+Kapowarr's biggest feature is being able to download comics. The [Settings -> Download](../settings/#download) section has all settings regarding the downloading.
 
 ### Download folder
 
-The download folder (Settings -> Download -> Download Location -> Direct Download Temporary Folder) is where all downloads are downloaded to, before they get moved to their final destination.  
-If you run Kapowarr using Docker, leave this setting to it's default value of `/app/temp_downloads` and instead change the value of `/path/to/download_folder` in the Docker command ([reference](../installation/#docker)). If you have a manual install, you can change this value to whatever you want. It is allowed to be outside your root folders.
+The download folder is where all downloads are downloaded to, before they get moved to their final destination.  
+In most cases, the default of `/app/temp_downloads` works best. If you wish to change this, refer to [Direct Download Temporary Folder](../settings/#direct-download-temporary-folder).  
 
 ### Service preference
 
