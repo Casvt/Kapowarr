@@ -170,9 +170,6 @@ This tells Kapowarr what port to listen on. The default is `5656`, which would p
 If you wish to change the port, it can be changed here.  
 _Note: this setting is not applicable if you have Kapowarr deployed with Docker. This should be done by following the examples below_.
 
-=== "Manual Install"
-    Edit the port number here by changing the value to the desired port. Press save, then restart Kapowarr.
-
 === "Docker CLI"
     Alter the command to run the container and replace `-p 5656:5656` with `-p {PORT}:5656`, where `{PORT}` is the desired port (e.g. `-p 8009:5656`).  
     Run the container with the new version of the command (you will need to remove the old container if you had it running before).
@@ -180,6 +177,9 @@ _Note: this setting is not applicable if you have Kapowarr deployed with Docker.
 === "Docker Compose"
     Alter the file to run the container and replace `- 5656:5656` with `- {PORT}:5656`, where `{PORT}` is the desired port (e.g. `- 8009:5656`).  
     Then re-run the container with the new version of the file.
+
+=== "Manual Install"
+    Edit the port number here by changing the value to the desired port. Press save, then restart Kapowarr.
 
 #### Base URL
 
