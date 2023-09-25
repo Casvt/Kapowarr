@@ -18,9 +18,9 @@ The recommended way to install Kapowarr is using Docker. After installing Kapowa
     A few notes about this command:
 
     1. Replace `/path/to/download_folder` with the path to your desired download folder. Everything is downloaded to this folder and when completed, moved out of to their final destination. It's smart to set this on a disk that can sustain more writes than normal. Ideally something like a _non_-network mounted ssd.
-    2. Replace `/path/to/root_folder` with the path to your desired root folder. Then, this folder will get mapped to `/comics-1` inside the docker container. When adding a root folder in Kapowarr, you'll then set it's location as `/comics-1`, mapping it this way to where ever `/path/to/root_folder` may be.
+    2. Replace `/path/to/root_folder` with the path to your desired root folder. Then, this folder will get mapped to `/comics-1` inside the docker container. When adding a root folder in Kapowarr, you'll then set its location as `/comics-1`, mapping it this way to where ever `/path/to/root_folder` may be.
     3. You can map multiple root folders by repeating `-v /path/to/root_folder:/comics-1` in the command, but then supplying different values for `/path/to/root_folder` and `/comics-1`.
-    4. Information on how to change the port can be found on the [Setup After Installation page](./setup_after_installation.md#port).
+    4. Information on how to change the port can be found on the [Setup After Installation page](../setup_after_installation/#port).
     5. Using a named volume in docker requires you to create the volume before you can use it (refer to [Named Volumes](#named-volumes)).
 
 === "Docker Compose"
