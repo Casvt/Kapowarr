@@ -55,7 +55,10 @@ class extract_filename_data(unittest.TestCase):
 				{'series': 'Batman ’66 Meets the Man From U.N.C.L.E.', 'year': 2016, 'volume_number': 1, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
 
 			'Thor Vol. 3 #1 – 12 (Also known 588-599) + #600 – 621 (2007-2011) --2007-2011--':
-				{'series': 'Thor', 'year': 2007, 'volume_number': 3, 'special_version': None, 'issue_number': (600.0, 621.0), 'annual': False}
+				{'series': 'Thor', 'year': 2007, 'volume_number': 3, 'special_version': None, 'issue_number': (600.0, 621.0), 'annual': False},
+
+			'Aliens Life And Death #003 (2016) Volume 02.cbr':
+				{'series': 'Aliens Life And Death', 'year': 2016, 'volume_number': 2, 'special_version': None, 'issue_number': 3.0, 'annual': False}
 		}
 		self.run_cases(cases)
 

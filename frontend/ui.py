@@ -20,6 +20,10 @@ def ui_volumes():
 def ui_add_volume():
 	return render_template('add_volume.html', url_base=ui_vars['url_base'])
 
+@ui.route('/library-import', methods=methods)
+def ui_library_import():
+	return render_template('library_import.html', url_base=ui_vars['url_base'])
+
 @ui.route('/volumes/<id>', methods=methods)
 def ui_view_volume(id):
 	return render_template('view_volume.html', url_base=ui_vars['url_base'])

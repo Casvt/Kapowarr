@@ -20,7 +20,7 @@ from backend.files import process_issue_number, volume_regex
 from backend.settings import Settings, private_settings
 
 translation_regex = compile(
-	r'^<p>\w+ publication(\.?</p>$| \(in the \w+ language\)|, translates )|^<p>published by the \w+ wing of|^<p>\w+ translations? of|from \w+</p>$|^<p>published in \w+|^<p>\w+ language|^<p>\w+ edition of |^<p>\w+ reprint of ',
+	r'^<p>\w+ publication(\.?</p>$|,\s| \(in the \w+ language\)|, translates )|^<p>published by the \w+ wing of|^<p>\w+ translations? of|from \w+</p>$|^<p>published in \w+|^<p>\w+ language|^<p>\w+ edition of |^<p>\w+ reprint of ',
 	IGNORECASE
 )
 headers = {'h2', 'h3', 'h4', 'h5', 'h6'}

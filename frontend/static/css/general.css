@@ -202,6 +202,7 @@ main > *:not(.tool-bar-container) {
 /*  */
 .tool-bar-container {
 	height: var(--tool-bar-height);
+	flex: 0 0 auto;
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
@@ -225,7 +226,7 @@ main > *:not(.tool-bar-container) {
 
 	padding: .5rem;
 	color: var(--light-color);
-	background-color: transparent;
+	background-color: var(--tool-bar-color);
 }
 
 .tool-bar > select {

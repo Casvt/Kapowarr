@@ -24,6 +24,7 @@ from backend.custom_exceptions import (BlocklistEntryNotFound,
 from backend.db import close_db
 from backend.download import (DownloadHandler, credentials,
                               delete_download_history, get_download_history)
+from backend.library_import import import_library, propose_library_import
 from backend.naming import (generate_volume_folder_name, mass_rename,
                             preview_mass_rename)
 from backend.root_folders import RootFolders
@@ -344,6 +345,27 @@ def api_rootfolder_id(id: int):
 		return return_api({})
 
 #=====================
+# Library Import
+#=====================
+@api.route('/libraryimport', methods=['GET', 'POST'])
+@error_handler
+@auth
+def api_library_import():
+	if request.method == 'GET':
+		result = propose_library_import()
+		return return_api(result)
+	
+	elif request.method == 'POST':
+		data = request.get_json()
+		if (
+			not isinstance(data, list)
+			or not all(isinstance(e, dict) and 'filepath' in e and 'id' in e for e in data)
+		):
+			raise InvalidKeyValue
+		import_library(data)
+		return return_api({}, code=201)
+
+#=====================
 # Library + Volumes
 #=====================
 @api.route('/volumes/search', methods=['GET', 'POST'])
@@ -460,7 +482,9 @@ def api_rename(id: int):
 		return return_api(result)
 		
 	elif request.method == 'POST':
-		mass_rename(id)
+		filepath_filter = request.get_json(silent=True)
+		print(filepath_filter)
+		mass_rename(id, filepath_filter=filepath_filter)
 		return return_api(None)
 
 @api.route('/issues/<int:id>/rename', methods=['GET','POST'])
@@ -474,7 +498,9 @@ def api_rename_issue(id: int):
 		return return_api(result)
 		
 	elif request.method == 'POST':
-		mass_rename(volume_id, id)
+		filepath_filter = request.get_json(silent=True)
+		print(filepath_filter)
+		mass_rename(volume_id, id, filepath_filter=filepath_filter)
 		return return_api(None)
 
 #=====================

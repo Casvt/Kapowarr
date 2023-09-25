@@ -67,15 +67,12 @@ class RootFolders:
 		Returns:
 			dict: The rootfolder info
 		"""
-		from backend.naming import _make_filename_safe
-
 		# Format folder and check if it exists
 		logging.info(f'Adding rootfolder from {folder}')
 		if not isdir(folder):
 			raise FolderNotFound
 		if not folder.endswith(path_sep):
 			folder += path_sep
-		folder = _make_filename_safe(folder)
 
 		# Insert into database
 		root_folder_id = get_db('dict').execute(
