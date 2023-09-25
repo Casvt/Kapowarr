@@ -105,7 +105,9 @@ Options are:
 ### Unzipping
 
 Unzip downloads will extract zip files after downloading.  
-This is useful for 'pack' style downloads, where the download contains multiple issues.
+This is useful for 'pack' style downloads, where the download contains multiple issues.  
+_Note: if Kapowarr determines that a file in the zip file is not related to the volume, it will not be extracted and will be deleted when the zip file is finished being unpacked.  
+If you find faulty deletions occurring, please [lodge an issue](https://github.com/Casvt/Kapowarr/issues) for this._
 
 ### Root Folders
 
