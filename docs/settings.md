@@ -74,6 +74,10 @@ Available variables are:
 
 For example, `{series_name} ({year}) Volume {volume_number} Issue {issue_number}` would come out as "Invincible Iron Man (2008) Volume 01 Issue 001.cbz".
 
+#### Treat Volume Issues as "No Title"
+
+Sometimes a volume will consist of multiple sub-volumes. This setting controls whether Kapowarr treats these as having no title or not.  
+
 #### Issue Padding
 
 This defines how issue numbers are 'padded' (3 digits, 2 digits, etc.).  
