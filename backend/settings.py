@@ -139,6 +139,7 @@ class Settings:
 
 			elif key == 'comicvine_api_key':
 				from backend.comicvine import ComicVine
+				value = value.strip()
 				if not ComicVine(value).test_token():
 					raise InvalidSettingValue(key, value)
 
