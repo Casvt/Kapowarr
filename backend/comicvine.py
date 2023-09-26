@@ -51,34 +51,24 @@ def _clean_description(description: str, short: bool=False) -> str:
 		removed_elements = []
 		for el in soup:
 			if el.name is None: continue
-			if removed_elements or el.name in lists:
+			if (removed_elements
+			or el.name in headers):
 				removed_elements.append(el)
 				continue
+			
+			if el.name in lists:
+				removed_elements.append(el)
+				prev_sib = el.previous_sibling
+				if (prev_sib is not None
+				and prev_sib.text.endswith(':')):
+					removed_elements.append(prev_sib)
+				continue
 
-			children = list(getattr(el, 'children', []))
-			if (el.name in headers
-			or (
-				1 <= len(children) <= 2
-       			and
-				children[0].name in ('b', 'i', 'strong')
-			)):
-				# Element is header or fake header
-				sib = el.next_sibling
-				if sib is None:
-					# Header at the end of description
+			if el.name == 'p':
+				children = list(getattr(el, 'children', []))
+				if (1 <= len(children) <= 2
+				and children[0].name in ('b', 'i', 'strong')):
 					removed_elements.append(el)
-					continue
-					
-				if sib.name in lists or sib.name in headers:
-					# Header above list or other header
-					removed_elements.append(el)
-					continue
-				
-				children = list(getattr(sib, 'children', []))
-				if 1 <= len(children) <= 2 and children[0].name in ('b', 'i', 'strong'):
-					# Header above fake header (<p> => <b> | <i>)
-					removed_elements.append(el)
-					continue
 
 		for el in removed_elements: el.decompose()
 

@@ -108,7 +108,7 @@ class extract_filename_data(unittest.TestCase):
 			'Silver Surfer - Rebirth (2022) (HD-WebRip) Volume 2/Page-100.cbr':
 				{'series': 'Silver Surfer - Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': None, 'issue_number': 100.0, 'annual': False},
 
-			'Silver Surfer - Rebirth (2022) (HD-WebRip) Volume 2/Page-100.jpg':
+			'Silver Surfer - Rebirth (2022) (HD-WebRip) Volume 2/Page - 100.jpg':
 				{'series': 'Silver Surfer - Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': 'tpb', 'issue_number': None, 'annual': False}
 		}
 		self.run_cases(cases)
