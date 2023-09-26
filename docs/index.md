@@ -12,13 +12,13 @@ _Please note the docs are maintained by MrCas and the Kapowarr team. As the soft
 
 Getting started:
 
-- [Installation](../installation)
-- [Setup After Installation](../setup_after_installation)
+- [Installation](./installation.md)
+- [Setup After Installation](./setup_after_installation)
 
 General Information:
 
-- [FAQ](../faq)
-- [API Docs](../api)
+- [FAQ](./faq)
+- [API Docs](./api)
 
 ## Workings
 

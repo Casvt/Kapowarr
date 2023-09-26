@@ -1,4 +1,159 @@
-/* Extend maximum page width to 1440px */
-.md-grid {
-    max-width: 1440px;
-  }
+/*  */
+/* Color defined */
+/*  */
+body {
+	--light-color: #ffffff;
+	--off-light-color: #f6f6f6;
+	--border-color: #dde6e9;
+	--mid-color: #808080;
+	--dark-color: #464b51;
+
+	--accent-color: #ebc700;
+	
+	--background-color: var(--off-light-color);
+	--text-color: var(--dark-color);
+	--dark-text-color: var(--mid-color);
+	--light-text-color: var(--border-color);
+	--header-background-color: var(--accent-color);
+	--header-color: var(--dark-color);
+	--code-background-color: var(--mid-color);
+	--search-color: var(--dark-color);
+}
+
+[data-md-color-scheme="Kapowarr-dark"] {
+	--light-color: #dde6e9;
+	--off-light-color: #c5c5c5;
+	--border-color: #7f7f7f;
+	--gray-color: #2a2a2a;
+	--mid-color: #262626;
+	--dark-color: #202020;
+
+	--background-color: var(--dark-color);
+	--text-color: var(--light-color);
+	--dark-text-color: var(--off-light-color);
+	--light-text-color: var(--light-color);
+	--header-background-color: var(--accent-color);
+	--header-color: var(--gray-color);
+	--code-background-color: var(--gray-color);
+	--search-color: var(--text-color);
+}
+
+/*  */
+/* Color applied */
+/*  */
+body[data-md-color-scheme="Kapowarr"],
+body[data-md-color-scheme="Kapowarr-dark"] {
+	/* Background color of header */
+	--md-primary-fg-color: var(--header-background-color);
+	/* Color in header */
+    --md-primary-bg-color: var(--header-color);
+
+	/* Background color */
+	--md-default-bg-color: var(--background-color);
+	/* Text color */
+	--md-typeset-color: var(--text-color);
+
+	/* Nav header and unselected tab color */
+    --md-default-fg-color--light: var(--dark-text-color);
+    --md-primary-fg-color--lighter: #00000052;
+
+	/* Horizontal lines */
+	--md-default-fg-color--lightest: var(--light-text-color);
+
+	/* Placeholder of search color */
+    --md-primary-bg-color--light: var(--md-primary-bg-color);
+
+	/* Color in search */
+	--md-default-fg-color: var(--search-color);
+
+	/* Hover color selected tab, ToC, Permanent Link hover and color of matched words in search */
+	--md-accent-fg-color: var(--accent-color);
+
+	/* Code color */
+	--md-code-fg-color: var(--light-text-color);
+	/* Code background color */
+    --md-code-bg-color: var(--code-background-color);
+    --md-code-hl-color: #ffff0080;
+    --md-code-hl-number-color: #fa3333;
+    --md-code-hl-special-color: #db1457;
+    --md-code-hl-function-color: #a846b9;
+    --md-code-hl-constant-color: #6e59d9;
+    --md-code-hl-keyword-color: #3f6ec6;
+    --md-code-hl-string-color: #1c7d4d;
+    --md-code-hl-string-color: #2ecd7d;
+
+	/* Slashes in code */
+    --md-code-hl-name-color: var(--md-code-fg-color);
+    --md-code-hl-operator-color: var(--md-code-fg-color);
+    --md-code-hl-punctuation-color: var(--md-code-fg-color);
+    --md-code-hl-comment-color: var(--md-code-fg-color);
+    --md-code-hl-generic-color: var(--md-code-fg-color);
+    --md-code-hl-variable-color: var(--md-code-fg-color);
+
+	/* Link color */
+    --md-typeset-a-color: var(--accent-color);
+    --md-typeset-mark-color: #ffff0080;
+    --md-typeset-del-color: #f5503d26;
+    --md-typeset-ins-color: #0bd57026;
+    --md-typeset-kbd-color: #fafafa;
+    --md-typeset-kbd-accent-color: #fff;
+    --md-typeset-kbd-border-color: #b8b8b8;
+    --md-typeset-table-color: var(--dark-text-color);
+    --md-typeset-table-color--light: rgba(0,0,0,.035);
+
+	--md-admonition-fg-color: var(--text-color);
+    --md-admonition-bg-color: var(--background-color);
+
+	--md-warning-fg-color: #000000de;
+    --md-warning-bg-color: #ff9;
+
+	/* Footer color */
+	--md-footer-fg-color: var(--light-text-color);
+	/* Footer background color */
+    --md-footer-bg-color: var(--background-color);
+
+	--md-shadow-z1: 0 0.2rem 0.5rem #0000000d,0 0 0.05rem #0000001a;
+    --md-shadow-z2: 0 0.2rem 0.5rem #0000001a,0 0 0.05rem #00000040;
+    --md-shadow-z3: 0 0.2rem 0.5rem #0003,0 0 0.05rem #00000059;
+}
+
+.md-typeset code {
+	border-radius: 6px;
+}
+
+.md-typeset a:not(.headerlink) {
+	text-decoration: underline;
+}
+
+.md-clipboard {
+	color: var(--code-background-color);
+}
+
+:hover > .md-clipboard {
+	color: var(--light-text-color);
+}
+
+.md-clipboard:hover {
+	color: var(--accent-color);
+}
+
+.md-typeset table:not([class]) {
+	border-radius: 6px;
+}
+
+[data-md-component="search-result"] > div {
+	background-color: var(--accent-color);
+	color: var(--header-color);
+}
+
+details {
+	border-color: var(--header-color);
+}
+
+details > summary {
+	background-color: transparent;
+}
+
+details > summary::before {
+	background-color: var(--header-color);
+}

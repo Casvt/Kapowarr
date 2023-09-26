@@ -32,17 +32,13 @@ theme:
   palette:
     # Light mode
     - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: amber
-      accent: amber
+      scheme: Kapowarr
       toggle:
         icon: material/toggle-switch-off-outline
         name: Switch to dark mode
     # Dark mode
     - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: amber
-      accent: amber
+      scheme: Kapowarr-dark
       toggle:
         icon: material/toggle-switch
         name: Switch to light mode
