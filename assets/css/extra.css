@@ -117,6 +117,10 @@ body[data-md-color-scheme="Kapowarr-dark"] {
     --md-shadow-z3: 0 0.2rem 0.5rem #0003,0 0 0.05rem #00000059;
 }
 
+.md-typeset .tabbed-labels {
+	--md-default-fg-color: var(--accent-color);
+}
+
 .md-typeset code {
 	border-radius: 6px;
 }
