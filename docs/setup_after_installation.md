@@ -36,14 +36,14 @@ In most cases, the default of `/app/temp_downloads` works best. If you wish to c
 
 ### Service preference
 
-If you have an account with one of the supported download services (MediaFire and Mega), set that service as the priority and add a credential for it.  
+If you have an account with Mega, set that service as the priority and add a credential for it.  
 The other services will then be used as a fallback option for if a link fails.
 
 For a full explanation, see [Service Preference](../settings/#service-preference).  
 
 ### Credentials
 
-This only applies if you have an account with MediaFire or Mega.  
+This only applies if you have an account with Mega (for now).  
 Refer to [Credentials](../settings/#credentials) for more info.
 
 ## Building up a library

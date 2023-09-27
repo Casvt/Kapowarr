@@ -150,9 +150,8 @@ Options are:
 
 ### Credentials
 
-Kapowarr has the ability to download from services like MediaFire and Mega. These services apply limits to how much you can download per day, or a download speed limit.  
-A (paid) account for one of these services often offers higher limits.  
-If you provide login credentials for the service, Kapowarr can take advantage of these extra features that these accounts offer.
+If you have a paid account with Mega, Kapowarr has the ability to use this account.  
+If you provide your login credentials for the service, Kapowarr will then take advantage of the extra features that your account has access to (higher speeds and caps, usually).  
 
 ## General
 
