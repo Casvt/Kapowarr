@@ -228,11 +228,12 @@ def _create_link_paths(
 	logging.debug('Creating link paths')
 
 	# Get info of volume
+	cursor = get_db()
 	volume_title: str
 	volume_number: int
 	volume_year: int
 	special_version: int
-	volume_title, volume_number, volume_year, special_version, last_issue_date = get_db('dict').execute("""
+	volume_title, volume_number, volume_year, special_version, last_issue_date = cursor.execute("""
 		SELECT
 			v.title,
 			volume_number,
@@ -256,33 +257,65 @@ def _create_link_paths(
 		processed_desc = extract_filename_data(desc, assume_volume_number=False)
 		if (_check_matching_titles(volume_title, processed_desc['series'])
 		and (processed_desc['volume_number'] is None
-			or
-			processed_desc['volume_number'] == volume_number
-			or
-			volume_year - 1 <= processed_desc['volume_number'] <= volume_year)
+			or ((
+					isinstance(processed_desc['volume_number'], int)
+					and processed_desc['volume_number'] == volume_number
+				)
+				or (
+					isinstance(processed_desc['volume_number'], tuple)
+					and special_version == 'volume-as-issue'
+				))
+			or (
+				isinstance(processed_desc['volume_number'], int)
+				and volume_year - 1 <= processed_desc['volume_number'] <= volume_year
+			)
+			or (
+				special_version == 'volume-as-issue'
+				and
+				cursor.execute(
+					"SELECT 1 FROM issues WHERE volume_id = ? AND calculated_issue_number = ? LIMIT 1;",
+					(volume_id, processed_desc['volume_number'])
+				).fetchone()
+			))
 		and (processed_desc['year'] is None
 			or
 			volume_year - 1 <= processed_desc['year'] <= last_year)
 		and (special_version == processed_desc['special_version']
-			or
-			(special_version == 'hard-cover' and processed_desc['special_version'] == 'tpb')
+			or (
+				special_version in ('hard-cover', 'volume-as-issue')
+				and processed_desc['special_version'] == 'tpb'
+			)
 			or
 			processed_desc['issue_number'])
 		and processed_desc['annual'] == annual
 		):
 			# Group matches/contains what is desired to be downloaded
 			sources = {s: sources[s] for s in sorted(sources, key=lambda k: service_preference_order[k])}
-			if processed_desc['special_version']:
+			if (special_version == 'volume-as-issue'
+			and (
+				processed_desc['special_version'] == 'tpb'
+				or isinstance(processed_desc['volume_number'], tuple)
+			)):
+				processed_desc['special_version'] = special_version
+
+			if (processed_desc['special_version'] is not None
+			and processed_desc['special_version'] != 'volume-as-issue'):
 				if special_version == 'hard-cover':
 					processed_desc['special_version'] = 'hard-cover'
 				link_paths.append([{'info': processed_desc, 'links': sources}])
+
 			else:
 				# Find path with ranges and single issues that doesn't have a link that already covers this one
 				for path in link_paths:
 					for entry in path:
-						if entry['info']['special_version']:
+						if entry['info']['special_version'] == 'volume-as-issue':
+							if entry['info']['volume_number'] == processed_desc['volume_number']:
+								break
+
+						elif entry['info']['special_version'] is not None:
 							break
-						if isinstance(entry['info']['issue_number'], float):
+
+						elif isinstance(entry['info']['issue_number'], float):
 							if isinstance(processed_desc['issue_number'], float):
 								if entry['info']['issue_number'] == processed_desc['issue_number']:
 									break
@@ -331,17 +364,32 @@ def _test_paths(
 	logging.debug('Testing paths')
 	limit_reached = False
 	downloads: List[Download] = []
-	rename_downloaded_files = Settings().get_settings()['rename_downloaded_files']
+	s = Settings().get_settings()
+	rename_downloaded_files = s['rename_downloaded_files']
+	name_volume_as_issue = s['volume_as_empty']
 	for path in link_paths:
 		for download in path:
 			if rename_downloaded_files:
 				# Generate name
 				if download['info']['special_version'] == 'tpb':
-					# Link for TPB
 					name = generate_tpb_name(volume_id)
 
-				elif download['info']['special_version']:
-					# Link for special version
+				elif download['info']['special_version'] == 'volume-as-issue':
+					if name_volume_as_issue:
+						if isinstance(download['info']['volume_number'], tuple):
+							name = generate_issue_range_name(
+								volume_id,
+								*download['info']['volume_number']
+							)
+						else:
+							name = generate_issue_name(
+								volume_id,
+								download['info']['volume_number']
+							)
+					else:
+						name = generate_empty_name(volume_id, download['info']['volume_number'])
+
+				elif (download['info']['special_version'] or 'volume-as-issue') != 'volume-as-issue':
 					name = generate_empty_name(volume_id)
 
 				elif isinstance(download['info']['issue_number'], tuple):
@@ -443,8 +491,5 @@ def _extract_download_links(link: str, volume_id: int, issue_id: int=None) -> Tu
 
 		# Decide which path to take by testing the links
 		return _test_paths(link_paths, volume_id)
-
-	#else
-	# Link is a torrent file or magnet link
 
 	return [], False

@@ -9,10 +9,11 @@ from os import remove
 from os.path import basename, isfile, join
 from shutil import move, rmtree
 from time import time
+from typing import List, Tuple
 from zipfile import ZipFile
 
 from backend.db import get_db
-from backend.files import extract_filename_data
+from backend.files import extract_filename_data, image_extensions, rename_file
 from backend.naming import mass_rename
 from backend.search import _check_matching_titles
 from backend.volumes import Volume, scan_files
@@ -191,11 +192,23 @@ def unzip_volume(volume_id: int, file: str=None) -> None:
 	if not files:
 		return
 		
-	volume_data = cursor.execute(
-		"SELECT title, year, volume_number, folder FROM volumes WHERE id = ? LIMIT 1;",
+	volume_data = cursor.execute("""
+		SELECT
+			v.title, year,
+			volume_number,
+			folder,
+			special_version,
+			MAX(i.date) AS last_issue_date
+		FROM volumes v
+		INNER JOIN issues i
+		ON v.id = i.volume_id
+		WHERE v.id = ?
+		LIMIT 1;
+		""",
 		(volume_id,)
 	).fetchone()
 	annual = 'annual' in volume_data[0].lower()
+	end_year = int(volume_data[5].split('-')[0]) if volume_data[5] else volume_data[1]
 
 	# All zip files gathered, now handle them one by one
 	resulting_files = []
@@ -225,26 +238,56 @@ def unzip_volume(volume_id: int, file: str=None) -> None:
 			and (
 				# Year has to match
 				(result['year'] is not None
-     				and volume_data[1] - 1 <= result['year'] <= volume_data[1] + 1)
+     				and volume_data[1] - 1 <= result['year'] <= end_year + 1)
 				# Or volume number
 				or (result['volume_number'] is not None
-					and result['volume_number'] == volume_data[2])
+					and ((
+							isinstance(result['volume_number'], int)
+							and result['volume_number'] == volume_data[2]
+						)
+						or (
+							volume_data[4] == 'volume-as-issue'
+							and cursor.execute(
+								"SELECT 1 FROM issues WHERE volume_id = ? AND calculated_issue_number = ? LIMIT 1;",
+								(
+									volume_id,
+									result['volume_number']
+									if isinstance(result['volume_number'], int) else
+									result['volume_number'][0]
+								)
+							).fetchone()
+						)
+				))
 				# Or neither should be found (we play it safe so we keep those)
 				or (result['year'] is None and result['volume_number'] is None)
 			)
 			and result['annual'] == annual):
-				rel_files_append(c)
+				rel_files_append((c, result))
 		logging.debug(f'Zip relevant files: {rel_files}')
 
 		# 4. Delete non-relevant files
 		for c in contents:
-			if not c in rel_files:
+			if not any(r for r in rel_files if r[0] == c):
 				remove(c)
 
 		# 5. Move remaining files to main folder and delete zip folder
-		for c in rel_files:
-			dest = join(volume_data[3], basename(c))
-			move(c, dest)
+		rel_files: List[Tuple[str, dict]]
+		for c, c_info in rel_files:
+			if c.endswith(image_extensions):
+				intermediate_folder = (f'{volume_data[0]} ({volume_data[1]})'
+					+ f'Volume {c_info["volume_number"] if isinstance(c_info["volume_number"], int) else "-".join(map(str, c_info))}')
+
+				if volume_data[4] and volume_data[4] != 'volume-as-issue':
+					intermediate_folder += f' {volume_data[4]}'
+				elif not (volume_data[4] == 'volume-as-issue'):
+					intermediate_folder += f' {c_info["issue_number"]}'
+
+				dest = join(volume_data[3], intermediate_folder, basename(c))
+
+			else:
+				dest = join(volume_data[3], basename(c))
+			
+			rename_file(c, dest)
 			resulting_files_append(dest)
 		rmtree(zip_folder, ignore_errors=True)
 

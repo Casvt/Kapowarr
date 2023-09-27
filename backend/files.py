@@ -25,9 +25,9 @@ digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 image_extensions = ('.png','.jpeg','.jpg','.webp','.gif')
 supported_extensions = image_extensions + ('.cbz','.zip','.rar','.cbr','.tar.gz','.7zip','.7z','.cb7','.cbt','.epub','.pdf')
 file_extensions = r'\.(' + '|'.join(e[1:] for e in supported_extensions) + r')$'
-volume_regex_snippet = r'\b(?:v(?:ol|olume)?)(?:\.\s|[\.\-\s])?(\d+|I{1,3})\b'
+volume_regex_snippet = r'\b(?:v(?:ol|olume)?)(?:\.\s|[\.\-\s])?(\d+(?:\s?\-\s?\d+)?|I{1,3})\b'
 year_regex_snippet = r'(?:(\d{4})(?:-\d{2}){0,2}|(\d{4})[\s\.]?-[\s\.]?\d{4}|(?:\d{2}-){1,2}(\d{4})|(\d{4})[\s\.\-]Edition|(\d{4})-\d{4}\s{3}\d{4})'
-issue_regex_snippet = r'(?!\d+(?:th|rd|st))(?<!’)\d+(?:\.\d{1,2}|\w{1,2}|[\s\-\.]?½)?'
+issue_regex_snippet = r'(?!\d+(?:th|rd|st|\s?(?:gb|mb)))(?<!’)\d+(?:\.\d{1,2}|\w{1,2}|[\s\-\.]?½)?'
 
 # Cleaning the filename
 strip_filename_regex = compile(r'\(.*?\)|\[.*?\]|\{.*?\}', IGNORECASE)
@@ -122,6 +122,32 @@ def process_issue_number(issue_number: str) -> Union[float, Tuple[float, float],
 
 	return _calc_float_issue_number(issue_number)
 
+def convert_volume_number_to_int(
+	volume_number: Union[str, None]
+) -> Union[int, Tuple[int, int], None]:
+	"""Convert the volume number (or volume range) from float(s) to int(s).
+
+	Args:
+		volume_number (Union[str, None]): The volume number (range) in string format
+
+	Returns:
+		Union[int, Tuple[int, int], None]: The converted volume number(s).
+	"""
+	if volume_number is None:
+		return
+
+	if 'I' in volume_number:
+		i_count = volume_number.count('I')
+		if i_count == len(volume_number):
+			volume_number = str(i_count)
+
+	result = process_issue_number(volume_number)
+	if isinstance(result, float):
+		result = int(result)
+	elif isinstance(result, tuple):
+		result = int(result[0]), int(result[1])
+	return result
+
 def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dict:
 	"""Extract data and present in a formatted way from a filename (or title of getcomics page).
 
@@ -134,7 +160,7 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 	"""	
 	logging.debug(f'Extracting filename data: {filepath}')
 	series, year, volume_number, special_version, issue_number = None, None, None, None, None
-	
+
 	# Determine annual or not
 	annual_result = annual_regex.search(basename(filepath))
 	annual_folder_result = annual_regex.search(basename(dirname(filepath)))
@@ -195,7 +221,7 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 	volume_result = volume_regex.search(clean_filename)
 	if volume_result:
 		# Volume number found (e.g. Series Volume 1 Issue 6.ext)
-		volume_number = volume_result.group(1)
+		volume_number = convert_volume_number_to_int(volume_result.group(1))
 		volume_pos = volume_result.start(0)
 		volume_end = volume_result.end(1)
 
@@ -205,10 +231,12 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 		# Volume number found in folder (e.g. Series Volume 1/Issue 5.ext)
 		volume_folderpos = volume_folder_result.start(0)
 		if not volume_result:
-			volume_number = volume_folder_result.group(1) or volume_folder_result.group(2)
+			volume_number = convert_volume_number_to_int(
+				volume_folder_result.group(1) or volume_folder_result.group(2)
+			)
 
 	if not volume_result and not volume_folder_result and assume_volume_number:
-		volume_number = '1'
+		volume_number = 1
 
 	# Check if it's a special version
 	issue_pos, special_pos = 10_000, 10_000
@@ -274,14 +302,6 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 	series = series_regex.sub('', series)
 
 	# Format output
-	if volume_number:
-		if volume_number.isdigit():
-			volume_number = int(volume_number)
-		else:
-			i_count = volume_number.lower().count('i')
-			if i_count == len(volume_number):
-				volume_number = i_count
-
 	calculated_issue_number = process_issue_number(issue_number) if issue_number else issue_number
 	year = int(year) if year else year
 
@@ -366,6 +386,11 @@ def scan_files(volume_data: dict) -> None:
 		create_volume_folder(root_folder, volume_data['id'])
 
 	file_to_issue_map = []
+	issue_number_to_year = {
+		issue['calculated_issue_number']:
+			int(issue['date'].split('-')[0]) if issue['date'] else None
+			for issue in volume_data['issues']
+	}
 	volume_files = _list_files(folder=volume_data['folder'], ext=supported_extensions)
 	for file in volume_files:
 		file_data = extract_filename_data(file)
@@ -375,13 +400,42 @@ def scan_files(volume_data: dict) -> None:
 		(
 			(
 				file_data['volume_number'] is not None
-				and file_data['volume_number'] in (
-					volume_data['volume_number'], volume_data['year']
+				and ((
+						volume_data['special_version'] == 'volume-as-issue'
+						and file_data['issue_number'] is None
+						and ((
+								isinstance(file_data['volume_number'], tuple)
+								and file_data['volume_number'][0] in issue_number_to_year
+								and file_data['volume_number'][1] in issue_number_to_year
+							)
+							or (
+								isinstance(file_data['volume_number'], int)
+								and file_data['volume_number'] in issue_number_to_year
+							))
+					)
+					or (
+						isinstance(file_data['volume_number'], int)
+						and file_data['volume_number'] in (
+							volume_data['volume_number'], volume_data['year']
+						)
+					)
 				)
 			)
 			or (
 				file_data['year'] is not None
-				and file_data['year'] == volume_data['year']
+				and (
+					file_data['year'] == volume_data['year']
+		 			or
+					(
+						file_data['issue_number'] is not None
+						and isinstance(file_data['volume_number'], int)
+						and issue_number_to_year.get((
+							file_data['issue_number']
+							if isinstance(file_data['issue_number'], float) else
+							file_data['issue_number'][0]
+						)) == file_data['year']
+					)
+				)
 			)
 		)
 		and
@@ -391,19 +445,41 @@ def scan_files(volume_data: dict) -> None:
 				volume_data['special_version'] == 'hard-cover'
 				and file_data['special_version'] == 'tpb'
 			)
+			or (
+				volume_data['special_version'] == 'volume-as-issue'
+				and (
+					file_data['special_version'] == 'tpb'
+					or (
+						isinstance(file_data['volume_number'], int)
+						and file_data['volume_number'] in (
+							volume_data['volume_number'], volume_data['year']
+						)
+						and ((
+							isinstance(file_data['issue_number'], float)
+							and file_data['issue_number'] in issue_number_to_year
+						) or (
+							isinstance(file_data['issue_number'], tuple)
+							and file_data['issue_number'][0] in issue_number_to_year
+							and file_data['issue_number'][1] in issue_number_to_year
+						))
+				))
+			)
 		)):
 			continue
 
-		# If file is special version, it means it covers all issues in volume so add it to every issue
-		if file_data['special_version']:
+		if (volume_data['special_version'] != 'volume-as-issue'
+		and file_data['special_version']):
 			# Add file to database if it isn't registered yet
 			file_id = _add_file(file)
 			
 			file_to_issue_map.append([file_id, volume_data['issues'][0]['id']])
 
 		# Search for issue number
-		elif file_data['issue_number'] is not None:
-			if isinstance(file_data['issue_number'], tuple):
+		if (file_data['issue_number'] is not None
+		or volume_data['special_version'] == 'volume-as-issue'):
+
+			if (isinstance(file_data['issue_number'] or '', tuple)
+			or isinstance(file_data['volume_number'] or '', tuple)):
 				issue_ids = cursor.execute("""
 					SELECT id
 					FROM issues
@@ -412,7 +488,14 @@ def scan_files(volume_data: dict) -> None:
 						AND ? <= calculated_issue_number
 						AND calculated_issue_number <= ?;
 					""",
-					(volume_data['id'], *file_data['issue_number'])
+					(
+						volume_data['id'],
+						*(
+							file_data['volume_number']
+							if isinstance(file_data['volume_number'] or '', tuple) else
+							file_data['issue_number']
+						)
+					)
 				).fetchall()
 				if issue_ids:
 					# Matching issue(s) found
@@ -429,7 +512,7 @@ def scan_files(volume_data: dict) -> None:
 						AND calculated_issue_number = ?
 					LIMIT 1;
 					""",
-					(volume_data['id'], file_data['issue_number'])
+					(volume_data['id'], file_data['issue_number'] or file_data['volume_number'])
 				).fetchone()
 				if issue_id:
 					# Matching issue found

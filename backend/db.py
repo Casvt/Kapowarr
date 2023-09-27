@@ -16,7 +16,7 @@ from waitress.task import ThreadedTaskDispatcher as OldThreadedTaskDispatcher
 from backend.logging import set_log_level
 
 __DATABASE_FILEPATH__ = 'db', 'Kapowarr.db'
-__DATABASE_VERSION__ = 10
+__DATABASE_VERSION__ = 11
 
 class Singleton(type):
 	_instances = {}
@@ -419,6 +419,36 @@ def migrate_db(current_db_version: int) -> None:
 		update_manifest(url_base)
 		
 		current_db_version = 10
+		update_db_version(current_db_version)
+
+	if current_db_version == 10:
+		# V10 -> V11
+		from backend.volumes import determine_special_version
+
+		volumes = cursor.execute("""
+			SELECT
+				id, title,
+				description
+			FROM volumes;
+			"""
+		).fetchall()
+
+		updates = []
+		for volume in volumes:
+			issue_titles = [
+				i[0] for i in cursor.execute(
+					"SELECT title FROM issues WHERE volume_id = ?;",
+					(volume[0],)
+				)
+			]
+			updates.append((determine_special_version(volume[1], volume[2], issue_titles), volume[0]))
+
+		cursor.executemany(
+			"UPDATE volumes SET special_version = ? WHERE id = ?;",
+			updates
+		)
+
+		current_db_version = 11
 		update_db_version(current_db_version)
 
 	return

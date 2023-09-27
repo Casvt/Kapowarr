@@ -21,28 +21,30 @@ from frontend.ui import ui_vars
 
 os_regex = compile(r'(?<!>)\bone[\- ]?shot\b(?!<)', IGNORECASE)
 hc_regex = compile(r'(?<!>)\bhard[\- ]?cover\b(?!<)', IGNORECASE)
+vol_regex = compile(r'^volume\.?\s\d+$', IGNORECASE)
 def determine_special_version(
 	volume_title: str,
 	volume_description: str,
-	issue_count: int,
-	first_issue_title: str
+	issue_titles: List[str]
 ) -> Union[str, None]:
-	"""Determine if a volume is a special version, like a TPB, One-Shot or Hard Cover.
+	"""Determine if a volume is a special version.
 
 	Args:
 		volume_title (str): The title of the volume.
 		volume_description (str): The description of the volume.
-		issue_count (int): The amount of issues in the volume.
-		first_issue_title (str): The title of the first issue in the volume.
+		issue_titles (List[str]): The titles of all issues in the volume.
 
 	Returns:
-		Union[str, None]: Either the type of special version or `None` if it's not a special version.
+		Union[str, None]: `tpb`, `one-shot`, `hard-cover`, `volume-as-issue` or `None`.
 	"""
 	if os_regex.search(volume_title):
 		return 'one-shot'
 
-	if (first_issue_title or '').lower() == 'hc':
+	if (issue_titles[0] or '').lower() == 'hc':
 		return 'hard-cover'
+
+	if all(vol_regex.search(title) for title in issue_titles):
+		return 'volume-as-issue'
 
 	if volume_description and len(volume_description.split('. ')) == 1:
 		# Description is only one sentence, so it's allowed to
@@ -56,7 +58,7 @@ def determine_special_version(
 		if hc_regex.search(volume_description):
 			return 'hard-cover'
 
-	if issue_count == 1:
+	if len(issue_titles) == 1:
 		return 'tpb'
 
 	return None
@@ -638,8 +640,7 @@ class Library:
 		special_version = determine_special_version(
 			volume_data['title'],
 			volume_data['description'],
-			len(volume_data['issues']),
-			volume_data['issues'][0]['title']
+			tuple(i['title'] for i in volume_data['issues'])
 		)
 
 		cursor.execute(

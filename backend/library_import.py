@@ -60,14 +60,13 @@ def propose_library_import() -> List[dict]:
 			matching_result = next(
 				(r for r in search_results
 				if _check_matching_titles(f['data']['series'], r['title'])
-					and f['data']['volume_number'] == r['volume_number']
-					and ((
-							f['data']['year'] is not None
-							and r['year'] is not None
-							and 0 <= abs(f['data']['year'] - r['year']) <= 1 # One year wiggle room
-						)
-						or r['year'] is None
-					)),
+				and ((
+						f['data']['year'] is not None
+						and r['year'] is not None
+						and 0 <= abs(f['data']['year'] - r['year']) <= 1 # One year wiggle room
+					)
+					or r['year'] is None
+				)),
 
 				{}
 			)

@@ -58,7 +58,10 @@ class extract_filename_data(unittest.TestCase):
 				{'series': 'Thor', 'year': 2007, 'volume_number': 3, 'special_version': None, 'issue_number': (600.0, 621.0), 'annual': False},
 
 			'Aliens Life And Death #003 (2016) Volume 02.cbr':
-				{'series': 'Aliens Life And Death', 'year': 2016, 'volume_number': 2, 'special_version': None, 'issue_number': 3.0, 'annual': False}
+				{'series': 'Aliens Life And Death', 'year': 2016, 'volume_number': 2, 'special_version': None, 'issue_number': 3.0, 'annual': False},
+
+			'/home/cas/plex-media/Comics/Invincible Compendium/Volume 1/Invincible Compendium Volume 2 Issue 3 - Volume 4 (2018-07-18).cbr':
+				{'series': 'Invincible Compendium', 'year': 2018, 'volume_number': 2, 'special_version': None, 'issue_number': 3.0, 'annual': False}
 		}
 		self.run_cases(cases)
 

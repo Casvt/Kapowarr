@@ -8,7 +8,7 @@ from os import listdir
 from os.path import basename, dirname, isdir, isfile, join, splitext
 from re import IGNORECASE, compile, escape, match
 from string import Formatter
-from typing import Dict, List
+from typing import Dict, List, Tuple, Union
 
 from backend.custom_exceptions import (InvalidSettingValue, IssueNotFound,
                                        VolumeNotFound)
@@ -52,7 +52,12 @@ def _make_filename_safe(unsafe_filename: str) -> str:
 	safe_filename = filename_cleaner.sub('', unsafe_filename)
 	return safe_filename
 
-def _get_formatting_data(volume_id: int, issue_id: int=None, _volume_data: dict=None) -> dict:
+def _get_formatting_data(
+	volume_id: int,
+	issue_id: int=None,
+	_volume_data: dict=None,
+	_volume_number: Union[int, Tuple[int, int], None]=None
+) -> dict:
 	"""Get the values of the formatting keys for a volume or issue
 
 	Args:
@@ -60,6 +65,7 @@ def _get_formatting_data(volume_id: int, issue_id: int=None, _volume_data: dict=
 		issue_id (int, optional): The id of the issue. Defaults to None.
 		_volume_data (dict, optional): Instead of fetching data based on the volume id,
 		work with the data given in this variable. Defaults to None.
+		_volume_number (Union[int, Tuple[int, int], None], optional): Override the volume number. Defaults to None.
 
 	Raises:
 		VolumeNotFound: The volume id doesn't map to any volume in the library
@@ -87,6 +93,9 @@ def _get_formatting_data(volume_id: int, issue_id: int=None, _volume_data: dict=
 	else:
 		volume_data = _volume_data
 	
+	if _volume_number is not None:
+		volume_data['volume_number'] = _volume_number
+	
 	# Build formatted data
 	if volume_data.get('title').startswith('The '):
 		clean_title = volume_data.get('title') + ', The'
@@ -102,7 +111,12 @@ def _get_formatting_data(volume_id: int, issue_id: int=None, _volume_data: dict=
 	formatting_data = {
 		'series_name': (volume_data.get('title') or 'Unknown').replace('/', '').replace(r'\\', ''),
 		'clean_series_name': clean_title.replace('/', '').replace(r'\\', ''),
-		'volume_number': str(volume_data.get('volume_number')).zfill(volume_padding) or 'Unknown',
+		'volume_number': (
+			(str(volume_data.get('volume_number')).zfill(volume_padding)
+			if not isinstance(volume_data.get('volume_number'), tuple)
+			else ' - '.join((str(n).zfill(volume_padding) for n in volume_data['volume_number'])))
+			or 'Unknown'
+		),
 		'comicvine_id': volume_data.get('comicvine_id') or 'Unknown',
 		'year': volume_data.get('year') or 'Unknown',
 		'publisher': volume_data.get('publisher') or 'Unknown'
@@ -151,24 +165,34 @@ def generate_volume_folder_name(volume_id: int, _volume_data: dict=None) -> str:
 	save_name = _make_filename_safe(name)
 	return save_name
 
-def generate_tpb_name(volume_id: int) -> str:
+def generate_tpb_name(volume_id: int, _volume_number: Union[int, Tuple[int, int], None]=None) -> str:
 	"""Generate a TPB name based on the format string
 
 	Args:
 		volume_id (int): The id of the volume for which to generate the string
+		_volume_number (Union[int, Tuple[int, int], None], optional): Override the volume number. Defaults to None.
 
 	Returns:
 		str: The TPB name
 	"""
-	formatting_data = _get_formatting_data(volume_id)
+	formatting_data = _get_formatting_data(volume_id, _volume_number=_volume_number)
 	format: str = Settings().get_settings()['file_naming_tpb']
 
 	name = format.format(**formatting_data)
 	save_name = _make_filename_safe(name)
 	return save_name
 
-def generate_empty_name(volume_id: int) -> str:
-	save_tpb_name = generate_tpb_name(volume_id)
+def generate_empty_name(volume_id: int, _volume_number: Union[int, Tuple[int, int], None]=None) -> str:
+	"""Generate a name without issue number or TPB marking
+
+	Args:
+		volume_id (int): The id of the volume for which to generate the string
+		_volume_number (Union[int, Tuple[int, int], None], optional): Override the volume number. Defaults to None.
+
+	Returns:
+		str: The empty name
+	"""
+	save_tpb_name = generate_tpb_name(volume_id, _volume_number)
 	save_name = save_tpb_name.replace('tpb', '').replace('TPB', '').strip()
 	return save_name
 
@@ -403,6 +427,7 @@ def preview_mass_rename(volume_id: int, issue_id: int=None, filepath_filter: Lis
 		"SELECT special_version FROM volumes WHERE id = ? LIMIT 1;",
 		(volume_id,)
 	).fetchone()[0]
+	name_volume_as_issue = Settings().get_settings()['volume_as_empty']
 
 	for file in file_infos:
 		if not isfile(file['filepath']):
@@ -422,11 +447,15 @@ def preview_mass_rename(volume_id: int, issue_id: int=None, filepath_filter: Lis
 			(file['id'],)
 		).fetchall()
 		if special_version == 'tpb':
-			# File is TPB
 			suggested_name = generate_tpb_name(volume_id)
 
-		elif special_version:
-			# File is a special version
+		elif special_version == 'volume-as-issue' and not name_volume_as_issue:
+			if len(issues) > 1:
+				suggested_name = generate_empty_name(volume_id, (int(issues[0][0]), int(issues[-1][0])))
+			else:
+				suggested_name = generate_empty_name(volume_id, int(issues[0][0]))
+
+		elif (special_version or 'volume-as-issue') != 'volume-as-issue':
 			suggested_name = generate_empty_name(volume_id)
 
 		elif len(issues) > 1:

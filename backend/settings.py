@@ -36,7 +36,7 @@ default_settings = {
 	'issue_padding': 3,
 	'rename_downloaded_files': True,
 	'file_naming_empty': '{series_name} ({year}) Volume {volume_number} Issue {issue_number}',
-	'volume_as_empty': True
+	'volume_as_empty': False
 }
 
 private_settings = {

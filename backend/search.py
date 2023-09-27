@@ -56,7 +56,7 @@ def _check_match(
 	"""Determine if a result is a match with what is searched for
 
 	Args:
-		result (dict): A result in SearchSources.search_results
+		result (dict): A result in SearchSources.search_all()
 		title (str): Title of volume
 		volume_number (int): The volume number of the volume
 		special_version (str): What type of special version the volume is, or None
@@ -78,14 +78,15 @@ def _check_match(
 		return {'match': False, 'match_issue': 'Annual conflict'}
 
 	if not _check_matching_titles(title, result['series']):
-		return {'match': False, 'match_issue': 'Title doesn\'t match'}
+		return {'match': False, 'match_issue': 'Titles don\'t match'}
 
-	if result['volume_number'] != volume_number and (result['volume_number'] is not None or year is None):
-		return {'match': False, 'match_issue': 'Volume number doesn\'t match'}
+	if (special_version != 'volume-as-issue'
+	and result['volume_number'] not in (volume_number, year, None)):
+		return {'match': False, 'match_issue': 'Volume numbers don\'t match'}
 
 	if special_version != result['special_version'] and not (
-		special_version == 'hard-cover'
-		and result['special_version'] == 'tpb'
+		result['special_version'] == 'tpb'
+		and special_version in ('volume-as-issue', 'hard-cover')
 	):
 		return {'match': False, 'match_issue': 'Special version conflict'}
 
@@ -97,9 +98,15 @@ def _check_match(
 				and
 				(
 					# Issue number is in volume
-					(isinstance(result['issue_number'], float) and result['issue_number'] in issue_numbers)
+					(
+						isinstance(result['issue_number'], float)
+						and result['issue_number'] in issue_numbers
+					)
 					# Issue range's start and end are both in volume
-					or (isinstance(result['issue_number'], tuple) and all(i in issue_numbers for i in result['issue_number']))
+					or (
+						isinstance(result['issue_number'], tuple)
+						and all(i in issue_numbers for i in result['issue_number'])
+					)
 				)
 			)
 			or
@@ -112,16 +119,38 @@ def _check_match(
 			)
 		)
 		if not issue_number_is_equal:
-			return {'match': False, 'match_issue': 'Issue number(s) don\'t match'}
-	
+			return {'match': False, 'match_issue': 'Issue numbers don\'t match'}
+
+	elif special_version == 'volume-as-issue' and result['special_version'] == 'tpb':
+		if ((isinstance(result['volume_number'], int)
+			and not result['volume_number'] not in issue_numbers
+		) or (
+			isinstance(result['volume_number'], tuple)
+			and (result['volume_number'][0] not in issue_numbers
+				or result['volume_number'][1] not in issue_numbers
+			)
+		)):
+			return {'match': False, 'match_issue': 'Volume numbers don\'t match'}
+
 	year_is_equal = (
 		year is None
 		or result['year'] is None
 		or (
 			year - 1 <= result['year'] <= year + 1 # Year in volume release year
 			# Year in issue release year
-			or (isinstance(result['issue_number'], float) and issue_numbers.get(result['issue_number']) == result['year']) 
-			or (isinstance(result['issue_number'], tuple) and issue_numbers.get(result['issue_number'][0]) == result['year'])
+			or (result['issue_number'] is None
+				and ((
+						isinstance(result['volume_number'], int)
+						and issue_numbers.get(float(result['volume_number'])) == result['year']
+					)
+					or (
+						isinstance(result['volume_number'], tuple)
+						and issue_numbers.get(float(result['volume_number'][0])) == result['year']
+				)))
+			or (isinstance(result['issue_number'], float)
+	   			and issue_numbers.get(result['issue_number']) == result['year']) 
+			or (isinstance(result['issue_number'], tuple)
+				and issue_numbers.get(result['issue_number'][0]) == result['year'])
 		)
 	)
 	if not year_is_equal:
@@ -334,6 +363,11 @@ def manual_search(
 			'{title} Vol. {volume_number}',
 			'{title}'
 		)
+	elif special_version == 'volume-as-issue':
+		query_formats = (
+			'{title} ({year})',
+			'{title}'
+		)
 	elif issue_number is None:
 		query_formats = (
 			'{title} Vol. {volume_number} ({year})',
@@ -466,16 +500,20 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 		lambda r: r['match'],
 		manual_search(volume_id, issue_id)
 	))
-	if issue_number is not None or special_version:
-		result = []
-		if results:
-			result.append(results[0])
+	if issue_number is not None or (
+		special_version is not None
+		and special_version != 'volume-as-issue'
+	):
+		result = results[0] if results else []
 		logging.debug(f'Auto search results: {result}')
 		return result
 	else:
 		volume_parts = []
 		for result in results:
-			if result['issue_number'] is not None:
+			if (result['issue_number'] is not None
+			or (special_version == 'volume-as-issue'
+				and result['special_version'] == 'tpb'
+			)):
 				if isinstance(result['issue_number'], tuple):
 					# Release is an issue range
 					# Only allow range if all the issues that the range covers are open
@@ -491,7 +529,11 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 						continue
 				else:
 					# Release is a specific issue
-					if not result['issue_number'] in searchable_issues:
+					if not (
+						result['issue_number'] in searchable_issues
+						or (result['special_version'] == 'tpb'
+							and result['volume_number'] in searchable_issues)
+					):
 						continue
 
 				# Check that any other selected download doesn't already cover the issue
@@ -510,7 +552,10 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 							if part['issue_number'][0] <= result['issue_number'] <= part['issue_number'][1]:
 								break
 						else:
-							if part['issue_number'] == result['issue_number']:
+							if (part['issue_number'] == result['issue_number']
+							or (special_version == 'volume-as-issue'
+								and part['volume_number'] == result['volume_number']
+							)):
 								break
 				else:
 					volume_parts.append(result)
