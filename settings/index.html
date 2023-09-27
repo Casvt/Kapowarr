@@ -1001,7 +1001,11 @@ Available variables are:</p>
 </ul>
 <p>For example, <code class="highlight">{series_name} ({year}) Volume {volume_number} Issue {issue_number}</code> would come out as "Invincible Iron Man (2008) Volume 01 Issue 001.cbz".</p>
 <h4 id="treat-volume-issues-as-no-title">Treat Volume Issues as "No Title"<a class="headerlink" href="#treat-volume-issues-as-no-title" title="Permanent link">&para;</a></h4>
-<p>Sometimes a volume will consist of multiple sub-volumes. This setting controls whether Kapowarr treats these as having no title or not.  </p>
+<p>Sometimes a volume will consist of multiple sub-volumes. This setting controls whether Kapowarr should name these the same as issues without a title or not. See the example below:
+|Setting|Example Result|
+|-|-|
+|Enabled|Invincible Compendium (2011) Volume 1 Issue 1-2.cbr<br>Invincible Compendium (2011) Volume 1 Issue 3.cbr|
+|Disabled|Invincible Compendium (2011) Volume 1 - 2.cbr<br>Invincible Compendium (2011) Volume 3.cbr|</p>
 <h4 id="issue-padding">Issue Padding<a class="headerlink" href="#issue-padding" title="Permanent link">&para;</a></h4>
 <p>This defines how issue numbers are 'padded' (3 digits, 2 digits, etc.).<br />
 This is useful in the case of file sorting, as many operating systems sort <em>alphabetically</em>, instead of alphanumerically. To them, because 1 is lower than 2, "11" comes before "20".<br />
@@ -1118,7 +1122,7 @@ If troubleshooting, setting this to 'Debug' will make the system log what it's d
   <small>
     
       Last update:
-      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-09-27T09:43:24+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-09-27</span>
+      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-09-27T10:49:27+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-09-27</span>
       
     
   </small>
