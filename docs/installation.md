@@ -52,8 +52,7 @@ Now that the database file can be stored somewhere, we can launch the container.
     3. Replace `/path/to/root_folder` with the path to your desired root folder. Then, this folder will get mapped to `/comics-1` inside the docker container. When adding a root folder in Kapowarr, you'll then set its location as `/comics-1`, mapping it this way to where ever `/path/to/root_folder` may be.
     4. You can map multiple root folders by repeating `-v /path/to/root_folder:/comics-1` in the command, but then supplying different values for `/path/to/root_folder` and `/comics-1`.  
     E.g. `-v /media/Comics-2:/comics-2`, then add `/comics-2` as your second root folder in Kapowarr.
-    5. Information on how to change the port can be found on the [Setup After Installation page](../setup_after_installation/#port).
-    6. Using a named volume in docker requires you to create the volume before you can use it (refer to [Named Volumes](#named-volumes)).
+    5. Information on how to change the port can be found on the [Setup After Installation page](./setup_after_installation.md#port).
 
 === "Docker Compose"
     The contents of the docker-compose.yml file would look like this:
@@ -78,9 +77,7 @@ Now that the database file can be stored somewhere, we can launch the container.
     3. Replace `/path/to/root_folder` with the path to your desired root folder on the host machine. Then, this folder will get mapped to `/comics-1` inside the docker container. When adding a root folder in Kapowarr, you'll then set it's location as `/comics-1`, mapping it this way to where ever `/path/to/root_folder` may point.
     4. You can map multiple root folders by repeating `- /path/to/root_folder:/comics-1` , but then supplying different values for `/path/to/root_folder` and `/comics-1`.  
     E.g. `- /media/Comics-2:/comics-2` for the Docker Compose file, then add `/comics-2` as your second root folder in Kapowarr.
-    5. Information on how to change the port can be found on the [Setup After Installation page](../setup_after_installation/#port).
-    6. Using a named volume in docker requires you to create the volume before you can use it (refer to [Named Volumes](#named-volumes))
-
+    5. Information on how to change the port can be found on the [Setup After Installation page](./setup_after_installation.md#port).
 
 ### Docker example
 

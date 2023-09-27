@@ -115,7 +115,7 @@ Root folders are the base folders that Kapowarr works in. All content is put in 
 
 When adding a volume (or when editing one), you choose in which root folder all content for that volume is put. Kapowarr will never touch any files outside the root folders (except in the [download folder](#download-location)). You might have multiple root folders because you store your comics on multiple drives or want different access rights to certain volumes, to name a few reasons.
 
-Root folders can be added at Settings -> Media Management -> Root Folders. Note: If you use docker to run Kapowarr and have followed the example given in the [installation instructions](../installation/#docker), this is where you would enter `/comics-1`, `/comics-2`, `/RF`, `/RF2`, etc.
+Root folders can be added at Settings -> Media Management -> Root Folders. Note: If you use docker to run Kapowarr and have followed the example given in the [installation instructions](./installation.md#docker), this is where you would enter `/comics-1`, `/comics-2`, `/RF`, `/RF2`, etc.
 
 _Note: at least one of these must be set before you are able to add any volumes to monitor, as without it Kapowarr cannot know where to put the files._
 
@@ -128,7 +128,7 @@ _Note: at least one of these must be set before you are able to add any volumes 
 This is where the files being downloaded get written to before being processed and moved to the correct location.  
 The default location for this is `/app/temp_downloads`.
 
-If you run Kapowarr using Docker, leave this set to the default value of `/app/temp_downloads` and instead change the value of `/path/to/download_folder` in the Docker command ([reference](../installation/#docker)).  
+If you run Kapowarr using Docker, leave this set to the default value of `/app/temp_downloads` and instead change the value of `/path/to/download_folder` in the Docker command ([reference](./installation.md#docker)).  
 If you have a manual install, you can change this value to whatever you want. It is recommended to be outside your root folders.
 
 #### Empty Temporary Download Folder
@@ -201,7 +201,7 @@ If you want to disable the password, set an empty value for the setting and save
 
 #### API Key
 
-This is where Kapowarr defines the API key for any queries made to the [Kapowarr API](../api).  
+This is where Kapowarr defines the API key for any queries made to the [Kapowarr API](api.md).  
 Documentation for the API itself will be coming in due course.
 
 ### Comic Vine API Key
@@ -213,7 +213,7 @@ Kapowarr uses ComicVine as its metadata source. To fetch the metadata from Comic
 3. You'll see your ComicVine API key, which is 40 characters long and contains the letters a-f and numbers 0-9 (e.g. `da39a3ee5e6b4b0d3255bfef95601890afd80709`).
 4. Copy that API key and enter it as the value of Settings -> General -> Comic Vine API -> Comic Vine API Key in the web-ui. Don't forget to save.
 
-On the documentation page about [rate limiting](../rate_limiting), information can be found about the handling of the ComicVine API rate limit.
+On the documentation page about [rate limiting](rate_limiting.md), information can be found about the handling of the ComicVine API rate limit.
 
 ### UI
 
