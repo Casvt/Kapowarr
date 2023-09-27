@@ -77,10 +77,11 @@ For example, `{series_name} ({year}) Volume {volume_number} Issue {issue_number}
 #### Treat Volume Issues as "No Title"
 
 Sometimes a volume will consist of multiple sub-volumes. This setting controls whether Kapowarr should name these the same as issues without a title or not. See the example below:
-|Setting|Example Result|
-|-|-|
-|Enabled|Invincible Compendium (2011) Volume 1 Issue 1-2.cbr<br>Invincible Compendium (2011) Volume 1 Issue 3.cbr|
-|Disabled|Invincible Compendium (2011) Volume 1 - 2.cbr<br>Invincible Compendium (2011) Volume 3.cbr|
+
+| Setting | Example Result |
+| ------- | -------------- |
+| Enabled | Invincible Compendium (2011) Volume 1 Issue 1-2.cbr<br>Invincible Compendium (2011) Volume 1 Issue 3.cbr |
+| Disabled | Invincible Compendium (2011) Volume 1 - 2.cbr<br>Invincible Compendium (2011) Volume 3.cbr |
 
 #### Issue Padding
 
