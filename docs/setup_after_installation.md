@@ -4,53 +4,47 @@ After installing Kapowarr, you should have access to the web-ui. Kapowarr needs 
 
 ## Port
 
-The first thing to do is decide if you want to leave Kapowarr on the default port of 5656. If you _do_, you can go to the next step. If you want to _change_ the port, continue reading.
-
-=== "Docker CLI"
-    Alter the command to run the container and replace `-p 5656:5656` with `-p {PORT}:5656`, where `{PORT}` is the desired port (e.g. `-p 8009:5656`). Then run the container with the new version of the command.
-
-=== "Docker Compose"
-    Alter the file to run the container and replace `- 5656:5656` with `- {PORT}:5656`, where `{PORT}` is the desired port (e.g. `- 8009:5656`). Then run the container with the new version of the file.
-
-=== "Manual Install"
-    Edit the port number at Settings -> General -> Host -> Port Number in the web-ui and change the value to the desired port. Then, restart Kapowarr.
+The first thing to do is decide if you want to leave Kapowarr on the default port of 5656. If you _do_, you can go to the next step.  
+If you want to _change_ the port, refer to [port](../settings/#port-number) on the Setting page.  
 
 ## Authentication
 
-You might want to set a password to restrict access to the web-ui (and API). Setting a password is optional. A password can be set at Settings -> General -> Security -> Login Password. Don't forget to save. From then on, it is required to enter a password in order to gain access to the web-ui (and the API). If you want to disable the password, set an empty value for the setting and save.
+If you want to put a password on your instance of Kapowarr, refer to [Authentication](../settings/#security).  
+_Note: If you are exposing Kapowarr to the internet, we highly recommend this._
 
 ## ComicVine API key
 
-Kapowarr uses ComicVine as it's metadata source. To fetch the metadata from ComicVine, Kapowarr needs access to the API, which requires an API key.
+Kapowarr uses ComicVine as its metadata source. To fetch the metadata from ComicVine, Kapowarr needs access to the API, which requires an API key.  
+See [Comic Vine API Key](../settings/#comic-vine-api-key) on the Settings page for how to get one.  
 
-1. Go to [the API page of ComicVine](https://comicvine.gamespot.com/api/).
-2. If you don't have a free account at ComicVine already, sign up and once logged in, revisit the linked page.
-3. You'll see your ComicVine API key, which is 40 characters long and contains the letters a-f and numbers 0-9 (e.g. `da39a3ee5e6b4b0d3255bfef95601890afd80709`).
-4. Copy that API key and enter it as the value of Settings -> General -> Comic Vine API -> Comic Vine API Key in the web-ui. Don't forget to save.
-
-On the documentation page about [rate limiting](./rate_limiting.md), information can be found about the handling of the ComicVine API rate limit.
+Once you've entered your key and hit "Save", move on to Root Folders.  
 
 ## Root Folders
 
-Root folders are the base folders that Kapowarr works in. All content is put in these folders. When adding a volume (or when editing one), you choose in which root folder all content for that volume is put. Kapowarr will never touch any files outside the root folders (except in the [download folder](#download-folder)). You might have multiple root folders because you store your comics on multiple drives or want different access rights to certain volumes, to name a few reasons.
-
-Root folders can be added at Settings -> Media Management -> Root Folders. Note: If you use docker to run Kapowarr and have followed the example given in the [installation instructions](./installation.md#docker), this is where you would enter `/comics-1` and `/comics-2`.
+Root folders are the base folders that Kapowarr works in. All content is put in these folders.  
+Refer to [Root Folders](../settings/#root-folders) for more details.  
+_Note: at least one of these must be set before you are able to add any volumes to monitor, as without it Kapowarr cannot know where to put the files._
 
 ## Downloading
 
-One of Kapowarr's biggest features is being able to download comics. The Settings -> Download section has all settings regarding the downloading.
+Kapowarr's biggest feature is being able to download comics. The [Settings -> Download](../settings/#download) section has all settings regarding the downloading.
 
 ### Download folder
 
-The download folder (Settings -> Download -> Download Location -> Direct Download Temporary Folder) is where all downloads are downloaded to, before they get moved to their final destination. If you run Kapowarr using Docker, leave this setting to it's default value of `/app/temp_downloads` and instead change the value of `/path/to/download_folder` in the Docker command ([reference](./installation.md#docker)). If you have a manual install, you can change this value to whatever you want. It is allowed to be outside your root folders.
+The download folder is where all downloads are downloaded to, before they get moved to their final destination.  
+In most cases, the default of `/app/temp_downloads` works best. If you wish to change this, refer to [Direct Download Temporary Folder](../settings/#direct-download-temporary-folder).  
 
 ### Service preference
 
-Kapowarr has the ability to download directly from servers, but also to download from services like MediaFire and Mega. Websites like getcomics.org offer the same download via multiple services (multiple download links to download the same file, via different services). This settings determines what preference you have for each service. If multiple services are offered for the same download, Kapowarr will use this preference list to determine what service to pick (if the link of the top service doesn't work, Kapowarr falls back to the other options, in order). If you have an account for one of these services (see [Credentials](#credentials) setting), you might want to put that one at the top, to make Kapowarr take advantage of the extra features that the account offers (extra bandwidth, higher rate limit, etc.).
+If you have an account with Mega, set that service as the priority and add a credential for it.  
+The other services will then be used as a fallback option for if a link fails.
+
+For a full explanation, see [Service Preference](../settings/#service-preference).  
 
 ### Credentials
 
-Kapowarr has the ability to download from services like MediaFire and Mega. These services apply limits to how much you can download per day, or a download speed limit. An (paid) account for one of these services often offers higher limits. Kapowarr can take advantage of these extra features that these accounts offer. Under the credentials section, you can add credentials of accounts, which Kapowarr will use when downloading, taking advantage of the extra features.
+This only applies if you have an account with Mega (for now).  
+Refer to [Credentials](../settings/#credentials) for more info.
 
 ## Building up a library
 
