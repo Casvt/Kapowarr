@@ -1,8 +1,11 @@
 #-*- coding: utf-8 -*-
 
 import logging
+from asyncio import create_task, gather, run
 from os.path import basename, commonpath, dirname, splitext
 from typing import Dict, List, Tuple, Union
+
+from aiohttp import ClientSession
 
 from backend.comicvine import ComicVine
 from backend.custom_exceptions import VolumeAlreadyAdded
@@ -13,6 +16,41 @@ from backend.root_folders import RootFolders
 from backend.search import _check_matching_titles
 from backend.volumes import Library, Volume
 
+
+async def __search_matches(datas: List[dict]) -> List[Tuple[dict, dict]]:
+	comicvine = ComicVine()
+	results: List[Tuple[dict, dict]] = []
+	async with ClientSession() as session:
+		tasks = [
+			create_task(comicvine.search_volumes_async(session, d['series'])) for d in datas
+		]
+		responses = await gather(*tasks)
+
+		for data, response in zip(datas, responses):
+			matching_result = next(
+				(r for r in response
+				if _check_matching_titles(data['series'], r['title'])
+				and ((
+						data['year'] is not None
+						and r['year'] is not None
+						and 0 <= abs(data['year'] - r['year']) <= 1 # One year wiggle room
+					)
+					or r['year'] is None
+				)),
+
+				{}
+			)
+			cv_data = {
+				'id': matching_result.get('comicvine_id'),
+				'title': f"{matching_result['title']} ({matching_result['year']})" if matching_result else None,
+				'link': matching_result.get('comicvine_info')
+			}
+			results.append((
+				cv_data,
+				data
+			))
+			
+		return results
 
 def propose_library_import() -> List[dict]:
 	"""Get list of unimported files and their suggestion for a matching volume on CV.
@@ -34,57 +72,49 @@ def propose_library_import() -> List[dict]:
 			"SELECT filepath FROM files"
 		)
 	)
-	unimported_files = []
+
+	# List with tuples. First entry is efd,
+	# second is all matching files for that efd.
+	unimported_files: List[Tuple[dict, List[dict]]] = []
 	for f in all_files:
 		if not f in imported_files:
 			efd = extract_filename_data(f)
 			del efd['issue_number']
-			result = {
+
+			file_entry = {
 				'filepath': f,
-				'file_title': splitext(basename(f))[0],
-				'data': efd
-			}
-			unimported_files.append(result)
+				'file_title': splitext(basename(f))[0]
+			}			
+			for entry in unimported_files:
+				if entry[0] == efd:
+					entry[1].append(file_entry)
+					break
+			else:
+				unimported_files.append((
+					efd,
+					[file_entry]
+				))
 
-	# Find a match for the file on CV
-	comicvine = ComicVine()
-	cv_to_data: List[Tuple[dict, dict]] = []
-	for f in unimported_files:
-		for cv, data in cv_to_data:
-			if f['data'] == data:
-				f['cv'] = cv
-				del f['data']
-				break
-		else:
-			search_results = comicvine.search_volumes(f['data']['series'])
-			matching_result = next(
-				(r for r in search_results
-				if _check_matching_titles(f['data']['series'], r['title'])
-				and ((
-						f['data']['year'] is not None
-						and r['year'] is not None
-						and 0 <= abs(f['data']['year'] - r['year']) <= 1 # One year wiggle room
-					)
-					or r['year'] is None
-				)),
+	# Find a match for the files on CV
+	result: List[dict] = []
+	for data_index in range(0, len(unimported_files), 10):
+		datas = unimported_files[data_index:data_index+10]
+		search_results = run(__search_matches([e[0] for e in datas]))
+		for search_result in search_results:
+			for data in datas:
+				if search_result[1] == data[0]:
+					result += [
+						{
+							**f,
+							'cv': search_result[0]
+						}
+						for f in data[1]
+					]
+					break
 
-				{}
-			)
-			cv_data = {
-				'id': matching_result.get('comicvine_id'),
-				'title': f"{matching_result['title']} ({matching_result['year']})" if matching_result else None,
-				'link': matching_result.get('comicvine_info')
-			}
-			cv_to_data.append((
-				cv_data,
-				f['data']
-			))
-			f['cv'] = cv_data
-			del f['data']
+	result.sort(key=lambda e: e['file_title'])
 
-	unimported_files.sort(key=lambda e: e['file_title'])
-
-	return unimported_files
+	return result
 
 def import_library(matches: List[Dict[str, Union[str, int]]]) -> None:
 	"""Add volume to library and import linked files

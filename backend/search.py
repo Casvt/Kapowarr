@@ -17,8 +17,8 @@ from backend.db import get_db
 from backend.files import extract_filename_data
 from backend.settings import private_settings
 
-clean_title_regex = compile(r'((?<=annual)s|(?!\s)\-(?!\s)|\+|,|\!|:|\bthe\s|\band\b|&|’|\'|\"|\bone-shot\b|\btpb\b)')
-clean_title_regex_2 = compile(r'(\s-\s|\s+|/)')
+clean_title_regex = compile(r'((?<=annual)s|/|\-|\+|,|\!|:|\bthe\s|\band\b|&|’|\'|\"|\bone-shot\b|\btpb\b)')
+clean_title_regex_2 = compile(r'\s')
 
 def _check_matching_titles(title1: str, title2: str) -> bool:
 	"""Determine if two titles match; if they refer to the same thing.
@@ -30,15 +30,21 @@ def _check_matching_titles(title1: str, title2: str) -> bool:
 	Returns:
 		bool: `True` if the titles match, otherwise `False`.
 	"""
-	pre_clean_title = clean_title_regex.sub('', title1.lower())
-	clean_reference_title = (clean_title_regex_2
-		.sub(' ', pre_clean_title)
-		.strip())
+	clean_reference_title = clean_title_regex_2.sub(
+		'',
+		clean_title_regex.sub(
+			'',
+			title1.lower()
+		)
+	)
 
-	pre_clean_title = clean_title_regex.sub('', title2.lower())
-	clean_title = (clean_title_regex_2
-		.sub(' ', pre_clean_title)
-		.strip())
+	clean_title = clean_title_regex_2.sub(
+		'',
+		clean_title_regex.sub(
+			'',
+			title2.lower()
+		)
+	)
 
 	result = clean_reference_title == clean_title
 	logging.debug(f'Matching titles ({title1} -> {clean_reference_title}, {title2} -> {clean_title}): {result}')

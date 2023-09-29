@@ -483,7 +483,6 @@ def api_rename(id: int):
 		
 	elif request.method == 'POST':
 		filepath_filter = request.get_json(silent=True)
-		print(filepath_filter)
 		mass_rename(id, filepath_filter=filepath_filter)
 		return return_api(None)
 
@@ -499,7 +498,6 @@ def api_rename_issue(id: int):
 		
 	elif request.method == 'POST':
 		filepath_filter = request.get_json(silent=True)
-		print(filepath_filter)
 		mass_rename(volume_id, id, filepath_filter=filepath_filter)
 		return return_api(None)
 

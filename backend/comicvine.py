@@ -5,8 +5,9 @@
 
 import logging
 from re import IGNORECASE, compile
-from typing import List
+from typing import List, Union
 
+from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 from requests import Session
 from requests.exceptions import ConnectionError as requests_ConnectionError
@@ -109,8 +110,10 @@ class ComicVine:
 			raise InvalidComicVineApiKey
 
 		self.ssn = Session()
-		self.ssn.params.update({'format': 'json', 'api_key': api_key})
-		self.ssn.headers.update({'user-agent': 'Kapowarr'})
+		self._params = {'format': 'json', 'api_key': api_key}
+		self._headers = {'user-agent': 'Kapowarr'}
+		self.ssn.params.update(self._params)
+		self.ssn.headers.update(self._headers)
 		return
 
 	def test_token(self) -> bool:
@@ -326,43 +329,17 @@ class ComicVine:
 			break
 		return issue_infos
 
-	def search_volumes(self, query: str) -> List[dict]:
-		"""Search for volumes in the ComicVine database
+	def __process_search_results(self, query: str, results: List[dict]) -> List[dict]:
+		"""Format the search results from `self.search_volumes()` or `self.search_volumes_async()`
 
 		Args:
-			query (str): The query to use when searching
+			query (str): The processed query that was used
+			results (List[dict]): The unformatted search results
 
 		Returns:
-			List[dict]: A list with search results
-		"""		
-		logging.debug(f'Searching for volumes with the query {query}')
+			List[dict]: The formatted search results
+		"""
 		cursor = get_db()
-
-		if query.startswith('4050-') or query.startswith('cv:'):
-			if query.startswith('cv:'):
-				query = query.partition(':')[2]
-				if not query.startswith('4050-'):
-					query = '4050-' + query
-			if not query.replace('-','0').isdigit():
-				return []
-			results: List[dict] = [
-				self.ssn.get(
-					f'{self.api_url}/volume/{query}',
-					params={'field_list': self.search_field_list}
-				).json()['results']
-			]
-			if results == [[]]:
-				return []
-		else:
-			results: List[dict] = self.ssn.get(
-				f'{self.api_url}/search',
-				params={'query': query,
-	    				'resources': 'volume',
-						'limit': 50,
-						'field_list': self.search_field_list}
-			).json()['results']
-			if not results:
-				return []
 		
 		results = [self.__format_volume_output(r) for r in results]
 
@@ -387,4 +364,97 @@ class ComicVine:
 
 		logging.debug(f'Searching for volumes with query result: {results}')
 		return results
+
+	def __normalize_cv_id(self, cv_id: str) -> Union[str, None]:
+		if cv_id.startswith('cv:'):
+			cv_id = cv_id.partition(':')[2]
+			if not cv_id.startswith('4050-'):
+				cv_id = '4050-' + cv_id
+
+		if cv_id.replace('-','0').isdigit():
+			return cv_id
+
+		return None
+
+	def search_volumes(self, query: str) -> List[dict]:
+		"""Search for volumes in the ComicVine database
+
+		Args:
+			query (str): The query to use when searching
+
+		Returns:
+			List[dict]: A list with search results
+		"""		
+		logging.debug(f'Searching for volumes with the query {query}')
+
+		if query.startswith('4050-') or query.startswith('cv:'):
+			query = self.__normalize_cv_id(query)
+			if not query:
+				return []
+
+			results: List[dict] = [
+				self.ssn.get(
+					f'{self.api_url}/volume/{query}',
+					params={'field_list': self.search_field_list}
+				).json()['results']
+			]
+			if results == [[]]:
+				return []
+		else:
+			results: List[dict] = self.ssn.get(
+				f'{self.api_url}/search',
+				params={'query': query,
+	    				'resources': 'volume',
+						'limit': 50,
+						'field_list': self.search_field_list}
+			).json()['results']
+			if not results:
+				return []
+
+		return self.__process_search_results(query, results)
+
+	async def search_volumes_async(self, session: ClientSession, query: str) -> List[dict]:
+		"""Search for volumes in the ComicVine database asynchronously
+
+		Args:
+			session (ClientSession): A aiohttp client session to make the request with
+			query (str): The query to use when searching
+
+		Returns:
+			List[dict]: A list with search results
+		"""		
+		logging.debug(f'Searching for volumes with the query {query}')
+
+		if query.startswith('4050-') or query.startswith('cv:'):
+			query = self.__normalize_cv_id(query)
+			if not query:
+				return []
+
+			async with session.get(
+				f'{self.api_url}/volume/{query}',
+				params={**self._params, 'field_list': self.search_field_list},
+				headers=self._headers
+			) as response:
+				results: List[dict] = [(await response.json())['results']]
+
+			if results == [[]]:
+				return []
+
+		else:
+			async with session.get(
+				f'{self.api_url}/search',
+				params={
+					**self._params,
+					'query': query,
+					'resources': 'volume',
+					'limit': 50,
+					'field_list': self.search_field_list
+				},
+				headers=self._headers
+			) as response:
+				results: List[dict] = (await response.json())['results']
+
+			if not results:
+				return []
 		
+		return self.__process_search_results(query, results)
