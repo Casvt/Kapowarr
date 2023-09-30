@@ -43,7 +43,7 @@ def determine_special_version(
 	if (issue_titles[0] or '').lower() == 'hc':
 		return 'hard-cover'
 
-	if all(vol_regex.search(title) for title in issue_titles):
+	if all(title is not None and vol_regex.search(title) for title in issue_titles):
 		return 'volume-as-issue'
 
 	if volume_description and len(volume_description.split('. ')) == 1:
