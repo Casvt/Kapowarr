@@ -233,6 +233,7 @@ def _create_link_paths(
 	volume_number: int
 	volume_year: int
 	special_version: int
+	last_issue_date: str
 	volume_title, volume_number, volume_year, special_version, last_issue_date = cursor.execute("""
 		SELECT
 			v.title,
@@ -248,7 +249,7 @@ def _create_link_paths(
 		""",
 		(volume_id,)
 	).fetchone()
-	last_year: int = int(last_issue_date.split('-')[0])
+	last_year: int = int(last_issue_date.split('-')[0]) if last_issue_date else volume_year
 	annual = 'annual' in volume_title.lower()
 	service_preference_order = dict((v, k) for k, v in enumerate(Settings().get_service_preference()))
 
