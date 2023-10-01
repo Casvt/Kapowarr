@@ -205,6 +205,8 @@ class DirectDownload(BaseDownload):
 		return
 
 class MegaDownload(BaseDownload):
+	"""For downloading a file via Mega
+	"""	
 	@property
 	def progress(self) -> float:
 		return self._mega.progress
