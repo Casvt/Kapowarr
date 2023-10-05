@@ -13,7 +13,7 @@ class extract_filename_data(unittest.TestCase):
 	def test_general(self):
 		cases = {
 		    'Iron-Man Volume 2 Issue 3.cbr':
-				{'series': 'Iron-Man', 'year': None, 'volume_number': 2, 'special_version': None, 'issue_number': 3.0, 'annual': False},
+				{'series': 'Iron Man', 'year': None, 'volume_number': 2, 'special_version': None, 'issue_number': 3.0, 'annual': False},
 
 			'/plex-media/Comics/Batman/Volume 1 (1940)/Batman (1940) Volume 2 Issue 11-25.zip':
 				{'series': 'Batman', 'year': 1940, 'volume_number': 2, 'special_version': None, 'issue_number': (11.0, 25.0), 'annual': False},
@@ -22,7 +22,7 @@ class extract_filename_data(unittest.TestCase):
 				{'series': 'Tales of the Unexpected', 'year': 2006, 'volume_number': 1, 'special_version': None, 'issue_number': 3.0, 'annual': False},
 
 			'Tales of the Teen Titans v2 (1984)/Issue 51-58 - Tales of the Teen Titans (1985-03-01)':
-				{'series': 'Tales of the Teen Titans', 'year': 1984, 'volume_number': 2, 'special_version': None, 'issue_number': (51.0, 58.0), 'annual': False},
+				{'series': 'Tales of the Teen Titans', 'year': 1985, 'volume_number': 2, 'special_version': None, 'issue_number': (51.0, 58.0), 'annual': False},
 
 			'Doctor Strange, Sorcerer Supreme Volume 2 Issues #4.0-4.5 (03-2022)':
 				{'series': 'Doctor Strange, Sorcerer Supreme', 'year': 2022, 'volume_number': 2, 'special_version': None, 'issue_number': (4.0, 4.5), 'annual': False},
@@ -46,10 +46,10 @@ class extract_filename_data(unittest.TestCase):
 				{'series': '100 Bullets', 'year': 1999, 'volume_number': 1, 'special_version': None, 'issue_number': (1.0, 101.0), 'annual': False},
 
 			'Batman 026-050 (1945-1949) GetComics.INFO/Batman 048 52p ctc (08-1948) flattermann.cbr':
-				{'series': 'Batman', 'year': 1945, 'volume_number': 1, 'special_version': None, 'issue_number': 48.0, 'annual': False},
+				{'series': 'Batman', 'year': 1948, 'volume_number': 1, 'special_version': None, 'issue_number': 48.0, 'annual': False},
 
 			'01. X-Men Vol. 2 (#05, #1 – 113 + Annuals) Part 1 — #1 – 25 --2022-2023--':
-				{'series': 'X-Men', 'year': 2022, 'volume_number': 2, 'special_version': None, 'issue_number': (1.0, 25.0), 'annual': False},
+				{'series': 'X Men', 'year': 2022, 'volume_number': 2, 'special_version': None, 'issue_number': (1.0, 25.0), 'annual': False},
 
 			'Batman ’66 Meets the Man From U.N.C.L.E. (2016)':
 				{'series': 'Batman ’66 Meets the Man From U.N.C.L.E.', 'year': 2016, 'volume_number': 1, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
@@ -61,7 +61,10 @@ class extract_filename_data(unittest.TestCase):
 				{'series': 'Aliens Life And Death', 'year': 2016, 'volume_number': 2, 'special_version': None, 'issue_number': 3.0, 'annual': False},
 
 			'/home/cas/plex-media/Comics/Invincible Compendium/Volume 1/Invincible Compendium Volume 2 Issue 3 - Volume 4 (2018-07-18).cbr':
-				{'series': 'Invincible Compendium', 'year': 2018, 'volume_number': 2, 'special_version': None, 'issue_number': 3.0, 'annual': False}
+				{'series': 'Invincible Compendium', 'year': 2018, 'volume_number': 2, 'special_version': None, 'issue_number': 3.0, 'annual': False},
+
+			'Batman and the Mad Monk (1-6) (2006-2007) GetComics.INFO/Batman___The_Mad_Monk_02__2007___team-ocdcp_.cbr':
+				{'series': 'Batman The Mad Monk', 'year': 2007, 'volume_number': 1, 'special_version': None, 'issue_number': 2.0, 'annual': False}
 		}
 		self.run_cases(cases)
 
@@ -103,15 +106,15 @@ class extract_filename_data(unittest.TestCase):
 	def test_page_vs_issue(self):
 		cases = {
 			'Silver Surfer - Rebirth (2022) (HD-WebRip) Volume 2/Silver Surfer - Rebirth (2022) (HD-WebRip) - 011.jpg':
-				{'series': 'Silver Surfer - Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
+				{'series': 'Silver Surfer Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
 
 			'Silver Surfer - Rebirth (2022) (HD-WebRip) Volume 2/Silver Surfer - Rebirth (2022) (HD-WebRip) - 011.cbr':
-				{'series': 'Silver Surfer - Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': None, 'issue_number': 11.0, 'annual': False},
+				{'series': 'Silver Surfer Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': None, 'issue_number': 11.0, 'annual': False},
 
 			'Silver Surfer - Rebirth (2022) (HD-WebRip) Volume 2/Page-100.cbr':
-				{'series': 'Silver Surfer - Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': None, 'issue_number': 100.0, 'annual': False},
+				{'series': 'Silver Surfer Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': None, 'issue_number': 100.0, 'annual': False},
 
 			'Silver Surfer - Rebirth (2022) (HD-WebRip) Volume 2/Page - 100.jpg':
-				{'series': 'Silver Surfer - Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': 'tpb', 'issue_number': None, 'annual': False}
+				{'series': 'Silver Surfer Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': 'tpb', 'issue_number': None, 'annual': False}
 		}
 		self.run_cases(cases)

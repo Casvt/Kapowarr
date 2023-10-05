@@ -169,7 +169,7 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 	# Generalise filename
 	filepath = (unquote(filepath)
 		.replace('+',' ')
-		.replace('_',' ')
+		.replace('_','-')
 		.replace('_28','(')
 		.replace('_29',')')
 		.replace('–', '-')
@@ -205,7 +205,7 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 
 	# Get year
 	year_pos, year_end, year_folderpos = 10_000, 10_000, 10_000
-	for location in (foldername, filename, upper_foldername):
+	for location in (filename, foldername, upper_foldername):
 		year_result = year_regex.search(location)
 		if year_result:
 			if year is None:
@@ -260,8 +260,8 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 					r.sort(key=lambda e: (int(e.group(1)[-1] not in '0123456789'), 1 / e.start(0) if e.start(0) else 0))
 
 					for result in r:
-						if not (year_pos <= result.start(0) <= year_end
-						or year_pos <= result.end(0) <= year_end):
+						if not (year_pos < result.start(0) < year_end
+						or year_pos < result.end(0) < year_end):
 							# Issue number found
 							issue_number = result.group(1)
 							issue_pos = result.start(0)
@@ -299,7 +299,7 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 		else:
 			# Series name is assumed to be the upper foldername
 			series = strip_filename_regex.sub('', upper_foldername)
-	series = series_regex.sub('', series)
+	series = series_regex.sub('', series.replace('-', ' '))
 
 	# Format output
 	calculated_issue_number = process_issue_number(issue_number) if issue_number else issue_number
