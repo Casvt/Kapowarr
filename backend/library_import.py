@@ -58,6 +58,8 @@ def propose_library_import() -> List[dict]:
 	Returns:
 		List[dict]: The list of files and their matches.
 	"""
+	logging.info('Loading library import')
+
 	# Get all files in all root folders
 	root_folders = RootFolders().get_all()
 	all_files = []
@@ -94,6 +96,7 @@ def propose_library_import() -> List[dict]:
 					efd,
 					[file_entry]
 				))
+	logging.debug(f'File groupings: {unimported_files}')
 
 	# Find a match for the files on CV
 	result: List[dict] = []
