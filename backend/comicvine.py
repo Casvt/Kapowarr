@@ -124,7 +124,7 @@ class ComicVine:
 		"""
 		try:
 			result = self.ssn.get(
-				f'{self.api_url}/publisher/4010-31',
+				f'{self.api_url}/publisher/4010-31/',
 				params={'field_list': 'id'}
 			).json()
 			if result['status_code'] != 1:
@@ -212,7 +212,7 @@ class ComicVine:
 		logging.debug(f'Fetching volume data for {id}')
 		
 		result = self.ssn.get(
-			f'{self.api_url}/volume/{id}',
+			f'{self.api_url}/volume/{id}/',
 			params={'field_list': self.volume_field_list}
 		).json()
 		if result['status_code'] == 101:
@@ -232,7 +232,7 @@ class ComicVine:
 		volume_info['issues'] = []
 		for offset in range(0, volume_info['issue_count'], 100):
 			results = self.ssn.get(
-				f'{self.api_url}/issues',
+				f'{self.api_url}/issues/',
 				params={'filter': f'volume:{volume_info["comicvine_id"]}',
 	    			'field_list': self.issue_field_list,
 					'offset': offset}
@@ -261,7 +261,7 @@ class ComicVine:
 		for i in range(0, len(ids), 100):
 			try:
 				results = self.ssn.get(
-					f'{self.api_url}/volumes',
+					f'{self.api_url}/volumes/',
 					params={
 						'field_list': self.volume_field_list,
 						'filter': f'id:{"|".join(ids[i:i+100])}'
@@ -296,7 +296,7 @@ class ComicVine:
 		issue_infos = []
 		for i in range(0, len(ids), 50):
 			results = self.ssn.get(
-				f'{self.api_url}/issues',
+				f'{self.api_url}/issues/',
 				params={
 					'field_list': self.issue_field_list,
 					'filter': f'volume:{"|".join(ids[i:i+50])}'
@@ -311,7 +311,7 @@ class ComicVine:
 				
 			for offset in range(100, results['number_of_total_results'], 100):
 				results = self.ssn.get(
-					f'{self.api_url}/issues',
+					f'{self.api_url}/issues/',
 					params={
 						'field_list': self.issue_field_list,
 						'filter': f'volume:{"|".join(ids[i:i+50])}',
@@ -394,7 +394,7 @@ class ComicVine:
 
 			results: List[dict] = [
 				self.ssn.get(
-					f'{self.api_url}/volume/{query}',
+					f'{self.api_url}/volume/{query}/',
 					params={'field_list': self.search_field_list}
 				).json()['results']
 			]
@@ -402,7 +402,7 @@ class ComicVine:
 				return []
 		else:
 			results: List[dict] = self.ssn.get(
-				f'{self.api_url}/search',
+				f'{self.api_url}/search/',
 				params={'query': query,
 	    				'resources': 'volume',
 						'limit': 50,
@@ -431,7 +431,7 @@ class ComicVine:
 				return []
 
 			async with session.get(
-				f'{self.api_url}/volume/{query}',
+				f'{self.api_url}/volume/{query}/',
 				params={**self._params, 'field_list': self.search_field_list},
 				headers=self._headers
 			) as response:
@@ -442,7 +442,7 @@ class ComicVine:
 
 		else:
 			async with session.get(
-				f'{self.api_url}/search',
+				f'{self.api_url}/search/',
 				params={
 					**self._params,
 					'query': query,
