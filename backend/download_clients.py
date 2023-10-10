@@ -19,7 +19,7 @@ from backend.settings import blocklist_reasons, Settings
 
 from .lib.mega import Mega, RequestError, sids
 
-file_extension_regex = compile(r'(?<=\.)[\w\d]{2,4}(?=$|;|\s)|(?<=\/)[\w\d]{2,4}(?=$|;|\s)', IGNORECASE)
+file_extension_regex = compile(r'(?<=\.|\/)[\w\d]{2,4}(?=$|;|\s|\")', IGNORECASE)
 credentials = Credentials(sids)
 download_chunk_size = 4194304 # 4MB Chunks
 
@@ -136,8 +136,8 @@ class DirectDownload(BaseDownload):
 		"""		
 		match = file_extension_regex.findall(
 			' '.join((
-				content_type,
 				content_disposition,
+				content_type,
 				url
 			))
 		)
