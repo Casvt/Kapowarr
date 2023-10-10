@@ -89,6 +89,9 @@ def _calc_float_issue_number(issue_number: str) -> Union[float, None]:
 
 			if c == '½':
 				converted_issue_number += '5'
+	
+			elif c == '¼':
+				converted_issue_number += '3'
 
 			elif c in alphabet:
 				converted_issue_number += alphabet.get(c, alphabet['z'])
