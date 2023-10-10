@@ -7,7 +7,7 @@ class extract_filename_data(unittest.TestCase):
 	def run_cases(self, cases: Dict[str, dict]):
 		self.longMessage = False
 		for input, output in cases.items():
-			self.assertEqual(ef(input), output, f"'{input}' isn't extracted properly: {output}")
+			self.assertEqual(ef(input), output, f"The input '{input}' isn't extracted properly:\n	Output: {ef(input)}\n	Expected: {output}")
 		return
 
 	def test_general(self):
@@ -111,10 +111,13 @@ class extract_filename_data(unittest.TestCase):
 			'Silver Surfer - Rebirth (2022) (HD-WebRip) Volume 2/Silver Surfer - Rebirth (2022) (HD-WebRip) - 011.cbr':
 				{'series': 'Silver Surfer Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': None, 'issue_number': 11.0, 'annual': False},
 
-			'Silver Surfer - Rebirth (2022) (HD-WebRip) Volume 2/Page-100.cbr':
-				{'series': 'Silver Surfer Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': None, 'issue_number': 100.0, 'annual': False},
+			'Silver Surfer - Rebirth (2022) (HD-WebRip) Volume 2/Page-100.jpg':
+				{'series': 'Silver Surfer Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
 
 			'Silver Surfer - Rebirth (2022) (HD-WebRip) Volume 2/Page - 100.jpg':
-				{'series': 'Silver Surfer Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': 'tpb', 'issue_number': None, 'annual': False}
+				{'series': 'Silver Surfer Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
+
+			'Star Wars Darth Vader (2020) Volume 3 Issue 18/Star Wars - Darth Vader (2021-) 019-002.jpg':
+				{'series': 'Star Wars Darth Vader', 'year': 2021, 'volume_number': 3, 'special_version': None, 'issue_number': 18.0, 'annual': False}
 		}
 		self.run_cases(cases)

@@ -26,8 +26,8 @@ image_extensions = ('.png','.jpeg','.jpg','.webp','.gif')
 supported_extensions = image_extensions + ('.cbz','.zip','.rar','.cbr','.tar.gz','.7zip','.7z','.cb7','.cbt','.epub','.pdf')
 file_extensions = r'\.(' + '|'.join(e[1:] for e in supported_extensions) + r')$'
 volume_regex_snippet = r'\b(?:v(?:ol|olume)?)(?:\.\s|[\.\-\s])?(\d+(?:\s?\-\s?\d+)?|I{1,3})\b'
-year_regex_snippet = r'(?:(\d{4})(?:-\d{2}){0,2}|(\d{4})[\s\.]?-[\s\.]?\d{4}|(?:\d{2}-){1,2}(\d{4})|(\d{4})[\s\.\-]Edition|(\d{4})-\d{4}\s{3}\d{4})'
-issue_regex_snippet = r'(?!\d+(?:th|rd|st|\s?(?:gb|mb)))(?<!’)\d+(?:\.\d{1,2}|\w{1,2}|[\s\-\.]?½)?'
+year_regex_snippet = r'(?:(\d{4})(?:-\d{2}){0,2}|(\d{4})[\s\.]?-(?:[\s\.]?\d{4})?|(?:\d{2}-){1,2}(\d{4})|(\d{4})[\s\.\-]Edition|(\d{4})\-\d{4}\s{3}\d{4})'
+issue_regex_snippet = r'(?!\d+(?:th|rd|st|\s?(?:gb|mb)))(?<!’)\d+(?:\.\d{1,2}|\w{1,2}|[\s\-\.]?[½¼])?'
 
 # Cleaning the filename
 strip_filename_regex = compile(r'\(.*?\)|\[.*?\]|\{.*?\}', IGNORECASE)
@@ -46,7 +46,7 @@ special_version_regex = compile(r'(?:\b|\()(tpb|os|one[\- ]?shot|ogn|gn|hard[\- 
 volume_regex = compile(volume_regex_snippet, IGNORECASE)
 volume_folder_regex = compile(volume_regex_snippet + r'|^(\d+)$', IGNORECASE)
 issue_regex = compile(r'\( (-?' + issue_regex_snippet + r')\)', IGNORECASE)
-issue_regex_2 = compile(r'(?<!\()\b(?:c(?:hapter)?|issue|page)s?(?:[\s\-\.]?|\s\-\s)#?(\-?' + issue_regex_snippet + r'(?:[\s\.]?\-[\s\.]?\-?' + issue_regex_snippet + r')?)\b(?!\))', IGNORECASE)
+issue_regex_2 = compile(r'(?<!\()\b(?:c(?:hapter)?|issue)s?(?:[\s\-\.]?|\s\-\s)#?(\-?' + issue_regex_snippet + r'(?:[\s\.]?\-[\s\.]?\-?' + issue_regex_snippet + r')?)\b(?!\))', IGNORECASE)
 issue_regex_3 = compile(r'(' + issue_regex_snippet + r')[\s\-\.]?\(?[\s\-\.]?of[\s\-\.]?' + issue_regex_snippet + r'\)?', IGNORECASE)
 issue_regex_4 = compile(r'(?<!--)#?(' + issue_regex_snippet + r'[\s\.]?-[\s\.]?' + issue_regex_snippet + r')\b(?!--)', IGNORECASE)
 issue_regex_5 = compile(r'#(\-?' + issue_regex_snippet + r')\b(?![\s\.]?\-[\s\.]?' + issue_regex_snippet + r')', IGNORECASE)
@@ -188,6 +188,8 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 	if '巻' in filepath:
 		filepath = japanese_volume_regex.sub(r'Volume \1', filepath)
 
+	is_image_file = filepath.endswith(image_extensions)
+
 	# Only keep filename
 	filename = basename(filepath)
 
@@ -220,7 +222,7 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 				year_folderpos = year_result.start(0)
 
 	# Get volume number
-	volume_end, volume_pos, volume_folderpos = 0, 10_000, 10_000
+	volume_end, volume_pos, volume_folderpos, volume_folderend = 0, 10_000, 10_000, 0
 	volume_result = volume_regex.search(clean_filename)
 	if volume_result:
 		# Volume number found (e.g. Series Volume 1 Issue 6.ext)
@@ -233,6 +235,7 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 	if volume_folder_result:
 		# Volume number found in folder (e.g. Series Volume 1/Issue 5.ext)
 		volume_folderpos = volume_folder_result.start(0)
+		volume_folderend = volume_folder_result.end(0)
 		if not volume_result:
 			volume_number = convert_volume_number_to_int(
 				volume_folder_result.group(1) or volume_folder_result.group(2)
@@ -242,7 +245,7 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 		volume_number = 1
 
 	# Check if it's a special version
-	issue_pos, special_pos = 10_000, 10_000
+	issue_pos, issue_folderpos, special_pos = 10_000, 10_000, 10_000
 	special_result = special_version_regex.search(filename)
 	if special_result:
 		special_version = special_result.group(1).lower().replace(' ', '-')
@@ -250,15 +253,28 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 
 	else:
 		# No special version so find issue number
-		pos_options = (
-			({'pos': volume_end},
-				(issue_regex, issue_regex_2, issue_regex_3, issue_regex_4, issue_regex_5, issue_regex_6)),
-			({'endpos': volume_pos},
-				(issue_regex, issue_regex_2, issue_regex_3, issue_regex_4, issue_regex_5))
-		)
-		for pos_option, regex_list in pos_options:
+		if not is_image_file:
+			pos_options = (
+				(filename,
+					{'pos': volume_end},
+					(issue_regex, issue_regex_2, issue_regex_3, issue_regex_4, issue_regex_5, issue_regex_6)),
+				(filename,
+					{'endpos': volume_pos},
+					(issue_regex, issue_regex_2, issue_regex_3, issue_regex_4, issue_regex_5))
+			)
+		else:
+			pos_options = (
+				(foldername,
+					{'pos': volume_folderend},
+					(issue_regex, issue_regex_2, issue_regex_3, issue_regex_4, issue_regex_5, issue_regex_6)),
+				(foldername,
+					{'endpos': volume_folderpos},
+					(issue_regex, issue_regex_2, issue_regex_3, issue_regex_4, issue_regex_5))
+			)
+
+		for file_part_with_issue, pos_option, regex_list in pos_options:
 			for regex in regex_list:
-				r = list(regex.finditer(filename, **pos_option))
+				r = list(regex.finditer(file_part_with_issue, **pos_option))
 				if r:
 					r.sort(key=lambda e: (int(e.group(1)[-1] not in '0123456789'), 1 / e.start(0) if e.start(0) else 0))
 
@@ -267,7 +283,10 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 						or year_pos < result.end(0) < year_end):
 							# Issue number found
 							issue_number = result.group(1)
-							issue_pos = result.start(0)
+							if not is_image_file:
+								issue_pos = result.start(0)
+							else:
+								issue_folderpos = result.start(0)
 							break
 					else:
 						continue
@@ -282,20 +301,22 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 				# Issue number found. File starts with issue number (e.g. Series/Volume N/{issue_number}.ext)
 				issue_number = issue_result.group(1)
 				issue_pos = issue_result.start(0)
-				
-		if filename.endswith(image_extensions):
-			issue_number = None
 
 	if not issue_number and not special_version:
 		special_version = 'tpb'
 
 	# Get series
-	series_pos = min(year_pos, volume_pos, issue_pos, special_pos)
-	if series_pos:
+	series_pos = min(
+		year_pos,
+		volume_pos,
+		special_pos,
+		issue_pos
+	)
+	if series_pos and not is_image_file:
 		# Series name is assumed to be in the filename, left of all other information
 		series = no_ext_clean_filename[:series_pos - 1]
 	else:
-		series_folder_pos = min(year_folderpos, volume_folderpos)
+		series_folder_pos = min(year_folderpos, volume_folderpos, issue_folderpos)
 		if series_folder_pos:
 			# Series name is assumed to be in the foldername, left of all other information
 			series = foldername[:series_folder_pos - 1]
