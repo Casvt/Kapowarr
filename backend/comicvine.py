@@ -21,7 +21,14 @@ from backend.files import process_issue_number, volume_regex
 from backend.settings import Settings, private_settings
 
 translation_regex = compile(
-	r'^<p>\w+ publication(\.?</p>$|,\s| \(in the \w+ language\)|, translates )|^<p>published by the \w+ wing of|^<p>\w+ translations? of|from \w+</p>$|^<p>published in \w+|^<p>\w+ language|^<p>\w+ edition of |^<p>\w+ reprint of ',
+	r'^<p>\w+ publication(\.?</p>$|,\s| \(in the \w+ language\)|, translates )|' +
+	r'^<p>published by the \w+ wing of|' + 
+	r'^<p>\w+ translations? of|' + 
+	r'from \w+</p>$|' +
+	r'^<p>published in \w+|' +
+	r'^<p>\w+ language|' +
+	r'^<p>\w+ edition of |' + 
+	r'^<p>\w+ reprint of ',
 	IGNORECASE
 )
 headers = {'h2', 'h3', 'h4', 'h5', 'h6'}
@@ -142,7 +149,6 @@ class ComicVine:
 		Returns:
 			dict: The formatted version
 		"""		
-		logging.debug(f'Formating volume output: {volume_data}')
 		result = {
 			'comicvine_id': int(volume_data['id']),
 			'title': volume_data['name'].strip(),
@@ -169,7 +175,6 @@ class ComicVine:
 		if 'site_detail_url' in volume_data:
 			result['comicvine_info'] = volume_data['site_detail_url']
 
-		logging.debug(f'Formatted volume output result: {result}')		
 		return result
 
 	def __format_issue_output(self, issue_data: dict) -> dict:
@@ -181,7 +186,6 @@ class ComicVine:
 		Returns:
 			dict: The formatted version
 		"""		
-		logging.debug(f'Formatting issue output: {issue_data}')
 		result = {
 			'comicvine_id': issue_data['id'],
 			'volume_id': int(issue_data['volume']['id']),
@@ -191,7 +195,6 @@ class ComicVine:
 			'date': issue_data['cover_date'] or None,
 			'description': _clean_description(issue_data['description'], short=True)
 		}
-		logging.debug(f'Formatted issue output result: {result}')
 		return result
 
 	def fetch_volume(self, id: str) -> dict:
