@@ -18,7 +18,7 @@ function populatePosters(volumes, api_key) {
 		
 		const progress = document.createElement('div');
 		const progress_bar = document.createElement('div');
-		const calc = volume.issues_downloaded / volume.issue_count * 100;
+		const calc = volume.issues_downloaded_monitored / volume.issue_count_monitored * 100;
 		if (calc === 100) {
 			progress_bar.setAttribute('style', `width: ${calc}%; background-color: var(--success-color);`);
 		} else if (volume.monitored === true) {
@@ -28,7 +28,7 @@ function populatePosters(volumes, api_key) {
 		};
 		progress.appendChild(progress_bar);
 		const progress_text = document.createElement('div');
-		progress_text.innerText = `${volume.issues_downloaded}/${volume.issue_count}`;
+		progress_text.innerText = `${volume.issues_downloaded_monitored}/${volume.issue_count_monitored}`;
 		progress.appendChild(progress_text);
 		entry.appendChild(progress);
 
@@ -91,7 +91,7 @@ function populateTable(volumes) {
 		const progress_container = document.createElement('td');
 		const progress = document.createElement('div');
 		const progress_bar = document.createElement('div');
-		const calc = volume.issues_downloaded / volume.issue_count * 100;
+		const calc = volume.issues_downloaded_monitored / volume.issue_count_monitored * 100;
 		if (calc === 100) {
 			progress_bar.setAttribute('style', `width: ${calc}%; background-color: var(--success-color);`);
 		} else if (volume.monitored === true) {
@@ -101,7 +101,7 @@ function populateTable(volumes) {
 		};
 		progress.appendChild(progress_bar);
 		const progress_text = document.createElement('div');
-		progress_text.innerText = `${volume.issues_downloaded}/${volume.issue_count}`;
+		progress_text.innerText = `${volume.issues_downloaded_monitored}/${volume.issue_count_monitored}`;
 		progress.appendChild(progress_text);
 		progress_container.appendChild(progress);
 		entry.appendChild(progress_container);

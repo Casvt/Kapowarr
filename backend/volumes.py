@@ -527,23 +527,36 @@ class Library:
 
 		volumes = [
 			dict(v) for v in get_db('dict').execute(f"""
+				WITH
+					vol_issues AS (
+						SELECT id, monitored
+						FROM issues
+						WHERE volume_id = volumes.id
+					),
+					issues_with_files AS (
+						SELECT DISTINCT issue_id, monitored
+						FROM issues i
+						INNER JOIN issues_files if
+						ON i.id = if.issue_id
+						WHERE volume_id = volumes.id
+					)
 				SELECT
 					id, comicvine_id,
 					title, year, publisher,
 					volume_number, description,
 					monitored,
 					(
-						SELECT COUNT(*)
-						FROM issues
-						WHERE volume_id = volumes.id
+						SELECT COUNT(id) FROM vol_issues
 					) AS issue_count,
 					(
-						SELECT COUNT(DISTINCT issue_id)
-						FROM issues i
-						INNER JOIN issues_files if
-						ON i.id = if.issue_id
-						WHERE volume_id = volumes.id
-					) AS issues_downloaded
+						SELECT COUNT(id) FROM vol_issues WHERE monitored = 1
+					) AS issue_count_monitored,
+					(
+						SELECT COUNT(issue_id) FROM issues_with_files
+					) AS issues_downloaded,
+					(
+						SELECT COUNT(issue_id) FROM issues_with_files WHERE monitored = 1
+					) AS issues_downloaded_monitored
 				FROM volumes
 				ORDER BY {sort};
 				"""
