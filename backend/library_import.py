@@ -17,38 +17,49 @@ from backend.search import _check_matching_titles
 from backend.volumes import Library, Volume
 
 
-async def __search_matches(datas: List[dict]) -> List[Tuple[dict, dict]]:
+def batched(l: list, n: int):
+	"""Iterate over list (or tuple, set, etc.) in batches
+
+	Args:
+		l (list): The list to iterate over
+		n (int): The batch size
+
+	Yields:
+		A batch of size n from l
+	"""
+	for ndx in range(0, len(l), n):
+		yield l[ndx : ndx+n]
+
+async def __search_matches(datas: List[dict]) -> List[dict]:
 	comicvine = ComicVine()
-	results: List[Tuple[dict, dict]] = []
+	results: List[dict] = []
 	async with ClientSession() as session:
+		data_titles = {d['series'].lower() for d in datas}
 		tasks = [
-			create_task(comicvine.search_volumes_async(session, d['series'])) for d in datas
+			create_task(comicvine.search_volumes_async(session, series)) for series in data_titles
 		]
 		responses = await gather(*tasks)
+		title_to_response = dict(zip(data_titles, responses))
 
-		for data, response in zip(datas, responses):
-			matching_result = next(
-				(r for r in response
-				if _check_matching_titles(data['series'], r['title'])
+		for data in datas:
+			matching_result = {}
+			for result in title_to_response[data['series'].lower()]:
+				if (_check_matching_titles(data['series'], result['title'])
 				and ((
 						data['year'] is not None
-						and r['year'] is not None
-						and 0 <= abs(data['year'] - r['year']) <= 1 # One year wiggle room
+						and result['year'] is not None
+						and 0 <= abs(data['year'] - result['year']) <= 1 # One year wiggle room
 					)
-					or r['year'] is None
-				)),
+					or result['year'] is None
+				)):
+					matching_result = result
+					break
 
-				{}
-			)
-			cv_data = {
+			results.append({
 				'id': matching_result.get('comicvine_id'),
 				'title': f"{matching_result['title']} ({matching_result['year']})" if matching_result else None,
 				'link': matching_result.get('comicvine_info')
-			}
-			results.append((
-				cv_data,
-				data
-			))
+			})
 			
 		return results
 
@@ -77,45 +88,39 @@ def propose_library_import() -> List[dict]:
 
 	# List with tuples. First entry is efd,
 	# second is all matching files for that efd.
-	unimported_files: List[Tuple[dict, List[dict]]] = []
+	unimported_files: List[Tuple[dict, List[str]]] = []
 	for f in all_files:
 		if not f in imported_files:
 			efd = extract_filename_data(f)
 			del efd['issue_number']
 
-			file_entry = {
-				'filepath': f,
-				'file_title': splitext(basename(f))[0]
-			}			
 			for entry in unimported_files:
 				if entry[0] == efd:
-					entry[1].append(file_entry)
+					entry[1].append(f)
 					break
 			else:
 				unimported_files.append((
 					efd,
-					[file_entry]
+					[f]
 				))
 	logging.debug(f'File groupings: {unimported_files}')
 
 	# Find a match for the files on CV
 	result: List[dict] = []
-	for data_index in range(0, len(unimported_files), 10):
-		datas = unimported_files[data_index:data_index+10]
-		search_results = run(__search_matches([e[0] for e in datas]))
-		for search_result in search_results:
-			for data in datas:
-				if search_result[1] == data[0]:
-					result += [
-						{
-							**f,
-							'cv': search_result[0]
-						}
-						for f in data[1]
-					]
-					break
+	for uf_batch in batched(unimported_files, 10):
+		search_results = run(__search_matches([e[0] for e in uf_batch]))
+		for group_number, (search_result, group_data) in enumerate(zip(search_results, uf_batch)):
+			result += [
+				{
+					'filepath': f,
+					'file_title': splitext(basename(f))[0],
+					'cv': search_result,
+					'group_number': group_number + 1
+				}
+				for f in group_data[1]
+			]
 
-	result.sort(key=lambda e: e['file_title'])
+	result.sort(key=lambda e: (e['group_number'], e['file_title']))
 
 	return result
 

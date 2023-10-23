@@ -7,6 +7,7 @@ function loadProposal(api_key) {
 		json.result.forEach(result => {
 			const entry = document.createElement('tr');
 			entry.dataset.cv_id = result.cv.id || '';
+			entry.dataset.group_number = result.group_number;
 			
 			const select = document.createElement('td');
 			const select_button = document.createElement('input');
@@ -36,7 +37,7 @@ function loadProposal(api_key) {
 			change_match_icon.src = '/static/img/edit.svg';
 			change_match_icon.alt = '';
 			change_match.appendChild(change_match_icon);
-			change_match.addEventListener('click', e => editCVMatch(result.filepath));
+			change_match.addEventListener('click', e => openEditCVMatch(result.filepath));
 			actions.appendChild(change_match);
 
 			entry.appendChild(actions);
@@ -55,12 +56,28 @@ function toggleSelectAll() {
 	document.querySelectorAll('.proposal-list input[type="checkbox"]').forEach(e => e.checked = checked);
 };
 
-function editCVMatch(filepath) {
+function openEditCVMatch(filepath) {
 	document.querySelector('#cv-window').dataset.filepath = filepath;
 	document.querySelector('#search-input').value = '';
 	document.querySelector('.search-results').innerHTML = '';
 	document.querySelector('.search-results-container').classList.add('hidden');
 	showWindow('cv-window');
+	document.querySelector('#search-input').focus();
+};
+
+function editCVMatch(filepath, comicvine_id, comicvine_info, title, year, group_number=null) {
+	let target_td;
+	if (group_number === null)
+		target_td = document.querySelectorAll(`td[title="${filepath}"]`);
+	else
+		target_td = document.querySelectorAll(`tr[data-group_number="${group_number}"] > td[title]`);
+	
+	target_td.forEach(td => {
+		td.parentNode.dataset.cv_id = comicvine_id;
+		const link = td.nextSibling.firstChild;
+		link.href = comicvine_info;
+		link.innerText = `${title} (${year})`;
+	});
 };
 
 function searchCV() {
@@ -89,18 +106,36 @@ function searchCV() {
 				const select_button = document.createElement('button');
 				select_button.innerText = 'Select';
 				select_button.addEventListener('click', e => {
-					const td = document.querySelector(`td[title="${document.querySelector('#cv-window').dataset.filepath}"]`);
-
-					td.parentNode.dataset.cv_id = result.comicvine_id;
-
-					const link = td.nextSibling.firstChild;
-					link.href = result.comicvine_info;
-					link.innerText = `${result.title} (${result.year})`;
-					
+					editCVMatch(
+						document.querySelector('#cv-window').dataset.filepath,
+						result.comicvine_id,
+						result.comicvine_info,
+						result.title,
+						result.year
+					);
 					closeWindow();
 				});
 				select.appendChild(select_button);
 				entry.appendChild(select);
+
+				const select_for_all = document.createElement('td');
+				const select_for_all_button = document.createElement('button');
+				select_for_all_button.innerText = 'Select for group';
+				select_for_all_button.addEventListener('click', e => {
+					const filepath = document.querySelector('#cv-window').dataset.filepath;
+					const group_number = document.querySelector(`td[title="${filepath}"]`).parentNode.dataset.group_number;
+					editCVMatch(
+						filepath,
+						result.comicvine_id,
+						result.comicvine_info,
+						result.title,
+						result.year,
+						group_number
+					);
+					closeWindow();
+				});
+				select_for_all.appendChild(select_for_all_button);
+				entry.appendChild(select_for_all);
 
 				table.appendChild(entry);
 			});

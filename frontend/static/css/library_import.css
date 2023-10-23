@@ -132,7 +132,7 @@ main > .action-container {
 }
 
 .search-results-container table {
-	min-width: 20rem;
+	min-width: 25rem;
 	border-spacing: 0px;
 }
 
@@ -150,11 +150,12 @@ main > .action-container {
 }
 
 .search-results td {
+	padding: .5rem 1rem;
 	border-top: 1px solid var(--border-color);
 }
 
-.search-results td {
-	padding: .5rem 1rem;
+.search-results td:last-child {
+	min-width: 9rem;
 }
 
 .search-results td a {
