@@ -44,7 +44,6 @@ def _clean_description(description: str, short: bool=False) -> str:
 	Returns:
 		str: The cleaned description (written in html)
 	"""	
-	logging.debug(f'Cleaning the description: {description}')
 	if not description:
 		return description
 
@@ -89,7 +88,6 @@ def _clean_description(description: str, short: bool=False) -> str:
 			link['href'] = private_settings['comicvine_url'] + '/' + link['href']
 
 	result = str(soup)
-	logging.debug(f'Cleaned description result: {result}')
 	return result
 
 class ComicVine:
