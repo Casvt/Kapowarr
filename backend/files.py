@@ -295,11 +295,12 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 			break
 
 		else:
-			issue_result = issue_regex_7.search(no_ext_clean_filename)
-			if issue_result:
-				# Issue number found. File starts with issue number (e.g. Series/Volume N/{issue_number}.ext)
-				issue_number = issue_result.group(1)
-				issue_pos = issue_result.start(0)
+			if not is_image_file:
+				issue_result = issue_regex_7.search(no_ext_clean_filename)
+				if issue_result:
+					# Issue number found. File starts with issue number (e.g. Series/Volume N/{issue_number}.ext)
+					issue_number = issue_result.group(1)
+					issue_pos = issue_result.start(0)
 
 	if not issue_number and not special_version:
 		special_version = 'tpb'

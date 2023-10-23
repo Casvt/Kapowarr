@@ -120,6 +120,9 @@ class extract_filename_data(unittest.TestCase):
 			'Silver Surfer - Rebirth (2022) (HD-WebRip) Volume 2/Page - 100.jpg':
 				{'series': 'Silver Surfer Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
 
+			'Silver Surfer - Rebirth (2022) (HD-WebRip) Volume 2/100.jpg':
+				{'series': 'Silver Surfer Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
+
 			'Star Wars Darth Vader (2020) Volume 3 Issue 18/Star Wars - Darth Vader (2021-) 019-002.jpg':
 				{'series': 'Star Wars Darth Vader', 'year': 2021, 'volume_number': 3, 'special_version': None, 'issue_number': 18.0, 'annual': False}
 		}
