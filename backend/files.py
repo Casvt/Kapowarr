@@ -46,10 +46,10 @@ special_version_regex = compile(r'(?:\b|\()(tpb|os|one[\- ]?shot|ogn|gn|hard[\- 
 volume_regex = compile(volume_regex_snippet, IGNORECASE)
 volume_folder_regex = compile(volume_regex_snippet + r'|^(\d+)$', IGNORECASE)
 issue_regex = compile(r'\( (-?' + issue_regex_snippet + r')\)', IGNORECASE)
-issue_regex_2 = compile(r'(?<!\()\b(?:c(?:hapter)?|issue)s?(?:[\s\-\.]?|\s\-\s)#?(\-?' + issue_regex_snippet + r'(?:[\s\.]?\-[\s\.]?\-?' + issue_regex_snippet + r')?)\b(?!\))', IGNORECASE)
+issue_regex_2 = compile(r'(?<!\()\b(?:c(?:hapter)?|issue)s?(?:[\s\-\.]?|\s\-\s)(?:#\s*)?(\-?' + issue_regex_snippet + r'(?:[\s\.]?\-[\s\.]?\-?' + issue_regex_snippet + r')?)\b(?!\))', IGNORECASE)
 issue_regex_3 = compile(r'(' + issue_regex_snippet + r')[\s\-\.]?\(?[\s\-\.]?of[\s\-\.]?' + issue_regex_snippet + r'\)?', IGNORECASE)
-issue_regex_4 = compile(r'(?<!--)#?(' + issue_regex_snippet + r'[\s\.]?-[\s\.]?' + issue_regex_snippet + r')\b(?!--)', IGNORECASE)
-issue_regex_5 = compile(r'#(\-?' + issue_regex_snippet + r')\b(?![\s\.]?\-[\s\.]?' + issue_regex_snippet + r')', IGNORECASE)
+issue_regex_4 = compile(r'(?<!--)(?:#\s*)?(' + issue_regex_snippet + r'[\s\.]?-[\s\.]?' + issue_regex_snippet + r')\b(?!--)', IGNORECASE)
+issue_regex_5 = compile(r'#\s*(\-?' + issue_regex_snippet + r')\b(?![\s\.]?\-[\s\.]?' + issue_regex_snippet + r')', IGNORECASE)
 issue_regex_6 = compile(r'(?<!\()\b(' + issue_regex_snippet + r')\b(?!\))', IGNORECASE)
 issue_regex_7 = compile(r'^(-?' + issue_regex_snippet + r')$', IGNORECASE)
 year_regex = compile(r'\(' + year_regex_snippet + r'\)|--' + year_regex_snippet + r'--|, ' + year_regex_snippet + r'\s{3}|\b(?:(?:\d{2}-){1,2}(\d{4})|(\d{4})(?:-\d{2}){1,2})\b', IGNORECASE)
@@ -279,9 +279,8 @@ def extract_filename_data(filepath: str, assume_volume_number: bool=True) -> dic
 					r.sort(key=lambda e: (int(e.group(1)[-1] not in '0123456789'), 1 / e.start(0) if e.start(0) else 0))
 
 					for result in r:
-						if not (year_pos < result.start(0) < year_end
-						or year_pos < result.end(0) < year_end):
-							# Issue number found
+						if not (year_pos <= result.start(0) < year_end
+						or year_pos < result.end(0) <= year_end):
 							issue_number = result.group(1)
 							if not is_image_file:
 								issue_pos = result.start(0)
