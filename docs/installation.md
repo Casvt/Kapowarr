@@ -1,6 +1,10 @@
 # Installation
 
-The recommended way to install Kapowarr is using Docker. After installing Kapowarr, it is advised to read the [Setup After Installation page](./setup_after_installation.md).
+!!! success "Recommended Installation"
+    The recommended way to install Kapowarr is using Docker.  
+    This does not mean that other options are bad, just that support is much easier for this setup.
+
+After installing Kapowarr, it is advised to read the [Setup After Installation page](./setup_after_installation.md).
 
 ## Docker
 
