@@ -48,6 +48,7 @@ function loadProposal(api_key) {
 		document.querySelector('.table-container').classList.remove('hidden');
 		document.querySelector('#run-button').innerText = 'Run';
 		document.querySelector('#import-button').classList.remove('hidden');
+		document.querySelector('#import-rename-button').classList.remove('hidden');
 	});
 };
 
@@ -144,23 +145,29 @@ function searchCV() {
 	});
 };
 
-function importLibrary(api_key) {
+function importLibrary(api_key, rename=false) {
 	const import_button = document.querySelector('#import-button');
+	const import_rename_button = document.querySelector('#import-rename-button');
+	const used_button = rename ? import_rename_button : import_button;
+
 	const data = [...document.querySelectorAll('.proposal-list > tr:not([data-cv_id=""]) input[type="checkbox"]:checked')]
 		.map(e => { return {
 			'filepath': e.parentNode.nextSibling.title,
 			'id': parseInt(e.parentNode.parentNode.dataset.cv_id)
 		} });
 	
-	import_button.innerText = 'Importing';
-	fetch(`${url_base}/api/libraryimport?api_key=${api_key}`, {
+	used_button.innerText = 'Importing';
+	fetch(`${url_base}/api/libraryimport?api_key=${api_key}&rename_files=${rename}`, {
 		'method': 'POST',
 		'headers': {'Content-Type': 'application/json'},
 		'body': JSON.stringify(data)
 	})
 	.then(response => {
+		import_rename_button.innerText = 'Import and Rename';
+		import_rename_button.classList.add('hidden');
 		import_button.innerText = 'Import';
 		import_button.classList.add('hidden');
+
 		document.querySelector('.table-container').classList.add('hidden');
 	});
 };
@@ -174,7 +181,8 @@ usingApiKey()
 		loadProposal(api_key);
 	});
 	addEventListener('#refresh-button', 'click', e => loadProposal(api_key));
-	addEventListener('#import-button', 'click', e => importLibrary(api_key));
+	addEventListener('#import-button', 'click', e => importLibrary(api_key, false));
+	addEventListener('#import-rename-button', 'click', e => importLibrary(api_key, true));
 });
 
 setAttribute('.search-bar', 'action', 'javascript:searchCV();');

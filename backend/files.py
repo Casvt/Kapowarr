@@ -591,7 +591,7 @@ def delete_empty_folders(top_folder: str, root_folder: str) -> None:
 	if not top_folder.startswith(abspath(root_folder) + sep):
 		logging.error(f'The folder {top_folder} is not in {root_folder}')
 		return
-		
+
 	while (not exists(top_folder) or not(
 		samefile(top_folder, root_folder)
 		or listdir(top_folder)

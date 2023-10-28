@@ -128,7 +128,7 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 			if not value in blocklist_reasons:
 				raise InvalidKeyValue(key, value)
 
-		elif key in ('monitor', 'delete_folder'):
+		elif key in ('monitor', 'delete_folder', 'rename_files'):
 			if value == 'true':
 				value = True
 			elif value == 'false':
@@ -149,6 +149,9 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 
 		elif key == 'offset':
 			value = 0
+
+		elif key == 'rename_files':
+			value = False
 
 	return value
 
@@ -357,12 +360,15 @@ def api_library_import():
 	
 	elif request.method == 'POST':
 		data = request.get_json()
+		rename_files = extract_key(request, 'rename_files', False)
+
 		if (
 			not isinstance(data, list)
 			or not all(isinstance(e, dict) and 'filepath' in e and 'id' in e for e in data)
 		):
 			raise InvalidKeyValue
-		import_library(data)
+
+		import_library(data, rename_files)
 		return return_api({}, code=201)
 
 #=====================

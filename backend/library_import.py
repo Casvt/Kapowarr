@@ -2,7 +2,8 @@
 
 import logging
 from asyncio import create_task, gather, run
-from os.path import basename, commonpath, dirname, splitext
+from os.path import basename, commonpath, dirname, join, splitext
+from shutil import move
 from typing import Dict, List, Tuple, Union
 
 from aiohttp import ClientSession
@@ -10,8 +11,10 @@ from aiohttp import ClientSession
 from backend.comicvine import ComicVine
 from backend.custom_exceptions import VolumeAlreadyAdded
 from backend.db import get_db
-from backend.files import (_list_files, extract_filename_data, scan_files,
+from backend.files import (_list_files, delete_empty_folders,
+                           extract_filename_data, image_extensions, scan_files,
                            supported_extensions)
+from backend.naming import mass_rename
 from backend.root_folders import RootFolders
 from backend.search import _check_matching_titles
 from backend.volumes import Library, Volume
@@ -124,40 +127,50 @@ def propose_library_import() -> List[dict]:
 
 	return result
 
-def import_library(matches: List[Dict[str, Union[str, int]]]) -> None:
+def __find_lowest_common_folder(files: List[str]) -> str:
+	"""Find the lowest folder that is shared between the files
+
+	Args:
+		files (List[str]): The list of files to find the lowest common folder for
+
+	Returns:
+		str: The path of the lowest common folder
+	"""
+	if len(files) == 1:
+		return dirname(files[0])
+
+	return commonpath(files)
+
+def import_library(matches: List[Dict[str, Union[str, int]]], rename_files: bool=False) -> None:
 	"""Add volume to library and import linked files
 
 	Args:
 		matches (List[Dict[str, Union[str, int]]]): List of dicts.
 		The key `id` should supply the CV id of the volume and `filepath` the linked file.
+		rename_files (bool, optional): Should Kapowarr trigger a rename after importing files? Defaults to False.
 	"""
 	logging.info('Starting library import')
-	id_to_filepath = {}
+	cvid_to_filepath: Dict[int, List[str]] = {}
 	for match in matches:
-		id_to_filepath.setdefault(match['id'], []).append(match['filepath'])
-	logging.debug(f'id_to_filepath: {id_to_filepath}')
+		cvid_to_filepath.setdefault(match['id'], []).append(match['filepath'])
+	logging.debug(f'id_to_filepath: {cvid_to_filepath}')
 
 	root_folders = RootFolders().get_all()
 
+	cursor = get_db()
 	library = Library()
-	for cv_id, files in id_to_filepath.items():
-		# Find lowest common folder
-		volume_folder: str
-		if len(files) == 1:
-			volume_folder = dirname(files[0])
-		else:
-			volume_folder = commonpath(files)
+	for cv_id, files in cvid_to_filepath.items():
+		# Find lowest common folder (lcf)
+		volume_folder = __find_lowest_common_folder(files) if not rename_files else None
 
-		# Find root folder that lcf is in
+		# Find root folder that media is in
 		for root_folder in root_folders:
-			if volume_folder.startswith(root_folder['folder']):
+			if files[0].startswith(root_folder['folder']):
 				root_folder_id = root_folder['id']
 				break
 		else:
 			continue
-		logging.debug(f'{cv_id} -> {volume_folder}')
 
-		# Add volume if it isn't already
 		try:
 			volume_id = library.add(
 				comicvine_id=str(cv_id),
@@ -165,7 +178,37 @@ def import_library(matches: List[Dict[str, Union[str, int]]]) -> None:
 				monitor=True,
 				volume_folder=volume_folder
 			)
-			scan_files(Volume(volume_id).get_info())
+			cursor.connection.commit()
+
 		except VolumeAlreadyAdded:
+			# The volume is already added but the file is not matched to it
+			# (it isn't because otherwise it wouldn't pop up in LI).
+			# That would mean that the file is actually not
+			# for that volume so skip.
 			continue
+
+		volume = Volume(volume_id)
+		if rename_files:
+			# Put files in volume folder
+			vf: str = volume.get_info()['folder']
+			new_files = []
+			for f in files:
+				if f.endswith(image_extensions):
+					new_files.append(move(
+						f, join(vf, basename(dirname(f)))
+					))
+				else:
+					new_files.append(move(f, vf))
+
+				
+				delete_empty_folders(dirname(f), root_folder['folder'])
+
+			scan_files(volume.get_info())
+			
+			# Trigger rename
+			mass_rename(volume_id, filepath_filter=new_files)
+
+		else:
+			scan_files(volume.get_info())
+
 	return
