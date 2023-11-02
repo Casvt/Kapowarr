@@ -6,6 +6,7 @@ const inputs = {
 	'file_naming_empty_input': document.querySelector('#file-naming-empty-input'),
 	'volume_as_empty_input': document.querySelector('#volume-as-empty-input'),
 	'unzip_input': document.querySelector('#unzip-input'),
+	'cbz_convert_input': document.querySelector('#cbz-convert-input'),
 	'issue_padding_input': document.querySelector('#issue-padding-input'),
 	'volume_padding_input': document.querySelector('#volume-padding-input')
 };
@@ -24,6 +25,7 @@ function fillSettings(api_key) {
 		inputs.file_naming_empty_input.value = json.result.file_naming_empty;
 		inputs.volume_as_empty_input.checked = json.result.volume_as_empty;
 		inputs.unzip_input.checked = json.result.unzip;
+		inputs.cbz_convert_input.checked = json.result.cbz_convert;
 		inputs.issue_padding_input.value = json.result.issue_padding;
 		inputs.volume_padding_input.value = json.result.volume_padding;
 	});
@@ -41,6 +43,7 @@ function saveSettings(api_key) {
 		'file_naming_empty': inputs.file_naming_empty_input.value,
 		'volume_as_empty': inputs.volume_as_empty_input.checked,
 		'unzip': inputs.unzip_input.checked,
+		'cbz_convert': inputs.cbz_convert_input.checked,
 		'issue_padding': parseInt(inputs.issue_padding_input.value),
 		'volume_padding': parseInt(inputs.volume_padding_input.value)
 	};

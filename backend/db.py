@@ -16,7 +16,7 @@ from waitress.task import ThreadedTaskDispatcher as OldThreadedTaskDispatcher
 from backend.logging import set_log_level
 
 __DATABASE_FILEPATH__ = 'db', 'Kapowarr.db'
-__DATABASE_VERSION__ = 11
+__DATABASE_VERSION__ = 12
 
 class Singleton(type):
 	_instances = {}
@@ -449,6 +449,16 @@ def migrate_db(current_db_version: int) -> None:
 		)
 
 		current_db_version = 11
+		update_db_version(current_db_version)
+
+	if current_db_version == 11:
+		# V11 -> V12
+
+		cursor.execute("""
+			INSERT OR REPLACE into config
+			VALUES ('cbz_convert', 0)
+		""")	
+		current_db_version = 12
 		update_db_version(current_db_version)
 
 	return

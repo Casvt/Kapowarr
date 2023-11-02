@@ -32,6 +32,7 @@ default_settings = {
 	'log_level': 'info',
 	'database_version': __DATABASE_VERSION__,
 	'unzip': False,
+	'cbz_convert': False,
 	'volume_padding': 2,
 	'issue_padding': 3,
 	'rename_downloaded_files': True,
@@ -104,6 +105,7 @@ class Settings:
 				"SELECT key, value FROM config;"
 			))
 			settings['unzip'] = settings['unzip'] == 1
+			settings['cbz_convert'] = settings['cbz_convert'] == 1
 			settings['rename_downloaded_files'] = settings['rename_downloaded_files'] == 1
 			settings['volume_as_empty'] = settings['volume_as_empty'] == 1
 			self.cache.update(settings)
