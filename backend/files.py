@@ -706,7 +706,7 @@ def move_volume_folder(volume_id: int, new_root_folder: int, new_volume_folder: 
 		renamed_files
 	)
 
-	makedirs(new_folder, 0o664, exist_ok=True)
+	makedirs(new_folder, 0o764, exist_ok=True)
 	for new_filepath, old_filepath in renamed_files:
 		move(old_filepath, new_filepath)
 
