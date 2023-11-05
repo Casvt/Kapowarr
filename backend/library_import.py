@@ -8,7 +8,7 @@ from typing import Dict, List, Tuple, Union
 
 from aiohttp import ClientSession
 
-from backend.comicvine import ComicVine
+from backend.comicvine import ComicVine, batched
 from backend.custom_exceptions import VolumeAlreadyAdded
 from backend.db import get_db
 from backend.files import (_list_files, delete_empty_folders,
@@ -19,19 +19,6 @@ from backend.root_folders import RootFolders
 from backend.search import _check_matching_titles
 from backend.volumes import Library, Volume
 
-
-def batched(l: list, n: int):
-	"""Iterate over list (or tuple, set, etc.) in batches
-
-	Args:
-		l (list): The list to iterate over
-		n (int): The batch size
-
-	Yields:
-		A batch of size n from l
-	"""
-	for ndx in range(0, len(l), n):
-		yield l[ndx : ndx+n]
 
 async def __search_matches(datas: List[dict]) -> List[dict]:
 	comicvine = ComicVine()

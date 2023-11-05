@@ -8,6 +8,7 @@ from re import IGNORECASE, compile
 from typing import List, Union
 
 from aiohttp import ClientSession
+from aiohttp.client_exceptions import ContentTypeError
 from bs4 import BeautifulSoup
 from requests import Session
 from requests.exceptions import ConnectionError as requests_ConnectionError
@@ -33,6 +34,19 @@ translation_regex = compile(
 )
 headers = {'h2', 'h3', 'h4', 'h5', 'h6'}
 lists = {'ul', 'ol'}
+
+def batched(l: list, n: int):
+	"""Iterate over list (or tuple, set, etc.) in batches
+
+	Args:
+		l (list): The list to iterate over
+		n (int): The batch size
+
+	Yields:
+		A batch of size n from l
+	"""
+	for ndx in range(0, len(l), n):
+		yield l[ndx : ndx+n]
 
 def _clean_description(description: str, short: bool=False) -> str:
 	"""Reduce size of description (written in html) to only essential information
@@ -121,6 +135,116 @@ class ComicVine:
 		self.ssn.headers.update(self._headers)
 		return
 
+	def __normalize_cv_id(self, cv_id: str) -> Union[str, None]:
+		"""Turn user entered cv id in to formatted id
+
+		Args:
+			cv_id (str): The user entered cv id
+
+		Returns:
+			Union[str, None]: The cv id as `4050-NNNN` or `None` in case of invalid ID
+		"""
+		if cv_id.startswith('cv:'):
+			cv_id = cv_id.partition(':')[2]
+
+		if not cv_id.startswith('4050-'):
+			cv_id = '4050-' + cv_id
+
+		if cv_id.replace('-','0').isdigit():
+			return cv_id
+
+		return None
+
+	def __call_request(self, url: str) -> Union[bytes, None]:
+		"""Fetch a URL and get it's content (with error handling).
+
+		Args:
+			url (str): The URL to fetch from
+
+		Returns:
+			Union[bytes, None]: The content of None in case of error.
+		"""
+		try:
+			return self.ssn.get(url).content
+		except requests_ConnectionError:
+			return None
+
+	def __call_api(self,
+		url_path: str,
+		params: dict
+	) -> dict:
+		"""Make an CV API call (with error handling).
+
+		Args:
+			url_path (str): The path of the url to make the call to (e.g. '/volumes'). Beginning '/' required.
+			params (dict): The URL params that should go with the request. Standard params (api key, format, etc.) not needed.
+
+		Raises:
+			CVRateLimitReached: The CV rate limit for this endpoint has been reached
+			InvalidComicVineApiKey: The CV api key is not valid
+			VolumeNotMatched: The volume with the given ID is not found
+
+		Returns:
+			dict: The raw API response
+		"""
+		if not url_path.endswith('/'):
+			url_path += '/'
+
+		try:
+			result = self.ssn.get(
+				f'{self.api_url}{url_path}',
+				params=params
+			).json()
+
+		except JSONDecodeError:
+			raise CVRateLimitReached
+
+		if result['status_code'] == 100:
+			raise InvalidComicVineApiKey
+		elif result['status_code'] == 101:
+			raise VolumeNotMatched
+		elif result['status_code'] == 107:
+			raise CVRateLimitReached
+
+		return result
+
+	async def __call_api_async(self,
+		session: ClientSession,
+		url_path: str,
+		params: dict
+	) -> dict:
+		"""Make an CV API call asynchronously (with error handling).
+
+		Args:
+			session (ClientSession): The aiohttp session to make the request with.
+			url_path (str): The path of the url to make the call to (e.g. '/volumes'). Beginning '/' required.
+			params (dict): The URL params that should go with the request. Standard params (api key, format, etc.) not needed.
+
+		Raises:
+			CVRateLimitReached: The CV rate limit for this endpoint has been reached
+
+		Returns:
+			dict: The raw API response
+		"""		
+		if not url_path.endswith('/'):
+			url_path += '/'
+
+		try:
+			async with session.get(
+				f'{self.api_url}{url_path}',
+				params={**self._params, **params},
+				headers=self._headers
+			) as response:
+				result: dict = await response.json()
+
+		except ContentTypeError:
+			raise CVRateLimitReached
+
+		if result['status_code'] == 107:
+			raise CVRateLimitReached
+
+		return result
+
 	def test_token(self) -> bool:
 		"""Test if the token works
 
@@ -128,14 +252,15 @@ class ComicVine:
 			bool: Whether or not the token works.
 		"""
 		try:
-			result = self.ssn.get(
-				f'{self.api_url}/publisher/4010-31/',
-				params={'field_list': 'id'}
-			).json()
-			if result['status_code'] != 1:
-				return False
-		except Exception:
+			self.__call_api(
+				'/publisher/4010-31',
+				{'field_list': 'id'}
+			)
+
+		except (CVRateLimitReached,
+		  		InvalidComicVineApiKey):
 			return False
+	
 		return True
 
 	def __format_volume_output(self, volume_data: dict) -> dict:
@@ -207,42 +332,32 @@ class ComicVine:
 
 		Returns:
 			dict: The metadata of the volume
-		"""		
-		if not id.startswith('4050-'):
-			id = '4050-' + id
+		"""	
+		id = self.__normalize_cv_id(id)
 		logging.debug(f'Fetching volume data for {id}')
 		
-		result = self.ssn.get(
-			f'{self.api_url}/volume/{id}/',
-			params={'field_list': self.volume_field_list}
-		).json()
-		if result['status_code'] == 101:
-			raise VolumeNotMatched
-		if result['status_code'] == 107:
-			raise CVRateLimitReached
+		result = self.__call_api(
+			f'/volume/{id}',
+			{'field_list': self.volume_field_list}
+		)
 
 		volume_info = self.__format_volume_output(result['results'])
-
-		try:
-			volume_info['cover'] = self.ssn.get(volume_info['cover']).content
-		except requests_ConnectionError:
-			volume_info['cover'] = None
+		volume_info['cover'] = self.__call_request(volume_info['cover'])
 
 		# Fetch issues
 		logging.debug(f'Fetching issue data for volume {id}')
 		volume_info['issues'] = []
 		for offset in range(0, volume_info['issue_count'], 100):
-			results = self.ssn.get(
-				f'{self.api_url}/issues/',
-				params={'filter': f'volume:{volume_info["comicvine_id"]}',
-	    			'field_list': self.issue_field_list,
+			results = self.__call_api(
+				'/issues',
+				{'filter': f'volume:{volume_info["comicvine_id"]}',
+					'field_list': self.issue_field_list,
 					'offset': offset}
-			).json()['results']
-
-			for issue in results:
-				volume_info['issues'].append(
-					self.__format_issue_output(issue)
-				)
+			)['results']
+			
+			volume_info['issues'] += [
+				self.__format_issue_output(i) for i in results
+			]
 
 		logging.debug(f'Fetching volume data result: {volume_info}')
 		return volume_info
@@ -259,27 +374,20 @@ class ComicVine:
 		logging.debug(f'Fetching volume data for {ids}')
 		
 		volume_infos = []
-		for i in range(0, len(ids), 100):
+		for id_batch in batched(ids, 100):
 			try:
-				results = self.ssn.get(
-					f'{self.api_url}/volumes/',
-					params={
-						'field_list': self.volume_field_list,
-						'filter': f'id:{"|".join(ids[i:i+100])}'
-					}
-				).json()
-			except JSONDecodeError:
+				results = self.__call_api(
+					'/volumes',
+					{'field_list': self.volume_field_list,
+					'filter': f'id:{"|".join(id_batch)}'}
+				)
+			except CVRateLimitReached:
 				break
-			if results['status_code'] == 107:
-				# Rate limit reached
-				break
+
 			for result in results['results']:
 				volume_info = self.__format_volume_output(result)
 
-				try:
-					volume_info['cover'] = self.ssn.get(volume_info['cover']).content
-				except requests_ConnectionError:
-					volume_info['cover'] = None
+				volume_info['cover'] = self.__call_request(volume_info['cover'])
 				volume_infos.append(volume_info)
 		return volume_infos
 
@@ -295,36 +403,31 @@ class ComicVine:
 		logging.debug(f'Fetching issue data for volumes {ids}')
 		
 		issue_infos = []
-		for i in range(0, len(ids), 50):
-			results = self.ssn.get(
-				f'{self.api_url}/issues/',
-				params={
-					'field_list': self.issue_field_list,
-					'filter': f'volume:{"|".join(ids[i:i+50])}'
-				}
-			).json()
-			if results['status_code'] == 107:
-				# Rate limit reached
+		for id_batch in batched(ids, 50):
+			try:
+				results = self.__call_api(
+					'/issues',
+					{'field_list': self.issue_field_list,
+					'filter': f'volume:{"|".join(id_batch)}'}
+				)
+			except CVRateLimitReached:
 				break
 			
-			for result in results['results']:
-				issue_infos.append(self.__format_issue_output(result))
+			issue_infos += [self.__format_issue_output(r) for r in results['results']]
 				
 			for offset in range(100, results['number_of_total_results'], 100):
-				results = self.ssn.get(
-					f'{self.api_url}/issues/',
-					params={
-						'field_list': self.issue_field_list,
-						'filter': f'volume:{"|".join(ids[i:i+50])}',
-						'offset': offset
-					}
-				).json()
-				if results['status_code'] == 107:
-					# Rate limit reached
+				try:
+					results = self.__call_api(
+						'/issues',
+						{'field_list': self.issue_field_list,
+						'filter': f'volume:{"|".join(id_batch)}',
+						'offset': offset}
+					)
+				except CVRateLimitReached:
 					break
 				
-				for result in results['results']:
-					issue_infos.append(self.__format_issue_output(result))
+				issue_infos += [self.__format_issue_output(r) for r in results['results']]
+
 			else:
 				continue
 			break
@@ -366,17 +469,6 @@ class ComicVine:
 		logging.debug(f'Searching for volumes with query result: {results}')
 		return results
 
-	def __normalize_cv_id(self, cv_id: str) -> Union[str, None]:
-		if cv_id.startswith('cv:'):
-			cv_id = cv_id.partition(':')[2]
-			if not cv_id.startswith('4050-'):
-				cv_id = '4050-' + cv_id
-
-		if cv_id.replace('-','0').isdigit():
-			return cv_id
-
-		return None
-
 	def search_volumes(self, query: str) -> List[dict]:
 		"""Search for volumes in the ComicVine database
 
@@ -393,22 +485,20 @@ class ComicVine:
 			if not query:
 				return []
 
-			results: List[dict] = [
-				self.ssn.get(
-					f'{self.api_url}/volume/{query}/',
-					params={'field_list': self.search_field_list}
-				).json()['results']
-			]
+			results: List[dict] = [self.__call_api(
+				f'/volume/{query}',
+				{'field_list': self.search_field_list}
+			)['results']]
 			if results == [[]]:
 				return []
 		else:
-			results: List[dict] = self.ssn.get(
-				f'{self.api_url}/search/',
-				params={'query': query,
-	    				'resources': 'volume',
-						'limit': 50,
-						'field_list': self.search_field_list}
-			).json()['results']
+			results: List[dict] = self.__call_api(
+				'/search',
+				{'query': query,
+				'resources': 'volume',
+				'limit': 50,
+				'field_list': self.search_field_list}
+			)['results']
 			if not results:
 				return []
 
@@ -431,29 +521,32 @@ class ComicVine:
 			if not query:
 				return []
 
-			async with session.get(
-				f'{self.api_url}/volume/{query}/',
-				params={**self._params, 'field_list': self.search_field_list},
-				headers=self._headers
-			) as response:
-				results: List[dict] = [(await response.json())['results']]
+			try:
+				results: List[dict] = [(await self.__call_api_async(
+					session,
+					f'/volume/{query}',
+					{'field_list': self.search_field_list}
+				))['results']]
+
+			except CVRateLimitReached:
+				return []
 
 			if results == [[]]:
 				return []
 
 		else:
-			async with session.get(
-				f'{self.api_url}/search/',
-				params={
-					**self._params,
-					'query': query,
+			try:
+				results: List[dict] = (await self.__call_api_async(
+					session,
+					'/search',
+					{'query': query,
 					'resources': 'volume',
 					'limit': 50,
-					'field_list': self.search_field_list
-				},
-				headers=self._headers
-			) as response:
-				results: List[dict] = (await response.json())['results']
+					'field_list': self.search_field_list}
+				))['results']
+			
+			except CVRateLimitReached:
+				return []
 
 			if not results:
 				return []
