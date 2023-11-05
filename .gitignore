@@ -140,3 +140,4 @@ temp_downloads/*
 
 # Project management files
 release.sh
+release_alpha.sh

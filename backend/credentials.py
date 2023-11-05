@@ -30,7 +30,9 @@ class Credentials:
 		"""Get all credentials
 
 		Args:
-			use_cache (bool, optional): Wether or not to pull data from cache instead of going to the database. Defaults to True.
+			use_cache (bool, optional): Wether or not to pull data from cache
+			instead of going to the database.
+				Defaults to True.
 
 		Returns:
 			List[dict]: The list of credentials
@@ -58,10 +60,14 @@ class Credentials:
 
 		Args:
 			id (int): The id of the credential to get.
-			use_cache (bool, optional): Wether or not to pull data from cache instead of going to the database. Defaults to True.
+
+			use_cache (bool, optional): Wether or not to pull data from cache
+			instead of going to the database.
+				Defaults to True.
 
 		Raises:
-			CredentialNotFound: The id doesn't map to any credential (could be because the credential doesn't exist or because cache isn't in sync with database (yet))
+			CredentialNotFound: The id doesn't map to any credential.
+				Could also be because of cache being behind database.
 
 		Returns:
 			dict: The credential info
@@ -78,7 +84,10 @@ class Credentials:
 
 		Args:
 			source (str): The source of which to get the credential.
-			use_cache (bool, optional): Wether or not to pull data from cache instead of going to the database. Defaults to True.
+
+			use_cache (bool, optional): Wether or not to pull data from cache
+			instead of going to the database.
+				Defaults to True.
 
 		Returns:
 			dict: The credential info or a 'ghost' version of the response
@@ -103,8 +112,11 @@ class Credentials:
 		"""Add a credential
 
 		Args:
-			source (str): The string representing the source for which the credential is. Must be a value of settings.credential_sources
+			source (str): The service for which the credential is.
+				Must be a value of `settings.credential_sources`.
+
 			email (str): The email of the credential.
+
 			password (str): The password of the credential
 
 		Raises:
@@ -121,7 +133,7 @@ class Credentials:
 		).fetchone()
 		if not source_id:
 			raise CredentialSourceNotFound(source)
-		
+
 		logging.info(f'Adding credential for {source}')
 		try:
 			if source == 'mega':
@@ -133,8 +145,10 @@ class Credentials:
 				""",
 				(source_id[0], email, password)
 			).lastrowid
+
 		except RequestError:
 			raise CredentialInvalid
+
 		except IntegrityError:
 			raise CredentialAlreadyAdded
 		
@@ -161,7 +175,8 @@ class Credentials:
 		return
 
 	def get_open(self) -> List[str]:
-		"""Get a list of all services that don't have a credential registered for it
+		"""Get a list of all services that
+		don't have a credential registered for it
 
 		Returns:
 			List[str]: The list of service strings
