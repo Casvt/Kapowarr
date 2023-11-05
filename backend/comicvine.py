@@ -19,6 +19,7 @@ from backend.custom_exceptions import (CVRateLimitReached,
                                        VolumeNotMatched)
 from backend.db import get_db
 from backend.files import process_issue_number, volume_regex
+from backend.helpers import batched
 from backend.settings import Settings, private_settings
 
 translation_regex = compile(
@@ -34,19 +35,6 @@ translation_regex = compile(
 )
 headers = {'h2', 'h3', 'h4', 'h5', 'h6'}
 lists = {'ul', 'ol'}
-
-def batched(l: list, n: int):
-	"""Iterate over list (or tuple, set, etc.) in batches
-
-	Args:
-		l (list): The list to iterate over
-		n (int): The batch size
-
-	Yields:
-		A batch of size n from l
-	"""
-	for ndx in range(0, len(l), n):
-		yield l[ndx : ndx+n]
 
 def _clean_description(description: str, short: bool=False) -> str:
 	"""Reduce size of description (written in html) to only essential information

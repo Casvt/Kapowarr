@@ -8,12 +8,13 @@ from typing import Dict, List, Tuple, Union
 
 from aiohttp import ClientSession
 
-from backend.comicvine import ComicVine, batched
+from backend.comicvine import ComicVine
 from backend.custom_exceptions import VolumeAlreadyAdded
 from backend.db import get_db
 from backend.files import (_list_files, delete_empty_folders,
                            extract_filename_data, image_extensions, scan_files,
                            supported_extensions)
+from backend.helpers import batched
 from backend.naming import mass_rename
 from backend.root_folders import RootFolders
 from backend.search import _check_matching_titles

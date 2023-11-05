@@ -2,28 +2,14 @@
 #-*- coding: utf-8 -*-
 
 import logging
-from sys import version_info
 
 from backend.db import __DATABASE_FILEPATH__, set_db_location, setup_db
 from backend.files import folder_path
+from backend.helpers import check_python_version
 from backend.logging import setup_logging
 from backend.server import create_app, create_waitress_server, set_url_base
 from frontend.api import download_handler, settings, task_handler
 
-
-def _check_python_version() -> bool:
-	"""Check if the python version that is used is a minimum version.
-
-	Returns:
-		bool: Whether or not the python version is version 3.8 or above or not.
-	"""
-	if not (version_info.major == 3 and version_info.minor >= 8):
-		logging.critical(
-			'The minimum python version required is python3.8 ' + 
-			'(currently ' + version_info.major + '.' + version_info.minor + '.' + version_info.micro + ').'
-		)
-		return False
-	return True
 
 def Kapowarr() -> None:
 	"""The main function of Kapowarr
@@ -31,7 +17,7 @@ def Kapowarr() -> None:
 	setup_logging()
 	logging.info('Starting up Kapowarr')
 
-	if not _check_python_version():
+	if not check_python_version():
 		exit(1)
 
 	set_db_location(folder_path(*__DATABASE_FILEPATH__))
