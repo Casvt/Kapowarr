@@ -1,4 +1,12 @@
 function loadProposal(api_key) {
+	const refresh_button = document.querySelector('#refresh-button > img');
+	refresh_button.src = `${url_base}/static/img/loading_white.svg`;
+	refresh_button.classList.add('spinning');
+
+	document.querySelector('.table-container').classList.add('hidden');
+	document.querySelector('#import-button').classList.add('hidden');
+	document.querySelector('#import-rename-button').classList.add('hidden');
+
 	const table = document.querySelector('.proposal-list');
 	table.innerHTML = '';
 	fetch(`${url_base}/api/libraryimport?api_key=${api_key}`)
@@ -45,10 +53,15 @@ function loadProposal(api_key) {
 			table.appendChild(entry);
 		});
 
-		document.querySelector('.table-container').classList.remove('hidden');
 		document.querySelector('#run-button').innerText = 'Run';
-		document.querySelector('#import-button').classList.remove('hidden');
-		document.querySelector('#import-rename-button').classList.remove('hidden');
+		if (json.result.length > 0) {
+			document.querySelector('.table-container').classList.remove('hidden');
+			document.querySelector('#import-button').classList.remove('hidden');
+			document.querySelector('#import-rename-button').classList.remove('hidden');
+		};
+
+		refresh_button.src = `${url_base}/static/img/refresh.svg`;
+		refresh_button.classList.remove('spinning');
 	});
 };
 
