@@ -3,7 +3,7 @@
 import logging
 from asyncio import create_task, gather, run
 from os.path import basename, commonpath, dirname, join, splitext
-from shutil import move
+from shutil import Error, move
 from typing import Dict, List, Tuple, Union
 
 from aiohttp import ClientSession
@@ -181,13 +181,20 @@ def import_library(matches: List[Dict[str, Union[str, int]]], rename_files: bool
 			new_files = []
 			for f in files:
 				if f.endswith(image_extensions):
-					new_files.append(move(
-						f, join(vf, basename(dirname(f)))
-					))
+					try:
+						new_files.append(move(
+							f, join(vf, basename(dirname(f)))
+						))
+					except Error:
+						new_files.append(
+							join(vf, basename(dirname(f)), basename(f))
+						)
 				else:
-					new_files.append(move(f, vf))
+					try:
+						new_files.append(move(f, vf))
+					except Error:
+						new_files.append(join(vf, basename(f)))
 
-				
 				delete_empty_folders(dirname(f), root_folder['folder'])
 
 			scan_files(volume.get_info())
