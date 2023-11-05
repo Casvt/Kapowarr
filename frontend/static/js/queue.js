@@ -45,7 +45,10 @@ function fillQueue(api_key) {
 
 				const progress = document.createElement('td');
 				progress.classList.add('number-column');
-				progress.innerText = obj.progress + '%';
+				if (progress > 100)
+					progress.innerText = convertSize(obj.progress)
+				else
+					progress.innerText = obj.progress + '%';
 				entry.append(progress);
 				
 				const delete_entry = document.createElement('td');

@@ -14,7 +14,10 @@ def get_blocklist(offset: int=0) -> List[dict]:
 	"""Get the blocklist entries in blocks of 50
 
 	Args:
-		offset (int, optional): The offset of the list. The higher the number, the deeper into the list you go. Defaults to 0.
+		offset (int, optional): The offset of the list.
+			The higher the number, the deeper into the list you go.
+			
+			Defaults to 0.
 
 	Returns:
 		List[dict]: A list of dicts where each dict is a blocklist entry
@@ -59,7 +62,7 @@ def get_blocklist_entry(id: int) -> dict:
 
 	Returns:
 		dict: The info about the blocklist entry, similar to the dicts in
-		the output of blocklist.get_blocklist()
+		the output of `blocklist.get_blocklist()`
 	"""	
 	logging.debug(f'Fetching blocklist entry {id}')
 	entry = get_db('dict').execute("""
@@ -117,13 +120,14 @@ def add_to_blocklist(link: str, reason_id: int) -> dict:
 
 	Args:
 		link (str): The link to block
-		reason_id (int): The id of the reason why the link is blocklisted (see settings.blocklist_reasons)
+		reason_id (int): The id of the reason why the link is blocklisted.
+			See `settings.blocklist_reasons`
 
 	Raises:
 		InvalidKeyValue: The reason id doesn't map to any reason
 
 	Returns:
-		dict: Info about the new blocklist entry, or if the link was already blocklisted, the existing data.
+		dict: Info about the blocklist entry.
 	"""	
 	logging.info(f'Adding {link} to blocklist with reason "{blocklist_reasons[reason_id]}"')
 	cursor = get_db()

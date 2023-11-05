@@ -27,7 +27,8 @@ async def __search_matches(datas: List[dict]) -> List[dict]:
 	async with ClientSession() as session:
 		data_titles = {d['series'].lower() for d in datas}
 		tasks = [
-			create_task(comicvine.search_volumes_async(session, series)) for series in data_titles
+			create_task(comicvine.search_volumes_async(session, series))
+			for series in data_titles
 		]
 		responses = await gather(*tasks)
 		title_to_response = dict(zip(data_titles, responses))
@@ -39,23 +40,29 @@ async def __search_matches(datas: List[dict]) -> List[dict]:
 				and ((
 						data['year'] is not None
 						and result['year'] is not None
-						and 0 <= abs(data['year'] - result['year']) <= 1 # One year wiggle room
+						and data['year'] - 1 <= result['year'] <= data['year'] + 1
 					)
 					or result['year'] is None
 				)):
 					matching_result = result
 					break
 
+			if matching_result:
+				title = f"{matching_result['title']} ({matching_result['year']})"
+			else:
+				title = None
+
 			results.append({
 				'id': matching_result.get('comicvine_id'),
-				'title': f"{matching_result['title']} ({matching_result['year']})" if matching_result else None,
+				'title': title,
 				'link': matching_result.get('comicvine_info')
 			})
 			
 		return results
 
 def propose_library_import() -> List[dict]:
-	"""Get list of unimported files and their suggestion for a matching volume on CV.
+	"""Get list of unimported files
+	and their suggestion for a matching volume on CV.
 
 	Returns:
 		List[dict]: The list of files and their matches.
@@ -100,7 +107,9 @@ def propose_library_import() -> List[dict]:
 	result: List[dict] = []
 	for uf_batch in batched(unimported_files, 10):
 		search_results = run(__search_matches([e[0] for e in uf_batch]))
-		for group_number, (search_result, group_data) in enumerate(zip(search_results, uf_batch)):
+		for group_number, (search_result, group_data) in enumerate(
+			zip(search_results, uf_batch)
+		):
 			result += [
 				{
 					'filepath': f,
@@ -129,13 +138,20 @@ def __find_lowest_common_folder(files: List[str]) -> str:
 
 	return commonpath(files)
 
-def import_library(matches: List[Dict[str, Union[str, int]]], rename_files: bool=False) -> None:
+def import_library(
+	matches: List[Dict[str, Union[str, int]]],
+	rename_files: bool=False
+) -> None:
 	"""Add volume to library and import linked files
 
 	Args:
 		matches (List[Dict[str, Union[str, int]]]): List of dicts.
-		The key `id` should supply the CV id of the volume and `filepath` the linked file.
-		rename_files (bool, optional): Should Kapowarr trigger a rename after importing files? Defaults to False.
+		The key `id` should supply the CV id of the volume
+		and `filepath` the linked file.
+
+		rename_files (bool, optional): Should Kapowarr trigger a rename
+		after importing files?
+			Defaults to False.
 	"""
 	logging.info('Starting library import')
 	cvid_to_filepath: Dict[int, List[str]] = {}
@@ -149,7 +165,10 @@ def import_library(matches: List[Dict[str, Union[str, int]]], rename_files: bool
 	library = Library()
 	for cv_id, files in cvid_to_filepath.items():
 		# Find lowest common folder (lcf)
-		volume_folder = __find_lowest_common_folder(files) if not rename_files else None
+		if not rename_files:
+			volume_folder = __find_lowest_common_folder(files)
+		else:
+			volume_folder = None
 
 		# Find root folder that media is in
 		for root_folder in root_folders:

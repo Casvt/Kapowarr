@@ -41,7 +41,8 @@ def _clean_description(description: str, short: bool=False) -> str:
 
 	Args:
 		description (str): The description (written in html) to clean.
-		short (bool, optional): Only remove images and fix links. Defaults to False.
+		short (bool, optional): Only remove images and fix links.
+			Defaults to False.
 
 	Returns:
 		str: The cleaned description (written in html)
@@ -84,7 +85,9 @@ def _clean_description(description: str, short: bool=False) -> str:
 	# Fix links
 	for link in soup.find_all('a'):
 		link['target'] = '_blank'
-		link.attrs = {k: v for k, v in link.attrs.items() if not k.startswith('data-')}
+		link.attrs = {
+			k: v for k, v in link.attrs.items() if not k.startswith('data-')
+		}
 		link['href'] = link['href'].lstrip('./')
 		if not link['href'].startswith('http'):
 			link['href'] = private_settings['comicvine_url'] + '/' + link['href']
@@ -103,7 +106,8 @@ class ComicVine:
 		"""Start interacting with ComicVine
 
 		Args:
-			comicvine_api_key (str, optional): Override the API key that is used. Defaults to None.
+			comicvine_api_key (str, optional): Override the API key that is used.
+				Defaults to None.
 
 		Raises:
 			InvalidComicVineApiKey: No ComicVine API key is set in the settings
@@ -130,7 +134,8 @@ class ComicVine:
 			cv_id (str): The user entered cv id
 
 		Returns:
-			Union[str, None]: The cv id as `4050-NNNN` or `None` in case of invalid ID
+			Union[str, None]: The cv id as `4050-NNNN`.
+				`None` in case of invalid ID.
 		"""
 		if cv_id.startswith('cv:'):
 			cv_id = cv_id.partition(':')[2]
@@ -150,7 +155,8 @@ class ComicVine:
 			url (str): The URL to fetch from
 
 		Returns:
-			Union[bytes, None]: The content of None in case of error.
+			Union[bytes, None]: The content in bytes.
+				`None` in case of error.
 		"""
 		try:
 			return self.ssn.get(url).content
@@ -164,8 +170,11 @@ class ComicVine:
 		"""Make an CV API call (with error handling).
 
 		Args:
-			url_path (str): The path of the url to make the call to (e.g. '/volumes'). Beginning '/' required.
-			params (dict): The URL params that should go with the request. Standard params (api key, format, etc.) not needed.
+			url_path (str): The path of the url to make the call to (e.g. '/volumes').
+				Beginning '/' required.
+
+			params (dict): The URL params that should go with the request.
+				Standard params (api key, format, etc.) not needed.
 
 		Raises:
 			CVRateLimitReached: The CV rate limit for this endpoint has been reached
@@ -205,8 +214,12 @@ class ComicVine:
 
 		Args:
 			session (ClientSession): The aiohttp session to make the request with.
-			url_path (str): The path of the url to make the call to (e.g. '/volumes'). Beginning '/' required.
-			params (dict): The URL params that should go with the request. Standard params (api key, format, etc.) not needed.
+
+			url_path (str): The path of the url to make the call to (e.g. '/volumes').
+				Beginning '/' required.
+
+			params (dict): The URL params that should go with the request.
+				Standard params (api key, format, etc.) not needed.
 
 		Raises:
 			CVRateLimitReached: The CV rate limit for this endpoint has been reached
@@ -252,44 +265,56 @@ class ComicVine:
 		return True
 
 	def __format_volume_output(self, volume_data: dict) -> dict:
-		"""Format the ComicVine API output containing the info about the volume to the "Kapowarr format"
+		"""Format the ComicVine API output containing the info
+		about the volume to the "Kapowarr format"
 
 		Args:
 			volume_data (dict): The ComicVine API output
 
 		Returns:
 			dict: The formatted version
-		"""		
+		"""
 		result = {
 			'comicvine_id': int(volume_data['id']),
+
 			'title': volume_data['name'].strip(),
-			'year': int(volume_data['start_year'].replace('-', '0').replace('?', '')) if volume_data['start_year'] is not None else None,
+			'year': None,
+			'volume_number': 1,
 			'cover': volume_data['image']['small_url'],
-			'publisher': volume_data['publisher']['name'] if volume_data['publisher'] is not None else None,
+
+			'description': _clean_description(volume_data['description']),
+			'aliases': [],
+			'comicvine_info': volume_data.get('site_detail_url'),
+
+			'publisher': volume_data.get('publisher', {}).get('name'),
 			'issue_count': int(volume_data['count_of_issues'])
 		}
 
-		match = volume_regex.search(volume_data['deck'] or '')
-		result['volume_number'] = int(match.group(1)) if match else 1
-		
-		result['description'] = _clean_description(volume_data['description'])
-		
-		result['translated'] = translation_regex.match(volume_data['description'] or '') is not None
+		if volume_data['start_year'] is not None:
+			result['year'] = int(
+				volume_data['start_year']
+					.replace('-', '0')
+					.replace('?', '')
+			)
 
-		# Turn aliases into list
-		if 'aliases' in volume_data:
-			if volume_data['aliases']:
-				result['aliases'] = volume_data['aliases'].split('\r\n')
-			else:
-				result['aliases'] = []
-		
-		if 'site_detail_url' in volume_data:
-			result['comicvine_info'] = volume_data['site_detail_url']
+		volume_result = volume_regex.search(volume_data['deck'] or '')
+		if volume_result:
+			result['volume_number'] = int(volume_result.group(1))
+
+		translation_result = translation_regex.match(
+			volume_data['description'] or ''
+		)
+		result['translated'] = translation_result is not None
+
+		# Turn aliases from string into list
+		if volume_data.get('aliases'):
+			result['aliases'] = volume_data['aliases'].split('\r\n')
 
 		return result
 
 	def __format_issue_output(self, issue_data: dict) -> dict:
-		"""Format the ComicVine API output containing the info about the issue to the "Kapowarr format"
+		"""Format the ComicVine API output containing the info
+		about the issue to the "Kapowarr format"
 
 		Args:
 			issue_data (dict): The ComicVine API output
@@ -301,21 +326,28 @@ class ComicVine:
 			'comicvine_id': issue_data['id'],
 			'volume_id': int(issue_data['volume']['id']),
 			'issue_number': issue_data['issue_number'],
-			'calculated_issue_number': process_issue_number(issue_data['issue_number']),
+			'calculated_issue_number': process_issue_number(
+				issue_data['issue_number']
+			),
 			'title': issue_data['name'] or None,
 			'date': issue_data['cover_date'] or None,
-			'description': _clean_description(issue_data['description'], short=True)
+			'description': _clean_description(
+				issue_data['description'],
+				short=True
+			)
 		}
 		return result
 
 	def fetch_volume(self, id: str) -> dict:
-		"""Get the metadata of a volume from ComicVine, formatted to the "Kapowarr format"
+		"""Get the metadata of a volume from ComicVine,
+		formatted to the "Kapowarr format"
 
 		Args:
-			id (str): The comicvine id of the volume. The `4050-` prefix is optional.
+			id (str): The comicvine id of the volume.
+				The `4050-` prefix is optional.
 
 		Raises:
-			VolumeNotMatched: No comic in the ComicVine database matches with the given id
+			VolumeNotMatched: No volume found with given ID in CV DB
 			CVRateLimitReached: The ComicVine rate limit is reached
 
 		Returns:
@@ -351,10 +383,12 @@ class ComicVine:
 		return volume_info
 
 	def fetch_volumes(self, ids: List[str]) -> List[dict]:
-		"""Get the metadata of the volumes given from ComicVine, formatted to the "Kapowarr format"
+		"""Get the metadata of the volumes given from ComicVine,
+		formatted to the "Kapowarr format"
 
 		Args:
-			ids (List[str]): The comicvine ids of the volumes. The `4050-` prefix should not be included.
+			ids (List[str]): The comicvine ids of the volumes.
+				The `4050-` prefix should not be included.
 
 		Returns:
 			List[dict]: The metadata of the volumes
@@ -374,16 +408,18 @@ class ComicVine:
 
 			for result in results['results']:
 				volume_info = self.__format_volume_output(result)
-
 				volume_info['cover'] = self.__call_request(volume_info['cover'])
+
 				volume_infos.append(volume_info)
 		return volume_infos
 
 	def fetch_issues(self, ids: List[str]) -> List[dict]:
-		"""Get the metadata of the issues of volumes given from ComicVine, formatted to the "Kapowarr format"
+		"""Get the metadata of the issues of volumes given from ComicVine,
+		formatted to the "Kapowarr format"
 
 		Args:
-			ids (List[str]): The comicvine ids of the volumes. The `4050-` prefix should not be included.
+			ids (List[str]): The comicvine ids of the volumes.
+				The `4050-` prefix should not be included.
 
 		Returns:
 			List[dict]: The metadata of all the issues inside the volumes
@@ -401,7 +437,10 @@ class ComicVine:
 			except CVRateLimitReached:
 				break
 			
-			issue_infos += [self.__format_issue_output(r) for r in results['results']]
+			issue_infos += [
+				self.__format_issue_output(r)
+				for r in results['results']
+			]
 				
 			for offset in range(100, results['number_of_total_results'], 100):
 				try:
@@ -414,15 +453,22 @@ class ComicVine:
 				except CVRateLimitReached:
 					break
 				
-				issue_infos += [self.__format_issue_output(r) for r in results['results']]
+				issue_infos += [
+					self.__format_issue_output(r)
+					for r in results['results']
+				]
 
 			else:
 				continue
 			break
 		return issue_infos
 
-	def __process_search_results(self, query: str, results: List[dict]) -> List[dict]:
-		"""Format the search results from `self.search_volumes()` or `self.search_volumes_async()`
+	def __process_search_results(self,
+		query: str,
+		results: List[dict]
+	) -> List[dict]:
+		"""Format the search results from `self.search_volumes()`
+		or `self.search_volumes_async()`
 
 		Args:
 			query (str): The processed query that was used
@@ -443,16 +489,21 @@ class ComicVine:
 			LIMIT 50;
 		"""))
 		for result in results:
-			result.update({'already_added': result['comicvine_id'] in volume_ids})
+			result.update({
+				'already_added': result['comicvine_id'] in volume_ids
+			})
 
 		# Sort results (prefer direct title matches and then sort those on volume number)
-		if results:
-			results.sort(
-				key=lambda v: (
-					0 if v['title'] == query else 1,
-					v['volume_number'] or float('inf') if v['title'] == query else float('inf') + 1
+		results.sort(
+			key=lambda v: (
+				int(not v['title'] == query),
+				(
+					v['volume_number']
+					or
+					float('inf') if v['title'] == query else float('inf') + 1
 				)
 			)
+		)
 
 		logging.debug(f'Searching for volumes with query result: {results}')
 		return results
@@ -492,11 +543,14 @@ class ComicVine:
 
 		return self.__process_search_results(query, results)
 
-	async def search_volumes_async(self, session: ClientSession, query: str) -> List[dict]:
+	async def search_volumes_async(self,
+		session: ClientSession,
+		query: str
+	) -> List[dict]:
 		"""Search for volumes in the ComicVine database asynchronously
 
 		Args:
-			session (ClientSession): A aiohttp client session to make the request with
+			session (ClientSession): An aiohttp client session for the requests
 			query (str): The query to use when searching
 
 		Returns:
