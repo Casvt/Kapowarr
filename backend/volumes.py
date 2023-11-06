@@ -35,7 +35,8 @@ def determine_special_version(
 		issue_titles (List[str]): The titles of all issues in the volume.
 
 	Returns:
-		Union[str, None]: `tpb`, `one-shot`, `hard-cover`, `volume-as-issue` or `None`.
+		Union[str, None]: `tpb`, `one-shot`, `hard-cover`, `volume-as-issue`
+		or `None`.
 	"""
 	if os_regex.search(volume_title):
 		return 'one-shot'
@@ -43,7 +44,10 @@ def determine_special_version(
 	if (issue_titles[0] or '').lower() == 'hc':
 		return 'hard-cover'
 
-	if all(title is not None and vol_regex.search(title) for title in issue_titles):
+	if all(
+		vol_regex.search(title or '')
+		for title in issue_titles
+	):
 		return 'volume-as-issue'
 
 	if volume_description and len(volume_description.split('. ')) == 1:
@@ -174,7 +178,9 @@ class Volume:
 		"""Get (all) info about the volume
 
 		Args:
-			complete (bool, optional): Wether or not to also get the issue info of the volume. Defaults to True.
+			complete (bool, optional): Whether or not to also get the info of
+			the issues inside the volume.
+				Defaults to True.
 
 		Returns:
 			dict: The info of the volume
@@ -210,7 +216,10 @@ class Volume:
 		volume_info = dict(cursor.fetchone())
 		volume_info['monitored'] = volume_info['monitored'] == 1
 		volume_info['cover'] = f'{ui_vars["url_base"]}/api/volumes/{volume_info["id"]}/cover'
-		volume_info['volume_folder'] = relpath(volume_info['folder'], volume_info['root_folder_path'])
+		volume_info['volume_folder'] = relpath(
+			volume_info['folder'],
+			volume_info['root_folder_path']
+		)
 		del volume_info['root_folder_path']
 
 		if complete:
@@ -314,7 +323,11 @@ class Volume:
 			(self.id,)
 		).fetchone()
 
-		new_folder = move_volume_folder(self.id, new_root_folder, new_volume_folder)
+		new_folder = move_volume_folder(
+			self.id,
+			new_root_folder,
+			new_volume_folder
+		)
 		if current_root_folder == new_root_folder and folder == new_folder:
 			return
 
@@ -328,7 +341,9 @@ class Volume:
 		"""Delete the volume from the library
 
 		Args:
-			delete_folder (bool, optional): Also delete the volume folder and it's contents. Defaults to False.
+			delete_folder (bool, optional): Also delete the volume folder and
+			it's contents.
+				Defaults to False.
 
 		Raises:
 			VolumeDownloadedFor: There is a download in the queue for the volume
@@ -375,8 +390,10 @@ def refresh_and_scan(volume_id: int=None) -> None:
 	"""Refresh and scan one or more volumes
 
 	Args:
-		volume_id (int, optional): The id of the volume if it is desired to only refresh and scan one.
-		If left to `None`, all volumes are refreshed and scanned. Defaults to None.
+		volume_id (int, optional): The id of the volume if it is desired to
+		only refresh and scan one. If left to `None`, all volumes are refreshed
+		and scanned.
+			Defaults to None.
 	"""
 	cursor = get_db()
 	cv = ComicVine()
@@ -518,7 +535,7 @@ class Library:
 		Args:
 			sort (str, optional): How to sort the list.
 			`title`, `year`, `volume_number`, `recently_added` and `publisher` allowed.
-			Defaults to 'title'.
+				Defaults to 'title'.
 
 		Returns:
 			List[dict]: The list of volumes in the library.
@@ -574,12 +591,16 @@ class Library:
 			query (str): The query to search with
 			sort (str, optional): How to sort the list.
 			`title`, `year`, `volume_number`, `recently_added` and `publisher` allowed.
-			Defaults to 'title'.
+				Defaults to 'title'.
 
 		Returns:
 			List[dict]: The resulting list of matching volumes in the library
 		"""
-		volumes = [v for v in self.get_volumes(sort) if query.lower() in v['title'].lower()]
+		volumes = [
+			v
+			for v in self.get_volumes(sort)
+			if query.lower() in v['title'].lower()
+		]
 		
 		return volumes
 
@@ -593,7 +614,8 @@ class Library:
 			VolumeNotFound: The id doesn't map to any volume in the library
 			
 		Returns:
-			Volume: The volumes.Volume instance representing the volume with the given id
+			Volume: The `volumes.Volume` instance representing the volume
+			with the given id.
 		"""
 		return Volume(volume_id)
 
@@ -607,18 +629,30 @@ class Library:
 			IssueNotFound: The id doesn't map to any issue in the library
 			
 		Returns:
-			Issue: The volumes.Issue instance representing the issue with the given id
+			Issue: The `volumes.Issue` instance representing the issue
+			with the given id.
 		"""		
 		return Issue(issue_id)
 		
-	def add(self, comicvine_id: str, root_folder_id: int, monitor: bool=True, volume_folder: str=None) -> int:
+	def add(self,
+		comicvine_id: str,
+		root_folder_id: int,
+		monitor: bool=True,
+		volume_folder: str=None
+	) -> int:
 		"""Add a volume to the library
 
 		Args:
 			comicvine_id (str): The ComicVine id of the volume
-			root_folder_id (int): The id of the rootfolder in which the volume folder will be
-			monitor (bool, optional): Wether or not to mark the volume as monitored. Defaults to True.
-			volume_folder (str, optional): Custom volume folder. Defaults to None.
+
+			root_folder_id (int): The id of the rootfolder in which
+			the volume folder will be.
+
+			monitor (bool, optional): Whether or not to mark the volume as monitored.
+				Defaults to True.
+
+			volume_folder (str, optional): Custom volume folder.
+				Defaults to None.
 
 		Raises:
 			RootFolderNotFound: The root folder with the given id was not found

@@ -23,7 +23,9 @@ class RootFolders:
 		"""Get all rootfolders
 
 		Args:
-			use_cache (bool, optional): Wether or not to pull data from cache instead of going to the database. Defaults to True.
+			use_cache (bool, optional): Wether or not to pull data from
+			cache instead of going to the database.
+				Defaults to True.
 
 		Returns:
 			List[dict]: The list of rootfolders
@@ -40,10 +42,14 @@ class RootFolders:
 
 		Args:
 			root_folder_id (int): The id of the rootfolder to get.
-			use_cache (bool, optional): Wether or not to pull data from cache instead of going to the database. Defaults to True.
+
+			use_cache (bool, optional): Wether or not to pull data from
+			cache instead of going to the database.
+				Defaults to True.
 
 		Raises:
-			RootFolderNotFound: The id doesn't map to any rootfolder (could be because root folder doesn't exist or because cache isn't in sync with database (yet))
+			RootFolderNotFound: The id doesn't map to any rootfolder.
+				Could also be because of cache being behind database.
 
 		Returns:
 			dict: The rootfolder info
