@@ -508,6 +508,39 @@ def api_rename_issue(id: int):
 		return return_api(None)
 
 #=====================
+# CBZ Conversion
+#=====================
+@api.route('/volumes/<int:id>/convert', methods=['GET','POST'])
+@error_handler
+@auth
+def api_convert(id: int):
+	library.get_volume(id)
+
+	if request.method == 'GET':
+		result = preview_mass_convert(id)
+		return return_api(result)
+		
+	elif request.method == 'POST':
+		filepath_filter = request.get_json(silent=True)
+		mass_convert(id, filepath_filter=filepath_filter)
+		return return_api(None)
+
+@api.route('/issues/<int:id>/convert', methods=['GET','POST'])
+@error_handler
+@auth
+def api_convert_issue(id: int):
+	volume_id = library.get_issue(id).get_info()['volume_id']
+
+	if request.method == 'GET':
+		result = preview_mass_convert(volume_id, id)
+		return return_api(result)
+		
+	elif request.method == 'POST':
+		filepath_filter = request.get_json(silent=True)
+		mass_convert(volume_id, id, filepath_filter=filepath_filter)
+		return return_api(None)
+
+#=====================
 # Manual search + Download
 #=====================
 @api.route('/volumes/<int:id>/manualsearch', methods=['GET'])
