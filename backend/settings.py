@@ -110,7 +110,12 @@ class Settings:
 						'convert')
 			for bv in bool_values:
 				settings[bv] = settings[bv] == 1
-			settings['format_preference'] = settings['format_preference'].split(',')
+
+			if not settings['format_preference']:
+				settings['format_preference'] = []
+			else:
+				settings['format_preference'] = settings['format_preference'].split(',')
+
 			self.cache.update(settings)
 
 		return self.cache
