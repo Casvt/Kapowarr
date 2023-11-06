@@ -32,7 +32,6 @@ default_settings = {
 	'log_level': 'info',
 	'database_version': __DATABASE_VERSION__,
 	'unzip': False,
-	'cbz_convert': False,
 	'volume_padding': 2,
 	'issue_padding': 3,
 	'rename_downloaded_files': True,

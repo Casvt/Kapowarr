@@ -8,6 +8,7 @@ from flask import Blueprint, Flask, request, send_file
 from backend.blocklist import (add_to_blocklist, delete_blocklist,
                                delete_blocklist_entry, get_blocklist,
                                get_blocklist_entry)
+from backend.conversion import mass_convert, preview_mass_convert
 from backend.custom_exceptions import (BlocklistEntryNotFound,
                                        CredentialAlreadyAdded,
                                        CredentialInvalid, CredentialNotFound,
@@ -24,7 +25,6 @@ from backend.custom_exceptions import (BlocklistEntryNotFound,
 from backend.db import close_db
 from backend.download import (DownloadHandler, credentials,
                               delete_download_history, get_download_history)
-from backend.files import mass_convert, preview_mass_convert
 from backend.library_import import import_library, propose_library_import
 from backend.naming import (generate_volume_folder_name, mass_rename,
                             preview_mass_rename)
@@ -522,8 +522,8 @@ def api_convert(id: int):
 		return return_api(result)
 		
 	elif request.method == 'POST':
-		filepath_filter = request.get_json(silent=True)
-		mass_convert(id, filepath_filter=filepath_filter)
+		files = request.get_json(silent=True)
+		mass_convert(id, files)
 		return return_api(None)
 
 @api.route('/issues/<int:id>/convert', methods=['GET','POST'])
@@ -537,9 +537,9 @@ def api_convert_issue(id: int):
 		return return_api(result)
 		
 	elif request.method == 'POST':
-		filepath_filter = request.get_json(silent=True)
-		mass_convert(volume_id, id, filepath_filter=filepath_filter)
-		return return_api(None)
+		files = request.get_json(silent=True)
+		mass_convert(volume_id, files)
+		return return_api({})
 
 #=====================
 # Manual search + Download
