@@ -17,6 +17,7 @@ from typing import List, Tuple, Union
 from urllib.parse import unquote
 
 from backend.db import get_db
+from backend.naming import same_name_indexing
 from backend.root_folders import RootFolders
 
 alphabet = 'abcdefghijklmnopqrstuvwxyz'
@@ -828,6 +829,210 @@ def rename_file(before: str, after: str) -> None:
 		after (str): The new desired filepath of the file
 	"""
 	logging.debug(f'Renaming file {before} to {after}')
+	# Create destination folder
+	makedirs(dirname(after), exist_ok=True)
+	
+	# Move file into folder
+	move(before, after)
+	return
+
+
+#=====================
+# CBZ Conversion
+#=====================
+def preview_mass_convert(volume_id: int, issue_id: int=None, filepath_filter: List[str]=None) -> List[Dict[str, str]]:
+	"""Preview what files.mass_convert() will do.
+
+	Args:
+		volume_id (int): The id of the volume for which to check the renaming.
+		issue_id (int, optional): The id of the issue for which to check the renaming. Defaults to None.
+		filepath_filter (List[str], optional): Only process files that are in the list. Defaults to None.
+
+	Returns:
+		List[Dict[str, str]]: The renaming proposals.
+	"""
+	result = []
+	cursor = get_db('dict')
+	# Fetch all files linked to the volume or issue
+	if not issue_id:
+		file_infos = cursor.execute("""
+			SELECT DISTINCT
+				f.id, f.filepath
+			FROM files f
+			INNER JOIN issues_files if
+			INNER JOIN issues i
+			ON
+				i.id = if.issue_id
+				AND if.file_id = f.id
+			WHERE i.volume_id = ?
+			ORDER BY f.filepath;
+			""",
+			(volume_id,)
+		).fetchall()
+		root_folder, custom_folder, folder = cursor.execute("""
+			SELECT rf.folder, v.custom_folder, v.folder
+			FROM
+				root_folders rf
+				JOIN volumes v
+			ON v.root_folder = rf.id
+			WHERE v.id = ?
+			LIMIT 1;
+			""",
+			(volume_id,)
+		).fetchone()
+		if custom_folder == 0:
+			folder = join(root_folder, generate_volume_folder_name(volume_id))
+	else:
+		file_infos = cursor.execute("""
+			SELECT
+				f.id, f.filepath
+			FROM files f
+			INNER JOIN issues_files if
+			ON if.file_id = f.id
+			WHERE if.issue_id = ?
+			ORDER BY f.filepath;
+			""",
+			(issue_id,)
+		).fetchall()
+		if not file_infos: return result
+		folder = dirname(file_infos[0]['filepath'])
+
+	if filepath_filter is not None:
+		file_infos = filter(lambda f: f['filepath'] in filepath_filter, file_infos)
+
+	special_version = cursor.execute(
+		"SELECT special_version FROM volumes WHERE id = ? LIMIT 1;",
+		(volume_id,)
+	).fetchone()[0]
+	name_volume_as_issue = Settings().get_settings()['volume_as_empty']
+
+	for file in file_infos:
+		if not isfile(file['filepath']):
+			continue
+		logging.debug(f'Converting: original format: {file["filepath"]}')
+		
+		# Find the issues that the file covers
+		issues = cursor.execute("""
+			SELECT
+				calculated_issue_number
+			FROM issues
+			INNER JOIN issues_files
+			ON id = issue_id
+			WHERE file_id = ?
+			ORDER BY calculated_issue_number;
+			""",
+			(file['id'],)
+		).fetchall()
+		if special_version == 'tpb':
+			suggested_name = generate_tpb_name(volume_id)
+
+		elif special_version == 'volume-as-issue' and not name_volume_as_issue:
+			if len(issues) > 1:
+				suggested_name = generate_empty_name(volume_id, (int(issues[0][0]), int(issues[-1][0])))
+			else:
+				suggested_name = generate_empty_name(volume_id, int(issues[0][0]))
+
+		elif (special_version or 'volume-as-issue') != 'volume-as-issue':
+			suggested_name = generate_empty_name(volume_id)
+
+		elif len(issues) > 1:
+			# File covers multiple issues
+			suggested_name = generate_issue_range_name(volume_id, issues[0][0], issues[-1][0])
+		
+		else:
+			# File covers one issue
+			suggested_name = generate_issue_name(volume_id, issues[0][0])
+
+		# If file is image, it's probably a page instead of a whole issue/tpb.
+		# So put it in it's own folder together with the other images.
+		if file['filepath'].endswith(image_extensions):
+			filename: str = basename(file['filepath'])
+			page_number = None
+			if 'cover' in filename.lower():
+				page_number = 'Cover'
+			else:
+				page_result = page_regex.search(filename)
+				if page_result:
+					page_number = next(r for r in page_result.groups() if r is not None)
+				else:
+					page_result = None
+					r = page_regex_2.finditer(basename(file['filepath']))
+					for page_result in r: pass
+					if page_result:
+						page_number = page_result.group(1)
+			suggested_name = join(suggested_name, page_number or '1')
+
+		# Add number to filename if other file has the same name
+		suggested_name = same_name_indexing(suggested_name, file['filepath'], folder, result)
+
+		suggested_name = join(folder, suggested_name + splitext(file["filepath"])[1])
+		logging.debug(f'Renaming: suggested filename: {suggested_name}')
+		if file['filepath'] != suggested_name:
+			logging.debug(f'Conversion: added convert')
+			result.append({
+				'before': file['filepath'],
+				'after': suggested_name
+			})
+		
+	return result
+
+def mass_convert(volume_id: int, issue_id: int=None, filepath_filter: List[str]=None) -> None:
+	"""Carry out proposal of files.convert()
+
+	Args:
+		volume_id (int): The id of the volume for which to convert.
+		issue_id (int, optional): The id of the issue for which to convert. Defaults to None.
+		filepath_filter (List[str], optional): Only convert files that are in the list. Defaults to None.
+	"""
+	cursor = get_db()
+	converts = preview_mass_convert(volume_id, issue_id, filepath_filter)
+
+	if not issue_id and converts:
+		folders = {
+			'before': None,
+			'after': None
+		}
+		for target in folders:
+			file = converts[0][target]
+			if file.endswith(image_extensions):
+				folders[target] = dirname(dirname(file))
+			else:
+				folders[target] = dirname(file)
+		cursor.execute(
+			"UPDATE volumes SET folder = ? WHERE id = ?",
+			(folders['after'], volume_id)
+		)
+
+	for c in converts:
+		convert_file(c['before'], c['after'])
+		cursor.execute(
+			"UPDATE files SET filepath = ? WHERE filepath = ?;",
+			(c['after'], c['before'])
+		)
+	
+	if converts:
+		root_folder = get_db().execute("""
+		   SELECT rf.folder
+		   FROM root_folders rf
+		   INNER JOIN volumes v
+		   ON rf.id = v.root_folder
+		   WHERE v.id = ?
+		   """,
+		   (volume_id,)
+		).fetchone()[0]
+		delete_empty_folders(folders['before'], root_folder)
+
+	logging.info(f'Converted volume {volume_id} {f"issue {issue_id}" if issue_id else ""}')
+	return
+
+def convert_file(before: str, after: str) -> None:
+	"""Convert a file, taking care of new folder locations
+
+	Args:
+		before (str): The current filepath of the file
+		after (str): The new desired filepath of the file
+	"""
+	logging.debug(f'Converting file {before} to {after}')
 	# Create destination folder
 	makedirs(dirname(after), exist_ok=True)
 	

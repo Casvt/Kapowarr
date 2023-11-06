@@ -24,6 +24,7 @@ from backend.custom_exceptions import (BlocklistEntryNotFound,
 from backend.db import close_db
 from backend.download import (DownloadHandler, credentials,
                               delete_download_history, get_download_history)
+from backend.files import mass_convert, preview_mass_convert
 from backend.library_import import import_library, propose_library_import
 from backend.naming import (generate_volume_folder_name, mass_rename,
                             preview_mass_rename)
