@@ -444,6 +444,107 @@ function renameVolume(api_key, issue_id=null) {
 	fetch(url, args)
 	.then(response => window.location.reload());
 };
+// 
+// Converting
+// 
+function showConvert(api_key, issue_id=null) {
+	let url;
+	if (issue_id === null) {
+		// Preview issue conversion
+		url = `${url_base}/api/volumes/${id}/convert?api_key=${api_key}`;
+		document.querySelector('#submit-convert').dataset.issue_id = '';
+	} else {
+		// Preview issue conversion
+		url = `${url_base}/api/issues/${issue_id}/convert?api_key=${api_key}`;
+		document.querySelector('#submit-convert').dataset.issue_id = issue_id;
+	};
+	fetch(url)
+	.then(response => response.json())
+	.then(json => {
+		const table = document.querySelector('#convert-preview > tbody');
+		table.innerHTML = '';
+		const convert_button = document.querySelector('#submit-convert');
+
+		if (!json.result.length) {
+			const message = document.createElement('p');
+			message.classList.add('empty-convert-message');
+			message.innerText = 'Nothing to convert';
+			table.appendChild(message);
+			convert_button.classList.add('hidden');
+			table.parentNode.querySelector('thead').classList.add('hidden');
+		} else {
+			convert_button.classList.remove('hidden');
+			table.parentNode.querySelector('thead').classList.remove('hidden');
+			json.result.forEach(convert_entry => {
+				const before = document.createElement('tr');
+				
+				const checkbox = document.createElement('td');
+				checkbox.setAttribute('rowspan', '2');
+				const checkbox_input = document.createElement('input');
+				checkbox_input.type = 'checkbox';
+				checkbox_input.checked = true;
+				checkbox.appendChild(checkbox_input);
+				before.appendChild(checkbox);
+				
+				const before_icon = document.createElement('td');
+				before_icon.innerText = '-';
+				before.appendChild(before_icon);
+				
+				const before_path = document.createElement('td');
+				before_path.innerText = convert_entry.before;
+				before.appendChild(before_path);
+				
+				table.appendChild(before);
+				
+				const after = document.createElement('tr');
+				
+				const after_icon = document.createElement('td');
+				after_icon.innerText = '+';
+				after.appendChild(after_icon);
+				
+				const after_path = document.createElement('td');
+				after_path.innerText = convert_entry.after;
+				after.appendChild(after_path);
+				
+				table.appendChild(after);
+			});
+		};
+		showWindow('convert-window');
+	});
+};
+
+function toggleAllConverts() {
+	const checked = document.querySelector('#selectall-input').checked;
+	document.querySelectorAll('#convert-preview > tbody input[type="checkbox"]').forEach(e => e.checked = checked);
+};
+
+function convertVolume(api_key, issue_id=null) {
+	if ([...document.querySelectorAll('#convert-preview > tbody input[type="checkbox"]')].every(e => !e.checked)) {
+		closeWindow();
+		return;
+	};
+
+	showLoadWindow('convert-window');
+	let url;
+	if (issue_id === null) url = `${url_base}/api/volumes/${id}/convert?api_key=${api_key}`;
+	else url = `${url_base}/api/issues/${issue_id}/convert?api_key=${api_key}`;
+
+	let args;
+	if ([...document.querySelectorAll('#convert-preview > tbody input[type="checkbox"]')].every(e => e.checked))
+		args = { 'method': 'POST' };
+	else
+		args = {
+			'method': 'POST',
+			'headers': {'Content-Type': 'application/json'},
+			'body': JSON.stringify(
+				[...document.querySelectorAll('#convert-preview > tbody > tr > td > input[type="checkbox"]:checked')]
+					.map(e => e.parentNode.nextSibling.nextSibling.innerText)
+			)
+		}
+
+	fetch(url, args)
+	.then(response => window.location.reload());
+};
 
 // 
 // Editing
@@ -561,6 +662,9 @@ usingApiKey()
 
 	addEventListener('#rename-button', 'click', e => showRename(api_key));
 	addEventListener('#submit-rename', 'click', e => renameVolume(api_key, e.target.dataset.issue_id || null));
+
+	addEventListener('#convert-button', 'click', e => showConvert(api_key));
+	addEventListener('#submit-convert', 'click', e => convertVolume(api_key, e.target.dataset.issue_id || null));
 
 	addEventListener('#edit-button', 'click', e => showEdit(api_key));
 	
