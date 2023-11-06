@@ -50,7 +50,16 @@ def preview_mass_convert(
 	volume_id: int,
 	issue_id: int = None
 ) -> List[Dict[str, str]]:
-	return
+	return [
+		{
+			'before': '/folder/file.zip',
+			'after': '/folder/file.cbz'
+		},
+		{
+			'before': '/folder/file_2.zip',
+			'after': '/folder/file_2.cbz'
+		}
+	]
 
 def mass_convert(
 	volume_id: int,
