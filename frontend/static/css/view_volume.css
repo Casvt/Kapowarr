@@ -172,6 +172,7 @@
 #cancel-delete,
 #cancel-edit,
 #cancel-rename,
+#cancel-convert,
 #cancel-search,
 #cancel-info {
 	background-color: var(--error-color);
@@ -179,7 +180,8 @@
 
 #submit-delete,
 #submit-edit,
-#submit-rename {
+#submit-rename,
+#submit-convert {
 	background-color: var(--success-color);
 }
 
@@ -334,6 +336,77 @@
 }
 
 #rename-preview p:not(:first-child) {
+	margin-top: .2rem;
+}
+
+/*  */
+/* convert window */
+/*  */
+#convert-window > :nth-child(2) {
+	display: block;
+}
+
+#convert-preview {
+	min-width: 40rem;
+	border-spacing: 0px;
+}
+
+#convert-preview th {
+	text-align: left;
+}
+
+#convert-preview tr > td:first-child {
+	padding-right: .5rem;
+}
+
+#convert-preview tr:nth-child(odd) > td {
+	padding-top: .75rem;
+	padding-bottom: .25rem;
+}
+
+#convert-preview tr:nth-child(even) > td {
+	padding-bottom: .75rem;
+	padding-top: .25rem;
+}
+
+#convert-preview tr:nth-child(odd):not(:nth-last-child(2)) > td:first-child,
+#convert-preview tr:nth-child(even):not(:last-child) > td {
+	border-bottom: 1px solid var(--border-color);
+}
+
+#convert-preview tr:nth-child(odd) > td:nth-child(2),
+#convert-preview tr:nth-child(even) > td:first-child {
+	text-align: center;
+	padding-right: .5rem;
+}
+
+#convert-preview tr:nth-child(odd) > td:nth-child(2) {
+	color: var(--error-color);
+}
+
+#convert-preview tr:nth-child(even) > td:first-child {
+	color: var(--success-color);
+}
+
+.empty-convert-message {
+	font-size: 1.2rem;
+	text-align: center;
+}
+
+.convert-minus,
+.convert-plus {
+	font-size: 1.2rem;
+	width: 1.5rem;
+	display: inline-block;
+	font-weight: 600;
+	text-align: center;
+}
+
+#convert-preview p:not(.empty-convert-message) {
+	font-size: .9rem;
+}
+
+#convert-preview p:not(:first-child) {
 	margin-top: .2rem;
 }
 
