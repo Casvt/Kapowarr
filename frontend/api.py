@@ -8,7 +8,7 @@ from flask import Blueprint, Flask, request, send_file
 from backend.blocklist import (add_to_blocklist, delete_blocklist,
                                delete_blocklist_entry, get_blocklist,
                                get_blocklist_entry)
-from backend.conversion import mass_convert, preview_mass_convert
+from backend.conversion import get_available_formats, mass_convert, preview_mass_convert
 from backend.custom_exceptions import (BlocklistEntryNotFound,
                                        CredentialAlreadyAdded,
                                        CredentialInvalid, CredentialNotFound,
@@ -321,6 +321,13 @@ def api_settings_service_preference():
 		settings.set_service_preference(data['order'])
 		return return_api({})
 
+@api.route('/settings/availableformats', methods=['GET'])
+@error_handler
+@auth
+def api_settings_available_formats():
+	result = get_available_formats()
+	return return_api(result)
+
 @api.route('/rootfolder', methods=['GET','POST'])
 @error_handler
 @auth
@@ -491,7 +498,7 @@ def api_rename(id: int):
 	elif request.method == 'POST':
 		filepath_filter = request.get_json(silent=True)
 		mass_rename(id, filepath_filter=filepath_filter)
-		return return_api(None)
+		return return_api({})
 
 @api.route('/issues/<int:id>/rename', methods=['GET','POST'])
 @error_handler
@@ -506,10 +513,10 @@ def api_rename_issue(id: int):
 	elif request.method == 'POST':
 		filepath_filter = request.get_json(silent=True)
 		mass_rename(volume_id, id, filepath_filter=filepath_filter)
-		return return_api(None)
+		return return_api({})
 
 #=====================
-# CBZ Conversion
+# File Conversion
 #=====================
 @api.route('/volumes/<int:id>/convert', methods=['GET','POST'])
 @error_handler
@@ -522,9 +529,9 @@ def api_convert(id: int):
 		return return_api(result)
 		
 	elif request.method == 'POST':
-		files = request.get_json(silent=True)
-		mass_convert(id, files)
-		return return_api(None)
+		files = request.get_json(silent=True) or []
+		mass_convert(id, files=files)
+		return return_api({})
 
 @api.route('/issues/<int:id>/convert', methods=['GET','POST'])
 @error_handler
@@ -537,8 +544,8 @@ def api_convert_issue(id: int):
 		return return_api(result)
 		
 	elif request.method == 'POST':
-		files = request.get_json(silent=True)
-		mass_convert(volume_id, files)
+		files = request.get_json(silent=True) or []
+		mass_convert(volume_id, id, files=files)
 		return return_api({})
 
 #=====================

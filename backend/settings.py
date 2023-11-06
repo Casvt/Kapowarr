@@ -17,6 +17,7 @@ from backend.custom_exceptions import (FolderNotFound, InvalidSettingKey,
 from backend.db import __DATABASE_FILEPATH__, __DATABASE_VERSION__, get_db
 from backend.files import folder_path
 from backend.logging import log_levels, set_log_level
+from backend.conversion import get_available_formats
 
 default_settings = {
 	'host': '0.0.0.0',
@@ -32,6 +33,8 @@ default_settings = {
 	'log_level': 'info',
 	'database_version': __DATABASE_VERSION__,
 	'unzip': False,
+	'convert': False,
+	'format_preference': '',
 	'volume_padding': 2,
 	'issue_padding': 3,
 	'rename_downloaded_files': True,
@@ -103,9 +106,11 @@ class Settings:
 			settings = dict(get_db().execute(
 				"SELECT key, value FROM config;"
 			))
-			settings['unzip'] = settings['unzip'] == 1
-			settings['rename_downloaded_files'] = settings['rename_downloaded_files'] == 1
-			settings['volume_as_empty'] = settings['volume_as_empty'] == 1
+			bool_values = ('unzip', 'rename_downloaded_files', 'volume_as_empty',
+						'convert')
+			for bv in bool_values:
+				settings[bv] = settings[bv] == 1
+			settings['format_preference'] = settings['format_preference'].split(',')
 			self.cache.update(settings)
 
 		return self.cache
@@ -168,6 +173,19 @@ class Settings:
 						raise InvalidSettingValue(key, value)
 				except TypeError:
 					raise InvalidSettingValue(key, value)
+
+			elif key == 'format_preference':
+				if not isinstance(value, list):
+					raise InvalidSettingValue(key, value)
+
+				available_formats = get_available_formats()
+				for format in value:
+					if not isinstance(format, str):
+						raise InvalidSettingValue(key, value)
+					if not format in available_formats:
+						raise InvalidSettingValue(key, value)
+
+				value = ','.join(value)
 
 			elif key not in default_settings.keys():
 				raise InvalidSettingKey(key)

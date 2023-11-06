@@ -1,7 +1,7 @@
 #-*- coding: utf-8 -*-
 
-from typing import Dict, List
 from os.path import splitext
+from typing import Dict, List
 
 from backend.converters import FileConverter
 
@@ -9,6 +9,14 @@ conversion_methods: Dict[str, Dict[str, FileConverter]] = {}
 "source_format -> target_format -> conversion class"
 for fc in FileConverter.__subclasses__():
 	conversion_methods.setdefault(fc.source_format, {})[fc.target_format] = fc
+
+def get_available_formats() -> List[str]:
+	"""Get all available formats that can be converted to.
+
+	Returns:
+		List[str]: The list with all formats
+	"""
+	return list({list(v.keys()) for v in conversion_methods.values()})
 
 def convert_file(file: str, formats: List[str]) -> str:
 	"""Convert a file from one format to another.
@@ -46,6 +54,7 @@ def preview_mass_convert(
 
 def mass_convert(
 	volume_id: int,
-	files: List[str]
+	issue_id: int = None,
+	files: List[str]= []
 ) -> None:
 	return
