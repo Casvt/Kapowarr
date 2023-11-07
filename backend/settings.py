@@ -17,7 +17,6 @@ from backend.custom_exceptions import (FolderNotFound, InvalidSettingKey,
 from backend.db import __DATABASE_FILEPATH__, __DATABASE_VERSION__, get_db
 from backend.files import folder_path
 from backend.logging import log_levels, set_log_level
-from backend.conversion import get_available_formats
 
 default_settings = {
 	'host': '0.0.0.0',
@@ -180,6 +179,7 @@ class Settings:
 					raise InvalidSettingValue(key, value)
 
 			elif key == 'format_preference':
+				from backend.conversion import get_available_formats
 				if not isinstance(value, list):
 					raise InvalidSettingValue(key, value)
 

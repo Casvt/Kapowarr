@@ -28,8 +28,9 @@ class ZIPtoCBZ(FileConverter):
 
 	@staticmethod
 	def convert(file: str) -> str:
+		target = splitext(file)[0] + '.cbz'
 		rename_file(
 			file,
-			splitext(file)[0] + '.cbz'
+			target
 		)
-		return
+		return target
