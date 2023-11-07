@@ -21,7 +21,7 @@ def get_available_formats() -> List[str]:
 	"""
 	return list({list(v.keys()) for v in conversion_methods.values()})
 
-def __find_target_format_file(
+def find_target_format_file(
 	file: str,
 	formats: List[str]
 ) -> Union[FileConverter, None]:
@@ -61,7 +61,7 @@ def convert_file(file: str, formats: List[str]) -> str:
 	Returns:
 		str: The path of the converted file.
 	"""
-	conversion_class = __find_target_format_file(
+	conversion_class = find_target_format_file(
 		file,
 		formats
 	)
@@ -151,7 +151,7 @@ def preview_mass_convert(
 
 	result = []
 	for (f,) in cursor:
-		converter = __find_target_format_file(
+		converter = find_target_format_file(
 			f,
 			format_preference
 		)
@@ -192,7 +192,7 @@ def mass_convert(
 		if files and f not in files:
 			continue
 		
-		converter = __find_target_format_file(
+		converter = find_target_format_file(
 			f,
 			format_preference
 		)

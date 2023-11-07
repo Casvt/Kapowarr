@@ -11,6 +11,7 @@ from shutil import move, rmtree
 from time import time
 from typing import List, Tuple
 from zipfile import ZipFile
+from backend.conversion import find_target_format_file
 
 from backend.db import get_db
 from backend.files import extract_filename_data, image_extensions, rename_file
@@ -53,6 +54,7 @@ class PostProcessing(PostProcessor):
 			self._remove_from_queue,
 			self._add_to_history,
 			self._move_file,
+			self._convert_file,
 			self._add_file_to_database,
 			self._unzip_file
 		]
@@ -111,7 +113,9 @@ class PostProcessing(PostProcessor):
 		
 	def _unzip_file(self) -> None:
 		if self.download.file.lower().endswith('.zip'):
-			unzip = get_db().execute("SELECT value FROM config WHERE key = 'unzip';").fetchone()[0]
+			unzip = get_db().execute(
+				"SELECT value FROM config WHERE key = 'unzip' LIMIT 1;"
+			).fetchone()[0]
 			if unzip:
 				unzip_volume(self.download.volume_id, self.download.file)
 		return
@@ -127,6 +131,33 @@ class PostProcessing(PostProcessor):
 		"""Register file in database and match to a volume/issue
 		"""
 		scan_files(Volume(self.download.volume_id).get_info())
+		return
+
+	def _convert_file(self) -> None:
+		"""Convert a file into a different format based on settings
+		"""
+		cursor = get_db()
+
+		if not cursor.execute(
+			"SELECT value FROM config WHERE key = 'convert' LIMIT 1;"
+		).fetchone()[0]:
+			return
+
+		format_preference = cursor.execute(
+			"SELECT value FROM config WHERE key = 'format_preference' LIMIT 1;"
+		).fetchone()[0].split(',')
+		if format_preference == ['']:
+			format_preference = []
+		
+		if not format_preference:
+			return
+		
+		converter = find_target_format_file(
+			self.download.file,
+			format_preference
+		)
+		if converter is not None:
+			converter().convert(self.download.file)
 		return
 
 	def __run_actions(self, actions: list) -> None:
