@@ -95,8 +95,18 @@ function fillTable(issues, api_key) {
 		manual_search_icon.src = `${url_base}/static/img/manual_search.svg`;
 		manual_search.appendChild(manual_search_icon);
 		actions.appendChild(manual_search);
+
+		// Convert
+		const convert = document.createElement('button');
+		convert.title = 'Convert files for this issue';
+		convert.ariaLabel = 'Convert files for this issue';
+		convert.onclick = (e) => showConvert(api_key, obj.id);
+		const convert_icon = document.createElement('img');
+		convert_icon.src = `${url_base}/static/img/unzip.svg`;
+		convert.appendChild(convert_icon);
+		actions.appendChild(convert);
+
 		entry.appendChild(actions);
-		
 		table.appendChild(entry);
 	};
 };
@@ -347,22 +357,25 @@ function blockManualSearch(link, button, match, api_key) {
 // Renaming
 // 
 function showRename(api_key, issue_id=null) {
+	document.querySelector('#selectall-input').checked = true;
+	
+	const rename_button = document.querySelector('#submit-rename');
 	let url;
 	if (issue_id === null) {
 		// Preview volume rename
 		url = `${url_base}/api/volumes/${id}/rename?api_key=${api_key}`;
-		document.querySelector('#submit-rename').dataset.issue_id = '';
+		rename_button.dataset.issue_id = '';
 	} else {
 		// Preview issue rename
 		url = `${url_base}/api/issues/${issue_id}/rename?api_key=${api_key}`;
-		document.querySelector('#submit-rename').dataset.issue_id = issue_id;
+		rename_button.dataset.issue_id = issue_id;
 	};
 	fetch(url)
 	.then(response => response.json())
 	.then(json => {
 		const table = document.querySelector('#rename-preview > tbody');
 		table.innerHTML = '';
-		const rename_button = document.querySelector('#submit-rename');
+		
 
 		if (!json.result.length) {
 			const message = document.createElement('p');
@@ -414,7 +427,7 @@ function showRename(api_key, issue_id=null) {
 
 function toggleAllRenames() {
 	const checked = document.querySelector('#selectall-input').checked;
-	document.querySelectorAll('#rename-preview > tbody input[type="checkbox"]').forEach(e => e.checked = checked);
+	document.querySelectorAll('#rename-window > tbody input[type="checkbox"]').forEach(e => e.checked = checked);
 };
 
 function renameVolume(api_key, issue_id=null) {
@@ -444,34 +457,54 @@ function renameVolume(api_key, issue_id=null) {
 	fetch(url, args)
 	.then(response => window.location.reload());
 };
+
 // 
 // Converting
 // 
+function loadConvertPreference(api_key) {
+	const el = document.querySelector('#convert-preference');
+	if (el.innerHTML !== '')
+		return;
+
+	fetch(`${url_base}/api/settings?api_key=${api_key}`)
+	.then(response => response.json())
+	.then(json => {
+		el.innerHTML = [
+			'source',
+			...json.result.format_preference
+		].join(' - ');
+	});
+};
+
 function showConvert(api_key, issue_id=null) {
+	document.querySelector('#selectall-convert-input').checked = true;
+	loadConvertPreference(api_key);
+
+	const convert_button = document.querySelector('#submit-convert');
 	let url;
 	if (issue_id === null) {
 		// Preview issue conversion
 		url = `${url_base}/api/volumes/${id}/convert?api_key=${api_key}`;
-		document.querySelector('#submit-convert').dataset.issue_id = '';
+		convert_button.dataset.issue_id = '';
 	} else {
 		// Preview issue conversion
 		url = `${url_base}/api/issues/${issue_id}/convert?api_key=${api_key}`;
-		document.querySelector('#submit-convert').dataset.issue_id = issue_id;
+		convert_button.dataset.issue_id = issue_id;
 	};
 	fetch(url)
 	.then(response => response.json())
 	.then(json => {
-		const table = document.querySelector('#convert-preview > tbody');
+		const table = document.querySelector('#convert-window tbody');
 		table.innerHTML = '';
-		const convert_button = document.querySelector('#submit-convert');
 
 		if (!json.result.length) {
 			const message = document.createElement('p');
-			message.classList.add('empty-convert-message');
+			message.classList.add('empty-rename-message');
 			message.innerText = 'Nothing to convert';
 			table.appendChild(message);
 			convert_button.classList.add('hidden');
 			table.parentNode.querySelector('thead').classList.add('hidden');
+
 		} else {
 			convert_button.classList.remove('hidden');
 			table.parentNode.querySelector('thead').classList.remove('hidden');
@@ -514,12 +547,12 @@ function showConvert(api_key, issue_id=null) {
 };
 
 function toggleAllConverts() {
-	const checked = document.querySelector('#selectall-input').checked;
-	document.querySelectorAll('#convert-preview > tbody input[type="checkbox"]').forEach(e => e.checked = checked);
+	const checked = document.querySelector('#selectall-convert-input').checked;
+	document.querySelectorAll('#convert-window tbody input[type="checkbox"]').forEach(e => e.checked = checked);
 };
 
 function convertVolume(api_key, issue_id=null) {
-	if ([...document.querySelectorAll('#convert-preview > tbody input[type="checkbox"]')].every(e => !e.checked)) {
+	if ([...document.querySelectorAll('#convert-window tbody input[type="checkbox"]')].every(e => !e.checked)) {
 		closeWindow();
 		return;
 	};
@@ -530,14 +563,14 @@ function convertVolume(api_key, issue_id=null) {
 	else url = `${url_base}/api/issues/${issue_id}/convert?api_key=${api_key}`;
 
 	let args;
-	if ([...document.querySelectorAll('#convert-preview > tbody input[type="checkbox"]')].every(e => e.checked))
+	if ([...document.querySelectorAll('#convert-window tbody input[type="checkbox"]')].every(e => e.checked))
 		args = { 'method': 'POST' };
 	else
 		args = {
 			'method': 'POST',
 			'headers': {'Content-Type': 'application/json'},
 			'body': JSON.stringify(
-				[...document.querySelectorAll('#convert-preview > tbody > tr > td > input[type="checkbox"]:checked')]
+				[...document.querySelectorAll('#convert-window tbody > tr > td > input[type="checkbox"]:checked')]
 					.map(e => e.parentNode.nextSibling.nextSibling.innerText)
 			)
 		}
@@ -679,7 +712,9 @@ addEventListener('#cancel-delete', 'click', e => closeWindow());
 addEventListener('#cancel-info', 'click', e => closeWindow());
 addEventListener('#issue-info-selector', 'click', e => showInfoWindow('issue-info'));
 addEventListener('#issue-files-selector', 'click', e => showInfoWindow('issue-files'));
+addEventListener('#cancel-convert', 'click', e => closeWindow());
 addEventListener('#selectall-input', 'change', e => toggleAllRenames());
+addEventListener('#selectall-convert-input', 'change', e => toggleAllConverts());
 
 document.querySelector('#edit-form').setAttribute('action', 'javascript:editVolume();');
 document.querySelector('#delete-form').setAttribute('action', 'javascript:deleteVolume();');

@@ -42,7 +42,7 @@ function mapButtons(id) {
 		};
 		task_to_button[`unzip#${id}`] = {
 			'button': document.querySelector('#unzip-button'),
-			'icon': `${url_base}/static/img/unzip.svg`,
+			'icon': `${url_base}/static/img/unzip_light.svg`,
 			'loading_icon': `${url_base}/static/img/loading_white.svg`
 		};
 		document.querySelectorAll('.issue-entry').forEach(entry => {
