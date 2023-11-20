@@ -1,13 +1,15 @@
-from typing import Dict
 import unittest
+from json import dumps
+from typing import Dict
 
 from backend.files import extract_filename_data as ef
+
 
 class extract_filename_data(unittest.TestCase):
 	def run_cases(self, cases: Dict[str, dict]):
 		self.longMessage = False
 		for input, output in cases.items():
-			self.assertEqual(ef(input), output, f"The input '{input}' isn't extracted properly:\n	Output: {ef(input)}\n	Expected: {output}")
+			self.assertEqual(ef(input), output, f"The input '{input}' isn't extracted properly:\nOutput: {dumps(ef(input), indent=4)}\nExpected: {dumps(output, indent=4)}")
 		return
 
 	def test_general(self):

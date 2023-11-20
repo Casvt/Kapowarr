@@ -208,6 +208,8 @@ def extract_filename_data(
 
 	# Only keep filename
 	filename = basename(filepath)
+	if splitext(filename)[1] in supported_extensions:
+		filename = splitext(filename)[0]
 
 	# Keep stripped version of filename without (), {}, [] and extensions
 	clean_filename = strip_filename_regex.sub(
