@@ -25,7 +25,7 @@ digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 image_extensions = ('.png','.jpeg','.jpg','.webp','.gif')
 supported_extensions = image_extensions + ('.cbz','.zip','.rar','.cbr','.tar.gz','.7zip','.7z','.cb7','.cbt','.epub','.pdf')
 file_extensions = r'\.(' + '|'.join(e[1:] for e in supported_extensions) + r')$'
-volume_regex_snippet = r'\b(?:v(?:ol|olume)?)(?:\.\s|[\.\-\s])?(\d+(?:\s?\-\s?\d+)?|I{1,3})\b'
+volume_regex_snippet = r'\b(?:v(?:ol|olume)?)(?:\.\s|[\.\-\s])?(\d+(?:\s?\-\s?\d+)?|(?<!v)I{1,3})\b'
 year_regex_snippet = r'(?:(\d{4})(?:-\d{2}){0,2}|(\d{4})[\s\.]?-(?:[\s\.]?\d{4})?|(?:\d{2}-){1,2}(\d{4})|(\d{4})[\s\.\-]Edition|(\d{4})\-\d{4}\s{3}\d{4})'
 issue_regex_snippet = r'(?!\d+(?:th|rd|st|\s?(?:gb|mb)))(?<!’)\d+(?:\.\d{1,2}|\.?\w{1,3}|[\s\-\.]?[½¼])?'
 
@@ -229,17 +229,16 @@ def extract_filename_data(
 	upper_foldername = basename(dirname(dirname(filepath)))
 
 	# Get year
-	year_pos, year_end, year_folderpos = 10_000, 10_000, 10_000
+	all_year_pos, all_year_folderpos = [(10_000, 10_000)], [(10_000, 10_000)]
 	for location in (filename, foldername, upper_foldername):
-		year_result = year_regex.search(location)
+		year_result = list(year_regex.finditer(location))
 		if year_result:
 			if year is None:
-				year = next(y for y in year_result.groups() if y)
+				year = next(y for y in year_result[0].groups() if y)
 			if location == filename:
-				year_pos = year_result.start(0)
-				year_end = year_result.end(0)
+				all_year_pos = [(r.start(0), r.end(0)) for r in year_result]
 			if location == foldername:
-				year_folderpos = year_result.start(0)
+				all_year_folderpos = [(r.start(0), r.end(0)) for r in year_result]
 
 	# Get volume number
 	volume_end, volume_pos, volume_folderpos, volume_folderend = (
@@ -305,12 +304,33 @@ def extract_filename_data(
 				if r:
 					r.sort(key=lambda e: (
 						int(e.group(1)[-1] not in '0123456789'),
-						1 / e.start(0) if e.start(0) else 0
+						(
+							(
+								e.start(0)
+								if regex in (issue_regex_2, issue_regex_3) else
+								1 / e.start(0)
+							)
+							if e.start(0) else
+							0
+						)
 					))
 
 					for result in r:
-						if not (year_pos <= result.start(0) < year_end
-						or year_pos < result.end(0) <= year_end):
+						if (
+							file_part_with_issue == filename
+							and not any(
+								start_pos <= result.start(0) < end_pos
+								or start_pos < result.end(0) <= end_pos
+								for start_pos, end_pos in all_year_pos
+							)
+							or
+							file_part_with_issue == foldername
+							and not any(
+								start_pos <= result.start(0) < end_pos
+								or start_pos < result.end(0) <= end_pos
+								for start_pos, end_pos in all_year_folderpos
+							)
+						):
 							issue_number = result.group(1)
 							if not is_image_file:
 								issue_pos = result.start(0)
@@ -338,7 +358,7 @@ def extract_filename_data(
 
 	# Get series
 	series_pos = min(
-		year_pos,
+		all_year_pos[0][0],
 		volume_pos,
 		special_pos,
 		issue_pos
@@ -349,7 +369,7 @@ def extract_filename_data(
 		series = no_ext_clean_filename[:series_pos - 1]
 	else:
 		series_folder_pos = min(
-			year_folderpos, volume_folderpos, issue_folderpos
+			all_year_folderpos[0][0], volume_folderpos, issue_folderpos
 		)
 		if series_folder_pos:
 			# Series name is assumed to be in the foldername,
