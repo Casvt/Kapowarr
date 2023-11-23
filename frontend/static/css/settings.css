@@ -11,14 +11,14 @@
 /*  */
 /* Sections titles */
 /*  */
-h2 {
+main h2 {
 	font-size: 1.5rem;
 	border-bottom: 1px solid var(--border-color);
 	margin-bottom: 1rem;
 	font-weight: 500;
 }
 
-h2:not(:first-of-type) {
+main h2:not(:first-of-type) {
 	margin-top: 1rem;
 }
 
@@ -213,6 +213,149 @@ h2:not(:first-of-type) {
 
 #generate-api img {
 	height: 1.2rem;
+}
+
+/*  */
+/* Download Client List */
+/*  */
+.client-list {
+	display: flex;
+	gap: 1rem;
+	flex-wrap: wrap;
+}
+
+.client-list > button {
+	position: relative;
+	width: 15rem;
+	height: 6rem;
+
+	border-radius: 6px;
+	padding-inline: 1rem;
+	background-color: var(--library-entry-color);
+	color: var(--library-entry-font-color);
+
+	overflow-x: hidden;
+	font-size: 1.2rem;
+
+	box-shadow: 0 0 9px 0px #00000075;
+}
+
+.client-list > button::after {
+	content: '';
+	position: absolute;
+	inset: 0 0 0 auto;
+	
+	box-shadow: 0px 0px 20px 36px var(--library-entry-color);
+}
+
+.add-client-button {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.add-client-button > img {
+	width: 2rem;
+	transform: rotate(45deg);
+}
+
+.window > section > div:nth-child(3) > button {
+	background-color: var(--error-color);
+}
+
+.window > section > div:nth-child(3) > button[type="submit"] {
+	background-color: var(--success-color);
+}
+
+.window > section > div:nth-child(2) p.error {
+	text-align: center;
+}
+
+.window > section > div:nth-child(2) form {
+	width: 60%;
+}
+
+#test-torrent-edit,
+#test-torrent-add {
+	position: relative;
+	width: 5rem;
+	display: flex;
+	overflow-x: hidden;
+	background-color: var(--tool-bar-color);
+	transition: background-color 300ms linear;
+}
+
+#test-torrent-edit > div,
+#test-torrent-add > div {
+	position: absolute;
+	width: 3rem;
+	transition: left 100ms linear;
+}
+
+#test-torrent-edit > div:first-child,
+#test-torrent-add > div:first-child {
+	left: -100%;
+}
+
+#test-torrent-edit > div:nth-child(2),
+#test-torrent-add > div:nth-child(2) {
+	left: 20%;
+}
+
+#test-torrent-edit > div:last-child,
+#test-torrent-add > div:last-child {
+	left: 100%;
+}
+
+#test-torrent-edit.show-success,
+#test-torrent-add.show-success {
+	background-color: var(--success-color);
+}
+#test-torrent-edit.show-success > div:nth-child(2),
+#test-torrent-add.show-success > div:nth-child(2) {
+	left: -100%;
+}
+#test-torrent-edit.show-success > div:last-child,
+#test-torrent-add.show-success > div:last-child {
+	left: 20%;
+}
+
+#test-torrent-edit.show-fail,
+#test-torrent-add.show-fail {
+	background-color: var(--error-color);
+}
+#test-torrent-edit.show-fail > div:nth-child(2),
+#test-torrent-add.show-fail > div:nth-child(2) {
+	left: 100%;
+}
+#test-torrent-edit.show-fail > div:first-child,
+#test-torrent-add.show-fail > div:first-child {
+	left: 20%;
+}
+
+#choose-torrent-window > div:nth-child(2) {
+	justify-content: flex-start;
+}
+
+#choose-torrent-list {
+	display: flex;
+	justify-content: center;
+	gap: 1rem;
+	flex-wrap: wrap;
+}
+
+#choose-torrent-list > button {
+	width: 10rem;
+	height: 4rem;
+	
+	border-radius: 4px;
+	padding: 1rem 2rem;
+	background-color: var(--library-entry-color);
+	color: var(--library-entry-font-color);
+
+	font-size: 1rem;
+
+	box-shadow: 0 0 9px 0px #00000075;
 }
 
 @media (max-width: 1000px) {

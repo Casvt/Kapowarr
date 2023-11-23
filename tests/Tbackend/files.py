@@ -1,13 +1,15 @@
-from typing import Dict
 import unittest
+from json import dumps
+from typing import Dict
 
 from backend.files import extract_filename_data as ef
+
 
 class extract_filename_data(unittest.TestCase):
 	def run_cases(self, cases: Dict[str, dict]):
 		self.longMessage = False
 		for input, output in cases.items():
-			self.assertEqual(ef(input), output, f"The input '{input}' isn't extracted properly:\n	Output: {ef(input)}\n	Expected: {output}")
+			self.assertEqual(ef(input), output, f"The input '{input}' isn't extracted properly:\nOutput: {dumps(ef(input), indent=4)}\nExpected: {dumps(output, indent=4)}")
 		return
 
 	def test_general(self):
@@ -67,7 +69,16 @@ class extract_filename_data(unittest.TestCase):
 				{'series': 'Batman The Mad Monk', 'year': 2007, 'volume_number': 1, 'special_version': None, 'issue_number': 2.0, 'annual': False},
 
 			'/comics-1/Heroes for Hire/Heroes for Hire # 014 02-2005.cbr':
-				{'series': 'Heroes for Hire', 'year': 2005, 'volume_number': 1, 'special_version': None, 'issue_number': 14.0, 'annual': False}
+				{'series': 'Heroes for Hire', 'year': 2005, 'volume_number': 1, 'special_version': None, 'issue_number': 14.0, 'annual': False},
+
+			'Spider-Man (2005) #3 - The Vector Attacks! - [01-02-2006] [cv-123]':
+				{'series': 'Spider Man', 'year': 2005, 'volume_number': 1, 'special_version': None, 'issue_number': 3.0, 'annual': False},
+
+			'Captain America (2018) Issue 025 - All Die Young Part VI; The Promise':
+				{'series': 'Captain America', 'year': 2018, 'volume_number': 1, 'special_version': None, 'issue_number': 25.0, 'annual': False},
+
+			'Wolverine (2020) Issue 006 - X of Swords, Chapter 3':
+				{'series': 'Wolverine', 'year': 2020, 'volume_number': 1, 'special_version': None, 'issue_number': 6.0, 'annual': False}
 		}
 		self.run_cases(cases)
 

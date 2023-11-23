@@ -12,7 +12,7 @@ from typing import Dict, List, Union
 from backend.custom_exceptions import (InvalidComicVineApiKey,
                                        TaskNotDeletable, TaskNotFound)
 from backend.db import get_db
-from backend.download import DownloadHandler
+from backend.download_queue import DownloadHandler
 from backend.post_processing import unzip_volume
 from backend.search import auto_search
 from backend.volumes import refresh_and_scan
@@ -106,7 +106,10 @@ class AutoSearchIssue(Task):
 		# Get search results and download them
 		results = auto_search(self.volume_id, self.issue_id)
 		if results:
-			return [(result['link'], self.volume_id, self.issue_id) for result in results]
+			return [
+				(result['link'], self.volume_id, self.issue_id)
+				for result in results
+			]
 		return []
 
 #=====================
@@ -273,7 +276,7 @@ class TaskHandler:
 
 		Args:
 			context (Flask): A Flask app instance
-			download_handler (DownloadHandler): An instance of the `download.DownloadHandler` class
+			download_handler (DownloadHandler): An instance of `download.DownloadHandler`
 			to which any download instructions are sent
 		"""
 		self.context = context.app_context
@@ -317,9 +320,9 @@ class TaskHandler:
 		return
 		
 	def _process_queue(self) -> None:
-		"""Handle the queue. In the case that there is something in the queue and it isn't already running,
-		start the task. This can safely be called multiple times while a task is going or while there is
-		nothing in the queue.
+		"""Handle the queue. In the case that there is something in the queue and
+		it isn't already running, start the task. This can safely be called
+		multiple times while a task is going or while there is nothing in the queue.
 		"""
 		if not self.queue:
 			return
@@ -345,7 +348,11 @@ class TaskHandler:
 			'task': task,
 			'id': id,
 			'status': 'queued',
-			'thread': Thread(target=self.__run_task, args=(task,), name="Task Handler")
+			'thread': Thread(
+				target=self.__run_task,
+				args=(task,),
+				name="Task Handler"
+			)
 		}
 		self.queue.append(task_data)
 		logging.info(f'Added task: {task.display_title} ({id})')
@@ -428,7 +435,8 @@ class TaskHandler:
 		"""Get all tasks in the queue
 
 		Returns:
-			List[dict]: A list with all tasks in the queue (formatted using `self.__format_entry()`)
+			List[dict]: A list with all tasks in the queue.
+				Formatted using `self.__format_entry()`.
 		"""		
 		return [self.__format_entry(t) for t in self.queue]
 
@@ -442,7 +450,8 @@ class TaskHandler:
 			TaskNotFound: The id doesn't match with any task in the queue
 
 		Returns:
-			dict: The info of the task in the queue (formatted using `self.__format_entry()`)
+			dict: The info of the task in the queue.
+				Formatted using `self.__format_entry()`.
 		"""
 		for entry in self.queue:
 			if entry['id'] == task_id:
@@ -477,7 +486,10 @@ def get_task_history(offset: int=0) -> List[dict]:
 	"""Get the task history in blocks of 50.
 
 	Args:
-		offset (int, optional): The offset of the list. The higher the number, the deeper into history you go. Defaults to 0.
+		offset (int, optional): The offset of the list.
+			The higher the number, the deeper into history you go.
+
+			Defaults to 0.
 
 	Returns:
 		List[dict]: The history entries.

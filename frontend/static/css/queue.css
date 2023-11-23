@@ -20,7 +20,7 @@ th, td {
 }
 
 .status-column {
-	width: 7.5rem;
+	width: clamp(7.5rem, 11vw, 10rem);
 }
 
 .number-column {

@@ -47,7 +47,9 @@ private_settings = {
 	'getcomics_url': 'https://getcomics.org',
 	'hosting_threads': 10,
 	'version': 'v1.0.0-beta-3',
-	'python_version': ".".join(str(i) for i in list(version_info))
+	'python_version': ".".join(str(i) for i in list(version_info)),
+	'torrent_update_interval': 5, # Seconds
+	'torrent_tag': 'kapowarr'
 }
 
 about_data = {
@@ -74,9 +76,10 @@ blocklist_reasons = {
 
 credential_sources = ('mega',)
 
-supported_source_strings = (('mega', 'mega link'),
-							('mediafire', 'mediafire link'),
-							('getcomics', 'download now','main server','mirror download','link 1','link 2'))
+supported_source_strings = (('mega',),
+							('mediafire',),
+							('getcomics', 'download now', 'main server', 'mirror download', 'link 1', 'link 2'),
+							('getcomics (torrent)', 'torrent'))
 
 def update_manifest(url_base: str) -> None:
 	with open(folder_path('frontend', 'static', 'json', 'manifest.json'), 'r+') as f:
@@ -96,7 +99,9 @@ class Settings:
 		"""Get all settings and their values
 
 		Args:
-			use_cache (bool, optional): Wether or not to use the cache instead of going to the database. Defaults to True.
+			use_cache (bool, optional): Wether or not to use the cache instead of
+			going to the database.
+				Defaults to True.
 
 		Returns:
 			dict: All settings and their values
@@ -132,7 +137,8 @@ class Settings:
 			InvalidSettingKey: The key isn't recognised
 
 		Returns:
-			dict: The settings and their new values. Same format as settings.Settings.get_settings()
+			dict: The settings and their new values.
+				Same format as `settings.Settings.get_settings()`.
 		"""		
 		from backend.naming import check_format
 
@@ -160,7 +166,8 @@ class Settings:
 					raise InvalidSettingValue(key, value)
 				value = int(value)
 
-			elif key in ('volume_folder_naming','file_naming','file_naming_tpb','file_naming_empty'):
+			elif key in ('volume_folder_naming','file_naming',
+						'file_naming_tpb','file_naming_empty'):
 				check_format(value, key)
 
 			elif key == 'log_level' and not value in log_levels:
@@ -226,7 +233,8 @@ class Settings:
 			InvalidSettingKey: The key isn't recognised
 
 		Returns:
-			dict: The settings and their new values. Same format as settings.Settings.get_settings()
+			dict: The settings and their new values.
+				Same format as `settings.Settings.get_settings()`.
 		"""		
 		logging.debug(f'Setting reset: {key}')
 		if not key in default_settings:
@@ -243,7 +251,8 @@ class Settings:
 		"""Generate a new api key
 
 		Returns:
-			dict: The settings and their new value. Same format as settings.Settings.get_settings()
+			dict: The settings and their new value.
+				Same format as `settings.Settings.get_settings()`.
 		"""		
 		logging.debug('Generating new api key')
 		api_key = urandom(16).hex()
@@ -273,7 +282,7 @@ class Settings:
 		"""Update the service preference
 
 		Args:
-			order (List[str]): A list with the services, in order of preference
+			order (List[str]): A list with the services, in order of preference.
 		"""
 		logging.info(f'Updating service preference: {order}')
 		cursor = get_db()

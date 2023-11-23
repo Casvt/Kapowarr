@@ -1,6 +1,7 @@
 #-*- coding: utf-8 -*-
 
-"""This file contains functions regarding searching for a volume or issue with getcomics.org as the source
+"""This file contains functions regarding searching for a volume or issue
+with getcomics.org as the source
 """
 
 import logging
@@ -63,17 +64,29 @@ def _check_match(
 
 	Args:
 		result (dict): A result in SearchSources.search_all()
+
 		title (str): Title of volume
+
 		volume_number (int): The volume number of the volume
+
 		special_version (str): What type of special version the volume is, or None
-		issue_numbers (Dict[float, int]): calculated_issue_number to release year for all issues of volume
-		calculated_issue_number (float, optional): The calculated issue number of the issue 
-		(output of files.process_issue_number()). Defaults to None.
-		year (int, optional): The year of the volume. Defaults to None.
+
+		issue_numbers (Dict[float, int]): calculated_issue_number to release year
+		for all issues of volume
+
+		calculated_issue_number (float, optional): The calculated issue number of
+		the issue.
+			Output of `files.process_issue_number()`.
+			
+			Defaults to None.
+
+		year (int, optional): The year of the volume.
+			Defaults to None.
 
 	Returns:
 		dict: A dict with the key `match` having a bool value for if it matches or not and
-		the key `match_issue` with the reason for why it isn't a match if that's the case (otherwise `None`).
+		the key `match_issue` with the reason for why it isn't a match
+		if that's the case (otherwise `None`).
 	"""
 	annual = 'annual' in title.lower()
 
@@ -147,16 +160,27 @@ def _check_match(
 			or (result['issue_number'] is None
 				and ((
 						isinstance(result['volume_number'], int)
-						and issue_numbers.get(float(result['volume_number'])) == result['year']
+						and issue_numbers.get(
+							float(result['volume_number'])
+						) == result['year']
 					)
+
 					or (
 						isinstance(result['volume_number'], tuple)
-						and issue_numbers.get(float(result['volume_number'][0])) == result['year']
+						and issue_numbers.get(
+							float(result['volume_number'][0])
+						) == result['year']
 				)))
+
 			or (isinstance(result['issue_number'], float)
-	   			and issue_numbers.get(result['issue_number']) == result['year']) 
+	   			and issue_numbers.get(
+					result['issue_number']
+				) == result['year']) 
+
 			or (isinstance(result['issue_number'], tuple)
-				and issue_numbers.get(result['issue_number'][0]) == result['year'])
+				and issue_numbers.get(
+					result['issue_number'][0]
+				) == result['year'])
 		)
 	)
 	if not year_is_equal:
@@ -174,11 +198,18 @@ def _sort_search_results(
 	"""Sort the search results
 
 	Args:
-		result (dict): A result in from `search.SearchSources.search_all`.
+		result (dict): A result from `search.SearchSources.search_all()`.
+
 		title (str): Title of volume
+
 		volume_number (int): The volume number of the volume
-		year (int, optional): The year of the volume. Defaults to None.
-		calculated_issue_number (float, optional): The calculated_issue_number of the issue. Defaults to None.
+
+		year (int, optional): The year of the volume.
+			Defaults to None.
+
+		calculated_issue_number (float, optional): The calculated_issue_number of
+		the issue.
+			Defaults to None.
 
 	Returns:
 		List[int]: A list of numbers which determines the ranking of the result.
@@ -188,31 +219,48 @@ def _sort_search_results(
 	# Prefer matches
 	rating.append(int(not result['match']))
 
-	# The more words in the search term that are present in the search results' title, 
-	# the higher ranked it gets
+	# The more words in the search term that are present in
+	# the search results' title, the higher ranked it gets
 	split_title = title.split(' ')
-	rating.append(len([word for word in result['series'].split(' ') if not word in split_title]))
+	rating.append(len([
+		word
+		for word in result['series'].split(' ')
+		if not word in split_title
+	]))
 
 	# Prefer volume number or year matches, even better if both match
-	v_match = int(not (result['volume_number'] is not None and result['volume_number'] == volume_number))
-	y_match = int(not (year is not None and result['year'] is not None and year - 1 <= result['year'] <= year + 1))
+	v_match = int(not (
+		result['volume_number'] is not None
+		and result['volume_number'] == volume_number
+	))
+	y_match = int(not (
+		year is not None
+		and result['year'] is not None
+		and year - 1 <= result['year'] <= year + 1
+	))
 	rating.append(v_match + y_match)
 
 	# Sort on issue number fitting
 	if calculated_issue_number is not None:
-		if isinstance(result['issue_number'], float) and calculated_issue_number == result['issue_number']:
+		if (isinstance(result['issue_number'], float)
+		and calculated_issue_number == result['issue_number']):
 			# Issue number is direct match
 			rating.append(0)
 
 		elif isinstance(result['issue_number'], tuple):
 			if result['issue_number'][0] <= calculated_issue_number <= result['issue_number'][1]:
 				# Issue number falls between range
-				rating.append(1 - (1 / (result['issue_number'][1] - result['issue_number'][0] + 1)))
+				rating.append(
+					1 - (1
+						/
+						(result['issue_number'][1] - result['issue_number'][0] + 1))
+				)
 			else:
 				# Issue number falls outside so release is not usefull
 				rating.append(3)
 
-		elif result['issue_number'] is None and result['special_version'] is not None:
+		elif (result['issue_number'] is None
+		and result['special_version'] is not None):
 			# Issue number not found but is special version
 			rating.append(2)
 
@@ -220,7 +268,11 @@ def _sort_search_results(
 			rating.append(3)
 	else:
 		if isinstance(result['issue_number'], tuple):
-			rating.append(1.0 / (result['issue_number'][1] - result['issue_number'][0] + 1))
+			rating.append(
+				1.0
+				/
+				(result['issue_number'][1] - result['issue_number'][0] + 1)
+			)
 
 		elif isinstance(result['issue_number'], float):
 			rating.append(1)
@@ -297,7 +349,10 @@ class SearchSources:
 		formatted_results = []
 		for result in results:
 			link = result.find('a')['href']
-			title = result.find("h1", {"class": "post-title"}).get_text(strip=True)
+			title = (result
+				.find("h1", {"class": "post-title"})
+				.get_text(strip=True)
+			)
 
 			data = extract_filename_data(title, False)
 			data.update({
@@ -397,7 +452,8 @@ def manual_search(
 	for format in query_formats:
 		search = SearchSources(
 			format.format(
-				title=title, volume_number=volume_number, year=year, issue_number=issue_number
+				title=title, volume_number=volume_number,
+				year=year, issue_number=issue_number
 			)
 		)
 		results += search.search_all()
@@ -411,14 +467,21 @@ def manual_search(
 		"SELECT calculated_issue_number, date FROM issues WHERE volume_id = ?;",
 		(volume_id,)
 	)
-	issue_numbers = {i[0]: int(i[1].split('-')[0]) if i[1] else None for i in cursor}
+	issue_numbers = {
+		i[0]: int(i[1].split('-')[0]) if i[1] else None
+		for i in cursor
+	}
 	for result in results:
 		result.update(
-			_check_match(result, title, volume_number, special_version, issue_numbers, calculated_issue_number, year)
+			_check_match(result, title, volume_number,
+				special_version, issue_numbers, calculated_issue_number, year
+			)
 		)
 
 	# Sort results; put best result at top
-	results.sort(key=lambda r: _sort_search_results(r, title, volume_number, year, calculated_issue_number))
+	results.sort(key=lambda r: _sort_search_results(
+		r, title, volume_number, year, calculated_issue_number
+	))
 		
 	logging.debug(f'Manual search results: {results}')
 	return results

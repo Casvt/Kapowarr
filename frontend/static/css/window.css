@@ -100,7 +100,7 @@
 }
 
 .window > section > div:nth-child(2) form table tr > td > select,
-.window > section > div:nth-child(2) form table tr > td > input[type="text"] {
+.window > section > div:nth-child(2) form table tr > td > input {
 	width: 90%;
 	padding: .5rem;
 	border: 2px solid var(--border-color);
@@ -122,6 +122,7 @@
 }
 
 .window > section > div:nth-child(3) > button {
+	height: 2rem;
 	padding: .5rem 1rem;
 	border-radius: 2px;
 	color: var(--light-color);

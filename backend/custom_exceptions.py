@@ -22,7 +22,8 @@ class RootFolderNotFound(Exception):
 		return
 
 class RootFolderInUse(Exception):
-	"""A root folder with the given id is requested to be deleted but is used by a volume
+	"""A root folder with the given id is requested to be deleted
+	but is used by a volume
 	"""
 	api_response = {'error': 'RootFolderInUse', 'result': {}, 'code': 400}
 	
@@ -40,7 +41,8 @@ class VolumeNotFound(Exception):
 		return
 
 class VolumeNotMatched(Exception):
-	"""The volume with the given id was found in the database but the comicvine id returned nothing
+	"""The volume with the given id was found in the database 
+	but the comicvine id returned nothing
 	"""
 	api_response = {'error': 'VolumeNotMatched', 'result': {}, 'code': 400}
 	
@@ -77,7 +79,11 @@ class VolumeDownloadedFor(Exception):
 		
 	@property
 	def api_response(self):
-		return {'error': 'VoolumeDownloadedFor', 'result': {'volume_id': self.volume_id}, 'code': 400}
+		return {
+			'error': 'VolumeDownloadedFor',
+			'result': {'volume_id': self.volume_id},
+			'code': 400
+		}
 
 class IssueNotFound(Exception):
 	"""The issue with the given id was not found
@@ -144,7 +150,14 @@ class LinkBroken(Exception):
 	
 	@property
 	def api_response(self):
-		return {'error': 'LinkBroken', 'result': {'reason_text': self.reason_text, 'reason_id': self.reason_id}, 'code': 400}
+		return {
+			'error': 'LinkBroken',
+			'result': {
+				'reason_text': self.reason_text,
+				'reason_id': self.reason_id
+			},
+			'code': 400
+		}
 
 class InvalidSettingKey(Exception):
 	"""The setting key is unknown
@@ -157,7 +170,11 @@ class InvalidSettingKey(Exception):
 
 	@property
 	def api_response(self):
-		return {'error': 'InvalidSettingKey', 'result': {'key': self.key}, 'code': 400}
+		return {
+			'error': 'InvalidSettingKey',
+			'result': {'key': self.key},
+			'code': 400
+		}
 
 class InvalidSettingValue(Exception):
 	"""The setting value is invalid
@@ -171,7 +188,11 @@ class InvalidSettingValue(Exception):
 		
 	@property
 	def api_response(self):
-		return {'error': 'InvalidSettingValue', 'result': {'key': self.key, 'value': self.value}, 'code': 400}
+		return {
+			'error': 'InvalidSettingValue',
+			'result': {'key': self.key, 'value': self.value},
+			'code': 400
+		}
 
 class InvalidSettingModification(Exception):
 	"""The setting is not allowed to be changed this way
@@ -180,12 +201,18 @@ class InvalidSettingModification(Exception):
 		self.key = key
 		self.instead = instead
 		super().__init__(key)
-		logging.warning(f'This setting is not allowed to be changed this way: {key}. Instead: {instead}')
+		logging.warning(
+			f'This setting is not allowed to be changed this way: {key}.' +
+			f' Instead: {instead}')
 		return
 
 	@property
 	def api_response(self):
-		return {'error': 'InvalidSettingModification', 'result': {'key': self.key, 'instead': self.instead}, 'code': 400}
+		return {
+			'error': 'InvalidSettingModification',
+			'result': {'key': self.key, 'instead': self.instead},
+			'code': 400
+		}
 
 class KeyNotFound(Exception):
 	"""A key that is required to be given in the api request was not found
@@ -194,7 +221,10 @@ class KeyNotFound(Exception):
 		self.key = key
 		super().__init__(self.key)
 		if key != 'password':
-			logging.warning(f'This key was not found in the API request, eventhough it\'s required: {key}')
+			logging.warning(
+				"This key was not found in the API request,"
+				+ f" eventhough it's required: {key}"
+			)
 		return
 
 	@property
@@ -209,12 +239,19 @@ class InvalidKeyValue(Exception):
 		self.value = value
 		super().__init__(self.key)
 		if value not in ('undefined', 'null'):
-			logging.warning(f'This key in the API request has an invalid value: {key} = {value}')
+			logging.warning(
+				'This key in the API request has an invalid value: ' + 
+				f'{key} = {value}'
+			)
 		return
 
 	@property
 	def api_response(self):
-		return {'error': 'InvalidKeyValue', 'result': {'key': self.key, 'value': self.value}, 'code': 400}
+		return {
+			'error': 'InvalidKeyValue',
+			'result': {'key': self.key, 'value': self.value},
+			'code': 400
+		}
 
 class CredentialNotFound(Exception):
 	"""The credential with the given id was not found
@@ -235,7 +272,11 @@ class CredentialSourceNotFound(Exception):
 
 	@property
 	def api_response(self):
-		return {'error': 'CredentialSourceNotFound', 'result': {'string': self.string}, 'code': 404}
+		return {
+			'error': 'CredentialSourceNotFound',
+			'result': {'string': self.string},
+			'code': 404
+		}
 
 class CredentialAlreadyAdded(Exception):
 	"""A credential for the given source is already added
@@ -259,10 +300,52 @@ class DownloadLimitReached(Exception):
 	"""
 	def __init__(self, string: str) -> None:
 		self.string = string
-		logging.warning(f'Credential source {string} has reached it\'s download limit')
+		logging.warning(f"Credential source {string} has reached it's download limit")
 		return
 	
 	@property
 	def api_response(self):
-		return {'error': 'DownloadLimitReached', 'result': {'string': self.string}, 'code': 509}
+		return {
+			'error': 'DownloadLimitReached',
+			'result': {'string': self.string},
+			'code': 509
+		}
+
+class TorrentClientNotFound(Exception):
+	"""The torrent client with the given ID was not found
+	"""
+	api_response = {'error': 'TorrentClientNotFound', 'result': {}, 'code': 404}
 	
+	def __init__(self) -> None:
+		logging.warning('Torrent client with given id not found')
+		return
+
+class TorrentClientDownloading(Exception):
+	"""The torrent client is desired to be deleted
+	but there is a torrent downloading with it
+	"""	
+	def __init__(self, torrent_client_id: int):
+		self.torrent_client_id = torrent_client_id
+		super().__init__(self.torrent_client_id)
+		logging.warning(
+			f'Deleting torrent client failed because there is '
+			+ f'a torrent downloading with it: {self.torrent_client_id}'
+		)
+		return
+		
+	@property
+	def api_response(self):
+		return {
+			'error': 'TorrentClientDownloading',
+			'result': {'torrent_client_id': self.torrent_client_id},
+			'code': 400
+		}
+
+class TorrentClientNotWorking(Exception):
+	"""The torrent client is not working
+	"""
+	api_response = {'error': 'TorrentClientNotWorking', 'result': {}, 'code': 400}
+	
+	def __init__(self) -> None:
+		logging.warning('Torrent client is not working')
+		return

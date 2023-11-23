@@ -60,6 +60,10 @@ def ui_mediamanagement():
 def ui_download():
 	return render_template('settings_download.html', url_base=ui_vars['url_base'])
 
+@ui.route('/settings/downloadclients', methods=methods)
+def ui_download_clients():
+	return render_template('settings_download_clients.html', url_base=ui_vars['url_base'])
+
 @ui.route('/settings/general', methods=methods)
 def ui_general():
 	return render_template('settings_general.html', url_base=ui_vars['url_base'])
