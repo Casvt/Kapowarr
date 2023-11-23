@@ -16,7 +16,7 @@ from waitress.task import ThreadedTaskDispatcher as OldThreadedTaskDispatcher
 from backend.logging import set_log_level
 
 __DATABASE_FILEPATH__ = 'db', 'Kapowarr.db'
-__DATABASE_VERSION__ = 11
+__DATABASE_VERSION__ = 12
 
 class Singleton(type):
 	_instances = {}
@@ -93,7 +93,8 @@ class TempDBConnection(Connection):
 		return f'<{self.__class__.__name__}; {current_thread().name}; {id(self)}>'
 
 def set_db_location(db_file_location: str) -> None:
-	"""Setup database location. Create folder for database and set location for db.DBConnection
+	"""Setup database location. Create folder for database
+	and set location for db.DBConnection
 
 	Args:
 		db_file_location (str): The absolute path to the database file
@@ -112,8 +113,12 @@ def get_db(output_type='tuple', temp: bool=False):
 	"""Get a database cursor instance or create a new one if needed
 
 	Args:
-		output_type ('tuple'|'dict', optional): The type of output the cursor should have. Defaults to 'tuple'.
-		temp (bool, optional): Decides if a new manually handled cursor is returned instead of the cached one. Defaults to False.
+		output_type ('tuple'|'dict', optional): The type of output of the cursor.
+			Defaults to 'tuple'.
+
+		temp (bool, optional): Decides if a new manually handled cursor is returned
+		instead of the cached one.
+			Defaults to False.
 
 	Returns:
 		Cursor: Database cursor instance with desired output type set
@@ -135,7 +140,7 @@ def get_db(output_type='tuple', temp: bool=False):
 	return cursor
 
 def close_db(e: str=None):
-	"""Close database cursor, commit database and close database (setup after each request)
+	"""Close database cursor, commit database and close database.
 
 	Args:
 		e (str, optional): Error. Defaults to None.
@@ -311,7 +316,10 @@ def migrate_db(current_db_version: int) -> None:
 			str(v[0])
 			for v in cursor.execute("SELECT comicvine_id FROM volumes;")
 		]
-		updates = ((r['date_last_updated'], r['comicvine_id']) for r in ComicVine().fetch_volumes(volume_ids))
+		updates = (
+			(r['date_last_updated'], r['comicvine_id'])
+			for r in ComicVine().fetch_volumes(volume_ids)
+		)
 		cursor.executemany(
 			"UPDATE volumes SET last_cv_update = ? WHERE comicvine_id = ?;",
 			updates
@@ -352,7 +360,10 @@ def migrate_db(current_db_version: int) -> None:
 			GROUP BY v.id;
 		""").fetchall()
 
-		updates = ((determine_special_version(v[1], v[2], v[3], v[4]) ,v[0]) for v in volumes)
+		updates = (
+			(determine_special_version(v[1], v[2], v[3], v[4]) ,v[0])
+			for v in volumes
+		)
 
 		cursor.executemany(
 			"UPDATE volumes SET special_version = ? WHERE id = ?;",
@@ -441,7 +452,10 @@ def migrate_db(current_db_version: int) -> None:
 					(volume[0],)
 				)
 			]
-			updates.append((determine_special_version(volume[1], volume[2], issue_titles), volume[0]))
+			updates.append(
+				(determine_special_version(volume[1], volume[2], issue_titles),
+	 			volume[0])
+			)
 
 		cursor.executemany(
 			"UPDATE volumes SET special_version = ? WHERE id = ?;",
@@ -450,6 +464,30 @@ def migrate_db(current_db_version: int) -> None:
 
 		current_db_version = 11
 		update_db_version(current_db_version)
+
+	if current_db_version == 11:
+		# V11 -> V12
+		cursor.executescript("""
+			DROP TABLE download_queue;
+
+			CREATE TABLE download_queue(
+				id INTEGER PRIMARY KEY,
+				client_type VARCHAR(255) NOT NULL,
+				torrent_client_id INTEGER,
+
+				link TEXT NOT NULL,
+				filename_body TEXT NOT NULL,
+				source VARCHAR(25) NOT NULL,
+
+				volume_id INTEGER NOT NULL,
+				issue_id INTEGER,
+				page_link TEXT,
+
+				FOREIGN KEY (torrent_client_id) REFERENCES torrent_clients(id),
+				FOREIGN KEY (volume_id) REFERENCES volumes(id),
+				FOREIGN KEY (issue_id) REFERENCES issues(id)
+			);
+		""")
 
 	return
 
@@ -523,12 +561,29 @@ def setup_db() -> None:
 				issue_id
 			)
 		);
+		CREATE TABLE IF NOT EXISTS torrent_clients(
+			id INTEGER PRIMARY KEY,
+			type VARCHAR(255) NOT NULL,
+			title VARCHAR(255) NOT NULL,
+			base_url TEXT NOT NULL,
+			username VARCHAR(255),
+			password VARCHAR(255),
+			api_token VARCHAR(255)
+		);
 		CREATE TABLE IF NOT EXISTS download_queue(
 			id INTEGER PRIMARY KEY,
+			client_type VARCHAR(255) NOT NULL,
+			torrent_client_id INTEGER,
+
 			link TEXT NOT NULL,
+			filename_body TEXT NOT NULL,
+			source VARCHAR(25) NOT NULL,
+
 			volume_id INTEGER NOT NULL,
 			issue_id INTEGER,
-			
+			page_link TEXT,
+
+			FOREIGN KEY (torrent_client_id) REFERENCES torrent_clients(id),
 			FOREIGN KEY (volume_id) REFERENCES volumes(id),
 			FOREIGN KEY (issue_id) REFERENCES issues(id)
 		);
@@ -599,7 +654,9 @@ def setup_db() -> None:
 	).fetchone()[0])
 
 	if current_db_version < __DATABASE_VERSION__:
-		logging.debug(f'Database migration: {current_db_version} -> {__DATABASE_VERSION__}')
+		logging.debug(
+			f'Database migration: {current_db_version} -> {__DATABASE_VERSION__}'
+		)
 		migrate_db(current_db_version)
 		# Redundant but just to be sure, in case
 		# the version isn't updated in the last migration of the function
@@ -648,7 +705,10 @@ def setup_db() -> None:
 	)
 
 	# Add service preferences
-	order = [(names[0], place + 1) for place, names in enumerate(supported_source_strings)]
+	order = [
+		(names[0], place + 1)
+		for place, names in enumerate(supported_source_strings)
+	]
 	logging.debug(f'Inserting service preferences: {order}')
 	cursor.executemany(
 		"""
