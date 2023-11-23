@@ -10,8 +10,8 @@ from shutil import move, rmtree
 from time import time
 from typing import List, Tuple
 from zipfile import ZipFile
-from backend.conversion import find_target_format_file
 
+from backend.conversion import find_target_format_file
 from backend.db import get_db
 from backend.files import (_list_files, extract_filename_data,
                            image_extensions, rename_file, supported_extensions)
@@ -110,7 +110,7 @@ class PostProcessingActions:
 			return
 		
 		converter = find_target_format_file(
-			self.download.file,
+			download.file,
 			format_preference
 		)
 		if converter is not None:
