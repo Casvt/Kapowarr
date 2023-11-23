@@ -127,7 +127,7 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 			if not value in library.sorting_orders.keys():
 				raise InvalidKeyValue(key, value)
 
-		elif key in ('root_folder_id', 'new_root_folder', 'offset'):
+		elif key in ('root_folder_id', 'new_root_folder', 'offset', 'limit'):
 			try:
 				value = int(value)
 			except (ValueError, TypeError):
@@ -166,6 +166,9 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 
 		elif key == 'rename_files':
 			value = False
+
+		elif key == 'limit':
+			value = 500
 
 	return value
 
@@ -369,7 +372,8 @@ def api_rootfolder_id(id: int):
 @auth
 def api_library_import():
 	if request.method == 'GET':
-		result = propose_library_import()
+		limit = extract_key(request, 'limit', check_existence=False)
+		result = propose_library_import(limit)
 		return return_api(result)
 	
 	elif request.method == 'POST':

@@ -60,9 +60,13 @@ async def __search_matches(datas: List[dict]) -> List[dict]:
 			
 		return results
 
-def propose_library_import() -> List[dict]:
+def propose_library_import(limit: int = 500) -> List[dict]:
 	"""Get list of unimported files
 	and their suggestion for a matching volume on CV.
+
+	Args:
+		limit (int, optional): The max amount of folders to scan.
+			Defaults to 500.
 
 	Returns:
 		List[dict]: The list of files and their matches.
@@ -71,12 +75,11 @@ def propose_library_import() -> List[dict]:
 
 	# Get all files in all root folders
 	root_folders = RootFolders().get_all()
-	all_files = []
+	all_files: List[str] = []
 	for f in root_folders:
 		all_files += _list_files(f['folder'], supported_extensions)
-	
-	# Remove all files that are already imported, 
-	# also extract filename data
+
+	# Get imported files
 	cursor = get_db()
 	imported_files = set(
 		f[0] for f in cursor.execute(
@@ -84,23 +87,39 @@ def propose_library_import() -> List[dict]:
 		)
 	)
 
+	# Filter away imported files and apply limit
+	limited_files = []
+	limited_files_append = limited_files.append
+	folders = set()
+	for f in all_files:
+		if f in imported_files:
+			continue
+		if f.endswith(image_extensions):
+			folder = basename(dirname(dirname(f)))
+		else:
+			folder = basename(dirname(f))
+		folders.add(folder)
+		print(folders, f)
+		if len(folders) > limit:
+			break
+		limited_files_append(f)
+
 	# List with tuples. First entry is efd,
 	# second is all matching files for that efd.
 	unimported_files: List[Tuple[dict, List[str]]] = []
-	for f in all_files:
-		if not f in imported_files:
-			efd = extract_filename_data(f)
-			del efd['issue_number']
+	for f in limited_files:
+		efd = extract_filename_data(f)
+		del efd['issue_number']
 
-			for entry in unimported_files:
-				if entry[0] == efd:
-					entry[1].append(f)
-					break
-			else:
-				unimported_files.append((
-					efd,
-					[f]
-				))
+		for entry in unimported_files:
+			if entry[0] == efd:
+				entry[1].append(f)
+				break
+		else:
+			unimported_files.append((
+				efd,
+				[f]
+			))
 	logging.debug(f'File groupings: {unimported_files}')
 
 	# Find a match for the files on CV

@@ -69,33 +69,52 @@
 			<div id="task-queue"></div>
 		</div>
 		<main>
-			<div class="tool-bar-container">
-				<div class="tool-bar">
-					<button id="refresh-button" aria-label="Refresh the list">
-						<img src="{{url_base}}/static/img/refresh.svg" alt="">
-						<div>
-							<p>Refresh</p>
-						</div>
-					</button>
-				</div>
-			</div>
-			<div class="action-container">
-				<button id="run-button">Run</button>
-				<button id="import-button" class="hidden">Import</button>
-				<button id="import-rename-button" class="hidden">Import and Rename</button>
-			</div>
-			<div class="table-container hidden">
+			<div id="start-window">
+				<h2>Import an existing organized library to add volumes to Kapowarr</h2>
 				<table>
-					<thead>
-						<th>
-							<input type="checkbox" id="selectall-input" checked>
-						</th>
-						<th>File</th>
-						<th>Match</th>
-						<th>Action</th>
-					</thead>
-					<tbody class="proposal-list"></tbody>
+					<tbody>
+						<tr>
+							<td><label for="limit-input">Max folders scanned</label></td>
+							<td>
+								<select id="limit-input">
+									<option value="1">1</option>
+									<option value="5">5</option>
+									<option value="20">20</option>
+									<option value="100" selected>100</option>
+									<option value="500">500</option>
+								</select>
+							</td>
+						</tr>
+					</tbody>
 				</table>
+				<button id="run-import-button">Scan</button>
+			</div>
+			<div id="loading-window" class="hidden">
+				<h2>Loading</h2>
+			</div>
+			<div id="no-result-window" class="hidden">
+				<h2>No results</h2>
+				<button class="cancel-button">Go Back</button>
+			</div>
+			<div id="list-window" class="hidden">
+				<div class="action-container">
+					<button class="cancel-button">Cancel</button>
+					<button id="import-button">Import</button>
+					<button id="import-rename-button">Import and Rename</button>
+				</div>
+				<div class="table-container">
+					<table>
+						<thead>
+							<th>
+								<input type="checkbox" id="selectall-input" checked>
+							</th>
+							<th>File</th>
+							<th>Match</th>
+							<th>Action</th>
+						</thead>
+						<tbody class="proposal-list"></tbody>
+					</table>
+				</div>
 			</div>
 		</main>
 	</div>

@@ -1,24 +1,96 @@
-main > .action-container {
-	flex: 0 0 auto;
+main {
+	padding-inline: 1rem;
+	color: var(--text-color);
+}
 
+#start-window {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1rem;
+}
+
+#start-window h2 {
+	margin-top: min(3vw, 2rem);
+
+	font-size: clamp(1rem, 5vw, 2rem);
+	font-weight: 500;
+	text-align: center;
+}
+
+#start-window table td {
+	padding: 1rem;
+	width: 50%;
+}
+
+#start-window table td:first-child {
+	text-align: right;
+}
+
+#start-window table select {
+	min-width: 4rem;
+
+	border-radius: 4px;
+	border: 2px solid var(--border-color);
+	padding: .25rem .5rem;
+	background-color: var(--library-entry-color);
+	color: var(--library-entry-font-color);
+
+	font-size: .9rem;
+	
+	transition: background-color 100ms linear;
+}
+
+#start-window table select:hover {
+	background-color: var(--dark-hover-color);
+}
+
+#run-import-button,
+.cancel-button,
+.action-container button {
+	min-width: 5rem;
+	
+	border: 2px solid var(--border-color);
+	border-radius: 4px;
+	padding: .4rem .5rem;
+	color: var(--text-color);
+	background-color: var(--library-entry-color);
+	
+	font-size: 1rem;
+	
+	transition: background-color 100ms linear;
+}
+
+#run-import-button:hover,
+.cancel-button:hover,
+.action-container button:hover {
+	background-color: var(--dark-hover-color);
+}
+
+#loading-window,
+#no-result-window {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	gap: 1.5rem;
+}
+
+#loading-window h2,
+#no-result-window h2 {
+	font-size: clamp(1rem, 5vw, 2rem);
+	font-weight: 500;
+	text-align: center;
+}
+
+.action-container {
 	display: flex;
 	justify-content: center;
 	align-items: center;
 	gap: 1rem;
-	
+	flex-wrap: wrap;
+
 	padding: 1rem;
-}
-
-.action-container button {
-	min-width: 5rem;
-
-	border: 2px solid var(--dark-text-color);
-	border-radius: 4px;
-	padding: .4rem .3rem;
-	color: var(--text-color);
-	background-color: var(--dark-hover-color);
-	
-	font-size: 1rem;
 }
 
 .table-container {

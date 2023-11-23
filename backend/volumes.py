@@ -41,14 +41,15 @@ def determine_special_version(
 	if os_regex.search(volume_title):
 		return 'one-shot'
 
-	if (issue_titles[0] or '').lower() == 'hc':
-		return 'hard-cover'
+	if issue_titles:
+		if (issue_titles[0] or '').lower() == 'hc':
+			return 'hard-cover'
 
-	if all(
-		vol_regex.search(title or '')
-		for title in issue_titles
-	):
-		return 'volume-as-issue'
+		if all(
+			vol_regex.search(title or '')
+			for title in issue_titles
+		):
+			return 'volume-as-issue'
 
 	if volume_description and len(volume_description.split('. ')) == 1:
 		# Description is only one sentence, so it's allowed to

@@ -1,15 +1,17 @@
+const windows = {
+	start: document.querySelector('#start-window'),
+	no_result: document.querySelector('#no-result-window'),
+	list: document.querySelector('#list-window'),
+	loading: document.querySelector('#loading-window')
+};
+
 function loadProposal(api_key) {
-	const refresh_button = document.querySelector('#refresh-button > img');
-	refresh_button.src = `${url_base}/static/img/loading_white.svg`;
-	refresh_button.classList.add('spinning');
-
-	document.querySelector('.table-container').classList.add('hidden');
-	document.querySelector('#import-button').classList.add('hidden');
-	document.querySelector('#import-rename-button').classList.add('hidden');
-
+	windows.start.classList.add('hidden');
+	windows.loading.classList.remove('hidden');
+	const limit = parseInt(document.querySelector('#limit-input').value);
 	const table = document.querySelector('.proposal-list');
 	table.innerHTML = '';
-	fetch(`${url_base}/api/libraryimport?api_key=${api_key}`)
+	fetch(`${url_base}/api/libraryimport?api_key=${api_key}&limit=${limit}`)
 	.then(response => response.json())
 	.then(json => {
 		json.result.forEach(result => {
@@ -53,15 +55,11 @@ function loadProposal(api_key) {
 			table.appendChild(entry);
 		});
 
-		document.querySelector('#run-button').innerText = 'Run';
-		if (json.result.length > 0) {
-			document.querySelector('.table-container').classList.remove('hidden');
-			document.querySelector('#import-button').classList.remove('hidden');
-			document.querySelector('#import-rename-button').classList.remove('hidden');
-		};
-
-		refresh_button.src = `${url_base}/static/img/refresh.svg`;
-		refresh_button.classList.remove('spinning');
+		windows.loading.classList.add('hidden');
+		if (json.result.length > 0)
+			windows.list.classList.remove('hidden');
+		else
+			windows.no_result.classList.remove('hidden');
 	});
 };
 
@@ -79,13 +77,20 @@ function openEditCVMatch(filepath) {
 	document.querySelector('#search-input').focus();
 };
 
-function editCVMatch(filepath, comicvine_id, comicvine_info, title, year, group_number=null) {
+function editCVMatch(
+	filepath,
+	comicvine_id,
+	comicvine_info,
+	title,
+	year,
+	group_number=null
+) {
 	let target_td;
 	if (group_number === null)
 		target_td = document.querySelectorAll(`td[title="${filepath}"]`);
 	else
 		target_td = document.querySelectorAll(`tr[data-group_number="${group_number}"] > td[title]`);
-	
+
 	target_td.forEach(td => {
 		td.parentNode.dataset.cv_id = comicvine_id;
 		const link = td.nextSibling.firstChild;
@@ -159,29 +164,22 @@ function searchCV() {
 };
 
 function importLibrary(api_key, rename=false) {
-	const import_button = document.querySelector('#import-button');
-	const import_rename_button = document.querySelector('#import-rename-button');
-	const used_button = rename ? import_rename_button : import_button;
-
 	const data = [...document.querySelectorAll('.proposal-list > tr:not([data-cv_id=""]) input[type="checkbox"]:checked')]
 		.map(e => { return {
 			'filepath': e.parentNode.nextSibling.title,
 			'id': parseInt(e.parentNode.parentNode.dataset.cv_id)
 		} });
-	
-	used_button.innerText = 'Importing';
+
+	windows.list.classList.add('hidden');
+	windows.loading.classList.remove('hidden');
 	fetch(`${url_base}/api/libraryimport?api_key=${api_key}&rename_files=${rename}`, {
 		'method': 'POST',
 		'headers': {'Content-Type': 'application/json'},
 		'body': JSON.stringify(data)
 	})
 	.then(response => {
-		import_rename_button.innerText = 'Import and Rename';
-		import_rename_button.classList.add('hidden');
-		import_button.innerText = 'Import';
-		import_button.classList.add('hidden');
-
-		document.querySelector('.table-container').classList.add('hidden');
+		windows.loading.classList.add('hidden');
+		windows.start.classList.remove('hidden');
 	});
 };
 
@@ -189,14 +187,15 @@ function importLibrary(api_key, rename=false) {
 
 usingApiKey()
 .then(api_key => {
-	addEventListener('#run-button', 'click', e => {
-		e.target.innerText = 'Running';
-		loadProposal(api_key);
-	});
-	addEventListener('#refresh-button', 'click', e => loadProposal(api_key));
+	addEventListener('#run-import-button', 'click', e => loadProposal(api_key));
 	addEventListener('#import-button', 'click', e => importLibrary(api_key, false));
 	addEventListener('#import-rename-button', 'click', e => importLibrary(api_key, true));
 });
 
 setAttribute('.search-bar', 'action', 'javascript:searchCV();');
 addEventListener('#selectall-input', 'change', e => toggleSelectAll());
+addEventListener('.cancel-button', 'click', e => {
+	windows.list.classList.add('hidden');
+	windows.no_result.classList.add('hidden');
+	windows.start.classList.remove('hidden');
+});
