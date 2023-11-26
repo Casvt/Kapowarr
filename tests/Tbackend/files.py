@@ -68,8 +68,8 @@ class extract_filename_data(unittest.TestCase):
 			'Batman and the Mad Monk (1-6) (2006-2007) GetComics.INFO/Batman___The_Mad_Monk_02__2007___team-ocdcp_.cbr':
 				{'series': 'Batman The Mad Monk', 'year': 2007, 'volume_number': 1, 'special_version': None, 'issue_number': 2.0, 'annual': False},
 
-			'/comics-1/Heroes for Hire/Heroes for Hire # 014 02-2005.cbr':
-				{'series': 'Heroes for Hire', 'year': 2005, 'volume_number': 1, 'special_version': None, 'issue_number': 14.0, 'annual': False},
+			'/comics-1/Heroes for Hire/Heroes for Hire # ½ 02-2005.cbr':
+				{'series': 'Heroes for Hire', 'year': 2005, 'volume_number': 1, 'special_version': None, 'issue_number': 0.5, 'annual': False},
 
 			'Spider-Man (2005) #3 - The Vector Attacks! - [01-02-2006] [cv-123]':
 				{'series': 'Spider Man', 'year': 2005, 'volume_number': 1, 'special_version': None, 'issue_number': 3.0, 'annual': False},
