@@ -18,6 +18,7 @@ function loadProposal(api_key) {
 			const entry = document.createElement('tr');
 			entry.dataset.cv_id = result.cv.id || '';
 			entry.dataset.group_number = result.group_number;
+			entry.dataset.filepath = encodeURIComponent(result.filepath);
 			
 			const select = document.createElement('td');
 			const select_button = document.createElement('input');
@@ -65,11 +66,14 @@ function loadProposal(api_key) {
 
 function toggleSelectAll() {
 	const checked = document.querySelector('#selectall-input').checked;
-	document.querySelectorAll('.proposal-list input[type="checkbox"]').forEach(e => e.checked = checked);
+	document.querySelectorAll('.proposal-list input[type="checkbox"]').forEach(
+		e => e.checked = checked
+	);
 };
 
 function openEditCVMatch(filepath) {
-	document.querySelector('#cv-window').dataset.filepath = filepath;
+	document.querySelector('#cv-window').dataset.filepath =
+		encodeURIComponent(filepath);
 	document.querySelector('#search-input').value = '';
 	document.querySelector('.search-results').innerHTML = '';
 	document.querySelector('.search-results-container').classList.add('hidden');
@@ -87,13 +91,13 @@ function editCVMatch(
 ) {
 	let target_td;
 	if (group_number === null)
-		target_td = document.querySelectorAll(`td[title="${filepath}"]`);
+		target_td = document.querySelectorAll(`tr[data-filepath="${filepath}"]`);
 	else
-		target_td = document.querySelectorAll(`tr[data-group_number="${group_number}"] > td[title]`);
+		target_td = document.querySelectorAll(`tr[data-group_number="${group_number}"]`);
 
-	target_td.forEach(td => {
-		td.parentNode.dataset.cv_id = comicvine_id;
-		const link = td.nextSibling.firstChild;
+	target_td.forEach(tr => {
+		tr.dataset.cv_id = comicvine_id;
+		const link = tr.querySelector('a');
 		link.href = comicvine_info;
 		link.innerText = `${title} (${year})`;
 	});
@@ -141,8 +145,10 @@ function searchCV() {
 				const select_for_all_button = document.createElement('button');
 				select_for_all_button.innerText = 'Select for group';
 				select_for_all_button.addEventListener('click', e => {
-					const filepath = document.querySelector('#cv-window').dataset.filepath;
-					const group_number = document.querySelector(`td[title="${filepath}"]`).parentNode.dataset.group_number;
+					const filepath = document.querySelector('#cv-window')
+						.dataset.filepath;
+					const group_number = document.querySelector(`tr[data-filepath="${filepath}"]`)
+						.dataset.group_number;
 					editCVMatch(
 						filepath,
 						result.comicvine_id,
@@ -164,11 +170,12 @@ function searchCV() {
 };
 
 function importLibrary(api_key, rename=false) {
-	const data = [...document.querySelectorAll('.proposal-list > tr:not([data-cv_id=""]) input[type="checkbox"]:checked')]
-		.map(e => { return {
-			'filepath': e.parentNode.nextSibling.title,
-			'id': parseInt(e.parentNode.parentNode.dataset.cv_id)
-		} });
+	const data = [...document.querySelectorAll(
+		'.proposal-list > tr:not([data-cv_id=""]) input[type="checkbox"]:checked'
+	)].map(e => { return {
+		'filepath': e.parentNode.nextSibling.title,
+		'id': parseInt(e.parentNode.parentNode.dataset.cv_id)
+	} });
 
 	windows.list.classList.add('hidden');
 	windows.loading.classList.remove('hidden');
