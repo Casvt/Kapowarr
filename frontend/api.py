@@ -1,7 +1,7 @@
 #-*- coding: utf-8 -*-
 
 import logging
-from typing import Any, Tuple
+from typing import Any, List, Tuple
 
 from flask import Blueprint, Flask, request, send_file
 
@@ -38,6 +38,7 @@ from backend.settings import Settings, about_data, blocklist_reasons
 from backend.tasks import (TaskHandler, delete_task_history, get_task_history,
                            get_task_planning, task_library)
 from backend.volumes import Library, search_volumes
+from backend.mass_edit import action_to_func
 
 api = Blueprint('api', __name__)
 root_folders = RootFolders()
@@ -746,3 +747,33 @@ def api_torrent_client(id: int):
 	elif request.method == 'DELETE':
 		client.delete()
 		return return_api({})
+
+#=====================
+# Torrent Clients
+#=====================
+@api.route('/masseditor', methods=['POST'])
+@error_handler
+@auth
+def api_mass_editor():
+	data = request.get_json()
+	if not isinstance(data, dict):
+		raise InvalidKeyValue('body', data)
+	if not 'volume_ids' in data:
+		raise KeyNotFound('volume_ids')
+	if not 'action' in data:
+		raise KeyNotFound('action')
+
+	action: str = data['action']
+	volume_ids: List[int] = data['volume_ids']
+
+	if not (
+		isinstance(volume_ids, list)
+		and all(isinstance(v, int) for v in volume_ids)
+	):
+		raise InvalidKeyValue('volume_ids', volume_ids)
+
+	if not action in action_to_func:
+		raise InvalidKeyValue('action', action)
+
+	action_to_func[action](volume_ids)
+	return return_api({})
