@@ -164,7 +164,9 @@ const default_values = {
 	'lib_sorting': 'title',
 	'lib_view': 'posters',
 	'theme': 'light',
-	'translated_filter': 'all'
+	'translated_filter': 'all',
+	'api_key': null,
+	'last_login': 0
 };
 
 function setupLocalStorage() {

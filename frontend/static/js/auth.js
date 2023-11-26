@@ -1,6 +1,8 @@
 async function usingApiKey(redirect=true) {
-	const api_key = sessionStorage.getItem('api_key');
-	if (api_key === null) {
+	const key_data = JSON.parse(localStorage.getItem('kapowarr'));
+
+	if (key_data.api_key === null
+	|| (key_data.last_login < (Date.now() - 86400))) {
 
 		return fetch(`${url_base}/api/auth`, {
 			'method': 'POST',
@@ -12,7 +14,9 @@ async function usingApiKey(redirect=true) {
 				return response.json();
 			})
 			.then(json => {
-				sessionStorage.setItem('api_key', json.result.api_key);
+				key_data.api_key = json.result.api_key;
+				key_data.last_login = Date.now();
+				localStorage.setItem('kapowarr', JSON.stringify(key_data));
 				return json.result.api_key;
 			})
 			.catch(e => {
@@ -26,7 +30,7 @@ async function usingApiKey(redirect=true) {
 			})
 
 	} else {
-		return api_key;
+		return key_data.api_key;
 	};
 };
 

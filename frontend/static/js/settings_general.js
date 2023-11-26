@@ -47,7 +47,7 @@ function generateApiKey(api_key) {
 	})
 	.then(response => response.json())
 	.then(json => {
-		sessionStorage.setItem('api_key', json.result.api_key);
+		setLocalStorage({'api_key': json.result.api_key});
 		document.querySelector('#api-input').innerText = json.result.api_key;
 	});
 };

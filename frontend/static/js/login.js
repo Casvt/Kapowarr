@@ -2,10 +2,13 @@ function redirect() {
 	parameters = new URLSearchParams(window.location.search);
 	redirect_value = parameters.get('redirect') || '/';
 	window.location.href = redirect_value;
-}
+};
 
 function registerLogin(api_key) {
-	sessionStorage.setItem('api_key', api_key);
+	const data = JSON.parse(localStorage.getItem('kapowarr'));
+	data.api_key = api_key;
+	data.last_login = Date.now();
+	localStorage.setItem('kapowarr', JSON.stringify(data));
 	redirect();
 };
 
