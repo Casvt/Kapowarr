@@ -573,7 +573,7 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 		special_version is not None
 		and special_version != 'volume-as-issue'
 	):
-		result = results[0] if results else []
+		result = results[:1] if results else []
 		logging.debug(f'Auto search results: {result}')
 		return result
 	else:
