@@ -169,9 +169,16 @@ class Settings:
 					value = ('/' + value.lstrip('/')).rstrip('/')
 					settings['url_base'] = value
 
-			elif key in ('issue_padding', 'volume_padding'):
+			elif key == 'volume_padding':
 				try:
-					if not (1 <= value <= 3):
+					if not 1 <= value <= 3:
+						raise InvalidSettingValue(key, value)
+				except TypeError:
+					raise InvalidSettingValue(key, value)
+
+			elif key == 'issue_padding':
+				try:
+					if not 1 <= value <= 4:
 						raise InvalidSettingValue(key, value)
 				except TypeError:
 					raise InvalidSettingValue(key, value)
