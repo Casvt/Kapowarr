@@ -1,13 +1,12 @@
 # Kapowarr
 
 [![Docker Pulls](https://img.shields.io/docker/pulls/mrcas/kapowarr.svg)](https://hub.docker.com/r/mrcas/kapowarr)
-[![GitHub Downloads](https://img.shields.io/github/downloads/Casvt/Kapowarr/total.svg)](https://github.com/Casvt/Kapowarr/releases)
 
 Kapowarr is a software to build and manage a comic book library, fitting in the *arr suite of software.
 
 ## Workings
 
-Kapowarr allows you to build a digital library of comics. You can add volumes, map them to a folder and start managing! Download issues of the volume (or TPB's), rename them and move them. The whole process is automised and is all customisable in the settings.
+Kapowarr allows you to build a digital library of comics. You can add volumes, map them to a folder and start managing! Download issues of the volume (or TPB's), rename them and move them. The whole process is automated and is all customisable in the settings.
 
 Each day, each volume is checked to see if a new issue has come out and if so, it will immediately be downloaded and added to your library.
 
