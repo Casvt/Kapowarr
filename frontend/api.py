@@ -339,7 +339,7 @@ def api_settings_service_preference():
 @error_handler
 @auth
 def api_settings_available_formats():
-	result = get_available_formats()
+	result = list(get_available_formats())
 	return return_api(result)
 
 @api.route('/rootfolder', methods=['GET','POST'])

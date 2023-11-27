@@ -161,7 +161,8 @@ class Settings:
 			elif key == 'download_folder' and not isdir(value):
 				raise FolderNotFound
 
-			elif key in ('rename_downloaded_files', 'volumes_as_empty'):
+			elif key in ('rename_downloaded_files', 'volumes_as_empty',
+						'convert'):
 				if not isinstance(value, bool):
 					raise InvalidSettingValue(key, value)
 				value = int(value)

@@ -1,7 +1,8 @@
 #-*- coding: utf-8 -*-
 
+from itertools import chain
 from os.path import splitext
-from typing import Dict, List, Union
+from typing import Dict, List, Set, Union
 
 from backend.converters import FileConverter
 from backend.db import get_db
@@ -13,13 +14,13 @@ conversion_methods: Dict[str, Dict[str, FileConverter]] = {}
 for fc in FileConverter.__subclasses__():
 	conversion_methods.setdefault(fc.source_format, {})[fc.target_format] = fc
 
-def get_available_formats() -> List[str]:
+def get_available_formats() -> Set[str]:
 	"""Get all available formats that can be converted to.
 
 	Returns:
-		List[str]: The list with all formats
+		Set[str]: The list with all formats
 	"""
-	return list({list(v.keys()) for v in conversion_methods.values()})
+	return set(chain.from_iterable(conversion_methods.values()))
 
 def find_target_format_file(
 	file: str,

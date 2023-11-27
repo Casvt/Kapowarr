@@ -120,21 +120,35 @@
                             </tr>
 						</tbody>
 					</table>
-					<h2>Unzipping</h2>
+					<h2>Converting</h2>
+					<p>Convert files to a different format. The list below is the desired format, in order of preference.</p>
 					<table class="fold">
 						<tbody>
 							<tr>
-								<th><label for="unzip-input">Unzip downloads</label></th>
+								<th><label for="convert-input">Convert Files</label></th>
 								<td>
-									<input type="checkbox" id="unzip-input">
-									<p>Unzip zip files after they've been downloaded</p>
+									<input type="checkbox" id="convert-input">
+									<p>Convert files after they've been downloaded.</p>
 								</td>
 							</tr>
+						</tbody>
+					</table>
+					<p>Format Preference</p>
+					<table id="convert-table" class="short-table">
+						<tbody>
 							<tr>
-								<th><label for="cbz-convert-input">Convert to CBZ</label></th>
+								<th></th>
+								<td><p>No Conversion</p></td>
+							</tr>
+							<tr>
+								<th></th>
 								<td>
-									<input type="checkbox" id="cbz-convert-input">
-									<p>Convert to CBZ files after they've been downloaded</p>
+									<select id="add-convert-input"></select>
+								</td>
+								<td>
+									<button id="add-convert-button" title="Add format to list" type="button">
+										<img src="/static/img/cancel_search.svg" alt="">
+									</button>
 								</td>
 							</tr>
 						</tbody>
