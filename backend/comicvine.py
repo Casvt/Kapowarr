@@ -286,7 +286,7 @@ class ComicVine:
 			'aliases': [],
 			'comicvine_info': volume_data.get('site_detail_url'),
 
-			'publisher': volume_data.get('publisher', {}).get('name'),
+			'publisher': (volume_data.get('publisher') or {}).get('name'),
 			'issue_count': int(volume_data['count_of_issues'])
 		}
 

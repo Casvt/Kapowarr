@@ -99,7 +99,6 @@ def propose_library_import(limit: int = 500) -> List[dict]:
 		else:
 			folder = basename(dirname(f))
 		folders.add(folder)
-		print(folders, f)
 		if len(folders) > limit:
 			break
 		limited_files_append(f)
