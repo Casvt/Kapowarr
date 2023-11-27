@@ -300,8 +300,14 @@ def generate_issue_range_name(
 		calculated_issue_number_start,
 		calculated_issue_number_end)
 	).fetchall()
-	formatting_data['issue_number'] = f'{issue_number_start[0]}-{issue_number_end[0]}'
-	
+	formatting_data['issue_number'] = (
+		str(issue_number_start[0])
+			.zfill(settings['issue_padding'])
+		+ ' - ' +
+		str(issue_number_end[0])
+			.zfill(settings['issue_padding'])
+	)
+
 	name = format.format(**formatting_data)
 	save_name = _make_filename_safe(name)
 	return save_name
