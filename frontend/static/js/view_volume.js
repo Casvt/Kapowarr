@@ -95,8 +95,18 @@ function fillTable(issues, api_key) {
 		manual_search_icon.src = `${url_base}/static/img/manual_search.svg`;
 		manual_search.appendChild(manual_search_icon);
 		actions.appendChild(manual_search);
+
+		// Convert
+		const convert = document.createElement('button');
+		convert.title = 'Convert files for this issue';
+		convert.ariaLabel = 'Convert files for this issue';
+		convert.onclick = (e) => showConvert(api_key, obj.id);
+		const convert_icon = document.createElement('img');
+		convert_icon.src = `${url_base}/static/img/convert.svg`;
+		convert.appendChild(convert_icon);
+		actions.appendChild(convert);
+
 		entry.appendChild(actions);
-		
 		table.appendChild(entry);
 	};
 };
@@ -221,12 +231,6 @@ function autosearchVolume(api_key) {
 	});
 };
 
-function unzipVolume(api_key) {
-	fetch(`${url_base}/api/system/tasks?api_key=${api_key}&cmd=unzip&volume_id=${id}`, {
-		'method': 'POST'
-	});
-};
-
 function autosearchIssue(issue_id, api_key) {
 	const button_info = task_to_button[`auto_search_issue#${id}#${issue_id}`];
 	const icon = button_info.button.querySelector('img');
@@ -347,22 +351,25 @@ function blockManualSearch(link, button, match, api_key) {
 // Renaming
 // 
 function showRename(api_key, issue_id=null) {
+	document.querySelector('#selectall-input').checked = true;
+	
+	const rename_button = document.querySelector('#submit-rename');
 	let url;
 	if (issue_id === null) {
 		// Preview volume rename
 		url = `${url_base}/api/volumes/${id}/rename?api_key=${api_key}`;
-		document.querySelector('#submit-rename').dataset.issue_id = '';
+		rename_button.dataset.issue_id = '';
 	} else {
 		// Preview issue rename
 		url = `${url_base}/api/issues/${issue_id}/rename?api_key=${api_key}`;
-		document.querySelector('#submit-rename').dataset.issue_id = issue_id;
+		rename_button.dataset.issue_id = issue_id;
 	};
 	fetch(url)
 	.then(response => response.json())
 	.then(json => {
 		const table = document.querySelector('#rename-preview > tbody');
 		table.innerHTML = '';
-		const rename_button = document.querySelector('#submit-rename');
+		
 
 		if (!json.result.length) {
 			const message = document.createElement('p');
@@ -414,7 +421,7 @@ function showRename(api_key, issue_id=null) {
 
 function toggleAllRenames() {
 	const checked = document.querySelector('#selectall-input').checked;
-	document.querySelectorAll('#rename-preview > tbody input[type="checkbox"]').forEach(e => e.checked = checked);
+	document.querySelectorAll('#rename-window > tbody input[type="checkbox"]').forEach(e => e.checked = checked);
 };
 
 function renameVolume(api_key, issue_id=null) {
@@ -437,6 +444,128 @@ function renameVolume(api_key, issue_id=null) {
 			'headers': {'Content-Type': 'application/json'},
 			'body': JSON.stringify(
 				[...document.querySelectorAll('#rename-preview > tbody > tr > td > input[type="checkbox"]:checked')]
+					.map(e => e.parentNode.nextSibling.nextSibling.innerText)
+			)
+		}
+
+	fetch(url, args)
+	.then(response => window.location.reload());
+};
+
+// 
+// Converting
+// 
+function loadConvertPreference(api_key) {
+	const el = document.querySelector('#convert-preference');
+	if (el.innerHTML !== '')
+		return;
+
+	fetch(`${url_base}/api/settings?api_key=${api_key}`)
+	.then(response => response.json())
+	.then(json => {
+		el.innerHTML = [
+			'source',
+			...json.result.format_preference,
+			'no conversion'
+		].join(' - ');
+	});
+};
+
+function showConvert(api_key, issue_id=null) {
+	document.querySelector('#selectall-convert-input').checked = true;
+	loadConvertPreference(api_key);
+
+	const convert_button = document.querySelector('#submit-convert');
+	let url;
+	if (issue_id === null) {
+		// Preview issue conversion
+		url = `${url_base}/api/volumes/${id}/convert?api_key=${api_key}`;
+		convert_button.dataset.issue_id = '';
+	} else {
+		// Preview issue conversion
+		url = `${url_base}/api/issues/${issue_id}/convert?api_key=${api_key}`;
+		convert_button.dataset.issue_id = issue_id;
+	};
+	fetch(url)
+	.then(response => response.json())
+	.then(json => {
+		const table = document.querySelector('#convert-window tbody');
+		table.innerHTML = '';
+
+		if (!json.result.length) {
+			const message = document.createElement('p');
+			message.classList.add('empty-rename-message');
+			message.innerText = 'Nothing to convert';
+			table.appendChild(message);
+			convert_button.classList.add('hidden');
+			table.parentNode.querySelector('thead').classList.add('hidden');
+
+		} else {
+			convert_button.classList.remove('hidden');
+			table.parentNode.querySelector('thead').classList.remove('hidden');
+			json.result.forEach(convert_entry => {
+				const before = document.createElement('tr');
+				
+				const checkbox = document.createElement('td');
+				checkbox.setAttribute('rowspan', '2');
+				const checkbox_input = document.createElement('input');
+				checkbox_input.type = 'checkbox';
+				checkbox_input.checked = true;
+				checkbox.appendChild(checkbox_input);
+				before.appendChild(checkbox);
+				
+				const before_icon = document.createElement('td');
+				before_icon.innerText = '-';
+				before.appendChild(before_icon);
+				
+				const before_path = document.createElement('td');
+				before_path.innerText = convert_entry.before;
+				before.appendChild(before_path);
+				
+				table.appendChild(before);
+				
+				const after = document.createElement('tr');
+				
+				const after_icon = document.createElement('td');
+				after_icon.innerText = '+';
+				after.appendChild(after_icon);
+				
+				const after_path = document.createElement('td');
+				after_path.innerText = convert_entry.after;
+				after.appendChild(after_path);
+				
+				table.appendChild(after);
+			});
+		};
+		showWindow('convert-window');
+	});
+};
+
+function toggleAllConverts() {
+	const checked = document.querySelector('#selectall-convert-input').checked;
+	document.querySelectorAll('#convert-window tbody input[type="checkbox"]').forEach(e => e.checked = checked);
+};
+
+function convertVolume(api_key, issue_id=null) {
+	if ([...document.querySelectorAll('#convert-window tbody input[type="checkbox"]')].every(e => !e.checked)) {
+		closeWindow();
+		return;
+	};
+
+	showLoadWindow('convert-window');
+	let url;
+	if (issue_id === null) url = `${url_base}/api/volumes/${id}/convert?api_key=${api_key}`;
+	else url = `${url_base}/api/issues/${issue_id}/convert?api_key=${api_key}`;
+
+	let args;
+	if ([...document.querySelectorAll('#convert-window tbody input[type="checkbox"]')].every(e => e.checked))
+		args = { 'method': 'POST' };
+	else
+		args = {
+			'method': 'POST',
+			'headers': {'Content-Type': 'application/json'},
+			'body': JSON.stringify(
+				[...document.querySelectorAll('#convert-window tbody > tr > td > input[type="checkbox"]:checked')]
 					.map(e => e.parentNode.nextSibling.nextSibling.innerText)
 			)
 		}
@@ -557,10 +686,12 @@ usingApiKey()
 	addEventListener('#refresh-button', 'click', e => refreshVolume(api_key));
 	addEventListener('#autosearch-button', 'click', e => autosearchVolume(api_key));
 	addEventListener('#manualsearch-button', 'click', e => showManualSearch(api_key));
-	addEventListener('#unzip-button', 'click', e => unzipVolume(api_key));
 
 	addEventListener('#rename-button', 'click', e => showRename(api_key));
 	addEventListener('#submit-rename', 'click', e => renameVolume(api_key, e.target.dataset.issue_id || null));
+
+	addEventListener('#convert-button', 'click', e => showConvert(api_key));
+	addEventListener('#submit-convert', 'click', e => convertVolume(api_key, e.target.dataset.issue_id || null));
 
 	addEventListener('#edit-button', 'click', e => showEdit(api_key));
 	
@@ -575,7 +706,9 @@ addEventListener('#cancel-delete', 'click', e => closeWindow());
 addEventListener('#cancel-info', 'click', e => closeWindow());
 addEventListener('#issue-info-selector', 'click', e => showInfoWindow('issue-info'));
 addEventListener('#issue-files-selector', 'click', e => showInfoWindow('issue-files'));
+addEventListener('#cancel-convert', 'click', e => closeWindow());
 addEventListener('#selectall-input', 'change', e => toggleAllRenames());
+addEventListener('#selectall-convert-input', 'change', e => toggleAllConverts());
 
 document.querySelector('#edit-form').setAttribute('action', 'javascript:editVolume();');
 document.querySelector('#delete-form').setAttribute('action', 'javascript:deleteVolume();');

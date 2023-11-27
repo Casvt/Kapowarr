@@ -114,7 +114,7 @@
 	width: 3rem;
 }
 .action-column {
-	width: 4rem;
+	width: 6rem;
 }
 .action-column > :not(:first-child) {
 	margin-left: .5rem;
@@ -172,6 +172,7 @@
 #cancel-delete,
 #cancel-edit,
 #cancel-rename,
+#cancel-convert,
 #cancel-search,
 #cancel-info {
 	background-color: var(--error-color);
@@ -179,7 +180,8 @@
 
 #submit-delete,
 #submit-edit,
-#submit-rename {
+#submit-rename,
+#submit-convert {
 	background-color: var(--success-color);
 }
 
@@ -267,51 +269,52 @@
 }
 
 /*  */
-/* Rename window */
+/* Rename and convert window */
 /*  */
-#rename-window > :nth-child(2) {
+#rename-window > :nth-child(2),
+#convert-window > :nth-child(2) {
 	display: block;
 }
 
-#rename-preview {
+.rename-preview {
 	min-width: 40rem;
 	border-spacing: 0px;
 }
 
-#rename-preview th {
+.rename-preview th {
 	text-align: left;
 }
 
-#rename-preview tr > td:first-child {
+.rename-preview tr > td:first-child {
 	padding-right: .5rem;
 }
 
-#rename-preview tr:nth-child(odd) > td {
+.rename-preview tr:nth-child(odd) > td {
 	padding-top: .75rem;
 	padding-bottom: .25rem;
 }
 
-#rename-preview tr:nth-child(even) > td {
+.rename-preview tr:nth-child(even) > td {
 	padding-bottom: .75rem;
 	padding-top: .25rem;
 }
 
-#rename-preview tr:nth-child(odd):not(:nth-last-child(2)) > td:first-child,
-#rename-preview tr:nth-child(even):not(:last-child) > td {
+.rename-preview tr:nth-child(odd):not(:nth-last-child(2)) > td:first-child,
+.rename-preview tr:nth-child(even):not(:last-child) > td {
 	border-bottom: 1px solid var(--border-color);
 }
 
-#rename-preview tr:nth-child(odd) > td:nth-child(2),
-#rename-preview tr:nth-child(even) > td:first-child {
+.rename-preview tr:nth-child(odd) > td:nth-child(2),
+.rename-preview tr:nth-child(even) > td:first-child {
 	text-align: center;
 	padding-right: .5rem;
 }
 
-#rename-preview tr:nth-child(odd) > td:nth-child(2) {
+.rename-preview tr:nth-child(odd) > td:nth-child(2) {
 	color: var(--error-color);
 }
 
-#rename-preview tr:nth-child(even) > td:first-child {
+.rename-preview tr:nth-child(even) > td:first-child {
 	color: var(--success-color);
 }
 
@@ -329,12 +332,17 @@
 	text-align: center;
 }
 
-#rename-preview p:not(.empty-rename-message) {
+.rename-preview p:not(.empty-rename-message) {
 	font-size: .9rem;
 }
 
-#rename-preview p:not(:first-child) {
+.rename-preview p:not(:first-child) {
 	margin-top: .2rem;
+}
+
+#convert-preference {
+	margin-bottom: 1rem;
+	text-align: center;
 }
 
 /*  */

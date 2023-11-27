@@ -31,7 +31,8 @@ default_settings = {
 	'download_folder': folder_path('temp_downloads'),
 	'log_level': 'info',
 	'database_version': __DATABASE_VERSION__,
-	'unzip': False,
+	'convert': False,
+	'format_preference': '',
 	'volume_padding': 2,
 	'issue_padding': 3,
 	'rename_downloaded_files': True,
@@ -108,9 +109,16 @@ class Settings:
 			settings = dict(get_db().execute(
 				"SELECT key, value FROM config;"
 			))
-			settings['unzip'] = settings['unzip'] == 1
-			settings['rename_downloaded_files'] = settings['rename_downloaded_files'] == 1
-			settings['volume_as_empty'] = settings['volume_as_empty'] == 1
+			bool_values = ('rename_downloaded_files', 'volume_as_empty',
+						'convert')
+			for bv in bool_values:
+				settings[bv] = settings[bv] == 1
+
+			if not settings['format_preference']:
+				settings['format_preference'] = []
+			else:
+				settings['format_preference'] = settings['format_preference'].split(',')
+
 			self.cache.update(settings)
 
 		return self.cache
@@ -152,7 +160,8 @@ class Settings:
 			elif key == 'download_folder' and not isdir(value):
 				raise FolderNotFound
 
-			elif key in ('rename_downloaded_files', 'volumes_as_empty'):
+			elif key in ('rename_downloaded_files', 'volumes_as_empty',
+						'convert'):
 				if not isinstance(value, bool):
 					raise InvalidSettingValue(key, value)
 				value = int(value)
@@ -182,6 +191,20 @@ class Settings:
 						raise InvalidSettingValue(key, value)
 				except TypeError:
 					raise InvalidSettingValue(key, value)
+
+			elif key == 'format_preference':
+				from backend.conversion import get_available_formats
+				if not isinstance(value, list):
+					raise InvalidSettingValue(key, value)
+
+				available_formats = get_available_formats()
+				for format in value:
+					if not isinstance(format, str):
+						raise InvalidSettingValue(key, value)
+					if not format in available_formats:
+						raise InvalidSettingValue(key, value)
+
+				value = ','.join(value)
 
 			elif key not in default_settings.keys():
 				raise InvalidSettingKey(key)

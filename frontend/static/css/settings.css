@@ -68,6 +68,47 @@ main h2:not(:first-of-type) {
 }
 
 /*  */
+/* Short table (preference lists) */
+/*  */
+.settings-container .short-table {
+	width: unset;
+}
+
+.settings-container .short-table tr > th {
+	width: 3rem;
+	vertical-align: middle;
+	padding-top: .5rem;
+}
+
+/*  */
+/* Converting list */
+/*  */
+#convert-table button {
+	width: 2rem;
+	padding: 0;
+	background-color: transparent;
+}
+
+#convert-table button img {
+	width: 2rem;
+}
+
+#convert-table tr:nth-last-child(2) td p {
+	padding: .5rem .75rem;
+	border-radius: 6px;
+	border: 2px solid var(--border-color);
+	background-color: var(--inverted-text-color);
+	color: var(--text-color);
+	font-size: 1rem;
+	font-family: "Ubuntu Mono", Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+#convert-table #add-convert-button img {
+	width: 1.5rem;
+	transform: rotate(45deg);
+}
+
+/*  */
 /* Root folder list */
 /*  */
 #root-folder-container {
@@ -131,17 +172,6 @@ main h2:not(:first-of-type) {
 	border-radius: 4px;
 	color: var(--dark-color);
 	background-color: var(--accent-color);
-}
-
-/*  */
-/* Service preference */
-/*  */
-#pref-table th {
-	width: 2rem;
-}
-
-#pref-table select {
-	width: min(20rem, 100%);
 }
 
 /*  */

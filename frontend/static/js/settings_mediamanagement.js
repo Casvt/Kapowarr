@@ -5,7 +5,7 @@ const inputs = {
 	'file_naming_tpb_input': document.querySelector('#file-naming-tpb-input'),
 	'file_naming_empty_input': document.querySelector('#file-naming-empty-input'),
 	'volume_as_empty_input': document.querySelector('#volume-as-empty-input'),
-	'unzip_input': document.querySelector('#unzip-input'),
+	'convert_input': document.querySelector('#convert-input'),
 	'issue_padding_input': document.querySelector('#issue-padding-input'),
 	'volume_padding_input': document.querySelector('#volume-padding-input')
 };
@@ -23,9 +23,11 @@ function fillSettings(api_key) {
 		inputs.file_naming_tpb_input.value = json.result.file_naming_tpb;
 		inputs.file_naming_empty_input.value = json.result.file_naming_empty;
 		inputs.volume_as_empty_input.checked = json.result.volume_as_empty;
-		inputs.unzip_input.checked = json.result.unzip;
+		inputs.convert_input.checked = json.result.convert;
 		inputs.issue_padding_input.value = json.result.issue_padding;
 		inputs.volume_padding_input.value = json.result.volume_padding;
+		
+		fillConvert(api_key, json.result.format_preference);
 	});
 };
 
@@ -40,7 +42,8 @@ function saveSettings(api_key) {
 		'file_naming_tpb': inputs.file_naming_tpb_input.value,
 		'file_naming_empty': inputs.file_naming_empty_input.value,
 		'volume_as_empty': inputs.volume_as_empty_input.checked,
-		'unzip': inputs.unzip_input.checked,
+		'convert': inputs.convert_input.checked,
+		'format_preference': convert_preference,
 		'issue_padding': parseInt(inputs.issue_padding_input.value),
 		'volume_padding': parseInt(inputs.volume_padding_input.value)
 	};
@@ -64,6 +67,113 @@ function saveSettings(api_key) {
 		} else
 			console.log(e.error);
 	});
+};
+
+//
+// Convert
+//
+let convert_options = [];
+let convert_preference = [];
+function fillConvert(api_key, convert_pref) {
+	fetch(`${url_base}/api/settings/availableformats?api_key=${api_key}`)
+	.then(response => response.json())
+	.then(json => {
+		convert_options = json.result;
+
+		convert_preference = convert_pref;
+		updateConvertList();
+	});
+};
+
+function getConvertList() {
+	return [
+		...document.querySelectorAll(
+			'#convert-table tr[data-place] select'
+		)
+	].map(el => el.value);
+};
+
+function updateConvertList() {
+	const table = document.querySelector('#convert-table tbody');
+	table.querySelectorAll('tr:not(:nth-last-child(-n+2))').forEach(
+		e => e.remove()
+		);
+	const no_conversion = table.querySelector('tr:nth-last-child(2)');
+
+	let last_index = -1
+	convert_preference.forEach((format, index) => {
+		last_index = index;
+		const entry = document.createElement('tr');
+		entry.dataset.place = index + 1;
+
+		const place = document.createElement('th');
+		place.innerText = index + 1;
+		entry.appendChild(place);
+
+		const select_container = document.createElement('td');
+		const select = document.createElement('select');
+		convert_preference.forEach(o => {
+			const option = document.createElement('option');
+			option.value = option.innerText = o;
+			option.selected = format === o;
+			select.appendChild(option);
+		});
+		select.onchange = (e) => {
+			const other_el = [
+				...table.querySelectorAll(
+					`tr:not([data-place="${index + 1}"]) select`
+				)
+			].filter(
+				el => el.value === select.value
+			)[0];
+			const used_values = new Set([
+				...table.querySelectorAll('select')
+			].map(el => el.value));
+			const missing_value = convert_preference
+				.filter(f => !used_values.has(f))[0];
+			other_el.value = missing_value;
+			
+			convert_preference = getConvertList();
+		};
+		select_container.appendChild(select);
+		entry.appendChild(select_container);
+		
+		const delete_container = document.createElement('td');
+		const delete_button = document.createElement('button');
+		delete_button.title = 'Delete format from list';
+		delete_button.type = 'button';
+		delete_button.onclick = (e) => {
+			entry.remove();
+			convert_preference = getConvertList();
+			updateConvertList();
+		};
+		const delete_button_icon = document.createElement('img');
+		delete_button_icon.src = `${url_base}/static/img/delete.svg`;
+		delete_button_icon.alt = '';
+
+		delete_button.appendChild(delete_button_icon);
+		delete_container.appendChild(delete_button);
+		entry.appendChild(delete_container);
+
+		no_conversion.insertAdjacentElement("beforebegin", entry);
+	});
+
+	no_conversion.querySelector('th').innerText = last_index + 2;
+
+	const add_select = table.querySelector('#add-convert-input');
+	add_select.innerHTML = '';
+	const not_added_formats = convert_options
+		.filter(el => !convert_preference.includes(el));
+	if (not_added_formats.length > 0) {
+		not_added_formats.forEach(format => {
+			const option = document.createElement('option');
+			option.value = option.innerText = format;
+			add_select.appendChild(option);
+		});
+		table.querySelector('tr:last-child').classList.remove('hidden');
+	} else {
+		table.querySelector('tr:last-child').classList.add('hidden');
+	};
 };
 
 // 
@@ -157,3 +267,9 @@ usingApiKey()
 });
 
 addEventListener('#toggle-root-folder', 'click', toggleAddRootFolder);
+addEventListener('#add-convert-button', 'click', e => {
+	convert_preference.push(
+		document.querySelector('#add-convert-input').value
+	);
+	updateConvertList();
+});

@@ -29,6 +29,10 @@
 		<section id="renaming-window" class="loading-window">
 			<p>Renaming volume files...</p>
 		</section>
+		<!-- Loading after converting volume files -->
+		<section id="converting-window" class="loading-window">
+			<p>Converting volume files...</p>
+		</section>
 		<!-- Deleting volume -->
 		<section id="delete-window">
 			<div>
@@ -112,7 +116,7 @@
 				</button>
 			</div>
 			<div>
-				<table id="rename-preview">
+				<table class="rename-preview">
 					<thead>
 						<th colspan="2">
 							<input type="checkbox" id="selectall-input" checked>
@@ -180,6 +184,31 @@
 				<button id="cancel-info">Close</button>
 			</div>
 		</section>
+		<!-- Converting volume files -->
+		<section id="convert-window" class="wide-window" data-loading_window="converting-window">
+			<div>
+				<h2>Convert volume files</h2>
+				<button aria-label="Cancel converting volume files" title="Cancel converting volume files">
+					<img src="{{url_base}}/static/img/cancel_search.svg" alt="">
+				</button>
+			</div>
+			<div>
+				<p id="convert-preference"></p>
+				<table class="rename-preview">
+					<thead>
+						<th colspan="2">
+							<input type="checkbox" id="selectall-convert-input" checked>
+						</th>
+						<th>Files</th>
+					</thead>
+					<tbody></tbody>
+				</table>
+			</div>
+			<div>
+				<button id="cancel-convert">Cancel</button>
+				<button id="submit-convert" type="submit">Convert</button>
+			</div>
+		</section>
 	</div>
 	
 	<header>
@@ -223,16 +252,16 @@
 							<p>Manual Search</p>
 						</div>
 					</button>
-					<button id="unzip-button" aria-label="Unzip all zip files for the volume" title="Unzip all zip files for the volume">
-						<img src="{{url_base}}/static/img/unzip.svg" alt="">
-						<div>
-							<p>Unzip</p>
-						</div>
-					</button>
 					<button id="rename-button" aria-label="Preview how the files of the volume will be renamed" title="Preview how the files of the volume will be renamed">
 						<img src="{{url_base}}/static/img/rename.svg" alt="">
 						<div>
 							<p>Preview Rename</p>
+						</div>
+					</button>
+					<button id="convert-button" aria-label="Convert files to a different format" title="Convert files to a different format">
+						<img src="{{url_base}}/static/img/convert_white.svg" alt="">
+						<div>
+							<p>Convert</p>
 						</div>
 					</button>
 					<button id="edit-button" aria-label="Edit the volume" title="Edit the volume">
