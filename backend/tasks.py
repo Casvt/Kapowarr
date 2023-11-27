@@ -13,7 +13,6 @@ from backend.custom_exceptions import (InvalidComicVineApiKey,
                                        TaskNotDeletable, TaskNotFound)
 from backend.db import get_db
 from backend.download_queue import DownloadHandler
-from backend.post_processing import unzip_volume
 from backend.search import auto_search
 from backend.volumes import refresh_and_scan
 
@@ -178,35 +177,6 @@ class RefreshAndScanVolume(Task):
 		except InvalidComicVineApiKey:
 			pass
 
-		return
-
-class Unzip(Task):
-	"""Unzip all zip files for a volume
-	"""
-	stop = False
-	message = ''
-	action = 'unzip'
-	display_title = 'Unzip'
-	category = ''
-	volume_id = None
-	issue_id = None
-	
-	def __init__(self, volume_id: int):
-		"""Create the task
-
-		Args:
-			volume_id (int): The id of the volume for which to perform the task
-		"""
-		self.volume_id = volume_id
-		
-	def run(self) -> None:
-		title = get_db().execute(
-			"SELECT title FROM volumes WHERE id = ? LIMIT 1;",
-			(self.volume_id,)
-		).fetchone()[0]
-		self.message = f'Unzipping for {title}'
-		
-		unzip_volume(self.volume_id)
 		return
 
 #=====================

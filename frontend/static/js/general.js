@@ -40,11 +40,6 @@ function mapButtons(id) {
 			'icon': `${url_base}/static/img/search_white.svg`,
 			'loading_icon': `${url_base}/static/img/loading_white.svg`
 		};
-		task_to_button[`unzip#${id}`] = {
-			'button': document.querySelector('#unzip-button'),
-			'icon': `${url_base}/static/img/unzip_light.svg`,
-			'loading_icon': `${url_base}/static/img/loading_white.svg`
-		};
 		document.querySelectorAll('.issue-entry').forEach(entry => {
 			const button = entry.querySelector('.action-column > button:first-child');
 			task_to_button[`auto_search_issue#${id}#${entry.dataset.id}`] = {

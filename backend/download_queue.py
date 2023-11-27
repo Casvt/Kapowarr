@@ -266,9 +266,10 @@ class DownloadHandler:
 						custom_name=True
 					)
 					dl_instance.id = download['id']
-					dl_instance.client = TorrentClients.get_client(
-						download['torrent_client_id']
-					)
+					if isinstance(dl_instance, TorrentDownload):
+						dl_instance.client = TorrentClients.get_client(
+							download['torrent_client_id']
+						)
 
 				except LinkBroken as lb:
 					# Link is broken

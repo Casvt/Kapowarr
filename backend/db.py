@@ -16,7 +16,7 @@ from waitress.task import ThreadedTaskDispatcher as OldThreadedTaskDispatcher
 from backend.logging import set_log_level
 
 __DATABASE_FILEPATH__ = 'db', 'Kapowarr.db'
-__DATABASE_VERSION__ = 12
+__DATABASE_VERSION__ = 13
 
 class Singleton(type):
 	_instances = {}
@@ -488,6 +488,28 @@ def migrate_db(current_db_version: int) -> None:
 				FOREIGN KEY (issue_id) REFERENCES issues(id)
 			);
 		""")
+
+	if current_db_version == 12:
+		# V12 -> V13
+		unzip = cursor.execute(
+			"SELECT value FROM config WHERE key = 'unzip' LIMIT 1;"
+		).fetchone()[0]
+
+		cursor.execute(
+			"DELETE FROM config WHERE key = 'unzip';"
+		)
+
+		if unzip:
+			cursor.executescript("""
+				UPDATE config
+				SET value = 'folder'
+				WHERE key = 'format_preference';
+				
+				UPDATE config
+				SET value = 1
+				WHERE key = 'convert';
+				"""
+			)
 
 	return
 

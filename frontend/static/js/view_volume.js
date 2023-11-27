@@ -102,7 +102,7 @@ function fillTable(issues, api_key) {
 		convert.ariaLabel = 'Convert files for this issue';
 		convert.onclick = (e) => showConvert(api_key, obj.id);
 		const convert_icon = document.createElement('img');
-		convert_icon.src = `${url_base}/static/img/unzip.svg`;
+		convert_icon.src = `${url_base}/static/img/convert.svg`;
 		convert.appendChild(convert_icon);
 		actions.appendChild(convert);
 
@@ -227,12 +227,6 @@ function autosearchVolume(api_key) {
 	icon.classList.add('spinning');
 
 	fetch(`${url_base}/api/system/tasks?api_key=${api_key}&cmd=auto_search&volume_id=${id}`, {
-		'method': 'POST'
-	});
-};
-
-function unzipVolume(api_key) {
-	fetch(`${url_base}/api/system/tasks?api_key=${api_key}&cmd=unzip&volume_id=${id}`, {
 		'method': 'POST'
 	});
 };
@@ -471,7 +465,8 @@ function loadConvertPreference(api_key) {
 	.then(json => {
 		el.innerHTML = [
 			'source',
-			...json.result.format_preference
+			...json.result.format_preference,
+			'no conversion'
 		].join(' - ');
 	});
 };
@@ -691,7 +686,6 @@ usingApiKey()
 	addEventListener('#refresh-button', 'click', e => refreshVolume(api_key));
 	addEventListener('#autosearch-button', 'click', e => autosearchVolume(api_key));
 	addEventListener('#manualsearch-button', 'click', e => showManualSearch(api_key));
-	addEventListener('#unzip-button', 'click', e => unzipVolume(api_key));
 
 	addEventListener('#rename-button', 'click', e => showRename(api_key));
 	addEventListener('#submit-rename', 'click', e => renameVolume(api_key, e.target.dataset.issue_id || null));

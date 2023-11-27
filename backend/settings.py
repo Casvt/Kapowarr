@@ -31,7 +31,6 @@ default_settings = {
 	'download_folder': folder_path('temp_downloads'),
 	'log_level': 'info',
 	'database_version': __DATABASE_VERSION__,
-	'unzip': False,
 	'convert': False,
 	'format_preference': '',
 	'volume_padding': 2,
@@ -110,7 +109,7 @@ class Settings:
 			settings = dict(get_db().execute(
 				"SELECT key, value FROM config;"
 			))
-			bool_values = ('unzip', 'rename_downloaded_files', 'volume_as_empty',
+			bool_values = ('rename_downloaded_files', 'volume_as_empty',
 						'convert')
 			for bv in bool_values:
 				settings[bv] = settings[bv] == 1

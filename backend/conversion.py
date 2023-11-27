@@ -1,7 +1,7 @@
 #-*- coding: utf-8 -*-
 
 from itertools import chain
-from os.path import splitext
+from os.path import dirname, splitext
 from typing import Dict, List, Set, Union
 
 from backend.converters import FileConverter
@@ -157,15 +157,21 @@ def preview_mass_convert(
 			format_preference
 		)
 		if converter is not None:
-			result.append({
-				'before': f,
-				'after': splitext(f)[0] + '.' + converter.target_format
-			})
+			if converter.target_format == 'folder':
+				result.append({
+					'before': f,
+					'after': dirname(f)
+				})
+			else:
+				result.append({
+					'before': f,
+					'after': splitext(f)[0] + '.' + converter.target_format
+				})
 	return result
 
 def mass_convert(
 	volume_id: int,
-	issue_id: int = None,
+	issue_id: Union[int, None] = None,
 	files: List[str]= []
 ) -> None:
 	"""Convert files for a volume or issue.
@@ -173,7 +179,7 @@ def mass_convert(
 	Args:
 		volume_id (int): The ID of the volume to convert for.
 
-		issue_id (int, optional): The ID of the issue to convert for.
+		issue_id (Union[int, None], optional): The ID of the issue to convert for.
 			Defaults to None.
 
 		files (List[str], optional): Only convert files mentioned in this list.
@@ -189,7 +195,7 @@ def mass_convert(
 		issue_id
 	)
 	
-	for (f,) in cursor:
+	for (f,) in cursor.fetchall():
 		if files and f not in files:
 			continue
 		
