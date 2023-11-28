@@ -125,8 +125,13 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 				raise InvalidKeyValue(key, value)
 
 		elif key == 'sort':
-			if not value in library.sorting_orders.keys():
+			if not value in library.sorting_orders:
 				raise InvalidKeyValue(key, value)
+
+		elif key == 'filter':
+			if not value in library.filters and value:
+				raise InvalidKeyValue(key, value)
+			value = value or None
 
 		elif key in ('root_folder_id', 'new_root_folder', 'offset', 'limit'):
 			try:
@@ -155,6 +160,9 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 		# Default value
 		if key == 'sort':
 			value = 'title'
+
+		elif key == 'filter':
+			value = None
 
 		elif key == 'monitor':
 			value = True
@@ -424,10 +432,11 @@ def api_volumes():
 	if request.method == 'GET':
 		query = extract_key(request, 'query', False)
 		sort = extract_key(request, 'sort', False)
+		filter = extract_key(request, 'filter', False)
 		if query:
-			volumes = library.search(query, sort)
+			volumes = library.search(query, sort, filter)
 		else:
-			volumes = library.get_volumes(sort)
+			volumes = library.get_volumes(sort, filter)
 
 		return return_api(volumes)
 

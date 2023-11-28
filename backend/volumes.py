@@ -516,6 +516,11 @@ class Library:
 		'publisher': 'publisher, title, year, volume_number'
 	}
 	
+	filters = {
+		'wanted': 'WHERE issues_downloaded_monitored < issue_count_monitored',
+		'monitored': 'WHERE monitored = 1'
+	}
+	
 	def __format_lib_output(self, library: List[dict]) -> List[dict]:
 		"""Format the library entries for API response
 
@@ -530,7 +535,10 @@ class Library:
 			entry['cover'] = f'{ui_vars["url_base"]}/api/volumes/{entry["id"]}/cover'
 		return library
 	
-	def get_volumes(self, sort: str='title') -> List[dict]:
+	def get_volumes(self,
+		sort: str='title',
+		filter: Union[str, None] = None
+	) -> List[dict]:
 		"""Get all volumes in the library
 
 		Args:
@@ -538,10 +546,15 @@ class Library:
 			`title`, `year`, `volume_number`, `recently_added` and `publisher` allowed.
 				Defaults to 'title'.
 
+			filter (Union[str, None], optional): Apply a filter to the list.
+			`wanted` and `monitored` allowed.
+				Defaults to None.
+
 		Returns:
 			List[dict]: The list of volumes in the library.
 		"""		
 		sort = self.sorting_orders[sort]
+		filter = self.filters.get(filter, '')
 
 		volumes = [
 			dict(v) for v in get_db('dict').execute(f"""
@@ -576,6 +589,7 @@ class Library:
 						SELECT COUNT(issue_id) FROM issues_with_files WHERE monitored = 1
 					) AS issues_downloaded_monitored
 				FROM volumes
+				{filter}
 				ORDER BY {sort};
 				"""
 			)
@@ -585,7 +599,11 @@ class Library:
 		
 		return volumes
 		
-	def search(self, query: str, sort: str='title') -> List[dict]:
+	def search(self,
+		query: str,
+		sort: str='title',
+		filter: Union[str, None] = None
+	) -> List[dict]:
 		"""Search in the library with a query
 
 		Args:
@@ -594,12 +612,16 @@ class Library:
 			`title`, `year`, `volume_number`, `recently_added` and `publisher` allowed.
 				Defaults to 'title'.
 
+			filter (Union[str, None], optional): Apply a filter to the list.
+			`wanted` and `monitored` allowed.
+				Defaults to None.
+
 		Returns:
 			List[dict]: The resulting list of matching volumes in the library
 		"""
 		volumes = [
 			v
-			for v in self.get_volumes(sort)
+			for v in self.get_volumes(sort, filter)
 			if query.lower() in v['title'].lower()
 		]
 		

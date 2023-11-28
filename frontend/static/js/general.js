@@ -158,6 +158,7 @@ function convertSize(size) {
 const default_values = {
 	'lib_sorting': 'title',
 	'lib_view': 'posters',
+	'lib_filter': '',
 	'theme': 'light',
 	'translated_filter': 'all',
 	'api_key': null,

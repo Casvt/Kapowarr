@@ -127,12 +127,13 @@ function populateLibrary(volumes, api_key, view) {
 function fetchLibrary(api_key) {
 	const sort = document.querySelector('#sort-button').value;
 	const view = document.querySelector('#view-button').value;
+	const filter = document.querySelector('#filter-button').value;
 	const query = document.querySelector('#search-input').value;
 	let url;
 	if (query === '')
-		url = `${url_base}/api/volumes?api_key=${api_key}&sort=${sort}`;
+		url = `${url_base}/api/volumes?api_key=${api_key}&sort=${sort}&filter=${filter}`;
 	else
-		url = `${url_base}/api/volumes?api_key=${api_key}&sort=${sort}&query=${query}`;
+		url = `${url_base}/api/volumes?api_key=${api_key}&sort=${sort}&query=${query}&filter=${filter}`;
 	fetch(url)
 	.then(response => response.json())
 	.then(json => populateLibrary(json.result, api_key, view));
@@ -182,6 +183,7 @@ function searchAll(api_key) {
 
 document.querySelector('#sort-button').value = getLocalStorage('lib_sorting')['lib_sorting'];
 document.querySelector('#view-button').value = getLocalStorage('lib_view')['lib_view'];
+document.querySelector('#filter-button').value = getLocalStorage('lib_filter')['lib_filter'];
 usingApiKey()
 .then(api_key => {
 	fetchLibrary(api_key);
@@ -196,6 +198,10 @@ usingApiKey()
 	});
 	addEventListener('#view-button', 'change', e => {
 		setLocalStorage({'lib_view': document.querySelector('#view-button').value});
+		fetchLibrary(api_key);
+	});
+	addEventListener('#filter-button', 'change', e => {
+		setLocalStorage({'lib_filter': document.querySelector('#filter-button').value});
 		fetchLibrary(api_key);
 	});
 });
