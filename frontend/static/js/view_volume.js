@@ -367,7 +367,7 @@ function showRename(api_key, issue_id=null) {
 	fetch(url)
 	.then(response => response.json())
 	.then(json => {
-		const table = document.querySelector('#rename-preview > tbody');
+		const table = document.querySelector('.rename-preview > tbody');
 		table.innerHTML = '';
 		
 
@@ -425,7 +425,7 @@ function toggleAllRenames() {
 };
 
 function renameVolume(api_key, issue_id=null) {
-	if ([...document.querySelectorAll('#rename-preview > tbody input[type="checkbox"]')].every(e => !e.checked)) {
+	if ([...document.querySelectorAll('.rename-preview > tbody input[type="checkbox"]')].every(e => !e.checked)) {
 		closeWindow();
 		return;
 	};
