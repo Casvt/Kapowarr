@@ -488,9 +488,36 @@ def refresh_and_scan(volume_id: int=None) -> None:
 			title = ?,
 			date = ?,
 			description = ?;
-	""", issue_updates)
-
+		""",
+		issue_updates
+	)
 	cursor.connection.commit()
+	
+	# Check special version
+	sv_updates = list((
+			determine_special_version(
+				volume_data['title'],
+				volume_data['description'],
+				[
+					t[0]
+					for t in cursor.execute(
+						"SELECT title FROM issues WHERE volume_id = ?;",
+						(ids[volume_data['comicvine_id']],)
+					)
+				]
+			),
+			ids[volume_data['comicvine_id']]
+		)
+		for volume_data in volume_datas
+	)
+	
+	cursor.executemany("""
+		UPDATE volumes
+		SET special_version = ?
+		WHERE id = ?;
+		""",
+		sv_updates
+	)
 
 	# Scan for files
 	if volume_id:
