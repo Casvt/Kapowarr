@@ -75,7 +75,25 @@
 			</div>
 			<div id="list-window">
 				<div class="action-bar">
-					<button data-action="rename">Rename</button>
+					<div class="action-divider">
+						<div class="option-container">
+							<button data-action="delete">Delete</button>
+							<select name="delete_folder" id="delete-folder-input">
+								<option value="true">Delete Volume Folder</option>
+								<option value="false" selected>Keep Volume Folder</option>
+							</select>
+						</div>
+					</div>
+					<div class="action-divider">
+						<button data-action="rename">Rename</button>
+						<button data-action="update">Refresh & Scan</button>
+						<button data-action="search">Auto Search</button>
+						<button data-action="convert">Convert</button>
+					</div>
+					<div class="action-divider">
+						<button data-action="unmonitor">Unmonitor</button>
+						<button data-action="monitor">Monitor</button>
+					</div>
 				</div>
 				<div class="list-container">
 					<table>

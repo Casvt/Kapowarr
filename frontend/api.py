@@ -1,7 +1,7 @@
 #-*- coding: utf-8 -*-
 
 import logging
-from typing import Any, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from flask import Blueprint, Flask, request, send_file
 
@@ -30,6 +30,7 @@ from backend.download_queue import (DownloadHandler, delete_download_history,
                                     get_download_history)
 from backend.download_torrent_clients import TorrentClients, client_types
 from backend.library_import import import_library, propose_library_import
+from backend.mass_edit import MassEditorVariables, action_to_func
 from backend.naming import (generate_volume_folder_name, mass_rename,
                             preview_mass_rename)
 from backend.root_folders import RootFolders
@@ -38,7 +39,6 @@ from backend.settings import Settings, about_data, blocklist_reasons
 from backend.tasks import (TaskHandler, delete_task_history, get_task_history,
                            get_task_planning, task_library)
 from backend.volumes import Library, search_volumes
-from backend.mass_edit import action_to_func
 
 api = Blueprint('api', __name__)
 root_folders = RootFolders()
@@ -50,6 +50,7 @@ handler_context = Flask('handler')
 handler_context.teardown_appcontext(close_db)
 download_handler = DownloadHandler(handler_context)
 task_handler = TaskHandler(handler_context, download_handler)
+MassEditorVariables.download_handler = download_handler
 
 def return_api(result: Any, error: str=None, code: int=200) -> Tuple[dict, int]:
 	return {'error': error, 'result': result}, code
@@ -765,6 +766,7 @@ def api_mass_editor():
 
 	action: str = data['action']
 	volume_ids: List[int] = data['volume_ids']
+	args: Dict[str, Any] = data.get('args', {})
 
 	if not (
 		isinstance(volume_ids, list)
@@ -775,5 +777,8 @@ def api_mass_editor():
 	if not action in action_to_func:
 		raise InvalidKeyValue('action', action)
 
-	action_to_func[action](volume_ids)
+	if not isinstance(args, dict):
+		raise InvalidKeyValue('args', args)
+
+	action_to_func[action](volume_ids, **args)
 	return return_api({})

@@ -44,7 +44,7 @@ function toggleSelection() {
 		.forEach(c => c.checked = checked);
 };
 
-function runAction(api_key, action) {
+function runAction(api_key, action, args={}) {
 	windows.list.classList.add('hidden');
 	windows.loading.classList.remove('hidden');
 
@@ -57,7 +57,8 @@ function runAction(api_key, action) {
 		'headers': {'Content-Type': 'application/json'},
 		'body': JSON.stringify({
 			'volume_ids': volume_ids,
-			'action': action
+			'action': action,
+			'args': args
 		})
 	})
 	.then(response => {
@@ -72,8 +73,19 @@ function runAction(api_key, action) {
 usingApiKey()
 .then(api_key => {
 	fillVolumeList(api_key);
-	addEventListener('.action-bar > button', 'click',
+	addEventListener('.action-bar > div > button', 'click',
 		e => runAction(api_key, e.target.dataset.action)
+	);
+	addEventListener('button[data-action="delete"]', 'click',
+		e => runAction(
+			api_key,
+			e.target.dataset.action,
+			{
+				'delete_folder': document.querySelector(
+					'select[name="delete_folder"]'
+				).value === "true"
+			}
+		)
 	);
 });
 
