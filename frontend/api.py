@@ -1,7 +1,7 @@
 #-*- coding: utf-8 -*-
 
 import logging
-from typing import Any, Tuple
+from typing import Any, Dict, List, Tuple
 
 from flask import Blueprint, Flask, request, send_file
 
@@ -31,6 +31,7 @@ from backend.download_queue import (DownloadHandler, delete_download_history,
                                     get_download_history)
 from backend.download_torrent_clients import TorrentClients, client_types
 from backend.library_import import import_library, propose_library_import
+from backend.mass_edit import MassEditorVariables, action_to_func
 from backend.naming import (generate_volume_folder_name, mass_rename,
                             preview_mass_rename)
 from backend.root_folders import RootFolders
@@ -50,6 +51,7 @@ handler_context = Flask('handler')
 handler_context.teardown_appcontext(close_db)
 download_handler = DownloadHandler(handler_context)
 task_handler = TaskHandler(handler_context, download_handler)
+MassEditorVariables.download_handler = download_handler
 
 def return_api(result: Any, error: str=None, code: int=200) -> Tuple[dict, int]:
 	return {'error': error, 'result': result}, code
@@ -796,3 +798,37 @@ def api_torrent_client(id: int):
 	elif request.method == 'DELETE':
 		client.delete()
 		return return_api({})
+
+#=====================
+# Torrent Clients
+#=====================
+@api.route('/masseditor', methods=['POST'])
+@error_handler
+@auth
+def api_mass_editor():
+	data = request.get_json()
+	if not isinstance(data, dict):
+		raise InvalidKeyValue('body', data)
+	if not 'volume_ids' in data:
+		raise KeyNotFound('volume_ids')
+	if not 'action' in data:
+		raise KeyNotFound('action')
+
+	action: str = data['action']
+	volume_ids: List[int] = data['volume_ids']
+	args: Dict[str, Any] = data.get('args', {})
+
+	if not (
+		isinstance(volume_ids, list)
+		and all(isinstance(v, int) for v in volume_ids)
+	):
+		raise InvalidKeyValue('volume_ids', volume_ids)
+
+	if not action in action_to_func:
+		raise InvalidKeyValue('action', action)
+
+	if not isinstance(args, dict):
+		raise InvalidKeyValue('args', args)
+
+	action_to_func[action](volume_ids, **args)
+	return return_api({})

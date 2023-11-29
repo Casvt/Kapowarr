@@ -10,13 +10,13 @@
 
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/window.css') }}">
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/library_import.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/mass_editor.css') }}">
 	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 	<script src="{{ url_for('static', filename='js/general.js') }}" defer></script>
 	<script src="{{ url_for('static', filename='js/window.js') }}" defer></script>
-	<script src="{{ url_for('static', filename='js/library_import.js') }}" defer></script>
+	<script src="{{ url_for('static', filename='js/mass_editor.js') }}" defer></script>
 
-	<title>Library Import - Kapowarr</title>
+	<title>Mass Editor - Kapowarr</title>
 </head>
 <body>
 	<div class="window">
@@ -61,8 +61,8 @@
 			<nav>
 				<a href="{{url_base}}/">Volumes</a>
 					<a href="{{url_base}}/add" class="sub-entry">Add Volume</a>
-					<a href="{{url_base}}/library-import" class="sub-entry current-nav">Library Import</a>
-					<a href="{{url_base}}/mass-editor" class="sub-entry">Mass Editor</a>
+					<a href="{{url_base}}/library-import" class="sub-entry">Library Import</a>
+					<a href="{{url_base}}/mass-editor" class="sub-entry current-nav">Mass Editor</a>
 				<a href="{{url_base}}/activity/queue">Activity</a>
 				<a href="{{url_base}}/settings">Settings</a>
 				<a href="{{url_base}}/system/status">System</a>
@@ -70,50 +70,40 @@
 			<div id="task-queue"></div>
 		</div>
 		<main>
-			<div id="start-window">
-				<h2>Import an existing organized library to add volumes to Kapowarr</h2>
-				<table>
-					<tbody>
-						<tr>
-							<td><label for="limit-input">Max folders scanned</label></td>
-							<td>
-								<select id="limit-input">
-									<option value="1">1</option>
-									<option value="5">5</option>
-									<option value="20">20</option>
-									<option value="100" selected>100</option>
-									<option value="500">500</option>
-								</select>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-				<button id="run-import-button">Scan</button>
-			</div>
 			<div id="loading-window" class="hidden">
 				<h2>Loading</h2>
 			</div>
-			<div id="no-result-window" class="hidden">
-				<h2>No results</h2>
-				<button class="cancel-button">Go Back</button>
-			</div>
-			<div id="list-window" class="hidden">
-				<div class="action-container">
-					<button class="cancel-button">Cancel</button>
-					<button id="import-button">Import</button>
-					<button id="import-rename-button">Import and Rename</button>
+			<div id="list-window">
+				<div class="action-bar">
+					<div class="action-divider">
+						<div class="option-container">
+							<button data-action="delete">Delete</button>
+							<select name="delete_folder" id="delete-folder-input">
+								<option value="true">Delete Volume Folder</option>
+								<option value="false" selected>Keep Volume Folder</option>
+							</select>
+						</div>
+					</div>
+					<div class="action-divider">
+						<button data-action="rename">Rename</button>
+						<button data-action="update">Refresh & Scan</button>
+						<button data-action="search">Auto Search</button>
+						<button data-action="convert">Convert</button>
+					</div>
+					<div class="action-divider">
+						<button data-action="unmonitor">Unmonitor</button>
+						<button data-action="monitor">Monitor</button>
+					</div>
 				</div>
-				<div class="table-container">
+				<div class="list-container">
 					<table>
 						<thead>
-							<th>
-								<input type="checkbox" id="selectall-input" checked>
-							</th>
-							<th>File</th>
-							<th>Match</th>
-							<th>Action</th>
+							<th><input type="checkbox" id="selectall-input"></th>
+							<th>Title</th>
+							<th>Year</th>
+							<th>Volume Number</th>
 						</thead>
-						<tbody class="proposal-list"></tbody>
+						<tbody class="volume-list"></tbody>
 					</table>
 				</div>
 			</div>
