@@ -123,20 +123,20 @@ def propose_library_import(limit: int = 500) -> List[dict]:
 
 	# Find a match for the files on CV
 	result: List[dict] = []
+	group_number = 1
 	for uf_batch in batched(unimported_files, 10):
 		search_results = run(__search_matches([e[0] for e in uf_batch]))
-		for group_number, (search_result, group_data) in enumerate(
-			zip(search_results, uf_batch)
-		):
+		for search_result, group_data in zip(search_results, uf_batch):
 			result += [
 				{
 					'filepath': f,
 					'file_title': splitext(basename(f))[0],
 					'cv': search_result,
-					'group_number': group_number + 1
+					'group_number': group_number
 				}
 				for f in group_data[1]
 			]
+			group_number += 1
 
 	result.sort(key=lambda e: (e['group_number'], e['file_title']))
 
