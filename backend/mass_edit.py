@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING, List, Union
+from backend.conversion import mass_convert
 
 from backend.custom_exceptions import InvalidKeyValue, VolumeDownloadedFor
 from backend.db import get_db
@@ -56,6 +57,8 @@ def mass_editor_search(volume_ids: List[int], **kwargs) -> None:
 
 def mass_editor_convert(volume_ids: List[int], **kwargs) -> None:
 	logging.info(f'Using mass editor, converting for volumes: {volume_ids}')
+	for volume_id in volume_ids:
+		mass_convert(volume_id)
 	return
 
 def mass_editor_unmonitor(volume_ids: List[int], **kwargs) -> None:
