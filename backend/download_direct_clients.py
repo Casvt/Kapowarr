@@ -160,7 +160,8 @@ class DirectDownload(BaseDownload):
 			start_time = perf_counter()
 			try:
 				for chunk in r.iter_content(chunk_size=download_chunk_size):
-					if self.state == DownloadStates.CANCELED_STATE:
+					if self.state in (DownloadStates.CANCELED_STATE,
+									DownloadStates.SHUTDOWN_STATE):
 						break
 
 					f.write(chunk)
