@@ -57,28 +57,32 @@ main {
 
 #run-import-button,
 .cancel-button,
-.action-container button {
+.action-container button,
+#no-cv-window a {
 	min-width: 5rem;
-	
+
 	border: 2px solid var(--border-color);
 	border-radius: 4px;
 	padding: .4rem .5rem;
 	color: var(--text-color);
 	background-color: var(--library-entry-color);
-	
+
 	font-size: 1rem;
-	
+	text-decoration: none;
+
 	transition: background-color 100ms linear;
 }
 
 #run-import-button:hover,
 .cancel-button:hover,
-.action-container button:hover {
+.action-container button:hover,
+#no-cv-window h2:hover {
 	background-color: var(--dark-hover-color);
 }
 
 #loading-window,
-#no-result-window {
+#no-result-window,
+#no-cv-window {
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
@@ -87,7 +91,8 @@ main {
 }
 
 #loading-window h2,
-#no-result-window h2 {
+#no-result-window h2,
+#no-cv-window h2 {
 	font-size: clamp(1rem, 5vw, 2rem);
 	font-weight: 500;
 	text-align: center;

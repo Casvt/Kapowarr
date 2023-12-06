@@ -2,7 +2,8 @@ const windows = {
 	start: document.querySelector('#start-window'),
 	no_result: document.querySelector('#no-result-window'),
 	list: document.querySelector('#list-window'),
-	loading: document.querySelector('#loading-window')
+	loading: document.querySelector('#loading-window'),
+	no_cv: document.querySelector('#no-cv-window')
 };
 
 function loadProposal(api_key) {
@@ -12,7 +13,10 @@ function loadProposal(api_key) {
 	const table = document.querySelector('.proposal-list');
 	table.innerHTML = '';
 	fetch(`${url_base}/api/libraryimport?api_key=${api_key}&limit=${limit}`)
-	.then(response => response.json())
+	.then(response => {
+		if (!response.ok) return Promise.reject(response.status);
+		return response.json();
+	})
 	.then(json => {
 		json.result.forEach(result => {
 			const entry = document.createElement('tr');
@@ -65,6 +69,12 @@ function loadProposal(api_key) {
 			windows.list.classList.remove('hidden');
 		else
 			windows.no_result.classList.remove('hidden');
+	})
+	.catch(e => {
+		if (e === 400) {
+			windows.loading.classList.add('hidden');
+			windows.no_cv.classList.remove('hidden');
+		};
 	});
 };
 
@@ -216,5 +226,6 @@ addEventListener('#selectall-input', 'change', e => toggleSelectAll());
 addEventListener('.cancel-button', 'click', e => {
 	windows.list.classList.add('hidden');
 	windows.no_result.classList.add('hidden');
+	windows.no_cv.classList.add('hidden');
 	windows.start.classList.remove('hidden');
 });
