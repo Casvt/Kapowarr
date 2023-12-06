@@ -295,7 +295,7 @@ class BaseTorrentClient(TorrentClient):
 			"SELECT 1 FROM download_queue WHERE torrent_client_id = ? LIMIT 1;",
 			(self.id,)
 		).fetchone() is not None:
-			raise TorrentClientDownloading
+			raise TorrentClientDownloading(self.id)
 
 		cursor.execute(
 			"DELETE FROM torrent_clients WHERE id = ?;",
