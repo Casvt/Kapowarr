@@ -33,7 +33,7 @@ issue_formatting_keys = formatting_keys + (
 	'issue_release_year'
 )
 
-filename_cleaner = compile(r'(<|>|:|\"|\||\?|\*|\x00|(\s|\.)+$)')
+filename_cleaner = compile(r'(<|>|(?<!^\w):|\"|\||\?|\*|\x00|(\s|\.)+$)')
 page_regex = compile(r'^(\d+)$|page[\s\.\-]?(\d+)', IGNORECASE)
 page_regex_2 = compile(r'(\d+)')
 
