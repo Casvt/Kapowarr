@@ -55,6 +55,7 @@ async def __search_matches(datas: List[dict]) -> List[dict]:
 			results.append({
 				'id': matching_result.get('comicvine_id'),
 				'title': title,
+				'issue_count': matching_result.get('issue_count'),
 				'link': matching_result.get('comicvine_info')
 			})
 			

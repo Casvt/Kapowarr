@@ -39,6 +39,10 @@ function loadProposal(api_key) {
 			CV_link.target = '_blank';
 			CV_match.appendChild(CV_link);
 			entry.appendChild(CV_match);
+			
+			const issue_count = document.createElement('td');
+			issue_count.innerText = result.cv.issue_count;
+			entry.appendChild(issue_count);
 
 			const actions = document.createElement('td');
 
@@ -87,6 +91,7 @@ function editCVMatch(
 	comicvine_info,
 	title,
 	year,
+	issue_count,
 	group_number=null
 ) {
 	let target_td;
@@ -100,6 +105,7 @@ function editCVMatch(
 		const link = tr.querySelector('a');
 		link.href = comicvine_info;
 		link.innerText = `${title} (${year})`;
+		tr.querySelector(':nth-child(4)').innerText = issue_count;
 	});
 };
 
@@ -124,6 +130,10 @@ function searchCV() {
 				title_link.innerText = `${result.title} (${result.year})`;
 				title.appendChild(title_link);
 				entry.appendChild(title);
+				
+				const issue_count = document.createElement('td');
+				issue_count.innerText = result.issue_count;
+				entry.appendChild(issue_count);
 
 				const select = document.createElement('td');
 				const select_button = document.createElement('button');
@@ -134,7 +144,8 @@ function searchCV() {
 						result.comicvine_id,
 						result.comicvine_info,
 						result.title,
-						result.year
+						result.year,
+						result.issue_count
 					);
 					closeWindow();
 				});
@@ -155,6 +166,7 @@ function searchCV() {
 						result.comicvine_info,
 						result.title,
 						result.year,
+						result.issue_count,
 						group_number
 					);
 					closeWindow();

@@ -108,7 +108,7 @@ main {
 }
 
 .table-container > table {
-	min-width: 33rem;
+	min-width: 30rem;
 	width: 100%;
 	
 	border-spacing: 0px;
