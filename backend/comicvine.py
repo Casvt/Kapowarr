@@ -23,14 +23,14 @@ from backend.helpers import batched
 from backend.settings import Settings, private_settings
 
 translation_regex = compile(
-	r'^<p>\w+ publication(\.?</p>$|,\s| \(in the \w+ language\)|, translates )|' +
-	r'^<p>published by the \w+ wing of|' + 
-	r'^<p>\w+ translations? of|' + 
+	r'^<p>\s*\w+ publication(\.?</p>$|,\s| \(in the \w+ language\)|, translates )|' +
+	r'^<p>\s*published by the \w+ wing of|' + 
+	r'^<p>\s*\w+ translations? of|' + 
 	r'from \w+</p>$|' +
-	r'^<p>published in \w+|' +
-	r'^<p>\w+ language|' +
-	r'^<p>\w+ edition of |' + 
-	r'^<p>\w+ reprint of ',
+	r'^<p>\s*published in \w+|' +
+	r'^<p>\s*\w+ language|' +
+	r'^<p>\s*\w+ edition of |' + 
+	r'^<p>\s*\w+ reprint of ',
 	IGNORECASE
 )
 headers = {'h2', 'h3', 'h4', 'h5', 'h6'}
