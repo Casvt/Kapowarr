@@ -18,6 +18,16 @@ main {
 	text-align: center;
 }
 
+#start-window > p,
+#start-window > ul {
+	max-width: 50rem;
+	color: var(--dark-text-color);
+}
+
+#start-window > ul > li {
+	margin-bottom: 1rem;
+}
+
 #start-window table td {
 	padding: 1rem;
 	width: 50%;
