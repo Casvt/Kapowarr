@@ -4,7 +4,6 @@
 """
 
 import logging
-from os import remove
 from os.path import basename, exists, join
 from shutil import move
 from time import time
@@ -12,6 +11,7 @@ from time import time
 from backend.conversion import find_target_format_file
 from backend.converters import extract_files_from_folder
 from backend.db import get_db
+from backend.helpers import delete_file_folder
 from backend.naming import mass_rename
 from backend.volumes import Volume, scan_files
 
@@ -53,9 +53,9 @@ class PostProcessingActions:
 
 			if exists(file_dest):
 				logging.warning(
-					f'The file {file_dest} already exists; replacing with downloaded file'
+					f'The file/folder {file_dest} already exists; replacing with downloaded file'
 				)
-				remove(file_dest)
+				delete_file_folder(download.file)
 
 			move(download.file, file_dest)
 			download.file = file_dest
@@ -63,9 +63,8 @@ class PostProcessingActions:
 
 	@staticmethod
 	def delete_file(download) -> None:
-		"Delete file from download folder"		
-		if exists(download.file):
-			remove(download.file)
+		"Delete file from download folder"
+		delete_file_folder(download.file)
 		return
 
 	@staticmethod

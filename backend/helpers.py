@@ -4,6 +4,9 @@
 """
 
 import logging
+from os import remove
+from os.path import isdir, isfile
+from shutil import rmtree
 from sys import version_info
 
 
@@ -33,3 +36,15 @@ def batched(l: list, n: int):
 	"""
 	for ndx in range(0, len(l), n):
 		yield l[ndx : ndx+n]
+
+def delete_file_folder(path: str) -> None:
+	"""Delete a file or folder. In the case of a folder, it is deleted recursively.
+
+	Args:
+		path (str): The path to the file or folder.
+	"""
+	if isfile(path):
+		remove(path)
+	elif isdir(path):
+		rmtree(path, ignore_errors=True)
+	return
