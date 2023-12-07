@@ -38,23 +38,42 @@ async def __search_matches(
 		title_to_response = dict(zip(data_titles, responses))
 
 		for data in datas:
-			matching_result = {}
+			# Find all matches
+			matching_results: Dict[str, List[dict]] = {
+				'year': [],
+				'volume_number': []
+			}
 			for result in title_to_response[data['series'].lower()]:
 				if (_check_matching_titles(data['series'], result['title'])
-				and ((
-						data['year'] is not None
-						and result['year'] is not None
-						and data['year'] - 1 <= result['year'] <= data['year'] + 1
-					)
-					or result['year'] is None
-					)
 				and (
 					(only_english and not result['translated'])
 					or
 					(not only_english)
 				)):
-					matching_result = result
-					break
+					if (
+						data['year'] is not None
+						and result['year'] is not None
+						and data['year'] - 1 <= result['year'] <= data['year'] + 1
+					):
+						matching_results['year'].append(result)
+
+					elif (
+						data['volume_number'] is not None
+						and result['volume_number'] is not None
+						and result['volume_number'] == data['volume_number']
+					):
+						matching_results['volume_number'].append(result)
+
+			# Sort matches
+			matching_results['year'].sort(
+				key=lambda r: int(not data['year'] == r['year'])
+			)
+			matching_result = next(
+				iter(
+					matching_results['year'] or matching_results['volume_number']
+				),
+				{}
+			)
 
 			if matching_result:
 				title = f"{matching_result['title']} ({matching_result['year']})"
