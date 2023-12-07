@@ -30,6 +30,7 @@ main {
 
 #start-window table td {
 	padding: 1rem;
+	padding-bottom: 0rem;
 	width: 50%;
 }
 

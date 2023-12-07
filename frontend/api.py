@@ -146,7 +146,7 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 			if not value in blocklist_reasons:
 				raise InvalidKeyValue(key, value)
 
-		elif key in ('monitor', 'delete_folder', 'rename_files'):
+		elif key in ('monitor', 'delete_folder', 'rename_files', 'only_english'):
 			if value == 'true':
 				value = True
 			elif value == 'false':
@@ -179,7 +179,10 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 			value = False
 
 		elif key == 'limit':
-			value = 500
+			value = 20
+
+		elif key == 'only_english':
+			value = True
 
 	return value
 
@@ -391,7 +394,8 @@ def api_rootfolder_id(id: int):
 def api_library_import():
 	if request.method == 'GET':
 		limit = extract_key(request, 'limit', check_existence=False)
-		result = propose_library_import(limit)
+		only_english = extract_key(request, 'only_english', check_existence=False)
+		result = propose_library_import(limit, only_english)
 		return return_api(result)
 	
 	elif request.method == 'POST':

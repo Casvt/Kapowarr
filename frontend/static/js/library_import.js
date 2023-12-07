@@ -10,9 +10,10 @@ function loadProposal(api_key) {
 	windows.start.classList.add('hidden');
 	windows.loading.classList.remove('hidden');
 	const limit = parseInt(document.querySelector('#limit-input').value);
+	const lang_filter = document.querySelector('#lang-input').value;
 	const table = document.querySelector('.proposal-list');
 	table.innerHTML = '';
-	fetch(`${url_base}/api/libraryimport?api_key=${api_key}&limit=${limit}`)
+	fetch(`${url_base}/api/libraryimport?api_key=${api_key}&limit=${limit}&only_english=${lang_filter}`)
 	.then(response => {
 		if (!response.ok) return Promise.reject(response.status);
 		return response.json();

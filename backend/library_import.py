@@ -21,7 +21,11 @@ from backend.search import _check_matching_titles
 from backend.volumes import Library, Volume
 
 
-async def __search_matches(datas: List[dict]) -> List[dict]:
+async def __search_matches(
+	datas: List[dict],
+	only_english: bool
+) -> List[dict]:
+
 	comicvine = ComicVine()
 	results: List[dict] = []
 	async with ClientSession() as session:
@@ -43,6 +47,11 @@ async def __search_matches(datas: List[dict]) -> List[dict]:
 						and data['year'] - 1 <= result['year'] <= data['year'] + 1
 					)
 					or result['year'] is None
+					)
+				and (
+					(only_english and not result['translated'])
+					or
+					(not only_english)
 				)):
 					matching_result = result
 					break
@@ -61,13 +70,19 @@ async def __search_matches(datas: List[dict]) -> List[dict]:
 			
 		return results
 
-def propose_library_import(limit: int = 500) -> List[dict]:
+def propose_library_import(
+	limit: int = 20,
+	only_english: bool = True
+) -> List[dict]:
 	"""Get list of unimported files
 	and their suggestion for a matching volume on CV.
 
 	Args:
 		limit (int, optional): The max amount of folders to scan.
-			Defaults to 500.
+			Defaults to 20.
+
+		only_english (bool, optional): Only match with english releases.
+			Defaults to True.
 
 	Returns:
 		List[dict]: The list of files and their matches.
@@ -126,7 +141,10 @@ def propose_library_import(limit: int = 500) -> List[dict]:
 	result: List[dict] = []
 	group_number = 1
 	for uf_batch in batched(unimported_files, 10):
-		search_results = run(__search_matches([e[0] for e in uf_batch]))
+		search_results = run(__search_matches(
+			[e[0] for e in uf_batch],
+			only_english
+		))
 		for search_result, group_data in zip(search_results, uf_batch):
 			result += [
 				{
