@@ -29,8 +29,9 @@ translation_regex = compile(
 	r'from \w+</p>$|' +
 	r'^<p>\s*published in \w+|' +
 	r'^<p>\s*\w+ language|' +
-	r'^<p>\s*\w+ edition of |' + 
-	r'^<p>\s*\w+ reprint of ',
+	r'^<p>\s*\w+ edition of|' + 
+	r'^<p>\s*\w+ reprint of|' +
+	r'^<p>\s*\w+ trade collection of',
 	IGNORECASE
 )
 headers = {'h2', 'h3', 'h4', 'h5', 'h6'}
