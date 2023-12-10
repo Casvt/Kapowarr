@@ -104,7 +104,7 @@ Now that the database file can be stored somewhere, we can launch the container.
         Remember also that Windows uses a `\` for directories, rather than a `/`.
     The command to get the docker container running can be found below:
     ```powershell
-    docker run -d --name kapowarr -v kapowarr-db:/app/db -v DRIVE:\with\download_folder:/app/temp_downloads -v DRIVE:\with\root_folder:/comics-1 -p 5656:5656 mrcas/kapowarr:latest
+    docker run -d --name kapowarr -v kapowarr-db:/app/db -v "DRIVE:\with\download_folder:/app/temp_downloads" -v "DRIVE:\with\root_folder:/comics-1" -p 5656:5656 mrcas/kapowarr:latest
     ```
     A few notes about this command:
 
@@ -112,9 +112,9 @@ Now that the database file can be stored somewhere, we can launch the container.
     E.g. `D:\kapowarr\Kapowarr/db:/app/db`.
     2.  Replace `DRIVE:\with\download_folder` with the path to your desired download folder. Everything is downloaded to this folder and when completed, moved out of to their final destination. It's smart to set this on a disk that can sustain more writes than normal. Ideally something like a _non_-network mounted ssd.
     3. Replace `DRIVE:\with\root_folder` with the path to your desired root folder. Then, this folder will get mapped to `/comics-1` inside the docker container. When adding a root folder in Kapowarr, you'll then set its location as `/comics-1`, mapping it this way to where ever `DRIVE:\with\root_folder` may be.
-    4. You can map multiple root folders by repeating `-v DRIVE:\with\root_folder:/comics-1` in the command, but then supplying different values for `DRIVE:\with\root_folder` and `/comics-1`.  
-    E.g. `-v DRIVE:\with\Comics-2:/comics-2`, then add `/comics-2` as your second root folder in Kapowarr.
-    5. If your folder has a space in the name, you will need to wrap it in quotes (i.e. "DRIVE:\with\root folder:/comics-1").
+    4. You can map multiple root folders by repeating `-v "DRIVE:\with\root_folder:/comics-1"` in the command, and supplying different values for `DRIVE:\with\root_folder` and `/comics-1`.  
+    E.g. `-v "DRIVE:\with\Comics-2:/comics-2"`, then add `/comics-2` as your second root folder in Kapowarr.
+    5. All paths on Windows require being wrapped in quotes, because of the use of `:` in the path.
     6. Information on how to change the port can be found on the [Setup After Installation page](./setup_after_installation.md#port).
 
 ### Docker example
