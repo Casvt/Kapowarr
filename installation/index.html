@@ -928,7 +928,7 @@ As a result, this command is adjusted to be a 'one-liner'.<br />
 Remember also that Windows uses a <code class="highlight">\</code> for directories, rather than a <code class="highlight">/</code>.</p>
 </div>
 <p>The command to get the docker container running can be found below:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">docker</span> <span class="n">run</span> <span class="n">-d</span> <span class="p">-</span><span class="n">-name</span> <span class="n">kapowarr</span> <span class="n">-v</span> <span class="n">kapowarr-db</span><span class="p">:/</span><span class="n">app</span><span class="p">/</span><span class="n">db</span> <span class="n">-v</span> <span class="n">DRIVE</span><span class="p">:\</span><span class="n">with</span><span class="p">\</span><span class="n">download_folder</span><span class="p">:/</span><span class="n">app</span><span class="p">/</span><span class="n">temp_downloads</span> <span class="n">-v</span> <span class="n">DRIVE</span><span class="p">:\</span><span class="n">with</span><span class="p">\</span><span class="n">root_folder</span><span class="p">:/</span><span class="n">comics</span><span class="p">-</span><span class="n">1</span> <span class="n">-p</span> <span class="n">5656</span><span class="p">:</span><span class="n">5656</span> <span class="n">mrcas</span><span class="p">/</span><span class="n">kapowarr</span><span class="p">:</span><span class="n">latest</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">docker</span> <span class="n">run</span> <span class="n">-d</span> <span class="p">-</span><span class="n">-name</span> <span class="n">kapowarr</span> <span class="n">-v</span> <span class="n">kapowarr-db</span><span class="p">:/</span><span class="n">app</span><span class="p">/</span><span class="n">db</span> <span class="n">-v</span> <span class="s2">&quot;DRIVE:\with\download_folder:/app/temp_downloads&quot;</span> <span class="n">-v</span> <span class="s2">&quot;DRIVE:\with\root_folder:/comics-1&quot;</span> <span class="n">-p</span> <span class="n">5656</span><span class="p">:</span><span class="n">5656</span> <span class="n">mrcas</span><span class="p">/</span><span class="n">kapowarr</span><span class="p">:</span><span class="n">latest</span>
 </code></pre></div>
 A few notes about this command:</p>
 <ol>
@@ -936,9 +936,9 @@ A few notes about this command:</p>
 E.g. <code class="highlight">D:\kapowarr\Kapowarr/db:/app/db</code>.</li>
 <li>Replace <code class="highlight"><span class="n">DRIVE</span><span class="p">:</span>\<span class="n">with</span>\<span class="n">download_folder</span></code> with the path to your desired download folder. Everything is downloaded to this folder and when completed, moved out of to their final destination. It's smart to set this on a disk that can sustain more writes than normal. Ideally something like a <em>non</em>-network mounted ssd.</li>
 <li>Replace <code class="highlight">DRIVE:\with\root_folder</code> with the path to your desired root folder. Then, this folder will get mapped to <code class="highlight">/comics-1</code> inside the docker container. When adding a root folder in Kapowarr, you'll then set its location as <code class="highlight">/comics-1</code>, mapping it this way to where ever <code class="highlight">DRIVE:\with\root_folder</code> may be.</li>
-<li>You can map multiple root folders by repeating <code class="highlight">-v DRIVE:\with\root_folder:/comics-1</code> in the command, but then supplying different values for <code class="highlight">DRIVE:\with\root_folder</code> and <code class="highlight">/comics-1</code>.<br />
-E.g. <code class="highlight">-v DRIVE:\with\Comics-2:/comics-2</code>, then add <code class="highlight">/comics-2</code> as your second root folder in Kapowarr.</li>
-<li>If your folder has a space in the name, you will need to wrap it in quotes (i.e. "DRIVE:\with\root folder:/comics-1").</li>
+<li>You can map multiple root folders by repeating <code class="highlight">-v &quot;DRIVE:\with\root_folder:/comics-1&quot;</code> in the command, and supplying different values for <code class="highlight">DRIVE:\with\root_folder</code> and <code class="highlight">/comics-1</code>.<br />
+E.g. <code class="highlight">-v &quot;DRIVE:\with\Comics-2:/comics-2&quot;</code>, then add <code class="highlight">/comics-2</code> as your second root folder in Kapowarr.</li>
+<li>All paths on Windows require being wrapped in quotes, because of the use of <code class="highlight">:</code> in the path.</li>
 <li>Information on how to change the port can be found on the <a href="../setup_after_installation/#port">Setup After Installation page</a>.</li>
 </ol>
 </div>
@@ -1027,7 +1027,7 @@ Permissions on macOS (and GateKeeper) make this needlessly complex.  </p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1-2.1-2M12.5 7v5.2l4 2.4-1 1L11 13V7h1.5M11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2v1.8Z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-12-10T22:04:08+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-12-10</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-12-10T22:39:34+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-12-10</span>
   </span>
 
     
