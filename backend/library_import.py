@@ -2,7 +2,7 @@
 
 import logging
 from asyncio import create_task, gather, run
-from os.path import basename, commonpath, dirname, join, splitext
+from os.path import basename, commonpath, dirname, isfile, join, splitext
 from shutil import Error, move
 from typing import Dict, List, Tuple, Union
 
@@ -126,14 +126,18 @@ def propose_library_import(
 	limited_files = []
 	limited_files_append = limited_files.append
 	folders = set()
+	image_folders = set()
 	for f in all_files:
 		if f in imported_files:
 			continue
+
 		if f.endswith(image_extensions):
-			folder = basename(dirname(dirname(f)))
-		else:
-			folder = basename(dirname(f))
-		folders.add(folder)
+			f = dirname(f)
+			if f in image_folders:
+				continue
+			image_folders.add(f)
+
+		folders.add(dirname(f))
 		if len(folders) > limit:
 			break
 		limited_files_append(f)
@@ -154,6 +158,13 @@ def propose_library_import(
 				efd,
 				[f]
 			))
+	unimported_files.sort(key=lambda f: (
+		f[0]['series'],
+		f[0]['volume_number'] or 0,
+		f[0]['year'] or 0
+	))
+	for (_, filelist) in unimported_files:
+		filelist.sort()
 	logging.debug(f'File groupings: {unimported_files}')
 
 	# Find a match for the files on CV
@@ -168,7 +179,11 @@ def propose_library_import(
 			result += [
 				{
 					'filepath': f,
-					'file_title': splitext(basename(f))[0],
+					'file_title': (
+						splitext(basename(f))[0]
+						if isfile(f) else
+						basename(f)
+					),
 					'cv': search_result,
 					'group_number': group_number
 				}
@@ -256,20 +271,10 @@ def import_library(
 			vf: str = volume.get_info()['folder']
 			new_files = []
 			for f in files:
-				if f.endswith(image_extensions):
-					try:
-						new_files.append(move(
-							f, join(vf, basename(dirname(f)))
-						))
-					except Error:
-						new_files.append(
-							join(vf, basename(dirname(f)), basename(f))
-						)
-				else:
-					try:
-						new_files.append(move(f, vf))
-					except Error:
-						new_files.append(join(vf, basename(f)))
+				try:
+					new_files.append(move(f, vf))
+				except Error:
+					new_files.append(join(vf, basename(f)))
 
 				delete_empty_folders(dirname(f), root_folder['folder'])
 
