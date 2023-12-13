@@ -621,20 +621,26 @@ def mass_rename(
 	cursor = get_db()
 	renames = preview_mass_rename(volume_id, issue_id, filepath_filter)
 
+	root_folder = get_db().execute("""
+		SELECT rf.folder
+		FROM root_folders rf
+		INNER JOIN volumes v
+		ON rf.id = v.root_folder
+		WHERE v.id = ?
+		""",
+		(volume_id,)
+	).fetchone()[0]
+
 	if not issue_id and renames:
-		folders = {
-			'before': None,
-			'after': None
-		}
-		for target in folders:
-			file = renames[0][target]
-			if file.endswith(image_extensions):
-				folders[target] = dirname(dirname(file))
-			else:
-				folders[target] = dirname(file)
+		# Update volume folder in case it gets renamed
+		if renames[0]['after'].endswith(image_extensions):
+			new_volume_folder = dirname(dirname(renames[0]['after']))
+		else:
+			new_volume_folder = dirname(renames[0]['after'])
+
 		cursor.execute(
 			"UPDATE volumes SET folder = ? WHERE id = ?",
-			(folders['after'], volume_id)
+			(new_volume_folder, volume_id)
 		)
 
 	for r in renames:
@@ -643,18 +649,11 @@ def mass_rename(
 			"UPDATE files SET filepath = ? WHERE filepath = ?;",
 			(r['after'], r['before'])
 		)
+		if r['before'].endswith(image_extensions):
+			delete_empty_folders(r['before'], root_folder)
 	
 	if renames:
-		root_folder = get_db().execute("""
-		   SELECT rf.folder
-		   FROM root_folders rf
-		   INNER JOIN volumes v
-		   ON rf.id = v.root_folder
-		   WHERE v.id = ?
-		   """,
-		   (volume_id,)
-		).fetchone()[0]
-		delete_empty_folders(folders['before'], root_folder)
+		delete_empty_folders(renames[0]['before'], root_folder)
 
 	logging.info(
 		f'Renamed volume {volume_id} {f"issue {issue_id}" if issue_id else ""}'

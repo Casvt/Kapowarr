@@ -2,9 +2,10 @@
 
 from itertools import chain
 from os.path import dirname, splitext
+from sys import platform
 from typing import Dict, List, Set, Union
 
-from backend.converters import FileConverter
+from backend.converters import FileConverter, rar_executables
 from backend.db import get_db
 from backend.files import scan_files
 from backend.volumes import Volume
@@ -42,7 +43,14 @@ def find_target_format_file(
 	if not source_format in conversion_methods:
 		return
 
+	if (
+		source_format in ('rar', 'cbr')
+		and not platform in rar_executables
+	):
+		return
+
 	available_formats = conversion_methods[source_format]
+
 	for format in formats:
 		if format in available_formats:
 			return available_formats[format]

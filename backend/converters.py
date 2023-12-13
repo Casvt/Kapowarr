@@ -2,97 +2,28 @@
 
 import logging
 from abc import ABC, abstractmethod
-from os import remove
-from os.path import basename, join, splitext
-from shutil import rmtree
-from typing import List, Tuple
+from os import mkdir, remove
+from os.path import basename, dirname, join, splitext
+from shutil import make_archive, rmtree
+from subprocess import call as spc
+from sys import platform
+from typing import List
 from zipfile import ZipFile
 
 from backend.db import get_db
-from backend.files import (_list_files, extract_filename_data,
+from backend.files import (_list_files, extract_filename_data, folder_path,
                            image_extensions, rename_file, scan_files,
                            supported_extensions)
 from backend.naming import mass_rename
 from backend.search import _check_matching_titles
 from backend.volumes import Volume
 
-zip_extract_folder = '.zip_extract'
-
-
-class FileConverter(ABC):
-	source_format: str
-	target_format: str
-
-	@abstractmethod
-	def convert(file: str) -> str:
-		"""Convert a file from source_format to target_format.
-
-		Args:
-			file (str): Filepath to the source file, should be in source_format.
-
-		Returns:
-			str: The filepath to the converted file, in target_format.
-		"""
-		pass
-
-class ZIPtoCBZ(FileConverter):
-	source_format = 'zip'
-	target_format = 'cbz'
-
-	@staticmethod
-	def convert(file: str) -> str:
-		target = splitext(file)[0] + '.cbz'
-		rename_file(
-			file,
-			target
-		)
-		return target
-
-class ZIPtoFOLDER(FileConverter):
-	source_format = 'zip'
-	target_format = 'folder'
-	
-	@staticmethod
-	def convert(file: str) -> str:
-		cursor = get_db('dict')
-
-		volume_id: int = cursor.execute("""
-			SELECT i.volume_id
-			FROM
-				files f
-				INNER JOIN issues_files if
-				INNER JOIN issues i
-			ON
-				f.id = if.file_id
-				AND if.issue_id = i.id
-			WHERE f.filepath = ?
-			LIMIT 1;
-			""",
-			(file,)
-		).fetchone()[0]
-
-		volume_folder = cursor.execute(
-			"SELECT folder FROM volumes WHERE id = ? LIMIT 1;",
-			(volume_id,)
-		).fetchone()['folder']
-		
-		zip_folder = join(volume_folder, zip_extract_folder)
-
-		with ZipFile(file, 'r') as zip:
-			zip.extractall(zip_folder)
-
-		remove(file)
-
-		resulting_files = extract_files_from_folder(
-			zip_folder,
-			volume_id
-		)
-
-		scan_files(Volume(volume_id).get_info())
-		if resulting_files:
-			mass_rename(volume_id, filepath_filter=resulting_files)
-
-		return volume_folder
+archive_extract_folder = '.archive_extract'
+rar_executables = {
+	'linux': folder_path('backend', 'lib', 'rar_linux_64'),
+	'darwin': folder_path('backend', 'lib', 'rar_bsd_64'),
+	'win32': folder_path('backend', 'lib', 'rar_windows_64.exe')
+}
 
 def __get_volume_data(volume_id: int) -> dict:
 	"""Get info about the volume based on ID
@@ -138,7 +69,7 @@ def extract_files_from_folder(
 	cursor = get_db()
 
 	# Filter non-relevant files
-	rel_files: List[Tuple[str, dict]] = []
+	rel_files: List[str] = []
 	rel_files_append = rel_files.append
 	for c in folder_contents:
 		if 'variant cover' in c.lower():
@@ -173,28 +104,19 @@ def extract_files_from_folder(
 			or (result['year'] is None and result['volume_number'] is None)
 		)
 		and result['annual'] == volume_data['annual']):
-			rel_files_append((c, result))
+			rel_files_append(c)
 	logging.debug(f'Relevant files: {rel_files}')
 
 	# Delete non-relevant files
-	for c in folder_contents:
-		if not any(r for r in rel_files if r[0] == c):
-			remove(c)
+	for c in filter(lambda f: f not in rel_files, folder_contents):
+		remove(c)
 
 	# Move remaining files to main folder and delete source folder
 	result = []
 	result_append = result.append
-	for c, c_info in rel_files:
+	for c in rel_files:
 		if c.endswith(image_extensions):
-			intermediate_folder = (f'{volume_data["title"]} ({volume_data["year"]})'
-				+ f'Volume {c_info["volume_number"] if isinstance(c_info["volume_number"], int) else "-".join(map(str, c_info))}')
-
-			if volume_data['special_version'] and volume_data['special_version'] != 'volume-as-issue':
-				intermediate_folder += f' {volume_data["special_version"]}'
-			elif not (volume_data["special_version"] == 'volume-as-issue'):
-				intermediate_folder += f' {c_info["issue_number"]}'
-
-			dest = join(volume_data["folder"], intermediate_folder, basename(c))
+			dest = join(volume_data["folder"], basename(dirname(c)), basename(c))
 
 		else:
 			dest = join(volume_data["folder"], basename(c))
@@ -204,3 +126,371 @@ def extract_files_from_folder(
 
 	rmtree(source_folder, ignore_errors=True)
 	return result
+
+def _run_rar(args: List[str]) -> int:
+	"""Run (un)rar executable. This function takes care of the platform.
+		Note: It is already expected when this function is called
+		that the platform is supported. The check should be done outside.
+
+	Args:
+		args (List[str]): The arguments to give to the executable.
+
+	Returns:
+		int: The exit code of the executable.
+	"""
+	exe = rar_executables[platform]
+	
+	return spc([exe, *args])
+
+class FileConverter(ABC):
+	source_format: str
+	target_format: str
+
+	@abstractmethod
+	def convert(file: str) -> str:
+		"""Convert a file from source_format to target_format.
+
+		Args:
+			file (str): Filepath to the source file, should be in source_format.
+
+		Returns:
+			str: The filepath to the converted file, in target_format.
+		"""
+		pass
+
+#=====================
+# ZIP
+#=====================
+class ZIPtoCBZ(FileConverter):
+	source_format = 'zip'
+	target_format = 'cbz'
+
+	@staticmethod
+	def convert(file: str) -> str:
+		target = splitext(file)[0] + '.cbz'
+		rename_file(
+			file,
+			target
+		)
+		return target
+
+class ZIPtoRAR(FileConverter):
+	source_format = 'zip'
+	target_format = 'rar'
+	
+	@staticmethod
+	def convert(file: str) -> str:
+		cursor = get_db('dict')
+
+		volume_id: int = cursor.execute("""
+			SELECT i.volume_id
+			FROM
+				files f
+				INNER JOIN issues_files if
+				INNER JOIN issues i
+			ON
+				f.id = if.file_id
+				AND if.issue_id = i.id
+			WHERE f.filepath = ?
+			LIMIT 1;
+			""",
+			(file,)
+		).fetchone()[0]
+
+		volume_folder = cursor.execute(
+			"SELECT folder FROM volumes WHERE id = ? LIMIT 1;",
+			(volume_id,)
+		).fetchone()['folder']
+		
+		archive_folder = join(volume_folder, archive_extract_folder)
+
+		with ZipFile(file, 'r') as zip:
+			zip.extractall(archive_folder)
+
+		remove(file)
+
+		_run_rar([
+			'a',
+			'-ep', '-inul',
+			splitext(file)[0],
+			archive_folder
+		])
+		
+		rmtree(archive_folder, ignore_errors=True)
+
+		return splitext(file)[0] + '.rar'
+
+class ZIPtoCBR(FileConverter):
+	source_format = 'zip'
+	target_format = 'cbr'
+	
+	@staticmethod
+	def convert(file: str) -> str:
+		rar_file = ZIPtoRAR.convert(file)
+		cbr_file = RARtoCBR.convert(rar_file)
+		return cbr_file
+
+class ZIPtoFOLDER(FileConverter):
+	source_format = 'zip'
+	target_format = 'folder'
+	
+	@staticmethod
+	def convert(file: str) -> str:
+		cursor = get_db('dict')
+
+		volume_id: int = cursor.execute("""
+			SELECT i.volume_id
+			FROM
+				files f
+				INNER JOIN issues_files if
+				INNER JOIN issues i
+			ON
+				f.id = if.file_id
+				AND if.issue_id = i.id
+			WHERE f.filepath = ?
+			LIMIT 1;
+			""",
+			(file,)
+		).fetchone()[0]
+
+		volume_folder = cursor.execute(
+			"SELECT folder FROM volumes WHERE id = ? LIMIT 1;",
+			(volume_id,)
+		).fetchone()['folder']
+		
+		zip_folder = join(volume_folder, archive_extract_folder)
+
+		with ZipFile(file, 'r') as zip:
+			zip.extractall(zip_folder)
+
+		remove(file)
+
+		resulting_files = extract_files_from_folder(
+			zip_folder,
+			volume_id
+		)
+
+		scan_files(Volume(volume_id).get_info())
+		if resulting_files:
+			mass_rename(volume_id, filepath_filter=resulting_files)
+
+		return volume_folder
+
+#=====================
+# CBZ
+#=====================
+class CBZtoZIP(FileConverter):
+	source_format = 'cbz'
+	target_format = 'zip'
+
+	@staticmethod	
+	def convert(file: str) -> str:
+		target = splitext(file)[0] + '.zip'
+		rename_file(
+			file,
+			target
+		)
+		return target
+
+class CBZtoRAR(FileConverter):
+	source_format = 'cbz'
+	target_format = 'rar'
+	
+	@staticmethod
+	def convert(file: str) -> str:
+		return ZIPtoRAR.convert(file)
+
+class CBZtoCBR(FileConverter):
+	source_format = 'cbz'
+	target_format = 'cbr'
+	
+	@staticmethod
+	def convert(file: str) -> str:
+		rar_file = ZIPtoRAR.convert(file)
+		cbr_file = RARtoCBR.convert(rar_file)
+		return cbr_file
+
+class CBZtoFOLDER(FileConverter):
+	source_format = 'cbz'
+	target_format = 'folder'
+
+	@staticmethod
+	def convert(file: str) -> str:
+		return ZIPtoFOLDER.convert(file)
+
+#=====================
+# RAR
+#=====================
+class RARtoCBR(FileConverter):
+	source_format = 'rar'
+	target_format = 'cbr'
+
+	@staticmethod	
+	def convert(file: str) -> str:
+		target = splitext(file)[0] + '.cbr'
+		rename_file(
+			file,
+			target
+		)
+		return target
+
+class RARtoZIP(FileConverter):
+	source_format = 'rar'
+	target_format = 'zip'
+
+	@staticmethod
+	def convert(file: str) -> str:
+		cursor = get_db('dict')
+
+		volume_id: int = cursor.execute("""
+			SELECT i.volume_id
+			FROM
+				files f
+				INNER JOIN issues_files if
+				INNER JOIN issues i
+			ON
+				f.id = if.file_id
+				AND if.issue_id = i.id
+			WHERE f.filepath = ?
+			LIMIT 1;
+			""",
+			(file,)
+		).fetchone()[0]
+
+		volume_folder = cursor.execute(
+			"SELECT folder FROM volumes WHERE id = ? LIMIT 1;",
+			(volume_id,)
+		).fetchone()['folder']
+		
+		rar_folder = join(volume_folder, archive_extract_folder)
+		mkdir(rar_folder)
+
+		_run_rar([
+			'x',
+			'-inul',
+			file,
+			rar_folder
+		])
+		
+		remove(file)
+
+		target_file = splitext(file)[0]
+		target_file = make_archive(target_file, 'zip', rar_folder)
+
+		rmtree(rar_folder, ignore_errors=True)
+
+		return target_file
+
+class RARtoCBZ(FileConverter):
+	source_format = 'rar'
+	target_format = 'cbz'
+
+	@staticmethod
+	def convert(file: str) -> str:
+		zip_file = RARtoZIP.convert(file)
+		cbz_file = ZIPtoCBZ.convert(zip_file)
+		return cbz_file
+
+class RARtoFOLDER(FileConverter):
+	source_format = 'rar'
+	target_format = 'folder'
+	
+	@staticmethod
+	def convert(file: str) -> str:
+		cursor = get_db('dict')
+
+		volume_id: int = cursor.execute("""
+			SELECT i.volume_id
+			FROM
+				files f
+				INNER JOIN issues_files if
+				INNER JOIN issues i
+			ON
+				f.id = if.file_id
+				AND if.issue_id = i.id
+			WHERE f.filepath = ?
+			LIMIT 1;
+			""",
+			(file,)
+		).fetchone()[0]
+
+		volume_folder = cursor.execute(
+			"SELECT folder FROM volumes WHERE id = ? LIMIT 1;",
+			(volume_id,)
+		).fetchone()['folder']
+		
+		rar_folder = join(volume_folder, archive_extract_folder)
+		mkdir(rar_folder)
+
+		_run_rar([
+			'x',
+			'-inul',
+			file,
+			rar_folder
+		])
+
+		remove(file)
+
+		resulting_files = extract_files_from_folder(
+			rar_folder,
+			volume_id
+		)
+
+		scan_files(Volume(volume_id).get_info())
+		if resulting_files:
+			mass_rename(volume_id, filepath_filter=resulting_files)
+
+		return volume_folder
+
+#=====================
+# CBR
+#=====================
+class CBRtoRAR(FileConverter):
+	source_format = 'cbr'
+	target_format = 'rar'
+
+	@staticmethod	
+	def convert(file: str) -> str:
+		target = splitext(file)[0] + '.rar'
+		rename_file(
+			file,
+			target
+		)
+		return target
+
+class CBRtoZIP(FileConverter):
+	source_format = 'cbr'
+	target_format = 'zip'
+	
+	@staticmethod
+	def convert(file: str) -> str:
+		return RARtoZIP.convert(file)
+
+class CBRtoCBZ(FileConverter):
+	source_format = 'cbr'
+	target_format = 'cbz'
+
+	@staticmethod
+	def convert(file: str) -> str:
+		zip_file = RARtoZIP.convert(file)
+		cbz_file = ZIPtoCBZ.convert(zip_file)
+		return cbz_file
+
+class CBRtoFOLDER(FileConverter):
+	source_format = 'cbr'
+	target_format = 'folder'
+	
+	@staticmethod
+	def convert(file: str) -> str:
+		return RARtoFOLDER.convert(file)
+
+#=====================
+# FOLDER
+#=====================
+# FOLDER to ZIP
+
+# FOLDER to CBZ
+
+# FOLDER to RAR
+
+# FOLDER TO CBR
