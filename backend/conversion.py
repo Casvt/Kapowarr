@@ -52,6 +52,9 @@ def find_target_format_file(
 	available_formats = conversion_methods[source_format]
 
 	for format in formats:
+		if source_format == format:
+			break
+
 		if format in available_formats:
 			return available_formats[format]
 
