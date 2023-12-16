@@ -3,22 +3,27 @@
 """This file contains functions regarding the post processing of downloads
 """
 
+from __future__ import annotations
+
 import logging
 from os.path import basename, exists, join
 from shutil import move
 from time import time
+from typing import TYPE_CHECKING
 
-from backend.conversion import find_target_format_file
+from backend.conversion import mass_convert
 from backend.converters import extract_files_from_folder
 from backend.db import get_db
 from backend.helpers import delete_file_folder
 from backend.naming import mass_rename
 from backend.volumes import Volume, scan_files
 
+if TYPE_CHECKING:
+	from backend.download_general import Download
 
 class PostProcessingActions:
 	@staticmethod
-	def remove_from_queue(download) -> None:
+	def remove_from_queue(download: Download) -> None:
 		"Delete the download from the queue in the database"
 		get_db().execute(
 			"DELETE FROM download_queue WHERE id = ?",
@@ -27,7 +32,7 @@ class PostProcessingActions:
 		return
 
 	@staticmethod
-	def add_to_history(download) -> None:
+	def add_to_history(download: Download) -> None:
 		"Add the download to history in the database"
 		get_db().execute(
 			"""
@@ -39,7 +44,7 @@ class PostProcessingActions:
 		return
 
 	@staticmethod
-	def move_file(download) -> None:
+	def move_file(download: Download) -> None:
 		"Move file from download folder to final destination"
 		if exists(download.file):
 			folder = get_db().execute(
@@ -62,19 +67,19 @@ class PostProcessingActions:
 		return
 
 	@staticmethod
-	def delete_file(download) -> None:
+	def delete_file(download: Download) -> None:
 		"Delete file from download folder"
 		delete_file_folder(download.file)
 		return
 
 	@staticmethod
-	def add_file_to_database(download) -> None:
+	def add_file_to_database(download: Download) -> None:
 		"Register file in database and match to a volume/issue"
 		scan_files(Volume(download.volume_id).get_info())
 		return
 
 	@staticmethod
-	def convert_file(download) -> None:
+	def convert_file(download: Download) -> None:
 		"Convert a file into a different format based on settings"
 		cursor = get_db()
 
@@ -83,25 +88,15 @@ class PostProcessingActions:
 		).fetchone()[0]:
 			return
 
-		format_preference = cursor.execute(
-			"SELECT value FROM config WHERE key = 'format_preference' LIMIT 1;"
-		).fetchone()[0].split(',')
-		if format_preference == ['']:
-			format_preference = []
-		
-		if not format_preference:
-			return
-		
-		converter = find_target_format_file(
-			download.file,
-			format_preference
+		mass_convert(
+			download.volume_id,
+			download.issue_id,
+			files=[download.file]
 		)
-		if converter is not None:
-			converter.convert(download.file)
 		return
 
 	@staticmethod
-	def move_file_torrent(download) -> None:
+	def move_file_torrent(download: Download) -> None:
 		"""Move file downloaded using torrent from download folder to
 		final destination"""
 		PPA.move_file(download)

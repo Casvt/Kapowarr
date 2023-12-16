@@ -9,6 +9,7 @@ from os.path import dirname
 from sqlite3 import Connection, ProgrammingError, Row
 from threading import current_thread
 from time import time
+from typing import List
 
 from flask import g
 from waitress.task import ThreadedTaskDispatcher as OldThreadedTaskDispatcher
@@ -16,7 +17,7 @@ from waitress.task import ThreadedTaskDispatcher as OldThreadedTaskDispatcher
 from backend.logging import set_log_level
 
 __DATABASE_FILEPATH__ = 'db', 'Kapowarr.db'
-__DATABASE_VERSION__ = 13
+__DATABASE_VERSION__ = 14
 
 class Singleton(type):
 	_instances = {}
@@ -509,6 +510,31 @@ def migrate_db(current_db_version: int) -> None:
 				SET value = 1
 				WHERE key = 'convert';
 				"""
+			)
+
+	if current_db_version == 13:
+		# V13 -> V14
+		format_preference: List[str] = cursor.execute("""
+			SELECT value
+			FROM config
+			WHERE key = 'format_preference'
+			LIMIT 1;
+		""").fetchone()[0].split(',')
+		
+		if 'folder' in format_preference:
+			cursor.execute("""
+				UPDATE config
+				SET value = 1
+				WHERE key = 'extract_issue_ranges';
+				"""
+			)
+			format_preference.remove('folder')
+			cursor.execute("""
+				UPDATE config
+				SET value = ?
+				WHERE key = 'format_preference';
+				""",
+				(",".join(format_preference),)
 			)
 
 	return

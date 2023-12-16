@@ -32,6 +32,7 @@ default_settings = {
 	'log_level': 'info',
 	'database_version': __DATABASE_VERSION__,
 	'convert': False,
+	'extract_issue_ranges': False,
 	'format_preference': '',
 	'volume_padding': 2,
 	'issue_padding': 3,
@@ -110,7 +111,7 @@ class Settings:
 				"SELECT key, value FROM config;"
 			))
 			bool_values = ('rename_downloaded_files', 'volume_as_empty',
-						'convert')
+						'convert', 'extract_issue_ranges')
 			for bv in bool_values:
 				settings[bv] = settings[bv] == 1
 
@@ -161,7 +162,7 @@ class Settings:
 				raise FolderNotFound
 
 			elif key in ('rename_downloaded_files', 'volumes_as_empty',
-						'convert'):
+						'convert', 'extract_issue_ranges'):
 				if not isinstance(value, bool):
 					raise InvalidSettingValue(key, value)
 				value = int(value)

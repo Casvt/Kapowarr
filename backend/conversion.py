@@ -3,11 +3,11 @@
 from itertools import chain
 from os.path import dirname, splitext
 from sys import platform
-from typing import Dict, List, Set, Union
+from typing import Dict, List, Set, Tuple, Union
 
 from backend.converters import FileConverter, rar_executables
 from backend.db import get_db
-from backend.files import scan_files
+from backend.files import _list_files, extract_filename_data, scan_files
 from backend.volumes import Volume
 
 conversion_methods: Dict[str, Dict[str, FileConverter]] = {}
@@ -78,14 +78,14 @@ def convert_file(file: str, formats: List[str]) -> str:
 		formats
 	)
 	if conversion_class is not None:
-		return conversion_class().convert(file)
+		return conversion_class.convert(file)
 	else:
 		return file
 
 def __get_format_pref_and_files(
 	volume_id: int,
 	issue_id: Union[int, None] = None
-) -> List[str]:
+) -> Tuple[List[str], bool]:
 	"""Get the format preference and load the targeted files into the cursor.
 
 	Args:
@@ -96,7 +96,8 @@ def __get_format_pref_and_files(
 			Defaults to None.
 
 	Returns:
-		List[str]: The format preference in the settings
+		Tuple[List[str], bool]: The format preference in the settings and
+		the value of 'extract_issue_ranges'.
 	"""
 	cursor = get_db()
 	
@@ -105,6 +106,10 @@ def __get_format_pref_and_files(
 	).fetchone()[0].split(',')
 	if format_preference == ['']:
 		format_preference = []
+	
+	extract_issue_ranges = cursor.execute(
+		"SELECt value FROM config WHERE key = 'extract_issue_ranges' LIMIT 1;"
+	).fetchone()[0] == 1
 	
 	if not issue_id:
 		cursor.execute("""
@@ -138,7 +143,7 @@ def __get_format_pref_and_files(
 			(volume_id, issue_id)
 		)
 
-	return format_preference
+	return format_preference, extract_issue_ranges
 
 def preview_mass_convert(
 	volume_id: int,
@@ -156,17 +161,28 @@ def preview_mass_convert(
 			Dicts have the keys `before` and `after`.
 	"""	
 	cursor = get_db()
-	format_preference = __get_format_pref_and_files(
+	format_preference, extract_issue_ranges = __get_format_pref_and_files(
 		volume_id,
 		issue_id
 	)
 
 	result = []
 	for (f,) in cursor:
-		converter = find_target_format_file(
-			f,
-			format_preference
-		)
+		converter = None
+
+		if (extract_issue_ranges
+		and isinstance(extract_filename_data(f)['issue_number'], tuple)):
+			converter = find_target_format_file(
+				f,
+				['folder']
+			)
+
+		if converter is None:
+			converter = find_target_format_file(
+				f,
+				format_preference
+			)
+
 		if converter is not None:
 			if converter.target_format == 'folder':
 				result.append({
@@ -183,7 +199,7 @@ def preview_mass_convert(
 def mass_convert(
 	volume_id: int,
 	issue_id: Union[int, None] = None,
-	files: List[str]= []
+	files: List[str] = []
 ) -> None:
 	"""Convert files for a volume or issue.
 
@@ -201,21 +217,36 @@ def mass_convert(
 	files = set(files)
 
 	cursor = get_db()
-	format_preference = __get_format_pref_and_files(
+	format_preference, extract_issue_ranges = __get_format_pref_and_files(
 		volume_id,
 		issue_id
 	)
-	
+
 	for (f,) in cursor.fetchall():
 		if files and f not in files:
 			continue
-		
-		converter = find_target_format_file(
-			f,
-			format_preference
-		)
-		if converter is not None:
-			converter().convert(f)
+
+		converted = False
+		if (extract_issue_ranges
+		and isinstance(extract_filename_data(f)['issue_number'], tuple)):
+			converter = find_target_format_file(
+				f,
+				['folder']
+			)
+			if converter is not None:
+				folder = converter.convert(f)
+				for sub_file in _list_files(folder):
+					convert_file(
+						sub_file,
+						format_preference
+					)
+				converted = True
+
+		if not converted:
+			convert_file(
+				f,
+				format_preference
+			)
 
 	scan_files(Volume(volume_id).get_info())
 

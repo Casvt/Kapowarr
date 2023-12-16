@@ -6,6 +6,7 @@ const inputs = {
 	'file_naming_empty_input': document.querySelector('#file-naming-empty-input'),
 	'volume_as_empty_input': document.querySelector('#volume-as-empty-input'),
 	'convert_input': document.querySelector('#convert-input'),
+	'extract_input': document.querySelector('#extract-input'),
 	'issue_padding_input': document.querySelector('#issue-padding-input'),
 	'volume_padding_input': document.querySelector('#volume-padding-input')
 };
@@ -24,6 +25,7 @@ function fillSettings(api_key) {
 		inputs.file_naming_empty_input.value = json.result.file_naming_empty;
 		inputs.volume_as_empty_input.checked = json.result.volume_as_empty;
 		inputs.convert_input.checked = json.result.convert;
+		inputs.extract_input.checked = json.result.extract_issue_ranges;
 		inputs.issue_padding_input.value = json.result.issue_padding;
 		inputs.volume_padding_input.value = json.result.volume_padding;
 		
@@ -43,6 +45,7 @@ function saveSettings(api_key) {
 		'file_naming_empty': inputs.file_naming_empty_input.value,
 		'volume_as_empty': inputs.volume_as_empty_input.checked,
 		'convert': inputs.convert_input.checked,
+		'extract_issue_ranges': inputs.extract_input.checked,
 		'format_preference': convert_preference,
 		'issue_padding': parseInt(inputs.issue_padding_input.value),
 		'volume_padding': parseInt(inputs.volume_padding_input.value)
