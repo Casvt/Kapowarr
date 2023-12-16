@@ -15,7 +15,7 @@ async function usingApiKey(redirect=true) {
 			})
 			.then(json => {
 				key_data.api_key = json.result.api_key;
-				key_data.last_login = Date.now();
+				key_data.last_login = Date.now() / 1000;
 				localStorage.setItem('kapowarr', JSON.stringify(key_data));
 				return json.result.api_key;
 			})
