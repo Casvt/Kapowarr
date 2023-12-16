@@ -2,7 +2,7 @@ async function usingApiKey(redirect=true) {
 	const key_data = JSON.parse(localStorage.getItem('kapowarr'));
 
 	if (key_data.api_key === null
-	|| (key_data.last_login < (Date.now() - 86400))) {
+	|| (key_data.last_login < (Date.now() / 1000 - 86400))) {
 
 		return fetch(`${url_base}/api/auth`, {
 			'method': 'POST',
