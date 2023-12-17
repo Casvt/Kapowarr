@@ -656,21 +656,25 @@ def delete_empty_folders(top_folder: str, root_folder: str) -> None:
 	"""
 	logging.debug(f'Deleting folders from {top_folder} until {root_folder}')
 
-	if not top_folder.startswith(abspath(root_folder) + sep):
+	if not (abspath(top_folder) + sep).startswith(abspath(root_folder) + sep):
 		logging.error(f'The folder {top_folder} is not in {root_folder}')
 		return
 
-	while (not exists(top_folder) or not(
-		samefile(top_folder, root_folder)
-		or listdir(top_folder)
-	)):
+	while True:
 		if not exists(top_folder):
 			top_folder = dirname(top_folder)
 			continue
 
+		if samefile(top_folder, root_folder):
+			break
+		
+		if listdir(top_folder):
+			break
+
 		logging.debug(f'Deleting folder: {top_folder}')
 		rmtree(top_folder, ignore_errors=True)
 		top_folder = dirname(top_folder)
+
 	return
 
 def create_volume_folder(
