@@ -265,6 +265,9 @@ class TorrentDownload(BaseDownload):
 		of the torrent download
 		"""
 		torrent_status = self.client.get_torrent_status(self._torrent_id)
+		if not torrent_status:
+			return
+
 		self.progress = torrent_status['progress']
 		self.speed = torrent_status['speed']
 		self.size = torrent_status['size']

@@ -403,6 +403,8 @@ class DownloadHandler:
 
 		for download in self.queue:
 			if download.id == download_id:
+				download.stop()
+
 				if download.state == DownloadStates.QUEUED_STATE:
 					self.queue.remove(download)
 					if isinstance(download, TorrentDownload):
@@ -411,8 +413,6 @@ class DownloadHandler:
 					else:
 						PostProcesser.canceled(download)
 
-				else:
-					download.stop()
 				break
 		else:
 			raise DownloadNotFound

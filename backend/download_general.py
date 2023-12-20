@@ -173,7 +173,8 @@ class TorrentClient(ABC):
 			torrent_id (int): The id of the torrent to get status of
 
 		Returns:
-			dict: The status of the torrent
+			dict: The status of the torrent,
+			or empty dict if torrent is not found.
 		"""
 		return
 

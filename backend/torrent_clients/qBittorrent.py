@@ -57,10 +57,14 @@ class qBittorrent(BaseTorrentClient):
 		return hash_magnet_link.search(magnet_link).group(0)
 
 	def get_torrent_status(self, torrent_id: int) -> dict:
-		result = self.ssn.get(
+		r = self.ssn.get(
 			f'{self.base_url}/api/v2/torrents/properties',
 			params={'hash': torrent_id}
-		).json()
+		)
+		if r.status_code == 404:
+			return {}
+
+		result = r.json()
 
 		if result['pieces_have'] <= 0:
 			state = DownloadStates.QUEUED_STATE
