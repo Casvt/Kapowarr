@@ -3,7 +3,7 @@
 from re import IGNORECASE, compile
 from typing import Union
 
-from requests import Session, get
+from requests import Session, post
 from requests.exceptions import RequestException
 
 from backend.download_general import BaseTorrentClient, DownloadStates
@@ -21,16 +21,16 @@ class qBittorrent(BaseTorrentClient):
 		self.ssn = Session()
 
 		if self.username and self.password:
-			params = {
+			data = {
 				'username': self.username,
 				'password': self.password
 			}
 		else:
-			params = {}
+			data = {}
 
-		self.ssn.get(
+		self.ssn.post(
 			f'{self.base_url}/api/v2/auth/login',
-			params=params
+			data=data
 		)
 
 		return
@@ -43,15 +43,15 @@ class qBittorrent(BaseTorrentClient):
 		if torrent_name is not None:
 			magnet_link = filename_magnet_link.sub(torrent_name, magnet_link)
 			
-		params = {
-			'urls': magnet_link,
-			'savepath': target_folder,
-			'category': private_settings['torrent_tag']
+		files = {
+			'urls': (None, magnet_link),
+			'savepath': (None, target_folder),
+			'category': (None, private_settings['torrent_tag'])
 		}
 			
-		self.ssn.get(
+		self.ssn.post(
 			f'{self.base_url}/api/v2/torrents/add',
-			params=params
+			files=files
 		)
 		
 		return hash_magnet_link.search(magnet_link).group(0)
@@ -88,9 +88,9 @@ class qBittorrent(BaseTorrentClient):
 		}
 
 	def delete_torrent(self, torrent_id: int, delete_files: bool) -> None:
-		self.ssn.get(
+		self.ssn.post(
 			f'{self.base_url}/api/v2/torrents/delete',
-			params={
+			data={
 				'hashes': torrent_id,
 				'deleteFiles': delete_files
 			}
@@ -113,10 +113,13 @@ class qBittorrent(BaseTorrentClient):
 			else:
 				params = {}
 
-			cookie = get(
+			auth_request = post(
 				f'{base_url}/api/v2/auth/login',
-				params=params
-			).headers.get('set-cookie')
+				data=params
+			)
+			if auth_request.status_code == 404:
+				return False
+			cookie = auth_request.headers.get('set-cookie')
 			
 			return cookie is not None
 		
