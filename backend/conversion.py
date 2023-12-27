@@ -167,17 +167,26 @@ def preview_mass_convert(
 			Dicts have the keys `before` and `after`.
 	"""	
 	cursor = get_db()
-	format_preference, extract_issue_ranges = __get_format_pref_and_files(
+	format_preference, extract_issue_ranges, special_version = __get_format_pref_and_files(
 		volume_id,
 		issue_id
 	)
+	volume_as_issue = special_version == 'volume-as-issue'
 
 	result = []
 	for (f,) in cursor:
 		converter = None
 
 		if (extract_issue_ranges
-		and isinstance(extract_filename_data(f)['issue_number'], tuple)):
+		and ((
+				not volume_as_issue
+				and isinstance(extract_filename_data(f)['issue_number'], tuple)
+			)
+			or (
+				volume_as_issue
+				and isinstance(extract_filename_data(f)['volume_number'], tuple)
+			)
+		)):
 			converter = find_target_format_file(
 				f,
 				['folder']
