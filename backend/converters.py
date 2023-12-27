@@ -88,7 +88,7 @@ def extract_files_from_folder(
 						and result['volume_number'] == volume_data['volume_number']
 					)
 					or (
-						volume_data[4] == 'volume-as-issue'
+						volume_data['special_version'] == 'volume-as-issue'
 						and cursor.execute(
 							"SELECT 1 FROM issues WHERE volume_id = ? AND calculated_issue_number = ? LIMIT 1;",
 							(

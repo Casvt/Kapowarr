@@ -85,7 +85,7 @@ def convert_file(file: str, formats: List[str]) -> str:
 def __get_format_pref_and_files(
 	volume_id: int,
 	issue_id: Union[int, None] = None
-) -> Tuple[List[str], bool]:
+) -> Tuple[List[str], bool, Union[None, str]]:
 	"""Get the format preference and load the targeted files into the cursor.
 
 	Args:
@@ -96,8 +96,9 @@ def __get_format_pref_and_files(
 			Defaults to None.
 
 	Returns:
-		Tuple[List[str], bool]: The format preference in the settings and
-		the value of 'extract_issue_ranges'.
+		Tuple[List[str], bool, Union[None, str]]: The format preference
+		in the settings, the value of 'extract_issue_ranges'
+		and the value of 'special_version' for the volume.
 	"""
 	cursor = get_db()
 	
@@ -108,8 +109,13 @@ def __get_format_pref_and_files(
 		format_preference = []
 	
 	extract_issue_ranges = cursor.execute(
-		"SELECt value FROM config WHERE key = 'extract_issue_ranges' LIMIT 1;"
+		"SELECT value FROM config WHERE key = 'extract_issue_ranges' LIMIT 1;"
 	).fetchone()[0] == 1
+
+	special_version = cursor.execute(
+		"SELECT special_version FROM volumes WHERE id = ? LIMIT 1;",
+		(volume_id,)
+	).fetchone()[0]
 	
 	if not issue_id:
 		cursor.execute("""
@@ -143,7 +149,7 @@ def __get_format_pref_and_files(
 			(volume_id, issue_id)
 		)
 
-	return format_preference, extract_issue_ranges
+	return format_preference, extract_issue_ranges, special_version
 
 def preview_mass_convert(
 	volume_id: int,
@@ -217,10 +223,11 @@ def mass_convert(
 	files = set(files)
 
 	cursor = get_db()
-	format_preference, extract_issue_ranges = __get_format_pref_and_files(
+	format_preference, extract_issue_ranges, special_version = __get_format_pref_and_files(
 		volume_id,
 		issue_id
 	)
+	volume_as_issue = special_version == 'volume-as-issue'
 
 	for (f,) in cursor.fetchall():
 		if files and f not in files:
@@ -228,7 +235,15 @@ def mass_convert(
 
 		converted = False
 		if (extract_issue_ranges
-		and isinstance(extract_filename_data(f)['issue_number'], tuple)):
+		and ((
+				not volume_as_issue
+				and isinstance(extract_filename_data(f)['issue_number'], tuple)
+			)
+			or (
+				volume_as_issue
+				and isinstance(extract_filename_data(f)['volume_number'], tuple)
+			)
+		)):
 			converter = find_target_format_file(
 				f,
 				['folder']
