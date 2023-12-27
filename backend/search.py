@@ -155,32 +155,33 @@ def _check_match(
 		year is None
 		or result['year'] is None
 		or (
-			year - 1 <= result['year'] <= year + 1 # Year in volume release year
+			# Year in volume release year
+			year - 1 <= result['year'] <= year + 1
 			# Year in issue release year
 			or (result['issue_number'] is None
 				and ((
 						isinstance(result['volume_number'], int)
-						and issue_numbers.get(
+						and result['year'] - 1 <= issue_numbers.get(
 							float(result['volume_number'])
-						) == result['year']
+						) <= result['year'] + 1
 					)
 
 					or (
 						isinstance(result['volume_number'], tuple)
-						and issue_numbers.get(
+						and result['year'] - 1 <= issue_numbers.get(
 							float(result['volume_number'][0])
-						) == result['year']
+						) <= result['year'] + 1
 				)))
 
 			or (isinstance(result['issue_number'], float)
-	   			and issue_numbers.get(
+	   			and result['year'] - 1 <= issue_numbers.get(
 					result['issue_number']
-				) == result['year']) 
+				) <= result['year'] + 1)
 
 			or (isinstance(result['issue_number'], tuple)
-				and issue_numbers.get(
+				and result['year'] - 1 <= issue_numbers.get(
 					result['issue_number'][0]
-				) == result['year'])
+				) <= result['year'] + 1)
 		)
 	)
 	if not year_is_equal:
