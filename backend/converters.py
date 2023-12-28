@@ -201,7 +201,7 @@ class ZIPtoRAR(FileConverter):
 			"SELECT folder FROM volumes WHERE id = ? LIMIT 1;",
 			(volume_id,)
 		).fetchone()['folder']
-		
+
 		archive_folder = join(volume_folder, archive_extract_folder)
 
 		with ZipFile(file, 'r') as zip:
@@ -215,7 +215,7 @@ class ZIPtoRAR(FileConverter):
 			splitext(file)[0],
 			archive_folder
 		])
-		
+
 		rmtree(archive_folder, ignore_errors=True)
 
 		return splitext(file)[0] + '.rar'
@@ -233,7 +233,7 @@ class ZIPtoCBR(FileConverter):
 class ZIPtoFOLDER(FileConverter):
 	source_format = 'zip'
 	target_format = 'folder'
-	
+
 	@staticmethod
 	def convert(file: str) -> str:
 		cursor = get_db('dict')
@@ -257,8 +257,12 @@ class ZIPtoFOLDER(FileConverter):
 			"SELECT folder FROM volumes WHERE id = ? LIMIT 1;",
 			(volume_id,)
 		).fetchone()['folder']
-		
-		zip_folder = join(volume_folder, archive_extract_folder)
+
+		zip_folder = join(
+			volume_folder,
+			archive_extract_folder,
+			splitext(basename(file))[0]
+		)
 
 		with ZipFile(file, 'r') as zip:
 			zip.extractall(zip_folder)
@@ -266,7 +270,7 @@ class ZIPtoFOLDER(FileConverter):
 		remove(file)
 
 		resulting_files = extract_files_from_folder(
-			zip_folder,
+			dirname(zip_folder),
 			volume_id
 		)
 
@@ -419,7 +423,11 @@ class RARtoFOLDER(FileConverter):
 			(volume_id,)
 		).fetchone()['folder']
 		
-		rar_folder = join(volume_folder, archive_extract_folder)
+		rar_folder = join(
+			volume_folder,
+			archive_extract_folder,
+			splitext(basename(file))[0]
+		)
 		mkdir(rar_folder)
 
 		_run_rar([
@@ -432,7 +440,7 @@ class RARtoFOLDER(FileConverter):
 		remove(file)
 
 		resulting_files = extract_files_from_folder(
-			rar_folder,
+			dirname(rar_folder),
 			volume_id
 		)
 
