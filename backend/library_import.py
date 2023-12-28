@@ -273,6 +273,13 @@ def import_library(
 			for f in files:
 				try:
 					new_files.append(move(f, vf))
+				except PermissionError:
+					# Happens when moving between an NFS file system.
+					# Raised when chmod is used inside.
+					# Checking the source code, chmod is used at the very end,
+					# 	so just skipping it is alright I think.
+					pass
+
 				except Error:
 					new_files.append(join(vf, basename(f)))
 

@@ -792,7 +792,14 @@ def move_volume_folder(
 
 	makedirs(new_folder, 0o764, exist_ok=True)
 	for new_filepath, old_filepath in renamed_files:
-		move(old_filepath, new_filepath)
+		try:
+			move(old_filepath, new_filepath)
+		except PermissionError:
+			# Happens when moving between an NFS file system.
+			# Raised when chmod is used inside.
+			# Checking the source code, chmod is used at the very end,
+			# 	so just skipping it is alright I think.
+			pass
 
 	# Delete old folder
 	if not (new_folder + sep).startswith(current_folder.rstrip(sep) + sep):
@@ -858,5 +865,13 @@ def rename_file(before: str, after: str) -> None:
 	makedirs(dirname(after), exist_ok=True)
 	
 	# Move file into folder
-	move(before, after)
+	try:
+		move(before, after)
+	except PermissionError:
+		# Happens when moving between an NFS file system.
+		# Raised when chmod is used inside.
+		# Checking the source code, chmod is used at the very end,
+		# 	so just skipping it is alright I think.
+		pass
+
 	return

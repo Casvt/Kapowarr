@@ -62,7 +62,14 @@ class PostProcessingActions:
 				)
 				delete_file_folder(download.file)
 
-			move(download.file, file_dest)
+			try:
+				move(download.file, file_dest)
+			except PermissionError:
+				# Happens when moving between an NFS file system.
+				# Raised when chmod is used inside.
+				# Checking the source code, chmod is used at the very end,
+				# 	so just skipping it is alright I think.
+				pass
 			download.file = file_dest
 		return
 
