@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 from backend.conversion import mass_convert
 from backend.converters import extract_files_from_folder
 from backend.db import get_db
+from backend.download_torrent_clients import TorrentDownload
 from backend.helpers import delete_file_folder
 from backend.naming import mass_rename
 from backend.volumes import Volume, scan_files
@@ -95,22 +96,29 @@ class PostProcessingActions:
 		).fetchone()[0]:
 			return
 
-		mass_convert(
-			download.volume_id,
-			download.issue_id,
-			files=[download.file]
-		)
+		if isinstance(download, TorrentDownload):
+			mass_convert(
+				download.volume_id,
+				download.issue_id,
+				files=download.resulting_files
+			)
+		else:
+			mass_convert(
+				download.volume_id,
+				download.issue_id,
+				files=[download.file]
+			)
 		return
 
 	@staticmethod
-	def move_file_torrent(download: Download) -> None:
+	def move_file_torrent(download: TorrentDownload) -> None:
 		"""Move file downloaded using torrent from download folder to
 		final destination"""
 		PPA.move_file(download)
 
 		cursor = get_db('dict')
 
-		files = extract_files_from_folder(
+		download.resulting_files = extract_files_from_folder(
 			download.file,
 			download.volume_id
 		)
@@ -124,8 +132,11 @@ class PostProcessingActions:
 			LIMIT 1;
 		""").fetchone()[0]
 
-		if rename_files and files:
-			mass_rename(download.volume_id, filepath_filter=files)
+		if rename_files and download.resulting_files:
+			mass_rename(
+				download.volume_id,
+				filepath_filter=download.resulting_files
+			)
 
 		return
 
