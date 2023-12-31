@@ -22,7 +22,8 @@ from backend.root_folders import RootFolders
 alphabet = 'abcdefghijklmnopqrstuvwxyz'
 alphabet = {letter: str(alphabet.index(letter) + 1).zfill(2) for letter in alphabet}
 digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
-image_extensions = ('.png','.jpeg','.jpg','.webp','.gif')
+image_extensions = ('.png','.jpeg','.jpg','.webp','.gif',
+					'.PNG','.JPEG','.JPG','.WEBP','.GIF')
 supported_extensions = image_extensions + ('.cbz','.zip','.rar','.cbr','.tar.gz','.7zip','.7z','.cb7','.cbt','.epub','.pdf')
 file_extensions = r'\.(' + '|'.join(e[1:] for e in supported_extensions) + r')$'
 volume_regex_snippet = r'\b(?:v(?:ol|olume)?)(?:\.\s|[\.\-\s])?(\d+(?:\s?\-\s?\d+)?|(?<!v)I{1,3})\b'
