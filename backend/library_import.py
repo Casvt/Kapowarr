@@ -266,9 +266,10 @@ def import_library(
 			continue
 
 		volume = Volume(volume_id)
+		vi = volume.get_info()
 		if rename_files:
 			# Put files in volume folder
-			vf: str = volume.get_info()['folder']
+			vf: str = vi['folder']
 			new_files = []
 			for f in files:
 				try:
@@ -285,12 +286,12 @@ def import_library(
 
 				delete_empty_folders(dirname(f), root_folder['folder'])
 
-			scan_files(volume.get_info())
+			scan_files(vi)
 			
 			# Trigger rename
 			mass_rename(volume_id, filepath_filter=new_files)
 
 		else:
-			scan_files(volume.get_info())
+			scan_files(vi)
 
 	return
