@@ -107,10 +107,6 @@ def extract_files_from_folder(
 			rel_files_append(c)
 	logging.debug(f'Relevant files: {rel_files}')
 
-	# Delete non-relevant files
-	for c in filter(lambda f: f not in rel_files, folder_contents):
-		remove(c)
-
 	# Move remaining files to main folder and delete source folder
 	result = []
 	result_append = result.append
@@ -207,8 +203,6 @@ class ZIPtoRAR(FileConverter):
 		with ZipFile(file, 'r') as zip:
 			zip.extractall(archive_folder)
 
-		remove(file)
-
 		_run_rar([
 			'a',
 			'-ep', '-inul',
@@ -217,6 +211,8 @@ class ZIPtoRAR(FileConverter):
 		])
 
 		rmtree(archive_folder, ignore_errors=True)
+
+		remove(file)
 
 		return splitext(file)[0] + '.rar'
 
@@ -267,8 +263,6 @@ class ZIPtoFOLDER(FileConverter):
 		with ZipFile(file, 'r') as zip:
 			zip.extractall(zip_folder)
 
-		remove(file)
-
 		resulting_files = extract_files_from_folder(
 			dirname(zip_folder),
 			volume_id
@@ -277,6 +271,8 @@ class ZIPtoFOLDER(FileConverter):
 		scan_files(Volume(volume_id).get_info())
 		if resulting_files:
 			mass_rename(volume_id, filepath_filter=resulting_files)
+
+		remove(file)
 
 		return volume_folder
 
@@ -376,12 +372,12 @@ class RARtoZIP(FileConverter):
 			rar_folder
 		])
 		
-		remove(file)
-
 		target_file = splitext(file)[0]
 		target_file = make_archive(target_file, 'zip', rar_folder)
 
 		rmtree(rar_folder, ignore_errors=True)
+
+		remove(file)
 
 		return target_file
 
@@ -437,8 +433,6 @@ class RARtoFOLDER(FileConverter):
 			rar_folder
 		])
 
-		remove(file)
-
 		resulting_files = extract_files_from_folder(
 			dirname(rar_folder),
 			volume_id
@@ -447,6 +441,8 @@ class RARtoFOLDER(FileConverter):
 		scan_files(Volume(volume_id).get_info())
 		if resulting_files:
 			mass_rename(volume_id, filepath_filter=resulting_files)
+
+		remove(file)
 
 		return volume_folder
 
