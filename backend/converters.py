@@ -2,8 +2,8 @@
 
 import logging
 from abc import ABC, abstractmethod
-from os import mkdir, remove
-from os.path import basename, dirname, join, splitext
+from os import mkdir, remove, utime
+from os.path import basename, dirname, join, splitext, getmtime
 from shutil import make_archive, rmtree
 from subprocess import call as spc
 from sys import platform
@@ -371,15 +371,19 @@ class RARtoZIP(FileConverter):
 			file,
 			rar_folder
 		])
-		
+
+		for f in _list_files(rar_folder):
+			if getmtime(f) <= 315619200:
+				utime(f, (315619200, 315619200))
+
 		target_file = splitext(file)[0]
-		target_file = make_archive(target_file, 'zip', rar_folder)
+		target_archive = make_archive(target_file, 'zip', rar_folder)
 
 		rmtree(rar_folder, ignore_errors=True)
 
 		remove(file)
 
-		return target_file
+		return target_archive
 
 class RARtoCBZ(FileConverter):
 	source_format = 'rar'
