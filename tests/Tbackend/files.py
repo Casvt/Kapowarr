@@ -78,7 +78,10 @@ class extract_filename_data(unittest.TestCase):
 				{'series': 'Captain America', 'year': 2018, 'volume_number': 1, 'special_version': None, 'issue_number': 25.0, 'annual': False},
 
 			'Wolverine (2020) Issue 006 - X of Swords, Chapter 3':
-				{'series': 'Wolverine', 'year': 2020, 'volume_number': 1, 'special_version': None, 'issue_number': 6.0, 'annual': False}
+				{'series': 'Wolverine', 'year': 2020, 'volume_number': 1, 'special_version': None, 'issue_number': 6.0, 'annual': False},
+
+			'Batman Annual (1961) Volume 1 Issue 10/90 - Batman_Annual #10/Batman Annual #10-02.jpg':
+				{'series': 'Batman Annual', 'year': 1961, 'volume_number': 1, 'special_version': None, 'issue_number': 10.0, 'annual': True}
 		}
 		self.run_cases(cases)
 
@@ -136,5 +139,30 @@ class extract_filename_data(unittest.TestCase):
 
 			'Star Wars Darth Vader (2020) Volume 3 Issue 18/Star Wars - Darth Vader (2021-) 019-002.jpg':
 				{'series': 'Star Wars Darth Vader', 'year': 2021, 'volume_number': 3, 'special_version': None, 'issue_number': 18.0, 'annual': False}
+		}
+		self.run_cases(cases)
+
+	def test_cover(self):
+		cases = {
+			'Batman Annual (1961) Volume 1 Issue 1-28/Batman - Annuals (1-28) (1961-2011) GetComics.INFO/Batman Annual 006 (1964) (no cover).cbr':
+				{'series': 'Batman Annual', 'year': 1964, 'volume_number': 1, 'special_version': None, 'issue_number': 6.0, 'annual': True},
+
+			'Batman_Annual_n02c01':
+				{'series': 'Batman Annual', 'year': None, 'volume_number': 1, 'special_version': 'cover', 'issue_number': 2.0, 'annual': True},
+
+			'Batman Annual (1961) Volume 1 Issue 1-28/Batman - Annuals (1-28) (1961-2011) GetComics.INFO/Batman Annual cover (1964).cbr':
+				{'series': 'Batman Annual', 'year': 1964, 'volume_number': 1, 'special_version': 'cover', 'issue_number': None, 'annual': True},
+
+			'Batman Annual (1961) Volume 1 Issue 1-28/Batman - Annuals (1-28) (1961-2011) GetComics.INFO/Batman Annual v2c6 (1964).cbr':
+				{'series': 'Batman Annual', 'year': 1964, 'volume_number': 2, 'special_version': None, 'issue_number': 6.0, 'annual': True},
+
+			'Batman Annual (1961) Volume 1 Issue 16/Batman-Annual-1992-16-00-FC.jpg':
+				{'series': 'Batman Annual', 'year': 1992, 'volume_number': 1, 'special_version': 'cover', 'issue_number': 16.0, 'annual': True},
+
+			'Batman Annual (1961) Volume 1 Issue 13/Batman-Annual #13-00fc.jpg':
+				{'series': 'Batman Annual', 'year': 1961, 'volume_number': 1, 'special_version': 'cover', 'issue_number': 13.0, 'annual': True},
+
+			'Batman Annual (1961) Volume 1 Issue 14/Batman-Annual #14-00.jpg':
+				{'series': 'Batman Annual', 'year': 1961, 'volume_number': 1, 'special_version': None, 'issue_number': 14.0, 'annual': True}
 		}
 		self.run_cases(cases)

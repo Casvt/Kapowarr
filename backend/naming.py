@@ -6,14 +6,15 @@
 import logging
 from os import listdir
 from os.path import basename, dirname, isdir, isfile, join, splitext
-from re import IGNORECASE, compile, escape, match
+from re import compile, escape, match
 from string import Formatter
 from typing import Dict, List, Tuple, Union
 
 from backend.custom_exceptions import (InvalidSettingValue, IssueNotFound,
                                        VolumeNotFound)
 from backend.db import get_db
-from backend.files import delete_empty_folders, image_extensions, rename_file
+from backend.files import (cover_regex, delete_empty_folders, image_extensions,
+                           rename_file)
 from backend.settings import Settings
 
 formatting_keys = (
@@ -34,7 +35,10 @@ issue_formatting_keys = formatting_keys + (
 )
 
 filename_cleaner = compile(r'(<|>|(?<!^\w):|\"|\||\?|\*|\x00|(\s|\.)+$)')
-page_regex = compile(r'^(\d+)$|page[\s\.\-]?(\d+)', IGNORECASE)
+remove_year_in_image_regex = compile(r'(?:19|20)\d{2}')
+page_regex = compile(
+	r'^(\d+(?:[a-f]|_\d+)?)$|\b(?i:page|pg)[\s\.\-_]?(\d+(?:[a-f]|_\d+)?)|n?\d+[_\-p](\d+(?:[a-f]|_\d+)?)'
+)
 page_regex_2 = compile(r'(\d+)')
 
 #=====================
@@ -563,12 +567,19 @@ def preview_mass_rename(
 		# If file is image, it's probably a page instead of a whole issue/tpb.
 		# So put it in it's own folder together with the other images.
 		if file['filepath'].endswith(image_extensions):
-			filename: str = basename(file['filepath'])
+			filename: str = splitext(basename(file['filepath']))[0]
 			page_number = None
-			if 'cover' in filename.lower():
-				page_number = 'Cover'
+			cover_result = cover_regex.search(filename)
+			if cover_result:
+				cover_number = cover_result.group(1)
+				if cover_number:
+					page_number = f'Cover {cover_number}'
+				else:
+					page_number = 'Cover'
 			else:
-				page_result = page_regex.search(filename)
+				page_result = page_regex.search(
+					remove_year_in_image_regex.sub('', filename)
+				)
 				if page_result:
 					page_number = next(r for r in page_result.groups() if r is not None)
 				else:
