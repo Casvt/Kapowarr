@@ -18,7 +18,8 @@ from backend.custom_exceptions import (CVRateLimitReached,
                                        InvalidComicVineApiKey,
                                        VolumeNotMatched)
 from backend.db import get_db
-from backend.files import process_issue_number, volume_regex
+from backend.files import (convert_volume_number_to_int, process_issue_number,
+                           volume_regex)
 from backend.helpers import batched
 from backend.settings import Settings, private_settings
 
@@ -300,7 +301,9 @@ class ComicVine:
 
 		volume_result = volume_regex.search(volume_data['deck'] or '')
 		if volume_result:
-			result['volume_number'] = int(volume_result.group(1))
+			result['volume_number'] = convert_volume_number_to_int(
+				volume_result.group(1)
+			)
 
 		translation_result = translation_regex.match(
 			volume_data['description'] or ''
