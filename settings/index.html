@@ -534,18 +534,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#naming" class="md-nav__link">
+  <a href="#file-naming" class="md-nav__link">
     <span class="md-ellipsis">
-      Naming
+      File Naming
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#unzipping" class="md-nav__link">
+  <a href="#converting" class="md-nav__link">
     <span class="md-ellipsis">
-      Unzipping
+      Converting
     </span>
   </a>
   
@@ -585,6 +585,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#completed-download-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Completed Download Handling
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#service-preference" class="md-nav__link">
     <span class="md-ellipsis">
       Service preference
@@ -604,6 +613,15 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#download-clients" class="md-nav__link">
+    <span class="md-ellipsis">
+      Download Clients
+    </span>
+  </a>
   
 </li>
       
@@ -852,18 +870,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#naming" class="md-nav__link">
+  <a href="#file-naming" class="md-nav__link">
     <span class="md-ellipsis">
-      Naming
+      File Naming
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#unzipping" class="md-nav__link">
+  <a href="#converting" class="md-nav__link">
     <span class="md-ellipsis">
-      Unzipping
+      Converting
     </span>
   </a>
   
@@ -903,6 +921,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#completed-download-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Completed Download Handling
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#service-preference" class="md-nav__link">
     <span class="md-ellipsis">
       Service preference
@@ -922,6 +949,15 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#download-clients" class="md-nav__link">
+    <span class="md-ellipsis">
+      Download Clients
+    </span>
+  </a>
   
 </li>
       
@@ -1008,7 +1044,9 @@
 Each setting type is grouped based on what they're related to.</p>
 <h2 id="media-management">Media Management<a class="headerlink" href="#media-management" title="Permanent link">&para;</a></h2>
 <p>Here is where you configure your settings related to how your media files are handled.</p>
-<h3 id="naming">Naming<a class="headerlink" href="#naming" title="Permanent link">&para;</a></h3>
+<h3 id="file-naming">File Naming<a class="headerlink" href="#file-naming" title="Permanent link">&para;</a></h3>
+<h4 id="rename-downloaded-files">Rename Downloaded Files<a class="headerlink" href="#rename-downloaded-files" title="Permanent link">&para;</a></h4>
+<p>When a file is downloaded, this setting decides if it should be renamed or not. If not, the default filename is used. If so, it is renamed following the formats set below.</p>
 <h4 id="volume-folder-naming">Volume Folder Naming<a class="headerlink" href="#volume-folder-naming" title="Permanent link">&para;</a></h4>
 <p>The naming format for the volume folder (folder structure allowed).<br />
 Available variables are:</p>
@@ -1021,7 +1059,7 @@ Available variables are:</p>
 <li>{publisher}</li>
 </ul>
 <p>For example, <code class="highlight">{series_name} ({year})</code> will come out as "Invincible Iron Man (2019)".</p>
-<h4 id="file-naming">File Naming<a class="headerlink" href="#file-naming" title="Permanent link">&para;</a></h4>
+<h4 id="file-naming_1">File Naming<a class="headerlink" href="#file-naming_1" title="Permanent link">&para;</a></h4>
 <p>The naming format for the file itself.<br />
 Available variables are:</p>
 <ul>
@@ -1051,8 +1089,9 @@ Available variables are:</p>
 </ul>
 <p>For example, <code class="highlight">{series_name} ({year}) Volume {volume_number} TPB</code> would come out as "Invincible Iron Man (2019) Volume 01 TPB.cbz"</p>
 <h4 id="file-naming-for-issues-without-title">File Naming For Issues Without Title<a class="headerlink" href="#file-naming-for-issues-without-title" title="Permanent link">&para;</a></h4>
-<p>The naming format for the file itself if there is no issue-specific title.<br />
-Available variables are:</p>
+<p>The naming format for the file itself if there is no issue-specific title.</p>
+<p>If the value of the setting <a href="#file-naming-1">File Naming</a> uses the issue title, it will most likely look ugly when the issue doesn't have a title. For example, if your format is <code class="highlight">Issue {issue_number} - {issue_title}</code>, but the issue doesn't have a title, it will result in a file like <code class="highlight">Issue 5 - .cbr</code>. For that scenario, this setting exists. Here you can set an alternative format for when the issue doesn't have a title.</p>
+<p>Available variables are:</p>
 <ul>
 <li>{series_name}</li>
 <li>{clean_series_name}</li>
@@ -1106,10 +1145,15 @@ To get around this, we 'pad' the numbers with leading zeroes. "1" becomes"001", 
 <li>0x (2 digits, i.e. 01, 02...10)</li>
 <li>00x (3 digits, i.e. 001, 002...,010...099,100)</li>
 </ul>
-<h3 id="unzipping">Unzipping<a class="headerlink" href="#unzipping" title="Permanent link">&para;</a></h3>
-<p>Unzip downloads will extract zip files after downloading.<br />
-This is useful for 'pack' style downloads, where the download contains multiple issues.<br />
-<em>Note: if Kapowarr determines that a file in the zip file is not related to the volume, it will not be extracted and will be deleted when the zip file is finished being unpacked.<br />
+<h3 id="converting">Converting<a class="headerlink" href="#converting" title="Permanent link">&para;</a></h3>
+<p>The "Converting" feature allows you to change the format of your files (e.g. from cbr to cbz). It can also extract archive files.</p>
+<h4 id="covert-files">Covert Files<a class="headerlink" href="#covert-files" title="Permanent link">&para;</a></h4>
+<p>If Kapowarr should automatically convert files after they've been downloaded. Kapowarr will follow the format preference set.</p>
+<h4 id="extract-archives-covering-multiple-issues">Extract archives covering multiple issues<a class="headerlink" href="#extract-archives-covering-multiple-issues" title="Permanent link">&para;</a></h4>
+<p>If an archive file is downloaded with multiple issues inside, then first extract the files inside and <em>then</em> convert. With the setting disabled, Kapowarr will covert the file as normal. Even when no format preference is set (don't convert), this setting can still be enabled to extract archive files (up to beta-3, this was called 'unzipping').</p>
+<h4 id="format-preference">Format Preference<a class="headerlink" href="#format-preference" title="Permanent link">&para;</a></h4>
+<p>The formats that Kapowarr should convert the files to. It will try to convert the files to the format at place 1, but if that is not possible, it will fallback to the format at place 2, and so forth. The last place will always be occupied by the format 'No Conversion'. That means that if Kapowarr is not able to convert the file to any of the set formats, it will just keep the current one. If no format preference is set ('No Conversion' is at place 1), no conversion will happen. The format 'folder' means extracting archive files. Kapowarr will extract all files inside the archive, delete the original archive file, filter unrelated files and rename the relevant ones.</p>
+<p><em>Note: if Kapowarr determines that a file in the archive file is not related to the volume, it will not be extracted and will be deleted when the archive file is finished being unpacked.
 If you find faulty deletions occurring, please <a href="https://github.com/Casvt/Kapowarr/issues">lodge an issue</a> for this.</em></p>
 <h3 id="root-folders">Root Folders<a class="headerlink" href="#root-folders" title="Permanent link">&para;</a></h3>
 <p>Root folders are the base folders that Kapowarr works in. All content is put in these folders.  </p>
@@ -1124,22 +1168,31 @@ The default location for this is <code class="highlight"><span class="o">/</span
 <p>If you run Kapowarr using Docker, leave this set to the default value of <code class="highlight"><span class="o">/</span><span class="n">app</span><span class="o">/</span><span class="n">temp_downloads</span></code> and instead change the value of <code class="highlight"><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">download_folder</span></code> in the Docker command (<a href="../installation/#docker">reference</a>).<br />
 If you have a manual install, you can change this value to whatever you want. It is recommended to be outside your root folders.</p>
 <h4 id="empty-temporary-download-folder">Empty Temporary Download Folder<a class="headerlink" href="#empty-temporary-download-folder" title="Permanent link">&para;</a></h4>
-<p>This isn't so much of a setting as it is a tool. It will completely empty the download folder of all files.<br />
-This can be handy if the application crashed while downloading, leading to half-downloaded files in the folder.  </p>
+<p>This isn't so much of a setting as it is a tool. It will delete all files from the download folder that aren't actively being downloaded. This can be handy if the application crashed while downloading, leading to half-downloaded files in the folder.  </p>
+<h3 id="completed-download-handling">Completed Download Handling<a class="headerlink" href="#completed-download-handling" title="Permanent link">&para;</a></h3>
+<h4 id="seeding-handling">Seeding Handling<a class="headerlink" href="#seeding-handling" title="Permanent link">&para;</a></h4>
+<p>When a torrent download is done, depending on the settings of the torrent client, it will start to seed. The originally downloaded files need to be available in order to seed. But you might not want to wait for the torrent to complete seeding before you can read the downloaded comics. Kapowarr offers two solutions:</p>
+<ol>
+<li>'Complete': wait until the torrent has completed seeding and then move the files. You'll have to wait until the torrent has completed seeding before the comics are available.</li>
+<li>'Copy': make a copy of the downloaded files and post-process those (moving, renaming, converting, etc.). When the torrent finishes seeding, it's files are deleted. With this setup, your downloaded comics will be available immediately, but will temporarily take up twice as much space.</li>
+</ol>
+<h4 id="delete-completed-torrents">Delete Completed Torrents<a class="headerlink" href="#delete-completed-torrents" title="Permanent link">&para;</a></h4>
+<p>If Kapowarr should delete torrents from the client once they have completed. Otherwise leave them in the queue of the torrent client as 'completed'.</p>
 <h3 id="service-preference">Service preference<a class="headerlink" href="#service-preference" title="Permanent link">&para;</a></h3>
-<p>Kapowarr has the ability to download directly from servers, but also to download from services like MediaFire and Mega.
-When an issue is queried on <a href="https://getcomics.org/">getcomics</a> and found to have multiple possible download sources, this defines which link takes priority.<br />
-If the first download fails, Kapowarr will try the next service in order.<br />
-If you have an account for one of these services (see <a href="#credentials">Credentials</a> setting), you might want to put that one at the top, to make Kapowarr take advantage of the extra features that the account offers (extra bandwidth, higher rate limit, etc.).<br />
+<p>Kapowarr has the ability to download directly from the servers of GetComics, but also to download from services like MediaFire and Mega. When an issue is queried on <a href="https://getcomics.org/">GetComics</a> and found to have multiple possible download sources, this defines which link takes priority.  </p>
+<p>If the first download fails, Kapowarr will try the next service in order.  </p>
+<p>If you have an account for one of these services (see <a href="#credentials">Credentials</a> setting), you might want to put that one at the top, to make Kapowarr take advantage of the extra features that the account offers (extra bandwidth, higher rate limit, etc.).<br />
 Options are:</p>
 <ul>
 <li>Mega</li>
-<li>Mediafire</li>
-<li>Getcomics (direct link)</li>
+<li>MediaFire</li>
+<li>GetComics ("Main Server", "Mirror Server", etc.)</li>
 </ul>
 <h3 id="credentials">Credentials<a class="headerlink" href="#credentials" title="Permanent link">&para;</a></h3>
 <p>If you have a paid account with Mega, Kapowarr has the ability to use this account.<br />
 If you provide your login credentials for the service, Kapowarr will then take advantage of the extra features that your account has access to (higher speeds and caps, usually).  </p>
+<h2 id="download-clients">Download Clients<a class="headerlink" href="#download-clients" title="Permanent link">&para;</a></h2>
+<p>On this page you can add external download clients. Currently, only torrent clients are supported, which can be used for downloading torrents that GetComics offers.</p>
 <h2 id="general">General<a class="headerlink" href="#general" title="Permanent link">&para;</a></h2>
 <h3 id="host">Host<a class="headerlink" href="#host" title="Permanent link">&para;</a></h3>
 <p>This section defines how Kapowarr binds to a port/IP when starting up.<br />
@@ -1216,7 +1269,7 @@ If troubleshooting, setting this to 'Debug' will make the system log what it's d
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1-2.1-2M12.5 7v5.2l4 2.4-1 1L11 13V7h1.5M11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2v1.8Z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2023-09-27T10:58:00+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2023-09-27</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2024-01-03T16:57:47+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2024-01-03</span>
   </span>
 
     
