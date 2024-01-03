@@ -7,7 +7,10 @@ Each setting type is grouped based on what they're related to.
 
 Here is where you configure your settings related to how your media files are handled.
 
-### Naming
+### File Naming
+
+#### Rename Downloaded Files
+When a file is downloaded, this setting decides if it should be renamed or not. If not, the default filename is used. If so, it is renamed following the formats set below.
 
 #### Volume Folder Naming
 
@@ -58,7 +61,10 @@ For example, `{series_name} ({year}) Volume {volume_number} TPB` would come out 
 
 #### File Naming For Issues Without Title
 
-The naming format for the file itself if there is no issue-specific title.  
+The naming format for the file itself if there is no issue-specific title.
+
+If the value of the setting [File Naming](#file-naming-1) uses the issue title, it will most likely look ugly when the issue doesn't have a title. For example, if your format is `Issue {issue_number} - {issue_title}`, but the issue doesn't have a title, it will result in a file like `Issue 5 - .cbr`. For that scenario, this setting exists. Here you can set an alternative format for when the issue doesn't have a title.
+
 Available variables are:
 
 - {series_name}
@@ -107,11 +113,23 @@ Options are:
 - 0x (2 digits, i.e. 01, 02...10)
 - 00x (3 digits, i.e. 001, 002...,010...099,100)
 
-### Unzipping
+### Converting
 
-Unzip downloads will extract zip files after downloading.  
-This is useful for 'pack' style downloads, where the download contains multiple issues.  
-_Note: if Kapowarr determines that a file in the zip file is not related to the volume, it will not be extracted and will be deleted when the zip file is finished being unpacked.  
+The "Converting" feature allows you to change the format of your files (e.g. from cbr to cbz). It can also extract archive files.
+
+#### Covert Files
+
+If Kapowarr should automatically convert files after they've been downloaded. Kapowarr will follow the format preference set.
+
+#### Extract archives covering multiple issues
+
+If an archive file is downloaded with multiple issues inside, then first extract the files inside and _then_ convert. With the setting disabled, Kapowarr will covert the file as normal. Even when no format preference is set (don't convert), this setting can still be enabled to extract archive files (up to beta-3, this was called 'unzipping').
+
+#### Format Preference
+
+The formats that Kapowarr should convert the files to. It will try to convert the files to the format at place 1, but if that is not possible, it will fallback to the format at place 2, and so forth. The last place will always be occupied by the format 'No Conversion'. That means that if Kapowarr is not able to convert the file to any of the set formats, it will just keep the current one. If no format preference is set ('No Conversion' is at place 1), no conversion will happen. The format 'folder' means extracting archive files. Kapowarr will extract all files inside the archive, delete the original archive file, filter unrelated files and rename the relevant ones.
+
+_Note: if Kapowarr determines that a file in the archive file is not related to the volume, it will not be extracted and will be deleted when the archive file is finished being unpacked.
 If you find faulty deletions occurring, please [lodge an issue](https://github.com/Casvt/Kapowarr/issues) for this._
 
 ### Root Folders
@@ -138,25 +156,42 @@ If you have a manual install, you can change this value to whatever you want. It
 
 #### Empty Temporary Download Folder
 
-This isn't so much of a setting as it is a tool. It will completely empty the download folder of all files.  
-This can be handy if the application crashed while downloading, leading to half-downloaded files in the folder.  
+This isn't so much of a setting as it is a tool. It will delete all files from the download folder that aren't actively being downloaded. This can be handy if the application crashed while downloading, leading to half-downloaded files in the folder.  
+
+### Completed Download Handling
+
+#### Seeding Handling
+
+When a torrent download is done, depending on the settings of the torrent client, it will start to seed. The originally downloaded files need to be available in order to seed. But you might not want to wait for the torrent to complete seeding before you can read the downloaded comics. Kapowarr offers two solutions:
+
+1. 'Complete': wait until the torrent has completed seeding and then move the files. You'll have to wait until the torrent has completed seeding before the comics are available.
+2. 'Copy': make a copy of the downloaded files and post-process those (moving, renaming, converting, etc.). When the torrent finishes seeding, it's files are deleted. With this setup, your downloaded comics will be available immediately, but will temporarily take up twice as much space.
+
+#### Delete Completed Torrents
+
+If Kapowarr should delete torrents from the client once they have completed. Otherwise leave them in the queue of the torrent client as 'completed'.
 
 ### Service preference
 
-Kapowarr has the ability to download directly from servers, but also to download from services like MediaFire and Mega.
-When an issue is queried on [getcomics](https://getcomics.org/) and found to have multiple possible download sources, this defines which link takes priority.  
+Kapowarr has the ability to download directly from the servers of GetComics, but also to download from services like MediaFire and Mega. When an issue is queried on [GetComics](https://getcomics.org/) and found to have multiple possible download sources, this defines which link takes priority.  
+
 If the first download fails, Kapowarr will try the next service in order.  
+
 If you have an account for one of these services (see [Credentials](#credentials) setting), you might want to put that one at the top, to make Kapowarr take advantage of the extra features that the account offers (extra bandwidth, higher rate limit, etc.).  
 Options are:
 
 - Mega
-- Mediafire
-- Getcomics (direct link)
+- MediaFire
+- GetComics ("Main Server", "Mirror Server", etc.)
 
 ### Credentials
 
 If you have a paid account with Mega, Kapowarr has the ability to use this account.  
 If you provide your login credentials for the service, Kapowarr will then take advantage of the extra features that your account has access to (higher speeds and caps, usually).  
+
+## Download Clients
+
+On this page you can add external download clients. Currently, only torrent clients are supported, which can be used for downloading torrents that GetComics offers.
 
 ## General
 

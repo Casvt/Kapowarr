@@ -1,6 +1,6 @@
 # Rate limiting
 
-This page covers how Kapowarr handles with the rate limits of services it uses.
+This page covers how Kapowarr handles the rate limits of the services it uses.
 
 ## ComicVine
 
