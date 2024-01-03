@@ -40,7 +40,8 @@ default_settings = {
 	'rename_downloaded_files': True,
 	'file_naming_empty': '{series_name} ({year}) Volume {volume_number} Issue {issue_number}',
 	'volume_as_empty': False,
-	'seeding_handling': SeedingHandling.COPY
+	'seeding_handling': SeedingHandling.COPY,
+	'delete_completed_torrents': True
 }
 
 private_settings = {
@@ -113,7 +114,8 @@ class Settings:
 				"SELECT key, value FROM config;"
 			))
 			bool_values = ('rename_downloaded_files', 'volume_as_empty',
-						'convert', 'extract_issue_ranges')
+						'convert', 'extract_issue_ranges',
+						'delete_completed_torrents')
 			for bv in bool_values:
 				settings[bv] = settings[bv] == 1
 
@@ -164,7 +166,8 @@ class Settings:
 				raise FolderNotFound
 
 			elif key in ('rename_downloaded_files', 'volumes_as_empty',
-						'convert', 'extract_issue_ranges'):
+						'convert', 'extract_issue_ranges',
+						'delete_completed_torrents'):
 				if not isinstance(value, bool):
 					raise InvalidSettingValue(key, value)
 				value = int(value)

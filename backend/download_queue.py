@@ -168,7 +168,15 @@ class DownloadHandler:
 					post_processer.seeding(download)
 
 				elif download.state == DownloadStates.IMPORTING_STATE:
-					download.remove_from_client(delete_files=False)
+					delete_completed_torrents = get_db().execute("""
+						SELECT value
+						FROM config
+						WHERE key = 'delete_completed_torrents'
+						LIMIT 1;
+						"""
+					).fetchone()[0]
+					if delete_completed_torrents:
+						download.remove_from_client(delete_files=False)
 					post_processer.success(download)
 					self.queue.remove(download)
 					break
