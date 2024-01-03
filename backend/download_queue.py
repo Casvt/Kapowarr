@@ -19,7 +19,10 @@ from backend.download_direct_clients import (DirectDownload, Download,
 from backend.download_general import DownloadStates
 from backend.download_torrent_clients import TorrentClients, TorrentDownload
 from backend.getcomics import _extract_download_links
-from backend.post_processing import PostProcesser, PostProcesserTorrents
+from backend.helpers import SeedingHandling
+from backend.post_processing import (PostProcesser,
+                                     PostProcesserTorrentsComplete,
+                                     PostProcesserTorrentsCopy)
 from backend.settings import Settings, private_settings
 
 #=====================
@@ -122,36 +125,59 @@ class DownloadHandler:
 		download.run()
 		
 		with self.context():
+			seeding_handling = get_db().execute(
+				"SELECT value FROM config WHERE key = 'seeding_handling' LIMIT 1;"
+			).fetchone()[0]
+			
+			if seeding_handling == SeedingHandling.COMPLETE:
+				post_processer = PostProcesserTorrentsComplete
+			elif seeding_handling == SeedingHandling.COPY:
+				post_processer = PostProcesserTorrentsCopy
+			else:
+				raise NotImplementedError
+
+			# When seeding_handling is 'copy', keep track if we already copied the files
+			files_copied = False
+
 			while True:
 				download.update_status()
 
-				if download.state in (
-					DownloadStates.QUEUED_STATE,
-					DownloadStates.DOWNLOADING_STATE,
-					DownloadStates.SEEDING_STATE
-				):
-					sleep(private_settings['torrent_update_interval'])
-					continue
-
 				if download.state == DownloadStates.CANCELED_STATE:
 					download.remove_from_client(delete_files=True)
-					PostProcesserTorrents.canceled(download)
+					post_processer.canceled(download)
+					self.queue.remove(download)
+					break
 
 				elif download.state == DownloadStates.FAILED_STATE:
 					download.remove_from_client(delete_files=True)
-					PostProcesserTorrents.failed(download)
-				
+					post_processer.failed(download)
+					self.queue.remove(download)
+					break
+
 				elif download.state == DownloadStates.SHUTDOWN_STATE:
 					download.remove_from_client(delete_files=True)
-					PostProcesserTorrents.shutdown(download)
-					return
+					post_processer.shutdown(download)
+					break
+
+				elif (
+					seeding_handling == SeedingHandling.COPY
+					and download.state == DownloadStates.SEEDING_STATE
+					and not files_copied
+				):
+					files_copied = True
+					post_processer.seeding(download)
 
 				elif download.state == DownloadStates.IMPORTING_STATE:
 					download.remove_from_client(delete_files=False)
-					PostProcesserTorrents.success(download)
+					post_processer.success(download)
+					self.queue.remove(download)
+					break
 
-				self.queue.remove(download)
-				return
+				else:
+					# Queued, downloading or
+					# seeding with files copied or seeding_handling = 'complete'
+					sleep(private_settings['torrent_update_interval'])
+		return
 
 	def _process_queue(self) -> None:
 		"""Handle the queue. In the case that there is something in the queue
@@ -409,7 +435,7 @@ class DownloadHandler:
 					self.queue.remove(download)
 					if isinstance(download, TorrentDownload):
 						download.remove_from_client(delete_files=True)
-						PostProcesserTorrents.canceled(download)
+						PostProcesserTorrentsComplete.canceled(download)
 					else:
 						PostProcesser.canceled(download)
 

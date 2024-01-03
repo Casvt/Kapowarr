@@ -16,6 +16,7 @@ from backend.custom_exceptions import (FolderNotFound, InvalidSettingKey,
                                        InvalidSettingValue)
 from backend.db import __DATABASE_FILEPATH__, __DATABASE_VERSION__, get_db
 from backend.files import folder_path
+from backend.helpers import SeedingHandling
 from backend.logging import log_levels, set_log_level
 
 default_settings = {
@@ -38,7 +39,8 @@ default_settings = {
 	'issue_padding': 3,
 	'rename_downloaded_files': True,
 	'file_naming_empty': '{series_name} ({year}) Volume {volume_number} Issue {issue_number}',
-	'volume_as_empty': False
+	'volume_as_empty': False,
+	'seeding_handling': SeedingHandling.COPY
 }
 
 private_settings = {
@@ -206,6 +208,10 @@ class Settings:
 						raise InvalidSettingValue(key, value)
 
 				value = ','.join(value)
+
+			elif key == 'seeding_handling':
+				if not value in SeedingHandling():
+					raise InvalidSettingValue(key, value)
 
 			elif key not in default_settings.keys():
 				raise InvalidSettingKey(key)

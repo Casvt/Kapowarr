@@ -3,6 +3,7 @@ function fillSettings(api_key) {
 	.then(response => response.json())
 	.then(json => {
 		document.querySelector('#download-folder-input').value = json.result.download_folder;
+		document.querySelector('#seeding-handling-input').value = json.result.seeding_handling;
 	});
 };
 
@@ -11,7 +12,8 @@ function saveSettings(api_key) {
 
 	document.querySelector('#download-folder-input').classList.remove('error-input');
 	const data = {
-		'download_folder': document.querySelector('#download-folder-input').value
+		'download_folder': document.querySelector('#download-folder-input').value,
+		'seeding_handling': document.querySelector('#seeding-handling-input').value
 	};
 	fetch(`${url_base}/api/settings?api_key=${api_key}`, {
 		'method': 'PUT',

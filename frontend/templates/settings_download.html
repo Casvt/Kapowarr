@@ -71,6 +71,21 @@
 							</tr>
 						</tbody>
 					</table>
+					<h2>Completed Download Handling</h2>
+					<table class="fold">
+						<tbody>
+							<tr>
+								<th><label for="seeding-handling-input">Seeding Handling</label></th>
+								<td>
+									<select id="seeding-handling-input">
+										<option value="complete">Complete</option>
+										<option value="copy">Copy</option>
+									</select>
+									<p>How a torrent that goes seeding should be handled. Either wait until it has completed seeding and then move the files, or copy the files and then delete the original when seeding finishes.</p>
+								</td>
+							</tr>
+						</tbody>
+					</table>
 					<h2>Service preference</h2>
 					<p>The preference for service to download from when using GetComics as the source.</p>
 					<table id="pref-table" class="short-table">

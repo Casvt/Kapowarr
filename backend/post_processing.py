@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 from os.path import basename, exists, join
-from shutil import move
+from shutil import copytree, move
 from time import time
 from typing import TYPE_CHECKING
 
@@ -116,8 +116,6 @@ class PostProcessingActions:
 		final destination"""
 		PPA.move_file(download)
 
-		cursor = get_db('dict')
-
 		download.resulting_files = extract_files_from_folder(
 			download.file,
 			download.volume_id
@@ -125,7 +123,7 @@ class PostProcessingActions:
 
 		scan_files(Volume(download.volume_id).get_info())
 
-		rename_files = cursor.execute("""
+		rename_files = get_db().execute("""
 			SELECT value
 			FROM config
 			WHERE key = 'rename_downloaded_files'
@@ -138,6 +136,67 @@ class PostProcessingActions:
 				filepath_filter=download.resulting_files
 			)
 
+		return
+
+	@staticmethod
+	def copy_file_torrent(download: TorrentDownload) -> None:
+		"""Copy downloaded files to dest. Change download.file to copy.
+		Change back using `PPA.reset_file_link()`.
+		"""
+		download.original_file = download.file
+		if exists(download.file):
+			cursor = get_db()
+			folder = cursor.execute(
+				"SELECT folder FROM volumes WHERE id = ? LIMIT 1;",
+				(download.volume_id,)
+			).fetchone()[0]
+			file_dest = join(folder, basename(download.file))
+			logging.debug(
+				f'Copying download to final destination: {download}, Dest: {file_dest}'
+			)
+
+			if exists(file_dest):
+				logging.warning(
+					f'The file/folder {file_dest} already exists; replacing with downloaded file'
+				)
+				delete_file_folder(download.file)
+
+			try:
+				copytree(download.file, file_dest)
+			except PermissionError:
+				# Happens when copying between an NFS file system.
+				# Raised when chmod is used inside.
+				# Checking the source code, chmod is used at the very end,
+				# 	so just skipping it is alright I think.
+				pass
+			download.file = file_dest
+
+			download.resulting_files = extract_files_from_folder(
+				download.file,
+				download.volume_id
+			)
+
+			scan_files(Volume(download.volume_id).get_info())
+
+			rename_files = cursor.execute("""
+				SELECT value
+				FROM config
+				WHERE key = 'rename_downloaded_files'
+				LIMIT 1;
+			""").fetchone()[0]
+
+			if rename_files and download.resulting_files:
+				mass_rename(
+					download.volume_id,
+					filepath_filter=download.resulting_files
+				)
+		return
+
+	@staticmethod
+	def reset_file_link(download: TorrentDownload) -> None:
+		"""Set download.file back to original folder from the copied folder.
+		"""
+		download.file = download.original_file
 		return
 
 PPA = PostProcessingActions
@@ -170,7 +229,7 @@ class PostProcesser:
 	]
 
 	@staticmethod
-	def __run_actions(actions: list, download) -> None:
+	def _run_actions(actions: list, download) -> None:
 		for action in actions:
 			action(download)
 		return
@@ -178,28 +237,28 @@ class PostProcesser:
 	@classmethod
 	def success(cls, download) -> None:
 		logging.info(f'Postprocessing of successful download: {download.id}')
-		cls.__run_actions(cls.actions_success, download)
+		cls._run_actions(cls.actions_success, download)
 		return
 
 	@classmethod
 	def canceled(cls, download) -> None:
 		logging.info(f'Postprocessing of canceled download: {download.id}')
-		cls.__run_actions(cls.actions_canceled, download)
+		cls._run_actions(cls.actions_canceled, download)
 		return
 
 	@classmethod
 	def shutdown(cls, download) -> None:
 		logging.info(f'Postprocessing of shut down download: {download.id}')
-		cls.__run_actions(cls.actions_shutdown, download)
+		cls._run_actions(cls.actions_shutdown, download)
 		return
 
 	@classmethod
 	def failed(cls, download) -> None:
 		logging.info(f'Postprocessing of failed download: {download.id}')
-		cls.__run_actions(cls.actions_failed, download)
+		cls._run_actions(cls.actions_failed, download)
 		return
 
-class PostProcesserTorrents(PostProcesser):
+class PostProcesserTorrentsComplete(PostProcesser):
 	actions_success = [
 		PPA.remove_from_queue,
 		PPA.add_to_history,
@@ -207,3 +266,23 @@ class PostProcesserTorrents(PostProcesser):
 		PPA.convert_file,
 		PPA.add_file_to_database
 	]
+
+class PostProcesserTorrentsCopy(PostProcesser):
+	actions_success = [
+		PPA.remove_from_queue,
+		PPA.delete_file
+	]
+	
+	actions_seeding = [
+		PPA.add_to_history,
+		PPA.copy_file_torrent,
+		PPA.convert_file,
+		PPA.add_file_to_database,
+		PPA.reset_file_link
+	]
+	
+	@classmethod
+	def seeding(cls, download) -> None:
+		logging.info(f'Postprocessing of seeding download: {download.id}')
+		cls._run_actions(cls.actions_seeding, download)
+		return
