@@ -46,6 +46,7 @@ def mass_editor_update(volume_ids: List[int], **kwargs) -> None:
 
 def mass_editor_search(volume_ids: List[int], **kwargs) -> None:
 	logging.info(f'Using mass editor, auto searching for volumes: {volume_ids}')
+	cursor = get_db()
 	for volume_id in volume_ids:
 		search_results = auto_search(volume_id)
 		for result in search_results:
@@ -53,6 +54,8 @@ def mass_editor_search(volume_ids: List[int], **kwargs) -> None:
 				result['link'],
 				volume_id
 			)
+			# add() does a write so commit in-between to avoid db locking
+			cursor.connection.commit()
 	return
 
 def mass_editor_convert(volume_ids: List[int], **kwargs) -> None:

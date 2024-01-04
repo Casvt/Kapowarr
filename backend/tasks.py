@@ -263,9 +263,10 @@ class TaskHandler:
 		with self.context():
 			try:
 				result = task.run()
+				cursor = get_db()
 
 				# Note in history
-				get_db().execute(
+				cursor.execute(
 					"INSERT INTO task_history VALUES (?,?,?);",
 					(task.action, task.display_title, round(time()))
 				)
@@ -274,6 +275,9 @@ class TaskHandler:
 					if task.category == 'download':
 						for download in result:
 							self.download_handler.add(*download)
+							# add() does a write to db so commit in-between
+							# to avoid locking up the db
+							cursor.connection.commit()
 
 					logging.info(f'Finished task {task.display_title}')
 

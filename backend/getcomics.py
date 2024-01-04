@@ -414,6 +414,7 @@ def _test_paths(
 		If the list has content, the page has working links that can be used.
 	"""
 	logging.debug('Testing paths')
+	cursor = get_db()
 	limit_reached = False
 	downloads: List[Download] = []
 	s = Settings().get_settings()
@@ -473,6 +474,7 @@ def _test_paths(
 					except LinkBroken as lb:
 						# Link is broken
 						add_to_blocklist(link, lb.reason_id)
+						cursor.connection.commit()
 
 					except DownloadLimitReached:
 						# Link works but the download limit for the service is reached
@@ -508,7 +510,7 @@ def _extract_download_links(link: str, volume_id: int, issue_id: int=None) -> Tu
 		issue_id (int, optional): The id of the issue for which the getcomics page is. Defaults to None.
 
 	Returns:
-		Tuple[List[dict], bool]: List of downloads and wether or not the download limit for a service on the page is reached.
+		Tuple[List[dict], bool]: List of downloads and whether or not the download limit for a service on the page is reached.
 
 		If the list is empty and the bool is False, the page doesn't have any working links and can be blacklisted.
 
@@ -527,6 +529,7 @@ def _extract_download_links(link: str, volume_id: int, issue_id: int=None) -> Tu
 	except requests_ConnectionError:
 		# Link broken
 		add_to_blocklist(link, 1)
+		return [], True
 
 	# Link is to a getcomics page
 	soup = BeautifulSoup(r.text, 'html.parser')

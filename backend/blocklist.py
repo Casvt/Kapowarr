@@ -140,7 +140,10 @@ def add_to_blocklist(link: str, reason_id: int) -> dict:
 		).lastrowid
 	except IntegrityError:
 		# Check if link isn't already in blocklist
-		id = cursor.execute("SELECT id FROM blocklist WHERE link = ? LIMIT 1", (link,)).fetchone()
+		id = cursor.execute(
+			"SELECT id FROM blocklist WHERE link = ? LIMIT 1",
+			(link,)
+		).fetchone()
 		if id:
 			return get_blocklist_entry(id[0])		
 

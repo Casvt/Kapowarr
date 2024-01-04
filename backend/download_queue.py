@@ -312,6 +312,7 @@ class DownloadHandler:
 					# To avoid the database being locked for a long time while 
 					# importing, we commit in-between.
 					cursor.connection.commit()
+					continue
 
 				except DownloadLimitReached:
 					continue
@@ -322,6 +323,9 @@ class DownloadHandler:
 					download['issue_id'],
 					download['page_link']
 				)
+				# self.__prepare_downloads_for_queue() has a write to the db
+				# To avoid locking the db, commit in-between.
+				cursor.connection.commit()
 
 			self._process_queue()
 		return
