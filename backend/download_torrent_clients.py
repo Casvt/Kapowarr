@@ -165,7 +165,7 @@ class TorrentClients:
 		Returns:
 			List[dict]: The list with all torrent clients
 		"""
-		cursor = get_db('dict')
+		cursor = get_db(dict)
 		cursor.execute("""
 			SELECT
 				id, type,
@@ -231,7 +231,7 @@ class TorrentDownload(BaseDownload):
 		self.speed: float = 0.0
 		self._torrent_id = None
 		self._download_thread = None
-		self._download_folder = Settings().get_settings()['download_folder']
+		self._download_folder = Settings()['download_folder']
 		
 		if custom_name:
 			self.title = filename_body.rstrip('.')

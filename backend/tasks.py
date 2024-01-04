@@ -340,7 +340,7 @@ class TaskHandler:
 		with self.context():
 			current_time = time()
 
-			cursor = get_db('dict')
+			cursor = get_db(dict)
 			interval_tasks = cursor.execute(
 				"SELECT task_name, interval, next_run FROM task_intervals;"
 			).fetchall()
@@ -470,7 +470,7 @@ def get_task_history(offset: int=0) -> List[dict]:
 	"""	
 	result = list(map(
 		dict,
-		get_db('dict').execute(
+		get_db(dict).execute(
 			"""
 			SELECT
 				task_name, display_title, run_at
@@ -497,7 +497,7 @@ def get_task_planning() -> List[dict]:
 	Returns:
 		List[dict]: List of interval tasks and their planning
 	"""
-	cursor = get_db('dict')
+	cursor = get_db(dict)
 
 	tasks = cursor.execute(
 		"""

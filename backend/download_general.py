@@ -212,7 +212,7 @@ class TorrentClient(ABC):
 class BaseTorrentClient(TorrentClient):
 	def __init__(self, id: int) -> None:
 		self.id = id
-		data = get_db('dict').execute("""
+		data = get_db(dict).execute("""
 			SELECT
 				type, title,
 				base_url,

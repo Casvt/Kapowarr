@@ -17,6 +17,7 @@ from backend.db import get_db
 from backend.download_torrent_clients import TorrentDownload
 from backend.helpers import delete_file_folder
 from backend.naming import mass_rename
+from backend.settings import Settings
 from backend.volumes import Volume, scan_files
 
 if TYPE_CHECKING:
@@ -89,11 +90,7 @@ class PostProcessingActions:
 	@staticmethod
 	def convert_file(download: Download) -> None:
 		"Convert a file into a different format based on settings"
-		cursor = get_db()
-
-		if not cursor.execute(
-			"SELECT value FROM config WHERE key = 'convert' LIMIT 1;"
-		).fetchone()[0]:
+		if not Settings()['convert']:
 			return
 
 		if isinstance(download, TorrentDownload):

@@ -34,7 +34,7 @@ def __get_volume_data(volume_id: int) -> dict:
 	Returns:
 		dict: The data
 	"""
-	volume_data = dict(get_db('dict').execute("""
+	volume_data = dict(get_db(dict).execute("""
 		SELECT
 			v.id,
 			v.title, year,
@@ -89,9 +89,13 @@ def extract_files_from_folder(
 					)
 					or (
 						volume_data['special_version'] == 'volume-as-issue'
-						and cursor.execute(
-							"SELECT 1 FROM issues WHERE volume_id = ? AND calculated_issue_number = ? LIMIT 1;",
-							(
+						and cursor.execute("""
+							SELECT 1
+							FROM issues
+							WHERE volume_id = ?
+								AND calculated_issue_number = ?
+							LIMIT 1;
+							""", (
 								volume_data['id'],
 								result['volume_number']
 								if isinstance(result['volume_number'], int) else
@@ -176,7 +180,7 @@ class ZIPtoRAR(FileConverter):
 	
 	@staticmethod
 	def convert(file: str) -> str:
-		cursor = get_db('dict')
+		cursor = get_db(dict)
 
 		volume_id: int = cursor.execute("""
 			SELECT i.volume_id
@@ -232,7 +236,7 @@ class ZIPtoFOLDER(FileConverter):
 
 	@staticmethod
 	def convert(file: str) -> str:
-		cursor = get_db('dict')
+		cursor = get_db(dict)
 
 		volume_id: int = cursor.execute("""
 			SELECT i.volume_id
@@ -340,7 +344,7 @@ class RARtoZIP(FileConverter):
 
 	@staticmethod
 	def convert(file: str) -> str:
-		cursor = get_db('dict')
+		cursor = get_db(dict)
 
 		volume_id: int = cursor.execute("""
 			SELECT i.volume_id
@@ -401,7 +405,7 @@ class RARtoFOLDER(FileConverter):
 	
 	@staticmethod
 	def convert(file: str) -> str:
-		cursor = get_db('dict')
+		cursor = get_db(dict)
 
 		volume_id: int = cursor.execute("""
 			SELECT i.volume_id

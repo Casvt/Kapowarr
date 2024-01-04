@@ -118,7 +118,7 @@ class ComicVine:
 		if comicvine_api_key:
 			api_key = comicvine_api_key
 		else:
-			api_key = Settings().get_settings()['comicvine_api_key']
+			api_key = Settings()['comicvine_api_key']
 		if not api_key:
 			raise InvalidComicVineApiKey
 

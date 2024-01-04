@@ -142,7 +142,7 @@ class DirectDownload(BaseDownload):
 		Returns:
 			str: The filename
 		"""		
-		folder = Settings().get_settings()['download_folder']
+		folder = Settings()['download_folder']
 		extension = self.__extract_extension(
 			r.headers.get('Content-Type', ''),
 			r.headers.get('Content-Disposition', ''),
@@ -269,7 +269,7 @@ class MegaDownload(BaseDownload):
 		Returns:
 			str: The filename
 		"""
-		folder = Settings().get_settings()['download_folder']
+		folder = Settings()['download_folder']
 		extension = self.__extract_extension()
 		return join(folder, self._filename_body + extension)
 

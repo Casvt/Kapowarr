@@ -302,7 +302,7 @@ def _create_link_paths(
 	).fetchone()
 	last_year: int = int(last_issue_date.split('-')[0]) if last_issue_date else volume_year
 	annual = 'annual' in volume_title.lower()
-	service_preference_order = dict((v, k) for k, v in enumerate(Settings().get_service_preference()))
+	service_preference: List[str] = Settings()['service_preference']
 
 	link_paths: List[List[dict]] = []
 	for desc, sources in download_groups.items():
@@ -342,7 +342,7 @@ def _create_link_paths(
 		and processed_desc['annual'] == annual
 		):
 			# Group matches/contains what is desired to be downloaded
-			sources = {s: sources[s] for s in sorted(sources, key=lambda k: service_preference_order[k])}
+			sources = {s: sources[s] for s in sorted(sources, key=lambda k: service_preference.index(k))}
 			if (special_version == 'volume-as-issue'
 			and (
 				processed_desc['special_version'] == 'tpb'
@@ -417,9 +417,9 @@ def _test_paths(
 	cursor = get_db()
 	limit_reached = False
 	downloads: List[Download] = []
-	s = Settings().get_settings()
-	rename_downloaded_files = s['rename_downloaded_files']
-	name_volume_as_issue = s['volume_as_empty']
+	settings = Settings()
+	rename_downloaded_files = settings['rename_downloaded_files']
+	name_volume_as_issue = settings['volume_as_empty']
 	for path in link_paths:
 		for download in path:
 			if rename_downloaded_files:

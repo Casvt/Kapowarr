@@ -87,7 +87,7 @@ def _get_formatting_data(
 		dict: The formatting keys and their values for the item
 	"""
 	# Fetch volume data and check if id is valid
-	cursor = get_db('dict')
+	cursor = get_db(dict)
 	if _volume_data is None:
 		volume_data = cursor.execute("""
 			SELECT
@@ -116,9 +116,9 @@ def _get_formatting_data(
 	else:
 		clean_title = volume_data.get('title') or 'Unknown'
 
-	s = Settings().get_settings()
-	volume_padding = s['volume_padding']
-	issue_padding = s['issue_padding']
+	settings = Settings()
+	volume_padding = settings['volume_padding']
+	issue_padding = settings['issue_padding']
 
 	if not isinstance(volume_data.get('volume_number'), tuple):
 		volume_number = (str(volume_data.get('volume_number'))
@@ -194,7 +194,7 @@ def generate_volume_folder_name(volume_id: int, _volume_data: dict=None) -> str:
 		str: The volume folder name
 	"""
 	formatting_data = _get_formatting_data(volume_id, None, _volume_data)
-	format: str = Settings().get_settings()['volume_folder_naming']
+	format: str = Settings()['volume_folder_naming']
 
 	name = format.format(**formatting_data)
 	save_name = _make_filename_safe(name)
@@ -220,7 +220,7 @@ def generate_tpb_name(
 		volume_id,
 		_volume_number=_volume_number
 	)
-	format: str = Settings().get_settings()['file_naming_tpb']
+	format: str = Settings()['file_naming_tpb']
 
 	name = format.format(**formatting_data)
 	save_name = _make_filename_safe(name)
@@ -275,7 +275,7 @@ def generate_issue_range_name(
 		LIMIT 1;
 	""", (volume_id, calculated_issue_number_start)).fetchone()[0]
 	formatting_data = _get_formatting_data(volume_id, issue_id)
-	settings = Settings().get_settings()
+	settings = Settings()
 
 	if (formatting_data['issue_title'] == 'Unknown'
 		or (
@@ -336,7 +336,7 @@ def generate_issue_name(volume_id: int, calculated_issue_number: float) -> str:
 		LIMIT 1;
 	""", (volume_id, calculated_issue_number)).fetchone()[0]
 	formatting_data = _get_formatting_data(volume_id, issue_id)
-	settings = Settings().get_settings()
+	settings = Settings()
 
 	if (formatting_data['issue_title'] == 'Unknown'
 		or (
@@ -460,7 +460,7 @@ def preview_mass_rename(
 		List[Dict[str, str]]: The renaming proposals.
 	"""
 	result = []
-	cursor = get_db('dict')
+	cursor = get_db(dict)
 	# Fetch all files linked to the volume or issue
 	if not issue_id:
 		file_infos = cursor.execute("""
@@ -515,7 +515,7 @@ def preview_mass_rename(
 		"SELECT special_version FROM volumes WHERE id = ? LIMIT 1;",
 		(volume_id,)
 	).fetchone()[0]
-	name_volume_as_issue = Settings().get_settings()['volume_as_empty']
+	name_volume_as_issue = Settings()['volume_as_empty']
 
 	for file in file_infos:
 		if not isfile(file['filepath']):

@@ -8,6 +8,7 @@ from typing import Dict, List, Set, Tuple, Union
 from backend.converters import FileConverter, rar_executables
 from backend.db import get_db
 from backend.files import _list_files, extract_filename_data, scan_files
+from backend.settings import Settings
 from backend.volumes import Volume
 
 conversion_methods: Dict[str, Dict[str, FileConverter]] = {}
@@ -101,17 +102,11 @@ def __get_format_pref_and_files(
 		and the value of 'special_version' for the volume.
 	"""
 	cursor = get_db()
+	settings = Settings()
 	
-	format_preference = cursor.execute(
-		"SELECT value FROM config WHERE key = 'format_preference' LIMIT 1;"
-	).fetchone()[0].split(',')
-	if format_preference == ['']:
-		format_preference = []
+	format_preference = settings['format_preference']
+	extract_issue_ranges = settings['extract_issue_ranges']
 	
-	extract_issue_ranges = cursor.execute(
-		"SELECT value FROM config WHERE key = 'extract_issue_ranges' LIMIT 1;"
-	).fetchone()[0] == 1
-
 	special_version = cursor.execute(
 		"SELECT special_version FROM volumes WHERE id = ? LIMIT 1;",
 		(volume_id,)

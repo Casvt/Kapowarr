@@ -125,9 +125,8 @@ class DownloadHandler:
 		download.run()
 		
 		with self.context():
-			seeding_handling = get_db().execute(
-				"SELECT value FROM config WHERE key = 'seeding_handling' LIMIT 1;"
-			).fetchone()[0]
+			settings = Settings()
+			seeding_handling = settings['seeding_handling']
 			
 			if seeding_handling == SeedingHandling.COMPLETE:
 				post_processer = PostProcesserTorrentsComplete
@@ -168,14 +167,7 @@ class DownloadHandler:
 					post_processer.seeding(download)
 
 				elif download.state == DownloadStates.IMPORTING_STATE:
-					delete_completed_torrents = get_db().execute("""
-						SELECT value
-						FROM config
-						WHERE key = 'delete_completed_torrents'
-						LIMIT 1;
-						"""
-					).fetchone()[0]
-					if delete_completed_torrents:
+					if settings['delete_completed_torrents']:
 						download.remove_from_client(delete_files=False)
 					post_processer.success(download)
 					self.queue.remove(download)
@@ -278,7 +270,7 @@ class DownloadHandler:
 		for re-downloading
 		"""
 		with self.context():
-			cursor = get_db('dict')
+			cursor = get_db(dict)
 			downloads = cursor.execute("""
 				SELECT
 					id, client_type, torrent_client_id,
@@ -461,7 +453,7 @@ class DownloadHandler:
 	def create_download_folder(self) -> None:
 		"""Create the download folder if it doesn't already.
 		"""
-		makedirs(Settings().get_settings()['download_folder'], exist_ok=True)
+		makedirs(Settings()['download_folder'], exist_ok=True)
 		return
 
 	def empty_download_folder(self) -> None:
@@ -469,7 +461,7 @@ class DownloadHandler:
 		Handy in the case that a crash left half-downloaded files behind in the folder.
 		"""
 		logging.info(f'Emptying the temporary download folder')
-		folder = Settings().get_settings()['download_folder']
+		folder = Settings()['download_folder']
 		files_in_queue = [basename(download.file) for download in self.queue]
 		files_in_folder = listdir(folder)
 		ghost_files = [
@@ -497,7 +489,7 @@ def get_download_history(offset: int=0) -> List[dict]:
 	"""	
 	result = list(map(
 		dict,
-		get_db('dict').execute(
+		get_db(dict).execute(
 			"""
 			SELECT
 				original_link, title, downloaded_at

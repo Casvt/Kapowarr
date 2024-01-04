@@ -1,11 +1,11 @@
 #-*- coding: utf-8 -*-
 
-import logging
-
 """
 All custom exceptions are defined here.
 Note: Not all C.E. inherit CustomException.
 """
+
+import logging
 
 class CustomException(Exception):
 	def __init__(self, e = None) -> None:

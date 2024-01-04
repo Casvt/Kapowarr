@@ -97,7 +97,7 @@ class Issue:
 		Returns:
 			dict: The info about the issue
 		"""
-		cursor = get_db('dict')
+		cursor = get_db(dict)
 		
 		# Get issue data
 		data = dict(cursor.execute(
@@ -128,7 +128,6 @@ class Issue:
 				(self.id,)
 			)
 		]
-		data['monitored'] = data['monitored'] == 1
 		return data
 		
 	def monitor(self) -> None:
@@ -186,7 +185,7 @@ class Volume:
 		Returns:
 			dict: The info of the volume
 		"""	
-		cursor = get_db('dict')
+		cursor = get_db(dict)
 
 		cursor.execute("""
 			SELECT
@@ -215,7 +214,6 @@ class Volume:
 			LIMIT 1;
 		""", (self.id,))
 		volume_info = dict(cursor.fetchone())
-		volume_info['monitored'] = volume_info['monitored'] == 1
 		volume_info['cover'] = f'{ui_vars["url_base"]}/api/volumes/{volume_info["id"]}/cover'
 		volume_info['volume_folder'] = relpath(
 			volume_info['folder'],
@@ -240,7 +238,6 @@ class Volume:
 				)
 			]
 			for issue in issues:
-				issue['monitored'] = issue['monitored'] == 1
 				issue['files'] = [
 					f[0] for f in cursor.execute("""
 						SELECT f.filepath
@@ -584,7 +581,7 @@ class Library:
 		filter = self.filters.get(filter, '')
 
 		volumes = [
-			dict(v) for v in get_db('dict').execute(f"""
+			dict(v) for v in get_db(dict).execute(f"""
 				WITH
 					vol_issues AS (
 						SELECT id, monitored
@@ -810,7 +807,7 @@ class Library:
 		return volume_id
 
 	def get_stats(self) -> Dict[str, int]:
-		cursor = get_db('dict')
+		cursor = get_db(dict)
 		cursor.execute("""
 			WITH v_stats AS (
 				SELECT

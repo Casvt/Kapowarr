@@ -31,7 +31,7 @@ class RootFolders:
 			List[dict]: The list of rootfolders
 		"""		
 		if not use_cache or not self.cache:
-			root_folders = get_db('dict').execute(
+			root_folders = get_db(dict).execute(
 				"SELECT id, folder FROM root_folders;"
 			)
 			self.cache = {r['id']: dict(r) for r in root_folders}
@@ -81,7 +81,7 @@ class RootFolders:
 			folder += path_sep
 
 		# Insert into database
-		root_folder_id = get_db('dict').execute(
+		root_folder_id = get_db(dict).execute(
 			"INSERT INTO root_folders(folder) VALUES (?)",
 			(folder,)
 		).lastrowid

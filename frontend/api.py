@@ -44,7 +44,6 @@ from backend.volumes import Library, search_volumes
 api = Blueprint('api', __name__)
 root_folders = RootFolders()
 library = Library()
-settings = Settings()
 
 # Create handlers
 handler_context = Flask('handler')
@@ -123,7 +122,7 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 				raise TaskNotFound
 
 		elif key == 'api_key':
-			if not value == settings.get_settings()['api_key']:
+			if not value == Settings()['api_key']:
 				raise InvalidKeyValue(key, value)
 
 		elif key == 'sort':
@@ -214,20 +213,22 @@ def auth(method):
 
 @api.route('/auth', methods=['POST'])
 def api_auth():
+	settings = Settings()
+
 	ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
 
-	if settings.get_settings()['auth_password']:
+	if settings['auth_password']:
 		given_password = request.get_json().get('password')
 		if given_password is None:
 			return return_api({}, 'PasswordInvalid', 401)
 
-		auth_password = settings.get_settings().get('auth_password')
+		auth_password = settings['auth_password']
 		if auth_password is not None and given_password != auth_password:
 			logging.warning(f'Login attempt failed from {ip}')
 			return return_api({}, 'PasswordInvalid', 401)
 
 	logging.info(f'Login attempt successful from {ip}')
-	return return_api({'api_key': settings.get_settings()['api_key']})
+	return return_api({'api_key': settings['api_key']})
 
 @api.route('/auth/check', methods=['POST'])
 @error_handler
@@ -308,48 +309,28 @@ def api_task(task_id: int):
 @error_handler
 @auth
 def api_settings():
+	settings = Settings()
 	if request.method == 'GET':
-		result = settings.get_settings()
+		result = settings.get_all()
 		return return_api(result)
 
 	elif request.method == 'PUT':
 		data = request.get_json()
-		result = settings.set_settings(data)
-		return return_api(result)
+		settings.update(data)
+		return return_api(settings.get_all())
 
 	elif request.method == 'DELETE':
 		key = extract_key(request, 'key')
-		result = settings.reset_setting(key)
-		return return_api(result)
+		settings.reset(key)
+		return return_api(settings.get_all())
 
 @api.route('/settings/api_key', methods=['POST'])
 @error_handler
 @auth
 def api_settings_api_key():
-	result = settings.generate_api_key()
-	return return_api(result)
-
-@api.route('/settings/servicepreference', methods=['GET', 'PUT'])
-@error_handler
-@auth
-def api_settings_service_preference():
-	if request.method == 'GET':
-		result = settings.get_service_preference()
-		return return_api(result)
-	
-	elif request.method == 'PUT':
-		data = request.get_json()
-		if not 'order' in data:
-			raise KeyNotFound('order')
-		if not isinstance(data['order'], list):
-			raise InvalidKeyValue('order', data['order'])
-		current_order = settings.get_service_preference()
-		for entry in data['order']:
-			if not entry in current_order:
-				raise InvalidKeyValue('order', data['order'])
-
-		settings.set_service_preference(data['order'])
-		return return_api({})
+	settings = Settings()
+	settings.generate_api_key()
+	return return_api(settings.get_all())
 
 @api.route('/settings/availableformats', methods=['GET'])
 @error_handler
@@ -404,7 +385,10 @@ def api_library_import():
 
 		if (
 			not isinstance(data, list)
-			or not all(isinstance(e, dict) and 'filepath' in e and 'id' in e for e in data)
+			or not all(
+				isinstance(e, dict) and 'filepath' in e and 'id' in e
+				for e in data
+			)
 		):
 			raise InvalidKeyValue
 

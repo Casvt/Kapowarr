@@ -25,7 +25,7 @@ def get_blocklist(offset: int=0) -> List[dict]:
 	logging.debug(f'Fetching blocklist with offset {offset}')
 	entries = list(map(
 		dict,
-		get_db('dict').execute("""
+		get_db(dict).execute("""
 			SELECT
 				bl.id,
 				bl.link,
@@ -65,7 +65,7 @@ def get_blocklist_entry(id: int) -> dict:
 		the output of `blocklist.get_blocklist()`
 	"""	
 	logging.debug(f'Fetching blocklist entry {id}')
-	entry = get_db('dict').execute("""
+	entry = get_db(dict).execute("""
 		SELECT
 			bl.id,
 			bl.link,
