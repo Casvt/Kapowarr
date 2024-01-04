@@ -437,9 +437,10 @@ class DownloadHandler:
 
 		for download in self.queue:
 			if download.id == download_id:
+				prev_state = download.state
 				download.stop()
 
-				if download.state == DownloadStates.QUEUED_STATE:
+				if prev_state == DownloadStates.QUEUED_STATE:
 					self.queue.remove(download)
 					if isinstance(download, TorrentDownload):
 						download.remove_from_client(delete_files=True)
