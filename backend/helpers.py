@@ -101,15 +101,3 @@ class CommaList(list):
 
 	def __str__(self) -> str:
 		return ','.join(self)
-
-class SeedingHandling:
-	"Enum-like class for the seeding_handling setting"
-
-	COMPLETE = 'complete'
-	"Let torrent complete (finish seeding) and then move all files"
-
-	COPY = 'copy'
-	"Copy the files while the torrent is seeding, then delete original files"
-
-	def __contains__(self, value) -> bool:
-		return value in (self.COMPLETE, self.COPY)

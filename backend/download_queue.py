@@ -18,8 +18,8 @@ from backend.download_direct_clients import (DirectDownload, Download,
                                              MegaDownload)
 from backend.download_general import DownloadStates
 from backend.download_torrent_clients import TorrentClients, TorrentDownload
+from backend.enums import SeedingHandling
 from backend.getcomics import _extract_download_links
-from backend.helpers import SeedingHandling
 from backend.post_processing import (PostProcesser,
                                      PostProcesserTorrentsComplete,
                                      PostProcesserTorrentsCopy)
@@ -299,7 +299,7 @@ class DownloadHandler:
 
 				except LinkBroken as lb:
 					# Link is broken
-					add_to_blocklist(download['link'], lb.reason_id)
+					add_to_blocklist(download['link'], lb.reason)
 					# Link is broken, which triggers a write to the database
 					# To avoid the database being locked for a long time while 
 					# importing, we commit in-between.

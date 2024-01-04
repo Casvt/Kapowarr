@@ -8,7 +8,8 @@ from flask import Blueprint, Flask, request, send_file
 from backend.blocklist import (add_to_blocklist, delete_blocklist,
                                delete_blocklist_entry, get_blocklist,
                                get_blocklist_entry)
-from backend.conversion import get_available_formats, mass_convert, preview_mass_convert
+from backend.conversion import (get_available_formats, mass_convert,
+                                preview_mass_convert)
 from backend.custom_exceptions import (BlocklistEntryNotFound,
                                        CredentialAlreadyAdded,
                                        CredentialInvalid, CredentialNotFound,
@@ -30,13 +31,14 @@ from backend.download_direct_clients import credentials
 from backend.download_queue import (DownloadHandler, delete_download_history,
                                     get_download_history)
 from backend.download_torrent_clients import TorrentClients, client_types
+from backend.enums import BlocklistReasons, BlocklistReasonsByID
 from backend.library_import import import_library, propose_library_import
 from backend.mass_edit import MassEditorVariables, action_to_func
 from backend.naming import (generate_volume_folder_name, mass_rename,
                             preview_mass_rename)
 from backend.root_folders import RootFolders
 from backend.search import manual_search
-from backend.settings import Settings, about_data, blocklist_reasons
+from backend.settings import Settings, about_data
 from backend.tasks import (TaskHandler, delete_task_history, get_task_history,
                            get_task_planning, task_library)
 from backend.volumes import Library, search_volumes
@@ -141,8 +143,11 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 				raise InvalidKeyValue(key, value)
 
 		elif key == 'reason_id':
-			value = int(value)
-			if not value in blocklist_reasons:
+			try:
+				value = BlocklistReasons[
+					BlocklistReasonsByID(int(value)).name
+				]
+			except ValueError:
 				raise InvalidKeyValue(key, value)
 
 		elif key in ('monitor', 'delete_folder', 'rename_files', 'only_english'):
@@ -658,8 +663,8 @@ def api_blocklist():
 	
 	elif request.method == 'POST':
 		link = extract_key(request, 'link')
-		reason_id = extract_key(request, 'reason_id')
-		result = add_to_blocklist(link, reason_id)
+		reason = extract_key(request, 'reason_id')
+		result = add_to_blocklist(link, reason)
 		return return_api(result, code=201)
 	
 	elif request.method == 'DELETE':

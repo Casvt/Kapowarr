@@ -15,7 +15,8 @@ from requests.exceptions import ChunkedEncodingError
 from backend.credentials import Credentials
 from backend.custom_exceptions import LinkBroken
 from backend.download_general import Download, DownloadStates
-from backend.settings import Settings, blocklist_reasons
+from backend.enums import BlocklistReasons
+from backend.settings import Settings
 
 from .lib.mega import Mega, RequestError, sids
 
@@ -92,7 +93,7 @@ class DirectDownload(BaseDownload):
 		r = get(self.download_link, stream=True)
 		r.close()
 		if not r.ok:
-			raise LinkBroken(1, blocklist_reasons[1])
+			raise LinkBroken(BlocklistReasons.LINK_BROKEN)
 		self.size = int(r.headers.get('content-length', -1))
 
 		if custom_name:
@@ -244,7 +245,7 @@ class MegaDownload(BaseDownload):
 		try:
 			self._mega = Mega(link, cred['email'], cred['password'])
 		except RequestError:
-			raise LinkBroken(1, blocklist_reasons[1])
+			raise LinkBroken(BlocklistReasons.LINK_BROKEN)
 
 		self._filename_body = filename_body
 		if not custom_name:

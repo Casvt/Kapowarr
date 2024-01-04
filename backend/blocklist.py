@@ -5,9 +5,9 @@ from sqlite3 import IntegrityError
 from time import time
 from typing import List
 
-from backend.custom_exceptions import BlocklistEntryNotFound, InvalidKeyValue
+from backend.custom_exceptions import BlocklistEntryNotFound
 from backend.db import get_db
-from backend.settings import blocklist_reasons
+from backend.enums import BlocklistReasons, BlocklistReasonsByID
 
 
 def get_blocklist(offset: int=0) -> List[dict]:
@@ -27,18 +27,22 @@ def get_blocklist(offset: int=0) -> List[dict]:
 		dict,
 		get_db(dict).execute("""
 			SELECT
-				bl.id,
-				bl.link,
-				blr.reason,
-				bl.added_at
-			FROM blocklist bl
-			INNER JOIN blocklist_reasons blr
-			ON bl.reason = blr.id
-			ORDER BY bl.id DESC
+				id,
+				link,
+				reason,
+				added_at
+			FROM blocklist
+			ORDER BY id DESC
 			LIMIT 50
 			OFFSET ?;
 		""", (offset * 50,))
 	))
+	for entry in entries:
+		entry.update({
+			'reason': BlocklistReasons[
+				BlocklistReasonsByID(entry['reason']).name
+			].value
+		})
 	
 	return entries
 
@@ -67,19 +71,23 @@ def get_blocklist_entry(id: int) -> dict:
 	logging.debug(f'Fetching blocklist entry {id}')
 	entry = get_db(dict).execute("""
 		SELECT
-			bl.id,
-			bl.link,
-			blr.reason,
-			bl.added_at
-		FROM blocklist bl
-		INNER JOIN blocklist_reasons blr
-		ON bl.reason = blr.id
-		WHERE bl.id = ?
+			id,
+			link,
+			reason,
+			added_at
+		FROM blocklist
+		WHERE id = ?
 		LIMIT 1;
 	""", (id,)).fetchone()
-	if entry:
-		return dict(entry)
-	raise BlocklistEntryNotFound
+	
+	if not entry:
+		BlocklistEntryNotFound
+
+	result = dict(entry)
+	result['reason'] = BlocklistReasons[
+		BlocklistReasonsByID(result['reason']).name
+	].value
+	return result
 
 def delete_blocklist_entry(id: int) -> None:
 	"""Delete a blocklist entry
@@ -115,22 +123,20 @@ def blocklist_contains(link: str) -> bool:
 	)
 	return result
 
-def add_to_blocklist(link: str, reason_id: int) -> dict:
+def add_to_blocklist(link: str, reason: BlocklistReasons) -> dict:
 	"""Add a link to the blocklist
 
 	Args:
 		link (str): The link to block
-		reason_id (int): The id of the reason why the link is blocklisted.
-			See `settings.blocklist_reasons`
-
-	Raises:
-		InvalidKeyValue: The reason id doesn't map to any reason
+		reason (BlocklistReasons): The reason why the link is blocklisted.
+			See `backend.enums.BlocklistReasons`.
 
 	Returns:
 		dict: Info about the blocklist entry.
 	"""	
-	logging.info(f'Adding {link} to blocklist with reason "{blocklist_reasons[reason_id]}"')
+	logging.info(f'Adding {link} to blocklist with reason "{reason.value}"')
 	cursor = get_db()
+	reason_id = BlocklistReasonsByID[reason.name].value
 
 	# Try to add link to blocklist
 	try:
@@ -145,8 +151,7 @@ def add_to_blocklist(link: str, reason_id: int) -> dict:
 			(link,)
 		).fetchone()
 		if id:
-			return get_blocklist_entry(id[0])		
-
-		raise InvalidKeyValue('reason', reason_id)
+			return get_blocklist_entry(id[0])
+		raise NotImplementedError
 
 	return get_blocklist_entry(id)

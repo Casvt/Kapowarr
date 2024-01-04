@@ -19,7 +19,7 @@ from backend.helpers import CommaList, DB_ThreadSafeSingleton
 from backend.logging import set_log_level
 
 __DATABASE_FILEPATH__ = 'db', 'Kapowarr.db'
-__DATABASE_VERSION__ = 15
+__DATABASE_VERSION__ = 16
 
 
 class ThreadedTaskDispatcher(OldThreadedTaskDispatcher):
@@ -570,13 +570,40 @@ def migrate_db(current_db_version: int) -> None:
 		current_db_version = s['database_version'] = 15
 		s._save_to_database()
 
+	if current_db_version == 15:
+		# V15 -> V16
+
+		cursor.executescript("""
+			BEGIN TRANSACTION;
+			PRAGMA defer_foreign_keys = ON;
+
+			DROP TABLE blocklist_reasons;
+
+			CREATE TEMPORARY TABLE temp_blocklist AS
+				SELECT * FROM blocklist;
+			DROP TABLE blocklist;
+
+			CREATE TABLE blocklist(
+				id INTEGER PRIMARY KEY,
+				link TEXT NOT NULL UNIQUE,
+				reason INTEGER NOT NULL CHECK (reason > 0),
+				added_at INTEGER NOT NULL
+			);
+			INSERT INTO blocklist
+				SELECT * FROM temp_blocklist;
+
+			COMMIT;
+		""")
+		
+		current_db_version = s['database_version'] = 16
+		s._save_to_database()
+
 	return
 
 def setup_db() -> None:
 	"""Setup the database tables and default config when they aren't setup yet
 	"""
-	from backend.settings import (Settings, blocklist_reasons, credential_sources,
-	                              task_intervals)
+	from backend.settings import Settings, credential_sources, task_intervals
 
 	cursor = get_db()
 	cursor.execute("PRAGMA journal_mode = wal;")
@@ -685,17 +712,11 @@ def setup_db() -> None:
 			interval INTEGER NOT NULL,
 			next_run INTEGER NOT NULL
 		);
-		CREATE TABLE IF NOT EXISTS blocklist_reasons(
-			id INTEGER PRIMARY KEY,
-			reason TEXT NOT NULL UNIQUE
-		);
 		CREATE TABLE IF NOT EXISTS blocklist(
 			id INTEGER PRIMARY KEY,
 			link TEXT NOT NULL UNIQUE,
-			reason INTEGER NOT NULL,
-			added_at INTEGER NOT NULL,
-
-			FOREIGN KEY (reason) REFERENCES blocklist_reasons(id)
+			reason INTEGER NOT NULL CHECK (reason > 0),
+			added_at INTEGER NOT NULL
 		);
 		CREATE TABLE IF NOT EXISTS credentials_sources(
 			id INTEGER PRIMARY KEY,
@@ -747,16 +768,6 @@ def setup_db() -> None:
 			interval = ?;
 		""",
 		((k, v, current_time, v) for k, v in task_intervals.items())
-	)
-	
-	# Add blocklist reasons
-	logging.debug(f'Inserting blocklist reasons: {blocklist_reasons}')
-	cursor.executemany(
-		"""
-		INSERT OR IGNORE INTO blocklist_reasons(id, reason)
-		VALUES (?,?);
-		""",
-		blocklist_reasons.items()
 	)
 	
 	# Add credentials sources

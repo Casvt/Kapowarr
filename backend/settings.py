@@ -7,14 +7,15 @@ import logging
 from json import dumps, loads
 from os import urandom
 from os.path import isdir, join
-from typing import Any, List
+from typing import Any
 
 from backend.custom_exceptions import (FolderNotFound, InvalidSettingKey,
                                        InvalidSettingModification,
                                        InvalidSettingValue)
 from backend.db import __DATABASE_FILEPATH__, __DATABASE_VERSION__, get_db
+from backend.enums import SeedingHandling
 from backend.files import folder_path
-from backend.helpers import CommaList, SeedingHandling, Singleton, get_python_version
+from backend.helpers import CommaList, Singleton, get_python_version
 from backend.logging import log_levels, set_log_level
 
 supported_source_strings = (('mega',),
@@ -23,31 +24,34 @@ supported_source_strings = (('mega',),
 							('getcomics (torrent)', 'torrent'))
 
 default_settings = {
+	'database_version': __DATABASE_VERSION__,
 	'host': '0.0.0.0',
 	'port': 5656,
 	'url_base': '',
 	'api_key': None,
 	'comicvine_api_key': '',
 	'auth_password': '',
+	'log_level': 'info',
+
 	'volume_folder_naming': join('{series_name}', 'Volume {volume_number} ({year})'),
 	'file_naming': '{series_name} ({year}) Volume {volume_number} Issue {issue_number}',
 	'file_naming_tpb': '{series_name} ({year}) Volume {volume_number} TPB',
-	'download_folder': folder_path('temp_downloads'),
-	'log_level': 'info',
-	'database_version': __DATABASE_VERSION__,
-	'convert': False,
-	'extract_issue_ranges': False,
-	'format_preference': '',
-	'service_preference': str(CommaList(
-		[s[0] for s in supported_source_strings]
-	)),
+	'file_naming_empty': '{series_name} ({year}) Volume {volume_number} Issue {issue_number}',
+	'volume_as_empty': False,
 	'volume_padding': 2,
 	'issue_padding': 3,
 	'rename_downloaded_files': True,
-	'file_naming_empty': '{series_name} ({year}) Volume {volume_number} Issue {issue_number}',
-	'volume_as_empty': False,
-	'seeding_handling': SeedingHandling.COPY,
-	'delete_completed_torrents': True
+
+	'service_preference': str(CommaList(
+		[s[0] for s in supported_source_strings]
+	)),
+	'download_folder': folder_path('temp_downloads'),
+	'seeding_handling': SeedingHandling.COPY.value,
+	'delete_completed_torrents': True,
+
+	'convert': False,
+	'extract_issue_ranges': False,
+	'format_preference': ''
 }
 
 private_settings = {
@@ -74,13 +78,6 @@ task_intervals = {
 	# but per se after each other, put them in that order in the dict.
 	'update_all': 3600, # every hour
 	'search_all': 86400 # every day
-}
-
-blocklist_reasons = {
-	1: 'Link broken',
-	2: 'Source not supported',
-	3: 'No supported or working links',
-	4: 'Added by user'
 }
 
 credential_sources = ('mega',)
@@ -206,7 +203,9 @@ class Settings(metaclass=Singleton):
 			value = CommaList(value)
 
 		elif key == 'seeding_handling':
-			if not value in SeedingHandling():
+			try:
+				SeedingHandling(value)
+			except ValueError:
 				raise InvalidSettingValue(key, value)
 
 		return value

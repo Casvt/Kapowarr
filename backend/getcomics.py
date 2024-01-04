@@ -16,12 +16,12 @@ from backend.db import get_db
 from backend.download_direct_clients import (DirectDownload, Download,
                                              MegaDownload)
 from backend.download_torrent_clients import TorrentDownload
+from backend.enums import BlocklistReasons
 from backend.files import extract_filename_data
 from backend.naming import (generate_empty_name, generate_issue_name,
                             generate_issue_range_name, generate_tpb_name)
 from backend.search import _check_matching_titles
-from backend.settings import (Settings, blocklist_reasons,
-                              supported_source_strings)
+from backend.settings import Settings, supported_source_strings
 
 mega_regex = compile(r'https?://mega\.(nz|io)/(#(F\!|\!)|folder/|file/)', IGNORECASE)
 mediafire_regex = compile(r'https?://www\.mediafire\.com/', IGNORECASE)
@@ -100,11 +100,11 @@ def _purify_link(link: str) -> dict:
 			# Link is mega
 			if '#F!' in url:
 				# Link is not supported (folder)
-				raise LinkBroken(2, blocklist_reasons[2])
+				raise LinkBroken(BlocklistReasons.SOURCE_NOT_SUPPORTED)
 			
 			if '/folder/' in url:
 				# Link is not supported (folder)
-				raise LinkBroken(2, blocklist_reasons[2])
+				raise LinkBroken(BlocklistReasons.SOURCE_NOT_SUPPORTED)
 			
 			return {'link': url, 'target': MegaDownload, 'source': 'mega'}
 		
@@ -112,11 +112,11 @@ def _purify_link(link: str) -> dict:
 			# Link is mediafire
 			if 'error.php' in url:
 				# Link is broken
-				raise LinkBroken(1, blocklist_reasons[1])
+				raise LinkBroken(BlocklistReasons.LINK_BROKEN)
 			
 			elif '/folder/' in url:
 				# Link is not supported
-				raise LinkBroken(2, blocklist_reasons[2])
+				raise LinkBroken(BlocklistReasons.SOURCE_NOT_SUPPORTED)
 
 			result = extract_mediafire_regex.search(r.text)
 			if result:
@@ -137,7 +137,7 @@ def _purify_link(link: str) -> dict:
 
 			# Link is not broken and not a folder
 			# but we still can't find the download button...
-			raise LinkBroken(1, blocklist_reasons[1])
+			raise LinkBroken(BlocklistReasons.LINK_BROKEN)
 
 		elif r.headers.get('Content-Type','') == 'application/x-bittorrent':
 			# Link is torrent file
@@ -153,7 +153,7 @@ def _purify_link(link: str) -> dict:
 		return {'link': url, 'target': DirectDownload, 'source': 'getcomics'}
 
 	else:
-		raise LinkBroken(2, blocklist_reasons[2])
+		raise LinkBroken(BlocklistReasons.SOURCE_NOT_SUPPORTED)
 
 link_filter_1 = lambda e: (
 	e.name == 'p'
@@ -473,7 +473,7 @@ def _test_paths(
 
 					except LinkBroken as lb:
 						# Link is broken
-						add_to_blocklist(link, lb.reason_id)
+						add_to_blocklist(link, lb.reason)
 						cursor.connection.commit()
 
 					except DownloadLimitReached:
