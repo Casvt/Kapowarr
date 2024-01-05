@@ -31,7 +31,7 @@ from backend.download_direct_clients import credentials
 from backend.download_queue import (DownloadHandler, delete_download_history,
                                     get_download_history)
 from backend.download_torrent_clients import TorrentClients, client_types
-from backend.enums import BlocklistReasons, BlocklistReasonsByID
+from backend.enums import BlocklistReason, BlocklistReasonID
 from backend.library_import import import_library, propose_library_import
 from backend.mass_edit import MassEditorVariables, action_to_func
 from backend.naming import (generate_volume_folder_name, mass_rename,
@@ -144,8 +144,8 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 
 		elif key == 'reason_id':
 			try:
-				value = BlocklistReasons[
-					BlocklistReasonsByID(int(value)).name
+				value = BlocklistReason[
+					BlocklistReasonID(int(value)).name
 				]
 			except ValueError:
 				raise InvalidKeyValue(key, value)

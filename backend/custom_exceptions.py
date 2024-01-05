@@ -7,7 +7,7 @@ Note: Not all C.E. inherit CustomException.
 
 import logging
 
-from backend.enums import BlocklistReasons, BlocklistReasonsByID
+from backend.enums import BlocklistReason, BlocklistReasonID
 
 
 class CustomException(Exception):
@@ -88,10 +88,10 @@ class InvalidComicVineApiKey(CustomException):
 
 class LinkBroken(Exception):
 	"""Download link doesn't work"""
-	def __init__(self, reason: BlocklistReasons):
+	def __init__(self, reason: BlocklistReason):
 		self.reason = reason
 		self.reason_text = reason.value
-		self.reason_id = BlocklistReasonsByID[reason.name].value
+		self.reason_id = BlocklistReasonID[reason.name].value
 		super().__init__(self.reason_id)
 		return
 	

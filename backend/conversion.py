@@ -7,6 +7,7 @@ from typing import Dict, List, Set, Tuple, Union
 
 from backend.converters import FileConverter, rar_executables
 from backend.db import get_db
+from backend.enums import SpecialVersion
 from backend.files import _list_files, extract_filename_data, scan_files
 from backend.settings import Settings
 from backend.volumes import Volume
@@ -107,10 +108,12 @@ def __get_format_pref_and_files(
 	format_preference = settings['format_preference']
 	extract_issue_ranges = settings['extract_issue_ranges']
 	
-	special_version = cursor.execute(
-		"SELECT special_version FROM volumes WHERE id = ? LIMIT 1;",
-		(volume_id,)
-	).fetchone()[0]
+	special_version = SpecialVersion(
+		cursor.execute(
+			"SELECT special_version FROM volumes WHERE id = ? LIMIT 1;",
+			(volume_id,)
+		).fetchone()[0]
+	)
 	
 	if not issue_id:
 		cursor.execute("""
@@ -166,7 +169,7 @@ def preview_mass_convert(
 		volume_id,
 		issue_id
 	)
-	volume_as_issue = special_version == 'volume-as-issue'
+	volume_as_issue = special_version == SpecialVersion.VOLUME_AS_ISSUE
 
 	result = []
 	for (f,) in cursor:
@@ -231,7 +234,7 @@ def mass_convert(
 		volume_id,
 		issue_id
 	)
-	volume_as_issue = special_version == 'volume-as-issue'
+	volume_as_issue = special_version == SpecialVersion.VOLUME_AS_ISSUE
 
 	for (f,) in cursor.fetchall():
 		if files and f not in files:

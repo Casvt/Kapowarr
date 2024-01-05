@@ -7,7 +7,7 @@ from typing import List
 
 from backend.custom_exceptions import BlocklistEntryNotFound
 from backend.db import get_db
-from backend.enums import BlocklistReasons, BlocklistReasonsByID
+from backend.enums import BlocklistReason, BlocklistReasonID
 
 
 def get_blocklist(offset: int=0) -> List[dict]:
@@ -39,8 +39,8 @@ def get_blocklist(offset: int=0) -> List[dict]:
 	))
 	for entry in entries:
 		entry.update({
-			'reason': BlocklistReasons[
-				BlocklistReasonsByID(entry['reason']).name
+			'reason': BlocklistReason[
+				BlocklistReasonID(entry['reason']).name
 			].value
 		})
 	
@@ -84,8 +84,8 @@ def get_blocklist_entry(id: int) -> dict:
 		BlocklistEntryNotFound
 
 	result = dict(entry)
-	result['reason'] = BlocklistReasons[
-		BlocklistReasonsByID(result['reason']).name
+	result['reason'] = BlocklistReason[
+		BlocklistReasonID(result['reason']).name
 	].value
 	return result
 
@@ -123,20 +123,20 @@ def blocklist_contains(link: str) -> bool:
 	)
 	return result
 
-def add_to_blocklist(link: str, reason: BlocklistReasons) -> dict:
+def add_to_blocklist(link: str, reason: BlocklistReason) -> dict:
 	"""Add a link to the blocklist
 
 	Args:
 		link (str): The link to block
 		reason (BlocklistReasons): The reason why the link is blocklisted.
-			See `backend.enums.BlocklistReasons`.
+			See `backend.enums.BlocklistReason`.
 
 	Returns:
 		dict: Info about the blocklist entry.
 	"""	
 	logging.info(f'Adding {link} to blocklist with reason "{reason.value}"')
 	cursor = get_db()
-	reason_id = BlocklistReasonsByID[reason.name].value
+	reason_id = BlocklistReasonID[reason.name].value
 
 	# Try to add link to blocklist
 	try:

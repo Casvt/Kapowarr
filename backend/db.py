@@ -368,7 +368,7 @@ def migrate_db(current_db_version: int) -> None:
 		""").fetchall()
 
 		updates = (
-			(determine_special_version(v[1], v[2], v[3], v[4]) ,v[0])
+			(determine_special_version(v[1], v[2], v[3], v[4]), v[0])
 			for v in volumes
 		)
 

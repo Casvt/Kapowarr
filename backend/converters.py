@@ -11,6 +11,7 @@ from typing import List
 from zipfile import ZipFile
 
 from backend.db import get_db
+from backend.enums import SpecialVersion
 from backend.files import (_list_files, extract_filename_data, folder_path,
                            image_extensions, rename_file, scan_files,
                            supported_extensions)
@@ -51,6 +52,7 @@ def __get_volume_data(volume_id: int) -> dict:
 		(volume_id,)
 	).fetchone())
 
+	volume_data['special_version'] = SpecialVersion(volume_data['special_version'])
 	volume_data['annual'] = 'annual' in volume_data['title'].lower()
 	if volume_data['last_issue_date']:
 		volume_data['end_year'] = int(volume_data['last_issue_date'].split('-')[0])
@@ -88,7 +90,7 @@ def extract_files_from_folder(
 						and result['volume_number'] == volume_data['volume_number']
 					)
 					or (
-						volume_data['special_version'] == 'volume-as-issue'
+						volume_data['special_version'] == SpecialVersion.VOLUME_AS_ISSUE
 						and cursor.execute("""
 							SELECT 1
 							FROM issues

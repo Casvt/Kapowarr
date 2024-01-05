@@ -15,6 +15,7 @@ from requests import get
 
 from backend.blocklist import blocklist_contains
 from backend.db import get_db
+from backend.enums import SpecialVersion
 from backend.files import extract_filename_data
 from backend.settings import private_settings
 
@@ -55,7 +56,7 @@ def _check_match(
 	result: dict,
 	title: str,
 	volume_number: int,
-	special_version: Union[str, None],
+	special_version: SpecialVersion,
 	issue_numbers: Dict[float, int],
 	calculated_issue_number: float=None,
 	year: int=None
@@ -69,7 +70,7 @@ def _check_match(
 
 		volume_number (int): The volume number of the volume
 
-		special_version (str): What type of special version the volume is, or None
+		special_version (SpecialVersion): What type of special version the volume is.
 
 		issue_numbers (Dict[float, int]): calculated_issue_number to release year
 		for all issues of volume
@@ -99,17 +100,17 @@ def _check_match(
 	if not _check_matching_titles(title, result['series']):
 		return {'match': False, 'match_issue': 'Titles don\'t match'}
 
-	if (special_version != 'volume-as-issue'
+	if (special_version != SpecialVersion.VOLUME_AS_ISSUE
 	and result['volume_number'] not in (volume_number, year, None)):
 		return {'match': False, 'match_issue': 'Volume numbers don\'t match'}
 
 	if special_version != result['special_version'] and not (
-		result['special_version'] == 'tpb'
-		and special_version in ('volume-as-issue', 'hard-cover')
+		result['special_version'] == SpecialVersion.TPB
+		and special_version in (SpecialVersion.VOLUME_AS_ISSUE, SpecialVersion.HARD_COVER)
 	):
 		return {'match': False, 'match_issue': 'Special version conflict'}
 
-	if not special_version:
+	if not special_version.value:
 		issue_number_is_equal = (
 			(
 				# Search result for volume
@@ -140,7 +141,8 @@ def _check_match(
 		if not issue_number_is_equal:
 			return {'match': False, 'match_issue': 'Issue numbers don\'t match'}
 
-	elif special_version == 'volume-as-issue' and result['special_version'] == 'tpb':
+	elif (special_version == SpecialVersion.VOLUME_AS_ISSUE
+	and result['special_version'] == SpecialVersion.TPB):
 		if ((isinstance(result['volume_number'], int)
 			and not result['volume_number'] not in issue_numbers
 		) or (
@@ -397,10 +399,10 @@ def manual_search(
 	title: str
 	volume_number: int
 	year: int
-	special_version: Union[str, None]
+	special_version = SpecialVersion(special_version)
 	issue_number: int = None
 	calculated_issue_number: int = None
-	if issue_id and not special_version:
+	if issue_id and not special_version.value:
 		cursor.execute("""
 			SELECT
 				issue_number, calculated_issue_number
@@ -417,7 +419,7 @@ def manual_search(
 	# Prepare query
 	title = title.replace(':', '')
 
-	if special_version == 'tpb':
+	if special_version == SpecialVersion.TPB:
 		query_formats = (
 			'{title} Vol. {volume_number} ({year}) TPB',
 			'{title} ({year}) TPB',
@@ -425,7 +427,7 @@ def manual_search(
 			'{title} Vol. {volume_number}',
 			'{title}'
 		)
-	elif special_version == 'volume-as-issue':
+	elif special_version == SpecialVersion.VOLUME_AS_ISSUE:
 		query_formats = (
 			'{title} ({year})',
 			'{title}'
@@ -511,6 +513,7 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 		(volume_id,)
 	)
 	volume_monitored, special_version = cursor.fetchone()
+	special_version = SpecialVersion(special_version)
 	logging.info(
 		f'Starting auto search for volume {volume_id} {f"issue {issue_id}" if issue_id else ""}'
 	)
@@ -571,8 +574,8 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 		manual_search(volume_id, issue_id)
 	))
 	if issue_number is not None or (
-		special_version is not None
-		and special_version != 'volume-as-issue'
+		special_version.value is not None
+		and special_version != SpecialVersion.VOLUME_AS_ISSUE
 	):
 		result = results[:1] if results else []
 		logging.debug(f'Auto search results: {result}')
@@ -581,8 +584,8 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 		volume_parts = []
 		for result in results:
 			if (result['issue_number'] is not None
-			or (special_version == 'volume-as-issue'
-				and result['special_version'] == 'tpb'
+			or (special_version == SpecialVersion.VOLUME_AS_ISSUE
+				and result['special_version'] == SpecialVersion.TPB
 			)):
 				if isinstance(result['issue_number'], tuple):
 					# Release is an issue range
@@ -601,7 +604,7 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 					# Release is a specific issue
 					if not (
 						result['issue_number'] in searchable_issues
-						or (result['special_version'] == 'tpb'
+						or (result['special_version'] == SpecialVersion.TPB
 							and result['volume_number'] in searchable_issues)
 					):
 						continue
@@ -623,7 +626,7 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 								break
 						else:
 							if (part['issue_number'] == result['issue_number']
-							or (special_version == 'volume-as-issue'
+							or (special_version == SpecialVersion.VOLUME_AS_ISSUE
 								and part['volume_number'] == result['volume_number']
 							)):
 								break

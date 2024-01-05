@@ -13,6 +13,7 @@ from typing import Dict, List, Tuple, Union
 from backend.custom_exceptions import (InvalidSettingValue, IssueNotFound,
                                        VolumeNotFound)
 from backend.db import get_db
+from backend.enums import SpecialVersion
 from backend.files import (cover_regex, delete_empty_folders, image_extensions,
                            rename_file)
 from backend.settings import Settings
@@ -511,10 +512,12 @@ def preview_mass_rename(
 			file_infos
 		)
 
-	special_version = cursor.execute(
-		"SELECT special_version FROM volumes WHERE id = ? LIMIT 1;",
-		(volume_id,)
-	).fetchone()[0]
+	special_version = SpecialVersion(
+		cursor.execute(
+			"SELECT special_version FROM volumes WHERE id = ? LIMIT 1;",
+			(volume_id,)
+		).fetchone()[0]
+	)
 	name_volume_as_issue = Settings()['volume_as_empty']
 
 	for file in file_infos:
@@ -534,10 +537,10 @@ def preview_mass_rename(
 			""",
 			(file['id'],)
 		).fetchall()
-		if special_version == 'tpb':
+		if special_version == SpecialVersion.TPB:
 			suggested_name = generate_tpb_name(volume_id)
 
-		elif special_version == 'volume-as-issue' and not name_volume_as_issue:
+		elif special_version == SpecialVersion.VOLUME_AS_ISSUE and not name_volume_as_issue:
 			if len(issues) > 1:
 				suggested_name = generate_empty_name(
 					volume_id,
@@ -549,7 +552,7 @@ def preview_mass_rename(
 					int(issues[0][0])
 				)
 
-		elif (special_version or 'volume-as-issue') != 'volume-as-issue':
+		elif (special_version.value or SpecialVersion.VOLUME_AS_ISSUE) != SpecialVersion.VOLUME_AS_ISSUE:
 			suggested_name = generate_empty_name(volume_id)
 
 		elif len(issues) > 1:

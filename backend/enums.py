@@ -12,13 +12,13 @@ class SeedingHandling(BaseEnum):
 	COPY = 'copy'
 	"Copy the files while the torrent is seeding, then delete original files"
 
-class BlocklistReasonsByID(BaseEnum):
+class BlocklistReasonID(BaseEnum):
 	LINK_BROKEN = 1
 	SOURCE_NOT_SUPPORTED = 2
 	NO_WORKING_LINKS = 3
 	ADDED_BY_USER = 4
 
-class BlocklistReasons(BaseEnum):
+class BlocklistReason(BaseEnum):
 	LINK_BROKEN = 'Link broken'
 
 	SOURCE_NOT_SUPPORTED = 'Source not supported'
@@ -26,3 +26,16 @@ class BlocklistReasons(BaseEnum):
 	NO_WORKING_LINKS = 'No supported or working links'
 
 	ADDED_BY_USER = 'Added by user'
+
+class SpecialVersion(BaseEnum):
+	TPB = 'tpb'
+	
+	ONE_SHOT = 'one-shot'
+	
+	HARD_COVER = 'hard-cover'
+	
+	VOLUME_AS_ISSUE = 'volume-as-issue'
+	"Volume where each issue is named `Volume N`"
+
+	NORMAL = None
+	"Normal volume, so not a special version"

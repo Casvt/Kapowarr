@@ -17,6 +17,7 @@ from typing import List, Tuple, Union
 from urllib.parse import unquote
 
 from backend.db import get_db
+from backend.enums import SpecialVersion
 from backend.root_folders import RootFolders
 
 alphabet = 'abcdefghijklmnopqrstuvwxyz'
@@ -374,7 +375,7 @@ def extract_filename_data(
 					issue_pos = issue_result.start(0)
 
 	if not issue_number and not special_version:
-		special_version = 'tpb'
+		special_version = SpecialVersion.TPB.value
 
 	# Get series
 	series_pos = min(
@@ -511,7 +512,7 @@ def scan_files(volume_data: dict) -> None:
 			(
 				file_data['volume_number'] is not None
 				and ((
-						volume_data['special_version'] == 'volume-as-issue'
+						volume_data['special_version'] == SpecialVersion.VOLUME_AS_ISSUE
 						and file_data['issue_number'] is None
 						and ((
 								isinstance(file_data['volume_number'], tuple)
@@ -552,13 +553,13 @@ def scan_files(volume_data: dict) -> None:
 		(
 			file_data['special_version'] == volume_data['special_version']
 			or (
-				volume_data['special_version'] == 'hard-cover'
-				and file_data['special_version'] == 'tpb'
+				volume_data['special_version'] == SpecialVersion.HARD_COVER
+				and file_data['special_version'] == SpecialVersion.TPB
 			)
 			or (
-				volume_data['special_version'] == 'volume-as-issue'
+				volume_data['special_version'] == SpecialVersion.VOLUME_AS_ISSUE
 				and (
-					file_data['special_version'] == 'tpb'
+					file_data['special_version'] == SpecialVersion.TPB
 					or (
 						isinstance(file_data['volume_number'], int)
 						and file_data['volume_number'] in (
@@ -577,7 +578,7 @@ def scan_files(volume_data: dict) -> None:
 		)):
 			continue
 
-		if (volume_data['special_version'] != 'volume-as-issue'
+		if (volume_data['special_version'] != SpecialVersion.VOLUME_AS_ISSUE
 		and file_data['special_version']):
 			# Add file to database if it isn't registered yet
 			file_id = _add_file(file)
@@ -586,7 +587,7 @@ def scan_files(volume_data: dict) -> None:
 
 		# Search for issue number
 		if (file_data['issue_number'] is not None
-		or volume_data['special_version'] == 'volume-as-issue'):
+		or volume_data['special_version'] == SpecialVersion.VOLUME_AS_ISSUE):
 
 			if (isinstance(file_data['issue_number'] or '', tuple)
 			or isinstance(file_data['volume_number'] or '', tuple)):

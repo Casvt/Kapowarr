@@ -14,6 +14,7 @@ from backend.comicvine import ComicVine
 from backend.custom_exceptions import (IssueNotFound, VolumeAlreadyAdded,
                                        VolumeDownloadedFor, VolumeNotFound)
 from backend.db import get_db
+from backend.enums import SpecialVersion
 from backend.files import (create_volume_folder, delete_volume_folder,
                            move_volume_folder, scan_files)
 from backend.root_folders import RootFolders
@@ -26,7 +27,7 @@ def determine_special_version(
 	volume_title: str,
 	volume_description: str,
 	issue_titles: List[str]
-) -> Union[str, None]:
+) -> SpecialVersion:
 	"""Determine if a volume is a special version.
 
 	Args:
@@ -35,21 +36,20 @@ def determine_special_version(
 		issue_titles (List[str]): The titles of all issues in the volume.
 
 	Returns:
-		Union[str, None]: `tpb`, `one-shot`, `hard-cover`, `volume-as-issue`
-		or `None`.
+		SpecialVersion: The result.
 	"""
 	if os_regex.search(volume_title):
-		return 'one-shot'
+		return SpecialVersion.ONE_SHOT
 
 	if issue_titles:
 		if (issue_titles[0] or '').lower() == 'hc':
-			return 'hard-cover'
+			return SpecialVersion.HARD_COVER
 
 		if all(
 			vol_regex.search(title or '')
 			for title in issue_titles
 		):
-			return 'volume-as-issue'
+			return SpecialVersion.VOLUME_AS_ISSUE
 
 	if volume_description and len(volume_description.split('. ')) == 1:
 		# Description is only one sentence, so it's allowed to
@@ -58,15 +58,15 @@ def determine_special_version(
 		# could be referencing a special version that isn't this one,
 		# leading to a false hit.
 		if os_regex.search(volume_description):
-			return 'one-shot'
+			return SpecialVersion.ONE_SHOT
 		
 		if hc_regex.search(volume_description):
-			return 'hard-cover'
+			return SpecialVersion.HARD_COVER
 
 	if len(issue_titles) == 1:
-		return 'tpb'
+		return SpecialVersion.TPB
 
-	return None
+	return SpecialVersion.NORMAL
 
 #=====================
 # Main issue class
@@ -502,7 +502,7 @@ def refresh_and_scan(volume_id: int=None) -> None:
 						(ids[volume_data['comicvine_id']],)
 					)
 				]
-			),
+			).value,
 			ids[volume_data['comicvine_id']]
 		)
 		for volume_data in volume_datas
@@ -735,7 +735,7 @@ class Library:
 			volume_data['title'],
 			volume_data['description'],
 			tuple(i['title'] for i in volume_data['issues'])
-		)
+		).value
 
 		cursor.execute(
 			"""
