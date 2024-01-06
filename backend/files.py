@@ -18,6 +18,7 @@ from urllib.parse import unquote
 
 from backend.db import get_db
 from backend.enums import SpecialVersion
+from backend.matching import file_importing_filter
 from backend.root_folders import RootFolders
 
 alphabet = 'abcdefghijklmnopqrstuvwxyz'
@@ -494,11 +495,6 @@ def scan_files(volume_data: dict) -> None:
 		create_volume_folder(root_folder, volume_data['id'])
 
 	file_to_issue_map = []
-	issue_number_to_year = {
-		issue['calculated_issue_number']:
-			int(issue['date'].split('-')[0]) if issue['date'] else None
-			for issue in volume_data['issues']
-	}
 	volume_files = _list_files(
 		folder=volume_data['folder'],
 		ext=supported_extensions
@@ -507,75 +503,7 @@ def scan_files(volume_data: dict) -> None:
 		file_data = extract_filename_data(file)
 
 		# Check if file matches volume
-		if not (
-		(
-			(
-				file_data['volume_number'] is not None
-				and ((
-						volume_data['special_version'] == SpecialVersion.VOLUME_AS_ISSUE
-						and file_data['issue_number'] is None
-						and ((
-								isinstance(file_data['volume_number'], tuple)
-								and file_data['volume_number'][0] in issue_number_to_year
-								and file_data['volume_number'][1] in issue_number_to_year
-							)
-							or (
-								isinstance(file_data['volume_number'], int)
-								and file_data['volume_number'] in issue_number_to_year
-							))
-					)
-					or (
-						isinstance(file_data['volume_number'], int)
-						and file_data['volume_number'] in (
-							volume_data['volume_number'], volume_data['year']
-						)
-					)
-				)
-			)
-			or (
-				file_data['year'] is not None
-				and (
-					file_data['year'] == volume_data['year']
-		 			or
-					(
-						file_data['issue_number'] is not None
-						and isinstance(file_data['volume_number'], int)
-						and issue_number_to_year.get((
-							file_data['issue_number']
-							if isinstance(file_data['issue_number'], float) else
-							file_data['issue_number'][0]
-						)) == file_data['year']
-					)
-				)
-			)
-		)
-		and
-		(
-			file_data['special_version'] == volume_data['special_version']
-			or (
-				volume_data['special_version'] == SpecialVersion.HARD_COVER
-				and file_data['special_version'] == SpecialVersion.TPB
-			)
-			or (
-				volume_data['special_version'] == SpecialVersion.VOLUME_AS_ISSUE
-				and (
-					file_data['special_version'] == SpecialVersion.TPB
-					or (
-						isinstance(file_data['volume_number'], int)
-						and file_data['volume_number'] in (
-							volume_data['volume_number'], volume_data['year']
-						)
-						and ((
-							isinstance(file_data['issue_number'], float)
-							and file_data['issue_number'] in issue_number_to_year
-						) or (
-							isinstance(file_data['issue_number'], tuple)
-							and file_data['issue_number'][0] in issue_number_to_year
-							and file_data['issue_number'][1] in issue_number_to_year
-						))
-				))
-			)
-		)):
+		if not file_importing_filter(file_data, volume_data):
 			continue
 
 		if (volume_data['special_version'] != SpecialVersion.VOLUME_AS_ISSUE

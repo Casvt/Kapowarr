@@ -10,7 +10,7 @@ from os.path import isdir, isfile
 from shutil import rmtree
 from sys import version_info
 from threading import current_thread
-from typing import Iterable, Union
+from typing import Any, Iterable, List, Tuple, Union
 
 
 def get_python_version() -> str:
@@ -49,6 +49,46 @@ def batched(l: list, n: int):
 	"""
 	for ndx in range(0, len(l), n):
 		yield l[ndx : ndx+n]
+
+def get_first_of_range(
+	n: Union[Any, Tuple[Any, Any], List[Any]]
+) -> Any:
+	"""Get the first element from a variable that could potentially be a range,
+	but could also be a single value. In the case of a single value, the value
+	is returned.
+
+	Args:
+		n (Union[Any, Tuple[Any, Any], List[Any]]): The range or single value.
+
+	Returns:
+		Any: The first element or single value.
+	"""
+	if isinstance(n, (list, tuple)):
+		return n[0]
+	else:
+		return n
+
+def extract_year_from_date(
+	date: Union[str, None],
+	default: Any = None
+) -> int:
+	"""Get the year from a date in the format YYYY-MM-DD
+
+	Args:
+		date (Union[str, None]): The date.
+		default (Any, optional): Value if year can't be extracted.
+			Defaults to None.
+
+	Returns:
+		int: The year.
+	"""
+	if date:
+		try:
+			return int(date.split('-')[0])
+		except ValueError:
+			return default
+	else:
+		return default
 
 def delete_file_folder(path: str) -> None:
 	"""Delete a file or folder. In the case of a folder, it is deleted recursively.

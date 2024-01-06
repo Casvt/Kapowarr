@@ -20,7 +20,7 @@ from backend.enums import BlocklistReason, SpecialVersion
 from backend.files import extract_filename_data
 from backend.naming import (generate_empty_name, generate_issue_name,
                             generate_issue_range_name, generate_tpb_name)
-from backend.search import _check_matching_titles
+from backend.matching import GC_group_filter, _match_title
 from backend.settings import Settings, supported_source_strings
 
 mega_regex = compile(r'https?://mega\.(nz|io)/(#(F\!|\!)|folder/|file/)', IGNORECASE)
@@ -281,14 +281,12 @@ def _create_link_paths(
 	# Get info of volume
 	cursor = get_db()
 	volume_title: str
-	volume_number: int
 	volume_year: int
 	special_version: SpecialVersion
 	last_issue_date: str
-	volume_title, volume_number, volume_year, special_version, last_issue_date = cursor.execute("""
+	volume_title, volume_year, special_version, last_issue_date = cursor.execute("""
 		SELECT
 			v.title,
-			volume_number,
 			year,
 			special_version,
 			MAX(i.date) AS last_issue_date
@@ -301,46 +299,18 @@ def _create_link_paths(
 		(volume_id,)
 	).fetchone()
 	special_version = SpecialVersion(special_version)
-	last_year: int = int(last_issue_date.split('-')[0]) if last_issue_date else volume_year
-	annual = 'annual' in volume_title.lower()
 	service_preference: List[str] = Settings()['service_preference']
 
 	link_paths: List[List[dict]] = []
 	for desc, sources in download_groups.items():
 		processed_desc = extract_filename_data(desc, assume_volume_number=False)
-		if (_check_matching_titles(volume_title, processed_desc['series'])
-		and (processed_desc['volume_number'] is None
-			or ((
-					isinstance(processed_desc['volume_number'], int)
-					and processed_desc['volume_number'] == volume_number
-				)
-				or (
-					isinstance(processed_desc['volume_number'], tuple)
-					and special_version == SpecialVersion.VOLUME_AS_ISSUE
-				))
-			or (
-				isinstance(processed_desc['volume_number'], int)
-				and volume_year - 1 <= processed_desc['volume_number'] <= volume_year
-			)
-			or (
-				special_version == SpecialVersion.VOLUME_AS_ISSUE
-				and
-				cursor.execute(
-					"SELECT 1 FROM issues WHERE volume_id = ? AND calculated_issue_number = ? LIMIT 1;",
-					(volume_id, processed_desc['volume_number'])
-				).fetchone()
-			))
-		and (processed_desc['year'] is None
-			or
-			volume_year - 1 <= processed_desc['year'] <= last_year)
-		and (special_version == processed_desc['special_version']
-			or (
-				special_version in (SpecialVersion.HARD_COVER, SpecialVersion.VOLUME_AS_ISSUE)
-				and processed_desc['special_version'] == SpecialVersion.TPB
-			)
-			or
-			processed_desc['issue_number'])
-		and processed_desc['annual'] == annual
+		if GC_group_filter(
+			processed_desc,
+			volume_id,
+			volume_title,
+			volume_year,
+			last_issue_date,
+			special_version
 		):
 			# Group matches/contains what is desired to be downloaded
 			sources = {s: sources[s] for s in sorted(sources, key=lambda k: service_preference.index(k))}

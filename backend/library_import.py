@@ -17,7 +17,7 @@ from backend.files import (_list_files, delete_empty_folders,
 from backend.helpers import batched
 from backend.naming import mass_rename
 from backend.root_folders import RootFolders
-from backend.search import _check_matching_titles
+from backend.matching import _match_title
 from backend.volumes import Library, Volume
 
 
@@ -44,7 +44,7 @@ async def __search_matches(
 				'volume_number': []
 			}
 			for result in title_to_response[data['series'].lower()]:
-				if (_check_matching_titles(data['series'], result['title'])
+				if (_match_title(data['series'], result['title'])
 				and (
 					(only_english and not result['translated'])
 					or

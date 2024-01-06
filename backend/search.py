@@ -6,190 +6,17 @@ with getcomics.org as the source
 
 import logging
 from asyncio import create_task, gather, run
-from re import compile
-from typing import Dict, List, Union
+from typing import List
 
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 from requests import get
 
-from backend.blocklist import blocklist_contains
 from backend.db import get_db
 from backend.enums import SpecialVersion
 from backend.files import extract_filename_data
+from backend.matching import check_search_result_match
 from backend.settings import private_settings
-
-clean_title_regex = compile(r'((?<=annual)s|/|\-|\+|,|\!|:|\bthe\s|\band\b|&|’|\'|\"|\bone-shot\b|\btpb\b)')
-clean_title_regex_2 = compile(r'\s')
-
-def _check_matching_titles(title1: str, title2: str) -> bool:
-	"""Determine if two titles match; if they refer to the same thing.
-
-	Args:
-		title1 (str): The first title.
-		title2 (str): The second title, to which the first title should be compared.
-
-	Returns:
-		bool: `True` if the titles match, otherwise `False`.
-	"""
-	clean_reference_title = clean_title_regex_2.sub(
-		'',
-		clean_title_regex.sub(
-			'',
-			title1.lower()
-		)
-	)
-
-	clean_title = clean_title_regex_2.sub(
-		'',
-		clean_title_regex.sub(
-			'',
-			title2.lower()
-		)
-	)
-
-	result = clean_reference_title == clean_title
-	logging.debug(f'Matching titles ({title1} -> {clean_reference_title}, {title2} -> {clean_title}): {result}')
-	return result
-
-def _check_match(
-	result: dict,
-	title: str,
-	volume_number: int,
-	special_version: SpecialVersion,
-	issue_numbers: Dict[float, int],
-	calculated_issue_number: float=None,
-	year: int=None
-) -> dict:
-	"""Determine if a result is a match with what is searched for
-
-	Args:
-		result (dict): A result in SearchSources.search_all()
-
-		title (str): Title of volume
-
-		volume_number (int): The volume number of the volume
-
-		special_version (SpecialVersion): What type of special version the volume is.
-
-		issue_numbers (Dict[float, int]): calculated_issue_number to release year
-		for all issues of volume
-
-		calculated_issue_number (float, optional): The calculated issue number of
-		the issue.
-			Output of `files.process_issue_number()`.
-			
-			Defaults to None.
-
-		year (int, optional): The year of the volume.
-			Defaults to None.
-
-	Returns:
-		dict: A dict with the key `match` having a bool value for if it matches or not and
-		the key `match_issue` with the reason for why it isn't a match
-		if that's the case (otherwise `None`).
-	"""
-	annual = 'annual' in title.lower()
-
-	if blocklist_contains(result['link']):
-		return {'match': False, 'match_issue': 'Link is blocklisted'}
-
-	if result['annual'] != annual:
-		return {'match': False, 'match_issue': 'Annual conflict'}
-
-	if not _check_matching_titles(title, result['series']):
-		return {'match': False, 'match_issue': 'Titles don\'t match'}
-
-	if (special_version != SpecialVersion.VOLUME_AS_ISSUE
-	and result['volume_number'] not in (volume_number, year, None)):
-		return {'match': False, 'match_issue': 'Volume numbers don\'t match'}
-
-	if special_version != result['special_version'] and not (
-		result['special_version'] == SpecialVersion.TPB
-		and special_version in (SpecialVersion.VOLUME_AS_ISSUE, SpecialVersion.HARD_COVER)
-	):
-		return {'match': False, 'match_issue': 'Special version conflict'}
-
-	if not special_version.value:
-		issue_number_is_equal = (
-			(
-				# Search result for volume
-				calculated_issue_number is None
-				and
-				(
-					# Issue number is in volume
-					(
-						isinstance(result['issue_number'], float)
-						and result['issue_number'] in issue_numbers
-					)
-					# Issue range's start and end are both in volume
-					or (
-						isinstance(result['issue_number'], tuple)
-						and all(i in issue_numbers for i in result['issue_number'])
-					)
-				)
-			)
-			or
-			(
-				# Search result for issue
-				calculated_issue_number is not None
-				# Issue number equals issue that is searched for
-				and isinstance(result['issue_number'], float)
-				and result['issue_number'] == calculated_issue_number
-			)
-		)
-		if not issue_number_is_equal:
-			return {'match': False, 'match_issue': 'Issue numbers don\'t match'}
-
-	elif (special_version == SpecialVersion.VOLUME_AS_ISSUE
-	and result['special_version'] == SpecialVersion.TPB):
-		if ((isinstance(result['volume_number'], int)
-			and not result['volume_number'] not in issue_numbers
-		) or (
-			isinstance(result['volume_number'], tuple)
-			and (result['volume_number'][0] not in issue_numbers
-				or result['volume_number'][1] not in issue_numbers
-			)
-		)):
-			return {'match': False, 'match_issue': 'Volume numbers don\'t match'}
-
-	year_is_equal = (
-		year is None
-		or result['year'] is None
-		or (
-			# Year in volume release year
-			year - 1 <= result['year'] <= year + 1
-			# Year in issue release year
-			or (result['issue_number'] is None
-				and ((
-						isinstance(result['volume_number'], int)
-						and result['year'] - 1 <= issue_numbers.get(
-							float(result['volume_number'])
-						) <= result['year'] + 1
-					)
-
-					or (
-						isinstance(result['volume_number'], tuple)
-						and result['year'] - 1 <= issue_numbers.get(
-							float(result['volume_number'][0])
-						) <= result['year'] + 1
-				)))
-
-			or (isinstance(result['issue_number'], float)
-	   			and result['year'] - 1 <= issue_numbers.get(
-					result['issue_number']
-				) <= result['year'] + 1)
-
-			or (isinstance(result['issue_number'], tuple)
-				and result['year'] - 1 <= issue_numbers.get(
-					result['issue_number'][0]
-				) <= result['year'] + 1)
-		)
-	)
-	if not year_is_equal:
-		return {'match': False, 'match_issue': 'Year doesn\'t match'}
-		
-	return {'match': True, 'match_issue': None}
 
 def _sort_search_results(
 	result: dict,
@@ -476,7 +303,7 @@ def manual_search(
 	}
 	for result in results:
 		result.update(
-			_check_match(result, title, volume_number,
+			check_search_result_match(result, volume_id, title,
 				special_version, issue_numbers, calculated_issue_number, year
 			)
 		)

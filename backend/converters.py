@@ -16,7 +16,7 @@ from backend.files import (_list_files, extract_filename_data, folder_path,
                            image_extensions, rename_file, scan_files,
                            supported_extensions)
 from backend.naming import mass_rename
-from backend.search import _check_matching_titles
+from backend.matching import folder_extraction_filter
 from backend.volumes import Volume
 
 archive_extract_folder = '.archive_extract'
@@ -78,38 +78,7 @@ def extract_files_from_folder(
 			continue
 
 		result = extract_filename_data(c, False)
-		if (_check_matching_titles(result['series'], volume_data['title'])
-		and (
-			# Year has to match
-			(result['year'] is not None
-				and volume_data['year'] - 1 <= result['year'] <= volume_data['end_year'] + 1)
-			# Or volume number
-			or (result['volume_number'] is not None
-				and ((
-						isinstance(result['volume_number'], int)
-						and result['volume_number'] == volume_data['volume_number']
-					)
-					or (
-						volume_data['special_version'] == SpecialVersion.VOLUME_AS_ISSUE
-						and cursor.execute("""
-							SELECT 1
-							FROM issues
-							WHERE volume_id = ?
-								AND calculated_issue_number = ?
-							LIMIT 1;
-							""", (
-								volume_data['id'],
-								result['volume_number']
-								if isinstance(result['volume_number'], int) else
-								result['volume_number'][0]
-							)
-						).fetchone()
-					)
-			))
-			# Or neither should be found (we play it safe so we keep those)
-			or (result['year'] is None and result['volume_number'] is None)
-		)
-		and result['annual'] == volume_data['annual']):
+		if folder_extraction_filter(result, volume_data):
 			rel_files_append(c)
 	logging.debug(f'Relevant files: {rel_files}')
 
