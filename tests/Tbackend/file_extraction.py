@@ -2,7 +2,7 @@ import unittest
 from json import dumps
 from typing import Dict
 
-from backend.files import extract_filename_data as ef
+from backend.file_extraction import extract_filename_data as ef
 
 
 class extract_filename_data(unittest.TestCase):

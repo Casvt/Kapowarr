@@ -123,7 +123,7 @@ function fillPage(data, api_key) {
 	const mobile_description = document.querySelector('#volume-description-mobile');
 
 	// Cover
-	cover.src = `${data.cover}?api_key=${api_key}`;
+	cover.src = `${url_base}/api/volumes/${data.id}/cover?api_key=${api_key}`;
 	
 	// Monitored state
 	monitor.dataset.monitored = data.monitored;
@@ -176,7 +176,7 @@ function toggleMonitored(api_key) {
 	const button = document.querySelector('#volume-monitor');
 	const icon = button.querySelector('img');
 	data = {
-		'monitor': button.dataset.monitored !== 'true'
+		'monitored': button.dataset.monitored !== 'true'
 	};
 	fetch(`${url_base}/api/volumes/${id}?api_key=${api_key}`, {
 		'method': 'PUT',
@@ -184,8 +184,8 @@ function toggleMonitored(api_key) {
 		'headers': {'Content-Type': 'application/json'}
 	})
 	.then(response => {
-		button.dataset.monitored = data.monitor;
-		icon.src = data.monitor ? `${url_base}/static/img/monitored_light.svg` : `${url_base}/static/img/unmonitored_light.svg`;
+		button.dataset.monitored = data.monitored;
+		icon.src = data.monitored ? `${url_base}/static/img/monitored_light.svg` : `${url_base}/static/img/unmonitored_light.svg`;
 	});
 };
 
@@ -604,9 +604,9 @@ function editVolume() {
 	showLoadWindow('edit-window');
 
 	const data = {
-		'monitor': document.querySelector('#monitored-input').value == 'true',
-		'new_root_folder': parseInt(document.querySelector('#root-folder-input').value),
-		'new_volume_folder': document.querySelector('#volumefolder-input').value
+		'monitored': document.querySelector('#monitored-input').value == 'true',
+		'root_folder': parseInt(document.querySelector('#root-folder-input').value),
+		'volume_folder': document.querySelector('#volumefolder-input').value
 	};
 	usingApiKey()
 	.then(api_key => {

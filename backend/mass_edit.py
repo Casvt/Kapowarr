@@ -67,13 +67,13 @@ def mass_editor_convert(volume_ids: List[int], **kwargs) -> None:
 def mass_editor_unmonitor(volume_ids: List[int], **kwargs) -> None:
 	logging.info(f'Using mass editor, unmonitoring volumes: {volume_ids}')
 	for volume_id in volume_ids:
-		Volume(volume_id)._unmonitor()
+		Volume(volume_id)['monitored'] = False
 	return
 
 def mass_editor_monitor(volume_ids: List[int], **kwargs) -> None:
 	logging.info(f'Using mass editor, monitoring volumes: {volume_ids}')
 	for volume_id in volume_ids:
-		Volume(volume_id)._monitor()
+		Volume(volume_id)['monitored'] = True
 	return
 
 action_to_func = {

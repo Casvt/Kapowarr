@@ -1,6 +1,7 @@
 #-*- coding: utf-8 -*-
 
-"""This file contains functions regarding background tasks
+"""
+Background tasks and their handling
 """
 
 import logging
@@ -14,7 +15,7 @@ from backend.custom_exceptions import (InvalidComicVineApiKey,
 from backend.db import get_db
 from backend.download_queue import DownloadHandler
 from backend.search import auto_search
-from backend.volumes import refresh_and_scan
+from backend.volumes import Volume, refresh_and_scan
 
 
 class Task(ABC):
@@ -134,11 +135,7 @@ class AutoSearchVolume(Task):
 		self.volume_id = volume_id
 	
 	def run(self) -> List[tuple]:
-		title = get_db().execute(
-			"SELECT title FROM volumes WHERE id = ? LIMIT 1",
-			(self.volume_id,)
-		).fetchone()[0]
-		self.message = f'Searching for {title}'
+		self.message = f'Searching for {Volume(self.volume_id)["title"]}'
 
 		# Get search results and download them
 		results = auto_search(self.volume_id)
@@ -166,11 +163,7 @@ class RefreshAndScanVolume(Task):
 		self.volume_id = volume_id
 
 	def run(self) -> None:
-		title = get_db().execute(
-			"SELECT title FROM volumes WHERE id = ? LIMIT 1", 
-			(self.volume_id,)
-		).fetchone()[0]
-		self.message = f'Updating info on {title}'
+		self.message = f'Updating info on {Volume(self.volume_id)["title"]}'
 
 		try:
 			refresh_and_scan(self.volume_id)

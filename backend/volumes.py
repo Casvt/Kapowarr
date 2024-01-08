@@ -1,24 +1,26 @@
 #-*- coding: utf-8 -*-
 
-"""This file contains functions regarding volumes
-"""
-
 import logging
+from dataclasses import dataclass
 from io import BytesIO
-from os.path import relpath
+from os import remove
+from os.path import abspath, isdir, join, relpath
 from re import IGNORECASE, compile
 from time import time
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Tuple, Union
 
 from backend.comicvine import ComicVine
 from backend.custom_exceptions import (IssueNotFound, VolumeAlreadyAdded,
                                        VolumeDownloadedFor, VolumeNotFound)
 from backend.db import get_db
 from backend.enums import SpecialVersion
-from backend.files import (create_volume_folder, delete_volume_folder,
-                           move_volume_folder, scan_files)
+from backend.file_extraction import extract_filename_data, supported_extensions
+from backend.files import (create_volume_folder, delete_empty_folders,
+                           folder_is_inside_folder, get_file_id, list_files,
+                           propose_basefolder_change, rename_file)
+from backend.helpers import first_of_column, reversed_tuples
+from backend.matching import file_importing_filter
 from backend.root_folders import RootFolders
-from frontend.ui import ui_vars
 
 os_regex = compile(r'(?<!>)\bone[\- ]?shot\b(?!<)', IGNORECASE)
 hc_regex = compile(r'(?<!>)\bhard[\- ]?cover\b(?!<)', IGNORECASE)
@@ -115,8 +117,7 @@ class Issue:
 		).fetchone())
 
 		# Get all files linked to issue
-		data['files'] = [
-			f[0] for f in cursor.execute(
+		data['files'] = first_of_column(cursor.execute(
 				"""
 				SELECT filepath
 				FROM files
@@ -127,7 +128,7 @@ class Issue:
 				""",
 				(self.id,)
 			)
-		]
+		)
 		return data
 		
 	def monitor(self) -> None:
@@ -153,38 +154,207 @@ class Issue:
 #=====================
 # Main volume class
 #=====================
-class Volume:
-	"""For representing a volume in the library
-	"""	
-	def __init__(self, id: int):
-		"""Initiate the representation of the volume
+@dataclass(frozen=True)
+class VolumeData:
+	# All types should actually be Union[None, {TYPE}]
+	id: int = None
+	comicvine_id: int = None
+	title: str = None
+	year: int = None
+	publisher: str = None
+	volume_number: int = None
+	description: str = None
+	monitored: bool = None
+	root_folder: int = None
+	folder: str = None
+	special_version: SpecialVersion = None
 
-		Args:
-			id (int): The id of the volume
 
-		Raises:
-			VolumeNotFound: The id doesn't map to any volume
-		"""	
-		self.id = id
+class _VolumeBackend:
+	def _check_existence(self) -> bool:
 		volume_found = get_db().execute(
-			"SELECT 1 FROM volumes WHERE id = ? LIMIT 1",
-			(id,)
+			"SELECT 1 FROM volumes WHERE id = ? LIMIT 1;",
+			(self.id,)
+		)
+		
+		return (1,) in volume_found
+	
+	def _get_keys(self, keys: Union[Tuple[str], str]) -> dict:
+		if isinstance(keys, str):
+			keys = (keys,)
+		
+		result = dict(
+			get_db(dict).execute(
+				f"SELECT {','.join(keys)} FROM volumes WHERE id = ? LIMIT 1;",
+				(self.id,)
+			).fetchone()
+		)
+		
+		if 'special_version' in result:
+			result['special_version'] = SpecialVersion(result['special_version'])
+
+		return result
+
+	def _get_cover(self) -> BytesIO:
+		cover = get_db().execute(
+			"SELECT cover FROM volumes WHERE id = ? LIMIT 1",
+			(self.id,)
+		).fetchone()[0]
+		return BytesIO(cover)
+
+	def _get_last_issue_date(self) -> Union[str, None]:
+		last_issue_date = get_db().execute("""
+			SELECT MAX(date) AS last_issue_date
+			FROM issues
+			WHERE volume_id = ?;
+			""",
+			(self.id,)
+		).fetchone()[0]
+		
+		return last_issue_date
+
+	def _check_key(self, key: str) -> bool:
+		return key in (
+			*VolumeData.__annotations__,
+			'cover',
+			'custom_folder',
+			'last_cv_fetch',
+			'volume_folder'
 		)
 
-		if not (1,) in volume_found:
+	def _set_value(self, key: str, value: Any) -> None:
+		if key == 'special_version' and isinstance(value, SpecialVersion):
+			value = value.value
+
+		logging.debug(f'For volume {self.id}, setting {key} to {value}')
+		
+		get_db().execute(
+			f"UPDATE volumes SET {key} = ? WHERE id = ?;",
+			(value, self.id)
+		)
+		return
+
+	def _change_root_folder(self, root_folder_id: int) -> None:
+		cursor = get_db()
+		root_folders = cursor.execute("""
+			SELECT DISTINCT
+				rf.id, rf.folder
+			FROM root_folders rf
+			LEFT JOIN volumes v
+			ON rf.id = v.root_folder
+			WHERE v.id = ? OR rf.id = ?
+			LIMIT 2;
+			""",
+			(self.id, root_folder_id)
+		).fetchall()
+
+		if len(root_folders) != 2:
+			return
+
+		volume_folder = self['folder']
+
+		current_index = int(
+			not folder_is_inside_folder(root_folders[0][1], volume_folder)
+		)
+		current_root_folder = root_folders[current_index]
+		desired_root_folder = root_folders[current_index - 1]		
+
+		logging.info(f'Changing root folder of volume {self.id} from {current_root_folder[1]} to {desired_root_folder[1]}')
+
+		file_changes = propose_basefolder_change(
+			self.get_files(),
+			current_root_folder[1],
+			desired_root_folder[1]
+		)
+		for old_name, new_name in file_changes:
+			rename_file(
+				old_name,
+				new_name
+			)
+		cursor.executemany(
+			"UPDATE files SET filepath = ? WHERE filepath = ?",
+			reversed_tuples(file_changes)
+		)
+		
+		self._set_value('root_folder', desired_root_folder[0])
+		self['folder'] = propose_basefolder_change(
+			(volume_folder,),
+			current_root_folder[1],
+			desired_root_folder[1]
+		)[0][1]
+		
+		delete_empty_folders(
+			volume_folder,
+			current_root_folder[1]
+		)
+
+		return
+
+	def _change_volume_folder(
+		self,
+		new_volume_folder: Union[str, None]
+	) -> None:
+		from backend.naming import generate_volume_folder_name, make_filename_safe
+		current_volume_folder = self['folder']
+		root_folder = RootFolders().get_one(self['root_folder'])['folder']
+
+		if new_volume_folder is None or new_volume_folder == '':
+			# Generate default folder and set custom_folder to False
+			new_volume_folder = generate_volume_folder_name(self.id)
+			custom_folder = False
+		
+		else:
+			# Make custom folder safe and set custom_folder to True
+			new_volume_folder = make_filename_safe(new_volume_folder)
+			custom_folder = True
+
+		new_volume_folder = abspath(join(root_folder, new_volume_folder))
+		
+		if current_volume_folder == new_volume_folder:
+			return
+
+		logging.info(f'Moving volume folder from {current_volume_folder} to {new_volume_folder}')
+
+		self['custom_folder'] = custom_folder		
+		self['folder'] = new_volume_folder
+		
+		file_changes = propose_basefolder_change(
+			self.get_files(),
+			current_volume_folder,
+			new_volume_folder
+		)
+		for old_name, new_name in file_changes:
+			rename_file(
+				old_name,
+				new_name
+			)
+		get_db().executemany(
+			"UPDATE files SET filepath = ? WHERE filepath = ?",
+			reversed_tuples(file_changes)
+		)
+
+		delete_empty_folders(
+			current_volume_folder,
+			root_folder
+		)
+
+		return
+
+
+class Volume(_VolumeBackend):
+	def __init__(
+		self,
+		id: int,
+		check_existence: bool = False
+	) -> None:
+		self.id = id
+
+		if check_existence and not self._check_existence():
 			raise VolumeNotFound
 
-	def get_info(self, complete: bool=True) -> dict:
-		"""Get (all) info about the volume
+		return
 
-		Args:
-			complete (bool, optional): Whether or not to also get the info of
-			the issues inside the volume.
-				Defaults to True.
-
-		Returns:
-			dict: The info of the volume
-		"""	
+	def get_public_keys(self) -> dict:
 		cursor = get_db(dict)
 
 		cursor.execute("""
@@ -212,130 +382,104 @@ class Volume:
 			ON v.root_folder = rf.id
 			WHERE v.id = ?
 			LIMIT 1;
-		""", (self.id,))
+			""",
+			(self.id,)
+		)
 		volume_info = dict(cursor.fetchone())
-		volume_info['cover'] = f'{ui_vars["url_base"]}/api/volumes/{volume_info["id"]}/cover'
 		volume_info['volume_folder'] = relpath(
 			volume_info['folder'],
 			volume_info['root_folder_path']
 		)
 		del volume_info['root_folder_path']
+		volume_info['issues'] = self.get_issues()
 
-		if complete:
-			# Get issue info
-			issues = [
-				dict(i) for i in cursor.execute("""
-					SELECT
-						id, volume_id, comicvine_id,
-						issue_number, calculated_issue_number,
-						title, date, description,
-						monitored
-					FROM issues
-					WHERE volume_id = ?
-					ORDER BY date, calculated_issue_number
-					""",
-					(self.id,)
-				)
-			]
-			for issue in issues:
-				issue['files'] = [
-					f[0] for f in cursor.execute("""
-						SELECT f.filepath
-						FROM issues_files if
-						INNER JOIN files f
-						ON if.file_id = f.id
-						WHERE if.issue_id = ?
-						ORDER BY f.filepath;
-						""",
-						(issue['id'],)
-					)
-				]
-			volume_info['issues'] = issues
 		return volume_info
 
-	def get_cover(self) -> BytesIO:
-		"""Get the cover image of the volume
+	def __getitem__(self, key: str) -> Any:
+		if key == 'cover':
+			return self._get_cover()
+	
+		if key == 'last_issue_date':
+			return self._get_last_issue_date()
 
-		Returns:
-			BytesIO: The cover image of the volume
-		"""
-		cover = get_db().execute(
-			"SELECT cover FROM volumes WHERE id = ? LIMIT 1",
-			(self.id,)
-		).fetchone()[0]
-		return BytesIO(cover)
+		return self._get_keys(key)[key]
 
-	def edit(self, edits: dict) -> dict:
-		"""Edit the volume
+	def get_keys(self, keys: Tuple[str]) -> VolumeData:
+		data = self._get_keys(keys)
+		result = VolumeData(**data)
+		return result
 
-		Args:
-			edits (dict): The keys and their new values for the volume settings
-			(`monitor` and `new_root_folder` + `new_volume_folder` supported)
+	def get_files(self, issue_id: int = None) -> List[str]:
+		if not issue_id:
+			files = first_of_column(get_db().execute(f"""
+				SELECT DISTINCT filepath
+				FROM files f
+				INNER JOIN issues_files if
+				INNER JOIN issues i
+				ON
+					f.id = if.file_id
+					AND if.issue_id = i.id
+				WHERE volume_id = ?;
+				""",
+				(self.id,)
+			))
 
-		Returns:
-			dict: The new info of the volume
-		"""
-		logging.debug(f'Editing volume {self.id}: {edits}')
-		monitored = edits.get('monitor')
-		if monitored == True:
-			self._monitor()
-		elif monitored == False:
-			self._unmonitor()
+		else:
+			files = first_of_column(get_db().execute(f"""
+				SELECT DISTINCT filepath
+				FROM files f
+				INNER JOIN issues_files if
+				ON f.id = if.file_id
+				WHERE if.issue_id = ?;
+				""",
+				(issue_id,)
+			))
+			
+		return files
 
-		new_root_folder = edits.get('new_root_folder')
-		new_volume_folder = edits.get('new_volume_folder')
-		if new_root_folder and (new_volume_folder or not new_volume_folder):
-			self._edit_folder(new_root_folder, new_volume_folder)
+	def get_issues(self) -> List[dict]:
+		issues = [
+			dict(i) for i in get_db(dict).execute("""
+				SELECT
+					id, volume_id, comicvine_id,
+					issue_number, calculated_issue_number,
+					title, date, description,
+					monitored
+				FROM issues
+				WHERE volume_id = ?
+				ORDER BY date, calculated_issue_number
+				""",
+				(self.id,)
+			)
+		]
+		for issue in issues:
+			issue['files'] = self.get_files(issue['id'])
+		
+		return issues
 
-		return self.get_info()
+	def __setitem__(self, key: str, value: Any) -> None:
+		if not self._check_key(key):
+			raise KeyError
+		
+		if key == 'root_folder':
+			self._change_root_folder(value)
+		
+		elif key == 'volume_folder':
+			self._change_volume_folder(value)
 
-	def _monitor(self) -> None:
-		"""Set the volume to "monitored"
-		"""
-		logging.info(f'Setting volume {self.id} to monitored')
-		get_db().execute(
-			"UPDATE volumes SET monitored = 1 WHERE id = ?",
-			(self.id,)
-		)
+		else:
+			self._set_value(key, value)
+
 		return
 
-	def _unmonitor(self) -> None:
-		"""Set the volume to "unmonitored"
-		"""
-		logging.info(f'Setting volume {self.id} to unmonitored')
-		get_db().execute(
-			"UPDATE volumes SET monitored = 0 WHERE id = ?",
-			(self.id,)
-		)
-		return
+	def update(self, changes: dict) -> None:
+		if any(not self._check_key(k) for k in changes):
+			raise KeyError
 
-	def _edit_folder(self, new_root_folder: int, new_volume_folder: str) -> None:
-		"""Change the root folder of the volume
+		for key, value in changes.items():
+			self[key] = value
 
-		Args:
-			new_root_folder (int): The id of the new root folder to move the volume to
-			new_volume_folder (str): The new volume folder to move the volume to
-		"""
-		current_root_folder, folder = get_db().execute(
-			"SELECT root_folder, folder FROM volumes WHERE id = ? LIMIT 1",
-			(self.id,)
-		).fetchone()
-
-		new_folder = move_volume_folder(
-			self.id,
-			new_root_folder,
-			new_volume_folder
-		)
-		if current_root_folder == new_root_folder and folder == new_folder:
-			return
-
-		get_db().execute(
-			"UPDATE volumes SET folder = ?, root_folder = ? WHERE id = ?",
-			(new_folder, new_root_folder, self.id)
-		)
-		return
-
-	def delete(self, delete_folder: bool=False) -> None:
+	def delete(self, delete_folder: bool = False) -> None:
 		"""Delete the volume from the library
 
 		Args:
@@ -344,8 +488,7 @@ class Volume:
 				Defaults to False.
 
 		Raises:
-			VolumeDownloadedFor: There is a download in the queue for the volume
-			
+			VolumeDownloadedFor: There is a download in the queue for the volume.
 		"""
 		logging.info(f'Deleting volume {self.id} with delete_folder set to {delete_folder}')
 		cursor = get_db()
@@ -356,12 +499,20 @@ class Volume:
 			FROM download_queue
 			WHERE volume_id = ?
 			LIMIT 1;
-		""", (self.id,)).fetchone()
+			""",
+			(self.id,)
+		).fetchone()
 		if downloading_for_volume:
 			raise VolumeDownloadedFor(self.id)
 
 		if delete_folder:
-			delete_volume_folder(self.id)
+			for f in self.get_files():
+				remove(f)
+			
+			delete_empty_folders(
+				self['folder'],
+				RootFolders().get_one(self['root_folder'])['folder']
+			)
 
 		# Delete file entries
 		# ON DELETE CASCADE will take care of issues_files
@@ -383,6 +534,134 @@ class Volume:
 		cursor.execute("DELETE FROM volumes WHERE id = ?", (self.id,))
 
 		return
+
+	def __repr__(self) -> str:
+		return f'<{self.__class__.__name__}; ID {self.id}>'
+
+
+def scan_files(volume_id: int) -> None:
+	"""Scan inside the volume folder for files and map them to issues
+
+	Args:
+		volume_id (int): The ID of the volume to scan for.
+	"""
+	logging.debug(f'Scanning for files for {volume_id}')
+	cursor = get_db()
+	
+	volume = Volume(volume_id, check_existence=False)
+	volume_data = volume.get_keys(
+		('folder', 'root_folder', 'special_version', 'year', 'id')
+	)
+	volume_issues = volume.get_issues()
+	# We're going to check a lot of a string is in here,
+	# so convert to set for speed improvement.
+	volume_files = set(volume.get_files())
+
+	if not isdir(volume_data.folder):
+		root_folder = RootFolders().get_one(volume_data.root_folder)['folder']
+		create_volume_folder(root_folder, volume_id)
+
+	bindings = []
+	folder_contents = list_files(
+		folder=volume_data.folder,
+		ext=supported_extensions
+	)
+	for file in folder_contents:
+		file_data = extract_filename_data(file)
+
+		# Check if file matches volume
+		if not file_importing_filter(file_data, volume_data, volume_issues):
+			continue
+
+		if (
+			volume_data.special_version not in (
+				SpecialVersion.VOLUME_AS_ISSUE,
+				SpecialVersion.NORMAL
+			)
+			and file_data['special_version']
+		):
+			file_id = get_file_id(
+				file,
+				add_file = not file in volume_files
+			)
+
+			bindings.append((file_id, volume_issues[0]['id']))
+
+		# Search for issue number(s)
+		if (file_data['issue_number'] is not None
+		or volume_data.special_version == SpecialVersion.VOLUME_AS_ISSUE):
+
+			if volume_data.special_version == SpecialVersion.VOLUME_AS_ISSUE:
+				if file_data['issue_number'] is not None:
+					issue_range = file_data['issue_number']
+				else:
+					issue_range = file_data['volume_number']
+			else:
+				issue_range = file_data['issue_number']
+
+			if not isinstance(issue_range, tuple):
+				issue_range = (issue_range, issue_range)
+
+			matching_issues = cursor.execute("""
+				SELECT id
+				FROM issues
+				WHERE
+					volume_id = ?
+					AND ? <= calculated_issue_number
+					AND calculated_issue_number <= ?;
+				""",
+				(volume_id, *issue_range)
+			).fetchall()
+
+			if matching_issues:
+				file_id = get_file_id(
+					file,
+					add_file = not file in volume_files
+				)
+
+				for issue_id in matching_issues:
+					bindings.append((file_id, issue_id[0]))
+
+	# Get current bindings
+	current_bindings = cursor.execute("""
+		SELECT if.file_id, if.issue_id
+		FROM issues_files if
+		INNER JOIN issues i
+		ON if.issue_id = i.id
+		WHERE i.volume_id = ?;
+		""",
+		(volume_id,)
+	).fetchall()
+
+	# Delete bindings that aren't in new bindings
+	delete_bindings = (b for b in current_bindings if b not in bindings)
+	cursor.executemany(
+		"DELETE FROM issues_files WHERE file_id = ? AND issue_id = ?;",
+		delete_bindings
+	)
+
+	# Add bindings that aren't in current bindings
+	new_bindings = (b for b in bindings if b not in current_bindings)
+	cursor.executemany(
+		"INSERT INTO issues_files(file_id, issue_id) VALUES (?, ?);",
+		new_bindings
+	)
+
+	# Delete all file entries that aren't binded
+	# AKA files that were present last scan but this scan not anymore
+	cursor.execute("""
+		DELETE FROM files
+		WHERE rowid IN (
+			SELECT f.rowid
+			FROM files f
+			LEFT JOIN issues_files if
+			ON f.id = if.file_id
+			WHERE if.file_id IS NULL
+		);
+	""")
+
+	return
+
 
 def refresh_and_scan(volume_id: int=None) -> None:
 	"""Refresh and scan one or more volumes
@@ -518,12 +797,12 @@ def refresh_and_scan(volume_id: int=None) -> None:
 
 	# Scan for files
 	if volume_id:
-		scan_files(Volume(volume_id).get_info())
+		scan_files(volume_id)
 	else:
 		cursor2 = get_db(temp=True)
 		cursor2.execute("SELECT id FROM volumes;")
 		for volume in cursor2:
-			scan_files(Volume(volume[0]).get_info())
+			scan_files(volume[0])
 		cursor2.connection.close()
 
 	return
@@ -544,21 +823,7 @@ class Library:
 		'wanted': 'WHERE issues_downloaded_monitored < issue_count_monitored',
 		'monitored': 'WHERE monitored = 1'
 	}
-	
-	def __format_lib_output(self, library: List[dict]) -> List[dict]:
-		"""Format the library entries for API response
 
-		Args:
-			library (List[dict]): The unformatted library entries list
-
-		Returns:
-			List[dict]: The formatted library list
-		"""
-		for entry in library:
-			entry['monitored'] = entry['monitored'] == 1
-			entry['cover'] = f'{ui_vars["url_base"]}/api/volumes/{entry["id"]}/cover'
-		return library
-	
 	def get_volumes(self,
 		sort: str='title',
 		filter: Union[str, None] = None
@@ -619,8 +884,6 @@ class Library:
 			)
 		]
 
-		volumes = self.__format_lib_output(volumes)
-		
 		return volumes
 		
 	def search(self,
@@ -664,7 +927,7 @@ class Library:
 			Volume: The `volumes.Volume` instance representing the volume
 			with the given id.
 		"""
-		return Volume(volume_id)
+		return Volume(volume_id, check_existence=True)
 
 	def get_issue(self, issue_id: int) -> Issue:
 		"""Get a volumes.Issue instance of an issue in the library

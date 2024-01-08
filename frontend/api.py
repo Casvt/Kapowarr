@@ -39,8 +39,8 @@ from backend.naming import (generate_volume_folder_name, mass_rename,
 from backend.root_folders import RootFolders
 from backend.search import manual_search
 from backend.settings import Settings, about_data
-from backend.tasks import (TaskHandler, delete_task_history, get_task_history,
-                           get_task_planning, task_library)
+from backend.tasks import (Task, TaskHandler, delete_task_history,
+                           get_task_history, get_task_planning, task_library)
 from backend.volumes import Library, search_volumes
 
 api = Blueprint('api', __name__)
@@ -136,7 +136,7 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 				raise InvalidKeyValue(key, value)
 			value = value or None
 
-		elif key in ('root_folder_id', 'new_root_folder', 'offset', 'limit'):
+		elif key in ('root_folder_id', 'root_folder', 'offset', 'limit'):
 			try:
 				value = int(value)
 			except (ValueError, TypeError):
@@ -259,7 +259,7 @@ def api_tasks():
 		return return_api(tasks)
 
 	elif request.method == 'POST':
-		task = extract_key(request, 'cmd')
+		task: Task = extract_key(request, 'cmd')
 
 		if task.action in ('auto_search_issue', 'auto_search', 'refresh_and_scan'):
 			volume_id = extract_key(request, 'volume_id')
@@ -355,7 +355,8 @@ def api_rootfolder():
 	elif request.method == 'POST':
 		data: dict = request.get_json()
 		folder = data.get('folder')
-		if folder is None: raise KeyNotFound('folder')
+		if folder is None:
+			raise KeyNotFound('folder')
 		root_folder = root_folders.add(folder)
 		return return_api(root_folder, code=201)
 
@@ -446,7 +447,7 @@ def api_volumes():
 		volume_folder = data.get('volume_folder') or None
 
 		volume_id = library.add(comicvine_id, root_folder_id, monitor, volume_folder)
-		volume_info = library.get_volume(volume_id).get_info()
+		volume_info = library.get_volume(volume_id).get_public_keys()
 		return return_api(volume_info, code=201)
 
 @api.route('/volumes/stats', methods=['GET'])
@@ -463,12 +464,12 @@ def api_volume(id: int):
 	volume = library.get_volume(id)
 
 	if request.method == 'GET':
-		volume_info = volume.get_info()
+		volume_info = volume.get_public_keys()
 		return return_api(volume_info)
 
 	elif request.method == 'PUT':
 		edit_info = request.get_json()
-		result = volume.edit(edit_info)
+		result = volume.update(edit_info)
 		return return_api(result)
 
 	elif request.method == 'DELETE':
@@ -480,7 +481,7 @@ def api_volume(id: int):
 @error_handler
 @auth
 def api_volume_cover(id: int):
-	cover = library.get_volume(id).get_cover()
+	cover = library.get_volume(id)['cover']
 	return send_file(cover, 'image/jpeg'), 200
 
 @api.route('/issues/<int:id>', methods=['GET','PUT'])
@@ -585,8 +586,8 @@ def api_volume_manual_search(id: int):
 @error_handler
 @auth
 def api_volume_download(id: int):
-	link = extract_key(request, 'link')
 	library.get_volume(id)
+	link = extract_key(request, 'link')
 	result = download_handler.add(link, id)
 	return return_api(result, code=201)
 
@@ -594,9 +595,9 @@ def api_volume_download(id: int):
 @error_handler
 @auth
 def api_issue_manual_search(id: int):
-	issue_info = library.get_issue(id).get_info()
+	volume_id = library.get_issue(id).get_info()['volume_id']
 	result = manual_search(
-		issue_info['volume_id'],
+		volume_id,
 		id
 	)
 	return return_api(result)
@@ -605,9 +606,9 @@ def api_issue_manual_search(id: int):
 @error_handler
 @auth
 def api_issue_download(id: int):
+	volume_id = library.get_issue(id).get_info()['volume_id']
 	link = extract_key(request, 'link')
-	issue_info = library.get_issue(id).get_info()
-	result = download_handler.add(link, issue_info['volume_id'], id)
+	result = download_handler.add(link, volume_id, id)
 	return return_api(result, code=201)
 
 @api.route('/activity/queue', methods=['GET'])

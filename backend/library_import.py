@@ -2,7 +2,7 @@
 
 import logging
 from asyncio import create_task, gather, run
-from os.path import basename, commonpath, dirname, isfile, join, splitext
+from os.path import basename, dirname, isfile, join, splitext
 from shutil import Error, move
 from typing import Dict, List, Tuple, Union
 
@@ -11,14 +11,15 @@ from aiohttp import ClientSession
 from backend.comicvine import ComicVine
 from backend.custom_exceptions import VolumeAlreadyAdded
 from backend.db import get_db
-from backend.files import (_list_files, delete_empty_folders,
-                           extract_filename_data, image_extensions, scan_files,
-                           supported_extensions)
-from backend.helpers import batched
+from backend.file_extraction import (extract_filename_data, image_extensions,
+                                     supported_extensions)
+from backend.files import (delete_empty_folders, find_lowest_common_folder,
+                           folder_is_inside_folder, list_files, rename_file)
+from backend.helpers import batched, first_of_column
+from backend.matching import _match_title, _match_year
 from backend.naming import mass_rename
 from backend.root_folders import RootFolders
-from backend.matching import _match_title
-from backend.volumes import Library, Volume
+from backend.volumes import Library, Volume, scan_files
 
 
 async def __search_matches(
@@ -50,11 +51,7 @@ async def __search_matches(
 					or
 					(not only_english)
 				)):
-					if (
-						data['year'] is not None
-						and result['year'] is not None
-						and data['year'] - 1 <= result['year'] <= data['year'] + 1
-					):
+					if _match_year(data['year'], result['year']):
 						matching_results['year'].append(result)
 
 					elif (
@@ -112,7 +109,7 @@ def propose_library_import(
 	root_folders = RootFolders().get_all()
 	all_files: List[str] = []
 	for f in root_folders:
-		all_files += _list_files(f['folder'], supported_extensions)
+		all_files += list_files(f['folder'], supported_extensions)
 
 	# Get imported files
 	cursor = get_db()
@@ -172,7 +169,7 @@ def propose_library_import(
 	group_number = 1
 	for uf_batch in batched(unimported_files, 10):
 		search_results = run(__search_matches(
-			[e[0] for e in uf_batch],
+			first_of_column(uf_batch),
 			only_english
 		))
 		for search_result, group_data in zip(search_results, uf_batch):
@@ -194,20 +191,6 @@ def propose_library_import(
 	result.sort(key=lambda e: (e['group_number'], e['file_title']))
 
 	return result
-
-def __find_lowest_common_folder(files: List[str]) -> str:
-	"""Find the lowest folder that is shared between the files
-
-	Args:
-		files (List[str]): The list of files to find the lowest common folder for
-
-	Returns:
-		str: The path of the lowest common folder
-	"""
-	if len(files) == 1:
-		return dirname(files[0])
-
-	return commonpath(files)
 
 def import_library(
 	matches: List[Dict[str, Union[str, int]]],
@@ -237,7 +220,7 @@ def import_library(
 	for cv_id, files in cvid_to_filepath.items():
 		# Find lowest common folder (lcf)
 		if not rename_files:
-			volume_folder = __find_lowest_common_folder(files)
+			volume_folder = find_lowest_common_folder(files)
 		else:
 			volume_folder = None
 
@@ -265,33 +248,30 @@ def import_library(
 			# for that volume so skip.
 			continue
 
-		volume = Volume(volume_id)
-		vi = volume.get_info()
 		if rename_files:
 			# Put files in volume folder
-			vf: str = vi['folder']
+			vf: str = Volume(volume_id)['folder']
 			new_files = []
 			for f in files:
-				try:
-					new_files.append(move(f, vf))
-				except PermissionError:
-					# Happens when moving between an NFS file system.
-					# Raised when chmod is used inside.
-					# Checking the source code, chmod is used at the very end,
-					# 	so just skipping it is alright I think.
-					pass
+				if f.endswith(image_extensions):
+					target_f = join(vf, basename(dirname(f)), basename(f))
+				else:
+					target_f = join(vf, basename(f))
 
-				except Error:
-					new_files.append(join(vf, basename(f)))
+				if folder_is_inside_folder(f, target_f):
+					new_files.append(f)
+					continue
 
+				rename_file(f, target_f)
+				new_files.append(target_f)
 				delete_empty_folders(dirname(f), root_folder['folder'])
 
-			scan_files(vi)
+			scan_files(volume_id)
 			
 			# Trigger rename
 			mass_rename(volume_id, filepath_filter=new_files)
 
 		else:
-			scan_files(vi)
+			scan_files(volume_id)
 
 	return

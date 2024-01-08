@@ -15,7 +15,8 @@ from backend.custom_exceptions import (FolderNotFound, InvalidSettingKey,
 from backend.db import __DATABASE_FILEPATH__, __DATABASE_VERSION__, get_db
 from backend.enums import SeedingHandling
 from backend.files import folder_path
-from backend.helpers import CommaList, Singleton, get_python_version
+from backend.helpers import (CommaList, Singleton, first_of_column,
+                             get_python_version)
 from backend.logging import log_levels, set_log_level
 
 supported_source_strings = (('mega',),
@@ -43,7 +44,7 @@ default_settings = {
 	'rename_downloaded_files': True,
 
 	'service_preference': str(CommaList(
-		[s[0] for s in supported_source_strings]
+		first_of_column(supported_source_strings)
 	)),
 	'download_folder': folder_path('temp_downloads'),
 	'seeding_handling': SeedingHandling.COPY.value,
@@ -189,7 +190,7 @@ class Settings(metaclass=Singleton):
 				from backend.conversion import get_available_formats
 				available = get_available_formats()
 			elif key == 'service_preference':
-				available = [s[0] for s in supported_source_strings]
+				available = first_of_column(supported_source_strings)
 			
 			if not isinstance(value, list):
 				raise InvalidSettingValue(key, value)

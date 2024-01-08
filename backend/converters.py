@@ -2,22 +2,23 @@
 
 import logging
 from abc import ABC, abstractmethod
-from os import mkdir, remove, utime
-from os.path import basename, dirname, join, splitext, getmtime
-from shutil import make_archive, rmtree
+from os import mkdir, utime
+from os.path import basename, dirname, getmtime, join, splitext
+from shutil import make_archive
 from subprocess import call as spc
 from sys import platform
 from typing import List
 from zipfile import ZipFile
 
-from backend.db import get_db
-from backend.enums import SpecialVersion
-from backend.files import (_list_files, extract_filename_data, folder_path,
-                           image_extensions, rename_file, scan_files,
-                           supported_extensions)
-from backend.naming import mass_rename
+from backend.file_extraction import (extract_filename_data, image_extensions,
+                                     supported_extensions)
+from backend.files import (create_folder, delete_file_folder,
+                           filepath_to_volume_id, folder_path, list_files,
+                           rename_file)
+from backend.helpers import extract_year_from_date
 from backend.matching import folder_extraction_filter
-from backend.volumes import Volume
+from backend.naming import mass_rename
+from backend.volumes import Volume, scan_files
 
 archive_extract_folder = '.archive_extract'
 rar_executables = {
@@ -26,60 +27,34 @@ rar_executables = {
 	'win32': folder_path('backend', 'lib', 'rar_windows_64.exe')
 }
 
-def __get_volume_data(volume_id: int) -> dict:
-	"""Get info about the volume based on ID
-
-	Args:
-		volume_id (int): The ID of the volume.
-
-	Returns:
-		dict: The data
-	"""
-	volume_data = dict(get_db(dict).execute("""
-		SELECT
-			v.id,
-			v.title, year,
-			volume_number,
-			folder,
-			special_version,
-			MAX(i.date) AS last_issue_date
-		FROM volumes v
-		INNER JOIN issues i
-		ON v.id = i.volume_id
-		WHERE v.id = ?
-		LIMIT 1;
-		""",
-		(volume_id,)
-	).fetchone())
-
-	volume_data['special_version'] = SpecialVersion(volume_data['special_version'])
-	volume_data['annual'] = 'annual' in volume_data['title'].lower()
-	if volume_data['last_issue_date']:
-		volume_data['end_year'] = int(volume_data['last_issue_date'].split('-')[0])
-	else:
-		volume_data['end_year'] = volume_data['year']
-
-	return volume_data
-
 def extract_files_from_folder(
 	source_folder: str,
 	volume_id: int
 ) -> List[str]:
-	volume_data = __get_volume_data(volume_id)
-	folder_contents = _list_files(source_folder, supported_extensions)
+	folder_contents = list_files(source_folder, supported_extensions)
 
-	cursor = get_db()
+	volume = Volume(volume_id)
+	volume_data = volume.get_keys(
+		('id', 'title', 'year', 'folder')
+	)
+	end_year = extract_year_from_date(
+		volume['last_issue_date'],
+		volume_data.year
+	)
 
 	# Filter non-relevant files
-	rel_files: List[str] = []
-	rel_files_append = rel_files.append
-	for c in folder_contents:
-		if 'variant cover' in c.lower():
-			continue
-
-		result = extract_filename_data(c, False)
-		if folder_extraction_filter(result, volume_data):
-			rel_files_append(c)
+	rel_files = [
+		c
+		for c in folder_contents
+		if (
+			not 'variant cover' in c.lower()
+			and folder_extraction_filter(
+				extract_filename_data(c, False),
+				volume_data,
+				end_year
+			)
+		)
+	]
 	logging.debug(f'Relevant files: {rel_files}')
 
 	# Move remaining files to main folder and delete source folder
@@ -95,7 +70,7 @@ def extract_files_from_folder(
 		rename_file(c, dest)
 		result_append(dest)
 
-	rmtree(source_folder, ignore_errors=True)
+	delete_file_folder(source_folder)
 	return result
 
 def _run_rar(args: List[str]) -> int:
@@ -151,28 +126,8 @@ class ZIPtoRAR(FileConverter):
 	
 	@staticmethod
 	def convert(file: str) -> str:
-		cursor = get_db(dict)
-
-		volume_id: int = cursor.execute("""
-			SELECT i.volume_id
-			FROM
-				files f
-				INNER JOIN issues_files if
-				INNER JOIN issues i
-			ON
-				f.id = if.file_id
-				AND if.issue_id = i.id
-			WHERE f.filepath = ?
-			LIMIT 1;
-			""",
-			(file,)
-		).fetchone()[0]
-
-		volume_folder = cursor.execute(
-			"SELECT folder FROM volumes WHERE id = ? LIMIT 1;",
-			(volume_id,)
-		).fetchone()['folder']
-
+		volume_id = filepath_to_volume_id(file)
+		volume_folder = Volume(volume_id)['folder']
 		archive_folder = join(volume_folder, archive_extract_folder)
 
 		with ZipFile(file, 'r') as zip:
@@ -185,9 +140,8 @@ class ZIPtoRAR(FileConverter):
 			archive_folder
 		])
 
-		rmtree(archive_folder, ignore_errors=True)
-
-		remove(file)
+		delete_file_folder(archive_folder)
+		delete_file_folder(file)
 
 		return splitext(file)[0] + '.rar'
 
@@ -207,28 +161,8 @@ class ZIPtoFOLDER(FileConverter):
 
 	@staticmethod
 	def convert(file: str) -> str:
-		cursor = get_db(dict)
-
-		volume_id: int = cursor.execute("""
-			SELECT i.volume_id
-			FROM
-				files f
-				INNER JOIN issues_files if
-				INNER JOIN issues i
-			ON
-				f.id = if.file_id
-				AND if.issue_id = i.id
-			WHERE f.filepath = ?
-			LIMIT 1;
-			""",
-			(file,)
-		).fetchone()[0]
-
-		volume_folder = cursor.execute(
-			"SELECT folder FROM volumes WHERE id = ? LIMIT 1;",
-			(volume_id,)
-		).fetchone()['folder']
-
+		volume_id = filepath_to_volume_id(file)
+		volume_folder = Volume(volume_id)['folder']
 		zip_folder = join(
 			volume_folder,
 			archive_extract_folder,
@@ -243,11 +177,11 @@ class ZIPtoFOLDER(FileConverter):
 			volume_id
 		)
 
-		scan_files(Volume(volume_id).get_info())
+		scan_files(volume_id)
 		if resulting_files:
 			mass_rename(volume_id, filepath_filter=resulting_files)
 
-		remove(file)
+		delete_file_folder(file)
 
 		return volume_folder
 
@@ -315,30 +249,11 @@ class RARtoZIP(FileConverter):
 
 	@staticmethod
 	def convert(file: str) -> str:
-		cursor = get_db(dict)
+		volume_id = filepath_to_volume_id(file)
+		volume_folder = Volume(volume_id)['folder']
 
-		volume_id: int = cursor.execute("""
-			SELECT i.volume_id
-			FROM
-				files f
-				INNER JOIN issues_files if
-				INNER JOIN issues i
-			ON
-				f.id = if.file_id
-				AND if.issue_id = i.id
-			WHERE f.filepath = ?
-			LIMIT 1;
-			""",
-			(file,)
-		).fetchone()[0]
-
-		volume_folder = cursor.execute(
-			"SELECT folder FROM volumes WHERE id = ? LIMIT 1;",
-			(volume_id,)
-		).fetchone()['folder']
-		
 		rar_folder = join(volume_folder, archive_extract_folder)
-		mkdir(rar_folder)
+		create_folder(rar_folder)
 
 		_run_rar([
 			'x',
@@ -347,16 +262,15 @@ class RARtoZIP(FileConverter):
 			rar_folder
 		])
 
-		for f in _list_files(rar_folder):
+		for f in list_files(rar_folder):
 			if getmtime(f) <= 315619200:
 				utime(f, (315619200, 315619200))
 
 		target_file = splitext(file)[0]
 		target_archive = make_archive(target_file, 'zip', rar_folder)
 
-		rmtree(rar_folder, ignore_errors=True)
-
-		remove(file)
+		delete_file_folder(rar_folder)
+		delete_file_folder(file)
 
 		return target_archive
 
@@ -376,27 +290,8 @@ class RARtoFOLDER(FileConverter):
 	
 	@staticmethod
 	def convert(file: str) -> str:
-		cursor = get_db(dict)
-
-		volume_id: int = cursor.execute("""
-			SELECT i.volume_id
-			FROM
-				files f
-				INNER JOIN issues_files if
-				INNER JOIN issues i
-			ON
-				f.id = if.file_id
-				AND if.issue_id = i.id
-			WHERE f.filepath = ?
-			LIMIT 1;
-			""",
-			(file,)
-		).fetchone()[0]
-
-		volume_folder = cursor.execute(
-			"SELECT folder FROM volumes WHERE id = ? LIMIT 1;",
-			(volume_id,)
-		).fetchone()['folder']
+		volume_id = filepath_to_volume_id(file)
+		volume_folder = Volume(volume_id)['folder']
 		
 		rar_folder = join(
 			volume_folder,
@@ -417,11 +312,11 @@ class RARtoFOLDER(FileConverter):
 			volume_id
 		)
 
-		scan_files(Volume(volume_id).get_info())
+		scan_files(volume_id)
 		if resulting_files:
 			mass_rename(volume_id, filepath_filter=resulting_files)
 
-		remove(file)
+		delete_file_folder(file)
 
 		return volume_folder
 

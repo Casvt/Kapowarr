@@ -5,14 +5,19 @@ All matching is done here. Can be between file and database,
 file and CV result, issue/volume and GC result, etc.
 """
 
+from __future__ import annotations
+
 import logging
 from re import compile
-from typing import Dict, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 
 from backend.blocklist import blocklist_contains
 from backend.db import get_db
 from backend.enums import SpecialVersion
 from backend.helpers import extract_year_from_date, get_first_of_range
+
+if TYPE_CHECKING:
+	from backend.volumes import VolumeData
 
 clean_title_regex = compile(r'((?<=annual)s|/|\-|\+|,|\!|:|\bthe\s|\band\b|&|’|\'|\"|\bone-shot\b|\btpb\b)')
 clean_title_regex_2 = compile(r'\s')
@@ -208,7 +213,8 @@ def _match_special_version(
 
 def folder_extraction_filter(
 	file_data: dict,
-	volume_data: dict
+	volume_data: VolumeData,
+	end_year: Union[int, None]
 ) -> bool:
 	"""The filter applied to the files when extracting from a folder,
 	which decides which file is relevant and which one isn't.
@@ -217,23 +223,25 @@ def folder_extraction_filter(
 	Args:
 		file_data (dict): The output of `backend.files.extract_filename_data()`
 		for the file.
-		volume_data (dict): The info about the volume.
+		volume_data (VolumeData): The info about the volume.
+		end_year (Union[int, None]): Year of last issue or volume year.
 
 	Returns:
 		bool: Whether or not the file passes the filter
 		(if it should be kept or not).
 	"""
+	annual = 'annual' in volume_data.title.lower()
 	return (
-		_match_title(file_data['series'], volume_data['title'])
-		and file_data['annual'] == volume_data['annual']
+		_match_title(file_data['series'], volume_data.title)
+		and file_data['annual'] == annual
 		and (
 			_match_year(
-				volume_data['year'],
+				volume_data.year,
 				file_data['year'],
-				volume_data['end_year']
+				end_year
 			)
 			or _match_volume_number(
-				volume_data['id'],
+				volume_data.id,
 				file_data['volume_number'],
 			)
 			# Or neither should be found (we play it safe so we keep those)
@@ -244,13 +252,15 @@ def folder_extraction_filter(
 
 def file_importing_filter(
 	file_data: dict,
-	volume_data: dict
+	volume_data: VolumeData,
+	volume_issues: List[dict]
 ) -> bool:
 	"""Filter for matching files to volumes.
 
 	Args:
 		file_data (dict): The output of files.extract_filename_data() for the file.
-		volume_data (dict): The data of the volume.
+		volume_data (VolumeData): The data of the volume.
+		volume_issues (List[dict]): The issues of the volume.
 
 	Returns:
 		bool: Whether or not the file has passed the filter.
@@ -260,29 +270,29 @@ def file_importing_filter(
 	issue_number_to_year: Dict[float, Union[int, None]] = {
 		issue['calculated_issue_number']:
 			extract_year_from_date(issue['date'])
-			for issue in volume_data['issues']
+			for issue in volume_issues
 	}
 
 	matching_special_version = _match_special_version(
-		volume_data['special_version'],
+		volume_data.special_version,
 		file_data['special_version'],
 		file_data['issue_number']
 	)
 
 	matching_year = _match_year(
-		volume_data['year'],
+		volume_data.year,
 		file_data['year'],
 		issue_number_to_year.get(
 			get_first_of_range(
 				file_data['volume_number']
-				if volume_data['special_version'] == SpecialVersion.VOLUME_AS_ISSUE else
+				if volume_data.special_version == SpecialVersion.VOLUME_AS_ISSUE else
 				file_data['issue_number']
 			)
 		)
 	)
 	
 	matching_volume_number = _match_volume_number(
-		volume_data['id'],
+		volume_data.id,
 		file_data['volume_number']
 	)
 

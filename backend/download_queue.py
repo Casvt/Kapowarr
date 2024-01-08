@@ -1,10 +1,11 @@
 #-*- coding: utf-8 -*-
 
-"""Handling the download queue and history
+"""
+Handling the download queue and history
 """
 
 import logging
-from os import listdir, makedirs, remove
+from os import listdir
 from os.path import basename, join
 from threading import Thread
 from time import sleep
@@ -19,7 +20,9 @@ from backend.download_direct_clients import (DirectDownload, Download,
 from backend.download_general import DownloadStates
 from backend.download_torrent_clients import TorrentClients, TorrentDownload
 from backend.enums import SeedingHandling
-from backend.getcomics import _extract_download_links
+from backend.files import create_folder, delete_file_folder
+from backend.getcomics import extract_GC_download_links
+from backend.helpers import first_of_column
 from backend.post_processing import (PostProcesser,
                                      PostProcesserTorrentsComplete,
                                      PostProcesserTorrentsCopy)
@@ -56,12 +59,11 @@ class DownloadHandler:
 		Returns:
 			int: The ID of the client
 		"""
-		torrent_clients = [
-			tc[0]
-			for tc in get_db().execute(
+		torrent_clients = first_of_column(
+			get_db().execute(
 				"SELECT id FROM torrent_clients;"
 			)
-		]
+		)
 		queue_ids = [
 			d.client.id
 			for d in self.queue
@@ -354,7 +356,7 @@ class DownloadHandler:
 		downloads: List[Download] = []
 		if is_gc_link:
 			# Extract download links and convert into Download instances
-			GC_downloads, limit_reached = _extract_download_links(
+			GC_downloads, limit_reached = extract_GC_download_links(
 				link,
 				volume_id,
 				issue_id
@@ -453,7 +455,7 @@ class DownloadHandler:
 	def create_download_folder(self) -> None:
 		"""Create the download folder if it doesn't already.
 		"""
-		makedirs(Settings()['download_folder'], exist_ok=True)
+		create_folder(Settings()['download_folder'])
 		return
 
 	def empty_download_folder(self) -> None:
@@ -470,7 +472,7 @@ class DownloadHandler:
 			if not f in files_in_queue
 		]
 		for f in ghost_files:
-			remove(f)
+			delete_file_folder(f)
 		return
 
 #=====================

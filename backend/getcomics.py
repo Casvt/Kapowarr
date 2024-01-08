@@ -17,11 +17,12 @@ from backend.download_direct_clients import (DirectDownload, Download,
                                              MegaDownload)
 from backend.download_torrent_clients import TorrentDownload
 from backend.enums import BlocklistReason, SpecialVersion
-from backend.files import extract_filename_data
+from backend.file_extraction import extract_filename_data
+from backend.matching import GC_group_filter
 from backend.naming import (generate_empty_name, generate_issue_name,
                             generate_issue_range_name, generate_tpb_name)
-from backend.matching import GC_group_filter, _match_title
 from backend.settings import Settings, supported_source_strings
+from backend.volumes import Volume
 
 mega_regex = compile(r'https?://mega\.(nz|io)/(#(F\!|\!)|folder/|file/)', IGNORECASE)
 mediafire_regex = compile(r'https?://www\.mediafire\.com/', IGNORECASE)
@@ -279,26 +280,11 @@ def _create_link_paths(
 	logging.debug('Creating link paths')
 
 	# Get info of volume
-	cursor = get_db()
-	volume_title: str
-	volume_year: int
-	special_version: SpecialVersion
-	last_issue_date: str
-	volume_title, volume_year, special_version, last_issue_date = cursor.execute("""
-		SELECT
-			v.title,
-			year,
-			special_version,
-			MAX(i.date) AS last_issue_date
-		FROM volumes v
-		INNER JOIN issues i
-		ON v.id = i.volume_id
-		WHERE v.id = ?
-		LIMIT 1;
-		""",
-		(volume_id,)
-	).fetchone()
-	special_version = SpecialVersion(special_version)
+	volume = Volume(volume_id)
+	volume_data = volume.get_keys(
+		('title', 'year', 'special_version')
+	)
+	last_issue_date = volume['last_issue_date']
 	service_preference: List[str] = Settings()['service_preference']
 
 	link_paths: List[List[dict]] = []
@@ -307,23 +293,23 @@ def _create_link_paths(
 		if GC_group_filter(
 			processed_desc,
 			volume_id,
-			volume_title,
-			volume_year,
+			volume_data.title,
+			volume_data.year,
 			last_issue_date,
-			special_version
+			volume_data.special_version
 		):
 			# Group matches/contains what is desired to be downloaded
 			sources = {s: sources[s] for s in sorted(sources, key=lambda k: service_preference.index(k))}
-			if (special_version == SpecialVersion.VOLUME_AS_ISSUE
+			if (volume_data.special_version == SpecialVersion.VOLUME_AS_ISSUE
 			and (
 				processed_desc['special_version'] == SpecialVersion.TPB
 				or isinstance(processed_desc['volume_number'], tuple)
 			)):
-				processed_desc['special_version'] = special_version
+				processed_desc['special_version'] = volume_data.special_version
 
 			if (processed_desc['special_version'] is not None
 			and processed_desc['special_version'] != SpecialVersion.VOLUME_AS_ISSUE):
-				if special_version == SpecialVersion.HARD_COVER:
+				if volume_data.special_version == SpecialVersion.HARD_COVER:
 					processed_desc['special_version'] = SpecialVersion.HARD_COVER.value
 				link_paths.append([{'info': processed_desc, 'links': sources}])
 
@@ -472,7 +458,11 @@ def _test_paths(
 	logging.debug(f'Chosen links: {downloads}')
 	return downloads, limit_reached
 		
-def _extract_download_links(link: str, volume_id: int, issue_id: int=None) -> Tuple[List[dict], bool]:
+def extract_GC_download_links(
+	link: str,
+	volume_id: int,
+	issue_id: int = None
+) -> Tuple[List[dict], bool]:
 	"""Filter, select and setup downloads from a getcomic page
 
 	Args:

@@ -14,9 +14,11 @@ from requests import get
 
 from backend.db import get_db
 from backend.enums import SpecialVersion
-from backend.files import extract_filename_data
+from backend.file_extraction import extract_filename_data
+from backend.helpers import extract_year_from_date, first_of_column
 from backend.matching import check_search_result_match
 from backend.settings import private_settings
+from backend.volumes import Volume
 
 def _sort_search_results(
 	result: dict,
@@ -213,23 +215,14 @@ def manual_search(
 		List[dict]: List with search results.
 	"""
 	cursor = get_db()
-	cursor.execute("""
-		SELECT
-			title,
-			volume_number, year,
-			special_version
-		FROM volumes
-		WHERE id = ?
-		LIMIT 1;
-	""", (volume_id,))
-	title, volume_number, year, special_version = cursor.fetchone()
-	title: str
-	volume_number: int
-	year: int
-	special_version = SpecialVersion(special_version)
+	volume = Volume(volume_id)
+	volume_data = volume.get_keys(
+		('title', 'volume_number', 'year', 'special_version')
+	)
+	
 	issue_number: int = None
 	calculated_issue_number: int = None
-	if issue_id and not special_version.value:
+	if issue_id and not volume_data.special_version.value:
 		cursor.execute("""
 			SELECT
 				issue_number, calculated_issue_number
@@ -240,13 +233,13 @@ def manual_search(
 		issue_number, calculated_issue_number = cursor.fetchone()
 	
 	logging.info(
-		f'Starting manual search: {title} ({year}) {"#" + issue_number if issue_number else ""}'
+		f'Starting manual search: {volume_data.title} ({volume_data.year}) {"#" + issue_number if issue_number else ""}'
 	)
 
 	# Prepare query
-	title = title.replace(':', '')
+	title = volume_data.title.replace(':', '')
 
-	if special_version == SpecialVersion.TPB:
+	if volume_data.special_version == SpecialVersion.TPB:
 		query_formats = (
 			'{title} Vol. {volume_number} ({year}) TPB',
 			'{title} ({year}) TPB',
@@ -254,7 +247,7 @@ def manual_search(
 			'{title} Vol. {volume_number}',
 			'{title}'
 		)
-	elif special_version == SpecialVersion.VOLUME_AS_ISSUE:
+	elif volume_data.special_version == SpecialVersion.VOLUME_AS_ISSUE:
 		query_formats = (
 			'{title} ({year})',
 			'{title}'
@@ -274,7 +267,7 @@ def manual_search(
 			'{title}'
 		)
 
-	if year is None:
+	if volume_data.year is None:
 		query_formats = tuple(f.replace('({year})', '') for f in query_formats)
 
 	# Get formatted search results
@@ -282,8 +275,8 @@ def manual_search(
 	for format in query_formats:
 		search = SearchSources(
 			format.format(
-				title=title, volume_number=volume_number,
-				year=year, issue_number=issue_number
+				title=title, volume_number=volume_data.volume_number,
+				year=volume_data.year, issue_number=issue_number
 			)
 		)
 		results += search.search_all()
@@ -293,24 +286,22 @@ def manual_search(
 	results: List[dict] = list({r['link']: r for r in results}.values())
 
 	# Decide what is a match and what not
-	cursor.execute(
-		"SELECT calculated_issue_number, date FROM issues WHERE volume_id = ?;",
-		(volume_id,)
-	)
 	issue_numbers = {
-		i[0]: int(i[1].split('-')[0]) if i[1] else None
-		for i in cursor
+		i['calculated_issue_number']: extract_year_from_date(i['date'])
+		for i in volume.get_issues()
 	}
 	for result in results:
 		result.update(
 			check_search_result_match(result, volume_id, title,
-				special_version, issue_numbers, calculated_issue_number, year
+				volume_data.special_version, issue_numbers,
+				calculated_issue_number, volume_data.year
 			)
 		)
 
 	# Sort results; put best result at top
 	results.sort(key=lambda r: _sort_search_results(
-		r, title, volume_number, year, calculated_issue_number
+		r, title, volume_data.volume_number, volume_data.year,
+		calculated_issue_number
 	))
 		
 	logging.debug(f'Manual search results: {results}')
@@ -328,23 +319,15 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 	Returns:
 		List[dict]: List with chosen search results.
 	"""	
-	# Get data about volume (and issue)
 	cursor = get_db()
-	cursor.execute("""
-		SELECT
-			monitored, special_version
-		FROM volumes
-		WHERE id = ?
-		LIMIT 1;
-		""",
-		(volume_id,)
-	)
-	volume_monitored, special_version = cursor.fetchone()
-	special_version = SpecialVersion(special_version)
+
+	volume = Volume(volume_id)
+	monitored = volume['monitored']
+	special_version = volume['special_version']
 	logging.info(
 		f'Starting auto search for volume {volume_id} {f"issue {issue_id}" if issue_id else ""}'
 	)
-	if not volume_monitored:
+	if not monitored:
 		# Volume is unmonitored so regardless of what to search for, ignore searching
 		result = []
 		logging.debug(f'Auto search results: {result}')
@@ -354,7 +337,7 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 		# Auto search volume
 		issue_number = None
 		# Get issue numbers that are open (monitored and no file)
-		cursor.execute(
+		searchable_issues = first_of_column(cursor.execute(
 			"""
 			SELECT calculated_issue_number
 			FROM issues i
@@ -366,8 +349,7 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 				AND monitored = 1;
 			""",
 			(volume_id,)
-		)
-		searchable_issues = tuple(map(lambda i: i[0], cursor))
+		))
 		if not searchable_issues:
 			result = []
 			logging.debug(f'Auto search results: {result}')
@@ -417,14 +399,14 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 				if isinstance(result['issue_number'], tuple):
 					# Release is an issue range
 					# Only allow range if all the issues that the range covers are open
-					covered_issues = tuple(map(lambda i: i[0], cursor.execute("""
+					covered_issues = first_of_column(cursor.execute("""
 						SELECT calculated_issue_number
 						FROM issues
 						WHERE
 							volume_id = ?
-							AND calculated_issue_number >= ?
+							AND ? <= calculated_issue_number
 							AND calculated_issue_number <= ?;
-					""", (volume_id, *result['issue_number']))))
+					""", (volume_id, *result['issue_number'])))
 					if any(not i in searchable_issues for i in covered_issues):
 						continue
 				else:

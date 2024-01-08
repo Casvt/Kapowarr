@@ -112,10 +112,10 @@ def set_db_location(db_file_location: str) -> None:
 	Args:
 		db_file_location (str): The absolute path to the database file
 	"""
+	from backend.files import create_folder
 	logging.debug(f'Setting database location: {db_file_location}')
 
-	# Create folder where file will be put in if it doesn't exist yet
-	makedirs(dirname(db_file_location), exist_ok=True)
+	create_folder(dirname(db_file_location))
 
 	DBConnection.file = db_file_location
 	TempDBConnection.file = db_file_location
@@ -266,7 +266,7 @@ def migrate_db(current_db_version: int) -> None:
 	
 	if current_db_version == 4:
 		# V4 -> V5
-		from backend.files import process_issue_number
+		from backend.file_extraction import process_issue_number
 
 		cursor2 = get_db(temp=True)
 		for result in cursor2.execute("SELECT id, issue_number FROM issues;"):
