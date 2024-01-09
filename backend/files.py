@@ -6,7 +6,7 @@ Handling folders, files and filenames.
 
 import logging
 from os import listdir, makedirs, remove, scandir, sep, stat
-from os.path import (abspath, commonpath, dirname, exists, isdir, isfile, join,
+from os.path import (abspath, basename, commonpath, dirname, exists, isdir, isfile, join,
                      relpath, samefile, splitext)
 from shutil import copytree, move, rmtree
 from typing import List, Tuple
@@ -144,20 +144,24 @@ def delete_empty_folders(top_folder: str, root_folder: str) -> None:
 		logging.error(f'The folder {top_folder} is not in {root_folder}')
 		return
 
-	while True:
-		if not exists(top_folder):
-			top_folder = dirname(top_folder)
-			continue
+	parent_folder = top_folder
+	child_folder = None
+	
+	while parent_folder:
+		if exists(parent_folder):
+			if samefile(parent_folder, root_folder):
+				break
 
-		if samefile(top_folder, root_folder):
-			break
+			if listdir(parent_folder) not in ([], [child_folder]):
+				# Folder has content and it's not only the empty child
+				break
 
-		if listdir(top_folder):
-			break
+		child_folder = basename(parent_folder)
+		parent_folder = dirname(parent_folder)
 
-		logging.debug(f'Deleting folder: {top_folder}')
-		delete_file_folder(top_folder)
-		top_folder = dirname(top_folder)
+	lowest_empty_folder = join(parent_folder, child_folder)
+	logging.debug(f'Deleting folder and children: {lowest_empty_folder}')
+	delete_file_folder(lowest_empty_folder)
 
 	return
 
