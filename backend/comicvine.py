@@ -294,11 +294,17 @@ class ComicVine:
 		}
 
 		if volume_data['start_year'] is not None:
-			result['year'] = int(
-				volume_data['start_year']
-					.replace('-', '0')
-					.replace('?', '')
-			)
+			if '/' in volume_data['start_year']:
+				result['year'] = int(
+					volume_data['start_year']
+						.split('/')[-1]
+				)
+			else:
+				result['year'] = int(
+					volume_data['start_year']
+						.replace('-', '0')
+						.replace('?', '')
+				)
 
 		volume_result = volume_regex.search(volume_data['deck'] or '')
 		if volume_result:
