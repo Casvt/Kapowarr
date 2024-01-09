@@ -333,10 +333,17 @@ class _VolumeBackend:
 			reversed_tuples(file_changes)
 		)
 
-		delete_empty_folders(
-			current_volume_folder,
-			root_folder
-		)
+		if folder_is_inside_folder(new_volume_folder, current_volume_folder):
+			# New folder is parent of current folder, so delete up to new folder.
+			delete_empty_folders(
+				current_volume_folder,
+				new_volume_folder
+			)
+		else:
+			delete_empty_folders(
+				current_volume_folder,
+				root_folder
+			)
 
 		return
 
