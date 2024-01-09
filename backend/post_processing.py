@@ -58,7 +58,7 @@ class PostProcessingActions:
 				logging.warning(
 					f'The file/folder {file_dest} already exists; replacing with downloaded file'
 				)
-				delete_file_folder(download.file)
+				delete_file_folder(file_dest)
 
 			rename_file(download.file, file_dest)
 			download.file = file_dest
