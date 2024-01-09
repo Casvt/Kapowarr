@@ -4,6 +4,8 @@
 Handling the download queue and history
 """
 
+from __future__ import annotations
+
 import logging
 from os import listdir
 from os.path import basename, join
