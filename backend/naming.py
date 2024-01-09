@@ -1,6 +1,7 @@
 #-*- coding: utf-8 -*-
 
-"""This file contains functions regarding the (re)naming of folders and media
+"""
+The (re)naming of folders and media
 """
 
 import logging

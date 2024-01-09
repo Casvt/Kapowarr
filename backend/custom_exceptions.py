@@ -1,8 +1,11 @@
 #-*- coding: utf-8 -*-
 
 """
-All custom exceptions are defined here.
-Note: Not all C.E. inherit CustomException.
+All custom exceptions are defined here
+"""
+
+"""
+Note: Not all CE's inherit from CustomException.
 """
 
 import logging

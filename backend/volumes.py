@@ -74,8 +74,6 @@ def determine_special_version(
 # Main issue class
 #=====================
 class Issue:
-	"""For representing an issue of a volume
-	"""	
 	def __init__(self, id: int):
 		"""Initiate the representation of the issue
 
@@ -172,6 +170,11 @@ class VolumeData:
 
 class _VolumeBackend:
 	def _check_existence(self) -> bool:
+		"""Check if volume exists based on ID
+
+		Returns:
+			bool: Whether the volume exists or not
+		"""
 		volume_found = get_db().execute(
 			"SELECT 1 FROM volumes WHERE id = ? LIMIT 1;",
 			(self.id,)
@@ -180,6 +183,14 @@ class _VolumeBackend:
 		return (1,) in volume_found
 	
 	def _get_keys(self, keys: Union[Tuple[str], str]) -> dict:
+		"""Get a dict with the values of the given keys.
+
+		Args:
+			keys (Union[Tuple[str], str]): The keys or just one key.
+
+		Returns:
+			dict: The dict with the keys and their values.
+		"""
 		if isinstance(keys, str):
 			keys = (keys,)
 		
@@ -196,6 +207,11 @@ class _VolumeBackend:
 		return result
 
 	def _get_cover(self) -> BytesIO:
+		"""Get the cover of the volume.
+
+		Returns:
+			BytesIO: The cover.
+		"""
 		cover = get_db().execute(
 			"SELECT cover FROM volumes WHERE id = ? LIMIT 1",
 			(self.id,)
@@ -203,6 +219,12 @@ class _VolumeBackend:
 		return BytesIO(cover)
 
 	def _get_last_issue_date(self) -> Union[str, None]:
+		"""Get the date of the last issue that has a release date.
+
+		Returns:
+			Union[str, None]: The release date of the last issue with one.
+			`None` if there is no issue or no issue with a release date.
+		"""
 		last_issue_date = get_db().execute("""
 			SELECT MAX(date) AS last_issue_date
 			FROM issues
@@ -214,6 +236,14 @@ class _VolumeBackend:
 		return last_issue_date
 
 	def _check_key(self, key: str) -> bool:
+		"""Check key is allowed.
+
+		Args:
+			key (str): The key to check.
+
+		Returns:
+			bool: Whether it's allowed or not.
+		"""
 		return key in (
 			*VolumeData.__annotations__,
 			'cover',
@@ -223,6 +253,12 @@ class _VolumeBackend:
 		)
 
 	def _set_value(self, key: str, value: Any) -> None:
+		"""Set the value of the key.
+
+		Args:
+			key (str): The key to set the value for.
+			value (Any): The value to set.
+		"""
 		if key == 'special_version' and isinstance(value, SpecialVersion):
 			value = value.value
 
@@ -235,6 +271,11 @@ class _VolumeBackend:
 		return
 
 	def _change_root_folder(self, root_folder_id: int) -> None:
+		"""Change the root folder of the volume.
+
+		Args:
+			root_folder_id (int): The root folder ID of the new root folder.
+		"""
 		cursor = get_db()
 		root_folders = cursor.execute("""
 			SELECT DISTINCT
@@ -294,6 +335,12 @@ class _VolumeBackend:
 		self,
 		new_volume_folder: Union[str, None]
 	) -> None:
+		"""Change the volume folder of the volume.
+
+		Args:
+			new_volume_folder (Union[str, None]): The new folder,
+			or `None` if the default folder should be generated and used.
+		"""
 		from backend.naming import generate_volume_folder_name, make_filename_safe
 		current_volume_folder = self['folder']
 		root_folder = RootFolders().get_one(self['root_folder'])['folder']
@@ -354,6 +401,17 @@ class Volume(_VolumeBackend):
 		id: int,
 		check_existence: bool = False
 	) -> None:
+		"""Create instance of Volume.
+
+		Args:
+			id (int): The ID of the volume.
+			check_existence (bool, optional): Check if volume exists, based on ID.
+				Defaults to False.
+
+		Raises:
+			VolumeNotFound: The volume was not found.
+				Can only be raised when check_existence is `True`.
+		"""
 		self.id = id
 
 		if check_existence and not self._check_existence():
@@ -362,6 +420,11 @@ class Volume(_VolumeBackend):
 		return
 
 	def get_public_keys(self) -> dict:
+		"""Get data about the volume for the public to see (the API).
+
+		Returns:
+			dict: The data.
+		"""
 		cursor = get_db(dict)
 
 		cursor.execute("""
@@ -412,11 +475,31 @@ class Volume(_VolumeBackend):
 		return self._get_keys(key)[key]
 
 	def get_keys(self, keys: Tuple[str]) -> VolumeData:
+		"""The data of the volume based on the keys.
+
+		Args:
+			keys (Tuple[str]): The keys of which to get the value.
+
+		Returns:
+			VolumeData: The data. The given keys will have their values set.
+				The other keys will have `None` set as their value.
+		"""
 		data = self._get_keys(keys)
 		result = VolumeData(**data)
 		return result
 
 	def get_files(self, issue_id: int = None) -> List[str]:
+		"""Get the files matched to the volume.
+
+		Args:
+			issue_id (int, optional): The specific issue to get the files of.
+				Based on ID of issue.
+
+				Defaults to None.
+
+		Returns:
+			List[str]: List of filepaths.
+		"""
 		if not issue_id:
 			files = first_of_column(get_db().execute(f"""
 				SELECT DISTINCT filepath
@@ -445,6 +528,11 @@ class Volume(_VolumeBackend):
 		return files
 
 	def get_issues(self) -> List[dict]:
+		"""Get list of issues that are in the volume.
+
+		Returns:
+			List[dict]: The list of issues.
+		"""
 		issues = [
 			dict(i) for i in get_db(dict).execute("""
 				SELECT
@@ -480,6 +568,14 @@ class Volume(_VolumeBackend):
 		return
 
 	def update(self, changes: dict) -> None:
+		"""Change settings of the volume.
+
+		Args:
+			changes (dict): The keys with new values.
+
+		Raises:
+			KeyError: Key is unknown or not allowed.
+		"""		
 		if any(not self._check_key(k) for k in changes):
 			raise KeyError
 

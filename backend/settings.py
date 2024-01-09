@@ -1,8 +1,5 @@
 #-*- coding: utf-8 -*-
 
-"""Settings-like data, interacting with the settings and service preference
-"""
-
 import logging
 from json import dumps, loads
 from os import urandom
@@ -84,6 +81,12 @@ task_intervals = {
 credential_sources = ('mega',)
 
 def update_manifest(url_base: str) -> None:
+	"""Update the url's in the manifest file.
+	Needs to happen when url base changes.
+
+	Args:
+		url_base (str): The url base to use in the file.
+	"""
 	with open(folder_path('frontend', 'static', 'json', 'manifest.json'), 'r+') as f:
 		manifest = loads(f.read())
 		manifest['start_url'] = url_base + '/'
@@ -314,8 +317,7 @@ class Settings(metaclass=Singleton):
 		return
 
 	def generate_api_key(self) -> None:
-		"""Generate a new api key
-		"""
+		"Generate a new api key"
 		logging.debug('Generating new api key')
 		api_key = urandom(16).hex()
 		self.settings['api_key'] = api_key
@@ -328,7 +330,6 @@ class Settings(metaclass=Singleton):
 		return
 
 	def _save_to_database(self) -> None:
-		"""Commit database to save changes
-		"""
+		"Commit database to save changes"
 		get_db().connection.commit()
 		return

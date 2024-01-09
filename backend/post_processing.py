@@ -1,6 +1,7 @@
 #-*- coding: utf-8 -*-
 
-"""This file contains functions regarding the post processing of downloads
+"""
+The post-download processing (a.k.a. post-processing or PP) of downloads
 """
 
 from __future__ import annotations
@@ -160,8 +161,7 @@ class PostProcessingActions:
 
 	@staticmethod
 	def reset_file_link(download: TorrentDownload) -> None:
-		"""Set download.file back to original folder from the copied folder.
-		"""
+		"Set download.file back to original folder from the copied folder"
 		download.file = download.original_file
 		return
 

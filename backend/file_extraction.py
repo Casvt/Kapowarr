@@ -1,8 +1,9 @@
 #-*- coding: utf-8 -*-
 
-"""Extracting data from filenames and generalising it.
+"""
+Extracting data from filenames and generalising it.
 
-extract_filename_data is inspired by the file parsing of Kavita and Comictagger:
+extract_filename_data() is inspired by the file parsing of Kavita and Comictagger:
 	https://github.com/Kareadita/Kavita/blob/develop/API/Services/Tasks/Scanner/Parser/Parser.cs
 	https://github.com/comictagger/comictagger/blob/develop/comicapi/filenameparser.py
 """

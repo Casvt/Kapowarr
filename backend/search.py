@@ -1,7 +1,7 @@
 #-*- coding: utf-8 -*-
 
-"""This file contains functions regarding searching for a volume or issue
-with getcomics.org as the source
+"""
+Searching online sources (GC) for downloads
 """
 
 import logging
@@ -19,6 +19,7 @@ from backend.helpers import extract_year_from_date, first_of_column
 from backend.matching import check_search_result_match
 from backend.settings import private_settings
 from backend.volumes import Volume
+
 
 def _sort_search_results(
 	result: dict,
@@ -112,8 +113,8 @@ def _sort_search_results(
 	return rating
 
 class SearchSources:
-	"""For getting search results from various sources
-	"""	
+	"For getting search results from various sources"
+
 	def __init__(self, query: str):
 		"""Prepare a search
 
@@ -123,12 +124,10 @@ class SearchSources:
 		self.query = query
 		self.source_list = [
 			self._get_comics,
-			self._indexers
 		]
 
 	def search_all(self) -> List[dict]:
-		"""Search all sources for the query.
-		"""
+		"Search all sources for the query"
 		result = []
 		for source in self.source_list:
 			result += source()
@@ -195,9 +194,6 @@ class SearchSources:
 			formatted_results.append(data)
 		
 		return formatted_results
-	
-	def _indexers(self) -> List[dict]:
-		return []
 
 def manual_search(
 	volume_id: int,

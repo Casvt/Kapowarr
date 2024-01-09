@@ -1,8 +1,5 @@
 #-*- coding: utf-8 -*-
 
-"""This file is for everything that has to do with the root folders
-"""
-
 import logging
 from os.path import isdir
 from os.path import sep as path_sep
@@ -15,8 +12,6 @@ from backend.db import get_db
 
 
 class RootFolders:
-	"""For interacting with the rootfolders
-	"""
 	cache = {}
 	
 	def get_all(self, use_cache: bool=True) -> List[dict]:

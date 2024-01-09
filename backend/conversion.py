@@ -1,5 +1,9 @@
 #-*- coding: utf-8 -*-
 
+"""
+Converting files to a different format
+"""
+
 from itertools import chain
 from os.path import dirname, splitext
 from sys import platform

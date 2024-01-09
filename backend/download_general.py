@@ -1,6 +1,7 @@
 #-*- coding: utf-8 -*-
 
-"""To avoid import loops, general classes regarding downloading are here.
+"""
+General classes (ABC's, base classes) regarding downloading
 """
 
 from abc import ABC, abstractmethod
@@ -86,6 +87,11 @@ class Download(ABC):
 
 	@abstractmethod
 	def todict(self) -> dict:
+		"""Get a dict representing the download.
+
+		Returns:
+			dict: The dict with all information.
+		"""
 		return
 
 class TorrentClient(ABC):

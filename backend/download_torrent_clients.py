@@ -1,6 +1,7 @@
 #-*- coding: utf-8 -*-
 
-"""Downloading using torrents
+"""
+Clients for downloading a torrent using a torrent client
 """
 
 import logging

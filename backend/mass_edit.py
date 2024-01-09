@@ -16,6 +16,11 @@ if TYPE_CHECKING:
 	from backend.download_queue import DownloadHandler
 
 class MassEditorVariables:
+	"""
+	To avoid import loops, this class is imported to the places where
+	it needs a value by seting it as a class variable. That
+	way, the value 'sent back' to here where the value can be used.
+	"""
 	download_handler: Union[None, DownloadHandler] = None
 
 def mass_editor_delete(volume_ids: List[int], **kwargs) -> None:

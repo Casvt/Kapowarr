@@ -1,7 +1,7 @@
 #-*- coding: utf-8 -*-
 
 """
-General "helper" functions
+General "helper" functions and classes
 """
 
 import logging

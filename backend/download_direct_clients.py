@@ -1,6 +1,8 @@
 #-*- coding: utf-8 -*-
 
-"""Downloading from GetComics
+"""
+Clients for downloading from a direct URL and Mega.
+Used when downloading from GC.
 """
 
 import logging

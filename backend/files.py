@@ -1,7 +1,7 @@
 #-*- coding: utf-8 -*-
 
 """
-Extracting data from filenames and generalising it.
+Handling folders, files and filenames.
 """
 
 import logging
@@ -163,6 +163,11 @@ def delete_empty_folders(top_folder: str, root_folder: str) -> None:
 
 
 def create_folder(folder: str) -> None:
+	"""Create a folder
+
+	Args:
+		folder (str): The path to the folder to create.
+	"""
 	makedirs(folder, exist_ok=True)
 	return
 
@@ -233,7 +238,13 @@ def rename_file(before: str, after: str) -> None:
 	return
 
 
-def copy_directory(source, target) -> None:
+def copy_directory(source: str, target: str) -> None:
+	"""Copy a directory.
+
+	Args:
+		source (str): The path to the source directory.
+		target (str): The path to where the directory should be copied.
+	"""	
 	try:
 		copytree(source, target)
 	except PermissionError:
@@ -277,6 +288,14 @@ def get_file_id(
 
 
 def filepath_to_volume_id(filepath: str) -> int:
+	"""Get the ID of the volume based on a filename.
+
+	Args:
+		filepath (str): The filepath based on which to get the volume ID.
+
+	Returns:
+		int: The ID of the volume.
+	"""
 	volume_id: int = get_db().execute("""
 		SELECT i.volume_id
 		FROM

@@ -1,5 +1,9 @@
 #-*- coding: utf-8 -*-
 
+"""
+Contains all the converters for converting from one format to another
+"""
+
 import logging
 from abc import ABC, abstractmethod
 from os import mkdir, utime
@@ -26,11 +30,23 @@ rar_executables = {
 	'darwin': folder_path('backend', 'lib', 'rar_bsd_64'),
 	'win32': folder_path('backend', 'lib', 'rar_windows_64.exe')
 }
+"Maps a platform name to it's rar executable"
 
 def extract_files_from_folder(
 	source_folder: str,
 	volume_id: int
 ) -> List[str]:
+	"""Move files out of folder in to volume folder,
+	but only if they match to the volume. Otherwise they are deleted,
+	together with the original folder.
+
+	Args:
+		source_folder (str): The folder to extract files out of.
+		volume_id (int): The ID for which the files should be.
+
+	Returns:
+		List[str]: The filepaths of the files that were extracted.
+	"""
 	folder_contents = list_files(source_folder, supported_extensions)
 
 	volume = Volume(volume_id)
@@ -74,7 +90,7 @@ def extract_files_from_folder(
 	return result
 
 def _run_rar(args: List[str]) -> int:
-	"""Run (un)rar executable. This function takes care of the platform.
+	"""Run rar executable. This function takes care of the platform.
 		Note: It is already expected when this function is called
 		that the platform is supported. The check should be done outside.
 

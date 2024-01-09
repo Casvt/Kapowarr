@@ -68,8 +68,8 @@ class Task(ABC):
 # Issue tasks
 #=====================
 class AutoSearchIssue(Task):
-	"""Do an automatic search for an issue
-	"""	
+	"Do an automatic search for an issue"	
+
 	stop = False
 	message = ''
 	action = 'auto_search_issue'
@@ -116,8 +116,8 @@ class AutoSearchIssue(Task):
 # Volume tasks
 #=====================
 class AutoSearchVolume(Task):
-	"""Do an automatic search for a volume
-	"""
+	"Do an automatic search for a volume"
+
 	stop = False
 	message = ''
 	action = 'auto_search'
@@ -144,8 +144,8 @@ class AutoSearchVolume(Task):
 		return []
 
 class RefreshAndScanVolume(Task):
-	"""Trigger a refresh and scan for a volume
-	"""
+	"Trigger a refresh and scan for a volume"
+
 	stop = False
 	message = ''
 	action = 'refresh_and_scan'
@@ -176,8 +176,8 @@ class RefreshAndScanVolume(Task):
 # Library tasks
 #=====================
 class UpdateAll(Task):
-	"""Trigger a refresh and scan for each volume in the library
-	"""
+	"Trigger a refresh and scan for each volume in the library"
+
 	stop = False
 	message = ''
 	action = 'update_all'
@@ -196,8 +196,8 @@ class UpdateAll(Task):
 		return
 
 class SearchAll(Task):
-	"""Trigger an automatic search for each volume in the library
-	"""	
+	"Trigger an automatic search for each volume in the library"	
+	
 	stop = False
 	message = ''
 	action = 'search_all'
@@ -230,8 +230,6 @@ class SearchAll(Task):
 task_library: Dict[str, Task] = {c.action: c for c in Task.__subclasses__()}
 
 class TaskHandler:
-	"""For handling tasks
-	"""	
 	queue: List[dict] = []
 	task_interval_waiter: Timer = None
 	def __init__(self, context, download_handler: DownloadHandler) -> None:
@@ -239,7 +237,8 @@ class TaskHandler:
 
 		Args:
 			context (Flask): A Flask app instance
-			download_handler (DownloadHandler): An instance of `download.DownloadHandler`
+			download_handler (DownloadHandler): An instance of
+			`download.DownloadHandler`
 			to which any download instructions are sent
 		"""
 		self.context = context.app_context
@@ -287,7 +286,8 @@ class TaskHandler:
 		return
 		
 	def _process_queue(self) -> None:
-		"""Handle the queue. In the case that there is something in the queue and
+		"""
+		Handle the queue. In the case that there is something in the queue and
 		it isn't already running, start the task. This can safely be called
 		multiple times while a task is going or while there is nothing in the queue.
 		"""
@@ -327,8 +327,7 @@ class TaskHandler:
 		return id
 
 	def __check_intervals(self)	-> None:
-		"""Check if any interval task needs to be run and add to queue if so
-		"""
+		"Check if any interval task needs to be run and add to queue if so"
 		logging.debug('Checking task intervals')
 		with self.context():
 			current_time = time()
@@ -355,8 +354,7 @@ class TaskHandler:
 		return
 
 	def handle_intervals(self) -> None:
-		"""Find next time an interval task needs to be run
-		"""
+		"Find next time an interval task needs to be run"
 		with self.context():
 			next_run = get_db().execute(
 				"SELECT MIN(next_run) FROM task_intervals"
@@ -370,8 +368,7 @@ class TaskHandler:
 		return
 	
 	def stop_handle(self) -> None:
-		"""Stop the task handler
-		"""		
+		"Stop the task handler"		
 		logging.debug('Stopping task thread')
 		self.task_interval_waiter.cancel()
 		if self.queue:
@@ -478,8 +475,7 @@ def get_task_history(offset: int=0) -> List[dict]:
 	return result
 
 def delete_task_history() -> None:
-	"""Delete the complete task history
-	"""
+	"Delete the complete task history"
 	logging.info(f'Deleting task history')
 	get_db().execute("DELETE FROM task_history;")
 	return

@@ -1,10 +1,10 @@
 #-*- coding: utf-8 -*-
 
-"""This file is for getting and setting up database connections
+"""
+Setting up the database and handling connections
 """
 
 import logging
-from os import makedirs
 from os.path import dirname
 from sqlite3 import (PARSE_DECLTYPES, Connection, ProgrammingError, Row,
                      register_adapter, register_converter)
@@ -66,6 +66,8 @@ class DBConnection(Connection, metaclass=DB_ThreadSafeSingleton):
 		return
 	
 	def close(self) -> None:
+		"""Close the connection
+		"""
 		logging.debug(f'Closing connection {self}')
 		self.closed = True
 		super().close()
@@ -97,6 +99,8 @@ class TempDBConnection(Connection):
 		return
 	
 	def close(self) -> None:
+		"""Close the temporary connection
+		"""
 		logging.debug(f'Closing temporary connection {self}')
 		self.closed = True
 		super().close()
@@ -601,7 +605,8 @@ def migrate_db(current_db_version: int) -> None:
 	return
 
 def setup_db() -> None:
-	"""Setup the database tables and default config when they aren't setup yet
+	"""
+	Setup the database tables and default config when they aren't setup yet
 	"""
 	from backend.settings import Settings, credential_sources, task_intervals
 

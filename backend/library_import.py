@@ -3,7 +3,6 @@
 import logging
 from asyncio import create_task, gather, run
 from os.path import basename, dirname, isfile, join, splitext
-from shutil import Error, move
 from typing import Dict, List, Tuple, Union
 
 from aiohttp import ClientSession

@@ -9,7 +9,7 @@ from os import listdir
 from os.path import basename, join
 from threading import Thread
 from time import sleep
-from typing import Dict, List, Union
+from typing import TYPE_CHECKING, Dict, List, Union
 
 from backend.blocklist import add_to_blocklist
 from backend.custom_exceptions import (DownloadLimitReached, DownloadNotFound,
@@ -28,6 +28,9 @@ from backend.post_processing import (PostProcesser,
                                      PostProcesserTorrentsCopy)
 from backend.settings import Settings, private_settings
 
+if TYPE_CHECKING:
+	from flask import Flask
+
 #=====================
 # Download handling
 #=====================
@@ -40,7 +43,7 @@ class DownloadHandler:
 	queue: List[Download] = []
 	downloading_item: Union[Thread, None] = None
 	
-	def __init__(self, context) -> None:
+	def __init__(self, context: Flask) -> None:
 		"""Setup the download handler
 
 		Args:
@@ -182,7 +185,8 @@ class DownloadHandler:
 		return
 
 	def _process_queue(self) -> None:
-		"""Handle the queue. In the case that there is something in the queue
+		"""
+		Handle the queue. In the case that there is something in the queue
 		and it isn't already downloading, start the download. This can safely be
 		called multiple times while a download is going or while there is nothing
 		in the queue.
@@ -215,10 +219,27 @@ class DownloadHandler:
 		self,
 		downloads: List[Download],
 		volume_id: int,
-		issue_id: int,
+		issue_id: Union[int, None],
 		page_link: Union[str, None]
 	) -> List[Download]:
-		
+		"""Get download instances ready to be put in the queue.
+		Registers them in the db if not already. For torrents,
+		it chooses the client, creates the thread and runs it.
+
+		Args:
+			downloads (List[Download]): The downloads to get ready.
+
+			volume_id (int): The ID of the volume that the downloads are for.
+
+			issue_id (int): The ID of the issue that the downloads are for.
+				Default is None.
+
+			page_link (Union[str, None]): The link to the page where the
+			download was grabbed from.
+
+		Returns:
+			List[Download]: The downloads, now prepared.
+		"""
 		cursor = get_db()
 		for download in downloads:
 			download.volume_id = volume_id
@@ -268,7 +289,8 @@ class DownloadHandler:
 		return downloads
 
 	def __load_downloads(self) -> None:
-		"""Load downloads from the database and add them to the queue
+		"""
+		Load downloads from the database and add them to the queue
 		for re-downloading
 		"""
 		with self.context():
@@ -385,7 +407,8 @@ class DownloadHandler:
 		return [r.todict() for r in result]
 
 	def stop_handle(self) -> None:
-		"""Cancel any running download and stop the handler
+		"""
+		Cancel any running download and stop the handler
 		"""		
 		logging.debug('Stopping download thread')
 
@@ -453,13 +476,15 @@ class DownloadHandler:
 		return
 
 	def create_download_folder(self) -> None:
-		"""Create the download folder if it doesn't already.
+		"""
+		Create the download folder if it doesn't already.
 		"""
 		create_folder(Settings()['download_folder'])
 		return
 
 	def empty_download_folder(self) -> None:
-		"""Empty the temporary download folder of files that aren't being downloaded.
+		"""
+		Empty the temporary download folder of files that aren't being downloaded.
 		Handy in the case that a crash left half-downloaded files behind in the folder.
 		"""
 		logging.info(f'Emptying the temporary download folder')
@@ -506,7 +531,8 @@ def get_download_history(offset: int=0) -> List[dict]:
 	return result
 
 def delete_download_history() -> None:
-	"""Delete complete download history
+	"""
+	Delete complete download history
 	"""
 	logging.info('Deleting download history')
 	get_db().execute("DELETE FROM download_history;")
