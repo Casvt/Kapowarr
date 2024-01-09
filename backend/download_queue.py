@@ -19,7 +19,7 @@ from backend.download_direct_clients import (DirectDownload, Download,
                                              MegaDownload)
 from backend.download_general import DownloadStates
 from backend.download_torrent_clients import TorrentClients, TorrentDownload
-from backend.enums import SeedingHandling
+from backend.enums import BlocklistReason, SeedingHandling
 from backend.files import create_folder, delete_file_folder
 from backend.getcomics import extract_GC_download_links
 from backend.helpers import first_of_column
@@ -365,7 +365,7 @@ class DownloadHandler:
 			if not GC_downloads:
 				if not limit_reached:
 					# No links extracted from page so add it to blocklist
-					add_to_blocklist(link, 3)
+					add_to_blocklist(link, BlocklistReason.NO_WORKING_LINKS)
 				logging.warning(
 					f'Unable to extract download links from source; {limit_reached=}'
 				)
