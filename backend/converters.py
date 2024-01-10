@@ -78,10 +78,10 @@ def extract_files_from_folder(
 	result_append = result.append
 	for c in rel_files:
 		if c.endswith(image_extensions):
-			dest = join(volume_data["folder"], basename(dirname(c)), basename(c))
+			dest = join(volume_data.folder, basename(dirname(c)), basename(c))
 
 		else:
-			dest = join(volume_data["folder"], basename(c))
+			dest = join(volume_data.folder, basename(c))
 		
 		rename_file(c, dest)
 		result_append(dest)
