@@ -19,9 +19,8 @@ from backend.custom_exceptions import (DownloadLimitReached, DownloadNotFound,
 from backend.db import get_db
 from backend.download_direct_clients import (DirectDownload, Download,
                                              MegaDownload)
-from backend.enums import DownloadState
 from backend.download_torrent_clients import TorrentClients, TorrentDownload
-from backend.enums import BlocklistReason, SeedingHandling
+from backend.enums import BlocklistReason, DownloadState, SeedingHandling
 from backend.files import create_folder, delete_file_folder
 from backend.getcomics import extract_GC_download_links
 from backend.helpers import first_of_column

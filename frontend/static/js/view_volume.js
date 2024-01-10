@@ -193,7 +193,7 @@ function toggleMonitoredIssue(issue_id, api_key) {
 	const issue = document.querySelector(`button[data-id="${issue_id}"]`);
 	const icon = issue.querySelector('img');
 	data = {
-		'monitor': issue.dataset.monitored !== 'true'
+		'monitored': issue.dataset.monitored !== 'true'
 	};
 	fetch(`${url_base}/api/issues/${issue_id}?api_key=${api_key}`, {
 		'method': 'PUT',
@@ -201,8 +201,8 @@ function toggleMonitoredIssue(issue_id, api_key) {
 		'headers': {'Content-Type': 'application/json'}
 	})
 	.then(response => {
-		issue.dataset.monitored = data.monitor;
-		icon.src = data.monitor ? `${url_base}/static/img/monitored.svg` : `${url_base}/static/img/unmonitored.svg`;
+		issue.dataset.monitored = data.monitored;
+		icon.src = data.monitored ? `${url_base}/static/img/monitored.svg` : `${url_base}/static/img/unmonitored.svg`;
 	});
 };
 

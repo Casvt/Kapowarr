@@ -15,7 +15,7 @@ from backend.custom_exceptions import (InvalidComicVineApiKey,
 from backend.db import get_db
 from backend.download_queue import DownloadHandler
 from backend.search import auto_search
-from backend.volumes import Volume, refresh_and_scan
+from backend.volumes import Issue, Volume, refresh_and_scan
 
 
 class Task(ABC):
@@ -89,19 +89,9 @@ class AutoSearchIssue(Task):
 		self.issue_id = issue_id
 	
 	def run(self) -> List[tuple]:
-		title = get_db().execute(
-			"""
-			SELECT
-				v.title, i.issue_number
-			FROM volumes v
-			INNER JOIN issues i
-			ON i.volume_id = v.id
-			WHERE i.id = ?
-			LIMIT 1;
-			""",
-			(self.issue_id,)
-		).fetchone()
-		self.message = f'Searching for {title[0]} #{title[1]}'
+		issue = Issue(self.issue_id)
+		volume = Volume(issue['volume_id'])
+		self.message = f'Searching for {volume["title"]} #{issue["issue_number"]}'
 
 		# Get search results and download them
 		results = auto_search(self.volume_id, self.issue_id)

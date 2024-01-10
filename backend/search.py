@@ -18,7 +18,7 @@ from backend.file_extraction import extract_filename_data
 from backend.helpers import extract_year_from_date, first_of_column
 from backend.matching import check_search_result_match
 from backend.settings import private_settings
-from backend.volumes import Volume
+from backend.volumes import Issue, Volume, get_calc_number_range
 
 
 def _sort_search_results(
@@ -219,14 +219,11 @@ def manual_search(
 	issue_number: int = None
 	calculated_issue_number: int = None
 	if issue_id and not volume_data.special_version.value:
-		cursor.execute("""
-			SELECT
-				issue_number, calculated_issue_number
-			FROM issues
-			WHERE id = ?
-			LIMIT 1;
-		""", (issue_id,))
-		issue_number, calculated_issue_number = cursor.fetchone()
+		issue_data = Issue(issue_id).get_keys(
+			('issue_number', 'calculated_issue_number')
+		)
+		issue_number = issue_data['issue_number']
+		calculated_issue_number = issue_data['calculated_issue_number']
 	
 	logging.info(
 		f'Starting manual search: {volume_data.title} ({volume_data.year}) {"#" + issue_number if issue_number else ""}'
@@ -353,22 +350,18 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 
 	else:
 		# Auto search issue
-		cursor.execute(
-			"SELECT issue_number, monitored FROM issues WHERE id = ? LIMIT 1",
-			(issue_id,)
+		issue = Issue(issue_id)
+		issue_data = issue.get_keys(
+			('issue_number', 'monitored')
 		)
-		issue_number, monitored = cursor.fetchone()
+		issue_number, monitored = issue_data['issue_number'], issue_data['monitored']
 		if not monitored:
 			# Auto search for issue but issue is unmonitored
 			result = []
 			logging.debug(f'Auto search results: {result}')
 			return result
 		else:
-			cursor.execute(
-				"SELECT 1 FROM issues_files WHERE issue_id = ? LIMIT 1",
-				(issue_id,)
-			)
-			if (1,) in cursor:
+			if issue.get_files():
 				# Auto search for issue but issue already has file
 				result = []
 				logging.debug(f'Auto search results: {result}')
@@ -395,14 +388,10 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 				if isinstance(result['issue_number'], tuple):
 					# Release is an issue range
 					# Only allow range if all the issues that the range covers are open
-					covered_issues = first_of_column(cursor.execute("""
-						SELECT calculated_issue_number
-						FROM issues
-						WHERE
-							volume_id = ?
-							AND ? <= calculated_issue_number
-							AND calculated_issue_number <= ?;
-					""", (volume_id, *result['issue_number'])))
+					covered_issues = get_calc_number_range(
+						volume_id,
+						*result['issue_number']
+					)
 					if any(not i in searchable_issues for i in covered_issues):
 						continue
 				else:

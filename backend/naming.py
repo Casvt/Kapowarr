@@ -12,7 +12,7 @@ from re import compile, escape, match
 from string import Formatter
 from typing import Dict, List, Tuple, Union
 
-from backend.custom_exceptions import InvalidSettingValue, IssueNotFound
+from backend.custom_exceptions import InvalidSettingValue
 from backend.db import get_db
 from backend.enums import SpecialVersion
 from backend.file_extraction import cover_regex, image_extensions
@@ -20,7 +20,7 @@ from backend.files import delete_empty_folders, rename_file
 from backend.helpers import first_of_column
 from backend.root_folders import RootFolders
 from backend.settings import Settings
-from backend.volumes import Volume
+from backend.volumes import Issue, Volume
 
 formatting_keys = (
 	'series_name',
@@ -138,18 +138,9 @@ def _get_formatting_data(
 	
 	if issue_id:
 		# Add issue data if issue is found
-		issue_data = get_db(dict).execute("""
-			SELECT
-				comicvine_id,
-				issue_number,
-				title, date
-			FROM issues
-			WHERE id = ?;
-		""", (issue_id,)).fetchone()
-		
-		if not issue_data:
-			raise IssueNotFound
-		issue_data = dict(issue_data)
+		issue_data = Issue(issue_id, check_existence=True).get_keys(
+			('comicvine_id', 'issue_number', 'title', 'date')
+		)
 			
 		formatting_data.update({
 			'issue_comicvine_id': issue_data.get('comicvine_id') or 'Unknown',
@@ -257,15 +248,11 @@ def generate_issue_range_name(
 	Returns:
 		str: The issue range name
 	"""
-	cursor = get_db()
-	issue_id = cursor.execute("""
-		SELECT id
-		FROM issues
-		WHERE volume_id = ?
-			AND calculated_issue_number = ?
-		LIMIT 1;
-	""", (volume_id, calculated_issue_number_start)).fetchone()[0]
-	formatting_data = _get_formatting_data(volume_id, issue_id)
+	issue = Issue.from_volume_and_calc_number(
+		volume_id,
+		calculated_issue_number_start
+	)
+	formatting_data = _get_formatting_data(volume_id, issue.id)
 	settings = Settings()
 
 	if (formatting_data['issue_title'] == 'Unknown'
@@ -278,28 +265,17 @@ def generate_issue_range_name(
 		format: str = settings['file_naming']
 
 	# Override issue number to range
-	issue_number_start, issue_number_end = cursor.execute("""
-		SELECT issue_number
-		FROM issues
-		WHERE
-			volume_id = ?
-			AND
-			(
-				calculated_issue_number = ?
-				OR calculated_issue_number = ?
-			)
-		ORDER BY calculated_issue_number
-		LIMIT 2;
-		""",
-		(volume_id,
-		calculated_issue_number_start,
-		calculated_issue_number_end)
-	).fetchall()
+	issue_number_start = issue['issue_number']
+	issue_number_end = Issue.from_volume_and_calc_number(
+		volume_id,
+		calculated_issue_number_end
+	)['issue_number']
+
 	formatting_data['issue_number'] = (
-		str(issue_number_start[0])
+		str(issue_number_start)
 			.zfill(settings['issue_padding'])
 		+ ' - ' +
-		str(issue_number_end[0])
+		str(issue_number_end)
 			.zfill(settings['issue_padding'])
 	)
 
@@ -319,14 +295,12 @@ def generate_issue_name(volume_id: int, calculated_issue_number: float) -> str:
 	Returns:
 		str: The issue name
 	"""	
-	issue_id = get_db().execute("""
-		SELECT id
-		FROM issues
-		WHERE volume_id = ?
-			AND calculated_issue_number = ?
-		LIMIT 1;
-	""", (volume_id, calculated_issue_number)).fetchone()[0]
-	formatting_data = _get_formatting_data(volume_id, issue_id)
+	issue = Issue.from_volume_and_calc_number(
+		volume_id,
+		calculated_issue_number
+	)
+	
+	formatting_data = _get_formatting_data(volume_id, issue.id)
 	settings = Settings()
 
 	if (formatting_data['issue_title'] == 'Unknown'

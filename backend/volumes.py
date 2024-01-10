@@ -74,28 +74,68 @@ def determine_special_version(
 # Main issue class
 #=====================
 class Issue:
-	def __init__(self, id: int):
-		"""Initiate the representation of the issue
+	def __init__(
+		self,
+		id: int,
+		check_existence: bool = False
+	) -> None:
+		"""Create instance of issue.
 
 		Args:
-			id (int): The id of the issue to represent
+			id (int): The ID of the issue.
+			check_existence (bool, optional): Check if issue exists based on ID.
+				Defaults to False.
 
 		Raises:
-			IssueNotFound: The id doesn't map to any issue
-		"""
+			IssueNotFound: The issue was not found.
+				Can only be raised when check_existence is `True`.
+		"""		
 		self.id = id
-		issue_found = get_db().execute(
-			"SELECT 1 FROM issues WHERE id = ? LIMIT 1",
-			(id,)
-		)
-		if not (1,) in issue_found:
+		
+		if check_existence:
+			if not (1,) in get_db().execute(
+				"SELECT 1 FROM issues WHERE id = ? LIMIT 1;",
+				(self.id,)
+			):
+				raise IssueNotFound
+
+	@classmethod
+	def from_volume_and_calc_number(
+		cls,
+		volume_id: int,
+		calculated_issue_number: float
+	) -> None:
+		"""Create instance of issue based on volume ID and calculated issue
+		number of issue.
+
+		Args:
+			volume_id (int): The ID of the volume that the issue is in.
+			calculated_issue_number (float): The calculated issue number of
+			the issue.
+
+		Raises:
+			IssueNotFound: No issue found with the given arguments.
+		"""
+		issue_id = get_db().execute("""
+			SELECT id
+			FROM issues
+			WHERE volume_id = ?
+				AND calculated_issue_number = ?
+			LIMIT 1;
+			""",
+			(volume_id, calculated_issue_number)
+		).fetchone()
+		
+		if not issue_id:
 			raise IssueNotFound
 		
-	def get_info(self) -> dict:
-		"""Get all info about the issue
+		return cls(issue_id[0])
+
+	def get_public_keys(self) -> dict:
+		"""Get data about the issue for the public to see (the API).
 
 		Returns:
-			dict: The info about the issue
+			dict: The data.
 		"""
 		cursor = get_db(dict)
 		
@@ -128,26 +168,126 @@ class Issue:
 			)
 		)
 		return data
-		
-	def monitor(self) -> None:
-		"""Set the issue to "monitored"
-		"""		
-		logging.info(f'Setting issue {self.id} to monitored')
-		get_db().execute(
-			"UPDATE issues SET monitored = 1 WHERE id = ?",
-			(self.id,)
+
+	def get_keys(self, keys: Union[Tuple[str], str]) -> dict:
+		"""Get a dict with the values of the given keys.
+
+		Args:
+			keys (Union[Tuple[str], str]): The keys or just one key.
+
+		Returns:
+			dict: The dict with the keys and their values.
+		"""
+		if isinstance(keys, str):
+			keys = (keys,)
+
+		result = dict(
+			get_db(dict).execute(
+				f"SELECT {','.join(keys)} FROM issues WHERE id = ? LIMIT 1;",
+				(self.id,)
+			).fetchone()
 		)
-		return
-		
-	def unmonitor(self) -> None:
-		"""Set the issue to "unmonitored"
-		"""		
-		logging.info(f'Setting issue {self.id} to unmonitored')
-		get_db().execute(
-			"UPDATE issues SET monitored = 0 WHERE id = ?",
+
+		return result
+
+	def __getitem__(self, key: str) -> Any:
+		value = get_db().execute(
+			f"SELECT {key} FROM volumes WHERE id = ? LIMIT 1;",
 			(self.id,)
+		).fetchone()[0]
+		return value
+
+	def get_files(self) -> List[str]:
+		"""Get all files linked to the issue.
+
+		Returns:
+			List[str]: List of the files.
+		"""
+		files = first_of_column(get_db().execute(f"""
+			SELECT DISTINCT filepath
+			FROM files f
+			INNER JOIN issues_files if
+			ON f.id = if.file_id
+			WHERE if.issue_id = ?;
+			""",
+			(self.id,)
+		))
+		return files
+
+	def __setitem__(self, key: str, value: Any) -> None:
+		if key != 'monitored':
+			raise KeyError
+
+		logging.debug(f'For issue {self.id}, setting {key} to {value}')
+
+		get_db().execute(
+			f"UPDATE issues SET {key} = ? WHERE id = ?;",
+			(value, self.id)
 		)
+
 		return
+
+def get_calc_number_range(
+	volume_id: int,
+	calculated_issue_number_start: float,
+	calculated_issue_number_end: float
+) -> List[float]:
+	"""Get all calculated issue numbers between a range for a volume.
+
+	Args:
+		volume_id (int): The ID of the volume.
+		calculated_issue_number_start (float): Start of the range.
+		calculated_issue_number_end (float): End of the range.
+
+	Returns:
+		List[float]: All calculated issue numbers in the range.
+	"""
+	result = first_of_column(get_db().execute("""
+		SELECT calculated_issue_number
+		FROM issues
+		WHERE
+			volume_id = ?
+			AND ? <= calculated_issue_number
+			AND calculated_issue_number <= ?;
+		""",
+		(
+			volume_id,
+			calculated_issue_number_start,
+			calculated_issue_number_end
+		)
+	))
+	return result
+
+def get_calc_number_id_range(
+	volume_id: int,
+	calculated_issue_number_start: float,
+	calculated_issue_number_end: float
+) -> List[int]:
+	"""Get all id's of issues between a range for a volume.
+
+	Args:
+		volume_id (int): The ID of the volume.
+		calculated_issue_number_start (float): Start of the range.
+		calculated_issue_number_end (float): End of the range.
+
+	Returns:
+		List[int]: All issue id's in the range.
+	"""
+	result = first_of_column(get_db().execute("""
+		SELECT id
+		FROM issues
+		WHERE
+			volume_id = ?
+			AND ? <= calculated_issue_number
+			AND calculated_issue_number <= ?;
+		""",
+		(
+			volume_id,
+			calculated_issue_number_start,
+			calculated_issue_number_end
+		)
+	))
+	return result
 
 #=====================
 # Main volume class
@@ -263,7 +403,7 @@ class _VolumeBackend:
 			value = value.value
 
 		logging.debug(f'For volume {self.id}, setting {key} to {value}')
-		
+
 		get_db().execute(
 			f"UPDATE volumes SET {key} = ? WHERE id = ?;",
 			(value, self.id)
@@ -705,16 +845,10 @@ def scan_files(volume_id: int) -> None:
 			if not isinstance(issue_range, tuple):
 				issue_range = (issue_range, issue_range)
 
-			matching_issues = cursor.execute("""
-				SELECT id
-				FROM issues
-				WHERE
-					volume_id = ?
-					AND ? <= calculated_issue_number
-					AND calculated_issue_number <= ?;
-				""",
-				(volume_id, *issue_range)
-			).fetchall()
+			matching_issues = get_calc_number_id_range(
+				volume_id,
+				*issue_range
+			)
 
 			if matching_issues:
 				file_id = get_file_id(
@@ -723,7 +857,7 @@ def scan_files(volume_id: int) -> None:
 				)
 
 				for issue_id in matching_issues:
-					bindings.append((file_id, issue_id[0]))
+					bindings.append((file_id, issue_id))
 
 	# Get current bindings
 	current_bindings = cursor.execute("""
@@ -877,13 +1011,10 @@ def refresh_and_scan(volume_id: int=None) -> None:
 			determine_special_version(
 				volume_data['title'],
 				volume_data['description'],
-				[
-					t[0]
-					for t in cursor.execute(
-						"SELECT title FROM issues WHERE volume_id = ?;",
-						(ids[volume_data['comicvine_id']],)
-					)
-				]
+				first_of_column(cursor.execute(
+					"SELECT title FROM issues WHERE volume_id = ?;",
+					(ids[volume_data['comicvine_id']],)
+				))
 			).value,
 			ids[volume_data['comicvine_id']]
 		)
@@ -1045,7 +1176,7 @@ class Library:
 			Issue: The `volumes.Issue` instance representing the issue
 			with the given id.
 		"""		
-		return Issue(issue_id)
+		return Issue(issue_id, check_existence=True)
 		
 	def add(self,
 		comicvine_id: str,

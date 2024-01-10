@@ -491,18 +491,16 @@ def api_issues(id: int):
 	issue = library.get_issue(id)
 
 	if request.method == 'GET':
-		result = issue.get_info()
+		result = issue.get_public_keys()
 		return return_api(result)
 
 	elif request.method == 'PUT':
 		edit_info: dict = request.get_json()
-		monitored = edit_info.get('monitor')
-		if monitored:
-			issue.monitor()
-		else:
-			issue.unmonitor()
+		monitored = edit_info.get('monitored')
+		if monitored is not None:
+			issue['monitored'] = bool(monitored)
 
-		result = issue.get_info()
+		result = issue.get_public_keys()
 		return return_api(result)
 
 #=====================
@@ -527,7 +525,7 @@ def api_rename(id: int):
 @error_handler
 @auth
 def api_rename_issue(id: int):
-	volume_id = library.get_issue(id).get_info()['volume_id']
+	volume_id = library.get_issue(id)['volume_id']
 
 	if request.method == 'GET':
 		result = preview_mass_rename(volume_id, id)
@@ -560,7 +558,7 @@ def api_convert(id: int):
 @error_handler
 @auth
 def api_convert_issue(id: int):
-	volume_id = library.get_issue(id).get_info()['volume_id']
+	volume_id = library.get_issue(id)['volume_id']
 
 	if request.method == 'GET':
 		result = preview_mass_convert(volume_id, id)
@@ -595,7 +593,7 @@ def api_volume_download(id: int):
 @error_handler
 @auth
 def api_issue_manual_search(id: int):
-	volume_id = library.get_issue(id).get_info()['volume_id']
+	volume_id = library.get_issue(id)['volume_id']
 	result = manual_search(
 		volume_id,
 		id
@@ -606,7 +604,7 @@ def api_issue_manual_search(id: int):
 @error_handler
 @auth
 def api_issue_download(id: int):
-	volume_id = library.get_issue(id).get_info()['volume_id']
+	volume_id = library.get_issue(id)['volume_id']
 	link = extract_key(request, 'link')
 	result = download_handler.add(link, volume_id, id)
 	return return_api(result, code=201)

@@ -127,7 +127,6 @@ class PostProcessingActions:
 		"""
 		download.original_file = download.file
 		if exists(download.file):
-			cursor = get_db()
 			folder = Volume(download.volume_id)['folder']
 			file_dest = join(folder, basename(download.file))
 			logging.debug(
@@ -138,7 +137,7 @@ class PostProcessingActions:
 				logging.warning(
 					f'The file/folder {file_dest} already exists; replacing with downloaded file'
 				)
-				delete_file_folder(download.file)
+				delete_file_folder(file_dest)
 
 			copy_directory(download.file, file_dest)
 			download.file = file_dest

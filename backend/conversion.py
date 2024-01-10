@@ -12,7 +12,6 @@ from typing import Dict, List, Set, Union
 from backend.converters import FileConverter, rar_executables
 from backend.enums import SpecialVersion
 from backend.file_extraction import extract_filename_data
-from backend.files import list_files
 from backend.settings import Settings
 from backend.volumes import Volume, scan_files
 
