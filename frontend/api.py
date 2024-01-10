@@ -39,6 +39,7 @@ from backend.search import manual_search
 from backend.settings import Settings, about_data, blocklist_reasons
 from backend.tasks import (TaskHandler, delete_task_history, get_task_history,
                            get_task_planning, task_library)
+from backend.websockets import EventServer
 from backend.volumes import Library, search_volumes
 
 api = Blueprint('api', __name__)
@@ -51,6 +52,9 @@ handler_context = Flask('handler')
 handler_context.teardown_appcontext(close_db)
 download_handler = DownloadHandler(handler_context)
 task_handler = TaskHandler(handler_context, download_handler)
+event_server = EventServer()
+event_server.run()
+
 MassEditorVariables.download_handler = download_handler
 
 def return_api(result: Any, error: str=None, code: int=200) -> Tuple[dict, int]:
@@ -81,7 +85,7 @@ def error_handler(method):
 			VolumeNotFound
 		) as e:
 			return return_api(**e.api_response)
-	
+
 	wrapper.__name__ = method.__name__
 	return wrapper
 
@@ -100,7 +104,7 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 
 	Returns:
 		Any: The formatted value of the key.
-	"""	
+	"""
 	value: str = request.values.get(key)
 	if check_existence and value is None:
 		raise KeyNotFound(key)
@@ -277,7 +281,7 @@ def api_task_history():
 		offset = extract_key(request, 'offset', False)
 		tasks = get_task_history(offset)
 		return return_api(tasks)
-	
+
 	elif request.method == 'DELETE':
 		delete_task_history()
 		return return_api({})
@@ -296,7 +300,7 @@ def api_task(task_id: int):
 	if request.method == 'GET':
 		task = task_handler.get_one(task_id)
 		return return_api(task)
-		
+
 	elif request.method == 'DELETE':
 		task_handler.remove(task_id)
 		return return_api({})
@@ -336,7 +340,7 @@ def api_settings_service_preference():
 	if request.method == 'GET':
 		result = settings.get_service_preference()
 		return return_api(result)
-	
+
 	elif request.method == 'PUT':
 		data = request.get_json()
 		if not 'order' in data:
@@ -397,7 +401,7 @@ def api_library_import():
 		only_english = extract_key(request, 'only_english', check_existence=False)
 		result = propose_library_import(limit, only_english)
 		return return_api(result)
-	
+
 	elif request.method == 'POST':
 		data = request.get_json()
 		rename_files = extract_key(request, 'rename_files', False)
@@ -422,7 +426,7 @@ def api_volumes_search():
 		query = extract_key(request, 'query')
 		search_results = search_volumes(query)
 		return return_api(search_results)
-	
+
 	elif request.method == 'POST':
 		data = request.get_json()
 		for key in ('comicvine_id', 'title', 'year', 'volume_number', 'publisher'):
@@ -527,7 +531,7 @@ def api_rename(id: int):
 	if request.method == 'GET':
 		result = preview_mass_rename(id)
 		return return_api(result)
-		
+
 	elif request.method == 'POST':
 		filepath_filter = request.get_json(silent=True)
 		mass_rename(id, filepath_filter=filepath_filter)
@@ -542,7 +546,7 @@ def api_rename_issue(id: int):
 	if request.method == 'GET':
 		result = preview_mass_rename(volume_id, id)
 		return return_api(result)
-		
+
 	elif request.method == 'POST':
 		filepath_filter = request.get_json(silent=True)
 		mass_rename(volume_id, id, filepath_filter=filepath_filter)
@@ -560,7 +564,7 @@ def api_convert(id: int):
 	if request.method == 'GET':
 		result = preview_mass_convert(id)
 		return return_api(result)
-		
+
 	elif request.method == 'POST':
 		files = request.get_json(silent=True) or []
 		mass_convert(id, files=files)
@@ -575,7 +579,7 @@ def api_convert_issue(id: int):
 	if request.method == 'GET':
 		result = preview_mass_convert(volume_id, id)
 		return return_api(result)
-		
+
 	elif request.method == 'POST':
 		files = request.get_json(silent=True) or []
 		mass_convert(volume_id, id, files=files)
@@ -671,13 +675,13 @@ def api_blocklist():
 		offset = extract_key(request, 'offset', False)
 		result = get_blocklist(offset)
 		return return_api(result)
-	
+
 	elif request.method == 'POST':
 		link = extract_key(request, 'link')
 		reason_id = extract_key(request, 'reason_id')
 		result = add_to_blocklist(link, reason_id)
 		return return_api(result, code=201)
-	
+
 	elif request.method == 'DELETE':
 		delete_blocklist()
 		return return_api({})
@@ -704,7 +708,7 @@ def api_credentials():
 	if request.method == 'GET':
 		result = credentials.get_all()
 		return return_api(result)
-	
+
 	elif request.method == 'POST':
 		source = extract_key(request, 'source')
 		email = extract_key(request, 'email')
@@ -718,7 +722,7 @@ def api_credentials():
 def api_open_credentials():
 	result = credentials.get_open()
 	return return_api(result)
-	
+
 @api.route('/credentials/<int:id>', methods=['GET', 'DELETE'])
 @error_handler
 @auth
@@ -726,7 +730,7 @@ def api_credential(id: int):
 	if request.method == 'GET':
 		result = credentials.get_one(id)
 		return return_api(result)
-	
+
 	elif request.method == 'DELETE':
 		credentials.delete(id)
 		return return_api({})

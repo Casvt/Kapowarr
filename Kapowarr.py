@@ -8,7 +8,8 @@ from backend.files import folder_path
 from backend.helpers import check_python_version
 from backend.logging import setup_logging
 from backend.server import create_app, create_waitress_server, set_url_base
-from frontend.api import download_handler, settings, task_handler
+from backend.websockets import EventServer
+from frontend.api import download_handler, settings, task_handler, event_server
 
 
 def Kapowarr() -> None:
@@ -26,7 +27,7 @@ def Kapowarr() -> None:
 
 	with app.app_context():
 		setup_db()
-		
+
 		url_base = settings.get_settings()['url_base']
 		set_url_base(app, url_base)
 
@@ -45,6 +46,7 @@ def Kapowarr() -> None:
 
 	download_handler.stop_handle()
 	task_handler.stop_handle()
+	event_server.stop()
 
 	return
 
