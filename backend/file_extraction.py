@@ -1,7 +1,7 @@
 #-*- coding: utf-8 -*-
 
 """
-Extracting data from filenames and generalising it.
+Extracting data from filenames or search results and generalising it.
 
 extract_filename_data() is inspired by the file parsing of Kavita and Comictagger:
 	https://github.com/Kareadita/Kavita/blob/develop/API/Services/Tasks/Scanner/Parser/Parser.cs
@@ -145,8 +145,8 @@ def convert_volume_number_to_int(
 	if volume_number is None:
 		return
 
-	if 'I' in volume_number:
-		i_count = volume_number.count('I')
+	if 'i' in volume_number.lower():
+		i_count = volume_number.lower().count('i')
 		if i_count == len(volume_number):
 			volume_number = str(i_count)
 
