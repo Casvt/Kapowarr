@@ -48,7 +48,7 @@ issue_regex_2 = compile(r'(?<!\()(?:c|issues?)(?:[\s\-\.]?|\s\-\s)(?:#\s*)?(\-?'
 issue_regex_3 = compile(r'(' + issue_regex_snippet + r')[\s\-\.]?\(?[\s\-\.]?of[\s\-\.]?' + issue_regex_snippet + r'\)?', IGNORECASE)
 issue_regex_4 = compile(r'(?<!--)(?:#\s*)?(\-?' + issue_regex_snippet + r'[\s\.]?-[\s\.]?' + issue_regex_snippet + r')\b(?!--)', IGNORECASE)
 issue_regex_5 = compile(r'#\s*(\-?' + issue_regex_snippet + r')\b(?![\s\.]?\-[\s\.]?' + issue_regex_snippet + r')', IGNORECASE)
-issue_regex_6 = compile(r'(?<=\s|\-)(?P<n_c>n)?(\-?' + issue_regex_snippet + r')(?=(?(n_c)c\d+|)(?:\s|\-|$))', IGNORECASE)
+issue_regex_6 = compile(r'(?<=(?<!part)(?:\s|\-))(?P<n_c>n)?(\-?' + issue_regex_snippet + r')(?=(?(n_c)c\d+|)(?:\s|\-|$))', IGNORECASE)
 issue_regex_7 = compile(r'^(\-?' + issue_regex_snippet + r')$', IGNORECASE)
 year_regex = compile(r'\((?:\w+\s)?' + year_regex_snippet + r'\)|--' + year_regex_snippet + r'--|, ' + year_regex_snippet + r'\s{3}|\b(?:(?:\d{2}-){1,2}(\d{4})|(\d{4})(?:-\d{2}){1,2})\b', IGNORECASE)
 series_regex = compile(r'(^(\d+\.)?\s+|^\d+\s{3}|\s(?=\s)|[\s,]+$)')
