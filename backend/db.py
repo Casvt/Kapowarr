@@ -20,7 +20,7 @@ from backend.logging import set_log_level
 
 __DATABASE_FILEPATH__ = 'db', 'Kapowarr.db'
 __DATABASE_VERSION__ = 17
-
+__DATABASE_TIMEOUT__ = 10.0
 
 class ThreadedTaskDispatcher(OldThreadedTaskDispatcher):
 	def handler_thread(self, thread_no: int) -> None:
@@ -59,6 +59,7 @@ class DBConnection(Connection, metaclass=DB_ThreadSafeSingleton):
 		super().__init__(
 			self.file,
 			timeout=timeout,
+			isolation_level='EXCLUSIVE',
 			detect_types=PARSE_DECLTYPES
 		)
 		super().cursor().execute("PRAGMA foreign_keys = ON;")
@@ -92,6 +93,7 @@ class TempDBConnection(Connection):
 		super().__init__(
 			self.file,
 			timeout=timeout,
+			isolation_level='EXCLUSIVE',
 			detect_types=PARSE_DECLTYPES
 		)
 		super().cursor().execute("PRAGMA foreign_keys = ON;")
@@ -150,12 +152,12 @@ def get_db(
 		Cursor: Database cursor instance with desired output type set
 	"""
 	if temp:
-		cursor = TempDBConnection(timeout=20.0).cursor()
+		cursor = TempDBConnection(timeout=__DATABASE_TIMEOUT__).cursor()
 	else:
 		try:
 			cursor = g.cursor
 		except AttributeError:
-			db = DBConnection(timeout=20.0)
+			db = DBConnection(timeout=__DATABASE_TIMEOUT__)
 			cursor = g.cursor = db.cursor()
 
 	cursor.row_factory = db_output_mapping[output_type]
