@@ -155,18 +155,7 @@ class Issue:
 		).fetchone())
 
 		# Get all files linked to issue
-		data['files'] = first_of_column(cursor.execute(
-				"""
-				SELECT filepath
-				FROM files
-				INNER JOIN issues_files
-				ON file_id = id
-				WHERE issue_id = ?
-				ORDER BY filepath;
-				""",
-				(self.id,)
-			)
-		)
+		data['files'] = self.get_files()
 		return data
 
 	def get_keys(self, keys: Union[Tuple[str], str]) -> dict:
@@ -192,7 +181,7 @@ class Issue:
 
 	def __getitem__(self, key: str) -> Any:
 		value = get_db().execute(
-			f"SELECT {key} FROM volumes WHERE id = ? LIMIT 1;",
+			f"SELECT {key} FROM issues WHERE id = ? LIMIT 1;",
 			(self.id,)
 		).fetchone()[0]
 		return value
@@ -208,7 +197,8 @@ class Issue:
 			FROM files f
 			INNER JOIN issues_files if
 			ON f.id = if.file_id
-			WHERE if.issue_id = ?;
+			WHERE if.issue_id = ?
+			ORDER BY filepath;
 			""",
 			(self.id,)
 		))
