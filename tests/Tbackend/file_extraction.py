@@ -163,6 +163,9 @@ class extract_filename_data(unittest.TestCase):
 				{'series': 'Batman Annual', 'year': 1961, 'volume_number': 1, 'special_version': 'cover', 'issue_number': 13.0, 'annual': True},
 
 			'Batman Annual (1961) Volume 1 Issue 14/Batman-Annual #14-00.jpg':
-				{'series': 'Batman Annual', 'year': 1961, 'volume_number': 1, 'special_version': None, 'issue_number': 14.0, 'annual': True}
+				{'series': 'Batman Annual', 'year': 1961, 'volume_number': 1, 'special_version': None, 'issue_number': 14.0, 'annual': True},
+
+			'Action Comics/Volume 2 (2011)/Action Comics 000 (2012) (4 covers) (digital) (Minutemen-PhD).cbr':
+				{'series': 'Action Comics', 'year': 2012, 'volume_number': 2, 'special_version': None, 'issue_number': 0.0, 'annual': False}
 		}
 		self.run_cases(cases)

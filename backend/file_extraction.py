@@ -53,7 +53,7 @@ issue_regex_7 = compile(r'^(-?' + issue_regex_snippet + r')$', IGNORECASE)
 year_regex = compile(r'\((?:\w+\s)?' + year_regex_snippet + r'\)|--' + year_regex_snippet + r'--|, ' + year_regex_snippet + r'\s{3}|\b(?:(?:\d{2}-){1,2}(\d{4})|(\d{4})(?:-\d{2}){1,2})\b', IGNORECASE)
 series_regex = compile(r'(^(\d+\.)?\s+|^\d+\s{3}|\s(?=\s)|[\s,]+$)')
 annual_regex = compile(r'\+[\s\.]?annuals?|annuals?[\s\.]?\+|^((?!annuals?).)*$', IGNORECASE)
-cover_regex = compile(r'(?<!no[ \-])cover|n\d+c(\d+)|(?:\b|\d)i?fc\b', IGNORECASE)
+cover_regex = compile(r'(?<!no[ \-])(?<!\d[ \-])cover|n\d+c(\d+)|(?:\b|\d)i?fc\b', IGNORECASE)
 
 def _calc_float_issue_number(issue_number: str) -> Union[float, None]:
 	"""Convert an issue number from string to representive float
