@@ -44,7 +44,7 @@ special_version_regex = compile(r'(?:\b|\()(tpb|os|one[\- ]?shot|ogn|gn|hard[\- 
 volume_regex = compile(volume_regex_snippet, IGNORECASE)
 volume_folder_regex = compile(volume_regex_snippet + r'|^(\d+)$', IGNORECASE)
 issue_regex = compile(r'\( (\-?' + issue_regex_snippet + r')\)', IGNORECASE)
-issue_regex_2 = compile(r'(?<!\()(?:c(?:hapters?)?|issues?)(?:[\s\-\.]?|\s\-\s)(?:#\s*)?(\-?' + issue_regex_snippet + r'(?:[\s\.]?\-[\s\.]?\-?' + issue_regex_snippet + r')?)\b(?!\))', IGNORECASE)
+issue_regex_2 = compile(r'(?<!\()(?:c|issues?)(?:[\s\-\.]?|\s\-\s)(?:#\s*)?(\-?' + issue_regex_snippet + r'(?:[\s\.]?\-[\s\.]?\-?' + issue_regex_snippet + r')?)\b(?!\))', IGNORECASE)
 issue_regex_3 = compile(r'(' + issue_regex_snippet + r')[\s\-\.]?\(?[\s\-\.]?of[\s\-\.]?' + issue_regex_snippet + r'\)?', IGNORECASE)
 issue_regex_4 = compile(r'(?<!--)(?:#\s*)?(\-?' + issue_regex_snippet + r'[\s\.]?-[\s\.]?' + issue_regex_snippet + r')\b(?!--)', IGNORECASE)
 issue_regex_5 = compile(r'#\s*(\-?' + issue_regex_snippet + r')\b(?![\s\.]?\-[\s\.]?' + issue_regex_snippet + r')', IGNORECASE)
@@ -315,11 +315,7 @@ def extract_filename_data(
 					r.sort(key=lambda e: (
 						int(e.group(group_number)[-1] not in '0123456789'),
 						(
-							(
-								e.start(0)
-								if regex in (issue_regex_2, issue_regex_3) else
-								1 / e.start(0)
-							)
+							1 / e.start(0)
 							if e.start(0) else
 							0
 						)

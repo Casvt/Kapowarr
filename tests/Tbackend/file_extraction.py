@@ -81,7 +81,10 @@ class extract_filename_data(unittest.TestCase):
 				{'series': 'Wolverine', 'year': 2020, 'volume_number': 1, 'special_version': None, 'issue_number': 6.0, 'annual': False},
 
 			'Batman Annual (1961) Volume 1 Issue 10/90 - Batman_Annual #10/Batman Annual #10-02.jpg':
-				{'series': 'Batman Annual', 'year': 1961, 'volume_number': 1, 'special_version': None, 'issue_number': 10.0, 'annual': True}
+				{'series': 'Batman Annual', 'year': 1961, 'volume_number': 1, 'special_version': None, 'issue_number': 10.0, 'annual': True},
+
+			'Action Comics (2011) #31 - Infected Chapter 1 True Believers':
+				{'series': 'Action Comics', 'year': 2011, 'volume_number': 1, 'special_version': None, 'issue_number': 31.0, 'annual': False}
 		}
 		self.run_cases(cases)
 
