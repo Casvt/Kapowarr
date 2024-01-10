@@ -11,7 +11,7 @@ from os.path import basename, dirname, getmtime, join, splitext
 from shutil import make_archive
 from subprocess import call as spc
 from sys import platform
-from typing import List
+from typing import List, Union
 from zipfile import ZipFile
 
 from backend.file_extraction import (extract_filename_data, image_extensions,
@@ -109,14 +109,14 @@ class FileConverter(ABC):
 	target_format: str
 
 	@abstractmethod
-	def convert(file: str) -> str:
+	def convert(file: str) -> Union[str, List[str]]:
 		"""Convert a file from source_format to target_format.
 
 		Args:
 			file (str): Filepath to the source file, should be in source_format.
 
 		Returns:
-			str: The filepath to the converted file, in target_format.
+			Union[str, List[str]]: The resulting files or directories, in target_format.
 		"""
 		pass
 
@@ -176,7 +176,7 @@ class ZIPtoFOLDER(FileConverter):
 	target_format = 'folder'
 
 	@staticmethod
-	def convert(file: str) -> str:
+	def convert(file: str) -> List[str]:
 		volume_id = filepath_to_volume_id(file)
 		volume_folder = Volume(volume_id)['folder']
 		zip_folder = join(
@@ -193,13 +193,16 @@ class ZIPtoFOLDER(FileConverter):
 			volume_id
 		)
 
-		scan_files(volume_id)
 		if resulting_files:
-			mass_rename(volume_id, filepath_filter=resulting_files)
+			scan_files(volume_id)
+			resulting_files = mass_rename(
+				volume_id,
+				filepath_filter=resulting_files
+			)
 
 		delete_file_folder(file)
 
-		return volume_folder
+		return resulting_files
 
 #=====================
 # CBZ
@@ -240,7 +243,7 @@ class CBZtoFOLDER(FileConverter):
 	target_format = 'folder'
 
 	@staticmethod
-	def convert(file: str) -> str:
+	def convert(file: str) -> List[str]:
 		return ZIPtoFOLDER.convert(file)
 
 #=====================
@@ -305,10 +308,10 @@ class RARtoFOLDER(FileConverter):
 	target_format = 'folder'
 	
 	@staticmethod
-	def convert(file: str) -> str:
+	def convert(file: str) -> List[str]:
 		volume_id = filepath_to_volume_id(file)
 		volume_folder = Volume(volume_id)['folder']
-		
+
 		rar_folder = join(
 			volume_folder,
 			archive_extract_folder,
@@ -328,13 +331,16 @@ class RARtoFOLDER(FileConverter):
 			volume_id
 		)
 
-		scan_files(volume_id)
 		if resulting_files:
-			mass_rename(volume_id, filepath_filter=resulting_files)
+			scan_files(volume_id)
+			resulting_files = mass_rename(
+				volume_id,
+				filepath_filter=resulting_files
+			)
 
 		delete_file_folder(file)
 
-		return volume_folder
+		return resulting_files
 
 #=====================
 # CBR
@@ -375,7 +381,7 @@ class CBRtoFOLDER(FileConverter):
 	target_format = 'folder'
 	
 	@staticmethod
-	def convert(file: str) -> str:
+	def convert(file: str) -> List[str]:
 		return RARtoFOLDER.convert(file)
 
 #=====================

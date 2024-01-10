@@ -580,7 +580,7 @@ def mass_rename(
 	volume_id: int,
 	issue_id: int=None,
 	filepath_filter: List[str]=None
-) -> None:
+) -> List[str]:
 	"""Carry out proposal of `naming.preview_mass_rename()`.
 
 	Args:
@@ -591,6 +591,9 @@ def mass_rename(
 
 		filepath_filter (List[str], optional): Only rename files that are in the list.
 			Defaults to None.
+
+	Returns:
+		List[str]: The new files.
 	"""
 	cursor = get_db()
 	renames = preview_mass_rename(volume_id, issue_id, filepath_filter)
@@ -623,4 +626,4 @@ def mass_rename(
 	logging.info(
 		f'Renamed volume {volume_id} {f"issue {issue_id}" if issue_id else ""}'
 	)
-	return
+	return [r['after'] for r in renames]

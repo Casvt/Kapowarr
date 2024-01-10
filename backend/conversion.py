@@ -197,10 +197,10 @@ def mass_convert(
 				['folder']
 			)
 			if converter is not None:
-				folder = converter.convert(f)
-				for sub_file in list_files(folder):
+				resulting_files = converter.convert(f)
+				for file in resulting_files:
 					convert_file(
-						sub_file,
+						file,
 						format_preference
 					)
 				converted = True
