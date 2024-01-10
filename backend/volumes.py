@@ -483,7 +483,7 @@ class _VolumeBackend:
 		"""
 		from backend.naming import generate_volume_folder_name, make_filename_safe
 		current_volume_folder = self['folder']
-		root_folder = RootFolders().get_one(self['root_folder'])['folder']
+		root_folder = RootFolders()[self['root_folder']]
 
 		if new_volume_folder is None or new_volume_folder == '':
 			# Generate default folder and set custom_folder to False
@@ -754,7 +754,7 @@ class Volume(_VolumeBackend):
 			
 			delete_empty_folders(
 				self['folder'],
-				RootFolders().get_one(self['root_folder'])['folder']
+				RootFolders()[self['root_folder']]
 			)
 
 		# Delete file entries
@@ -801,7 +801,7 @@ def scan_files(volume_id: int) -> None:
 	volume_files = set(volume.get_files())
 
 	if not isdir(volume_data.folder):
-		root_folder = RootFolders().get_one(volume_data.root_folder)['folder']
+		root_folder = RootFolders()[volume_data.root_folder]
 		create_volume_folder(root_folder, volume_id)
 
 	bindings = []
@@ -1222,7 +1222,7 @@ class Library:
 
 		# Check if root folder exists
 		# Raises RootFolderNotFound when id is invalid
-		root_folder = RootFolders().get_one(root_folder_id)['folder']
+		root_folder = RootFolders()[root_folder_id]
 
 		volume_data = ComicVine().fetch_volume(comicvine_id)
 		volume_data['monitored'] = monitor

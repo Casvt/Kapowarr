@@ -431,7 +431,7 @@ def preview_mass_rename(
 	if not issue_id:
 		file_infos = sorted(volume.get_files())
 		if not volume['custom_folder']:
-			root_folder = RootFolders().get_one(volume['root_folder'])['folder']
+			root_folder = RootFolders()[volume['root_folder']]
 			folder = join(root_folder, generate_volume_folder_name(volume_id))
 		else:
 			folder = volume['folder']
@@ -573,7 +573,7 @@ def mass_rename(
 	renames = preview_mass_rename(volume_id, issue_id, filepath_filter)
 
 	volume = Volume(volume_id)
-	root_folder = RootFolders().get_one(volume['root_folder'])['folder']
+	root_folder = RootFolders()[volume['root_folder']]
 
 	if not issue_id and renames:
 		# Update volume folder in case it gets renamed

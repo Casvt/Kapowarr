@@ -78,7 +78,9 @@ def get_blocklist_entry(id: int) -> dict:
 		FROM blocklist
 		WHERE id = ?
 		LIMIT 1;
-	""", (id,)).fetchone()
+		""", 
+		(id,)
+	).fetchone()
 	
 	if not entry:
 		BlocklistEntryNotFound

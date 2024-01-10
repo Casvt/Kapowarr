@@ -55,7 +55,10 @@ class RootFolders:
 		if not root_folder:
 			raise RootFolderNotFound
 		return root_folder
-			
+
+	def __getitem__(self, root_folder_id: int) -> str:
+		return self.get_one(root_folder_id)['folder']
+
 	def add(self, folder: str) -> dict:
 		"""Add a rootfolder
 
