@@ -159,9 +159,10 @@ def delete_empty_folders(top_folder: str, root_folder: str) -> None:
 		child_folder = basename(parent_folder)
 		parent_folder = dirname(parent_folder)
 
-	lowest_empty_folder = join(parent_folder, child_folder)
-	logging.debug(f'Deleting folder and children: {lowest_empty_folder}')
-	delete_file_folder(lowest_empty_folder)
+	if child_folder:
+		lowest_empty_folder = join(parent_folder, child_folder)
+		logging.debug(f'Deleting folder and children: {lowest_empty_folder}')
+		delete_file_folder(lowest_empty_folder)
 
 	return
 
