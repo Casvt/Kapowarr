@@ -6,7 +6,8 @@ from typing import Union
 from requests import Session, post
 from requests.exceptions import RequestException
 
-from backend.download_general import BaseTorrentClient, DownloadStates
+from backend.download_general import BaseTorrentClient
+from backend.enums import DownloadState
 from backend.settings import private_settings
 
 filename_magnet_link = compile(r'(?<=&dn=).*?(?=&)', IGNORECASE)
@@ -67,16 +68,16 @@ class qBittorrent(BaseTorrentClient):
 		result = r.json()
 
 		if result['pieces_have'] <= 0:
-			state = DownloadStates.QUEUED_STATE
+			state = DownloadState.QUEUED_STATE
 
 		elif result['completion_date'] == -1:
-			state = DownloadStates.DOWNLOADING_STATE
+			state = DownloadState.DOWNLOADING_STATE
 
 		elif result['eta'] != 8640000:
-			state = DownloadStates.SEEDING_STATE
+			state = DownloadState.SEEDING_STATE
 		
 		else:
-			state = DownloadStates.IMPORTING_STATE
+			state = DownloadState.IMPORTING_STATE
 
 		return {
 			'size': result['total_size'],

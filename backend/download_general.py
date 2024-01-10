@@ -11,20 +11,8 @@ from backend.custom_exceptions import (InvalidKeyValue, KeyNotFound,
                                        TorrentClientDownloading,
                                        TorrentClientNotWorking)
 from backend.db import get_db
+from backend.enums import DownloadState
 
-
-class DownloadStates:
-	QUEUED_STATE = 'queued'
-	DOWNLOADING_STATE = 'downloading'
-	SEEDING_STATE = 'seeding'
-	IMPORTING_STATE = 'importing'
-
-	FAILED_STATE = 'failed'
-	"Download was unsuccessful"
-	CANCELED_STATE = 'canceled'
-	"Download was removed from queue"
-	SHUTDOWN_STATE = 'shutting down'
-	"Download was stopped because Kapowarr is shutting down"
 
 class Download(ABC):
 	# This block is assigned after initialisation of the object
@@ -42,7 +30,7 @@ class Download(ABC):
 	title: str
 	size: int
 
-	state: str
+	state: DownloadState
 	progress: float
 	speed: float
 
@@ -76,12 +64,15 @@ class Download(ABC):
 		return
 		
 	@abstractmethod
-	def stop(self, state: DownloadStates=DownloadStates.CANCELED_STATE) -> None:
+	def stop(
+		self, 
+		state: DownloadState = DownloadState.CANCELED_STATE
+	) -> None:
 		"""Interrupt the download
 
 		Args:
-			state (DownloadStates, optional): The state to set for the download.
-				Defaults to DownloadStates.CANCELED_STATE.
+			state (DownloadState, optional): The state to set for the download.
+				Defaults to DownloadState.CANCELED_STATE.
 		"""
 		return
 

@@ -19,7 +19,7 @@ from backend.custom_exceptions import (DownloadLimitReached, DownloadNotFound,
 from backend.db import get_db
 from backend.download_direct_clients import (DirectDownload, Download,
                                              MegaDownload)
-from backend.download_general import DownloadStates
+from backend.enums import DownloadState
 from backend.download_torrent_clients import TorrentClients, TorrentDownload
 from backend.enums import BlocklistReason, SeedingHandling
 from backend.files import create_folder, delete_file_folder
@@ -92,7 +92,7 @@ class DownloadHandler:
 
 			except DownloadLimitReached:
 				# Mega download limit reached mid-download
-				download.state = DownloadStates.FAILED_STATE
+				download.state = DownloadState.FAILED_STATE
 				self.queue = [
 					e
 					for e in self.queue
@@ -102,18 +102,18 @@ class DownloadHandler:
 					)
 				]
 
-			if download.state == DownloadStates.CANCELED_STATE:
+			if download.state == DownloadState.CANCELED_STATE:
 				PostProcesser.canceled(download)
 
-			elif download.state == DownloadStates.FAILED_STATE:
+			elif download.state == DownloadState.FAILED_STATE:
 				PostProcesser.failed(download)
 			
-			elif download.state == DownloadStates.SHUTDOWN_STATE:
+			elif download.state == DownloadState.SHUTDOWN_STATE:
 				PostProcesser.shutdown(download)
 				return
 
-			elif download.state == DownloadStates.DOWNLOADING_STATE:
-				download.state = DownloadStates.IMPORTING_STATE
+			elif download.state == DownloadState.DOWNLOADING_STATE:
+				download.state = DownloadState.IMPORTING_STATE
 				PostProcesser.success(download)
 
 			self.queue.remove(download)
@@ -148,32 +148,32 @@ class DownloadHandler:
 			while True:
 				download.update_status()
 
-				if download.state == DownloadStates.CANCELED_STATE:
+				if download.state == DownloadState.CANCELED_STATE:
 					download.remove_from_client(delete_files=True)
 					post_processer.canceled(download)
 					self.queue.remove(download)
 					break
 
-				elif download.state == DownloadStates.FAILED_STATE:
+				elif download.state == DownloadState.FAILED_STATE:
 					download.remove_from_client(delete_files=True)
 					post_processer.failed(download)
 					self.queue.remove(download)
 					break
 
-				elif download.state == DownloadStates.SHUTDOWN_STATE:
+				elif download.state == DownloadState.SHUTDOWN_STATE:
 					download.remove_from_client(delete_files=True)
 					post_processer.shutdown(download)
 					break
 
 				elif (
 					seeding_handling == SeedingHandling.COPY
-					and download.state == DownloadStates.SEEDING_STATE
+					and download.state == DownloadState.SEEDING_STATE
 					and not files_copied
 				):
 					files_copied = True
 					post_processer.seeding(download)
 
-				elif download.state == DownloadStates.IMPORTING_STATE:
+				elif download.state == DownloadState.IMPORTING_STATE:
 					if settings['delete_completed_torrents']:
 						download.remove_from_client(delete_files=False)
 					post_processer.success(download)
@@ -415,7 +415,7 @@ class DownloadHandler:
 		logging.debug('Stopping download thread')
 
 		for e in self.queue:
-			e.stop(DownloadStates.SHUTDOWN_STATE)
+			e.stop(DownloadState.SHUTDOWN_STATE)
 
 		if self.downloading_item:
 			self.downloading_item.join()
@@ -463,7 +463,7 @@ class DownloadHandler:
 				prev_state = download.state
 				download.stop()
 
-				if prev_state == DownloadStates.QUEUED_STATE:
+				if prev_state == DownloadState.QUEUED_STATE:
 					self.queue.remove(download)
 					if isinstance(download, TorrentDownload):
 						download.remove_from_client(delete_files=True)

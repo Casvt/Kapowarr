@@ -41,3 +41,16 @@ class SpecialVersion(BaseEnum):
 
 	NORMAL = None
 	"Normal volume, so not a special version"
+
+class DownloadState(BaseEnum):
+	QUEUED_STATE = 'queued'
+	DOWNLOADING_STATE = 'downloading'
+	SEEDING_STATE = 'seeding'
+	IMPORTING_STATE = 'importing'
+
+	FAILED_STATE = 'failed'
+	"Download was unsuccessful"
+	CANCELED_STATE = 'canceled'
+	"Download was removed from queue"
+	SHUTDOWN_STATE = 'shutting down'
+	"Download was stopped because Kapowarr is shutting down"

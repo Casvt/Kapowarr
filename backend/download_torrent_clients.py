@@ -15,7 +15,8 @@ from backend.custom_exceptions import (InvalidKeyValue, TorrentClientNotFound,
                                        TorrentClientNotWorking)
 from backend.db import get_db
 from backend.download_direct_clients import BaseDownload
-from backend.download_general import DownloadStates, TorrentClient
+from backend.download_general import TorrentClient
+from backend.enums import DownloadState
 from backend.settings import Settings
 from backend.torrent_clients import qBittorrent
 
@@ -272,12 +273,12 @@ class TorrentDownload(BaseDownload):
 		self.progress = torrent_status['progress']
 		self.speed = torrent_status['speed']
 		self.size = torrent_status['size']
-		if not self.state == DownloadStates.CANCELED_STATE:
+		if not self.state == DownloadState.CANCELED_STATE:
 			self.state = torrent_status['state']
 		return
 
 	def stop(self,
-		state: DownloadStates = DownloadStates.CANCELED_STATE
+		state: DownloadState = DownloadState.CANCELED_STATE
 	) -> None:
 		self.state = state
 		return
