@@ -14,7 +14,7 @@ from backend.enums import SeedingHandling
 from backend.files import folder_path
 from backend.helpers import (CommaList, Singleton, first_of_column,
                              get_python_version)
-from backend.logging import log_levels, set_log_level
+from backend.logging import set_log_level
 
 supported_source_strings = (('mega',),
 							('mediafire',),
@@ -167,7 +167,7 @@ class Settings(metaclass=Singleton):
 
 			check_format(value, key)
 
-		elif key == 'log_level' and not value in log_levels:
+		elif key == 'log_level' and not isinstance(value, int):
 			raise InvalidSettingValue(key, value)
 
 		elif key == 'url_base':

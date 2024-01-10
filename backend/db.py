@@ -19,7 +19,7 @@ from backend.helpers import CommaList, DB_ThreadSafeSingleton
 from backend.logging import set_log_level
 
 __DATABASE_FILEPATH__ = 'db', 'Kapowarr.db'
-__DATABASE_VERSION__ = 16
+__DATABASE_VERSION__ = 17
 
 
 class ThreadedTaskDispatcher(OldThreadedTaskDispatcher):
@@ -598,6 +598,15 @@ def migrate_db(current_db_version: int) -> None:
 
 			COMMIT;
 		""")
+		
+		current_db_version = s['database_version'] = 16
+		s._save_to_database()
+
+	if current_db_version == 16:
+		# V16 -> V17
+		
+		log_number = 20 if s['log_level'] == 'info' else 10
+		s['log_level'] = log_number
 		
 		current_db_version = s['database_version'] = 16
 		s._save_to_database()
