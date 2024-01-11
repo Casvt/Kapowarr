@@ -1,12 +1,16 @@
 #-*- coding: utf-8 -*-
 
+"""
+Getting downloads from a GC page
+"""
+
 import logging
 from hashlib import sha1
 from re import IGNORECASE, compile
 from typing import Dict, List, Tuple, Union
 
 from bencoding import bdecode, bencode
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from requests import get
 from requests.exceptions import ConnectionError as requests_ConnectionError
 
@@ -24,21 +28,25 @@ from backend.naming import (generate_empty_name, generate_issue_name,
 from backend.settings import Settings, supported_source_strings
 from backend.volumes import Volume
 
+check_year = compile(r'\b\d{4}\b')
 mega_regex = compile(r'https?://mega\.(nz|io)/(#(F\!|\!)|folder/|file/)', IGNORECASE)
 mediafire_regex = compile(r'https?://www\.mediafire\.com/', IGNORECASE)
-extract_mediafire_regex = compile(r'window.location.href\s?=\s?\'https://download\d+\.mediafire.com/.*?(?=\')', IGNORECASE)
+extract_mediafire_regex = compile(
+	r'window.location.href\s?=\s?\'https://download\d+\.mediafire.com/.*?(?=\')',
+	IGNORECASE
+)
 
 def _check_download_link(
 	link_text: str,
 	link: str,
 	torrent_client_available: bool
 ) -> Union[str, None]:
-	"""Check if download link is supported and allowed
+	"""Check if download link is supported and allowed.
 
 	Args:
-		link_text (str): The title of the link
-		link (str): The link itself
-		torrent_client_available (bool): Whether or not a torrent client is available
+		link_text (str): The title of the link.
+		link (str): The link itself.
+		torrent_client_available (bool): Whether or not a torrent client is available.
 
 	Returns:
 		Union[str, None]: Either the name of the service (e.g. `mega`)
@@ -161,21 +169,120 @@ link_filter_1 = lambda e: (
 	and 'Language' in e.text
 	and e.find('p') is None
 )
+def _extract_button_links(
+	body: Tag,
+	torrent_client_available: bool
+) -> dict:
+	"""Extract download groups that are a list of big buttons.
+
+	Args:
+		body (Tag): The body to extract from.
+		torrent_client_available (bool): Whether or not a client is available.
+
+	Returns:
+		dict: The download groups.
+		Follows format described in `_extract_get_comics_links()`.
+	"""
+	download_groups = {}
+	for result in body.find_all(link_filter_1):
+		extracted_title: str = result.get_text('\x00')
+		title: str = extracted_title.partition('\x00')[0]
+
+		if 'variant cover' in title.lower():
+			continue
+
+		if (
+			"Year :\x00\xa0" in extracted_title
+			and not check_year.search(title)
+		):
+			# Append year to title
+			year: str = (
+				extracted_title
+					.split("Year :\x00\xa0")[1]
+					.split(" |")[0]
+			)
+			title += ' --' + year + '--'
+
+		for e in result.next_sibling.next_elements:
+			if e.name == 'div':
+				print()
+				print(e.attrs.get('class', []))
+				print()
+			if e.name == 'hr':
+				break
+
+			elif (
+				e.name == 'div'
+				and 'aio-button-center' in (e.attrs.get('class', []))
+			):
+				group_link: Tag = e.find('a')
+				link_title = group_link.text.strip().lower()
+				match = _check_download_link(
+					link_title,
+					group_link['href'],
+					torrent_client_available
+				)
+				if match:
+					(download_groups
+						.setdefault(title, {})
+						.setdefault(match, [])
+						.append(group_link['href'])
+					)
+
+	return download_groups
+
 link_filter_2 = lambda e: (
 	e.name == 'li'
 	and e.parent.name == 'ul'
 	and e.find('a')
 )
-check_year = compile(r'\b\d{4}\b')
+def _extract_list_links(
+	body: Tag,
+	torrent_client_available: bool
+) -> dict:
+	"""Extract download groups that are in a unsorted list.
+
+	Args:
+		body (Tag): The body to extract from.
+		torrent_client_available (bool): Whether or not a client is available.
+
+	Returns:
+		dict: The download groups.
+		Follows format described in `_extract_get_comics_links()`.
+	"""
+	download_groups = {}
+	for result in body.find_all(link_filter_2):
+		title: str = result.get_text('\x00').partition('\x00')[0]
+
+		if 'variant cover' in title.lower():
+			continue
+
+		for group_link in result.find_all('a'):
+			group_link: Tag
+			link_title = group_link.text.strip().lower()
+			match = _check_download_link(
+				link_title,
+				group_link['href'],
+				torrent_client_available
+			)
+			if match:
+				(download_groups
+					.setdefault(title, {})
+					.setdefault(match, [])
+					.append(group_link['href'])
+				)
+	
+	return download_groups
+
 def _extract_get_comics_links(
 	soup: BeautifulSoup
 ) -> Dict[str, Dict[str, List[str]]]:
 	"""Go through the getcomics page and extract all download links.
 	The links are grouped. All links in a group lead to the same download,
-	only via different services (mega, direct download, mirror download, etc.)
+	only via different services (mega, direct download, mirror download, etc.).
 
 	Args:
-		soup (BeautifulSoup): The soup of the getcomics page
+		soup (BeautifulSoup): The soup of the getcomics page.
 
 	Returns:
 		Dict[str, Dict[str, List[str]]]: The outer dict maps the group name to the group.
@@ -185,7 +292,10 @@ def _extract_get_comics_links(
 			{
 				'Amazing Spider-Man V1 Issue 1-10': {
 					'mega': ['https://mega.io/abc'],
-					'direct': ['https://main.server.com/abc', 'https://mirror.server.com/abc']
+					'direct': [
+						'https://main.server.com/abc',
+						'https://mirror.server.com/abc'
+					]
 				},
 				'Amazing Spider-Man V1 Issue 11-20': {...}
 			}
@@ -196,42 +306,11 @@ def _extract_get_comics_links(
 		"SELECT 1 FROM torrent_clients"
 	).fetchone() is not None
 
-	download_groups = {}
 	body = soup.find('section', {'class': 'post-contents'})
-	for result in body.find_all(link_filter_1):
-		extracted_title = result.get_text('\x00')
-		group_title: str = extracted_title.partition('\x00')[0]
-		if "Year :\x00\xa0" in extracted_title and not check_year.search(group_title):
-			# Append year to title
-			group_title += ' --' + result.get_text("\x00").split("Year :\x00\xa0")[1].split(" |")[0] + '--'
-
-		if 'variant cover' in group_title.lower():
-			continue
-		group_links = {}
-		for e in result.next_sibling.next_elements:
-			if e.name == 'hr':
-				break
-			elif e.name == 'div' and 'aio-button-center' in (e.attrs.get('class', [])):
-				group_link = e.find('a')
-				link_title = group_link.text.strip().lower()
-				match = _check_download_link(link_title, group_link['href'], torrent_client_available)
-				if match:
-					group_links.setdefault(match, []).append(group_link['href'])
-		if group_links:
-			download_groups.update({group_title: group_links})
-
-	for result in body.find_all(link_filter_2):
-		group_title: str = result.get_text('\x00').partition('\x00')[0]
-		if 'variant cover' in group_title.lower():
-			continue
-		group_links = {}
-		for group_link in result.find_all('a'):
-			link_title = group_link.text.strip().lower()
-			match = _check_download_link(link_title, group_link['href'], torrent_client_available)
-			if match:
-				group_links.setdefault(match, []).append(group_link['href'])
-		if group_links:
-			download_groups.update({group_title: group_links})
+	download_groups = {
+		**_extract_button_links(body, torrent_client_available),
+		**_extract_list_links(body, torrent_client_available)
+	}
 
 	logging.debug(f'Download groups: {download_groups}')
 	return download_groups
@@ -253,29 +332,63 @@ def _sort_link_paths(p: List[dict]) -> Tuple[float, int]:
 		if isinstance(entry['info']['issue_number'], float):
 			issues_covered += 1
 		elif isinstance(entry['info']['issue_number'], tuple):
-			issues_covered += (entry['info']['issue_number'][1] - entry['info']['issue_number'][0])
+			issues_covered += (
+				entry['info']['issue_number'][1]
+				-
+				entry['info']['issue_number'][0]
+			)
 
 	return (1 / issues_covered, len(p))
-	
+
+def _check_overlapping_issues(
+		issues_1: Union[float, Tuple[float, float]],
+		issues_2: Union[float, Tuple[float, float]]
+) -> bool:
+	"""Check if two issues overlap. Both can be single issues or ranges.
+
+	Args:
+		issues_1 (Union[float, Tuple[float, float]]): First issue or range.
+		issues_2 (Union[float, Tuple[float, float]]): Second issue or range.
+
+	Returns:
+		bool: Whether or not they overlap.
+	"""
+	if isinstance(issues_1, float):
+		if isinstance(issues_2, float):
+			return issues_1 == issues_2
+		else:
+			return issues_2[0] <= issues_1 <= issues_2[1]
+	else:
+		if isinstance(issues_2, float):
+			return issues_1[0] <= issues_2 <= issues_1[1]
+		else:
+			return (issues_1[0] <= issues_2[0] <= issues_1[1]
+				or issues_1[0] <= issues_2[1] <= issues_1[1])
+
 def _create_link_paths(
 	download_groups: Dict[str, Dict[str, List[str]]],
 	volume_id: int
 ) -> List[List[Dict[str, dict]]]:
-	"""Based on the download groups, find different "paths" to download the most amount of content.
-	On the same page, there might be a download for `TPB + Extra's`, `TPB`, `Issue A-B` and for `Issue C-D`.
-	This function creates "paths" that contain links that together download as much content without overlapping.
-	So a path would be created for `TPB + Extra's`. A second path would be created for `TPB` and a third path for
-	`Issue A-B` + `Issue C-D`. Paths 2 and on are basically backup options for if path 1 doesn't work, to still get
-	the most content out of the page.
+	"""Based on the download groups, find different "paths" to download
+	the most amount of content. On the same page, there might be a download
+	for `TPB + Extra's`, `TPB`, `Issue A-B` and for `Issue C-D`. This function
+	creates "paths" that contain links that together download as much content
+	without overlapping. So a path would be created for `TPB + Extra's`. A
+	second path would be created for `TPB` and a third path for
+	`Issue A-B` + `Issue C-D`. Paths 2 and on are basically backup options for
+	if path 1 doesn't work, to still get the most content out of the page.
 
 	Args:
-		download_groups (Dict[str, Dict[str, List[str]]]): The download groups (output of download._extract_get_comics_links())
-		volume_id (int): The id of the volume
+		download_groups (Dict[str, Dict[str, List[str]]]): The download groups.
+		Output of `download._extract_get_comics_links()`.
+		volume_id (int): The id of the volume.
 
 	Returns:
-		List[List[Dict[str, dict]]]: The list contains all paths. Each path is a list of download groups. The `info` key has
-		as it's value the output of files.extract_filename_data() for the title of the group. The `links` key contains the
-		download links grouped together with their service.
+		List[List[Dict[str, dict]]]: The list contains all paths. Each path is
+		a list of download groups. The `info` key has as it's value the output 
+		of `file_extraction.extract_filename_data()` for the title of the group.
+		The `links` key contains the download links grouped together with
+		their service.
 	"""	
 	logging.debug('Creating link paths')
 
@@ -299,22 +412,35 @@ def _create_link_paths(
 			volume_data.special_version
 		):
 			# Group matches/contains what is desired to be downloaded
-			sources = {s: sources[s] for s in sorted(sources, key=lambda k: service_preference.index(k))}
+			sources = {
+				s: sources[s]
+				for s in sorted(
+					sources,
+					key=lambda k: service_preference.index(k)
+				)
+			}
 			if (volume_data.special_version == SpecialVersion.VOLUME_AS_ISSUE
 			and (
 				processed_desc['special_version'] == SpecialVersion.TPB
 				or isinstance(processed_desc['volume_number'], tuple)
 			)):
-				processed_desc['special_version'] = volume_data.special_version
+				processed_desc['special_version'] = SpecialVersion.VOLUME_AS_ISSUE.value
 
-			if (processed_desc['special_version'] is not None
-			and processed_desc['special_version'] != SpecialVersion.VOLUME_AS_ISSUE):
-				if volume_data.special_version == SpecialVersion.HARD_COVER:
-					processed_desc['special_version'] = SpecialVersion.HARD_COVER.value
+			if (
+				processed_desc['special_version'] is not None
+				and processed_desc['special_version'] != SpecialVersion.VOLUME_AS_ISSUE
+			):
+				if volume_data.special_version in (
+					SpecialVersion.HARD_COVER,
+					SpecialVersion.ONE_SHOT
+				):
+					processed_desc['special_version'] = volume_data.special_version.value
+
 				link_paths.append([{'info': processed_desc, 'links': sources}])
 
 			else:
-				# Find path with ranges and single issues that doesn't have a link that already covers this one
+				# Find path with ranges and single issues that doesn't have 
+				# a link that already covers this one
 				for path in link_paths:
 					for entry in path:
 						if entry['info']['special_version'] == SpecialVersion.VOLUME_AS_ISSUE:
@@ -324,31 +450,76 @@ def _create_link_paths(
 						elif entry['info']['special_version'] is not None:
 							break
 
-						elif isinstance(entry['info']['issue_number'], float):
-							if isinstance(processed_desc['issue_number'], float):
-								if entry['info']['issue_number'] == processed_desc['issue_number']:
-									break
-							else:
-								if processed_desc['issue_number'][0] <= entry['info']['issue_number'] <= processed_desc['issue_number'][1]:
-									break
-						else:
-							if isinstance(processed_desc['issue_number'], float):
-								if entry['info']['issue_number'][0] <= processed_desc['issue_number'] <= entry['info']['issue_number'][1]:
-									break
-							else:
-								if (entry['info']['issue_number'][0] <= processed_desc['issue_number'][0] <= entry['info']['issue_number'][1]
-									or entry['info']['issue_number'][0] <= processed_desc['issue_number'][1] <= entry['info']['issue_number'][1]):
-									break
+						elif _check_overlapping_issues(
+							entry['info']['issue_number'],
+							processed_desc['issue_number']
+						):
+							break
+
 					else:
+						# No conflicts found so add to path
 						path.append({'info': processed_desc, 'links': sources})
 						break
 				else:
+					# Conflict in all paths found so start a new one
 					link_paths.append([{'info': processed_desc, 'links': sources}])
 	
 	link_paths.sort(key=_sort_link_paths)
 
 	logging.debug(f'Link paths: {link_paths}')
 	return link_paths
+
+def _generate_name(
+	volume_id: int,
+	download_info: dict,
+	name_volume_as_issue: bool
+) -> str:
+	"""Generate filename based on info.
+
+	Args:
+		volume_id (int): The ID of the volume for which the file is.
+		download_info (dict): Output of `file_extraction.extract_filename_data()`
+		for download group title.
+		name_volume_as_issue (bool): Whether or not to name the volume as an
+		issue.
+
+	Returns:
+		str: The generated name.
+	"""
+	if download_info['special_version'] == SpecialVersion.TPB:
+		return generate_tpb_name(volume_id)
+
+	if download_info['special_version'] == SpecialVersion.VOLUME_AS_ISSUE:
+		if name_volume_as_issue:
+			if isinstance(download_info['volume_number'], tuple):
+				return generate_issue_range_name(
+					volume_id,
+					*download_info['volume_number']
+				)
+			else:
+				return generate_issue_name(
+					volume_id,
+					download_info['volume_number']
+				)
+		else:
+			return generate_empty_name(
+				volume_id,
+				download_info['volume_number']
+			)
+
+	if download_info['special_version'] is not None:
+		return generate_empty_name(volume_id)
+
+	if isinstance(download_info['issue_number'], tuple):
+		return generate_issue_range_name(
+			volume_id,
+			*download_info['issue_number']
+		)
+
+	return generate_issue_name(
+		volume_id,
+		download_info['issue_number']
+	)
 
 def _test_paths(
 	link_paths: List[List[Dict[str, dict]]],
@@ -380,38 +551,12 @@ def _test_paths(
 	for path in link_paths:
 		for download in path:
 			if rename_downloaded_files:
-				# Generate name
-				if download['info']['special_version'] == SpecialVersion.TPB:
-					name = generate_tpb_name(volume_id)
-
-				elif download['info']['special_version'] == SpecialVersion.VOLUME_AS_ISSUE:
-					if name_volume_as_issue:
-						if isinstance(download['info']['volume_number'], tuple):
-							name = generate_issue_range_name(
-								volume_id,
-								*download['info']['volume_number']
-							)
-						else:
-							name = generate_issue_name(
-								volume_id,
-								download['info']['volume_number']
-							)
-					else:
-						name = generate_empty_name(volume_id, download['info']['volume_number'])
-
-				elif (download['info']['special_version'] or SpecialVersion.VOLUME_AS_ISSUE) != SpecialVersion.VOLUME_AS_ISSUE:
-					name = generate_empty_name(volume_id)
-
-				elif isinstance(download['info']['issue_number'], tuple):
-					# Link for issue range
-					name = generate_issue_range_name(
-						volume_id,
-						*download['info']['issue_number']
-					)
+				name = _generate_name(
+					volume_id,
+					download['info'],
+					name_volume_as_issue
+				)
 				
-				else:
-					# Link for single issue
-					name = generate_issue_name(volume_id, download['info']['issue_number'])
 			else:
 				name = ''
 
@@ -452,6 +597,7 @@ def _test_paths(
 			if downloads:
 				break
 			else:
+				# Try next path
 				continue
 		downloads = []
 	
