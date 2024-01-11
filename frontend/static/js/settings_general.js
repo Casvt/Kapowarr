@@ -21,7 +21,7 @@ function saveSettings(api_key) {
 		'url_base': document.querySelector('#url-base-input').value,
 		'auth_password': document.querySelector('#password-input').value,
 		'comicvine_api_key': document.querySelector('#cv-input').value,
-		'log_level': document.querySelector('#log-level-input').value
+		'log_level': parseInt(document.querySelector('#log-level-input').value)
 	};
 	fetch(`${url_base}/api/settings?api_key=${api_key}`, {
 		'method': 'PUT',
