@@ -84,9 +84,10 @@ plugins:
 # Navigation Layout
 nav:
   - Home: index.md
-  - Getting Started:
+  - Installation And Updating:
     - Installation: installation/installation.md
     - Setup After Installation: installation/setup_after_installation.md
+    - Updating: installation/updating.md
   - General Information:
     - Introduction: general_info/workings.md
     - Features: general_info/features.md

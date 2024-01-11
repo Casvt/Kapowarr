@@ -20,7 +20,8 @@ In the web-UI of Kapowarr, the documentation for that topic will be found at the
 ### Getting started
 
 - [Installation](./installation/installation.md)
-- [Setup After Installation](./installation/setup_after_installation.md)
+- [Setup after installation](./installation/setup_after_installation.md)
+- [Updating your installation](./installation/updating.md)
 
 ### General Information
 
