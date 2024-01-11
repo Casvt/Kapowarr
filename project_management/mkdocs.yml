@@ -7,6 +7,8 @@ edit_uri: blob/development/docs/
 repo_name: Casvt/Kapowarr
 docs_dir: ../docs
 
+
+
 extra_css:
   - assets/css/extra.css
 
@@ -74,16 +76,32 @@ plugins:
       type: timeago
       locale: en
       fallback_to_build_date: false
+  - redirects:
+      redirect_maps:
+        'library-import.md': 'general_info/features.md#library-import'
+        'mass-editor.md': 'general_info/features.md#mass-editor'
 
 # Navigation Layout
 nav:
   - Home: index.md
   - Getting Started:
-    - Installation: installation.md
-    - Setup After Installation: setup_after_installation.md
-  - Settings: settings.md
+    - Installation: installation/installation.md
+    - Setup After Installation: installation/setup_after_installation.md
+  - General Information:
+    - Introduction: general_info/workings.md
+    - Features: general_info/features.md
+    - Managing A Volume: general_info/managing_volume.md
+    - Downloading: general_info/downloading.md
+  - Beta Documentation:
+    - Documentation: beta/beta.md
+  - Settings:
+    - Introduction: settings/settings.md
+    - Media Management: settings/mediamanagement.md
+    - Download: settings/download.md
+    - Download Clients: settings/download_clients.md
+    - General: settings/general.md
   - Other Docs:
-    - API: api.md
-    - FAQ: faq.md
-    - Rate Limiting: rate_limiting.md
-  - FAQ: faq.md
+    - Reporting: other_docs/reporting.md
+    - FAQ: other_docs/faq.md
+    - Rate Limiting: other_docs/rate_limiting.md
+    - API: other_docs/api.md

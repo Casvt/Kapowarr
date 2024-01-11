@@ -4,11 +4,14 @@
 body {
 	--light-color: #ffffff;
 	--off-light-color: #f6f6f6;
+	--dark-hover-color: #f9f9f9;
 	--border-color: #dde6e9;
 	--mid-color: #808080;
 	--dark-color: #464b51;
 
 	--accent-color: #ebc700;
+	--success-color: #54db68;
+	--error-color: #db5461;
 	
 	--background-color: var(--off-light-color);
 	--text-color: var(--dark-color);
@@ -27,6 +30,9 @@ body {
 	--gray-color: #2a2a2a;
 	--mid-color: #262626;
 	--dark-color: #202020;
+	--dark-hover-color: var(--mid-color);
+	
+	--light-accent-color: var(--border-color);
 
 	--background-color: var(--dark-color);
 	--text-color: var(--light-color);
