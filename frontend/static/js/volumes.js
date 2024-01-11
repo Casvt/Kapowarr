@@ -11,7 +11,7 @@ function populatePosters(volumes, api_key) {
 		entry.href = `${url_base}/volumes/${volume.id}`;
 
 		const cover = document.createElement("img");
-		cover.src = `${volume.cover}?api_key=${api_key}`;
+		cover.src = `${url_base}/api/volumes/${volume.id}/cover?api_key=${api_key}`;
 		cover.alt = "";
 		cover.loading = "lazy";
 		entry.appendChild(cover);

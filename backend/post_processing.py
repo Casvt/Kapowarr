@@ -1,13 +1,13 @@
 #-*- coding: utf-8 -*-
 
-"""This file contains functions regarding the post processing of downloads
+"""
+The post-download processing (a.k.a. post-processing or PP) of downloads
 """
 
 from __future__ import annotations
 
 import logging
 from os.path import basename, exists, join
-from shutil import copytree, move
 from time import time
 from typing import TYPE_CHECKING
 
@@ -15,8 +15,9 @@ from backend.conversion import mass_convert
 from backend.converters import extract_files_from_folder
 from backend.db import get_db
 from backend.download_torrent_clients import TorrentDownload
-from backend.helpers import delete_file_folder
+from backend.files import copy_directory, delete_file_folder, rename_file
 from backend.naming import mass_rename
+from backend.settings import Settings
 from backend.volumes import Volume, scan_files
 
 if TYPE_CHECKING:
@@ -48,10 +49,7 @@ class PostProcessingActions:
 	def move_file(download: Download) -> None:
 		"Move file from download folder to final destination"
 		if exists(download.file):
-			folder = get_db().execute(
-				"SELECT folder FROM volumes WHERE id = ? LIMIT 1",
-				(download.volume_id,)
-			).fetchone()[0]
+			folder = Volume(download.volume_id)['folder']
 			file_dest = join(folder, basename(download.file))
 			logging.debug(
 				f'Moving download to final destination: {download}, Dest: {file_dest}'
@@ -61,16 +59,9 @@ class PostProcessingActions:
 				logging.warning(
 					f'The file/folder {file_dest} already exists; replacing with downloaded file'
 				)
-				delete_file_folder(download.file)
+				delete_file_folder(file_dest)
 
-			try:
-				move(download.file, file_dest)
-			except PermissionError:
-				# Happens when moving between an NFS file system.
-				# Raised when chmod is used inside.
-				# Checking the source code, chmod is used at the very end,
-				# 	so just skipping it is alright I think.
-				pass
+			rename_file(download.file, file_dest)
 			download.file = file_dest
 		return
 
@@ -83,17 +74,13 @@ class PostProcessingActions:
 	@staticmethod
 	def add_file_to_database(download: Download) -> None:
 		"Register file in database and match to a volume/issue"
-		scan_files(Volume(download.volume_id).get_info())
+		scan_files(download.volume_id)
 		return
 
 	@staticmethod
 	def convert_file(download: Download) -> None:
 		"Convert a file into a different format based on settings"
-		cursor = get_db()
-
-		if not cursor.execute(
-			"SELECT value FROM config WHERE key = 'convert' LIMIT 1;"
-		).fetchone()[0]:
+		if not Settings()['convert']:
 			return
 
 		if isinstance(download, TorrentDownload):
@@ -121,14 +108,9 @@ class PostProcessingActions:
 			download.volume_id
 		)
 
-		scan_files(Volume(download.volume_id).get_info())
+		scan_files(download.volume_id)
 
-		rename_files = get_db().execute("""
-			SELECT value
-			FROM config
-			WHERE key = 'rename_downloaded_files'
-			LIMIT 1;
-		""").fetchone()[0]
+		rename_files = Settings()['rename_downloaded_files']
 
 		if rename_files and download.resulting_files:
 			mass_rename(
@@ -145,11 +127,7 @@ class PostProcessingActions:
 		"""
 		download.original_file = download.file
 		if exists(download.file):
-			cursor = get_db()
-			folder = cursor.execute(
-				"SELECT folder FROM volumes WHERE id = ? LIMIT 1;",
-				(download.volume_id,)
-			).fetchone()[0]
+			folder = Volume(download.volume_id)['folder']
 			file_dest = join(folder, basename(download.file))
 			logging.debug(
 				f'Copying download to final destination: {download}, Dest: {file_dest}'
@@ -159,16 +137,9 @@ class PostProcessingActions:
 				logging.warning(
 					f'The file/folder {file_dest} already exists; replacing with downloaded file'
 				)
-				delete_file_folder(download.file)
+				delete_file_folder(file_dest)
 
-			try:
-				copytree(download.file, file_dest)
-			except PermissionError:
-				# Happens when copying between an NFS file system.
-				# Raised when chmod is used inside.
-				# Checking the source code, chmod is used at the very end,
-				# 	so just skipping it is alright I think.
-				pass
+			copy_directory(download.file, file_dest)
 			download.file = file_dest
 
 			download.resulting_files = extract_files_from_folder(
@@ -176,14 +147,9 @@ class PostProcessingActions:
 				download.volume_id
 			)
 
-			scan_files(Volume(download.volume_id).get_info())
+			scan_files(download.volume_id)
 
-			rename_files = cursor.execute("""
-				SELECT value
-				FROM config
-				WHERE key = 'rename_downloaded_files'
-				LIMIT 1;
-			""").fetchone()[0]
+			rename_files = Settings()['rename_downloaded_files']
 
 			if rename_files and download.resulting_files:
 				mass_rename(
@@ -194,8 +160,7 @@ class PostProcessingActions:
 
 	@staticmethod
 	def reset_file_link(download: TorrentDownload) -> None:
-		"""Set download.file back to original folder from the copied folder.
-		"""
+		"Set download.file back to original folder from the copied folder"
 		download.file = download.original_file
 		return
 

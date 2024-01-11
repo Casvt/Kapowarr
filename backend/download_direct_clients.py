@@ -1,6 +1,8 @@
 #-*- coding: utf-8 -*-
 
-"""Downloading from GetComics
+"""
+Clients for downloading from a direct URL and Mega.
+Used when downloading from GC.
 """
 
 import logging
@@ -14,8 +16,9 @@ from requests.exceptions import ChunkedEncodingError
 
 from backend.credentials import Credentials
 from backend.custom_exceptions import LinkBroken
-from backend.download_general import Download, DownloadStates
-from backend.settings import Settings, blocklist_reasons
+from backend.download_general import Download
+from backend.enums import BlocklistReason, DownloadState
+from backend.settings import Settings
 
 from .lib.mega import Mega, RequestError, sids
 
@@ -26,7 +29,7 @@ download_chunk_size = 4194304 # 4MB Chunks
 class BaseDownload(Download):
 	def __init__(self):
 		self.id = None
-		self.state: str = DownloadStates.QUEUED_STATE
+		self.state: DownloadState = DownloadState.QUEUED_STATE
 
 	def todict(self) -> dict:
 		"""Represent the download in the form of a dict
@@ -48,7 +51,7 @@ class BaseDownload(Download):
 			'title': self.title,
 			'size': self.size,
 
-			'status': self.state,
+			'status': self.state.value,
 			'progress': self.progress,
 			'speed': self.speed,
 		}
@@ -92,7 +95,7 @@ class DirectDownload(BaseDownload):
 		r = get(self.download_link, stream=True)
 		r.close()
 		if not r.ok:
-			raise LinkBroken(1, blocklist_reasons[1])
+			raise LinkBroken(BlocklistReason.LINK_BROKEN)
 		self.size = int(r.headers.get('content-length', -1))
 
 		if custom_name:
@@ -142,7 +145,7 @@ class DirectDownload(BaseDownload):
 		Returns:
 			str: The filename
 		"""		
-		folder = Settings().get_settings()['download_folder']
+		folder = Settings()['download_folder']
 		extension = self.__extract_extension(
 			r.headers.get('Content-Type', ''),
 			r.headers.get('Content-Disposition', ''),
@@ -151,7 +154,7 @@ class DirectDownload(BaseDownload):
 		return join(folder, self.title + extension)
 
 	def run(self) -> None:
-		self.state = DownloadStates.DOWNLOADING_STATE
+		self.state = DownloadState.DOWNLOADING_STATE
 		size_downloaded = 0
 
 		with get(self.download_link, stream=True) as r, \
@@ -160,8 +163,8 @@ class DirectDownload(BaseDownload):
 			start_time = perf_counter()
 			try:
 				for chunk in r.iter_content(chunk_size=download_chunk_size):
-					if self.state in (DownloadStates.CANCELED_STATE,
-									DownloadStates.SHUTDOWN_STATE):
+					if self.state in (DownloadState.CANCELED_STATE,
+									DownloadState.SHUTDOWN_STATE):
 						break
 
 					f.write(chunk)
@@ -184,12 +187,12 @@ class DirectDownload(BaseDownload):
 					start_time = perf_counter()
 
 			except ChunkedEncodingError:
-				self.state = DownloadStates.FAILED_STATE
+				self.state = DownloadState.FAILED_STATE
 
 		return
 
 	def stop(self,
-		state: DownloadStates = DownloadStates.CANCELED_STATE
+		state: DownloadState = DownloadState.CANCELED_STATE
 	) -> None:
 		self.state = state
 		return
@@ -244,7 +247,7 @@ class MegaDownload(BaseDownload):
 		try:
 			self._mega = Mega(link, cred['email'], cred['password'])
 		except RequestError:
-			raise LinkBroken(1, blocklist_reasons[1])
+			raise LinkBroken(BlocklistReason.LINK_BROKEN)
 
 		self._filename_body = filename_body
 		if not custom_name:
@@ -269,7 +272,7 @@ class MegaDownload(BaseDownload):
 		Returns:
 			str: The filename
 		"""
-		folder = Settings().get_settings()['download_folder']
+		folder = Settings()['download_folder']
 		extension = self.__extract_extension()
 		return join(folder, self._filename_body + extension)
 
@@ -280,12 +283,12 @@ class MegaDownload(BaseDownload):
 		Raises:
 			DownloadLimitReached: The Mega download limit is reached mid-download
 		"""		
-		self.state = DownloadStates.DOWNLOADING_STATE
+		self.state = DownloadState.DOWNLOADING_STATE
 		self._mega.download_url(self.file)
 		return
 
 	def stop(self,
-		state: DownloadStates = DownloadStates.CANCELED_STATE
+		state: DownloadState = DownloadState.CANCELED_STATE
 	) -> None:
 		self.state = state
 		self._mega.downloading = False

@@ -1,6 +1,7 @@
 #-*- coding: utf-8 -*-
 
-"""This file contains functions regarding background tasks
+"""
+Background tasks and their handling
 """
 
 import logging
@@ -14,7 +15,7 @@ from backend.custom_exceptions import (InvalidComicVineApiKey,
 from backend.db import get_db
 from backend.download_queue import DownloadHandler
 from backend.search import auto_search
-from backend.volumes import refresh_and_scan
+from backend.volumes import Issue, Volume, refresh_and_scan
 
 
 class Task(ABC):
@@ -67,8 +68,8 @@ class Task(ABC):
 # Issue tasks
 #=====================
 class AutoSearchIssue(Task):
-	"""Do an automatic search for an issue
-	"""	
+	"Do an automatic search for an issue"	
+
 	stop = False
 	message = ''
 	action = 'auto_search_issue'
@@ -88,19 +89,9 @@ class AutoSearchIssue(Task):
 		self.issue_id = issue_id
 	
 	def run(self) -> List[tuple]:
-		title = get_db().execute(
-			"""
-			SELECT
-				v.title, i.issue_number
-			FROM volumes v
-			INNER JOIN issues i
-			ON i.volume_id = v.id
-			WHERE i.id = ?
-			LIMIT 1;
-			""",
-			(self.issue_id,)
-		).fetchone()
-		self.message = f'Searching for {title[0]} #{title[1]}'
+		issue = Issue(self.issue_id)
+		volume = Volume(issue['volume_id'])
+		self.message = f'Searching for {volume["title"]} #{issue["issue_number"]}'
 
 		# Get search results and download them
 		results = auto_search(self.volume_id, self.issue_id)
@@ -115,8 +106,8 @@ class AutoSearchIssue(Task):
 # Volume tasks
 #=====================
 class AutoSearchVolume(Task):
-	"""Do an automatic search for a volume
-	"""
+	"Do an automatic search for a volume"
+
 	stop = False
 	message = ''
 	action = 'auto_search'
@@ -134,11 +125,7 @@ class AutoSearchVolume(Task):
 		self.volume_id = volume_id
 	
 	def run(self) -> List[tuple]:
-		title = get_db().execute(
-			"SELECT title FROM volumes WHERE id = ? LIMIT 1",
-			(self.volume_id,)
-		).fetchone()[0]
-		self.message = f'Searching for {title}'
+		self.message = f'Searching for {Volume(self.volume_id)["title"]}'
 
 		# Get search results and download them
 		results = auto_search(self.volume_id)
@@ -147,8 +134,8 @@ class AutoSearchVolume(Task):
 		return []
 
 class RefreshAndScanVolume(Task):
-	"""Trigger a refresh and scan for a volume
-	"""
+	"Trigger a refresh and scan for a volume"
+
 	stop = False
 	message = ''
 	action = 'refresh_and_scan'
@@ -166,11 +153,7 @@ class RefreshAndScanVolume(Task):
 		self.volume_id = volume_id
 
 	def run(self) -> None:
-		title = get_db().execute(
-			"SELECT title FROM volumes WHERE id = ? LIMIT 1", 
-			(self.volume_id,)
-		).fetchone()[0]
-		self.message = f'Updating info on {title}'
+		self.message = f'Updating info on {Volume(self.volume_id)["title"]}'
 
 		try:
 			refresh_and_scan(self.volume_id)
@@ -183,8 +166,8 @@ class RefreshAndScanVolume(Task):
 # Library tasks
 #=====================
 class UpdateAll(Task):
-	"""Trigger a refresh and scan for each volume in the library
-	"""
+	"Trigger a refresh and scan for each volume in the library"
+
 	stop = False
 	message = ''
 	action = 'update_all'
@@ -203,8 +186,8 @@ class UpdateAll(Task):
 		return
 
 class SearchAll(Task):
-	"""Trigger an automatic search for each volume in the library
-	"""	
+	"Trigger an automatic search for each volume in the library"	
+	
 	stop = False
 	message = ''
 	action = 'search_all'
@@ -237,8 +220,6 @@ class SearchAll(Task):
 task_library: Dict[str, Task] = {c.action: c for c in Task.__subclasses__()}
 
 class TaskHandler:
-	"""For handling tasks
-	"""	
 	queue: List[dict] = []
 	task_interval_waiter: Timer = None
 	def __init__(self, context, download_handler: DownloadHandler) -> None:
@@ -246,7 +227,8 @@ class TaskHandler:
 
 		Args:
 			context (Flask): A Flask app instance
-			download_handler (DownloadHandler): An instance of `download.DownloadHandler`
+			download_handler (DownloadHandler): An instance of
+			`download.DownloadHandler`
 			to which any download instructions are sent
 		"""
 		self.context = context.app_context
@@ -294,7 +276,8 @@ class TaskHandler:
 		return
 		
 	def _process_queue(self) -> None:
-		"""Handle the queue. In the case that there is something in the queue and
+		"""
+		Handle the queue. In the case that there is something in the queue and
 		it isn't already running, start the task. This can safely be called
 		multiple times while a task is going or while there is nothing in the queue.
 		"""
@@ -334,13 +317,12 @@ class TaskHandler:
 		return id
 
 	def __check_intervals(self)	-> None:
-		"""Check if any interval task needs to be run and add to queue if so
-		"""
+		"Check if any interval task needs to be run and add to queue if so"
 		logging.debug('Checking task intervals')
 		with self.context():
 			current_time = time()
 
-			cursor = get_db('dict')
+			cursor = get_db(dict)
 			interval_tasks = cursor.execute(
 				"SELECT task_name, interval, next_run FROM task_intervals;"
 			).fetchall()
@@ -362,8 +344,7 @@ class TaskHandler:
 		return
 
 	def handle_intervals(self) -> None:
-		"""Find next time an interval task needs to be run
-		"""
+		"Find next time an interval task needs to be run"
 		with self.context():
 			next_run = get_db().execute(
 				"SELECT MIN(next_run) FROM task_intervals"
@@ -377,8 +358,7 @@ class TaskHandler:
 		return
 	
 	def stop_handle(self) -> None:
-		"""Stop the task handler
-		"""		
+		"Stop the task handler"		
 		logging.debug('Stopping task thread')
 		self.task_interval_waiter.cancel()
 		if self.queue:
@@ -470,7 +450,7 @@ def get_task_history(offset: int=0) -> List[dict]:
 	"""	
 	result = list(map(
 		dict,
-		get_db('dict').execute(
+		get_db(dict).execute(
 			"""
 			SELECT
 				task_name, display_title, run_at
@@ -485,8 +465,7 @@ def get_task_history(offset: int=0) -> List[dict]:
 	return result
 
 def delete_task_history() -> None:
-	"""Delete the complete task history
-	"""
+	"Delete the complete task history"
 	logging.info(f'Deleting task history')
 	get_db().execute("DELETE FROM task_history;")
 	return
@@ -497,7 +476,7 @@ def get_task_planning() -> List[dict]:
 	Returns:
 		List[dict]: List of interval tasks and their planning
 	"""
-	cursor = get_db('dict')
+	cursor = get_db(dict)
 
 	tasks = cursor.execute(
 		"""

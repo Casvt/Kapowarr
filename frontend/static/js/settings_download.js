@@ -5,17 +5,17 @@ function fillSettings(api_key) {
 		document.querySelector('#download-folder-input').value = json.result.download_folder;
 		document.querySelector('#seeding-handling-input').value = json.result.seeding_handling;
 		document.querySelector('#delete-torrents-input').checked = json.result.delete_completed_torrents;
+		fillPref(json.result.service_preference);
 	});
 };
 
 function saveSettings(api_key) {
-	savePrefOrder(api_key);
-
 	document.querySelector('#download-folder-input').classList.remove('error-input');
 	const data = {
 		'download_folder': document.querySelector('#download-folder-input').value,
 		'seeding_handling': document.querySelector('#seeding-handling-input').value,
-		'delete_completed_torrents': document.querySelector('#delete-torrents-input').checked
+		'delete_completed_torrents': document.querySelector('#delete-torrents-input').checked,
+		'service_preference': [...document.querySelectorAll('#pref-table select')].map(e => e.value)
 	};
 	fetch(`${url_base}/api/settings?api_key=${api_key}`, {
 		'method': 'PUT',
@@ -49,24 +49,21 @@ function emptyFolder(api_key) {
 //
 // Service preference
 //
-function fillPref(api_key) {
+function fillPref(pref) {
 	const selects = document.querySelectorAll('#pref-table select');
-	fetch(`${url_base}/api/settings/servicepreference?api_key=${api_key}`)
-	.then(response => response.json())
-	.then(json => {
-		for (let i = 0; i < json.result.length; i++) {
-			const service = json.result[i];
-			const select = selects[i];
-			select.addEventListener('change', updatePrefOrder);
-			json.result.forEach(option => {
-				const entry = document.createElement('option');
-				entry.value = option;
-				entry.innerText = option.charAt(0).toUpperCase() + option.slice(1);
-				if (option === service) entry.selected = true;
-				select.appendChild(entry);
-			});
-		};
-	});
+	for (let i = 0; i < pref.length; i++) {
+		const service = pref[i];
+		const select = selects[i];
+		select.addEventListener('change', updatePrefOrder);
+		pref.forEach(option => {
+			const entry = document.createElement('option');
+			entry.value = option;
+			entry.innerText = option.charAt(0).toUpperCase() + option.slice(1);
+			if (option === service)
+				entry.selected = true;
+			select.appendChild(entry);
+		});
+	};
 };
 
 function updatePrefOrder(e) {
@@ -84,15 +81,6 @@ function updatePrefOrder(e) {
 			break;
 		};
 	};
-};
-
-function savePrefOrder(api_key) {
-	const order = [...document.querySelectorAll('#pref-table select')].map(e => e.value);
-	fetch(`${url_base}/api/settings/servicepreference?api_key=${api_key}`, {
-		'method': 'PUT',
-		'headers': {'Content-Type': 'application/json'},
-		'body': JSON.stringify({'order': order})
-	});
 };
 
 // 
@@ -210,7 +198,6 @@ function deleteCredential(id, api_key) {
 usingApiKey()
 .then(api_key => {
 	fillSettings(api_key);
-	fillPref(api_key);
 	fillServices(api_key);
 	fillCredentials(api_key);
 	

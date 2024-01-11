@@ -1,14 +1,26 @@
 #-*- coding: utf-8 -*-
 
-"""General "helper" functions
+"""
+General "helper" functions and classes
 """
 
 import logging
-from os import remove
-from os.path import isdir, isfile
-from shutil import rmtree
 from sys import version_info
+from threading import current_thread
+from typing import Iterable, List, Tuple, TypeVar, Union
 
+T = TypeVar("T")
+U = TypeVar("U")
+
+def get_python_version() -> str:
+	"""Get python version as string
+
+	Returns:
+		str: The python version
+	"""
+	return ".".join(
+		str(i) for i in list(version_info)
+	)
 
 def check_python_version() -> bool:
 	"""Check if the python version that is used is a minimum version.
@@ -37,26 +49,107 @@ def batched(l: list, n: int):
 	for ndx in range(0, len(l), n):
 		yield l[ndx : ndx+n]
 
-def delete_file_folder(path: str) -> None:
-	"""Delete a file or folder. In the case of a folder, it is deleted recursively.
+def reversed_tuples(i: Tuple[Tuple[T, U]]) -> Tuple[Tuple[U, T]]:
+	"""Yield sub-tuples in reversed order.
 
 	Args:
-		path (str): The path to the file or folder.
+		i (Tuple[Tuple[T, U]]): Iterator.
+
+	Yields:
+		Iterator[Tuple[Tuple[U, T]]]: Sub-tuple with reversed order.
 	"""
-	if isfile(path):
-		remove(path)
-	elif isdir(path):
-		rmtree(path, ignore_errors=True)
-	return
+	for entry_1, entry_2 in i:
+		yield entry_2, entry_1
 
-class SeedingHandling:
-	"Enum-like class for the seeding_handling setting"
+def get_first_of_range(
+	n: Union[T, Tuple[T, T], List[T]]
+) -> T:
+	"""Get the first element from a variable that could potentially be a range,
+	but could also be a single value. In the case of a single value, the value
+	is returned.
 
-	COMPLETE = 'complete'
-	"Let torrent complete (finish seeding) and then move all files"
+	Args:
+		n (Union[T, Tuple[T, T], List[T]]): The range or single value.
 
-	COPY = 'copy'
-	"Copy the files while the torrent is seeding, then delete original files"
+	Returns:
+		T: The first element or single value.
+	"""
+	if isinstance(n, (list, tuple)):
+		return n[0]
+	else:
+		return n
 
-	def __contains__(self, value) -> bool:
-		return value in (self.COMPLETE, self.COPY)
+def extract_year_from_date(
+	date: Union[str, None],
+	default: T = None
+) -> Union[int, T]:
+	"""Get the year from a date in the format YYYY-MM-DD
+
+	Args:
+		date (Union[str, None]): The date.
+		default (T, optional): Value if year can't be extracted.
+			Defaults to None.
+
+	Returns:
+		Union[int, T]: The year or the default value.
+	"""
+	if date:
+		try:
+			return int(date.split('-')[0])
+		except ValueError:
+			return default
+	else:
+		return default
+
+def first_of_column(
+	columns: Tuple[Tuple[T]]
+) -> List[T]:
+	"""Get the first element of each sub-array.
+
+	Args:
+		columns (Tuple[Tuple[T]]): List of sub-arrays.
+
+	Returns:
+		List[T]: List with first value of each sub-array.
+	"""
+	return [e[0] for e in columns]
+
+class Singleton(type):
+	_instances = {}
+	def __call__(cls, *args, **kwargs):
+		c = str(cls)
+		if c not in cls._instances:
+			cls._instances[c] = super().__call__(*args, **kwargs)
+
+		return cls._instances[c]
+
+class DB_ThreadSafeSingleton(type):
+	_instances = {}
+	def __call__(cls, *args, **kwargs):
+		i = f'{cls}{current_thread()}'
+		if (i not in cls._instances
+		or cls._instances[i].closed):
+			cls._instances[i] = super().__call__(*args, **kwargs)
+
+		return cls._instances[i]
+
+class CommaList(list):
+	"""
+	Normal list but init can also take a string with comma seperated values:
+		`'blue,green,red'` -> `['blue', 'green', 'red']`.
+	Using str() will convert it back to a string with comma seperated values.
+	"""
+	
+	def __init__(self, value: Union[str, Iterable]):
+		if not isinstance(value, str):
+			super().__init__(value)
+			return
+
+		if not value:
+			super().__init__([])
+		else:
+			super().__init__(value.split(','))
+		return
+
+	def __str__(self) -> str:
+		return ','.join(self)

@@ -33,10 +33,9 @@ function saveSettings(api_key) {
 		if (json.error !== null) return Promise.reject(json);
 	})
 	.catch(e => {
-		if (e.error === 'InvalidSettingValue') {
-			if (e.result.key === 'comicvine_api_key')
-				document.querySelector('#cv-input').classList.add('error-input');
-		} else 
+		if (e.error === 'InvalidComicVineApiKey')
+			document.querySelector('#cv-input').classList.add('error-input');
+		else 
 			console.log(e.error);
 	});
 };

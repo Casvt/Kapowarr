@@ -1,80 +1,60 @@
 #-*- coding: utf-8 -*-
 
+"""
+All custom exceptions are defined here
+"""
+
+"""
+Note: Not all CE's inherit from CustomException.
+"""
+
 import logging
 
+from backend.enums import BlocklistReason, BlocklistReasonID
 
-class FolderNotFound(Exception):
-	"""Folder not found
-	"""
+
+class CustomException(Exception):
+	def __init__(self, e = None) -> None:
+		logging.warning(self.__doc__)
+		super().__init__(e)
+		return
+
+class FolderNotFound(CustomException):
+	"""Folder not found"""
 	api_response = {'error': 'FolderNotFound', 'result': {}, 'code': 404}
 	
-	def __init__(self) -> None:
-		logging.warning('Folder not found')
-		return
-
-class RootFolderNotFound(Exception):
-	"""A root folder with the given id doesn't exist
-	"""
+class RootFolderNotFound(CustomException):
+	"""Rootfolder with given ID not found"""
 	api_response = {'error': 'RootFolderNotFound', 'result': {}, 'code': 404}
 	
-	def __init__(self) -> None:
-		logging.warning('Rootfolder with given id not found')
-		return
-
-class RootFolderInUse(Exception):
-	"""A root folder with the given id is requested to be deleted
-	but is used by a volume
-	"""
+class RootFolderInUse(CustomException):
+	"""A root folder with the given ID is requested to be deleted but is used by a volume"""
 	api_response = {'error': 'RootFolderInUse', 'result': {}, 'code': 400}
 	
-	def __init__(self) -> None:
-		logging.warning('Rootfolder is still in use')
-		return
-
-class VolumeNotFound(Exception):
-	"""The volume with the given (comicvine-) key was not found
-	"""
+class VolumeNotFound(CustomException):
+	"""The volume with the given (comicvine-) key was not found"""
 	api_response = {'error': 'VolumeNotFound', 'result': {}, 'code': 404}
-	
-	def __init__(self) -> None:
-		logging.warning('Volume with given id not found')
-		return
 
-class VolumeNotMatched(Exception):
-	"""The volume with the given id was found in the database 
-	but the comicvine id returned nothing
-	"""
+class VolumeNotMatched(CustomException):
+	"""Volume not matched with ComicVine database"""
 	api_response = {'error': 'VolumeNotMatched', 'result': {}, 'code': 400}
-	
-	def __init__(self) -> None:
-		logging.warning('Volume not matched with comicvine database')
-		return
 
-class CVRateLimitReached(Exception):
-	"""The rate limit of the ComicVine API is reached
-	"""	
+class CVRateLimitReached(CustomException):
+	"""ComicVine API rate limit reached"""
 	api_response = {'error': 'CVRateLimitReached', 'result': {}, 'code': 509}
-	
-	def __init__(self) -> None:
-		logging.warning('Comic Vine API rate limit reached')
-		return
 
-class VolumeAlreadyAdded(Exception):
-	"""The volume that is desired to be added is already added
-	"""
+class VolumeAlreadyAdded(CustomException):
+	"""The volume that is desired to be added is already added"""
 	api_response = {'error': 'VolumeAlreadyAdded', 'result': {}, 'code': 400}
 	
-	def __init__(self) -> None:
-		logging.warning('Volume is already added')
-		return
-	
 class VolumeDownloadedFor(Exception):
-	"""The volume is desired to be deleted but there is a download for it going
-	"""	
+	"""The volume is desired to be deleted but there is a download for it going"""	
 	def __init__(self, volume_id: int):
 		self.volume_id = volume_id
 		super().__init__(self.volume_id)
-		logging.warning(f'Deleting volume failed because there is a download for the volume: {self.volume_id}')
+		logging.warning(
+			f'Deleting volume failed because there is a download for the volume: {self.volume_id}'
+		)
 		return
 		
 	@property
@@ -85,66 +65,36 @@ class VolumeDownloadedFor(Exception):
 			'code': 400
 		}
 
-class IssueNotFound(Exception):
-	"""The issue with the given id was not found
-	"""
+class IssueNotFound(CustomException):
+	"""Issue with given ID not found"""
 	api_response = {'error': 'IssueNotFound', 'result': {}, 'code': 404}
-	
-	def __init__(self) -> None:
-		logging.warning('Issue with given id not found')
-		return
 
-class TaskNotFound(Exception):
-	"""The task with the given id was not found
-	"""
+class TaskNotFound(CustomException):
+	"""Task with given ID not found"""
 	api_response = {'error': 'TaskNotFound', 'result': {}, 'code': 404}
-	
-	def __init__(self) -> None:
-		logging.warning('Task with given id not found')
-		return
 
-class TaskNotDeletable(Exception):
-	"""The task could not be deleted because it's the first in the queue
-	"""
+class TaskNotDeletable(CustomException):
+	"""The task could not be deleted because it's the first in the queue"""
 	api_response = {'error': 'TaskNotDeletable', 'result': {}, 'code': 400}
-	
-	def __init__(self) -> None:
-		logging.warning('Task with given id is not deletable')
-		return
 
-class DownloadNotFound(Exception):
-	"""The download requested to be deleted was not found
-	"""
+class DownloadNotFound(CustomException):
+	"""Download with given ID not found"""
 	api_response = {'error': 'DownloadNotFound', 'result': {}, 'code': 404}
-	
-	def __init__(self) -> None:
-		logging.warning('Download with given id not found')
-		return
 
-class BlocklistEntryNotFound(Exception):
-	"""The blocklist entry with the given id was not found
-	"""
+class BlocklistEntryNotFound(CustomException):
+	"""Blocklist entry with given ID not found"""
 	api_response = {'error': 'BlocklistEntryNotFound', 'result': {}, 'code': 404}
-	
-	def __init__(self) -> None:
-		logging.warning('Blocklist entry with given id not found')
-		return
 
-class InvalidComicVineApiKey(Exception):
-	"""No Comic Vine API key is set or it's invalid
-	"""
+class InvalidComicVineApiKey(CustomException):
+	"""No Comic Vine API key is set or it's invalid"""
 	api_response = {'error': 'InvalidComicVineApiKey', 'result': {}, 'code': 400}
-	
-	def __init__(self) -> None:
-		logging.warning('The ComicVine API key is not set or is invalid')
-		return
 
 class LinkBroken(Exception):
-	"""The download link doesn't work
-	"""
-	def __init__(self, reason_id: int, reason_text: str):
-		self.reason_id = reason_id
-		self.reason_text = reason_text
+	"""Download link doesn't work"""
+	def __init__(self, reason: BlocklistReason):
+		self.reason = reason
+		self.reason_text = reason.value
+		self.reason_id = BlocklistReasonID[reason.name].value
 		super().__init__(self.reason_id)
 		return
 	
@@ -160,8 +110,7 @@ class LinkBroken(Exception):
 		}
 
 class InvalidSettingKey(Exception):
-	"""The setting key is unknown
-	"""
+	"""The setting key is unknown"""
 	def __init__(self, key: str=''):
 		self.key = key
 		super().__init__(self.key)
@@ -177,8 +126,7 @@ class InvalidSettingKey(Exception):
 		}
 
 class InvalidSettingValue(Exception):
-	"""The setting value is invalid
-	"""
+	"""The setting value is invalid"""
 	def __init__(self, key: str='', value: str=''):
 		self.key = key
 		self.value = value
@@ -195,8 +143,7 @@ class InvalidSettingValue(Exception):
 		}
 
 class InvalidSettingModification(Exception):
-	"""The setting is not allowed to be changed this way
-	"""
+	"""The setting is not allowed to be changed this way"""
 	def __init__(self, key: str='', instead: str=''):
 		self.key = key
 		self.instead = instead
@@ -215,8 +162,7 @@ class InvalidSettingModification(Exception):
 		}
 
 class KeyNotFound(Exception):
-	"""A key that is required to be given in the api request was not found
-	"""
+	"""A key that is required to be given in the api request was not found"""
 	def __init__(self, key: str=''):
 		self.key = key
 		super().__init__(self.key)
@@ -232,8 +178,7 @@ class KeyNotFound(Exception):
 		return {'error': 'KeyNotFound', 'result': {'key': self.key}, 'code': 400}
 
 class InvalidKeyValue(Exception):
-	"""A key given in the api request has an invalid value
-	"""
+	"""A key given in the api request has an invalid value"""
 	def __init__(self, key: str='', value: str=''):
 		self.key = key
 		self.value = value
@@ -253,18 +198,12 @@ class InvalidKeyValue(Exception):
 			'code': 400
 		}
 
-class CredentialNotFound(Exception):
-	"""The credential with the given id was not found
-	"""	
+class CredentialNotFound(CustomException):
+	"""Credential with given ID not found"""
 	api_response = {'error': 'CredentialNotFound', 'result': {}, 'code': 404}
-	
-	def __init__(self) -> None:
-		logging.warning('Credential with given id not found')
-		return
 
 class CredentialSourceNotFound(Exception):
-	"""The credential source with the given string was not found
-	"""	
+	"""The credential source with the given string was not found"""	
 	def __init__(self, string: str) -> None:
 		self.string = string
 		logging.warning(f'Credential source with given string not found: {string}')
@@ -278,26 +217,16 @@ class CredentialSourceNotFound(Exception):
 			'code': 404
 		}
 
-class CredentialAlreadyAdded(Exception):
-	"""A credential for the given source is already added
-	"""	
+class CredentialAlreadyAdded(CustomException):
+	"""A credential for the given source is already added"""
 	api_response = {'error': 'CredentialAlreadyAdded', 'result': {}, 'code': 400}
-	
-	def __init__(self) -> None:
-		logging.warning('A credential for the given source is already added')
-		return
 
 class CredentialInvalid(Exception):
-	"""A credential is incorrect (can't login with it)
-	"""
+	"""A credential is incorrect (can't login with it)"""
 	api_response = {'error': 'CredentialInvalid', 'result': {}, 'code': 400}
-	
-	def __init__(self) -> None:
-		return
 
 class DownloadLimitReached(Exception):
-	"""The download limit (download quota) for the service is reached
-	"""
+	"""The download limit (download quota) for the service is reached"""
 	def __init__(self, string: str) -> None:
 		self.string = string
 		logging.warning(f"Credential source {string} has reached it's download limit")
@@ -311,17 +240,13 @@ class DownloadLimitReached(Exception):
 			'code': 509
 		}
 
-class TorrentClientNotFound(Exception):
-	"""The torrent client with the given ID was not found
-	"""
+class TorrentClientNotFound(CustomException):
+	"""Torrent client with given ID not found"""
 	api_response = {'error': 'TorrentClientNotFound', 'result': {}, 'code': 404}
-	
-	def __init__(self) -> None:
-		logging.warning('Torrent client with given id not found')
-		return
 
 class TorrentClientDownloading(Exception):
-	"""The torrent client is desired to be deleted
+	"""
+	The torrent client is desired to be deleted
 	but there is a torrent downloading with it
 	"""	
 	def __init__(self, torrent_client_id: int):
@@ -341,11 +266,6 @@ class TorrentClientDownloading(Exception):
 			'code': 400
 		}
 
-class TorrentClientNotWorking(Exception):
-	"""The torrent client is not working
-	"""
+class TorrentClientNotWorking(CustomException):
+	"""Torrent client is not working"""
 	api_response = {'error': 'TorrentClientNotWorking', 'result': {}, 'code': 400}
-	
-	def __init__(self) -> None:
-		logging.warning('Torrent client is not working')
-		return

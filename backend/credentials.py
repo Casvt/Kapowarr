@@ -8,6 +8,7 @@ from backend.custom_exceptions import (CredentialAlreadyAdded,
                                        CredentialInvalid, CredentialNotFound,
                                        CredentialSourceNotFound)
 from backend.db import get_db
+from backend.helpers import first_of_column
 from backend.lib.mega import Mega, RequestError
 
 
@@ -40,7 +41,7 @@ class Credentials:
 		if not use_cache or not self.cache or self.__load_first:
 			cred = dict(
 				(c['id'], dict(c))
-				for c in get_db('dict').execute("""
+				for c in get_db(dict).execute("""
 					SELECT
 						c.id, cs.source,
 						c.email, c.password
@@ -181,15 +182,14 @@ class Credentials:
 		Returns:
 			List[str]: The list of service strings
 		"""
-		result = [
-			s[0]
-			for s in get_db().execute("""
+		result = first_of_column(
+			get_db().execute("""
 				SELECT cs.source
 				FROM credentials_sources cs
 				LEFT JOIN credentials c
 				ON cs.id = c.source
 				WHERE c.id IS NULL;
 			""")
-		]
+		)
 
 		return result

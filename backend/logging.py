@@ -1,15 +1,11 @@
 #-*- coding: utf-8 -*-
 
 import logging
+from typing import Union
 
-log_levels = {
-	'info': logging.INFO,
-	'debug': logging.DEBUG
-}
 
 def setup_logging() -> None:
-	"""Setup the basic config of the logging module.
-	"""	
+	"Setup the basic config of the logging module"
 	logging.basicConfig(
 		level=logging.INFO,
 		format='[%(asctime)s][%(threadName)s][%(levelname)s] %(message)s',
@@ -18,15 +14,18 @@ def setup_logging() -> None:
 	)
 	return
 
-def set_log_level(level: str) -> None:
+def set_log_level(level: Union[int, str]) -> None:
 	"""Change the logging level
 
 	Args:
-		level (str): The level to set the logging to.
-			Should be one of the keys of `logging.log_levels`.
+		level (Union[int, str]): The level to set the logging to.
+			Should be a logging level, like `logging.INFO` or `logging.DEBUG`
+			or the string version.
 	"""
-	logging.debug(f'Setting logging level: {log_levels[level]}')
+	logging.debug(f'Setting logging level: {level}')
+	if isinstance(level, str):
+		level = level.upper()
 	logging.getLogger().setLevel(
-		level=log_levels[level]
+		level=level
 	)
 	return

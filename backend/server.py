@@ -1,6 +1,7 @@
 #-*- coding: utf-8 -*-
 
-"""For setting up, running and shutting down the API and web-ui
+"""
+Setting up, running and shutting down the API and web-ui
 """
 
 from os import urandom

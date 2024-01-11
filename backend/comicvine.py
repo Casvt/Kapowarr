@@ -1,6 +1,7 @@
 #-*- coding: utf-8 -*-
 
-"""Search for volumes/issues and fetch metadata for them on ComicVine
+"""
+Search for volumes/issues and fetch metadata for them on ComicVine
 """
 
 import logging
@@ -18,8 +19,8 @@ from backend.custom_exceptions import (CVRateLimitReached,
                                        InvalidComicVineApiKey,
                                        VolumeNotMatched)
 from backend.db import get_db
-from backend.files import (convert_volume_number_to_int, process_issue_number,
-                           volume_regex)
+from backend.file_extraction import (convert_volume_number_to_int,
+                                     process_issue_number, volume_regex)
 from backend.helpers import batched
 from backend.settings import Settings, private_settings
 
@@ -118,7 +119,7 @@ class ComicVine:
 		if comicvine_api_key:
 			api_key = comicvine_api_key
 		else:
-			api_key = Settings().get_settings()['comicvine_api_key']
+			api_key = Settings()['comicvine_api_key']
 		if not api_key:
 			raise InvalidComicVineApiKey
 
@@ -195,7 +196,7 @@ class ComicVine:
 				params=params
 			).json()
 
-		except JSONDecodeError:
+		except (JSONDecodeError, requests_ConnectionError):
 			raise CVRateLimitReached
 
 		if result['status_code'] == 100:
@@ -240,7 +241,7 @@ class ComicVine:
 			) as response:
 				result: dict = await response.json()
 
-		except ContentTypeError:
+		except (ContentTypeError, requests_ConnectionError):
 			raise CVRateLimitReached
 
 		if result['status_code'] == 107:
@@ -293,11 +294,17 @@ class ComicVine:
 		}
 
 		if volume_data['start_year'] is not None:
-			result['year'] = int(
-				volume_data['start_year']
-					.replace('-', '0')
-					.replace('?', '')
-			)
+			if '/' in volume_data['start_year']:
+				result['year'] = int(
+					volume_data['start_year']
+						.split('/')[-1]
+				)
+			else:
+				result['year'] = int(
+					volume_data['start_year']
+						.replace('-', '0')
+						.replace('?', '')
+				)
 
 		volume_result = volume_regex.search(volume_data['deck'] or '')
 		if volume_result:

@@ -1,14 +1,19 @@
 #-*- coding: utf-8 -*-
 
+"""
+Converting files to a different format
+"""
+
 from itertools import chain
 from os.path import dirname, splitext
 from sys import platform
-from typing import Dict, List, Set, Tuple, Union
+from typing import Dict, List, Set, Union
 
 from backend.converters import FileConverter, rar_executables
-from backend.db import get_db
-from backend.files import _list_files, extract_filename_data, scan_files
-from backend.volumes import Volume
+from backend.enums import SpecialVersion
+from backend.file_extraction import extract_filename_data
+from backend.settings import Settings
+from backend.volumes import Volume, scan_files
 
 conversion_methods: Dict[str, Dict[str, FileConverter]] = {}
 "source_format -> target_format -> conversion class"
@@ -82,75 +87,6 @@ def convert_file(file: str, formats: List[str]) -> str:
 	else:
 		return file
 
-def __get_format_pref_and_files(
-	volume_id: int,
-	issue_id: Union[int, None] = None
-) -> Tuple[List[str], bool, Union[None, str]]:
-	"""Get the format preference and load the targeted files into the cursor.
-
-	Args:
-		volume_id (int): The ID of the volume to get the files for.
-
-		issue_id (Union[int, None], optional): The ID of the issue to get
-		the files for.
-			Defaults to None.
-
-	Returns:
-		Tuple[List[str], bool, Union[None, str]]: The format preference
-		in the settings, the value of 'extract_issue_ranges'
-		and the value of 'special_version' for the volume.
-	"""
-	cursor = get_db()
-	
-	format_preference = cursor.execute(
-		"SELECT value FROM config WHERE key = 'format_preference' LIMIT 1;"
-	).fetchone()[0].split(',')
-	if format_preference == ['']:
-		format_preference = []
-	
-	extract_issue_ranges = cursor.execute(
-		"SELECT value FROM config WHERE key = 'extract_issue_ranges' LIMIT 1;"
-	).fetchone()[0] == 1
-
-	special_version = cursor.execute(
-		"SELECT special_version FROM volumes WHERE id = ? LIMIT 1;",
-		(volume_id,)
-	).fetchone()[0]
-	
-	if not issue_id:
-		cursor.execute("""
-			SELECT DISTINCT filepath
-			FROM files f
-			INNER JOIN issues_files if
-			INNER JOIN issues i
-			ON
-				f.id = if.file_id
-				AND if.issue_id = i.id
-			WHERE volume_id = ?
-			ORDER BY filepath;
-			""",
-			(volume_id,)
-		)
-
-	else:
-		cursor.execute("""
-			SELECT DISTINCT filepath
-			FROM files f
-			INNER JOIN issues_files if
-			INNER JOIN issues i
-			ON
-				f.id = if.file_id
-				AND if.issue_id = i.id
-			WHERE
-				volume_id = ?
-				AND i.id = ?
-			ORDER BY filepath;
-			""",
-			(volume_id, issue_id)
-		)
-
-	return format_preference, extract_issue_ranges, special_version
-
 def preview_mass_convert(
 	volume_id: int,
 	issue_id: int = None
@@ -166,15 +102,16 @@ def preview_mass_convert(
 		List[Dict[str, str]]: The list of suggestions.
 			Dicts have the keys `before` and `after`.
 	"""	
-	cursor = get_db()
-	format_preference, extract_issue_ranges, special_version = __get_format_pref_and_files(
-		volume_id,
-		issue_id
-	)
-	volume_as_issue = special_version == 'volume-as-issue'
+	settings = Settings()
+	volume = Volume(volume_id)
+	
+	format_preference = settings['format_preference']
+	extract_issue_ranges = settings['extract_issue_ranges']
+	special_version = volume['special_version']
+	volume_as_issue = special_version == SpecialVersion.VOLUME_AS_ISSUE
 
 	result = []
-	for (f,) in cursor:
+	for f in sorted(volume.get_files(issue_id)):
 		converter = None
 
 		if (extract_issue_ranges
@@ -231,14 +168,15 @@ def mass_convert(
 	# so making it a set will increase performance (due to hashing).
 	files = set(files)
 
-	cursor = get_db()
-	format_preference, extract_issue_ranges, special_version = __get_format_pref_and_files(
-		volume_id,
-		issue_id
-	)
-	volume_as_issue = special_version == 'volume-as-issue'
+	settings = Settings()
+	volume = Volume(volume_id)
+	
+	format_preference = settings['format_preference']
+	extract_issue_ranges = settings['extract_issue_ranges']
+	special_version = volume['special_version']
+	volume_as_issue = special_version == SpecialVersion.VOLUME_AS_ISSUE
 
-	for (f,) in cursor.fetchall():
+	for f in volume.get_files(issue_id):
 		if files and f not in files:
 			continue
 
@@ -258,10 +196,10 @@ def mass_convert(
 				['folder']
 			)
 			if converter is not None:
-				folder = converter.convert(f)
-				for sub_file in _list_files(folder):
+				resulting_files = converter.convert(f)
+				for file in resulting_files:
 					convert_file(
-						sub_file,
+						file,
 						format_preference
 					)
 				converted = True
@@ -272,6 +210,6 @@ def mass_convert(
 				format_preference
 			)
 
-	scan_files(Volume(volume_id).get_info())
+	scan_files(volume_id)
 
 	return
