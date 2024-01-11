@@ -71,7 +71,12 @@ def _calc_float_issue_number(issue_number: str) -> Union[float, None]:
 		pass
 
 	# Issue has special number notation
-	issue_number = issue_number.replace(',','.').rstrip('.').lower()
+	issue_number = (issue_number
+		.replace(',','.')
+		.replace('?','0')
+		.rstrip('.')
+		.lower()
+	)
 	if issue_number.startswith('-'):
 		converted_issue_number = '-'
 	else:
