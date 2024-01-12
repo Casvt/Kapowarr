@@ -9,7 +9,21 @@ class extract_filename_data(unittest.TestCase):
 	def run_cases(self, cases: Dict[str, dict]):
 		self.longMessage = False
 		for input, output in cases.items():
-			self.assertEqual(ef(input), output, f"The input '{input}' isn't extracted properly:\nOutput: {dumps(ef(input), indent=4)}\nExpected: {dumps(output, indent=4)}")
+			self.assertEqual(
+				ef(input),
+				output,
+				f"The input '{input}' isn't extracted properly:\nOutput: {dumps(ef(input), indent=4)}\nExpected: {dumps(output, indent=4)}"
+			)
+		return
+
+	def run_cases_folder_year(self, cases: Dict[str, dict]):
+		self.longMessage = False
+		for input, output in cases.items():
+			self.assertEqual(
+				ef(input, prefer_folder_year=True),
+				output,
+				f"The input '{input}' isn't extracted properly:\nOutput: {dumps(ef(input), indent=4)}\nExpected: {dumps(output, indent=4)}"
+			)
 		return
 
 	def test_general(self):
@@ -172,3 +186,13 @@ class extract_filename_data(unittest.TestCase):
 				{'series': 'Action Comics', 'year': 2012, 'volume_number': 2, 'special_version': None, 'issue_number': 0.0, 'annual': False}
 		}
 		self.run_cases(cases)
+
+	def test_folder_year(self):
+		cases = {
+			'Iron Man/Volume 1 (1945)/Iron Man Volume 1 Issue 100 (02-03-1950).cbr':
+				{'series': 'Iron Man', 'year': 1945, 'volume_number': 1, 'special_version': None, 'issue_number': 100.0, 'annual': False},
+
+			'Iron Man/Volume 1/Iron Man Volume 1 Issue 100 (02-03-1950).cbr':
+				{'series': 'Iron Man', 'year': 1950, 'volume_number': 1, 'special_version': None, 'issue_number': 100.0, 'annual': False},
+		}
+		self.run_cases_folder_year(cases)

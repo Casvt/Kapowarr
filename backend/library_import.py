@@ -142,7 +142,7 @@ def propose_library_import(
 	# second is all matching files for that efd.
 	unimported_files: List[Tuple[dict, List[str]]] = []
 	for f in limited_files:
-		efd = extract_filename_data(f)
+		efd = extract_filename_data(f, prefer_folder_year=True)
 		del efd['issue_number']
 
 		for entry in unimported_files:

@@ -164,7 +164,8 @@ def convert_volume_number_to_int(
 
 def extract_filename_data(
 	filepath: str,
-	assume_volume_number: bool=True
+	assume_volume_number: bool = True,
+	prefer_folder_year: bool = False
 ) -> dict:
 	"""Extract comic data from string and present in a formatted way.
 
@@ -175,6 +176,10 @@ def extract_filename_data(
 		should `1` be assumed? When a series has only one volume,
 		often the volume number isn't included in the filename.
 			Defaults to True.
+
+		prefer_folder_year (bool, optional): Use year in foldername instead of
+		year in filename, if available.
+			Defaults to False.
 
 	Returns:
 		dict: The extracted data in a formatted way
@@ -234,7 +239,13 @@ def extract_filename_data(
 
 	# Get year
 	all_year_pos, all_year_folderpos = [(10_000, 10_000)], [(10_000, 10_000)]
-	for location in (filename, foldername, upper_foldername):
+
+	if prefer_folder_year:
+		year_order = (foldername, filename, upper_foldername)
+	else:
+		year_order = (filename, foldername, upper_foldername)
+
+	for location in year_order:
 		year_result = list(year_regex.finditer(location))
 		if year_result:
 			if year is None:
