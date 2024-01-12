@@ -75,8 +75,9 @@
 				<h2>Import an existing organized library to add volumes to Kapowarr</h2>
 				<p>A few notes:</p>
 				<ul>
-					<li>Check if Kapowarr matched correctly! Comicvine has separate releases for normal volumes and TPB's. So even though the name and year match, it could still be a wrong match.</li>
+					<li>Check if Kapowarr matched correctly! Comicvine has separate releases for normal volumes, TPB's, one shots, hard covers, etc. So even though the name and year match, it could still be a wrong match.</li>
 					<li>Importing a lot of volumes in one go will quickly make Kapowarr reach the rate limit of ComicVine. Import volumes in batches to avoid this. It's advised to not go above 50 volumes at a time.</li>
+					<li>If each issue has a separate sub-folder, enable 'Apply limit to parent folder' so that the limit is correctly applied.</li>
 				</ul>
 				<table>
 					<tbody>
@@ -89,6 +90,15 @@
 									<option value="20" selected>20</option>
 									<option value="100">100</option>
 									<option value="500">500</option>
+								</select>
+							</td>
+						</tr>
+						<tr>
+							<td><label for="folder-input">Apply limit to parent folder</label></td>
+							<td>
+								<select id="folder-input">
+									<option value="true">Yes</option>
+									<option value="false" selected>No</option>
 								</select>
 							</td>
 						</tr>

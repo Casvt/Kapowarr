@@ -87,6 +87,7 @@ async def __search_matches(
 
 def propose_library_import(
 	limit: int = 20,
+	limit_parent_folder: bool = False,
 	only_english: bool = True
 ) -> List[dict]:
 	"""Get list of unimported files
@@ -95,6 +96,10 @@ def propose_library_import(
 	Args:
 		limit (int, optional): The max amount of folders to scan.
 			Defaults to 20.
+
+		limit_parent_folder (bool, optional): Base the folder limit on
+		parent folder, not folder. Useful if each issue has their own sub-folder.
+			Defaults to False.
 
 		only_english (bool, optional): Only match with english releases.
 			Defaults to True.
@@ -133,9 +138,14 @@ def propose_library_import(
 				continue
 			image_folders.add(f)
 
-		folders.add(dirname(f))
+		if limit_parent_folder:
+			folders.add(dirname(dirname(f)))
+		else:
+			folders.add(dirname(f))
+
 		if len(folders) > limit:
 			break
+
 		limited_files_append(f)
 
 	# List with tuples. First entry is efd,

@@ -150,7 +150,8 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 			except ValueError:
 				raise InvalidKeyValue(key, value)
 
-		elif key in ('monitor', 'delete_folder', 'rename_files', 'only_english'):
+		elif key in ('monitor', 'delete_folder', 'rename_files', 'only_english',
+					'limit_parent_folder'):
 			if value == 'true':
 				value = True
 			elif value == 'false':
@@ -187,6 +188,9 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 
 		elif key == 'only_english':
 			value = True
+
+		elif key == 'limit_parent_folder':
+			value = False
 
 	return value
 
@@ -380,9 +384,26 @@ def api_rootfolder_id(id: int):
 @auth
 def api_library_import():
 	if request.method == 'GET':
-		limit = extract_key(request, 'limit', check_existence=False)
-		only_english = extract_key(request, 'only_english', check_existence=False)
-		result = propose_library_import(limit, only_english)
+		limit = extract_key(
+			request,
+			'limit',
+			check_existence=False
+		)
+		only_english = extract_key(
+			request,
+			'only_english',
+			check_existence=False
+		)
+		limit_parent_folder = extract_key(
+			request,
+			'limit_parent_folder',
+			check_existence=False
+		)
+		result = propose_library_import(
+			limit,
+			limit_parent_folder,
+			only_english
+		)
 		return return_api(result)
 	
 	elif request.method == 'POST':
