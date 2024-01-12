@@ -20,6 +20,17 @@ __API_PREFIX__ = '/api'
 
 socketio = SocketIO()
 
+
+def send_event(event: str, data: dict, namespace: str = '/') -> None:
+	"""Send a socketio event to all connected clients.
+
+	Args:
+		event (str): The event name to send.
+		data (dict): The data to send with the event.
+		namespace (str, optional): The namespace to send the event to. Defaults to '/'.
+	"""
+	socketio.emit(event, data, namespace=namespace)
+
 def create_app() -> Flask:
 	"""Creates an flask app instance that can be used to start a web server
 

@@ -22,7 +22,7 @@ class Task(ABC):
 	@abstractmethod
 	def stop(self) -> bool:
 		return
-	
+
 	@property
 	@abstractmethod
 	def message(self) -> str:
@@ -47,7 +47,7 @@ class Task(ABC):
 	@abstractmethod
 	def volume_id(self) -> int:
 		return
-	
+
 	@property
 	@abstractmethod
 	def issue_id(self) -> int:
@@ -58,7 +58,7 @@ class Task(ABC):
 		"""Run the task
 
 		Returns:
-			Union[None, List[tuple]]: Either `None` if the task has no result or 
+			Union[None, List[tuple]]: Either `None` if the task has no result or
 			`List[tuple]` if the task returns search results.
 		"""
 		return
@@ -68,7 +68,7 @@ class Task(ABC):
 #=====================
 class AutoSearchIssue(Task):
 	"""Do an automatic search for an issue
-	"""	
+	"""
 	stop = False
 	message = ''
 	action = 'auto_search_issue'
@@ -76,7 +76,7 @@ class AutoSearchIssue(Task):
 	category = 'download'
 	volume_id = None
 	issue_id = None
-	
+
 	def __init__(self, volume_id: int, issue_id: int):
 		"""Create the task
 
@@ -86,7 +86,7 @@ class AutoSearchIssue(Task):
 		"""
 		self.volume_id = volume_id
 		self.issue_id = issue_id
-	
+
 	def run(self) -> List[tuple]:
 		title = get_db().execute(
 			"""
@@ -124,7 +124,7 @@ class AutoSearchVolume(Task):
 	category = 'download'
 	volume_id = None
 	issue_id = None
-	
+
 	def __init__(self, volume_id: int):
 		"""Create the task
 
@@ -132,7 +132,7 @@ class AutoSearchVolume(Task):
 			volume_id (int): The id of the volume to search for
 		"""
 		self.volume_id = volume_id
-	
+
 	def run(self) -> List[tuple]:
 		title = get_db().execute(
 			"SELECT title FROM volumes WHERE id = ? LIMIT 1",
@@ -156,18 +156,18 @@ class RefreshAndScanVolume(Task):
 	category = ''
 	volume_id = None
 	issue_id = None
-	
+
 	def __init__(self, volume_id: int):
 		"""Create the task
 
 		Args:
 			volume_id (int): The id of the volume for which to perform the task
-		"""		
+		"""
 		self.volume_id = volume_id
 
 	def run(self) -> None:
 		title = get_db().execute(
-			"SELECT title FROM volumes WHERE id = ? LIMIT 1", 
+			"SELECT title FROM volumes WHERE id = ? LIMIT 1",
 			(self.volume_id,)
 		).fetchone()[0]
 		self.message = f'Updating info on {title}'
@@ -204,7 +204,7 @@ class UpdateAll(Task):
 
 class SearchAll(Task):
 	"""Trigger an automatic search for each volume in the library
-	"""	
+	"""
 	stop = False
 	message = ''
 	action = 'search_all'
@@ -238,7 +238,7 @@ task_library: Dict[str, Task] = {c.action: c for c in Task.__subclasses__()}
 
 class TaskHandler:
 	"""For handling tasks
-	"""	
+	"""
 	queue: List[dict] = []
 	task_interval_waiter: Timer = None
 	def __init__(self, context, download_handler: DownloadHandler) -> None:
@@ -259,6 +259,8 @@ class TaskHandler:
 		Args:
 			task (Task): The task to run
 		"""
+		from backend.server import send_event
+
 		logging.debug(f'Running task {task.display_title}')
 		with self.context():
 			try:
@@ -288,11 +290,12 @@ class TaskHandler:
 
 			finally:
 				if not task.stop:
+					send_event('task_success', self.__format_entry(self.queue[0]))
 					self.queue.pop(0)
 					self._process_queue()
 
 		return
-		
+
 	def _process_queue(self) -> None:
 		"""Handle the queue. In the case that there is something in the queue and
 		it isn't already running, start the task. This can safely be called
@@ -350,7 +353,7 @@ class TaskHandler:
 					# Add task to queue
 					task_class = task_library[task['task_name']]
 					self.add(task_class())
-					
+
 					# Update next_run
 					next_run = round(current_time + task['interval'])
 					cursor.execute(
@@ -370,22 +373,22 @@ class TaskHandler:
 			).fetchone()[0]
 		timedelta = next_run - round(time()) + 1
 		logging.debug(f'Next interval task is in {timedelta} seconds')
-		
+
 		# Create sleep thread for that time and that will run self.__check_intervals.
 		self.task_interval_waiter = Timer(timedelta, self.__check_intervals)
 		self.task_interval_waiter.start()
 		return
-	
+
 	def stop_handle(self) -> None:
 		"""Stop the task handler
-		"""		
+		"""
 		logging.debug('Stopping task thread')
 		self.task_interval_waiter.cancel()
 		if self.queue:
 			self.queue[0]['task'].stop = True
 			self.queue[0]['thread'].join()
 		return
-	
+
 	def __format_entry(self, task: dict) -> dict:
 		"""Format a queue entry for API response
 
@@ -411,7 +414,7 @@ class TaskHandler:
 		Returns:
 			List[dict]: A list with all tasks in the queue.
 				Formatted using `self.__format_entry()`.
-		"""		
+		"""
 		return [self.__format_entry(t) for t in self.queue]
 
 	def get_one(self, task_id: int) -> dict:
@@ -445,7 +448,7 @@ class TaskHandler:
 		# Get task and check if id exists
 		# Raises TaskNotFound if the id isn't found
 		task = self.get_one(task_id)
-		
+
 		# Check if task is allowed to be deleted
 		if self.queue[0] == task:
 			raise TaskNotDeletable
@@ -467,7 +470,7 @@ def get_task_history(offset: int=0) -> List[dict]:
 
 	Returns:
 		List[dict]: The history entries.
-	"""	
+	"""
 	result = list(map(
 		dict,
 		get_db('dict').execute(

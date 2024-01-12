@@ -197,7 +197,8 @@ usingApiKey()
 		autoConnect: false,
 	  });
 	socket.on('connect', function() { console.log('connected'); });
-	socket.on('disconnect', function() { console.log('disconnected'); });
+	socket.on('doisconnect', function() { console.log('disconnected'); });
+	socket.on("task_success", function(data) { console.log(data); });
 	socket.connect();
 
 	addEventListener('#clear-search', 'click', e => clearSearch(api_key));
