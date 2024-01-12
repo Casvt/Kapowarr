@@ -1,6 +1,7 @@
 #-*- coding: utf-8 -*-
 
-"""Downloading using torrents
+"""
+Clients for downloading a torrent using a torrent client
 """
 
 import logging
@@ -14,7 +15,8 @@ from backend.custom_exceptions import (InvalidKeyValue, TorrentClientNotFound,
                                        TorrentClientNotWorking)
 from backend.db import get_db
 from backend.download_direct_clients import BaseDownload
-from backend.download_general import DownloadStates, TorrentClient
+from backend.download_general import TorrentClient
+from backend.enums import DownloadState
 from backend.settings import Settings
 from backend.torrent_clients import qBittorrent
 
@@ -165,7 +167,7 @@ class TorrentClients:
 		Returns:
 			List[dict]: The list with all torrent clients
 		"""
-		cursor = get_db('dict')
+		cursor = get_db(dict)
 		cursor.execute("""
 			SELECT
 				id, type,
@@ -231,7 +233,7 @@ class TorrentDownload(BaseDownload):
 		self.speed: float = 0.0
 		self._torrent_id = None
 		self._download_thread = None
-		self._download_folder = Settings().get_settings()['download_folder']
+		self._download_folder = Settings()['download_folder']
 		
 		if custom_name:
 			self.title = filename_body.rstrip('.')
@@ -271,12 +273,12 @@ class TorrentDownload(BaseDownload):
 		self.progress = torrent_status['progress']
 		self.speed = torrent_status['speed']
 		self.size = torrent_status['size']
-		if not self.state == DownloadStates.CANCELED_STATE:
+		if not self.state == DownloadState.CANCELED_STATE:
 			self.state = torrent_status['state']
 		return
 
 	def stop(self,
-		state: DownloadStates = DownloadStates.CANCELED_STATE
+		state: DownloadState = DownloadState.CANCELED_STATE
 	) -> None:
 		self.state = state
 		return

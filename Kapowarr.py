@@ -8,7 +8,7 @@ from backend.files import folder_path
 from backend.helpers import check_python_version
 from backend.logging import setup_logging
 from backend.server import create_app, create_waitress_server, set_url_base
-from frontend.api import download_handler, settings, task_handler
+from frontend.api import Settings, download_handler, task_handler
 
 
 def Kapowarr() -> None:
@@ -27,7 +27,8 @@ def Kapowarr() -> None:
 	with app.app_context():
 		setup_db()
 		
-		url_base = settings.get_settings()['url_base']
+		settings = Settings()
+		url_base = settings['url_base']
 		set_url_base(app, url_base)
 
 		download_handler.create_download_folder()
@@ -35,8 +36,8 @@ def Kapowarr() -> None:
 	download_handler.load_download_thread.start()
 	task_handler.handle_intervals()
 
-	host: str = settings.cache['host']
-	port: int = settings.cache['port']
+	host: str = settings['host']
+	port: int = settings['port']
 	server = create_waitress_server(app, host, port)
 	logging.info(f'Kapowarr running on http://{host}:{port}{url_base}/')
 	# =================

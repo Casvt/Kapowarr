@@ -1,47 +1,51 @@
 #-*- coding: utf-8 -*-
 
-"""This file is for getting and setting up database connections
+"""
+Setting up the database and handling connections
 """
 
 import logging
-from os import makedirs
 from os.path import dirname
-from sqlite3 import Connection, ProgrammingError, Row
+from sqlite3 import (PARSE_DECLTYPES, Connection, ProgrammingError, Row,
+                     register_adapter, register_converter)
 from threading import current_thread
 from time import time
-from typing import List
+from typing import List, Type, Union
 
 from flask import g
 from waitress.task import ThreadedTaskDispatcher as OldThreadedTaskDispatcher
 
+from backend.helpers import CommaList, DB_ThreadSafeSingleton
 from backend.logging import set_log_level
 
 __DATABASE_FILEPATH__ = 'db', 'Kapowarr.db'
-__DATABASE_VERSION__ = 14
-
-class Singleton(type):
-	_instances = {}
-	def __call__(cls, *args, **kwargs):
-		i = f'{cls}{current_thread()}'
-		if (i not in cls._instances
-		or cls._instances[i].closed):
-			cls._instances[i] = super(Singleton, cls).__call__(*args, **kwargs)
-
-		return cls._instances[i]
+__DATABASE_VERSION__ = 17
+__DATABASE_TIMEOUT__ = 10.0
 
 class ThreadedTaskDispatcher(OldThreadedTaskDispatcher):
 	def handler_thread(self, thread_no: int) -> None:
 		super().handler_thread(thread_no)
+
 		i = f'{DBConnection}{current_thread()}'
-		if i in Singleton._instances and not Singleton._instances[i].closed:
-			Singleton._instances[i].close()
+		if (
+			i in DB_ThreadSafeSingleton._instances
+			and
+			not DB_ThreadSafeSingleton._instances[i].closed
+		):
+			DB_ThreadSafeSingleton._instances[i].close()
 
-	def shutdown(self, cancel_pending: bool = True, timeout: int = 5) -> bool:
+		return
+
+	def shutdown(self,
+		cancel_pending: bool = True,
+		timeout: int = 5
+	) -> bool:
 		logging.info('Shutting down Kapowarr...')
-		super().shutdown(cancel_pending, timeout)
+		result = super().shutdown(cancel_pending, timeout)
 		DBConnection(20.0).close()
+		return result
 
-class DBConnection(Connection, metaclass=Singleton):
+class DBConnection(Connection, metaclass=DB_ThreadSafeSingleton):
 	"For creating a connection with a database"	
 	file = ''
 	
@@ -52,12 +56,19 @@ class DBConnection(Connection, metaclass=Singleton):
 			timeout (float): How long to wait before giving up on a command
 		"""
 		logging.debug(f'Creating connection {self}')
-		super().__init__(self.file, timeout=timeout)
+		super().__init__(
+			self.file,
+			timeout=timeout,
+			isolation_level='EXCLUSIVE',
+			detect_types=PARSE_DECLTYPES
+		)
 		super().cursor().execute("PRAGMA foreign_keys = ON;")
 		self.closed = False
 		return
 	
 	def close(self) -> None:
+		"""Close the connection
+		"""
 		logging.debug(f'Closing connection {self}')
 		self.closed = True
 		super().close()
@@ -71,7 +82,7 @@ class TempDBConnection(Connection):
 	The user needs to manually commit and close.
 	"""
 	file = ''
-	
+
 	def __init__(self, timeout: float) -> None:
 		"""Create a temporary connection with a database
 
@@ -79,12 +90,19 @@ class TempDBConnection(Connection):
 			timeout (float): How long to wait before giving up on a command
 		"""
 		logging.debug(f'Creating temporary connection {self}')
-		super().__init__(self.file, timeout=timeout)
+		super().__init__(
+			self.file,
+			timeout=timeout,
+			isolation_level='EXCLUSIVE',
+			detect_types=PARSE_DECLTYPES
+		)
 		super().cursor().execute("PRAGMA foreign_keys = ON;")
 		self.closed = False
 		return
 	
 	def close(self) -> None:
+		"""Close the temporary connection
+		"""
 		logging.debug(f'Closing temporary connection {self}')
 		self.closed = True
 		super().close()
@@ -100,43 +118,49 @@ def set_db_location(db_file_location: str) -> None:
 	Args:
 		db_file_location (str): The absolute path to the database file
 	"""
+	from backend.files import create_folder
 	logging.debug(f'Setting database location: {db_file_location}')
 
-	# Create folder where file will be put in if it doesn't exist yet
-	makedirs(dirname(db_file_location), exist_ok=True)
+	create_folder(dirname(db_file_location))
 
 	DBConnection.file = db_file_location
 	TempDBConnection.file = db_file_location
 
 	return
 
-def get_db(output_type='tuple', temp: bool=False):
-	"""Get a database cursor instance or create a new one if needed
+db_output_mapping = {
+	dict: Row,
+	tuple: None
+}
+def get_db(
+	output_type: Union[Type[dict], Type[tuple]] = tuple,
+	temp: bool = False
+):
+	"""
+	Get a database cursor instance or create a new one if needed
 
 	Args:
-		output_type ('tuple'|'dict', optional): The type of output of the cursor.
-			Defaults to 'tuple'.
+		output_type (Union[type[dict], type[tuple]], optional):
+		The type of output of the cursor.
+			Defaults to tuple.
 
-		temp (bool, optional): Decides if a new manually handled cursor is returned
-		instead of the cached one.
+		temp (bool, optional): Decides if a new manually handled cursor is
+		returned instead of the cached one.
 			Defaults to False.
 
 	Returns:
 		Cursor: Database cursor instance with desired output type set
 	"""
 	if temp:
-		cursor = TempDBConnection(timeout=20.0).cursor()
+		cursor = TempDBConnection(timeout=__DATABASE_TIMEOUT__).cursor()
 	else:
 		try:
 			cursor = g.cursor
 		except AttributeError:
-			db = DBConnection(timeout=20.0)
+			db = DBConnection(timeout=__DATABASE_TIMEOUT__)
 			cursor = g.cursor = db.cursor()
-		
-	if output_type == 'dict':
-		cursor.row_factory = Row
-	else:
-		cursor.row_factory = None
+
+	cursor.row_factory = db_output_mapping[output_type]
 
 	return cursor
 
@@ -159,33 +183,21 @@ def close_db(e: str=None):
 
 	return
 
-def update_db_version(desired_db_version: int) -> None:
-	"""Set the database version to the value of the parameter.
-
-	Args:
-		desired_db_version (int): The version that the database should be set to.
-	"""
-	cursor = get_db()
-	cursor.execute(
-		"UPDATE config SET value = ? WHERE key = 'database_version';",
-		(desired_db_version,)
-	)
-	cursor.connection.commit()
-	return
-
 def migrate_db(current_db_version: int) -> None:
 	"""
 	Migrate a Kapowarr database from it's current version
 	to the newest version supported by the Kapowarr version installed.
 	"""
+	from backend.settings import Settings
 	logging.info('Migrating database to newer version...')
+	s = Settings()
 	cursor = get_db()
 	if current_db_version == 1:
 		# V1 -> V2
 		cursor.executescript("DELETE FROM download_queue;")
 		
-		current_db_version = 2
-		update_db_version(current_db_version)
+		current_db_version = s['database_version'] = 2
+		s._save_to_database()
 
 	if current_db_version == 2:
 		# V2 -> V3
@@ -238,8 +250,8 @@ def migrate_db(current_db_version: int) -> None:
 			COMMIT;
 		""")
 		
-		current_db_version = 3
-		update_db_version(current_db_version)
+		current_db_version = s['database_version'] = 3
+		s._save_to_database()
 	
 	if current_db_version == 3:
 		# V3 -> V4
@@ -255,12 +267,12 @@ def migrate_db(current_db_version: int) -> None:
 			);
 		""")
 
-		current_db_version = 4
-		update_db_version(current_db_version)
+		current_db_version = s['database_version'] = 4
+		s._save_to_database()
 	
 	if current_db_version == 4:
 		# V4 -> V5
-		from backend.files import process_issue_number
+		from backend.file_extraction import process_issue_number
 
 		cursor2 = get_db(temp=True)
 		for result in cursor2.execute("SELECT id, issue_number FROM issues;"):
@@ -271,8 +283,8 @@ def migrate_db(current_db_version: int) -> None:
 			)
 		cursor2.connection.close()
 
-		current_db_version = 5
-		update_db_version(current_db_version)
+		current_db_version = s['database_version'] = 5
+		s._save_to_database()
 	
 	if current_db_version == 5:
 		# V5 -> V6
@@ -319,15 +331,15 @@ def migrate_db(current_db_version: int) -> None:
 		]
 		updates = (
 			(r['date_last_updated'], r['comicvine_id'])
-			for r in ComicVine().fetch_volumes(volume_ids)
+			for r in ComicVine().fetch_volumes_async(volume_ids)
 		)
 		cursor.executemany(
 			"UPDATE volumes SET last_cv_update = ? WHERE comicvine_id = ?;",
 			updates
 		)
 
-		current_db_version = 6
-		update_db_version(current_db_version)
+		current_db_version = s['database_version'] = 6
+		s._save_to_database()
 		
 	if current_db_version == 6:
 		# V6 -> V7
@@ -336,8 +348,8 @@ def migrate_db(current_db_version: int) -> None:
 				ADD custom_folder BOOL NOT NULL DEFAULT 0;
 		""")
 		
-		current_db_version = 7
-		update_db_version(current_db_version)
+		current_db_version = s['database_version'] = 7
+		s._save_to_database()
 
 	if current_db_version == 7:
 		# V7 -> V8
@@ -362,7 +374,7 @@ def migrate_db(current_db_version: int) -> None:
 		""").fetchall()
 
 		updates = (
-			(determine_special_version(v[1], v[2], v[3], v[4]) ,v[0])
+			(determine_special_version(v[1], v[2], v[3], v[4]), v[0])
 			for v in volumes
 		)
 
@@ -371,8 +383,8 @@ def migrate_db(current_db_version: int) -> None:
 			updates
 		)
 		
-		current_db_version = 8
-		update_db_version(current_db_version)
+		current_db_version = s['database_version'] = 8
+		s._save_to_database()
 
 	if current_db_version == 8:
 		# V8 -> V9
@@ -413,8 +425,8 @@ def migrate_db(current_db_version: int) -> None:
 			PRAGMA foreign_keys = ON;
 		""")
 
-		current_db_version = 9
-		update_db_version(current_db_version)
+		current_db_version = s['database_version'] = 9
+		s._save_to_database()
 
 	if current_db_version == 9:
 		# V9 -> V10
@@ -430,8 +442,8 @@ def migrate_db(current_db_version: int) -> None:
 		).fetchone()[0]
 		update_manifest(url_base)
 		
-		current_db_version = 10
-		update_db_version(current_db_version)
+		current_db_version = s['database_version'] = 10
+		s._save_to_database()
 
 	if current_db_version == 10:
 		# V10 -> V11
@@ -463,8 +475,8 @@ def migrate_db(current_db_version: int) -> None:
 			updates
 		)
 
-		current_db_version = 11
-		update_db_version(current_db_version)
+		current_db_version = s['database_version'] = 11
+		s._save_to_database()
 
 	if current_db_version == 11:
 		# V11 -> V12
@@ -489,6 +501,9 @@ def migrate_db(current_db_version: int) -> None:
 				FOREIGN KEY (issue_id) REFERENCES issues(id)
 			);
 		""")
+		
+		current_db_version = s['database_version'] = 12
+		s._save_to_database()
 
 	if current_db_version == 12:
 		# V12 -> V13
@@ -511,6 +526,9 @@ def migrate_db(current_db_version: int) -> None:
 				WHERE key = 'convert';
 				"""
 			)
+		
+		current_db_version = s['database_version'] = 13
+		s._save_to_database()
 
 	if current_db_version == 13:
 		# V13 -> V14
@@ -536,18 +554,78 @@ def migrate_db(current_db_version: int) -> None:
 				""",
 				(",".join(format_preference),)
 			)
+		
+		current_db_version = s['database_version'] = 14
+		s._save_to_database()
+
+	if current_db_version == 14:
+		# V14 -> V15
+		service_preference = ','.join([
+			source[0] for source in cursor.execute(
+				"SELECT source FROM service_preference ORDER BY pref;"
+			)
+		])
+		cursor.execute(
+			"UPDATE config SET value = ? WHERE key = 'service_preference';",
+			(service_preference,)
+		)
+		cursor.execute(
+			"DROP TABLE service_preference;"
+		)
+		
+		current_db_version = s['database_version'] = 15
+		s._save_to_database()
+
+	if current_db_version == 15:
+		# V15 -> V16
+
+		cursor.executescript("""
+			BEGIN TRANSACTION;
+			PRAGMA defer_foreign_keys = ON;
+
+			DROP TABLE blocklist_reasons;
+
+			CREATE TEMPORARY TABLE temp_blocklist AS
+				SELECT * FROM blocklist;
+			DROP TABLE blocklist;
+
+			CREATE TABLE blocklist(
+				id INTEGER PRIMARY KEY,
+				link TEXT NOT NULL UNIQUE,
+				reason INTEGER NOT NULL CHECK (reason > 0),
+				added_at INTEGER NOT NULL
+			);
+			INSERT INTO blocklist
+				SELECT * FROM temp_blocklist;
+
+			COMMIT;
+		""")
+		
+		current_db_version = s['database_version'] = 16
+		s._save_to_database()
+
+	if current_db_version == 16:
+		# V16 -> V17
+		
+		log_number = 20 if s['log_level'] == 'info' else 10
+		s['log_level'] = log_number
+		
+		current_db_version = s['database_version'] = 16
+		s._save_to_database()
 
 	return
 
 def setup_db() -> None:
-	"""Setup the database tables and default config when they aren't setup yet
 	"""
-	from backend.settings import (Settings, blocklist_reasons, credential_sources,
-	                              default_settings, supported_source_strings,
-	                              task_intervals)
+	Setup the database tables and default config when they aren't setup yet
+	"""
+	from backend.settings import Settings, credential_sources, task_intervals
 
 	cursor = get_db()
 	cursor.execute("PRAGMA journal_mode = wal;")
+	register_adapter(bool, lambda b: int(b))
+	register_converter("BOOL", lambda b: b == b'1')
+	register_adapter(CommaList, lambda c: str(c))
 
 	setup_commands = """
 		CREATE TABLE IF NOT EXISTS config(
@@ -650,17 +728,11 @@ def setup_db() -> None:
 			interval INTEGER NOT NULL,
 			next_run INTEGER NOT NULL
 		);
-		CREATE TABLE IF NOT EXISTS blocklist_reasons(
-			id INTEGER PRIMARY KEY,
-			reason TEXT NOT NULL UNIQUE
-		);
 		CREATE TABLE IF NOT EXISTS blocklist(
 			id INTEGER PRIMARY KEY,
 			link TEXT NOT NULL UNIQUE,
-			reason INTEGER NOT NULL,
-			added_at INTEGER NOT NULL,
-
-			FOREIGN KEY (reason) REFERENCES blocklist_reasons(id)
+			reason INTEGER NOT NULL CHECK (reason > 0),
+			added_at INTEGER NOT NULL
 		);
 		CREATE TABLE IF NOT EXISTS credentials_sources(
 			id INTEGER PRIMARY KEY,
@@ -675,31 +747,15 @@ def setup_db() -> None:
 			FOREIGN KEY (source) REFERENCES credentials_sources(id)
 				ON DELETE CASCADE
 		);
-		CREATE TABLE IF NOT EXISTS service_preference(
-			source VARCHAR(30) UNIQUE NOT NULL,
-			pref INTEGER UNIQUE CHECK (pref >= 1)
-		);
 	"""
 	cursor.executescript(setup_commands)
 
-	# Insert default setting values for keys that
-	# don't have a value yet or have newly been added
-	cursor.executemany(
-		"""
-		INSERT OR IGNORE INTO config
-		VALUES (?,?);
-		""",
-		default_settings.items()
-	)
+	settings = Settings()
 	
-	set_log_level(cursor.execute(
-		"SELECT value FROM config WHERE key = 'log_level' LIMIT 1;"
-	).fetchone()[0])
-
+	set_log_level(settings['log_level'])
+	
 	# Migrate database if needed
-	current_db_version = int(cursor.execute(
-		"SELECT value FROM config WHERE key = 'database_version' LIMIT 1;"
-	).fetchone()[0])
+	current_db_version = settings['database_version']
 
 	if current_db_version < __DATABASE_VERSION__:
 		logging.debug(
@@ -708,14 +764,12 @@ def setup_db() -> None:
 		migrate_db(current_db_version)
 		# Redundant but just to be sure, in case
 		# the version isn't updated in the last migration of the function
-		update_db_version(__DATABASE_VERSION__)
+		settings['database_version'] = __DATABASE_VERSION__
+		settings._save_to_database()
 
 	# Generate api key
-	api_key_exists = (None,) not in cursor.execute(
-		"SELECT value FROM config WHERE key = 'api_key' LIMIT 1;"
-	)
-	if not api_key_exists:
-		Settings().generate_api_key()
+	if settings['api_key'] is None:
+		settings.generate_api_key()
 
 	# Add task intervals
 	logging.debug(f'Inserting task intervals: {task_intervals}')
@@ -732,16 +786,6 @@ def setup_db() -> None:
 		((k, v, current_time, v) for k, v in task_intervals.items())
 	)
 	
-	# Add blocklist reasons
-	logging.debug(f'Inserting blocklist reasons: {blocklist_reasons}')
-	cursor.executemany(
-		"""
-		INSERT OR IGNORE INTO blocklist_reasons(id, reason)
-		VALUES (?,?);
-		""",
-		blocklist_reasons.items()
-	)
-	
 	# Add credentials sources
 	logging.debug(f'Inserting credentials sources: {credential_sources}')
 	cursor.executemany(
@@ -750,20 +794,6 @@ def setup_db() -> None:
 		VALUES (?);
 		""",
 		[(s,) for s in credential_sources]
-	)
-
-	# Add service preferences
-	order = [
-		(names[0], place + 1)
-		for place, names in enumerate(supported_source_strings)
-	]
-	logging.debug(f'Inserting service preferences: {order}')
-	cursor.executemany(
-		"""
-		INSERT OR IGNORE INTO service_preference(source, pref)
-		VALUES (?,?);
-		""",
-		order
 	)
 
 	return

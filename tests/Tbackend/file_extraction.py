@@ -2,14 +2,28 @@ import unittest
 from json import dumps
 from typing import Dict
 
-from backend.files import extract_filename_data as ef
+from backend.file_extraction import extract_filename_data as ef
 
 
 class extract_filename_data(unittest.TestCase):
 	def run_cases(self, cases: Dict[str, dict]):
 		self.longMessage = False
 		for input, output in cases.items():
-			self.assertEqual(ef(input), output, f"The input '{input}' isn't extracted properly:\nOutput: {dumps(ef(input), indent=4)}\nExpected: {dumps(output, indent=4)}")
+			self.assertEqual(
+				ef(input),
+				output,
+				f"The input '{input}' isn't extracted properly:\nOutput: {dumps(ef(input), indent=4)}\nExpected: {dumps(output, indent=4)}"
+			)
+		return
+
+	def run_cases_folder_year(self, cases: Dict[str, dict]):
+		self.longMessage = False
+		for input, output in cases.items():
+			self.assertEqual(
+				ef(input, prefer_folder_year=True),
+				output,
+				f"The input '{input}' isn't extracted properly:\nOutput: {dumps(ef(input), indent=4)}\nExpected: {dumps(output, indent=4)}"
+			)
 		return
 
 	def test_general(self):
@@ -81,7 +95,10 @@ class extract_filename_data(unittest.TestCase):
 				{'series': 'Wolverine', 'year': 2020, 'volume_number': 1, 'special_version': None, 'issue_number': 6.0, 'annual': False},
 
 			'Batman Annual (1961) Volume 1 Issue 10/90 - Batman_Annual #10/Batman Annual #10-02.jpg':
-				{'series': 'Batman Annual', 'year': 1961, 'volume_number': 1, 'special_version': None, 'issue_number': 10.0, 'annual': True}
+				{'series': 'Batman Annual', 'year': 1961, 'volume_number': 1, 'special_version': None, 'issue_number': 10.0, 'annual': True},
+
+			'Action Comics (2011) #31 - Infected Chapter 1 True Believers':
+				{'series': 'Action Comics', 'year': 2011, 'volume_number': 1, 'special_version': None, 'issue_number': 31.0, 'annual': False}
 		}
 		self.run_cases(cases)
 
@@ -163,6 +180,19 @@ class extract_filename_data(unittest.TestCase):
 				{'series': 'Batman Annual', 'year': 1961, 'volume_number': 1, 'special_version': 'cover', 'issue_number': 13.0, 'annual': True},
 
 			'Batman Annual (1961) Volume 1 Issue 14/Batman-Annual #14-00.jpg':
-				{'series': 'Batman Annual', 'year': 1961, 'volume_number': 1, 'special_version': None, 'issue_number': 14.0, 'annual': True}
+				{'series': 'Batman Annual', 'year': 1961, 'volume_number': 1, 'special_version': None, 'issue_number': 14.0, 'annual': True},
+
+			'Action Comics/Volume 2 (2011)/Action Comics 000 (2012) (4 covers) (digital) (Minutemen-PhD).cbr':
+				{'series': 'Action Comics', 'year': 2012, 'volume_number': 2, 'special_version': None, 'issue_number': 0.0, 'annual': False}
 		}
 		self.run_cases(cases)
+
+	def test_folder_year(self):
+		cases = {
+			'Iron Man/Volume 1 (1945)/Iron Man Volume 1 Issue 100 (02-03-1950).cbr':
+				{'series': 'Iron Man', 'year': 1945, 'volume_number': 1, 'special_version': None, 'issue_number': 100.0, 'annual': False},
+
+			'Iron Man/Volume 1/Iron Man Volume 1 Issue 100 (02-03-1950).cbr':
+				{'series': 'Iron Man', 'year': 1950, 'volume_number': 1, 'special_version': None, 'issue_number': 100.0, 'annual': False},
+		}
+		self.run_cases_folder_year(cases)

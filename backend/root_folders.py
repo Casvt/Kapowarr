@@ -1,8 +1,5 @@
 #-*- coding: utf-8 -*-
 
-"""This file is for everything that has to do with the root folders
-"""
-
 import logging
 from os.path import isdir
 from os.path import sep as path_sep
@@ -15,8 +12,6 @@ from backend.db import get_db
 
 
 class RootFolders:
-	"""For interacting with the rootfolders
-	"""
 	cache = {}
 	
 	def get_all(self, use_cache: bool=True) -> List[dict]:
@@ -31,7 +26,7 @@ class RootFolders:
 			List[dict]: The list of rootfolders
 		"""		
 		if not use_cache or not self.cache:
-			root_folders = get_db('dict').execute(
+			root_folders = get_db(dict).execute(
 				"SELECT id, folder FROM root_folders;"
 			)
 			self.cache = {r['id']: dict(r) for r in root_folders}
@@ -60,7 +55,10 @@ class RootFolders:
 		if not root_folder:
 			raise RootFolderNotFound
 		return root_folder
-			
+
+	def __getitem__(self, root_folder_id: int) -> str:
+		return self.get_one(root_folder_id)['folder']
+
 	def add(self, folder: str) -> dict:
 		"""Add a rootfolder
 
@@ -81,7 +79,7 @@ class RootFolders:
 			folder += path_sep
 
 		# Insert into database
-		root_folder_id = get_db('dict').execute(
+		root_folder_id = get_db(dict).execute(
 			"INSERT INTO root_folders(folder) VALUES (?)",
 			(folder,)
 		).lastrowid

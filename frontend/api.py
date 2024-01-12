@@ -8,7 +8,8 @@ from flask import Blueprint, Flask, request, send_file
 from backend.blocklist import (add_to_blocklist, delete_blocklist,
                                delete_blocklist_entry, get_blocklist,
                                get_blocklist_entry)
-from backend.conversion import get_available_formats, mass_convert, preview_mass_convert
+from backend.conversion import (get_available_formats, mass_convert,
+                                preview_mass_convert)
 from backend.custom_exceptions import (BlocklistEntryNotFound,
                                        CredentialAlreadyAdded,
                                        CredentialInvalid, CredentialNotFound,
@@ -30,21 +31,21 @@ from backend.download_direct_clients import credentials
 from backend.download_queue import (DownloadHandler, delete_download_history,
                                     get_download_history)
 from backend.download_torrent_clients import TorrentClients, client_types
+from backend.enums import BlocklistReason, BlocklistReasonID
 from backend.library_import import import_library, propose_library_import
 from backend.mass_edit import MassEditorVariables, action_to_func
 from backend.naming import (generate_volume_folder_name, mass_rename,
                             preview_mass_rename)
 from backend.root_folders import RootFolders
 from backend.search import manual_search
-from backend.settings import Settings, about_data, blocklist_reasons
-from backend.tasks import (TaskHandler, delete_task_history, get_task_history,
-                           get_task_planning, task_library)
+from backend.settings import Settings, about_data
+from backend.tasks import (Task, TaskHandler, delete_task_history,
+                           get_task_history, get_task_planning, task_library)
 from backend.volumes import Library, search_volumes
 
 api = Blueprint('api', __name__)
 root_folders = RootFolders()
 library = Library()
-settings = Settings()
 
 # Create handlers
 handler_context = Flask('handler')
@@ -123,7 +124,7 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 				raise TaskNotFound
 
 		elif key == 'api_key':
-			if not value == settings.get_settings()['api_key']:
+			if not value == Settings()['api_key']:
 				raise InvalidKeyValue(key, value)
 
 		elif key == 'sort':
@@ -135,18 +136,22 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 				raise InvalidKeyValue(key, value)
 			value = value or None
 
-		elif key in ('root_folder_id', 'new_root_folder', 'offset', 'limit'):
+		elif key in ('root_folder_id', 'root_folder', 'offset', 'limit'):
 			try:
 				value = int(value)
 			except (ValueError, TypeError):
 				raise InvalidKeyValue(key, value)
 
 		elif key == 'reason_id':
-			value = int(value)
-			if not value in blocklist_reasons:
+			try:
+				value = BlocklistReason[
+					BlocklistReasonID(int(value)).name
+				]
+			except ValueError:
 				raise InvalidKeyValue(key, value)
 
-		elif key in ('monitor', 'delete_folder', 'rename_files', 'only_english'):
+		elif key in ('monitor', 'delete_folder', 'rename_files', 'only_english',
+					'limit_parent_folder'):
 			if value == 'true':
 				value = True
 			elif value == 'false':
@@ -184,6 +189,9 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 		elif key == 'only_english':
 			value = True
 
+		elif key == 'limit_parent_folder':
+			value = False
+
 	return value
 
 #=====================
@@ -214,20 +222,22 @@ def auth(method):
 
 @api.route('/auth', methods=['POST'])
 def api_auth():
+	settings = Settings()
+
 	ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
 
-	if settings.get_settings()['auth_password']:
+	if settings['auth_password']:
 		given_password = request.get_json().get('password')
 		if given_password is None:
 			return return_api({}, 'PasswordInvalid', 401)
 
-		auth_password = settings.get_settings().get('auth_password')
+		auth_password = settings['auth_password']
 		if auth_password is not None and given_password != auth_password:
 			logging.warning(f'Login attempt failed from {ip}')
 			return return_api({}, 'PasswordInvalid', 401)
 
 	logging.info(f'Login attempt successful from {ip}')
-	return return_api({'api_key': settings.get_settings()['api_key']})
+	return return_api({'api_key': settings['api_key']})
 
 @api.route('/auth/check', methods=['POST'])
 @error_handler
@@ -253,7 +263,7 @@ def api_tasks():
 		return return_api(tasks)
 
 	elif request.method == 'POST':
-		task = extract_key(request, 'cmd')
+		task: Task = extract_key(request, 'cmd')
 
 		if task.action in ('auto_search_issue', 'auto_search', 'refresh_and_scan'):
 			volume_id = extract_key(request, 'volume_id')
@@ -308,48 +318,28 @@ def api_task(task_id: int):
 @error_handler
 @auth
 def api_settings():
+	settings = Settings()
 	if request.method == 'GET':
-		result = settings.get_settings()
+		result = settings.get_all()
 		return return_api(result)
 
 	elif request.method == 'PUT':
 		data = request.get_json()
-		result = settings.set_settings(data)
-		return return_api(result)
+		settings.update(data)
+		return return_api(settings.get_all())
 
 	elif request.method == 'DELETE':
 		key = extract_key(request, 'key')
-		result = settings.reset_setting(key)
-		return return_api(result)
+		settings.reset(key)
+		return return_api(settings.get_all())
 
 @api.route('/settings/api_key', methods=['POST'])
 @error_handler
 @auth
 def api_settings_api_key():
-	result = settings.generate_api_key()
-	return return_api(result)
-
-@api.route('/settings/servicepreference', methods=['GET', 'PUT'])
-@error_handler
-@auth
-def api_settings_service_preference():
-	if request.method == 'GET':
-		result = settings.get_service_preference()
-		return return_api(result)
-	
-	elif request.method == 'PUT':
-		data = request.get_json()
-		if not 'order' in data:
-			raise KeyNotFound('order')
-		if not isinstance(data['order'], list):
-			raise InvalidKeyValue('order', data['order'])
-		current_order = settings.get_service_preference()
-		for entry in data['order']:
-			if not entry in current_order:
-				raise InvalidKeyValue('order', data['order'])
-
-		settings.set_service_preference(data['order'])
-		return return_api({})
+	settings = Settings()
+	settings.generate_api_key()
+	return return_api(settings.get_all())
 
 @api.route('/settings/availableformats', methods=['GET'])
 @error_handler
@@ -369,7 +359,8 @@ def api_rootfolder():
 	elif request.method == 'POST':
 		data: dict = request.get_json()
 		folder = data.get('folder')
-		if folder is None: raise KeyNotFound('folder')
+		if folder is None:
+			raise KeyNotFound('folder')
 		root_folder = root_folders.add(folder)
 		return return_api(root_folder, code=201)
 
@@ -393,9 +384,26 @@ def api_rootfolder_id(id: int):
 @auth
 def api_library_import():
 	if request.method == 'GET':
-		limit = extract_key(request, 'limit', check_existence=False)
-		only_english = extract_key(request, 'only_english', check_existence=False)
-		result = propose_library_import(limit, only_english)
+		limit = extract_key(
+			request,
+			'limit',
+			check_existence=False
+		)
+		only_english = extract_key(
+			request,
+			'only_english',
+			check_existence=False
+		)
+		limit_parent_folder = extract_key(
+			request,
+			'limit_parent_folder',
+			check_existence=False
+		)
+		result = propose_library_import(
+			limit,
+			limit_parent_folder,
+			only_english
+		)
 		return return_api(result)
 	
 	elif request.method == 'POST':
@@ -404,7 +412,10 @@ def api_library_import():
 
 		if (
 			not isinstance(data, list)
-			or not all(isinstance(e, dict) and 'filepath' in e and 'id' in e for e in data)
+			or not all(
+				isinstance(e, dict) and 'filepath' in e and 'id' in e
+				for e in data
+			)
 		):
 			raise InvalidKeyValue
 
@@ -457,7 +468,7 @@ def api_volumes():
 		volume_folder = data.get('volume_folder') or None
 
 		volume_id = library.add(comicvine_id, root_folder_id, monitor, volume_folder)
-		volume_info = library.get_volume(volume_id).get_info()
+		volume_info = library.get_volume(volume_id).get_public_keys()
 		return return_api(volume_info, code=201)
 
 @api.route('/volumes/stats', methods=['GET'])
@@ -474,12 +485,12 @@ def api_volume(id: int):
 	volume = library.get_volume(id)
 
 	if request.method == 'GET':
-		volume_info = volume.get_info()
+		volume_info = volume.get_public_keys()
 		return return_api(volume_info)
 
 	elif request.method == 'PUT':
 		edit_info = request.get_json()
-		result = volume.edit(edit_info)
+		result = volume.update(edit_info)
 		return return_api(result)
 
 	elif request.method == 'DELETE':
@@ -491,7 +502,7 @@ def api_volume(id: int):
 @error_handler
 @auth
 def api_volume_cover(id: int):
-	cover = library.get_volume(id).get_cover()
+	cover = library.get_volume(id)['cover']
 	return send_file(cover, 'image/jpeg'), 200
 
 @api.route('/issues/<int:id>', methods=['GET','PUT'])
@@ -501,18 +512,16 @@ def api_issues(id: int):
 	issue = library.get_issue(id)
 
 	if request.method == 'GET':
-		result = issue.get_info()
+		result = issue.get_public_keys()
 		return return_api(result)
 
 	elif request.method == 'PUT':
 		edit_info: dict = request.get_json()
-		monitored = edit_info.get('monitor')
-		if monitored:
-			issue.monitor()
-		else:
-			issue.unmonitor()
+		monitored = edit_info.get('monitored')
+		if monitored is not None:
+			issue['monitored'] = bool(monitored)
 
-		result = issue.get_info()
+		result = issue.get_public_keys()
 		return return_api(result)
 
 #=====================
@@ -537,7 +546,7 @@ def api_rename(id: int):
 @error_handler
 @auth
 def api_rename_issue(id: int):
-	volume_id = library.get_issue(id).get_info()['volume_id']
+	volume_id = library.get_issue(id)['volume_id']
 
 	if request.method == 'GET':
 		result = preview_mass_rename(volume_id, id)
@@ -570,7 +579,7 @@ def api_convert(id: int):
 @error_handler
 @auth
 def api_convert_issue(id: int):
-	volume_id = library.get_issue(id).get_info()['volume_id']
+	volume_id = library.get_issue(id)['volume_id']
 
 	if request.method == 'GET':
 		result = preview_mass_convert(volume_id, id)
@@ -596,8 +605,8 @@ def api_volume_manual_search(id: int):
 @error_handler
 @auth
 def api_volume_download(id: int):
-	link = extract_key(request, 'link')
 	library.get_volume(id)
+	link = extract_key(request, 'link')
 	result = download_handler.add(link, id)
 	return return_api(result, code=201)
 
@@ -605,9 +614,9 @@ def api_volume_download(id: int):
 @error_handler
 @auth
 def api_issue_manual_search(id: int):
-	issue_info = library.get_issue(id).get_info()
+	volume_id = library.get_issue(id)['volume_id']
 	result = manual_search(
-		issue_info['volume_id'],
+		volume_id,
 		id
 	)
 	return return_api(result)
@@ -616,9 +625,9 @@ def api_issue_manual_search(id: int):
 @error_handler
 @auth
 def api_issue_download(id: int):
+	volume_id = library.get_issue(id)['volume_id']
 	link = extract_key(request, 'link')
-	issue_info = library.get_issue(id).get_info()
-	result = download_handler.add(link, issue_info['volume_id'], id)
+	result = download_handler.add(link, volume_id, id)
 	return return_api(result, code=201)
 
 @api.route('/activity/queue', methods=['GET'])
@@ -674,8 +683,8 @@ def api_blocklist():
 	
 	elif request.method == 'POST':
 		link = extract_key(request, 'link')
-		reason_id = extract_key(request, 'reason_id')
-		result = add_to_blocklist(link, reason_id)
+		reason = extract_key(request, 'reason_id')
+		result = add_to_blocklist(link, reason)
 		return return_api(result, code=201)
 	
 	elif request.method == 'DELETE':

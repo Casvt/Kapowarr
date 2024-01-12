@@ -21,7 +21,7 @@ function saveSettings(api_key) {
 		'url_base': document.querySelector('#url-base-input').value,
 		'auth_password': document.querySelector('#password-input').value,
 		'comicvine_api_key': document.querySelector('#cv-input').value,
-		'log_level': document.querySelector('#log-level-input').value
+		'log_level': parseInt(document.querySelector('#log-level-input').value)
 	};
 	fetch(`${url_base}/api/settings?api_key=${api_key}`, {
 		'method': 'PUT',
@@ -33,10 +33,9 @@ function saveSettings(api_key) {
 		if (json.error !== null) return Promise.reject(json);
 	})
 	.catch(e => {
-		if (e.error === 'InvalidSettingValue') {
-			if (e.result.key === 'comicvine_api_key')
-				document.querySelector('#cv-input').classList.add('error-input');
-		} else 
+		if (e.error === 'InvalidComicVineApiKey')
+			document.querySelector('#cv-input').classList.add('error-input');
+		else 
 			console.log(e.error);
 	});
 };

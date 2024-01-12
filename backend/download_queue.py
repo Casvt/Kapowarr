@@ -1,14 +1,17 @@
 #-*- coding: utf-8 -*-
 
-"""Handling the download queue and history
+"""
+Handling the download queue and history
 """
 
+from __future__ import annotations
+
 import logging
-from os import listdir, makedirs, remove
+from os import listdir
 from os.path import basename, join
 from threading import Thread
 from time import sleep
-from typing import Dict, List, Union
+from typing import TYPE_CHECKING, Dict, List, Union
 
 from backend.blocklist import add_to_blocklist
 from backend.custom_exceptions import (DownloadLimitReached, DownloadNotFound,
@@ -16,14 +19,18 @@ from backend.custom_exceptions import (DownloadLimitReached, DownloadNotFound,
 from backend.db import get_db
 from backend.download_direct_clients import (DirectDownload, Download,
                                              MegaDownload)
-from backend.download_general import DownloadStates
 from backend.download_torrent_clients import TorrentClients, TorrentDownload
-from backend.getcomics import _extract_download_links
-from backend.helpers import SeedingHandling
+from backend.enums import BlocklistReason, DownloadState, SeedingHandling
+from backend.files import create_folder, delete_file_folder
+from backend.getcomics import extract_GC_download_links
+from backend.helpers import first_of_column
 from backend.post_processing import (PostProcesser,
                                      PostProcesserTorrentsComplete,
                                      PostProcesserTorrentsCopy)
 from backend.settings import Settings, private_settings
+
+if TYPE_CHECKING:
+	from flask import Flask
 
 #=====================
 # Download handling
@@ -37,7 +44,7 @@ class DownloadHandler:
 	queue: List[Download] = []
 	downloading_item: Union[Thread, None] = None
 	
-	def __init__(self, context) -> None:
+	def __init__(self, context: Flask) -> None:
 		"""Setup the download handler
 
 		Args:
@@ -56,12 +63,11 @@ class DownloadHandler:
 		Returns:
 			int: The ID of the client
 		"""
-		torrent_clients = [
-			tc[0]
-			for tc in get_db().execute(
+		torrent_clients = first_of_column(
+			get_db().execute(
 				"SELECT id FROM torrent_clients;"
 			)
-		]
+		)
 		queue_ids = [
 			d.client.id
 			for d in self.queue
@@ -85,7 +91,7 @@ class DownloadHandler:
 
 			except DownloadLimitReached:
 				# Mega download limit reached mid-download
-				download.state = DownloadStates.FAILED_STATE
+				download.state = DownloadState.FAILED_STATE
 				self.queue = [
 					e
 					for e in self.queue
@@ -95,18 +101,18 @@ class DownloadHandler:
 					)
 				]
 
-			if download.state == DownloadStates.CANCELED_STATE:
+			if download.state == DownloadState.CANCELED_STATE:
 				PostProcesser.canceled(download)
 
-			elif download.state == DownloadStates.FAILED_STATE:
+			elif download.state == DownloadState.FAILED_STATE:
 				PostProcesser.failed(download)
 			
-			elif download.state == DownloadStates.SHUTDOWN_STATE:
+			elif download.state == DownloadState.SHUTDOWN_STATE:
 				PostProcesser.shutdown(download)
 				return
 
-			elif download.state == DownloadStates.DOWNLOADING_STATE:
-				download.state = DownloadStates.IMPORTING_STATE
+			elif download.state == DownloadState.DOWNLOADING_STATE:
+				download.state = DownloadState.IMPORTING_STATE
 				PostProcesser.success(download)
 
 			self.queue.remove(download)
@@ -125,9 +131,8 @@ class DownloadHandler:
 		download.run()
 		
 		with self.context():
-			seeding_handling = get_db().execute(
-				"SELECT value FROM config WHERE key = 'seeding_handling' LIMIT 1;"
-			).fetchone()[0]
+			settings = Settings()
+			seeding_handling = settings['seeding_handling']
 			
 			if seeding_handling == SeedingHandling.COMPLETE:
 				post_processer = PostProcesserTorrentsComplete
@@ -142,40 +147,33 @@ class DownloadHandler:
 			while True:
 				download.update_status()
 
-				if download.state == DownloadStates.CANCELED_STATE:
+				if download.state == DownloadState.CANCELED_STATE:
 					download.remove_from_client(delete_files=True)
 					post_processer.canceled(download)
 					self.queue.remove(download)
 					break
 
-				elif download.state == DownloadStates.FAILED_STATE:
+				elif download.state == DownloadState.FAILED_STATE:
 					download.remove_from_client(delete_files=True)
 					post_processer.failed(download)
 					self.queue.remove(download)
 					break
 
-				elif download.state == DownloadStates.SHUTDOWN_STATE:
+				elif download.state == DownloadState.SHUTDOWN_STATE:
 					download.remove_from_client(delete_files=True)
 					post_processer.shutdown(download)
 					break
 
 				elif (
 					seeding_handling == SeedingHandling.COPY
-					and download.state == DownloadStates.SEEDING_STATE
+					and download.state == DownloadState.SEEDING_STATE
 					and not files_copied
 				):
 					files_copied = True
 					post_processer.seeding(download)
 
-				elif download.state == DownloadStates.IMPORTING_STATE:
-					delete_completed_torrents = get_db().execute("""
-						SELECT value
-						FROM config
-						WHERE key = 'delete_completed_torrents'
-						LIMIT 1;
-						"""
-					).fetchone()[0]
-					if delete_completed_torrents:
+				elif download.state == DownloadState.IMPORTING_STATE:
+					if settings['delete_completed_torrents']:
 						download.remove_from_client(delete_files=False)
 					post_processer.success(download)
 					self.queue.remove(download)
@@ -188,7 +186,8 @@ class DownloadHandler:
 		return
 
 	def _process_queue(self) -> None:
-		"""Handle the queue. In the case that there is something in the queue
+		"""
+		Handle the queue. In the case that there is something in the queue
 		and it isn't already downloading, start the download. This can safely be
 		called multiple times while a download is going or while there is nothing
 		in the queue.
@@ -221,10 +220,27 @@ class DownloadHandler:
 		self,
 		downloads: List[Download],
 		volume_id: int,
-		issue_id: int,
+		issue_id: Union[int, None],
 		page_link: Union[str, None]
 	) -> List[Download]:
-		
+		"""Get download instances ready to be put in the queue.
+		Registers them in the db if not already. For torrents,
+		it chooses the client, creates the thread and runs it.
+
+		Args:
+			downloads (List[Download]): The downloads to get ready.
+
+			volume_id (int): The ID of the volume that the downloads are for.
+
+			issue_id (int): The ID of the issue that the downloads are for.
+				Default is None.
+
+			page_link (Union[str, None]): The link to the page where the
+			download was grabbed from.
+
+		Returns:
+			List[Download]: The downloads, now prepared.
+		"""
 		cursor = get_db()
 		for download in downloads:
 			download.volume_id = volume_id
@@ -274,11 +290,12 @@ class DownloadHandler:
 		return downloads
 
 	def __load_downloads(self) -> None:
-		"""Load downloads from the database and add them to the queue
+		"""
+		Load downloads from the database and add them to the queue
 		for re-downloading
 		"""
 		with self.context():
-			cursor = get_db('dict')
+			cursor = get_db(dict)
 			downloads = cursor.execute("""
 				SELECT
 					id, client_type, torrent_client_id,
@@ -307,7 +324,7 @@ class DownloadHandler:
 
 				except LinkBroken as lb:
 					# Link is broken
-					add_to_blocklist(download['link'], lb.reason_id)
+					add_to_blocklist(download['link'], lb.reason)
 					# Link is broken, which triggers a write to the database
 					# To avoid the database being locked for a long time while 
 					# importing, we commit in-between.
@@ -362,7 +379,7 @@ class DownloadHandler:
 		downloads: List[Download] = []
 		if is_gc_link:
 			# Extract download links and convert into Download instances
-			GC_downloads, limit_reached = _extract_download_links(
+			GC_downloads, limit_reached = extract_GC_download_links(
 				link,
 				volume_id,
 				issue_id
@@ -371,7 +388,7 @@ class DownloadHandler:
 			if not GC_downloads:
 				if not limit_reached:
 					# No links extracted from page so add it to blocklist
-					add_to_blocklist(link, 3)
+					add_to_blocklist(link, BlocklistReason.NO_WORKING_LINKS)
 				logging.warning(
 					f'Unable to extract download links from source; {limit_reached=}'
 				)
@@ -391,12 +408,13 @@ class DownloadHandler:
 		return [r.todict() for r in result]
 
 	def stop_handle(self) -> None:
-		"""Cancel any running download and stop the handler
+		"""
+		Cancel any running download and stop the handler
 		"""		
 		logging.debug('Stopping download thread')
 
 		for e in self.queue:
-			e.stop(DownloadStates.SHUTDOWN_STATE)
+			e.stop(DownloadState.SHUTDOWN_STATE)
 
 		if self.downloading_item:
 			self.downloading_item.join()
@@ -444,7 +462,7 @@ class DownloadHandler:
 				prev_state = download.state
 				download.stop()
 
-				if prev_state == DownloadStates.QUEUED_STATE:
+				if prev_state == DownloadState.QUEUED_STATE:
 					self.queue.remove(download)
 					if isinstance(download, TorrentDownload):
 						download.remove_from_client(delete_files=True)
@@ -459,17 +477,19 @@ class DownloadHandler:
 		return
 
 	def create_download_folder(self) -> None:
-		"""Create the download folder if it doesn't already.
 		"""
-		makedirs(Settings().get_settings()['download_folder'], exist_ok=True)
+		Create the download folder if it doesn't already.
+		"""
+		create_folder(Settings()['download_folder'])
 		return
 
 	def empty_download_folder(self) -> None:
-		"""Empty the temporary download folder of files that aren't being downloaded.
+		"""
+		Empty the temporary download folder of files that aren't being downloaded.
 		Handy in the case that a crash left half-downloaded files behind in the folder.
 		"""
 		logging.info(f'Emptying the temporary download folder')
-		folder = Settings().get_settings()['download_folder']
+		folder = Settings()['download_folder']
 		files_in_queue = [basename(download.file) for download in self.queue]
 		files_in_folder = listdir(folder)
 		ghost_files = [
@@ -478,7 +498,7 @@ class DownloadHandler:
 			if not f in files_in_queue
 		]
 		for f in ghost_files:
-			remove(f)
+			delete_file_folder(f)
 		return
 
 #=====================
@@ -497,7 +517,7 @@ def get_download_history(offset: int=0) -> List[dict]:
 	"""	
 	result = list(map(
 		dict,
-		get_db('dict').execute(
+		get_db(dict).execute(
 			"""
 			SELECT
 				original_link, title, downloaded_at
@@ -512,7 +532,8 @@ def get_download_history(offset: int=0) -> List[dict]:
 	return result
 
 def delete_download_history() -> None:
-	"""Delete complete download history
+	"""
+	Delete complete download history
 	"""
 	logging.info('Deleting download history')
 	get_db().execute("DELETE FROM download_history;")
