@@ -1,6 +1,7 @@
 #-*- coding: utf-8 -*-
 
 import logging
+from asyncio import run
 from dataclasses import dataclass
 from io import BytesIO
 from os import remove
@@ -920,7 +921,7 @@ def refresh_and_scan(volume_id: int=None) -> None:
 	str_ids = [str(i) for i in ids]
 
 	# Update volumes
-	volume_datas = cv.fetch_volumes(str_ids)
+	volume_datas = run(cv.fetch_volumes_async(str_ids))
 	update_volumes = ((
 				volume_data['title'],
 				volume_data['year'],
@@ -952,7 +953,7 @@ def refresh_and_scan(volume_id: int=None) -> None:
 	cursor.connection.commit()
 		
 	# Update issues
-	issue_datas = cv.fetch_issues([str(v['comicvine_id']) for v in volume_datas])
+	issue_datas = run(cv.fetch_issues_async([str(v['comicvine_id']) for v in volume_datas]))
 	issue_updates = ((
 			ids[issue_data['volume_id']],
 			issue_data['comicvine_id'],
@@ -1214,7 +1215,7 @@ class Library:
 		# Raises RootFolderNotFound when id is invalid
 		root_folder = RootFolders()[root_folder_id]
 
-		volume_data = ComicVine().fetch_volume(comicvine_id)
+		volume_data = run(ComicVine().fetch_volume_async(comicvine_id))
 		volume_data['monitored'] = monitor
 		volume_data['root_folder'] = root_folder_id
 		

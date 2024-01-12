@@ -331,7 +331,7 @@ def migrate_db(current_db_version: int) -> None:
 		]
 		updates = (
 			(r['date_last_updated'], r['comicvine_id'])
-			for r in ComicVine().fetch_volumes(volume_ids)
+			for r in ComicVine().fetch_volumes_async(volume_ids)
 		)
 		cursor.executemany(
 			"UPDATE volumes SET last_cv_update = ? WHERE comicvine_id = ?;",
