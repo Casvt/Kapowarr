@@ -15,7 +15,7 @@ function populatePosters(volumes, api_key) {
 		cover.alt = "";
 		cover.loading = "lazy";
 		entry.appendChild(cover);
-		
+
 		const progress = document.createElement('div');
 		const progress_bar = document.createElement('div');
 		const calc = volume.issues_downloaded_monitored / volume.issue_count_monitored * 100;
@@ -87,7 +87,7 @@ function populateTable(volumes) {
 		const year = document.createElement('td');
 		year.innerText = volume.year;
 		entry.appendChild(year);
-		
+
 		const progress_container = document.createElement('td');
 		const progress = document.createElement('div');
 		const progress_bar = document.createElement('div');
@@ -105,14 +105,14 @@ function populateTable(volumes) {
 		progress.appendChild(progress_text);
 		progress_container.appendChild(progress);
 		entry.appendChild(progress_container);
-		
+
 		const monitored_container = document.createElement('td');
 		const monitored = document.createElement('img');
 		monitored.src = volume.monitored ? `${url_base}/static/img/monitored.svg` : `${url_base}/static/img/unmonitored.svg`;
 		monitored.title = volume.monitored ? 'Monitored' : 'Unmonitored';
 		monitored_container.appendChild(monitored);
 		entry.appendChild(monitored_container);
-		
+
 		list.appendChild(entry);
 	});
 };
@@ -188,6 +188,17 @@ usingApiKey()
 .then(api_key => {
 	fetchLibrary(api_key);
 	fetchStats(api_key);
+
+	var socket = io({
+		path: `/api/socket.io`,
+		transports: ["polling", "websocket"],
+		upgrade: true,
+		rememberUpgrade: true,
+		autoConnect: false,
+	  });
+	socket.on('connect', function() { console.log('connected'); });
+	socket.on('disconnect', function() { console.log('disconnected'); });
+	socket.connect();
 
 	addEventListener('#clear-search', 'click', e => clearSearch(api_key));
 	addEventListener('#updateall-button', 'click', e => updateAll(api_key));
