@@ -7,6 +7,7 @@ Setting up, running and shutting down the API and web-ui
 from os import urandom
 
 from flask import Flask, render_template, request
+from flask_socketio import SocketIO
 from waitress import create_server
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
@@ -17,6 +18,19 @@ from frontend.api import api
 from frontend.ui import ui, ui_vars
 
 __API_PREFIX__ = '/api'
+
+socketio = SocketIO()
+
+
+def send_event(event: str, data: dict, namespace: str = '/') -> None:
+	"""Send a socketio event to all connected clients.
+
+	Args:
+		event (str): The event name to send.
+		data (dict): The data to send with the event.
+		namespace (str, optional): The namespace to send the event to. Defaults to '/'.
+	"""
+	socketio.emit(event, data, namespace=namespace)
 
 def create_app() -> Flask:
 	"""Creates an flask app instance that can be used to start a web server
@@ -33,6 +47,11 @@ def create_app() -> Flask:
 	app.config['SECRET_KEY'] = urandom(32)
 	app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 	app.config['JSON_SORT_KEYS'] = False
+
+	socketio.init_app(
+		app, path=__API_PREFIX__ + '/socket.io', cors_allowed_origins='*',
+		async_mode='threading', allow_upgrades=False, transports='polling',
+	)
 
 	# Add error handlers
 	@app.errorhandler(404)
