@@ -46,7 +46,7 @@ class CVRateLimitReached(CustomException):
 class VolumeAlreadyAdded(CustomException):
 	"""The volume that is desired to be added is already added"""
 	api_response = {'error': 'VolumeAlreadyAdded', 'result': {}, 'code': 400}
-	
+
 class VolumeDownloadedFor(Exception):
 	"""The volume is desired to be deleted but there is a download for it going"""	
 	def __init__(self, volume_id: int):
@@ -61,6 +61,24 @@ class VolumeDownloadedFor(Exception):
 	def api_response(self):
 		return {
 			'error': 'VolumeDownloadedFor',
+			'result': {'volume_id': self.volume_id},
+			'code': 400
+		}
+
+class TaskForVolumeRunning(Exception):
+	"""The volume is desired to be deleted but there is a task running for it"""	
+	def __init__(self, volume_id: int):
+		self.volume_id = volume_id
+		super().__init__(self.volume_id)
+		logging.warning(
+			f'Deleting volume failed because there is a task for the volume: {self.volume_id}'
+		)
+		return
+		
+	@property
+	def api_response(self):
+		return {
+			'error': 'TaskForVolumeRunning',
 			'result': {'volume_id': self.volume_id},
 			'code': 400
 		}

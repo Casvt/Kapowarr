@@ -11,7 +11,7 @@ from time import time
 from typing import Any, Dict, List, Tuple, Union
 
 from backend.comicvine import ComicVine
-from backend.custom_exceptions import (IssueNotFound, VolumeAlreadyAdded,
+from backend.custom_exceptions import (IssueNotFound, TaskForVolumeRunning, VolumeAlreadyAdded,
                                        VolumeDownloadedFor, VolumeNotFound)
 from backend.db import get_db
 from backend.enums import SpecialVersion
@@ -724,8 +724,14 @@ class Volume(_VolumeBackend):
 		Raises:
 			VolumeDownloadedFor: There is a download in the queue for the volume.
 		"""
+		from backend.tasks import TaskHandler
+		
 		logging.info(f'Deleting volume {self.id} with delete_folder set to {delete_folder}')
 		cursor = get_db()
+
+		# Check if there is no task running for the volume
+		if TaskHandler.task_for_volume_running(self.id):
+			raise TaskForVolumeRunning(self.id)
 
 		# Check if nothing is downloading for the volume
 		downloading_for_volume = cursor.execute("""

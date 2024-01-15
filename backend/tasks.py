@@ -316,6 +316,23 @@ class TaskHandler:
 		self._process_queue()
 		return id
 
+	@staticmethod
+	def task_for_volume_running(volume_id: int) -> bool:
+		"""Whether or not there is a task in the queue that targets the volume.
+
+		Args:
+			volume_id (int): The volume ID to check for.
+
+		Returns:
+			bool: Whether or not a task is in the queue targeting the volume.
+		"""
+		return any(
+			t
+			for t in TaskHandler.queue
+			if (isinstance(t['task'], (UpdateAll, SearchAll))
+				or t['task'].volume_id == volume_id)
+		)
+
 	def __check_intervals(self)	-> None:
 		"Check if any interval task needs to be run and add to queue if so"
 		logging.debug('Checking task intervals')
