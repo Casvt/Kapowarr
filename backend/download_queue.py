@@ -141,7 +141,8 @@ class DownloadHandler:
 			else:
 				raise NotImplementedError
 
-			# When seeding_handling is 'copy', keep track if we already copied the files
+			# When seeding_handling is 'copy', keep track if we already copied 
+			# the files
 			files_copied = False
 
 			while True:

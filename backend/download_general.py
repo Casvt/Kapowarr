@@ -163,15 +163,16 @@ class TorrentClient(ABC):
 		return
 	
 	@abstractmethod
-	def get_torrent_status(self, torrent_id: int) -> dict:
+	def get_torrent_status(self, torrent_id: int) -> Union[dict, None]:
 		"""Get the status of the torrent in a dict
 
 		Args:
 			torrent_id (int): The id of the torrent to get status of
 
 		Returns:
-			dict: The status of the torrent,
-			or empty dict if torrent is not found.
+			Union[dict, None]: The status of the torrent,
+			empty dict if torrent is not found
+			and `None` if client deleted torrent.
 		"""
 		return
 

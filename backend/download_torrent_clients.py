@@ -268,6 +268,8 @@ class TorrentDownload(BaseDownload):
 		"""
 		torrent_status = self.client.get_torrent_status(self._torrent_id)
 		if not torrent_status:
+			if torrent_status is None:
+				self.state = DownloadState.CANCELED_STATE
 			return
 
 		self.progress = torrent_status['progress']

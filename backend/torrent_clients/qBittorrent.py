@@ -33,6 +33,8 @@ class qBittorrent(BaseTorrentClient):
 			f'{self.base_url}/api/v2/auth/login',
 			data=data
 		)
+		
+		self.torrent_found = False
 
 		return
 
@@ -57,14 +59,15 @@ class qBittorrent(BaseTorrentClient):
 		
 		return hash_magnet_link.search(magnet_link).group(0)
 
-	def get_torrent_status(self, torrent_id: int) -> dict:
+	def get_torrent_status(self, torrent_id: int) -> Union[dict, None]:
 		r = self.ssn.get(
 			f'{self.base_url}/api/v2/torrents/properties',
 			params={'hash': torrent_id}
 		)
 		if r.status_code == 404:
-			return {}
+			return None if self.torrent_found else {}
 
+		self.torrent_found = True
 		result = r.json()
 
 		if result['pieces_have'] <= 0:
