@@ -198,6 +198,10 @@ def _match_special_version(
 	):
 		return True
 
+	if (reference_version == SpecialVersion.VOLUME_AS_ISSUE
+		and check_version == SpecialVersion.NORMAL):
+		return True
+
 	# Volume could be specific special version that
 	# extract_filename_data can't pick up
 	# and that that is the reason there is a mismatch
@@ -270,7 +274,7 @@ def file_importing_filter(
 	issue_number_to_year: Dict[float, Union[int, None]] = {
 		issue['calculated_issue_number']:
 			extract_year_from_date(issue['date'])
-			for issue in volume_issues
+		for issue in volume_issues
 	}
 
 	matching_special_version = _match_special_version(
@@ -290,7 +294,7 @@ def file_importing_filter(
 			)
 		)
 	)
-	
+
 	matching_volume_number = _match_volume_number(
 		volume_data.id,
 		file_data['volume_number']
