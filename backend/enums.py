@@ -54,3 +54,9 @@ class DownloadState(BaseEnum):
 	"Download was removed from queue"
 	SHUTDOWN_STATE = 'shutting down'
 	"Download was stopped because Kapowarr is shutting down"
+
+class SocketEvent(BaseEnum):
+	DISCONNECT = 'request_disconnect'
+	TASK_ADDED = 'task_added'
+	TASK_STATUS = 'task_status'
+	TASK_ENDED = 'task_ended'

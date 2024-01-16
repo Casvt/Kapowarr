@@ -51,43 +51,50 @@ function mapButtons(id) {
 	};
 };
 
-function spinButtons(result, id) {
-	// Map all buttons to their actions
-	// auto_search_issue#1155 -> button
-	// Remap all actions to prev. map key format
-	// Loop through buttons and check if key is in action map, then apply button
-	const tasks = [];
-	let task_string;
-	result.forEach(task => {
-		if (id === null && task.volume_id !== null || id !== null && task.volume_id === null) return;
-		task_string = task.action;
-		if (task.volume_id !== null) {
-			task_string += `#${task.volume_id}`;
-			if (task.issue_id !== null) {
-				task_string += `#${task.issue_id}`;
-			};
+function buildTaskString(task) {
+	let task_string = task.action;
+	if (task.volume_id !== null) {
+		task_string += `#${task.volume_id}`;
+		if (task.issue_id !== null) {
+			task_string += `#${task.issue_id}`;
 		};
-		tasks.push(task_string);
-	});
+	};
+	return task_string;
+};
 
-	for (const task in task_to_button) {
-		const button_info = task_to_button[task];
-		if (button_info.button) {
-			const icon = button_info.button.querySelector('img');
-			if (tasks.includes(task)) {
-				if (icon.src === button_info.loading_icon) continue
-				icon.src = button_info.loading_icon;
-				icon.classList.add('spinning');
-			} else {
-				if (icon.src === button_info.icon) continue
-				icon.src = button_info.icon;
-				icon.classList.remove('spinning');
-			};
-		};
+function setTaskMessage(message) {
+	const table = document.querySelector('#task-queue');
+	table.innerHTML = '';
+	if (message !== '') {
+		const entry = document.createElement('p');
+		entry.innerText = message;
+		table.appendChild(entry);
 	};
 };
 
-function fillTaskQueue(api_key, id) {
+function spinButton(task_string) {
+	const button_info = task_to_button[task_string];
+	const icon = button_info.button.querySelector('img');
+
+	if (icon.src === button_info.loading_icon)
+		return;
+
+	icon.src = button_info.loading_icon;
+	icon.classList.add('spinning');
+};
+
+function unspinButton(task_string) {
+	const button_info = task_to_button[task_string];
+	const icon = button_info.button.querySelector('img');
+
+	if (icon.src === button_info.icon)
+		return;
+
+	icon.src = button_info.icon;
+	icon.classList.remove('spinning');
+};
+
+function fillTaskQueue(api_key) {
 	fetch(`${url_base}/api/system/tasks?api_key=${api_key}`, {
 		'priority': 'low'
 	})
@@ -96,18 +103,51 @@ function fillTaskQueue(api_key, id) {
 		return response.json();
 	})
 	.then(json => {
-		const table = document.querySelector('#task-queue');
-		table.innerHTML = '';
-		if (json.result.length >= 1) {
-			const entry = document.createElement('p');
-			entry.innerText = json.result[0].message;
-			table.appendChild(entry);
-		};
-		spinButtons(json.result, id);
+		setTaskMessage(json.result[0].message);
+		json.result.forEach(task => {
+			const task_string = buildTaskString(task);
+			if (task_string in task_to_button)
+				spinButton(task_string);
+		});
 	})
 	.catch(e => {
-		if (e === 401) window.location.href = `${url_base}/login?redirect=${window.location.pathname}`;
+		if (e === 401) window.location.href = 
+			`${url_base}/login?redirect=${window.location.pathname}`;
 	});
+};
+
+function handleTaskAdded(data) {
+	const task_string = buildTaskString(data);
+	if (task_string in task_to_button)
+		spinButton(task_string);
+};
+
+function handleTaskRemoved(data) {
+	setTaskMessage('');
+	
+	const task_string = buildTaskString(data);
+	if (task_string in task_to_button)
+		unspinButton(task_string);
+};
+
+function connectToWebSocket() {
+	const socket = io({
+		path: `${url_base}/api/socket.io`,
+		transports: ["polling"],
+		upgrade: false,
+		autoConnect: false
+	});
+	socket.on('connect', () => console.log('Connected to WebSocket'));
+	socket.on('disconnect', () => console.log('Disconnected from WebSocket'));
+	socket.on('request_disconnect', () => {
+		console.log('Disconnecting from WebSocket');
+		socket.disconnect();
+	});
+	socket.on('task_added', handleTaskAdded);
+	socket.on('task_ended', handleTaskRemoved);
+	socket.on('task_status', data => setTaskMessage(data.message));
+	socket.connect();
+	return socket;
 };
 
 //
@@ -214,16 +254,16 @@ function setLocalStorage(keys_values) {
 
 const url_base = document.querySelector('#url_base').dataset.value;
 const volume_id = parseInt(window.location.pathname.split('/').at(-1)) || null;
-if (volume_id === null) mapButtons(volume_id);
+mapButtons(volume_id);
 
 usingApiKey()
 .then(api_key => {
-	setTimeout(() => fillTaskQueue(api_key, volume_id), 200);
-	setInterval(() => fillTaskQueue(api_key, volume_id), 2000);
-})
+	setTimeout(() => fillTaskQueue(api_key), 200);
+});
 
 setupLocalStorage();
 if (getLocalStorage('theme')['theme'] === 'dark')
 	document.querySelector(':root').classList.add('dark-mode');
+const socket = connectToWebSocket();
 
 addEventListener('#toggle-nav', 'click', showNav);

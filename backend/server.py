@@ -4,33 +4,47 @@
 Setting up, running and shutting down the API and web-ui
 """
 
+import logging
 from os import urandom
+from threading import current_thread
 
 from flask import Flask, render_template, request
-from flask_socketio import SocketIO
 from waitress import create_server
+from waitress.task import ThreadedTaskDispatcher as OldThreadedTaskDispatcher
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
-from backend.db import ThreadedTaskDispatcher, close_db
+from backend.db import DBConnection, close_db
 from backend.files import folder_path
+from backend.helpers import DB_ThreadSafeSingleton, WebSocket
 from backend.settings import private_settings
 from frontend.api import api
 from frontend.ui import ui, ui_vars
 
 __API_PREFIX__ = '/api'
 
-socketio = SocketIO()
+class ThreadedTaskDispatcher(OldThreadedTaskDispatcher):
+	def handler_thread(self, thread_no: int) -> None:
+		super().handler_thread(thread_no)
 
+		i = f'{DBConnection}{current_thread()}'
+		if (
+			i in DB_ThreadSafeSingleton._instances
+			and
+			not DB_ThreadSafeSingleton._instances[i].closed
+		):
+			DB_ThreadSafeSingleton._instances[i].close()
 
-def send_event(event: str, data: dict, namespace: str = '/') -> None:
-	"""Send a socketio event to all connected clients.
+		return
 
-	Args:
-		event (str): The event name to send.
-		data (dict): The data to send with the event.
-		namespace (str, optional): The namespace to send the event to. Defaults to '/'.
-	"""
-	socketio.emit(event, data, namespace=namespace)
+	def shutdown(self,
+		cancel_pending: bool = True,
+		timeout: int = 5
+	) -> bool:
+		logging.info('Shutting down Kapowarr...')
+		WebSocket().request_disconnect()
+		result = super().shutdown(cancel_pending, timeout)
+		DBConnection(20.0).close()
+		return result
 
 def create_app() -> Flask:
 	"""Creates an flask app instance that can be used to start a web server
@@ -48,9 +62,12 @@ def create_app() -> Flask:
 	app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 	app.config['JSON_SORT_KEYS'] = False
 
-	socketio.init_app(
-		app, path=__API_PREFIX__ + '/socket.io', cors_allowed_origins='*',
-		async_mode='threading', allow_upgrades=False, transports='polling',
+	WebSocket().init_app(
+		app,
+		path=f'{__API_PREFIX__}/socket.io',
+		cors_allowed_origins='*',
+		async_mode='threading',
+		transports='polling'
 	)
 
 	# Add error handlers

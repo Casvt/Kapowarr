@@ -189,18 +189,6 @@ usingApiKey()
 	fetchLibrary(api_key);
 	fetchStats(api_key);
 
-	var socket = io({
-		path: `/api/socket.io`,
-		transports: ["polling", "websocket"],
-		upgrade: true,
-		rememberUpgrade: true,
-		autoConnect: false,
-	  });
-	socket.on('connect', function() { console.log('connected'); });
-	socket.on('doisconnect', function() { console.log('disconnected'); });
-	socket.on("task_success", function(data) { console.log(data); });
-	socket.connect();
-
 	addEventListener('#clear-search', 'click', e => clearSearch(api_key));
 	addEventListener('#updateall-button', 'click', e => updateAll(api_key));
 	addEventListener('#searchall-button', 'click', e => searchAll(api_key));
