@@ -11,12 +11,13 @@ from typing import Dict, List, Union
 from bencoding import bdecode
 from requests import post
 
-from backend.custom_exceptions import (InvalidKeyValue, TorrentClientNotFound,
+from backend.custom_exceptions import (InvalidKeyValue, LinkBroken,
+                                       TorrentClientNotFound,
                                        TorrentClientNotWorking)
 from backend.db import get_db
 from backend.download_direct_clients import BaseDownload
 from backend.download_general import TorrentClient
-from backend.enums import DownloadState
+from backend.enums import BlocklistReason, DownloadState
 from backend.settings import Settings
 from backend.torrent_clients import qBittorrent
 
@@ -245,7 +246,7 @@ class TorrentDownload(BaseDownload):
 			headers={'User-Agent': 'Kapowarr'}
 		)
 		if r.headers.get('content-type') != 'application/x-bittorrent':
-			raise NotImplementedError
+			raise LinkBroken(BlocklistReason.LINK_BROKEN)
 
 		name = bdecode(r.content)[b'info'][b'name'].decode()
 		self.title = self.title or name
