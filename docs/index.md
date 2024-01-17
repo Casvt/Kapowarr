@@ -19,9 +19,8 @@ In the web-UI of Kapowarr, the documentation for that topic will be found at the
 
 ### Getting started
 
-- [Installation](./installation/installation.md)
+- [Installation and Updating](./installation/installation.md)
 - [Setup after installation](./installation/setup_after_installation.md)
-- [Updating your installation](./installation/updating.md)
 
 ### General Information
 
@@ -43,5 +42,5 @@ _Documentation that only applies to the beta releases._
 ## Contact
 
 - For support, a [discord server](https://discord.gg/5gWtW3ekgZ) is available.
-- For issues or feature suggestions, see the [Reporting page](./reporting.md).
+- For issues or feature suggestions, see the [Reporting page](./other_docs/reporting.md).
 - For donations, go to [Ko-Fi](https://ko-fi.com/casvt).

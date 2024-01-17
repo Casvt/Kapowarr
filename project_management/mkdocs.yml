@@ -85,9 +85,10 @@ plugins:
 nav:
   - Home: index.md
   - Installation And Updating:
-    - Installation: installation/installation.md
+    - Installation and Updating: installation/installation.md
+    - Docker: installation/docker.md
+    - Manual Install: installation/manual_install.md
     - Setup After Installation: installation/setup_after_installation.md
-    - Updating: installation/updating.md
   - General Information:
     - Introduction: general_info/workings.md
     - Features: general_info/features.md
