@@ -7,8 +7,9 @@ from sqlite3 import IntegrityError
 from typing import List
 
 from backend.custom_exceptions import (FolderNotFound, RootFolderInUse,
-                                       RootFolderNotFound)
+                                       RootFolderInvalid, RootFolderNotFound)
 from backend.db import get_db
+from backend.files import folder_is_inside_folder
 
 
 class RootFolders:
@@ -77,6 +78,13 @@ class RootFolders:
 			raise FolderNotFound
 		if not folder.endswith(path_sep):
 			folder += path_sep
+
+		for current_rf in self.get_all():
+			if (
+				folder_is_inside_folder(current_rf['folder'], folder)
+				or folder_is_inside_folder(folder, current_rf['folder'])
+			):
+				raise RootFolderInvalid
 
 		# Insert into database
 		root_folder_id = get_db(dict).execute(

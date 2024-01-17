@@ -22,15 +22,19 @@ class CustomException(Exception):
 class FolderNotFound(CustomException):
 	"""Folder not found"""
 	api_response = {'error': 'FolderNotFound', 'result': {}, 'code': 404}
-	
+
 class RootFolderNotFound(CustomException):
 	"""Rootfolder with given ID not found"""
 	api_response = {'error': 'RootFolderNotFound', 'result': {}, 'code': 404}
-	
+
 class RootFolderInUse(CustomException):
 	"""A root folder with the given ID is requested to be deleted but is used by a volume"""
 	api_response = {'error': 'RootFolderInUse', 'result': {}, 'code': 400}
-	
+
+class RootFolderInvalid(CustomException):
+	"""The root folder is a parent or child of an existing root folder, which is not allowed"""
+	api_response = {'error': 'RootFolderInvalid', 'result': {}, 'code': 400}
+
 class VolumeNotFound(CustomException):
 	"""The volume with the given (comicvine-) key was not found"""
 	api_response = {'error': 'VolumeNotFound', 'result': {}, 'code': 404}
