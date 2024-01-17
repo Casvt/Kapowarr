@@ -7,4 +7,4 @@ tenacity >= 5.1.5
 bencoding >= 0.2.6
 simplejson >= 3.16.0
 aiohttp >= 3.8.1
-flask-socketio >= 5.11.0
+flask-socketio >= 5.3.6
