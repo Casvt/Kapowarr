@@ -18,6 +18,7 @@ from backend.credentials import Credentials
 from backend.custom_exceptions import LinkBroken
 from backend.download_general import Download
 from backend.enums import BlocklistReason, DownloadState
+from backend.helpers import WebSocket
 from backend.settings import Settings
 
 from .lib.mega import Mega, RequestError, sids
@@ -156,6 +157,8 @@ class DirectDownload(BaseDownload):
 	def run(self) -> None:
 		self.state = DownloadState.DOWNLOADING_STATE
 		size_downloaded = 0
+		ws = WebSocket()
+		ws.update_queue_status(self)
 
 		with get(self.download_link, stream=True) as r, \
 		open(self.file, 'wb') as f:
@@ -185,6 +188,8 @@ class DirectDownload(BaseDownload):
 							2
 						)
 					start_time = perf_counter()
+					
+					ws.update_queue_status(self)
 
 			except ChunkedEncodingError:
 				self.state = DownloadState.FAILED_STATE
@@ -284,7 +289,11 @@ class MegaDownload(BaseDownload):
 			DownloadLimitReached: The Mega download limit is reached mid-download
 		"""		
 		self.state = DownloadState.DOWNLOADING_STATE
-		self._mega.download_url(self.file)
+		ws = WebSocket()
+		self._mega.download_url(
+			self.file,
+			lambda: ws.update_queue_status(self)
+		)
 		return
 
 	def stop(self,

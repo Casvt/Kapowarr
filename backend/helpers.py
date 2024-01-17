@@ -17,6 +17,7 @@ from backend.enums import SocketEvent
 
 if TYPE_CHECKING:
 	from backend.tasks import Task
+	from backend.download_general import Download
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -192,7 +193,7 @@ class WebSocket(SocketIO, metaclass=Singleton):
 
 	def send_task_ended(self, task: Task) -> None:
 		"""Send a message stating a task that has been removed
-		to the queue. Either because it's finished or canceled.
+		from the queue. Either because it's finished or canceled.
 
 		Args:
 			task (Task): The task that has been removed.
@@ -220,3 +221,59 @@ class WebSocket(SocketIO, metaclass=Singleton):
 			}
 		)
 		return
+
+	def send_queue_added(self, download: Download) -> None:
+		"""Send a message stating a download that has been added
+		to the queue.
+
+		Args:
+			download (Download): The download that has been added.
+		"""
+		self.emit(
+			SocketEvent.QUEUE_ADDED.value,
+			{
+				'id': download.id,
+				'status': download.state.value,
+				'title': download.title,
+				'page_link': download.page_link,
+				'source': download.source,
+				'size': download.size,
+				'speed': download.speed,
+				'progress': download.progress
+			}
+		)
+		return
+
+	def send_queue_ended(self, download: Download) -> None:
+		"""Send a message stating a download that has been removed
+		from the queue. Either because it's finished or canceled.
+
+		Args:
+			download (Download): The download that has been removed.
+		"""
+		self.emit(
+			SocketEvent.QUEUE_ENDED.value,
+			{
+				'id': download.id
+			}
+		)
+		return
+
+	def update_queue_status(self, download: Download) -> None:
+		"""Send a message with the new download queue status.
+
+		Args:
+			download (Download): The download instance to send the status of.
+		"""
+		self.emit(
+			SocketEvent.QUEUE_STATUS.value,
+			{
+				'id': download.id,
+				'status': download.state.value,
+				'size': download.size,
+				'speed': download.speed,
+				'progress': download.progress
+			}
+		)
+		return
+

@@ -57,6 +57,11 @@ class DownloadState(BaseEnum):
 
 class SocketEvent(BaseEnum):
 	DISCONNECT = 'request_disconnect'
+
 	TASK_ADDED = 'task_added'
 	TASK_STATUS = 'task_status'
 	TASK_ENDED = 'task_ended'
+
+	QUEUE_ADDED = 'queue_added'
+	QUEUE_STATUS = 'queue_status'
+	QUEUE_ENDED = 'queue_ended'
