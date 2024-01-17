@@ -39,7 +39,7 @@ issue_formatting_keys = formatting_keys + (
 	'issue_release_year'
 )
 
-filename_cleaner = compile(r'(<|>|(?<!^\w):|\"|\||\?|\*|\x00|(\s|\.)+$)')
+filename_cleaner = compile(r'(<|>|(?<!^\w):|\"|\||\?|\*|\x00|(?:\s|\.)+(?=$|\\|/))')
 remove_year_in_image_regex = compile(r'(?:19|20)\d{2}')
 page_regex = compile(
 	r'^(\d+(?:[a-f]|_\d+)?)$|\b(?i:page|pg)[\s\.\-_]?(\d+(?:[a-f]|_\d+)?)|n?\d+[_\-p](\d+(?:[a-f]|_\d+)?)'
