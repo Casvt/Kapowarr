@@ -4,10 +4,20 @@
 General "helper" functions and classes
 """
 
+from __future__ import annotations
+
 import logging
 from sys import version_info
 from threading import current_thread
-from typing import Iterable, List, Tuple, TypeVar, Union
+from typing import TYPE_CHECKING, Iterable, List, Tuple, TypeVar, Union
+
+from flask_socketio import SocketIO
+
+from backend.enums import SocketEvent
+
+if TYPE_CHECKING:
+	from backend.tasks import Task
+	from backend.download_general import Download
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -153,3 +163,117 @@ class CommaList(list):
 
 	def __str__(self) -> str:
 		return ','.join(self)
+
+# It's more logical to have this class in the server.py file,
+# but then we have an import loop so this is the second-best file...
+class WebSocket(SocketIO, metaclass=Singleton):
+	def request_disconnect(self) -> None:
+		"Request the clients to disconnect"
+		self.emit(
+			SocketEvent.DISCONNECT.value
+		)
+		return
+
+	def send_task_added(self, task: Task) -> None:
+		"""Send a message stating a task that has been added
+		to the queue.
+
+		Args:
+			task (Task): The task that has been added.
+		"""
+		self.emit(
+			SocketEvent.TASK_ADDED.value,
+			{
+				'action': task.action,
+				'volume_id': task.volume_id,
+				'issue_id': task.issue_id
+			}
+		)
+		return
+
+	def send_task_ended(self, task: Task) -> None:
+		"""Send a message stating a task that has been removed
+		from the queue. Either because it's finished or canceled.
+
+		Args:
+			task (Task): The task that has been removed.
+		"""
+		self.emit(
+			SocketEvent.TASK_ENDED.value,
+			{
+				'action': task.action,
+				'volume_id': task.volume_id,
+				'issue_id': task.issue_id
+			}
+		)
+		return
+
+	def update_task_status(self, task: Task) -> None:
+		"""Send a message with the new task queue status.
+
+		Args:
+			task (Task): The task instance to send the status of.
+		"""
+		self.emit(
+			SocketEvent.TASK_STATUS.value,
+			{
+				'message': task.message
+			}
+		)
+		return
+
+	def send_queue_added(self, download: Download) -> None:
+		"""Send a message stating a download that has been added
+		to the queue.
+
+		Args:
+			download (Download): The download that has been added.
+		"""
+		self.emit(
+			SocketEvent.QUEUE_ADDED.value,
+			{
+				'id': download.id,
+				'status': download.state.value,
+				'title': download.title,
+				'page_link': download.page_link,
+				'source': download.source,
+				'size': download.size,
+				'speed': download.speed,
+				'progress': download.progress
+			}
+		)
+		return
+
+	def send_queue_ended(self, download: Download) -> None:
+		"""Send a message stating a download that has been removed
+		from the queue. Either because it's finished or canceled.
+
+		Args:
+			download (Download): The download that has been removed.
+		"""
+		self.emit(
+			SocketEvent.QUEUE_ENDED.value,
+			{
+				'id': download.id
+			}
+		)
+		return
+
+	def update_queue_status(self, download: Download) -> None:
+		"""Send a message with the new download queue status.
+
+		Args:
+			download (Download): The download instance to send the status of.
+		"""
+		self.emit(
+			SocketEvent.QUEUE_STATUS.value,
+			{
+				'id': download.id,
+				'status': download.state.value,
+				'size': download.size,
+				'speed': download.speed,
+				'progress': download.progress
+			}
+		)
+		return
+

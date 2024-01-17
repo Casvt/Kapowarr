@@ -13,7 +13,6 @@ from time import time
 from typing import List, Type, Union
 
 from flask import g
-from waitress.task import ThreadedTaskDispatcher as OldThreadedTaskDispatcher
 
 from backend.helpers import CommaList, DB_ThreadSafeSingleton
 from backend.logging import set_log_level
@@ -21,29 +20,6 @@ from backend.logging import set_log_level
 __DATABASE_FILEPATH__ = 'db', 'Kapowarr.db'
 __DATABASE_VERSION__ = 17
 __DATABASE_TIMEOUT__ = 10.0
-
-class ThreadedTaskDispatcher(OldThreadedTaskDispatcher):
-	def handler_thread(self, thread_no: int) -> None:
-		super().handler_thread(thread_no)
-
-		i = f'{DBConnection}{current_thread()}'
-		if (
-			i in DB_ThreadSafeSingleton._instances
-			and
-			not DB_ThreadSafeSingleton._instances[i].closed
-		):
-			DB_ThreadSafeSingleton._instances[i].close()
-
-		return
-
-	def shutdown(self,
-		cancel_pending: bool = True,
-		timeout: int = 5
-	) -> bool:
-		logging.info('Shutting down Kapowarr...')
-		result = super().shutdown(cancel_pending, timeout)
-		DBConnection(20.0).close()
-		return result
 
 class DBConnection(Connection, metaclass=DB_ThreadSafeSingleton):
 	"For creating a connection with a database"	

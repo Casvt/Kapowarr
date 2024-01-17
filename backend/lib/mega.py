@@ -34,6 +34,7 @@ from random import randint
 from re import findall, search
 from struct import pack, unpack
 from time import perf_counter, time
+from typing import Callable
 
 from Crypto.Cipher import AES
 from Crypto.PublicKey import RSA
@@ -470,7 +471,11 @@ class Mega:
 		else:
 			raise RequestError('Url key missing')
 
-	def download_url(self, filename: str):
+	def download_url(self,
+		filename: str,
+		websocket_update_function: Callable
+	):
+		websocket_update_function()
 		self.downloading = True
 
 		url = self._api_request({
@@ -525,6 +530,7 @@ class Mega:
 				self.speed = round(chunk_length / (perf_counter() - start_time), 2)
 				self.progress = round(size_downloaded / self.size * 100, 2)
 				start_time = perf_counter()
+				websocket_update_function()
 
 		if self.downloading:
 			file_mac = str_to_a32(mac_bytes)

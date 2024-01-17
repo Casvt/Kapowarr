@@ -14,6 +14,7 @@ from backend.custom_exceptions import (InvalidComicVineApiKey,
                                        TaskNotDeletable, TaskNotFound)
 from backend.db import get_db
 from backend.download_queue import DownloadHandler
+from backend.helpers import WebSocket
 from backend.search import auto_search
 from backend.volumes import Issue, Volume, refresh_and_scan
 
@@ -23,7 +24,7 @@ class Task(ABC):
 	@abstractmethod
 	def stop(self) -> bool:
 		return
-	
+
 	@property
 	@abstractmethod
 	def message(self) -> str:
@@ -48,7 +49,7 @@ class Task(ABC):
 	@abstractmethod
 	def volume_id(self) -> int:
 		return
-	
+
 	@property
 	@abstractmethod
 	def issue_id(self) -> int:
@@ -59,7 +60,7 @@ class Task(ABC):
 		"""Run the task
 
 		Returns:
-			Union[None, List[tuple]]: Either `None` if the task has no result or 
+			Union[None, List[tuple]]: Either `None` if the task has no result or
 			`List[tuple]` if the task returns search results.
 		"""
 		return
@@ -68,8 +69,8 @@ class Task(ABC):
 # Issue tasks
 #=====================
 class AutoSearchIssue(Task):
-	"Do an automatic search for an issue"	
-
+	"Do an automatic search for an issue"
+  
 	stop = False
 	message = ''
 	action = 'auto_search_issue'
@@ -77,7 +78,7 @@ class AutoSearchIssue(Task):
 	category = 'download'
 	volume_id = None
 	issue_id = None
-	
+
 	def __init__(self, volume_id: int, issue_id: int):
 		"""Create the task
 
@@ -87,11 +88,12 @@ class AutoSearchIssue(Task):
 		"""
 		self.volume_id = volume_id
 		self.issue_id = issue_id
-	
+
 	def run(self) -> List[tuple]:
 		issue = Issue(self.issue_id)
 		volume = Volume(issue['volume_id'])
 		self.message = f'Searching for {volume["title"]} #{issue["issue_number"]}'
+		WebSocket().update_task_status(self)
 
 		# Get search results and download them
 		results = auto_search(self.volume_id, self.issue_id)
@@ -115,7 +117,7 @@ class AutoSearchVolume(Task):
 	category = 'download'
 	volume_id = None
 	issue_id = None
-	
+
 	def __init__(self, volume_id: int):
 		"""Create the task
 
@@ -123,9 +125,10 @@ class AutoSearchVolume(Task):
 			volume_id (int): The id of the volume to search for
 		"""
 		self.volume_id = volume_id
-	
+
 	def run(self) -> List[tuple]:
 		self.message = f'Searching for {Volume(self.volume_id)["title"]}'
+		WebSocket().update_task_status(self)
 
 		# Get search results and download them
 		results = auto_search(self.volume_id)
@@ -143,17 +146,18 @@ class RefreshAndScanVolume(Task):
 	category = ''
 	volume_id = None
 	issue_id = None
-	
+
 	def __init__(self, volume_id: int):
 		"""Create the task
 
 		Args:
 			volume_id (int): The id of the volume for which to perform the task
-		"""		
+		"""
 		self.volume_id = volume_id
 
 	def run(self) -> None:
 		self.message = f'Updating info on {Volume(self.volume_id)["title"]}'
+		WebSocket().update_task_status(self)
 
 		try:
 			refresh_and_scan(self.volume_id)
@@ -178,6 +182,8 @@ class UpdateAll(Task):
 
 	def run(self) -> None:
 		self.message = f'Updating info on all volumes'
+		WebSocket().update_task_status(self)
+
 		try:
 			refresh_and_scan()
 		except InvalidComicVineApiKey:
@@ -186,7 +192,7 @@ class UpdateAll(Task):
 		return
 
 class SearchAll(Task):
-	"Trigger an automatic search for each volume in the library"	
+	"Trigger an automatic search for each volume in the library"
 	
 	stop = False
 	message = ''
@@ -202,9 +208,11 @@ class SearchAll(Task):
 			"SELECT id, title FROM volumes WHERE monitored = 1;"
 		)
 		downloads = []
+		ws = WebSocket()
 		for volume_id, volume_title in cursor:
 			if self.stop: break
 			self.message = f'Searching for {volume_title}'
+			ws.update_task_status(self)
 			# Get search results and download them
 			results = auto_search(volume_id)
 			if results:
@@ -243,6 +251,7 @@ class TaskHandler:
 		"""
 		logging.debug(f'Running task {task.display_title}')
 		with self.context():
+			socket = WebSocket()
 			try:
 				result = task.run()
 				cursor = get_db()
@@ -266,15 +275,17 @@ class TaskHandler:
 			except Exception:
 				logging.exception('An error occured while trying to run a task: ')
 				task.message = 'AN ERROR OCCURED'
+				socket.update_task_status(task)
 				sleep(1.5)
 
 			finally:
 				if not task.stop:
+					socket.send_task_ended(task)
 					self.queue.pop(0)
 					self._process_queue()
 
 		return
-		
+
 	def _process_queue(self) -> None:
 		"""
 		Handle the queue. In the case that there is something in the queue and
@@ -313,6 +324,7 @@ class TaskHandler:
 		}
 		self.queue.append(task_data)
 		logging.info(f'Added task: {task.display_title} ({id})')
+		WebSocket().send_task_added(task)
 		self._process_queue()
 		return id
 
@@ -349,7 +361,7 @@ class TaskHandler:
 					# Add task to queue
 					task_class = task_library[task['task_name']]
 					self.add(task_class())
-					
+
 					# Update next_run
 					next_run = round(current_time + task['interval'])
 					cursor.execute(
@@ -368,21 +380,22 @@ class TaskHandler:
 			).fetchone()[0]
 		timedelta = next_run - round(time()) + 1
 		logging.debug(f'Next interval task is in {timedelta} seconds')
-		
+
 		# Create sleep thread for that time and that will run self.__check_intervals.
 		self.task_interval_waiter = Timer(timedelta, self.__check_intervals)
 		self.task_interval_waiter.start()
 		return
-	
+
 	def stop_handle(self) -> None:
-		"Stop the task handler"		
+		"Stop the task handler"
+    
 		logging.debug('Stopping task thread')
 		self.task_interval_waiter.cancel()
 		if self.queue:
 			self.queue[0]['task'].stop = True
 			self.queue[0]['thread'].join()
 		return
-	
+
 	def __format_entry(self, task: dict) -> dict:
 		"""Format a queue entry for API response
 
@@ -408,7 +421,7 @@ class TaskHandler:
 		Returns:
 			List[dict]: A list with all tasks in the queue.
 				Formatted using `self.__format_entry()`.
-		"""		
+		"""
 		return [self.__format_entry(t) for t in self.queue]
 
 	def get_one(self, task_id: int) -> dict:
@@ -442,7 +455,7 @@ class TaskHandler:
 		# Get task and check if id exists
 		# Raises TaskNotFound if the id isn't found
 		task = self.get_one(task_id)
-		
+
 		# Check if task is allowed to be deleted
 		if self.queue[0] == task:
 			raise TaskNotDeletable
@@ -451,6 +464,7 @@ class TaskHandler:
 		task['thread'].join()
 		self.queue.remove(task)
 		logging.info(f'Removed task: {task["task"].display_name} ({task_id})')
+		WebSocket().send_task_ended(task['task'])
 		return
 
 def get_task_history(offset: int=0) -> List[dict]:
@@ -464,7 +478,7 @@ def get_task_history(offset: int=0) -> List[dict]:
 
 	Returns:
 		List[dict]: The history entries.
-	"""	
+	"""
 	result = list(map(
 		dict,
 		get_db(dict).execute(

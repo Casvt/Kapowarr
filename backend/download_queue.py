@@ -23,7 +23,7 @@ from backend.download_torrent_clients import TorrentClients, TorrentDownload
 from backend.enums import BlocklistReason, DownloadState, SeedingHandling
 from backend.files import create_folder, delete_file_folder
 from backend.getcomics import extract_GC_download_links
-from backend.helpers import first_of_column
+from backend.helpers import WebSocket, first_of_column
 from backend.post_processing import (PostProcesser,
                                      PostProcesserTorrentsComplete,
                                      PostProcesserTorrentsCopy)
@@ -86,21 +86,21 @@ class DownloadHandler:
 		logging.info(f'Starting download: {download.id}')
 
 		with self.context():
+			ws = WebSocket()
 			try:
 				download.run()
 
 			except DownloadLimitReached:
 				# Mega download limit reached mid-download
 				download.state = DownloadState.FAILED_STATE
-				self.queue = [
-					e
-					for e in self.queue
-					if (
-						not isinstance(e['instance'], MegaDownload)
-						or e == download
-					)
-				]
+				ws.update_queue_status(download)
+				for d in self.queue:
+					if (isinstance(d, MegaDownload)
+					and d != download):
+						self.queue.remove(d)
+						ws.send_queue_ended(d)
 
+			ws.update_queue_status(download)
 			if download.state == DownloadState.CANCELED_STATE:
 				PostProcesser.canceled(download)
 
@@ -113,10 +113,12 @@ class DownloadHandler:
 
 			elif download.state == DownloadState.DOWNLOADING_STATE:
 				download.state = DownloadState.IMPORTING_STATE
+				ws.update_queue_status(download)
 				PostProcesser.success(download)
 
 			self.queue.remove(download)
 			self.downloading_item = None
+			ws.send_queue_ended(download)
 
 		self._process_queue()
 		return
@@ -131,6 +133,7 @@ class DownloadHandler:
 		download.run()
 		
 		with self.context():
+			ws = WebSocket()
 			settings = Settings()
 			seeding_handling = settings['seeding_handling']
 			
@@ -147,6 +150,7 @@ class DownloadHandler:
 
 			while True:
 				download.update_status()
+				ws.update_queue_status(download)
 
 				if download.state == DownloadState.CANCELED_STATE:
 					download.remove_from_client(delete_files=True)
@@ -184,6 +188,8 @@ class DownloadHandler:
 					# Queued, downloading or
 					# seeding with files copied or seeding_handling = 'complete'
 					sleep(private_settings['torrent_update_interval'])
+
+			ws.send_queue_ended(download)
 		return
 
 	def _process_queue(self) -> None:
@@ -288,6 +294,7 @@ class DownloadHandler:
 					name='Torrent Download Handler'
 				)
 				download._download_thread.start()
+			WebSocket().send_queue_added(download)
 		return downloads
 
 	def __load_downloads(self) -> None:
@@ -464,12 +471,14 @@ class DownloadHandler:
 				download.stop()
 
 				if prev_state == DownloadState.QUEUED_STATE:
+					WebSocket().update_queue_status(download)
 					self.queue.remove(download)
 					if isinstance(download, TorrentDownload):
 						download.remove_from_client(delete_files=True)
 						PostProcesserTorrentsComplete.canceled(download)
 					else:
 						PostProcesser.canceled(download)
+					WebSocket().send_queue_ended(download)
 
 				break
 		else:
