@@ -25,9 +25,9 @@ In the web-UI of Kapowarr, the documentation for that topic will be found at the
 ### General Information
 
 - [How features work and their implementation](./general_info/workings.md)
-- [FAQ](./general_info/faq.md)
-- [Handling of the rate limits](./general_info/rate_limiting.md)
-- [API Documentation](./general_info/api.md)
+- [FAQ](./other_docs/faq.md)
+- [Handling of the rate limits](./other_docs/rate_limiting.md)
+- [API Documentation](./other_docs/api.md)
 
 ### Settings
 
