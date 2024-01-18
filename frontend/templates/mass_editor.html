@@ -53,7 +53,9 @@
 			<button id="toggle-nav" aria-label="Toggle menu">
 				<img src="{{url_base}}/static/img/menu.svg" alt="">
 			</button>
-			<img src="{{ url_for('static', filename='img/favicon.svg') }}" alt="">
+			<a href="{{url_base}}/">
+				<img src="{{ url_for('static', filename='img/favicon.svg') }}" alt="">
+			</a>
 		</div>
 	</header>
 

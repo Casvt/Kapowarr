@@ -123,7 +123,7 @@ header {
 	transform: scale(0.6);
 }
 
-.menu-title-container > img {
+.menu-title-container > a {
 	width: 3rem;
 }
 
