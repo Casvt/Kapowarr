@@ -7,7 +7,7 @@
 This is where the files being downloaded get written to before being processed and moved to the correct location.  
 The default location for this is `/app/temp_downloads`.
 
-If you run Kapowarr using Docker, leave this set to the default value of `/app/temp_downloads` and instead change the value of `/path/to/download_folder` in the Docker command ([reference](./installation.md#docker)).  
+If you run Kapowarr using Docker, leave this set to the default value of `/app/temp_downloads` and instead change the value of `/path/to/download_folder` in the Docker command ([reference](../installation/docker.md)).  
 If you have a manual install, you can change this value to whatever you want. It is recommended to be outside your root folders.
 
 #### Empty Temporary Download Folder

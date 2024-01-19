@@ -46,7 +46,7 @@ If you want to disable the password, set an empty value for the setting and save
 
 #### API Key
 
-This is where Kapowarr defines the API key for any queries made to the [Kapowarr API](api.md).  
+This is where Kapowarr defines the API key for any queries made to the [Kapowarr API](../other_docs/api.md).  
 Documentation for the API itself will be coming in due course.
 
 ### Comic Vine API Key
@@ -58,7 +58,7 @@ Kapowarr uses ComicVine as its metadata source. To fetch the metadata from Comic
 3. You'll see your ComicVine API key, which is 40 characters long and contains the letters a-f and numbers 0-9 (e.g. `da39a3ee5e6b4b0d3255bfef95601890afd80709`).
 4. Copy that API key and enter it as the value of Settings -> General -> Comic Vine API -> Comic Vine API Key in the web-ui. Don't forget to save.
 
-On the documentation page about [rate limiting](rate_limiting.md), information can be found about the handling of the ComicVine API rate limit.
+On the documentation page about [rate limiting](../other_docs/rate_limiting.md), information can be found about the handling of the ComicVine API rate limit.
 
 ### UI
 
