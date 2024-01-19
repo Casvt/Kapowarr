@@ -111,8 +111,11 @@ function fillTaskQueue(api_key) {
 		});
 	})
 	.catch(e => {
-		if (e === 401) window.location.href = 
-			`${url_base}/login?redirect=${window.location.pathname}`;
+		if (e === 401) {
+			setLocalStorage({api_key: null})
+			window.location.href = 
+				`${url_base}/login?redirect=${window.location.pathname}`;
+		}
 	});
 };
 
