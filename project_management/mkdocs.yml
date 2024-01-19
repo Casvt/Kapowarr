@@ -91,9 +91,10 @@ nav:
     - Setup After Installation: installation/setup_after_installation.md
   - General Information:
     - Introduction: general_info/workings.md
-    - Features: general_info/features.md
     - Managing A Volume: general_info/managing_volume.md
     - Downloading: general_info/downloading.md
+    - Matching: general_info/matching.md
+    - Features: general_info/features.md
   - Beta Documentation:
     - Documentation: beta/beta.md
   - Settings:

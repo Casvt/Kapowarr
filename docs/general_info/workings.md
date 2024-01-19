@@ -1,11 +1,3 @@
-# Workings
+Here you can learn more about how to use Kapowarr, how features work and certain implementation details.
 
-Here you can find out how features work and their implementation details.
-
-Go the the list on the left to find what you're looking for.
-
-Managing Volumes goes into what you can do with a volume once it's added to your library.
-
-Downloading describes in more detail how Kapowarr downloads media.
-
-Features is for well... other features of Kapowarr.
+If you need more information on the basic usage of Kapowarr, see the ['Managing A Volume'](./managing_volume.md) section. If you want detailed information on how Kapowarr downloads media, see the ['Downloading'](./downloading.md) section. Details on how Kapowarr matches files to issues, GC search results and other things can be found in the ['Matching'](./matching.md) section. Functionality and implementation details for certain features of Kapowarr can be found in the ['Features'](./features.md) section.

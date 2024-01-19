@@ -13,3 +13,11 @@
 ### How do I access the web-ui?
 
 Coming Soon.
+
+### Why do certain files pop up in the Library Import, even though I just imported them?
+
+Coming Soon.
+
+### Why does Kapowarr not grab the links from a GC page even though they work fine?
+
+Coming Soon.
