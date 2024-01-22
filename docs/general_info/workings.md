@@ -1,3 +1,15 @@
+# Introduction
+
 Here you can learn more about how to use Kapowarr, how features work and certain implementation details.
 
-If you need more information on the basic usage of Kapowarr, see the ['Managing A Volume'](./managing_volume.md) section. If you want detailed information on how Kapowarr downloads media, see the ['Downloading'](./downloading.md) section. Details on how Kapowarr matches files to issues, GC search results and other things can be found in the ['Matching'](./matching.md) section. Functionality and implementation details for certain features of Kapowarr can be found in the ['Features'](./features.md) section.
+[Managing A Volume](./managing_volume.md)  
+More information on the basic usage of Kapowarr.
+
+[Downloading](./downloading.md)  
+Detailed information on how Kapowarr downloads media.
+
+[Matching](./matching.md)  
+Details on how Kapowarr matches files to issues, GC search results and other things.
+
+[Features](./features.md)
+Functionality and implementation details for certain features of Kapowarr.
