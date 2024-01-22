@@ -1,5 +1,1 @@
-# Settings
-
-This page will cover the Settings sections.  
-Each setting type is grouped based on what they're related to.
-Check the list on the left for the specific sections.
+You can find documentation for each setting here. It's also possible to find documentation for a setting by [using the same URL as in the web-UI](../index.md#finding-documentation). When you make changes in the settings, don't forget to click 'Save' at the top!
