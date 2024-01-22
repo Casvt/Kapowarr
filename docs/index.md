@@ -21,28 +21,28 @@ The same goes for features like Library Import and Mass Editor.
 
 ### Getting Started
 
-- [Installation and Updating](./installation/installation)
-- [Setup after installation](./installation/setup_after_installation)
+- [Installation and Updating](./installation/installation.md)
+- [Setup after installation](./installation/setup_after_installation.md)
 
 ### General Information
 
-- [How features work and their implementation](./general_info/workings)
+- [How features work and their implementation](./general_info/workings.md)
 - [FAQ](./other_docs/faq.md)
-- [Handling of the rate limits](./other_docs/rate_limiting)
+- [Handling of the rate limits](./other_docs/rate_limiting.md)
 - [API Documentation](./other_docs/api.md)
 
 ### Settings
 
-- [Explanation of settings](./settings/settings)
+- [Explanation of settings](./settings/settings.md)
 
 ### Beta Documentation
 
 _Documentation that only applies to the beta releases._
 
-- [Beta Documentation](./beta/beta)
+- [Beta Documentation](./beta/beta.md)
 
 ## Contact
 
 - For support, a [Discord server](https://discord.gg/5gWtW3ekgZ) is available.
-- For issues or feature suggestions, see the [Reporting page](./other_docs/reporting).
+- For issues or feature suggestions, see the [Reporting page](./other_docs/reporting.md).
 - For donations, go to [Ko-Fi](https://ko-fi.com/casvt).
