@@ -1,8 +1,10 @@
+# FAQ
+
 ## Regarding the project
 
 ### Does Kapowarr support XYZ?
 
-Look around in the web-UI and this documentation hub first, to see if you find it. Otherwise you can ask on the [discord server](https://discord.gg/5gWtW3ekgZ). If you are sure that it is not available in Kapowarr, you can [report it](./reporting.md).
+Look around in the web-UI and this documentation hub first, to see if you find it. Otherwise you can ask on the [Discord server](https://discord.gg/5gWtW3ekgZ). If you are sure that it is not available in Kapowarr, you can [report it](./reporting.md).
 
 ### When will XYZ be added?
 
@@ -27,3 +29,12 @@ This could have two causes: working but unsupported links, or non-matching group
 It could be the case that the link is working, but that it's not supported by Kapowarr. For example, downloading a Mega/MediaFire folder.
 
 Otherwise, most of the time, it's because Kapowarr does not think that the link leads to a file that actually matches the volume. Often, GC pages have multiple links, and not always are all of them relevant to the volume. Because of this, Kapowarr filters the groups and only downloads the ones that it thinks are relevant to the volume. It could be that the information does not match enough for Kapowarr to be convinced that they match. This could be because the year does not match close enough, or the title (e.g. 'ABC: Deluxe Edition' and 'The Deluxe Edition of ABC').
+
+## Common Errors
+
+### I can't add volumes to the library
+
+The two most common causes for this are:
+
+- Not having a valid ComicVine API key to be able to match or look up volumes.
+- Not having a root folder defined.
