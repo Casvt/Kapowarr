@@ -2,27 +2,31 @@
 
 ## Adding Volumes To Your Library
 
-You can add volumes manually, or using Library Import. See the [Library Import documentation](./features.md#library-import) for more information on that. To add a volume to your library manually, follow the instructions below:
+There are two ways you can add volumes - manually, or by importing.  
+See the [Library Import documentation](./features.md#library-import) for more information on that.  
+To add a volume to your library manually, follow the instructions below:
 
 1. Make sure that you set a [Root Folder](../settings/mediamanagement.md#root-folders).
 2. Make sure that you set your ComicVine API Key [in the settings](../settings/general.md#comic-vine-api-key).
 3. In the web-UI, go to Volumes -> Add Volume.
-4. Give a search term, or enter the CV ID of the volume.
+4. Enter a search term (or the CV ID of the volume).
 5. In the search results, click on the volume that you want to add.
 6. Choose a root folder to put the volume folder in, set a custom volume folder (instead of the [generated one](../settings/mediamanagement.md#volume-folder-naming)) and choose if it should be monitored.
 7. Click 'Add Volume' to add it to your library. Done!
 
 ## Managing Files
 
-Now that you have a volume in your library, you can start managing it. Kapowarr offers features in two categories: files and downloading. This section covers the 'files' category.
+Now that you have a volume in your library, Kapowarr/you can start managing it.  
 
 When clicking on a volume in your library, you get taken to the volume page. It shows information about the volume and the issues that are in it. You can also click on an issue to get extra specific information about it. At the top, there is a tool bar with multiple options.
 
 ### Refresh & Scan
 
-The 'Refresh & Scan' button will update the metadata of the volume (= refresh) and scan for files (= scan). Under the metadata update falls data like the poster, title, release year and description but also the issue list and their descriptions, issue numbers and release dates. The file scanning will look in the volume folder for files and will try to match them to the issues. If Kapowarr is able to match them to an issue, that issue will be marked as downloaded. More information on how Kapowarr matches files to issues can be found on the ['Matching' page](./matching.md).
+The 'Refresh & Scan' button will update the metadata of the volume (= refresh) and scan for files (= scan).  
+Under the metadata update falls data like the poster, title, release year and description but also the issue list and their descriptions, issue numbers and release dates.  
+The file scanning will look in the volume folder for files and will try to match them to the issues. If Kapowarr is able to match them to an issue, that issue will be marked as downloaded. More information on how Kapowarr matches files to issues can be found on the ['Matching' page](./matching.md).
 
-On the home page (a.k.a. library page/view), the button 'Update All' will trigger a Refresh & Scan for all volumes. The metadata of a volume is automatically updated every 24 hours, but will be forcibly updated if you trigger a Refresh & Scan manually. More information on this can be found on the ['Rate Limiting' page](../other_docs/rate_limiting.md#comicvine).
+On the home page (a.k.a. library page/view), the button 'Update All' will trigger a Refresh & Scan for all volumes. The metadata of a volume is automatically updated every 24 hours, but will be forcibly updated if you trigger a Refresh & Scan manually. More information on the risks of doing this too often can be found on the ['Rate Limiting' page](../other_docs/rate_limiting.md#comicvine).
 
 ### Preview Rename
 
