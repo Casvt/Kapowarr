@@ -14,7 +14,8 @@ Each day, each volume is checked to see if a new issue has come out and if so, i
 ## Finding Documentation
 
 In the web-UI of Kapowarr, the documentation for that topic will be found at the same URL path.  
-This means that if you have questions about the 'File Naming' setting, (found at `YOUR_KAPOWARR/settings/mediamanagement#file-naming`), then the docs for that setting can be found at `https://casvt.github.io/Kapowarr/settings/mediamanagement#file-naming`. The same goes for features like Library Import and Mass Editor.
+This means for information about the 'File Naming' setting, (found at `YOUR_KAPOWARR/settings/mediamanagement#file-naming`), the docs for that setting can be found at `https://casvt.github.io/Kapowarr/settings/mediamanagement#file-naming`.  
+The same goes for features like Library Import and Mass Editor.
 
 ## Quick Links
 
