@@ -8,6 +8,7 @@
 	"python.testing.pytestEnabled": false,
 	"python.testing.unittestEnabled": true,
 	"cSpell.words": [
+		"behaviour",
 		"blocklist",
 		"customisable",
 		"customised",
