@@ -1,3 +1,5 @@
+# Volume Management
+
 ## Adding Volumes To Your Library
 
 You can add volumes manually, or using Library Import. See the [Library Import documentation](./features.md#library-import) for more information on that. To add a volume to your library manually, follow the instructions below:
@@ -31,7 +33,7 @@ Kapowarr has the ability to easily manage your files by (re)naming them all to o
 Another feature of Kapowarr is the ability to change the format of files. For example, Kapowarr can convert cbr files to cbz. To what format Kapowarr will change the files is set [in the settings](../settings/mediamanagement.md#format-preference). The 'Convert' button will show a list of the files for the volume and what format Kapowarr will convert them to, if you agree.
 
 !!! info "Extracting Archives"
-	If you download multiple issues in one go, they often come in a zip file (e.g. `Issue 1-10.zip`). Kapowarr can extract these archive files and put the contents directly in the folder. See the ['Extract archives covering multiple issues' setting](../settings/mediamanagement.md#extract-archives-covering-multiple-issues) to enable this.
+    If you download multiple issues in one go, they often come in a zip file (e.g. `Issue 1-10.zip`). Kapowarr can extract these archive files and put the contents directly in the folder. See the ['Extract archives covering multiple issues' setting](../settings/mediamanagement.md#extract-archives-covering-multiple-issues) to enable this.
 
 ### Root folder and Volume folder
 
@@ -53,7 +55,7 @@ On the home page, the button 'Search All' will trigger a 'Search Monitored' for 
 
 ### Manual Search
 
-The button 'Manual Search' will show you a list of search results for the volume/issue. From these results, you can choose yourself which one Kapowarr will download. It is possible that the page does not contain any matching and working downloads. In that case, the download button will turn red and the page will be blocklisted.
+The button 'Manual Search' will show you a list of search results for the volume/issue. From these results, you can choose yourself which one Kapowarr will download. It is possible that the page does not contain any matching and working downloads. In that case, the download button will turn red and the page will be added to the blocklist.
 
 ### Download Queue and Post Processing
 
