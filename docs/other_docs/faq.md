@@ -36,5 +36,5 @@ Otherwise, most of the time, it's because Kapowarr does not think that the link 
 
 The two most common causes for this are:
 
-- Not having a valid ComicVine API key to be able to match or look up volumes.
-- Not having a root folder defined.
+- Not having a valid [ComicVine API key](../settings/general.md#comic-vine-api-key) to be able to match or look up volumes.
+- Not having a [root folder](../settings/mediamanagement.md#root-folders) defined.
