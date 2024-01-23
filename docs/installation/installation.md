@@ -51,13 +51,16 @@ You need to have a download folder and root folder created on the host. The data
 	```yml
 	version: "3.3"
 	services:
-		kapowarr:
-			container_name: kapowarr
-			volumes:
-				- "kapowarr-db:/app/db"
-				- "/path/to/download_folder:/app/temp_downloads"
-				- "/path/to/root_folder:/comics-1"
-			ports:
-				- "5656:5656"
-			image: "mrcas/kapowarr:latest"
+	  kapowarr:
+	    container_name: kapowarr
+	    image: mrcas/kapowarr:latest
+	    volumes:
+	      - "kapowarr-db:/app/db"
+	      - "/path/to/download_folder:/app/temp_downloads"
+	      - "/path/to/root_folder:/comics-1"
+	    ports:
+	      - 5656:5656
+
+	volumes:
+	  kapowarr-db:
 	```

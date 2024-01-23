@@ -21,6 +21,11 @@ If you have Kapowarr deployed using Docker, do not change this setting but inste
 === "Docker Compose"
     Alter the file to run the container and replace `- 5656:5656` with `- {PORT}:5656`, where `{PORT}` is the desired port (e.g. `- 8009:5656`). Then re-run the container with the new version of the file.
 
+=== "Docker Desktop"
+	1. Open `Containers` and locate the `kapowarr` container in the list.
+	2. Click the stop button on the right, then the delete button.
+	3. Follow the [instructions for launching the container](../installation/docker.md#launch-container), starting from step 3. At step 6, set the value to the desired port. For example, if you set it to `8009`, the web-UI will then be accessible via `http://{host}:8009/`. Continue following the rest of the steps.
+
 ### Base URL
 
 This is used for reverse proxy support - the default is empty. If you want to put Kapowarr behind a proxy (so you can access the web-UI via a nice URL), set a Base URL (it _must_ start with a `/` character).  

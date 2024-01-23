@@ -8,7 +8,7 @@ The first thing to do is decide if you want to leave Kapowarr on the default por
 
 If you want to put a password on your instance of Kapowarr, see the ['Login Password' setting](../settings/general.md#login-password).
 
-!!! tip "Exposing Kapowarr"
+!!! warning "Exposing Kapowarr"
 	If you are exposing your Kapowarr instance to the internet, we highly recommend setting a password.
 
 ## ComicVine API key

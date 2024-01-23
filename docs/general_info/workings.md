@@ -11,5 +11,5 @@ Detailed information on how Kapowarr downloads media.
 [Matching](./matching.md)  
 Details on how Kapowarr matches files to issues, GC search results and other things.
 
-[Features](./features.md)
+[Features](./features.md)  
 Functionality and implementation details for certain features of Kapowarr.
