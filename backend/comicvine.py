@@ -11,7 +11,7 @@ from typing import List, Union
 
 from aiohttp import ClientSession
 from aiohttp.client_exceptions import ContentTypeError
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from requests import Session
 from requests.exceptions import ConnectionError as requests_ConnectionError
 from simplejson import JSONDecodeError
@@ -84,7 +84,9 @@ def _clean_description(description: str, short: bool=False) -> str:
 				and children[0].name in ('b', 'i', 'strong')):
 					removed_elements.append(el)
 
-		for el in removed_elements: el.decompose()
+		for el in removed_elements:
+			if isinstance(el, Tag):
+				el.decompose()
 
 	# Fix links
 	for link in soup.find_all('a'):
