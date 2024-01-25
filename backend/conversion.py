@@ -5,9 +5,11 @@ Converting files to a different format
 """
 
 from itertools import chain
+from multiprocessing import cpu_count
+from multiprocessing.pool import Pool
 from os.path import dirname, splitext
 from sys import platform
-from typing import Dict, List, Set, Union
+from typing import Dict, List, Set, Tuple, Union
 
 from backend.converters import FileConverter, rar_executables
 from backend.enums import SpecialVersion
@@ -147,7 +149,6 @@ def preview_mass_convert(
 					'after': splitext(f)[0] + '.' + converter.target_format
 				})
 	return result
-
 def mass_convert(
 	volume_id: int,
 	issue_id: Union[int, None] = None,
@@ -176,6 +177,7 @@ def mass_convert(
 	special_version = volume['special_version']
 	volume_as_issue = special_version == SpecialVersion.VOLUME_AS_ISSUE
 
+	planned_conversions: List[Tuple[str, List[str]]] = []
 	for f in volume.get_files(issue_id):
 		if files and f not in files:
 			continue
@@ -198,16 +200,35 @@ def mass_convert(
 			if converter is not None:
 				resulting_files = converter.convert(f)
 				for file in resulting_files:
-					convert_file(
-						file,
-						format_preference
+					planned_conversions.append(
+						(file, format_preference)
 					)
 				converted = True
 
 		if not converted:
-			convert_file(
-				f,
-				format_preference
+			planned_conversions.append(
+				(f, format_preference)
+			)
+
+	# Don't start more processes than files, but also not
+	# more than that is supported by the CPU
+	processes = min(len(planned_conversions), cpu_count())
+	
+	if processes == 0:
+		return
+	
+	elif processes == 1:
+		# Avoid mp overhead when we're only converting one file
+		convert_file(
+			*planned_conversions[0]
+		)
+	
+	else:
+		with Pool(processes=processes) as pool:
+			pool.starmap(
+				convert_file,
+				planned_conversions,
+				chunksize=10
 			)
 
 	scan_files(volume_id)
