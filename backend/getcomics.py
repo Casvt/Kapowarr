@@ -22,6 +22,7 @@ from backend.download_direct_clients import (DirectDownload, Download,
 from backend.download_torrent_clients import TorrentDownload
 from backend.enums import BlocklistReason, SpecialVersion
 from backend.file_extraction import extract_filename_data
+from backend.helpers import check_overlapping_issues
 from backend.matching import GC_group_filter
 from backend.naming import (generate_empty_name, generate_issue_name,
                             generate_issue_range_name, generate_tpb_name)
@@ -204,10 +205,6 @@ def _extract_button_links(
 			title += ' --' + year + '--'
 
 		for e in result.next_sibling.next_elements:
-			if e.name == 'div':
-				print()
-				print(e.attrs.get('class', []))
-				print()
 			if e.name == 'hr':
 				break
 
@@ -340,31 +337,6 @@ def _sort_link_paths(p: List[dict]) -> Tuple[float, int]:
 
 	return (1 / issues_covered, len(p))
 
-def _check_overlapping_issues(
-		issues_1: Union[float, Tuple[float, float]],
-		issues_2: Union[float, Tuple[float, float]]
-) -> bool:
-	"""Check if two issues overlap. Both can be single issues or ranges.
-
-	Args:
-		issues_1 (Union[float, Tuple[float, float]]): First issue or range.
-		issues_2 (Union[float, Tuple[float, float]]): Second issue or range.
-
-	Returns:
-		bool: Whether or not they overlap.
-	"""
-	if isinstance(issues_1, float):
-		if isinstance(issues_2, float):
-			return issues_1 == issues_2
-		else:
-			return issues_2[0] <= issues_1 <= issues_2[1]
-	else:
-		if isinstance(issues_2, float):
-			return issues_1[0] <= issues_2 <= issues_1[1]
-		else:
-			return (issues_1[0] <= issues_2[0] <= issues_1[1]
-				or issues_1[0] <= issues_2[1] <= issues_1[1])
-
 def _create_link_paths(
 	download_groups: Dict[str, Dict[str, List[str]]],
 	volume_id: int
@@ -450,7 +422,7 @@ def _create_link_paths(
 						elif entry['info']['special_version'] is not None:
 							break
 
-						elif _check_overlapping_issues(
+						elif check_overlapping_issues(
 							entry['info']['issue_number'],
 							processed_desc['issue_number']
 						):

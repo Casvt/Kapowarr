@@ -15,8 +15,9 @@ from requests import get
 from backend.db import get_db
 from backend.enums import SpecialVersion
 from backend.file_extraction import extract_filename_data
-from backend.helpers import extract_year_from_date, first_of_column
-from backend.matching import check_search_result_match
+from backend.helpers import (check_overlapping_issues, create_range,
+                             extract_year_from_date, first_of_column)
+from backend.matching import _match_special_version, check_search_result_match
 from backend.settings import private_settings
 from backend.volumes import Issue, Volume, get_calc_number_range
 
@@ -371,6 +372,7 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 		lambda r: r['match'],
 		manual_search(volume_id, issue_id)
 	))
+
 	if issue_number is not None or (
 		special_version.value is not None
 		and special_version != SpecialVersion.VOLUME_AS_ISSUE
@@ -378,54 +380,64 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 		result = results[:1] if results else []
 		logging.debug(f'Auto search results: {result}')
 		return result
-	else:
-		volume_parts = []
-		for result in results:
-			if (result['issue_number'] is not None
-			or (special_version == SpecialVersion.VOLUME_AS_ISSUE
-				and result['special_version'] == SpecialVersion.TPB
-			)):
-				if isinstance(result['issue_number'], tuple):
-					# Release is an issue range
-					# Only allow range if all the issues that the range covers are open
-					covered_issues = get_calc_number_range(
-						volume_id,
-						*result['issue_number']
-					)
-					if any(not i in searchable_issues for i in covered_issues):
-						continue
-				else:
-					# Release is a specific issue
-					if not (
-						result['issue_number'] in searchable_issues
-						or (result['special_version'] == SpecialVersion.TPB
-							and result['volume_number'] in searchable_issues)
-					):
-						continue
 
-				# Check that any other selected download doesn't already cover the issue
-				for part in volume_parts:
-					if isinstance(result['issue_number'], tuple):
-						# Release is an issue range
-						for is_n in result['issue_number']:
-							if part['issue_number'][0] <= is_n <= part['issue_number'][1]:
-								break
-						else:
-							continue
-						break
-					else:
-						# Release is a specific issue
-						if isinstance(part['issue_number'], tuple):
-							if part['issue_number'][0] <= result['issue_number'] <= part['issue_number'][1]:
-								break
-						else:
-							if (part['issue_number'] == result['issue_number']
-							or (special_version == SpecialVersion.VOLUME_AS_ISSUE
-								and part['volume_number'] == result['volume_number']
-							)):
-								break
-				else:
-					volume_parts.append(result)
-		
-		logging.debug(f'Auto search results: {volume_parts}')
-		return volume_parts
+	volume_parts = []
+	for result in results:
+		if not _match_special_version(
+				special_version,
+				result['special_version'],
+				result['issue_number']
+		):
+			continue
+
+		if result['issue_number'] is not None:
+			# Normal issue, VAS with issue number,
+			# OS/HC using issue 1
+			result['_issue_number'] = result['issue_number']
+			covered_issues = get_calc_number_range(
+				volume_id,
+				*create_range(result['issue_number'])
+			)
+
+		elif (special_version == SpecialVersion.VOLUME_AS_ISSUE
+		and result['special_version'] == SpecialVersion.TPB):
+			# VAS with volume number
+			result['_issue_number'] = result['volume_number']
+			covered_issues = get_calc_number_range(
+				volume_id,
+				*create_range(result['volume_number'])
+			)
+
+		elif (
+			special_version in (
+				SpecialVersion.ONE_SHOT,
+				SpecialVersion.HARD_COVER,
+				SpecialVersion.TPB
+			)
+			and result['special_version'] in (
+				special_version,
+				SpecialVersion.TPB
+			)
+		):
+			# OS/HC using no issue number, TPB
+			result['_issue_number'] = 1.0
+			covered_issues = (1.0,)
+
+		else:
+			continue
+
+		if any(not i in searchable_issues for i in covered_issues):
+			continue
+
+		# Check that any other selected download doesn't already cover the issue
+		for part in volume_parts:
+			if check_overlapping_issues(
+				part['_issue_number'],
+				result['_issue_number']
+			):
+				break
+		else:
+			volume_parts.append(result)
+	
+	logging.debug(f'Auto search results: {volume_parts}')
+	return volume_parts

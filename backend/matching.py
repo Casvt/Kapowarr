@@ -168,17 +168,19 @@ def _match_volume_number(
 
 
 def _match_special_version(
-	reference_version: Union[str, None],
-	check_version: Union[str, None],
+	reference_version: Union[SpecialVersion, str, None],
+	check_version: Union[SpecialVersion, str, None],
 	issue_number: Union[None, float, Tuple[float, float]] = None
 ) -> bool:
 	"""Check if special version states match. Takes into consideration that
 	files have lacking state specificity.
 
 	Args:
-		reference_version (Union[str, None]): The state to check against.
+		reference_version (Union[SpecialVersion, str, None]):
+		The state to check against.
 
-		check_version (Union[str, None]): The state to check.
+		check_version (Union[SpecialVersion, str, None]):
+		The state to check.
 
 		issue_number (Union[None, float, Tuple[float, float]], optional):
 		The issue number to check for if applicable.

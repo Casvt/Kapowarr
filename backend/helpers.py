@@ -16,11 +16,12 @@ from flask_socketio import SocketIO
 from backend.enums import SocketEvent
 
 if TYPE_CHECKING:
-	from backend.tasks import Task
 	from backend.download_general import Download
+	from backend.tasks import Task
 
 T = TypeVar("T")
 U = TypeVar("U")
+
 
 def get_python_version() -> str:
 	"""Get python version as string
@@ -31,6 +32,7 @@ def get_python_version() -> str:
 	return ".".join(
 		str(i) for i in list(version_info)
 	)
+
 
 def check_python_version() -> bool:
 	"""Check if the python version that is used is a minimum version.
@@ -46,6 +48,7 @@ def check_python_version() -> bool:
 		return False
 	return True
 
+
 def batched(l: list, n: int):
 	"""Iterate over list (or tuple, set, etc.) in batches
 
@@ -59,6 +62,7 @@ def batched(l: list, n: int):
 	for ndx in range(0, len(l), n):
 		yield l[ndx : ndx+n]
 
+
 def reversed_tuples(i: Tuple[Tuple[T, U]]) -> Tuple[Tuple[U, T]]:
 	"""Yield sub-tuples in reversed order.
 
@@ -70,6 +74,7 @@ def reversed_tuples(i: Tuple[Tuple[T, U]]) -> Tuple[Tuple[U, T]]:
 	"""
 	for entry_1, entry_2 in i:
 		yield entry_2, entry_1
+
 
 def get_first_of_range(
 	n: Union[T, Tuple[T, T], List[T]]
@@ -88,6 +93,24 @@ def get_first_of_range(
 		return n[0]
 	else:
 		return n
+
+
+def create_range(
+	n: Union[T, Tuple[T, T], List[T]]
+) -> Union[Tuple[T, T], List[T]]:
+	"""Create range if input isn't already.
+
+	Args:
+		n (Union[T, Tuple[T, T], List[T]]): The value or range.
+
+	Returns:
+		Union[Tuple[T, T], List[T]]: The range.
+	"""
+	if isinstance(n, (list, tuple)):
+		return n
+	else:
+		return (n, n)
+
 
 def extract_year_from_date(
 	date: Union[str, None],
@@ -111,6 +134,33 @@ def extract_year_from_date(
 	else:
 		return default
 
+
+def check_overlapping_issues(
+		issues_1: Union[float, Tuple[float, float]],
+		issues_2: Union[float, Tuple[float, float]]
+) -> bool:
+	"""Check if two issues overlap. Both can be single issues or ranges.
+
+	Args:
+		issues_1 (Union[float, Tuple[float, float]]): First issue or range.
+		issues_2 (Union[float, Tuple[float, float]]): Second issue or range.
+
+	Returns:
+		bool: Whether or not they overlap.
+	"""
+	if isinstance(issues_1, float):
+		if isinstance(issues_2, float):
+			return issues_1 == issues_2
+		else:
+			return issues_2[0] <= issues_1 <= issues_2[1]
+	else:
+		if isinstance(issues_2, float):
+			return issues_1[0] <= issues_2 <= issues_1[1]
+		else:
+			return (issues_1[0] <= issues_2[0] <= issues_1[1]
+				or issues_1[0] <= issues_2[1] <= issues_1[1])
+
+
 def first_of_column(
 	columns: Tuple[Tuple[T]]
 ) -> List[T]:
@@ -124,6 +174,7 @@ def first_of_column(
 	"""
 	return [e[0] for e in columns]
 
+
 class Singleton(type):
 	_instances = {}
 	def __call__(cls, *args, **kwargs):
@@ -132,6 +183,7 @@ class Singleton(type):
 			cls._instances[c] = super().__call__(*args, **kwargs)
 
 		return cls._instances[c]
+
 
 class DB_ThreadSafeSingleton(type):
 	_instances = {}
@@ -142,6 +194,7 @@ class DB_ThreadSafeSingleton(type):
 			cls._instances[i] = super().__call__(*args, **kwargs)
 
 		return cls._instances[i]
+
 
 class CommaList(list):
 	"""
@@ -163,6 +216,7 @@ class CommaList(list):
 
 	def __str__(self) -> str:
 		return ','.join(self)
+
 
 # It's more logical to have this class in the server.py file,
 # but then we have an import loop so this is the second-best file...
@@ -276,4 +330,3 @@ class WebSocket(SocketIO, metaclass=Singleton):
 			}
 		)
 		return
-
