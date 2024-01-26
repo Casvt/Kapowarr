@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 from backend.blocklist import blocklist_contains
 from backend.db import get_db
 from backend.enums import SpecialVersion
-from backend.helpers import extract_year_from_date, get_first_of_range
+from backend.helpers import create_range, extract_year_from_date, get_first_of_range
 
 if TYPE_CHECKING:
 	from backend.volumes import VolumeData
@@ -437,32 +437,26 @@ def check_search_result_match(
 	):
 		return {'match': False, 'match_issue': 'Special version conflict'}
 
-	if not special_version.value:
+	if special_version in (SpecialVersion.NORMAL, SpecialVersion.VOLUME_AS_ISSUE):
+		if result['issue_number'] is not None:
+			issue_key = 'issue_number'
+		else:
+			issue_key = 'volume_number'
+		
 		issue_number_is_equal = (
 			(
 				# Search result for volume
 				calculated_issue_number is None
 				and
-				(
-					# Issue number is in volume
-					(
-						isinstance(result['issue_number'], float)
-						and result['issue_number'] in issue_numbers
-					)
-					# Issue range's start and end are both in volume
-					or (
-						isinstance(result['issue_number'], tuple)
-						and all(i in issue_numbers for i in result['issue_number'])
-					)
-				)
+				all(i in issue_numbers for i in create_range(result[issue_key]))
 			)
 			or
 			(
 				# Search result for issue
 				calculated_issue_number is not None
 				# Issue number equals issue that is searched for
-				and isinstance(result['issue_number'], float)
-				and result['issue_number'] == calculated_issue_number
+				and isinstance(result[issue_key], float)
+				and result[issue_key] == calculated_issue_number
 			)
 		)
 		if not issue_number_is_equal:
