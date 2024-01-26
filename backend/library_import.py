@@ -3,7 +3,7 @@
 import logging
 from asyncio import create_task, gather, run
 from os.path import basename, dirname, isfile, join, splitext
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Union
 
 from aiohttp import ClientSession
 
@@ -14,7 +14,7 @@ from backend.file_extraction import (extract_filename_data, image_extensions,
                                      supported_extensions)
 from backend.files import (delete_empty_folders, find_lowest_common_folder,
                            folder_is_inside_folder, list_files, rename_file)
-from backend.helpers import batched, first_of_column
+from backend.helpers import DictKeyedDict, batched, first_of_column
 from backend.matching import _match_title, _match_year
 from backend.naming import mass_rename
 from backend.root_folders import RootFolders
@@ -24,10 +24,10 @@ from backend.volumes import Library, Volume, scan_files
 async def __search_matches(
 	datas: List[dict],
 	only_english: bool
-) -> List[dict]:
+) -> DictKeyedDict:
 
 	comicvine = ComicVine()
-	results: List[dict] = []
+	results = DictKeyedDict()
 	async with ClientSession() as session:
 		data_titles = {d['series'].lower() for d in datas}
 		tasks = [
@@ -76,13 +76,13 @@ async def __search_matches(
 			else:
 				title = None
 
-			results.append({
+			results[data] = {
 				'id': matching_result.get('comicvine_id'),
 				'title': title,
 				'issue_count': matching_result.get('issue_count'),
 				'link': matching_result.get('comicvine_info')
-			})
-			
+			}
+
 		return results
 
 def propose_library_import(
@@ -125,7 +125,6 @@ def propose_library_import(
 
 	# Filter away imported files and apply limit
 	limited_files = []
-	limited_files_append = limited_files.append
 	folders = set()
 	image_folders = set()
 	for f in all_files:
@@ -146,42 +145,36 @@ def propose_library_import(
 		if len(folders) > limit:
 			break
 
-		limited_files_append(f)
+		limited_files.append(f)
 
 	# List with tuples. First entry is efd,
 	# second is all matching files for that efd.
-	unimported_files: List[Tuple[dict, List[str]]] = []
+	unimported_files = DictKeyedDict()
 	for f in limited_files:
 		efd = extract_filename_data(f, prefer_folder_year=True)
 		del efd['issue_number']
-
-		for entry in unimported_files:
-			if entry[0] == efd:
-				entry[1].append(f)
-				break
-		else:
-			unimported_files.append((
-				efd,
-				[f]
-			))
-	unimported_files.sort(key=lambda f: (
-		f[0]['series'],
-		f[0]['volume_number'] or 0,
-		f[0]['year'] or 0
-	))
-	for (_, filelist) in unimported_files:
-		filelist.sort()
+		
+		(unimported_files
+			.setdefault(efd, [])
+			.append(f))
 	logging.debug(f'File groupings: {unimported_files}')
 
 	# Find a match for the files on CV
 	result: List[dict] = []
 	group_number = 1
-	for uf_batch in batched(unimported_files, 10):
-		search_results = run(__search_matches(
+	for uf_batch in batched(
+		sorted(unimported_files.items(), key=lambda f: (
+			f[0]['series'],
+			f[0]['volume_number'] or 0,
+			f[0]['year'] or 0
+		)),
+		10
+	):
+		group_to_cv = run(__search_matches(
 			first_of_column(uf_batch),
 			only_english
 		))
-		for search_result, group_data in zip(search_results, uf_batch):
+		for group_data, search_result in group_to_cv.items():
 			result += [
 				{
 					'filepath': f,
@@ -193,7 +186,7 @@ def propose_library_import(
 					'cv': search_result,
 					'group_number': group_number
 				}
-				for f in group_data[1]
+				for f in unimported_files[group_data]
 			]
 			group_number += 1
 

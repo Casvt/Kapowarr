@@ -211,7 +211,6 @@ def manual_search(
 	Returns:
 		List[dict]: List with search results.
 	"""
-	cursor = get_db()
 	volume = Volume(volume_id)
 	volume_data = volume.get_keys(
 		('title', 'volume_number', 'year', 'special_version')

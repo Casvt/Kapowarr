@@ -9,7 +9,8 @@ from __future__ import annotations
 import logging
 from sys import version_info
 from threading import current_thread
-from typing import TYPE_CHECKING, Iterable, List, Tuple, TypeVar, Union
+from typing import (TYPE_CHECKING, Any, Iterable, Iterator, List, Tuple,
+                    TypeVar, Union)
 
 from flask_socketio import SocketIO
 
@@ -216,6 +217,55 @@ class CommaList(list):
 
 	def __str__(self) -> str:
 		return ','.join(self)
+
+
+class DictKeyedDict(dict):
+	"""
+	Normal dict but key is dict.
+	"""
+
+	def __convert_dict(self, key: dict) -> str:
+		converted_key = ','.join(
+			sorted(key.keys()) + sorted(map(str, key.values()))
+		)
+		return converted_key
+
+	def __getitem__(self, key: dict) -> Any:
+		return super().__getitem__(
+			self.__convert_dict(key)
+		)[1]
+
+	def get(self, key: dict, default: Any = None) -> Any:
+		try:
+			return self[self.__convert_dict(key)][1]
+		except KeyError:
+			return default
+		
+	def __setitem__(self, key: dict, value: Any) -> None:
+		return super().__setitem__(
+			self.__convert_dict(key),
+			(key, value)
+		)
+
+	def setdefault(self, key: dict, default: Any = None) -> Any:
+		if not key in self:
+			self[key] = default
+
+		return self[key]
+
+	def __contains__(self, key: Any) -> bool:
+		return super().__contains__(
+			self.__convert_dict(key)
+		)
+
+	def keys(self) -> Iterator:
+		return (v[0] for v in super().values())
+
+	def values(self) -> Iterator:
+		return (v[1] for v in super().values())
+
+	def items(self) -> Iterator:
+		return zip(self.keys(), self.values())
 
 
 # It's more logical to have this class in the server.py file,
