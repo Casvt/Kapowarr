@@ -1,132 +1,169 @@
 //
 // Library
 //
-function populatePosters(volumes, api_key) {
-	const table = document.querySelector('#library');
-	const space_taker = document.querySelector('.space-taker');
-	space_taker.classList.remove('hidden');
-	table.querySelectorAll('#library > a, #library > .table-container').forEach(e => e.remove());
-	volumes.forEach(volume => {
-		const entry = document.createElement("a");
-		entry.href = `${url_base}/volumes/${volume.id}`;
-
-		const cover = document.createElement("img");
-		cover.src = `${url_base}/api/volumes/${volume.id}/cover?api_key=${api_key}`;
-		cover.alt = "";
-		cover.loading = "lazy";
-		entry.appendChild(cover);
-
-		const progress = document.createElement('div');
-		const progress_bar = document.createElement('div');
-		const calc = volume.issues_downloaded_monitored / volume.issue_count_monitored * 100;
-		if (calc === 100) {
-			progress_bar.setAttribute('style', `width: ${calc}%; background-color: var(--success-color);`);
-		} else if (volume.monitored === true) {
-			progress_bar.setAttribute('style', `width: ${calc}%; background-color: var(--accent-color);`);
-		} else {
-			progress_bar.setAttribute('style', `width: ${calc}%; background-color: var(--error-color);`);
-		};
-		progress.appendChild(progress_bar);
-		const progress_text = document.createElement('div');
-		progress_text.innerText = `${volume.issues_downloaded_monitored}/${volume.issue_count_monitored}`;
-		progress.appendChild(progress_text);
-		entry.appendChild(progress);
-
-		const title = document.createElement("h2");
-		title.innerText = `${volume.title} (${volume.year})`;
-		title.title = `${volume.title} (${volume.year})`;
-		entry.appendChild(title);
-
-		const volume_number = document.createElement("p");
-		volume_number.innerText = `Volume ${volume.volume_number}`;
-		entry.append(volume_number);
-
-		const monitored = document.createElement("p");
-		monitored.innerText = volume.monitored ? 'Monitored' : 'Unmonitored';
-		entry.appendChild(monitored);
-
-		table.insertBefore(entry, space_taker);
-	});
+const library_els = {
+	pages: {
+		loading: document.querySelector('#loading-library'),
+		empty: document.querySelector('#empty-library'),
+		view: document.querySelector('#library-container'),
+	},
+	views: {
+		list: document.querySelector('#list-library'),
+		table: document.querySelector('#table-library'),
+	},
+	stats: {
+		volume_count: document.querySelector('#volume-count'),
+		volume_monitored_count: document.querySelector('#volume-monitored-count'),
+		volume_unmonitored_count: document.querySelector('#volume-unmonitored-count'),
+		issue_count: document.querySelector('#issue-count'),
+		issue_download_count: document.querySelector('#issue-download-count'),
+		file_count: document.querySelector('#file-count'),
+		total_file_size: document.querySelector('#total-file-size')
+	}
 };
 
-function populateTable(volumes) {
-	const space_taker = document.querySelector('.space-taker');
-	space_taker.classList.add('hidden');
-
-	const library = document.querySelector('#library');
-	library.querySelectorAll('#library > a, #library > .table-container').forEach(e => e.remove());
-
-	const table_container = document.createElement('div');
-	table_container.classList.add('table-container');
-	const table = document.createElement('table');
-	table_container.appendChild(table);
-	const thead = document.createElement('thead');
-	table.appendChild(thead);
-	const head_row = document.createElement('tr');
-	thead.appendChild(head_row);
-	['Volume Title', 'Year', 'Progress', 'Monitored'].forEach(h => {
-		const entry = document.createElement('th');
-		entry.innerText = h;
-		head_row.appendChild(entry);
-	});
-	const list = document.createElement('tbody');
-	table.appendChild(list);
-	library.insertBefore(table_container, space_taker);
-
-	volumes.forEach(volume => {
-		const entry = document.createElement('tr');
-
-		const title_container = document.createElement('td');
-		const title = document.createElement('a');
-		title.innerText = volume.title;
-		title.title = volume.title;
-		title.href = `${url_base}/volumes/${volume.id}`;
-		title_container.appendChild(title);
-		entry.appendChild(title_container);
-
-		const year = document.createElement('td');
-		year.innerText = volume.year;
-		entry.appendChild(year);
-
-		const progress_container = document.createElement('td');
-		const progress = document.createElement('div');
-		const progress_bar = document.createElement('div');
-		const calc = volume.issues_downloaded_monitored / volume.issue_count_monitored * 100;
-		if (calc === 100) {
-			progress_bar.setAttribute('style', `width: ${calc}%; background-color: var(--success-color);`);
-		} else if (volume.monitored === true) {
-			progress_bar.setAttribute('style', `width: ${calc}%; background-color: var(--accent-color);`);
-		} else {
-			progress_bar.setAttribute('style', `width: ${calc}%; background-color: var(--error-color);`);
-		};
-		progress.appendChild(progress_bar);
-		const progress_text = document.createElement('div');
-		progress_text.innerText = `${volume.issues_downloaded_monitored}/${volume.issue_count_monitored}`;
-		progress.appendChild(progress_text);
-		progress_container.appendChild(progress);
-		entry.appendChild(progress_container);
-
-		const monitored_container = document.createElement('td');
-		const monitored = document.createElement('img');
-		monitored.src = volume.monitored ? `${url_base}/static/img/monitored.svg` : `${url_base}/static/img/unmonitored.svg`;
-		monitored.title = volume.monitored ? 'Monitored' : 'Unmonitored';
-		monitored_container.appendChild(monitored);
-		entry.appendChild(monitored_container);
-
-		list.appendChild(entry);
-	});
+const pre_build_els = {
+	list_entry: document.querySelector('.pre-build-els .list-entry'),
+	table_entry: document.querySelector('.pre-build-els .table-entry')
 };
 
-function populateLibrary(volumes, api_key, view) {
-	if (view === 'posters')
-		populatePosters(volumes, api_key);
-	else if (view === 'table')
-		populateTable(volumes);
+function showLibraryPage(el) {
+	Object.values(library_els.pages).forEach(v => v.classList.add('hidden'));
+	el.classList.remove('hidden');
+};
+
+class LibraryEntry {
+	constructor(id, api_key) {
+		this.id = id;
+		this.api_key = api_key;
+		this.list_entry = library_els.views.list.querySelector(`.vol-${id}`);
+		this.table_entry = library_els.views.table.querySelector(`.vol-${id}`);
+	};
+	
+	setMonitored(monitored) {
+		fetch(`${url_base}/api/volumes/${this.id}?api_key=${this.api_key}`, {
+			'method': 'PUT',
+			'headers': {'Content-Type': 'application/json'},
+			'body': JSON.stringify({'monitored': monitored})
+		})
+		.then(response => {
+			const monitored_button = this.table_entry.querySelector('.table-monitored');
+			monitored_button.onclick = e => new LibraryEntry(this.id, this.api_key)
+				.setMonitored(!monitored);
+	
+			if (monitored) {
+				this.list_entry.setAttribute('monitored', '');
+				monitored_button.title = 'Monitored'
+				monitored_button.innerHTML =
+					icons.monitored;
+	
+			} else {
+				this.list_entry.removeAttribute('monitored');
+				monitored_button.title = 'Unmonitored'
+				monitored_button.innerHTML =
+					icons.unmonitored;
+			};
+		});
+	};
+};
+
+function populateLibrary(volumes, api_key) {
+	library_els.views.list.querySelectorAll('.list-entry').forEach(
+		e => e.remove()
+	);
+	library_els.views.table.innerHTML = '';
+	const space_taker = document.querySelector('.space-taker');
+
+	volumes.forEach(volume => {
+		const list_entry = pre_build_els.list_entry.cloneNode(true),
+			table_entry = pre_build_els.table_entry.cloneNode(true);
+		
+		// ID
+		list_entry.classList.add(`vol-${volume.id}`);
+		table_entry.classList.add(`vol-${volume.id}`);
+
+		// Link
+		list_entry.href =
+		table_entry.querySelector('.table-link').href =
+			`${url_base}/volumes/${volume.id}`;
+
+		// Cover
+		list_entry.querySelector('.list-img').src =
+			`${url_base}/api/volumes/${volume.id}/cover?api_key=${api_key}`;
+
+		// Title
+		const list_title = list_entry.querySelector('.list-title');
+		list_title.innerText =
+		list_title.title =
+			`${volume.title} (${volume.year})`;
+		table_entry.querySelector('.table-link').innerText =
+			volume.title;
+
+		// Year
+		table_entry.querySelector('.table-year').innerText =
+			volume.year;
+
+		// Volume Number
+		list_entry.querySelector('.list-volume').innerText =
+		table_entry.querySelector('.table-volume').innerText =
+			`Volume ${volume.volume_number}`;
+
+		// Progress Bar
+		const progress = (volume.issues_downloaded_monitored
+						/ volume.issue_count_monitored 			* 100);
+		const list_bar = list_entry.querySelector('.list-prog-bar'),
+			table_bar = table_entry.querySelector('.table-prog-bar');
+
+		list_entry.querySelector('.list-prog-num').innerText =
+		table_entry.querySelector('.table-prog-num').innerText =
+			`${volume.issues_downloaded_monitored}/${volume.issue_count_monitored}`;
+
+		list_bar.style.width = 
+		table_bar.style.width =
+			`${progress}%`;
+
+		if (progress === 100)
+			list_bar.style.backgroundColor =
+			table_bar.style.backgroundColor =
+				'var(--success-color)';
+
+		else if (volume.monitored === true)
+			list_bar.style.backgroundColor =
+			table_bar.style.backgroundColor =
+				'var(--accent-color)';
+
+		else
+			list_bar.style.backgroundColor =
+			table_bar.style.backgroundColor =
+				'var(--error-color)';
+
+		// Monitored
+		const monitored_button = table_entry.querySelector('.table-monitored');
+		monitored_button.onclick = e => new LibraryEntry(volume.id, api_key)
+			.setMonitored(!volume.monitored);
+		if (volume.monitored) {
+			list_entry.setAttribute('monitored', '');
+
+			monitored_button.title = 'Monitored'
+			monitored_button.innerHTML =
+				icons.monitored;
+
+		} else {
+			monitored_button.title = 'Unmonitored'
+			monitored_button.innerHTML =
+				icons.unmonitored;
+		};
+		
+		// Add to view
+		library_els.views.list.insertBefore(list_entry, space_taker);
+		library_els.views.table.appendChild(table_entry);
+	});
 };
 
 function fetchLibrary(api_key) {
+	showLibraryPage(library_els.pages.loading);
+
 	const sort = document.querySelector('#sort-button').value;
-	const view = document.querySelector('#view-button').value;
 	const filter = document.querySelector('#filter-button').value;
 	const query = document.querySelector('#search-input').value;
 	let url;
@@ -134,9 +171,17 @@ function fetchLibrary(api_key) {
 		url = `${url_base}/api/volumes?api_key=${api_key}&sort=${sort}&filter=${filter}`;
 	else
 		url = `${url_base}/api/volumes?api_key=${api_key}&sort=${sort}&query=${query}&filter=${filter}`;
+
 	fetch(url)
 	.then(response => response.json())
-	.then(json => populateLibrary(json.result, api_key, view));
+	.then(json => {
+		if (json.result.length === 0) {
+			showLibraryPage(library_els.pages.empty);
+		} else {
+			populateLibrary(json.result, api_key);
+			showLibraryPage(library_els.pages.view);
+		};
+	});
 };
 
 function searchLibrary() {
@@ -152,13 +197,13 @@ function fetchStats(api_key) {
 	fetch(`${url_base}/api/volumes/stats?api_key=${api_key}`)
 	.then(response => response.json())
 	.then(json => {
-		document.querySelector('#volume-count').innerText = json.result.volumes;
-		document.querySelector('#volume-monitored-count').innerText = json.result.monitored;
-		document.querySelector('#volume-unmonitored-count').innerText = json.result.unmonitored;
-		document.querySelector('#issue-count').innerText = json.result.issues;
-		document.querySelector('#issue-download-count').innerText = json.result.downloaded_issues;
-		document.querySelector('#file-count').innerText = json.result.files;
-		document.querySelector('#total-file-size').innerText = convertSize(json.result.total_file_size);
+		library_els.stats.volume_count.innerText = json.result.volumes;
+		library_els.stats.volume_monitored_count.innerText = json.result.monitored;
+		library_els.stats.volume_unmonitored_count.innerText = json.result.unmonitored;
+		library_els.stats.issue_count.innerText = json.result.issues;
+		library_els.stats.issue_download_count.innerText = json.result.downloaded_issues;
+		library_els.stats.file_count.innerText = json.result.files;
+		library_els.stats.total_file_size.innerText = convertSize(json.result.total_file_size);
 	});
 };
 
@@ -166,17 +211,17 @@ function fetchStats(api_key) {
 // Actions
 //
 function updateAll(api_key) {
-	const icon = document.querySelector('#updateall-button > img');
-	icon.src = task_to_button['update_all'].loading_icon;
-	icon.classList.add('spinning');
-	fetch(`${url_base}/api/system/tasks?api_key=${api_key}&cmd=update_all`, {'method': 'POST'});
+	fetch(
+		`${url_base}/api/system/tasks?api_key=${api_key}&cmd=update_all`,
+		{'method': 'POST'}
+	);
 };
 
 function searchAll(api_key) {
-	const icon = document.querySelector('#searchall-button > img');
-	icon.src = task_to_button['search_all'].loading_icon;
-	icon.classList.add('spinning');
-	fetch(`${url_base}/api/system/tasks?api_key=${api_key}&cmd=search_all`, {'method': 'POST'});
+	fetch(
+		`${url_base}/api/system/tasks?api_key=${api_key}&cmd=search_all`,
+		{'method': 'POST'}
+	);
 };
 
 // code run on load
@@ -198,11 +243,10 @@ usingApiKey()
 	});
 	addEventListener('#view-button', 'change', e => {
 		setLocalStorage({'lib_view': document.querySelector('#view-button').value});
-		fetchLibrary(api_key);
 	});
 	addEventListener('#filter-button', 'change', e => {
 		setLocalStorage({'lib_filter': document.querySelector('#filter-button').value});
 		fetchLibrary(api_key);
 	});
 });
-document.querySelector('#search-container').setAttribute('action', 'javascript:searchLibrary();');
+setAttribute('#search-container', 'action', 'javascript:searchLibrary();');
