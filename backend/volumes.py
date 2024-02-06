@@ -23,6 +23,7 @@ from backend.helpers import first_of_column, reversed_tuples
 from backend.matching import file_importing_filter
 from backend.root_folders import RootFolders
 
+split_regex = compile(r'(?<!vs)(?<!r\.i\.p)\.(?:\s|</p>(?!$))', IGNORECASE)
 os_regex = compile(r'(?<!>)\bone[\- ]?shot\b(?!<)', IGNORECASE)
 hc_regex = compile(r'(?<!>)\bhard[\- ]?cover\b(?!<)', IGNORECASE)
 vol_regex = compile(r'^volume\.?\s\d+$', IGNORECASE)
@@ -54,7 +55,7 @@ def determine_special_version(
 		):
 			return SpecialVersion.VOLUME_AS_ISSUE
 
-	if volume_description and len(volume_description.split('. ')) == 1:
+	if volume_description and len(split_regex.split(volume_description)) == 1:
 		# Description is only one sentence, so it's allowed to
 		# look in description for special version.
 		# Only one sentence is allowed because otherwise the description
