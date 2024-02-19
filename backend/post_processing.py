@@ -48,21 +48,27 @@ class PostProcessingActions:
 	@staticmethod
 	def move_file(download: Download) -> None:
 		"Move file from download folder to final destination"
-		if exists(download.file):
-			folder = Volume(download.volume_id)['folder']
-			file_dest = join(folder, basename(download.file))
-			logging.debug(
-				f'Moving download to final destination: {download}, Dest: {file_dest}'
+		if not exists(download.file):
+			return
+
+		# If it takes very long to move the file (because of it's size),
+		# the DB is left locked for a long period leading to timeouts.
+		get_db().connection.commit()
+
+		folder = Volume(download.volume_id)['folder']
+		file_dest = join(folder, basename(download.file))
+		logging.debug(
+			f'Moving download to final destination: {download}, Dest: {file_dest}'
+		)
+
+		if exists(file_dest):
+			logging.warning(
+				f'The file/folder {file_dest} already exists; replacing with downloaded file'
 			)
+			delete_file_folder(file_dest)
 
-			if exists(file_dest):
-				logging.warning(
-					f'The file/folder {file_dest} already exists; replacing with downloaded file'
-				)
-				delete_file_folder(file_dest)
-
-			rename_file(download.file, file_dest)
-			download.file = file_dest
+		rename_file(download.file, file_dest)
+		download.file = file_dest
 		return
 
 	@staticmethod
@@ -101,6 +107,9 @@ class PostProcessingActions:
 	def move_file_torrent(download: TorrentDownload) -> None:
 		"""Move file downloaded using torrent from download folder to
 		final destination"""
+		if not exists(download.file):
+			return
+
 		PPA.move_file(download)
 
 		download.resulting_files = extract_files_from_folder(
