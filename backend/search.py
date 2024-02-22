@@ -186,7 +186,11 @@ class SearchSources:
 				.get_text(strip=True)
 			)
 
-			data = extract_filename_data(title, False)
+			data = extract_filename_data(
+				title,
+				assume_volume_number=False,
+				fix_year=True
+			)
 			data.update({
 				'link': link,
 				'display_title': title,

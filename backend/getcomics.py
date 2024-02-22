@@ -374,7 +374,11 @@ def _create_link_paths(
 
 	link_paths: List[List[dict]] = []
 	for desc, sources in download_groups.items():
-		processed_desc = extract_filename_data(desc, assume_volume_number=False)
+		processed_desc = extract_filename_data(
+			desc,
+			assume_volume_number=False,
+			fix_year=True
+		)
 		if GC_group_filter(
 			processed_desc,
 			volume_id,

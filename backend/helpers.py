@@ -64,7 +64,7 @@ def batched(l: list, n: int):
 		yield l[ndx : ndx+n]
 
 
-def reversed_tuples(i: Tuple[Tuple[T, U]]) -> Tuple[Tuple[U, T]]:
+def reversed_tuples(i: Tuple[Tuple[T, U]]) -> Iterator[Tuple[Tuple[U, T]]]:
 	"""Yield sub-tuples in reversed order.
 
 	Args:
@@ -174,6 +174,26 @@ def first_of_column(
 		List[T]: List with first value of each sub-array.
 	"""
 	return [e[0] for e in columns]
+
+
+def fix_year(year: int) -> int:
+	"""Fix year numbers that are probably a typo.
+	E.g. 2204 -> 2024, 1890 -> 1980, 2010 -> 2010
+
+	Args:
+		year (int): The possibly broken year.
+
+	Returns:
+		int: The fixed year or input year if not broken.
+	"""
+	if 1900 <= year < 2100:
+		return year
+
+	year_str = list(str(year))
+	if len(year_str) != 4:
+		return year
+
+	return int(year_str[0] + year_str[2] + year_str[1] + year_str[3])
 
 
 class Singleton(type):
