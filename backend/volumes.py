@@ -24,8 +24,8 @@ from backend.matching import file_importing_filter
 from backend.root_folders import RootFolders
 
 split_regex = compile(r'(?<!vs)(?<!r\.i\.p)\.(?:\s|</p>(?!$))', IGNORECASE)
-os_regex = compile(r'(?<!>)\bone[\- ]?shot\b(?!<)', IGNORECASE)
-hc_regex = compile(r'(?<!>)\bhard[\- ]?cover\b(?!<)', IGNORECASE)
+os_regex = compile(r'(?<!preceding\s)(?<!>)\bone[\- ]?shot\b(?!<)', IGNORECASE)
+hc_regex = compile(r'(?<!preceding\s)(?<!>)\bhard[\- ]?cover\b(?!<)', IGNORECASE)
 vol_regex = compile(r'^volume\.?\s\d+$', IGNORECASE)
 def determine_special_version(
 	volume_title: str,
