@@ -23,6 +23,41 @@
 	<title>Volumes - Kapowarr</title>
 </head>
 <body>
+	<div class="pre-build-els hidden">
+		<a href="" class="list-entry">
+			<img class="list-img" src="" alt="" loading="lazy">
+			<div class="list-prog-container">
+				<div class="list-prog-bar"></div>
+				<div class="list-prog-num"></div>
+			</div>
+			<h2 class="list-title" title=""></h2>
+			<p class="list-volume"></p>
+			<p class="list-monitored">Monitored</p>
+			<p class="list-unmonitored">Unmonitored</p>
+		</a>
+	</div>
+	<table class="pre-build-els hidden">
+		<tbody>
+			<tr class="table-entry">
+				<td>
+					<a class="table-link" href=""></a>
+				</td>
+				<td class="table-year"></td>
+				<td class="table-volume"></td>
+				<td>
+					<div class="table-prog-container">
+						<div class="table-prog-bar"></div>
+						<div class="table-prog-num"></div>
+					</div>
+				</td>
+				<td class="table-monitored-container">
+					<button class="table-monitored">
+					</button>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+	
 	<header>
 		<div class="menu-title-container">
 			<button id="toggle-nav" aria-label="Toggle menu">
@@ -90,9 +125,31 @@
 					</select>
 				</div>
 			</div>
-			<div id="library">
-				<div class="space-taker"></div>
-				<div class="lib-stats">
+			<div id="loading-library">
+				<h2>Loading...</h2>
+			</div>
+			<div id="empty-library" class="hidden">
+				<h2>Library is empty</h2>
+			</div>
+			<div id="library-container" class="hidden">
+				<div id="list-library">
+					<div class="space-taker"></div>
+				</div>
+				<div id="table-container">
+					<table>
+						<thead>
+							<tr>
+								<th>Volume Title</th>
+								<th>Year</th>
+								<th>Volume</th>
+								<th>Progress</th>
+								<th>Monitored</th>
+							</tr>
+						</thead>
+						<tbody id="table-library"></tbody>
+					</table>
+				</div>
+				<div id="lib-stats">
 					<table>
 						<tbody>
 							<tr>
