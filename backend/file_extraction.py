@@ -122,7 +122,7 @@ def process_issue_number(
 		or `None` if it wasn't succesfull in converting.
 	"""
 	if '-' in issue_number[1:]:
-		entries = issue_number[1:].split('-', 1)
+		entries = issue_number[1:].replace(' ', '').split('-', 1)
 		entries[0] = issue_number[0] + entries[0]
 
 		if not all(
