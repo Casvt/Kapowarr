@@ -384,6 +384,21 @@ class _VolumeBackend:
 			'volume_folder'
 		)
 
+	def _check_public_key(self, key: str) -> bool:
+		"""Check if key is allowed to be altered by user.
+
+		Args:
+			key (str): The key to check.
+
+		Returns:
+			bool: Whether it's allowed or not.
+		"""
+		return key in (
+			'monitored',
+			'root_folder',
+			'volume_folder'
+		)
+
 	def _set_value(self, key: str, value: Any) -> None:
 		"""Set the value of the key.
 
@@ -708,7 +723,7 @@ class Volume(_VolumeBackend):
 		Raises:
 			KeyError: Key is unknown or not allowed.
 		"""		
-		if any(not self._check_key(k) for k in changes):
+		if any(not self._check_public_key(k) for k in changes):
 			raise KeyError
 
 		for key, value in changes.items():
