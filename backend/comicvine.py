@@ -436,24 +436,26 @@ class ComicVine:
 				]
 				responses = await gather(*tasks)
 
-				cover_tasks = []
-				cover_ids = []
+				# cover_tasks = []
+				# cover_ids = []
+				cover_map = {}
 				for batch in responses:
 					for result in batch['results']:
 						volume_info = self.__format_volume_output(result)
 						volume_infos.append(volume_info)
-						cover_ids.append(volume_info['comicvine_id'])
-						cover_tasks.append(create_task(
+						cover_map[volume_info['comicvine_id']] = create_task(
 							self.__call_request_async(
 								session,
 								volume_info['cover']
 							)
-						))
+						)
 
-				cover_responses = await gather(*cover_tasks)
-				cover_map = dict(zip(cover_ids, cover_responses))
+				cover_responses = dict(zip(
+					cover_map.keys(),
+					await gather(*cover_map.values())
+				))
 				for vi in volume_infos:
-					vi['cover'] = cover_map[vi['comicvine_id']]
+					vi['cover'] = cover_responses.get(vi['comicvine_id'])
 
 			return volume_infos
 
