@@ -980,7 +980,11 @@ def refresh_and_scan(volume_id: int=None) -> None:
 			ids[issue_data['volume_id']],
 			issue_data['comicvine_id'],
 			issue_data['issue_number'],
-			issue_data['calculated_issue_number'],
+			(
+				issue_data['calculated_issue_number']
+				if not isinstance(issue_data['calculated_issue_number'], tuple) else
+				0.0
+			),
 			issue_data['title'],
 			issue_data['date'],
 			issue_data['description'],

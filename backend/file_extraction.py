@@ -124,6 +124,16 @@ def process_issue_number(
 	if '-' in issue_number[1:]:
 		entries = issue_number[1:].split('-', 1)
 		entries[0] = issue_number[0] + entries[0]
+
+		if not all(
+			e[0] in digits or (
+				e[0] == '-'
+				and e[1] in digits
+			)
+			for e in entries
+		):
+			return _calc_float_issue_number(issue_number)
+
 		entries = (
 			_calc_float_issue_number(entries[0]),
 			_calc_float_issue_number(entries[1])
