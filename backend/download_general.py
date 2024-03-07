@@ -262,6 +262,8 @@ class BaseTorrentClient(TorrentClient):
 			raise InvalidKeyValue('password', data['password'])
 
 		data['base_url'] = data['base_url'].rstrip('/')
+		if not data["base_url"].startswith(('http://', 'https://')):
+			data["base_url"] = f'http://{data["base_url"]}'
 
 		ClientClass = client_types[self.type]
 		test_result = ClientClass.test(

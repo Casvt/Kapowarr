@@ -65,7 +65,9 @@ class TorrentClients:
 			raise InvalidKeyValue('type', type)
 
 		base_url = base_url.rstrip('/')
-		
+		if not base_url.startswith(('http://', 'https://')):
+			base_url = f'http://{base_url}'
+
 		result = client_types[type].test(
 			base_url,
 			username,
@@ -124,6 +126,8 @@ class TorrentClients:
 			raise InvalidKeyValue('password', password)
 
 		base_url = base_url.rstrip('/')
+		if not base_url.startswith(('http://', 'https://')):
+			base_url = f'http://{base_url}'
 
 		ClientClass = client_types[type]
 		test_result = ClientClass.test(
