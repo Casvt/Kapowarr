@@ -10,7 +10,7 @@ import logging
 from sys import version_info
 from threading import current_thread
 from typing import (TYPE_CHECKING, Any, Iterable, Iterator, List, Tuple,
-                    TypeVar, Union)
+                    TypeVar, TypedDict, Union)
 
 from flask_socketio import SocketIO
 
@@ -194,6 +194,30 @@ def fix_year(year: int) -> int:
 		return year
 
 	return int(year_str[0] + year_str[2] + year_str[1] + year_str[3])
+
+
+class FilenameData(TypedDict):
+	series: str
+	year: Union[int, None]
+	volume_number: Union[int, Tuple[int, int], None]
+	special_version: Union[str, None]
+	issue_number: Union[float, Tuple[float, float], None]
+	annual: bool
+
+
+class SearchResultData(FilenameData):
+	link: str
+	display_title: str
+	source: str
+
+
+class SearchResultMatchData(TypedDict):
+	match: bool
+	match_issue: Union[str, None]
+
+
+class MatchedSearchResultData(SearchResultMatchData, SearchResultData):
+	pass
 
 
 class Singleton(type):

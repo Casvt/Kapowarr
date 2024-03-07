@@ -15,6 +15,7 @@ from typing import Tuple, Union
 from urllib.parse import unquote
 
 from backend.enums import SpecialVersion
+from backend.helpers import FilenameData
 from backend.helpers import fix_year as fix_broken_year
 
 alphabet = 'abcdefghijklmnopqrstuvwxyz'
@@ -168,7 +169,7 @@ def extract_filename_data(
 	assume_volume_number: bool = True,
 	prefer_folder_year: bool = False,
 	fix_year: bool = False
-) -> dict:
+) -> FilenameData:
 	"""Extract comic data from string and present in a formatted way.
 
 	Args:
@@ -188,7 +189,7 @@ def extract_filename_data(
 			Defaults to False.
 
 	Returns:
-		dict: The extracted data in a formatted way
+		FilenameData: The extracted data in a formatted way
 	"""	
 	logging.debug(f'Extracting filename data: {filepath}')
 	series, year, volume_number, special_version, issue_number = (
@@ -421,7 +422,7 @@ def extract_filename_data(
 	else:
 		calculated_issue_number = None
 
-	year = int(year) if year else year
+	year = int(year) if year else None
 	if fix_year:
 		year = fix_broken_year(year)
 

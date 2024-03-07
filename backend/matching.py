@@ -14,7 +14,8 @@ from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 from backend.blocklist import blocklist_contains
 from backend.db import get_db
 from backend.enums import SpecialVersion
-from backend.helpers import create_range, extract_year_from_date, get_first_of_range
+from backend.helpers import (FilenameData, SearchResultData, SearchResultMatchData, create_range, extract_year_from_date,
+                             get_first_of_range)
 
 if TYPE_CHECKING:
 	from backend.volumes import VolumeData
@@ -218,7 +219,7 @@ def _match_special_version(
 
 
 def folder_extraction_filter(
-	file_data: dict,
+	file_data: FilenameData,
 	volume_data: VolumeData,
 	end_year: Union[int, None]
 ) -> bool:
@@ -227,7 +228,7 @@ def folder_extraction_filter(
 	This filter is relatively conservative.
 
 	Args:
-		file_data (dict): The output of `backend.files.extract_filename_data()`
+		file_data (FilenameData): The output of `backend.files.extract_filename_data()`
 		for the file.
 		volume_data (VolumeData): The info about the volume.
 		end_year (Union[int, None]): Year of last issue or volume year.
@@ -257,14 +258,14 @@ def folder_extraction_filter(
 
 
 def file_importing_filter(
-	file_data: dict,
+	file_data: FilenameData,
 	volume_data: VolumeData,
 	volume_issues: List[dict]
 ) -> bool:
 	"""Filter for matching files to volumes.
 
 	Args:
-		file_data (dict): The output of files.extract_filename_data() for the file.
+		file_data (FilenameData): The output of files.extract_filename_data() for the file.
 		volume_data (VolumeData): The data of the volume.
 		volume_issues (List[dict]): The issues of the volume.
 
@@ -315,7 +316,7 @@ def file_importing_filter(
 
 
 def GC_group_filter(
-	processed_desc: dict,
+	processed_desc: FilenameData,
 	volume_id: int,
 	volume_title: str,
 	volume_year: int,
@@ -326,7 +327,7 @@ def GC_group_filter(
 	volume/issue.
 
 	Args:
-		processed_desc (dict): Output of files.extract_filename_data() for 
+		processed_desc (FilenameData): Output of files.extract_filename_data() for 
 		group title.
 		volume_id (int): The ID of the volume.
 		volume_title (str): The title of the volume.
@@ -376,18 +377,18 @@ def GC_group_filter(
 
 
 def check_search_result_match(
-	result: dict,
+	result: SearchResultData,
 	volume_id: int,
 	title: str,
 	special_version: SpecialVersion,
 	issue_numbers: Dict[float, int],
 	calculated_issue_number: float=None,
 	year: int=None
-) -> dict:
+) -> SearchResultMatchData:
 	"""Determine if a result is a match with what is searched for
 
 	Args:
-		result (dict): A result in SearchSources.search_all()
+		result (SearchResultData): A result in SearchSources.search_all()
 
 		title (str): Title of volume
 
@@ -408,7 +409,7 @@ def check_search_result_match(
 			Defaults to None.
 
 	Returns:
-		dict: A dict with the key `match` having a bool value for if it matches or not and
+		SearchResultMatchData: A dict with the key `match` having a bool value for if it matches or not and
 		the key `match_issue` with the reason for why it isn't a match
 		if that's the case (otherwise `None`).
 	"""

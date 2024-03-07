@@ -15,7 +15,8 @@ from requests import get
 from backend.db import get_db
 from backend.enums import SpecialVersion
 from backend.file_extraction import extract_filename_data
-from backend.helpers import (check_overlapping_issues, create_range,
+from backend.helpers import (MatchedSearchResultData, SearchResultData,
+                             check_overlapping_issues, create_range,
                              extract_year_from_date, first_of_column)
 from backend.matching import _match_special_version, check_search_result_match
 from backend.settings import private_settings
@@ -23,7 +24,7 @@ from backend.volumes import Issue, Volume, get_calc_number_range
 
 
 def _sort_search_results(
-	result: dict,
+	result: MatchedSearchResultData,
 	title: str,
 	volume_number: int,
 	year: int=None,
@@ -32,7 +33,7 @@ def _sort_search_results(
 	"""Sort the search results
 
 	Args:
-		result (dict): A result from `search.SearchSources.search_all()`.
+		result (MatchedSearchResultData): A result from `search.SearchSources.search_all()`.
 
 		title (str): Title of volume
 
@@ -127,9 +128,9 @@ class SearchSources:
 			self._get_comics,
 		]
 
-	def search_all(self) -> List[dict]:
+	def search_all(self) -> List[SearchResultData]:
 		"Search all sources for the query"
-		result = []
+		result: List[SearchResultData] = []
 		for source in self.source_list:
 			result += source()
 		return result
@@ -157,11 +158,11 @@ class SearchSources:
 			responses = await gather(*tasks)
 			return [BeautifulSoup(r, 'html.parser') for r in responses]
 
-	def _get_comics(self) -> List[dict]:
+	def _get_comics(self) -> List[SearchResultData]:
 		"""Search for the query in getcomics
 
 		Returns:
-			List[dict]: The search results
+			List[SearchResultData]: The search results
 		"""		
 		search_results = get(
 			private_settings["getcomics_url"],
@@ -178,7 +179,7 @@ class SearchSources:
 		for page in [soup] + parsed_results:
 			results += page.find_all('article', {'class': 'post'})
 
-		formatted_results = []
+		formatted_results: List[SearchResultData] = []
 		for result in results:
 			link = result.find('a')['href']
 			title = (result
@@ -203,7 +204,7 @@ class SearchSources:
 def manual_search(
 	volume_id: int,
 	issue_id: int=None
-) -> List[dict]:
+) -> List[MatchedSearchResultData]:
 	"""Do a manual search for a volume or issue
 
 	Args:
@@ -213,7 +214,7 @@ def manual_search(
 		Defaults to None.
 
 	Returns:
-		List[dict]: List with search results.
+		List[MatchedSearchResultData]: List with search results.
 	"""
 	volume = Volume(volume_id)
 	volume_data = volume.get_keys(
@@ -268,7 +269,7 @@ def manual_search(
 		query_formats = tuple(f.replace('({year})', '') for f in query_formats)
 
 	# Get formatted search results
-	results = []
+	results: List[SearchResultData] = []
 	for format in query_formats:
 		search = SearchSources(
 			format.format(
@@ -280,7 +281,7 @@ def manual_search(
 
 	# Remove duplicates 
 	# because multiple formats can return the same result
-	results: List[dict] = list({r['link']: r for r in results}.values())
+	results = list({r['link']: r for r in results}.values())
 
 	# Decide what is a match and what not
 	issue_numbers = {
@@ -294,6 +295,7 @@ def manual_search(
 				calculated_issue_number, volume_data.year
 			)
 		)
+	results: List[MatchedSearchResultData]
 
 	# Sort results; put best result at top
 	results.sort(key=lambda r: _sort_search_results(
@@ -371,10 +373,7 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 				logging.debug(f'Auto search results: {result}')
 				return result
 
-	results = list(filter(
-		lambda r: r['match'],
-		manual_search(volume_id, issue_id)
-	))
+	results = [r for r in manual_search(volume_id, issue_id) if r['match']]
 
 	if issue_number is not None or (
 		special_version.value is not None
@@ -405,7 +404,7 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 		elif (special_version == SpecialVersion.VOLUME_AS_ISSUE
 		and result['special_version'] == SpecialVersion.TPB):
 			# VAS with volume number
-			result['_issue_number'] = result['volume_number']
+			result['_issue_number'] = tuple(map(float, result['volume_number']))
 			covered_issues = get_calc_number_range(
 				volume_id,
 				*create_range(result['volume_number'])
