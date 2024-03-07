@@ -18,7 +18,7 @@ from backend.helpers import CommaList, DB_ThreadSafeSingleton
 from backend.logging import set_log_level
 
 __DATABASE_FILEPATH__ = 'db', 'Kapowarr.db'
-__DATABASE_VERSION__ = 17
+__DATABASE_VERSION__ = 18
 __DATABASE_TIMEOUT__ = 10.0
 
 class DBConnection(Connection, metaclass=DB_ThreadSafeSingleton):
@@ -589,6 +589,17 @@ def migrate_db(current_db_version: int) -> None:
 		current_db_version = s['database_version'] = 16
 		s._save_to_database()
 
+	if current_db_version == 17:
+		# V17 -> V18
+
+		cursor.execute("""
+			ALTER TABLE volumes ADD
+				special_version_locked BOOL NOT NULL DEFAULT 0
+		""")
+
+		current_db_version = s['database_version'] = 17
+		s._save_to_database()
+
 	return
 
 def setup_db() -> None:
@@ -627,7 +638,8 @@ def setup_db() -> None:
 			custom_folder BOOL NOT NULL DEFAULT 0,
 			last_cv_fetch INTEGER(8) DEFAULT 0,
 			special_version VARCHAR(255),
-			
+			special_version_locked BOOL NOT NULL DEFAULT 0,
+
 			FOREIGN KEY (root_folder) REFERENCES root_folders(id)
 		);
 		CREATE TABLE IF NOT EXISTS issues(

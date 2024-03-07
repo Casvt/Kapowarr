@@ -11,7 +11,7 @@ from time import time
 from typing import Any, Dict, List, Tuple, Union
 
 from backend.comicvine import ComicVine
-from backend.custom_exceptions import (IssueNotFound, TaskForVolumeRunning, VolumeAlreadyAdded,
+from backend.custom_exceptions import (InvalidKeyValue, IssueNotFound, TaskForVolumeRunning, VolumeAlreadyAdded,
                                        VolumeDownloadedFor, VolumeNotFound)
 from backend.db import get_db
 from backend.enums import SpecialVersion
@@ -298,6 +298,7 @@ class VolumeData:
 	root_folder: int = None
 	folder: str = None
 	special_version: SpecialVersion = None
+	special_version_locked: bool = None
 
 
 class _VolumeBackend:
@@ -396,7 +397,9 @@ class _VolumeBackend:
 		return key in (
 			'monitored',
 			'root_folder',
-			'volume_folder'
+			'volume_folder',
+			'special_version',
+			'special_version_locked'
 		)
 
 	def _set_value(self, key: str, value: Any) -> None:
@@ -578,7 +581,8 @@ class Volume(_VolumeBackend):
 			SELECT
 				v.id, comicvine_id,
 				title, year, publisher,
-				volume_number, special_version,
+				volume_number,
+				special_version, special_version_locked,
 				description, monitored,
 				v.folder, root_folder,
 				rf.folder AS root_folder_path,
@@ -702,10 +706,17 @@ class Volume(_VolumeBackend):
 	def __setitem__(self, key: str, value: Any) -> None:
 		if not self._check_key(key):
 			raise KeyError
-		
+
+		if key == 'special_version':
+			try:
+				SpecialVersion(value or None)
+			except ValueError:
+				raise InvalidKeyValue(key, value)
+			value = value or None
+
 		if key == 'root_folder':
 			self._change_root_folder(value)
-		
+
 		elif key == 'volume_folder':
 			self._change_volume_folder(value)
 
@@ -722,12 +733,15 @@ class Volume(_VolumeBackend):
 
 		Raises:
 			KeyError: Key is unknown or not allowed.
-		"""		
+			InvalidKeyValue: Value is invalid.
+		"""
 		if any(not self._check_public_key(k) for k in changes):
 			raise KeyError
 
 		for key, value in changes.items():
 			self[key] = value
+
+		return
 
 	def delete(self, delete_folder: bool = False) -> None:
 		"""Delete the volume from the library
@@ -1037,11 +1051,11 @@ def refresh_and_scan(volume_id: int=None) -> None:
 		)
 		for volume_data in volume_datas
 	)
-	
+
 	cursor.executemany("""
 		UPDATE volumes
 		SET special_version = ?
-		WHERE id = ?;
+		WHERE id = ? AND special_version_locked = 0;
 		""",
 		sv_updates
 	)
