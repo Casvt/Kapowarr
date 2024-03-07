@@ -2,9 +2,7 @@ This page covers how Kapowarr matches certain things.
 
 ## Files to Issues
 
-This covers how Kapowarr matches files to issues of a volume. Information is extracted from the filename, folder and parent folder. The necessary information is allowed to be in any of the three places in the filepath/filename.
-
-The series should always be mentioned and it should match.
+This covers how Kapowarr matches files to issues of a volume. Information is extracted from the filename, folder and parent folder.
 
 If a specific string is required, any common variations are also supported. For example, if the string 'one-shot' is required, the variations 'one shot' and 'os' are also allowed. And upper case or lower case does not matter. 
 
