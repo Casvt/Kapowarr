@@ -14,7 +14,7 @@ from backend.file_extraction import (extract_filename_data, image_extensions,
                                      supported_extensions)
 from backend.files import (delete_empty_folders, find_lowest_common_folder,
                            folder_is_inside_folder, list_files, rename_file)
-from backend.helpers import DictKeyedDict, batched, first_of_column
+from backend.helpers import DictKeyedDict, batched, create_range, first_of_column
 from backend.matching import _match_title, _match_year
 from backend.naming import mass_rename
 from backend.root_folders import RootFolders
@@ -165,7 +165,7 @@ def propose_library_import(
 	for uf_batch in batched(
 		sorted(unimported_files.items(), key=lambda f: (
 			f[0]['series'],
-			f[0]['volume_number'] or 0,
+			create_range(f[0]['volume_number'] or 0)[0],
 			f[0]['year'] or 0
 		)),
 		10
