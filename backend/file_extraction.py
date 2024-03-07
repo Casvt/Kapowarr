@@ -42,7 +42,7 @@ korean_volume_regex = compile(r'제?(\d+)권', IGNORECASE)
 japanese_volume_regex = compile(r'(\d+)巻', IGNORECASE)
 
 # Extract data from (stripped)filename
-special_version_regex = compile(r'(?:\b|\()(tpb|os|one[\- ]?shot|ogn|gn|hard[\- ]?cover)(?:\b|\))', IGNORECASE)
+special_version_regex = compile(r'(?:\b|\()(?P<tpb>tpb|trade paper back)|(?P<one_shot>os|one[\- ]?shot)|(?P<hard_cover>hc|hard[\- ]?cover)(?:\b|\))', IGNORECASE)
 volume_regex = compile(volume_regex_snippet, IGNORECASE)
 volume_folder_regex = compile(volume_regex_snippet + r'|^(\d+)$', IGNORECASE)
 issue_regex = compile(r'\( (\-?' + issue_regex_snippet + r')\)', IGNORECASE)
@@ -302,7 +302,10 @@ def extract_filename_data(
 			special_end = cover_result.end(0)
 
 	if special_result:
-		special_version = special_result.group(1).lower().replace(' ', '-')
+		special_version = [
+			k for k, v in special_result.groupdict().items()
+			if v is not None
+		][0].replace('_', '-')
 		special_pos = special_result.start(0)
 
 	else:
