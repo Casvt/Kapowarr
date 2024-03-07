@@ -423,7 +423,7 @@ def extract_filename_data(
 		calculated_issue_number = None
 
 	year = int(year) if year else None
-	if fix_year:
+	if fix_year and year is not None:
 		year = fix_broken_year(year)
 
 	file_data = {
