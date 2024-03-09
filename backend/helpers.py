@@ -44,7 +44,7 @@ def check_python_version() -> bool:
 	if not (version_info.major == 3 and version_info.minor >= 8):
 		logging.critical(
 			'The minimum python version required is python3.8 ' + 
-			'(currently ' + version_info.major + '.' + version_info.minor + '.' + version_info.micro + ').'
+			'(currently ' + str(version_info.major) + '.' + str(version_info.minor) + '.' + str(version_info.micro) + ').'
 		)
 		return False
 	return True
