@@ -196,3 +196,37 @@ class extract_filename_data(unittest.TestCase):
 				{'series': 'Iron Man', 'year': 1950, 'volume_number': 1, 'special_version': None, 'issue_number': 100.0, 'annual': False},
 		}
 		self.run_cases_folder_year(cases)
+
+	def test_special_version(self):
+		cases = {
+			'Superman Lost Volume 2 Issue 3.cbr':
+				{'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': None, 'issue_number': 3.0, 'annual': False},
+
+			'Superman Lost Volume 2.cbr':
+				{'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
+
+			'Superman Lost Volume 2 Issue 3 TPB.cbr':
+				{'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
+
+			'Superman Lost Volume 2 Trade paper BACK.cbr':
+				{'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
+
+			'Superman Lost Volume 2 OS.cbr':
+				{'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'one-shot', 'issue_number': None, 'annual': False},
+
+			'Superman Lost Volume 2 One Shot.cbr':
+				{'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'one-shot', 'issue_number': None, 'annual': False},
+
+			'Superman Lost Volume 2 ONE-SHOT.cbr':
+				{'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'one-shot', 'issue_number': None, 'annual': False},
+
+			'Superman Lost Volume 2 Hc.cbr':
+				{'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'hard-cover', 'issue_number': None, 'annual': False},
+
+			'Superman Lost Volume 2 Hard Cover.cbr':
+				{'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'hard-cover', 'issue_number': None, 'annual': False},
+
+			'Superman Lost Volume 2 Issue 3 HARD-COVER.cbr':
+				{'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'hard-cover', 'issue_number': None, 'annual': False},
+		}
+		self.run_cases(cases)
