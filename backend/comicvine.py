@@ -313,17 +313,18 @@ class ComicVine:
 		}
 
 		if volume_data['start_year'] is not None:
-			if '/' in volume_data['start_year']:
-				result['year'] = int(
-					volume_data['start_year']
-						.split('/')[-1]
-				)
-			else:
-				result['year'] = int(
-					volume_data['start_year']
-						.replace('-', '0')
-						.replace('?', '')
-				)
+			y: str = volume_data['start_year']
+
+			if '/' in y:
+				y = y.split('/')[-1]
+
+			y = (y
+				.replace('-', '0')
+				.replace('?', '')
+			)
+			
+			if y and y.isdigit():
+				result['year'] = int(y)
 
 		volume_result = volume_regex.search(volume_data['deck'] or '')
 		if volume_result:
