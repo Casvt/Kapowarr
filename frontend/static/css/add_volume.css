@@ -22,7 +22,7 @@ main > div {
 
 	padding: 0;
 	border: 1px solid var(--border-color);
-	background-color: var(--search-bar-button-color);
+	background-color: var(--foreground-color);
 }
 
 #search-button {
@@ -50,8 +50,8 @@ main > div {
 
 	padding: .4rem 1rem;
 	border: 1px solid var(--border-color);
-	background-color: var(--search-bar-color);
-	color: var(--search-bar-font-color);
+	background-color: var(--foreground-color);
+	color: var(--text-color);
 
 	box-shadow: rgba(0, 0, 0, 0.075) 0px 1px 1px 0px inset;
 
@@ -71,7 +71,7 @@ main > div {
 #search-empty,
 #search-failed,
 #search-blocked {
-	color: var(--search-bar-desc-color);
+	color: var(--text-color);
 	text-align: center;
 	font-size: 1.5rem;
 }
@@ -92,8 +92,8 @@ main > div {
 .filter-bar > * {
 	padding: 1rem;
 	border-radius: 4px;
-	background-color: var(--search-bar-color);
-	color: var(--search-bar-font-color);
+	background-color: var(--foreground-color);
+	color: var(--text-color);
 }
 
 /*  */
@@ -112,8 +112,8 @@ main > div {
 
 	padding: 1.3rem;
 	border-radius: 2px;
-	background-color: var(--search-bar-color);
-	color: var(--dark-color);
+	background-color: var(--foreground-color);
+	color: var(--text-color);
 
 	text-align: left;
 
@@ -121,7 +121,7 @@ main > div {
 }
 
 .search-entry:hover {
-	background-color: var(--dark-hover-color);
+	background-color: var(--hover-color);
 }
 
 .cover-info-container {
@@ -146,8 +146,6 @@ main > div {
 	display: flex;
 	flex-direction: column;
 	gap: .5rem;
-
-	color: var(--search-result-font-color);
 }
 
 .entry-info-container h2 {
@@ -174,8 +172,8 @@ main > div {
 
 .entry-tags > *,
 .entry-aliases > * {
-	background-color: var(--dark-color);
-	color: var(--light-color);
+	background-color: var(--volume-info-background-color);
+	color: var(--nav-color);
 	padding: .15rem .35rem;
 	text-decoration: none;
 	border-radius: 2px;
@@ -183,7 +181,6 @@ main > div {
 
 .entry-spare-description {
 	display: none;
-	color: var(--search-result-font-color);
 }
 
 /*  */

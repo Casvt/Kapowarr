@@ -26,28 +26,31 @@ const icons = {
 //
 const task_to_button = {};
 function mapButtons(id) {
-	if (id === null) {
+	if (window.location.pathname === '/' ||
+		window.location.pathname === url_base) {
 		task_to_button['search_all'] = {
 			'button': document.querySelector('#searchall-button'),
-			'icon': `${url_base}/static/img/search_white.svg`,
-			'loading_icon': `${url_base}/static/img/loading_white.svg`
+			'icon': `${url_base}/static/img/search.svg`,
+			'loading_icon': `${url_base}/static/img/loading.svg`
 		};
 		task_to_button['update_all'] = {
 			'button': document.querySelector('#updateall-button'),
 			'icon': `${url_base}/static/img/refresh.svg`,
-			'loading_icon': `${url_base}/static/img/loading_white.svg`
+			'loading_icon': `${url_base}/static/img/loading.svg`
 		};
-	} else {
+
+	} else if (id !== null) {
 		task_to_button[`refresh_and_scan#${id}`] = {
 			'button': document.querySelector('#refresh-button'),
 			'icon': `${url_base}/static/img/refresh.svg`,
-			'loading_icon': `${url_base}/static/img/loading_white.svg`
+			'loading_icon': `${url_base}/static/img/loading.svg`
 		};
 		task_to_button[`auto_search#${id}`] = {
 			'button': document.querySelector('#autosearch-button'),
-			'icon': `${url_base}/static/img/search_white.svg`,
-			'loading_icon': `${url_base}/static/img/loading_white.svg`
+			'icon': `${url_base}/static/img/search.svg`,
+			'loading_icon': `${url_base}/static/img/loading.svg`
 		};
+
 		document.querySelectorAll('.issue-entry').forEach(entry => {
 			const button = entry.querySelector('.action-column > button:first-child');
 			task_to_button[`auto_search_issue#${id}#${entry.dataset.id}`] = {

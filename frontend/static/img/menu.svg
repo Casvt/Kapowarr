@@ -1,2 +1,8 @@
 <?xml version="1.0"?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:svgjs="http://svgjs.com/svgjs" version="1.1" width="512" height="512" x="0" y="0" viewBox="0 0 24 24" style="enable-background:new 0 0 512 512" xml:space="preserve"><g><rect xmlns="http://www.w3.org/2000/svg" y="11" width="24" height="2" rx="1" fill="#464b51" data-original="#000000"/><rect xmlns="http://www.w3.org/2000/svg" y="4" width="24" height="2" rx="1" fill="#464b51" data-original="#000000"/><rect xmlns="http://www.w3.org/2000/svg" y="18" width="24" height="2" rx="1" fill="#464b51" data-original="#000000"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:svgjs="http://svgjs.com/svgjs" version="1.1" width="512" height="512" x="0" y="0" viewBox="0 0 24 24" style="enable-background:new 0 0 512 512" xml:space="preserve">
+	<g>
+		<rect xmlns="http://www.w3.org/2000/svg" y="11" width="24" height="2" rx="1" fill="black"/>
+		<rect xmlns="http://www.w3.org/2000/svg" y="4" width="24" height="2" rx="1" fill="black"/>
+		<rect xmlns="http://www.w3.org/2000/svg" y="18" width="24" height="2" rx="1" fill="black"/>
+	</g>
+</svg>

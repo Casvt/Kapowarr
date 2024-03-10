@@ -1,149 +1,108 @@
+const ViewEls = {
+	views: {
+		loading: document.querySelector('#loading-screen'),
+		main: document.querySelector('main')
+	},
+	pre_build: {
+		issue_entry: document.querySelector('.pre-build-els .issue-entry')
+	},
+	vol_data: {
+		monitor: document.querySelector('#volume-monitor'),
+		title: document.querySelector('.volume-title-monitored > h2'),
+		cover: document.querySelector('.volume-info > img'),
+		tags: document.querySelector('#volume-tags'),
+		path: document.querySelector('#volume-path'),
+		description: document.querySelector('#volume-description'),
+		mobile_description: document.querySelector('#volume-description-mobile')
+	},
+	issues_list: document.querySelector('#issues-list')
+};
+
 // 
 // Filling data
 // 
 function fillTable(issues, api_key) {
-	const table = document.querySelector('#issues-list');
-	table.innerHTML = '';
+	ViewEls.issues_list.innerHTML = '';
 
 	for (i = issues.length - 1; i >= 0; i--) {
 		const obj = issues[i];
 		
-		const entry = document.createElement('tr');
-		entry.setAttribute('data-id', obj.id);
-		entry.classList.add('issue-entry');
+		const entry = ViewEls.pre_build.issue_entry.cloneNode(deep=true);
+		entry.dataset.id = obj.id;
 
 		// Monitored
-		const monitored_container = document.createElement('td');
-		monitored_container.classList.add('issue-monitored','monitor-column');
-		const monitored = document.createElement('button');
+		const monitored = entry.querySelector('.issue-monitored button');
 		monitored.dataset.monitored = obj.monitored;
 		monitored.dataset.id = obj.id;
-		monitored.addEventListener('click', e => toggleMonitoredIssue(obj.id, api_key));
-		const monitored_icon = document.createElement('img');
+		monitored.onclick = e => toggleMonitoredIssue(obj.id, api_key);
 		if (obj.monitored) {
 			// Issue is monitored
-			monitored_icon.src = `${url_base}/static/img/monitored.svg`;
-			monitored.setAttribute('aria-label', 'Issue is monitored. Click to unmonitor.');
-			monitored.setAttribute('title', 'Issue is monitored. Click to unmonitor.');
+			monitored.innerHTML = icons.monitored;
+			monitored.title = 'Issue is monitored. Click to unmonitor.';
 		} else {
 			// Issue is unmonitored
-			monitored_icon.src = `${url_base}/static/img/unmonitored.svg`;
-			monitored.setAttribute('aria-label', 'Issue is unmonitored. Click to monitor.');
-			monitored.setAttribute('title', 'Issue is unmonitored. Click to monitor.');
+			monitored.innerHTML = icons.unmonitored;
+			monitored.title = 'Issue is unmonitored. Click to monitor.';
 		};
-		monitored.appendChild(monitored_icon);
-		monitored_container.appendChild(monitored);
-		entry.appendChild(monitored_container);
 
 		// Issue number
-		const issue_number = document.createElement('td');
-		issue_number.classList.add('issue-number','number-column');
-		issue_number.innerText = obj.issue_number;
-		entry.appendChild(issue_number);
+		entry.querySelector('.issue-number').innerText = obj.issue_number;
 
 		// Title
-		const title = document.createElement('td');
-		title.classList.add('issue-title','title-column');
+		const title = entry.querySelector('.issue-title')
 		title.innerText = obj.title;
-		title.addEventListener('click', e => showIssueInfo(obj.id, api_key));
-		entry.append(title);
+		title.onclick = e => showIssueInfo(obj.id, api_key);
 
 		// Release date
-		const release_date = document.createElement('td');
-		release_date.classList.add('issue-date','date-column');
-		release_date.innerText = obj.date;
-		entry.append(release_date);
+		entry.querySelector('.issue-date').innerText = obj.date;
 
 		// Download status
-		const status = document.createElement('td');
-		status.classList.add('issue-status','download-column');
-		const status_icon = document.createElement('img');
+		const status = entry.querySelector('.issue-status');
+		const status_icon = status.querySelector('img');
 		if (obj.files.length) {
 			// Downloaded
 			status_icon.src = `${url_base}/static/img/check.svg`;
-			status.setAttribute('aria-label', 'Issue is downloaded.');
-			status.setAttribute('title', 'Issue is downloaded');
+			status.title = 'Issue is downloaded';
 		} else {
 			// Not downloaded
-			status_icon.src = `${url_base}/static/img/cancel_search.svg`;
-			status.setAttribute('aria-label', 'Issue is not downloaded.');
-			status.setAttribute('title', 'Issue is not downloaded');
+			status_icon.src = `${url_base}/static/img/cancel.svg`;
+			status.title = 'Issue is not downloaded';
 		};
-		status.appendChild(status_icon);
-		entry.appendChild(status);
 
-		// Actions
-		const actions = document.createElement('td');
-		actions.classList.add('action-column');
-		
-		// Auto search
-		const auto_search = document.createElement('button');
-		auto_search.setAttribute('title', 'Auto search for this issue');
-		auto_search.setAttribute('aria-label', 'Auto search for this issue');
-		auto_search.addEventListener('click', e => autosearchIssue(obj.id, api_key));
-		const auto_search_icon = document.createElement('img');
-		auto_search_icon.src = `${url_base}/static/img/search.svg`;
-		auto_search.appendChild(auto_search_icon);
-		actions.appendChild(auto_search);
+		entry.querySelector('.action-column :nth-child(1)').onclick =
+			e => autosearchIssue(obj.id, api_key);
+		entry.querySelector('.action-column :nth-child(2)').onclick =
+			e => showManualSearch(api_key, obj.id);
+		entry.querySelector('.action-column :nth-child(3)').onclick =
+			e => showConvert(api_key, obj.id);
 
-		// Manual search
-		const manual_search = document.createElement('button');
-		manual_search.setAttribute('title', 'Manually search for this issue');
-		manual_search.setAttribute('aria-label', 'Manually search for this issue');
-		manual_search.addEventListener('click', e => showManualSearch(api_key, obj.id));		
-		const manual_search_icon = document.createElement('img');
-		manual_search_icon.src = `${url_base}/static/img/manual_search.svg`;
-		manual_search.appendChild(manual_search_icon);
-		actions.appendChild(manual_search);
-
-		// Convert
-		const convert = document.createElement('button');
-		convert.title = 'Convert files for this issue';
-		convert.ariaLabel = 'Convert files for this issue';
-		convert.onclick = (e) => showConvert(api_key, obj.id);
-		const convert_icon = document.createElement('img');
-		convert_icon.src = `${url_base}/static/img/convert.svg`;
-		convert.appendChild(convert_icon);
-		actions.appendChild(convert);
-
-		entry.appendChild(actions);
-		table.appendChild(entry);
+		ViewEls.issues_list.appendChild(entry);
 	};
 };
 
 function fillPage(data, api_key) {
-	// Set volume data
-	const monitor = document.querySelector('#volume-monitor');
-	const monitor_icon = monitor.querySelector('img');
-	const title = document.querySelector('.volume-title-monitored > h2');
-	const cover = document.querySelector('.volume-info > img');
-	const tags = document.querySelector('#volume-tags');
-	const path = document.querySelector('#volume-path');
-	const description = document.querySelector('#volume-description');
-	const mobile_description = document.querySelector('#volume-description-mobile');
-
 	// Cover
-	cover.src = `${url_base}/api/volumes/${data.id}/cover?api_key=${api_key}`;
-	
+	ViewEls.vol_data.cover.src = `${url_base}/api/volumes/${data.id}/cover?api_key=${api_key}`;
+
 	// Monitored state
+	const monitor = ViewEls.vol_data.monitor;
 	monitor.dataset.monitored = data.monitored;
-	monitor.addEventListener('click', e => toggleMonitored(api_key));
+	monitor.onclick = e => toggleMonitored(api_key);
 	if (data.monitored) {
 		// Volume is monitored
-		monitor_icon.src = `${url_base}/static/img/monitored_light.svg`;
-		monitor.setAttribute('aria-label', 'Volume is monitored. Click to unmonitor.');
-		monitor.setAttribute('title', 'Volume is monitored. Click to unmonitor.');
+		monitor.innerHTML = icons.monitored;
+		monitor.title = 'Volume is monitored. Click to unmonitor.';
 	} else {
 		// Volume is unmonitored
-		monitor_icon.src = `${url_base}/static/img/unmonitored_light.svg`;
-		monitor.setAttribute('aria-label', 'Volume is unmonitored. Click to monitor.');
-		monitor.setAttribute('title', 'Volume is unmonitored. Click to monitor.');
+		monitor.innerHTML = icons.unmonitored;
+		monitor.title = 'Volume is unmonitored. Click to monitor.';
 	};
-	
+
 	// Title
-	title.innerText = data.title;
-	
+	ViewEls.vol_data.title.innerText = data.title;
+
 	// Tags
+	const tags = ViewEls.vol_data.tags;
 	const year = document.createElement('p');
 	year.innerText = data.year;
 	tags.appendChild(year);
@@ -153,20 +112,24 @@ function fillPage(data, api_key) {
 	const special_version = document.createElement('p');
 	special_version.innerText = data.special_version?.toUpperCase() || 'Normal volume';
 	tags.appendChild(special_version);
-	
+
 	// Path
+	const path = ViewEls.vol_data.path;
 	path.innerText = data.folder;
 	path.dataset.root_folder = data.root_folder;
 	path.dataset.volume_folder = data.volume_folder;
-	
+
 	// Descriptions
-	description.innerHTML = data.description;
-	mobile_description.innerHTML = data.description;
+	ViewEls.vol_data.description.innerHTML = data.description;
+	ViewEls.vol_data.mobile_description.innerHTML = data.description;
 
 	// fill issue lists
 	fillTable(data.issues, api_key);
-	
+
 	mapButtons(id);
+
+	ViewEls.views.loading.classList.add('hidden');
+	ViewEls.views.main.classList.remove('hidden');
 };
 
 // 
@@ -174,7 +137,6 @@ function fillPage(data, api_key) {
 // 
 function toggleMonitored(api_key) {
 	const button = document.querySelector('#volume-monitor');
-	const icon = button.querySelector('img');
 	data = {
 		'monitored': button.dataset.monitored !== 'true'
 	};
@@ -185,13 +147,12 @@ function toggleMonitored(api_key) {
 	})
 	.then(response => {
 		button.dataset.monitored = data.monitored;
-		icon.src = data.monitored ? `${url_base}/static/img/monitored_light.svg` : `${url_base}/static/img/unmonitored_light.svg`;
+		button.innerHTML = data.monitored ? icons.monitored : icons.unmonitored;
 	});
 };
 
 function toggleMonitoredIssue(issue_id, api_key) {
 	const issue = document.querySelector(`button[data-id="${issue_id}"]`);
-	const icon = issue.querySelector('img');
 	data = {
 		'monitored': issue.dataset.monitored !== 'true'
 	};
@@ -202,7 +163,7 @@ function toggleMonitoredIssue(issue_id, api_key) {
 	})
 	.then(response => {
 		issue.dataset.monitored = data.monitored;
-		icon.src = data.monitored ? `${url_base}/static/img/monitored.svg` : `${url_base}/static/img/unmonitored.svg`;
+		issue.innerHTML = data.monitored ? icons.monitored : icons.unmonitored;
 	});
 };
 
@@ -272,7 +233,7 @@ function showManualSearch(api_key, issue_id=null) {
 			if (result.match) {
 				match_icon.src = `${url_base}/static/img/check.svg`;
 			} else {
-				match_icon.src = `${url_base}/static/img/cancel_search.svg`;
+				match_icon.src = `${url_base}/static/img/cancel.svg`;
 				match.title = result.match_issue;
 			};
 			match.appendChild(match_icon);
@@ -342,7 +303,7 @@ function blockManualSearch(link, button, match, api_key) {
 	})
 	.then(response => {
 		button.querySelector('img').src = `${url_base}/static/img/check.svg`;
-		match.src = '/static/img/cancel_search.svg';
+		match.src = `${url_base}/static/img/cancel.svg`;
 		match.title = 'Link is blocklisted';
 	});
 };
@@ -681,7 +642,12 @@ usingApiKey()
 		return response.json();
 	})
 	.then(json => fillPage(json.result, api_key))
-	.catch(e => { window.location.href = `${url_base}/` });
+	.catch(e => {
+		if (e === 404)
+			window.location.href = `${url_base}/`
+		else
+			console.log(e);
+	});
 
 	addEventListener('#refresh-button', 'click', e => refreshVolume(api_key));
 	addEventListener('#autosearch-button', 'click', e => autosearchVolume(api_key));
