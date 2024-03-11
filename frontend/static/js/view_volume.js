@@ -145,6 +145,9 @@ function fillPage(data, api_key) {
 	const special_version = document.createElement('p');
 	special_version.innerText = data.special_version?.toUpperCase() || 'Normal volume';
 	tags.appendChild(special_version);
+	const total_size = document.createElement('p');
+	total_size.innerText = data.total_size > 0 ? convertSize(data.total_size) : '0MB';
+	tags.appendChild(total_size);
 
 	// Path
 	const path = ViewEls.vol_data.path;
