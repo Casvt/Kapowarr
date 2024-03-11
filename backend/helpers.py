@@ -64,7 +64,7 @@ def batched(l: list, n: int):
 		yield l[ndx : ndx+n]
 
 
-def reversed_tuples(i: Tuple[Tuple[T, U]]) -> Tuple[Tuple[U, T]]:
+def reversed_tuples(i: Tuple[Tuple[T, U]]) -> Iterator[Tuple[Tuple[U, T]]]:
 	"""Yield sub-tuples in reversed order.
 
 	Args:
