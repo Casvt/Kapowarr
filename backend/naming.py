@@ -102,7 +102,7 @@ def _get_formatting_data(
 	settings = Settings()
 	volume_padding = settings['volume_padding']
 	issue_padding = settings['issue_padding']
-		
+
 	# Build formatted data
 	if volume_data.get('title').startswith('The '):
 		clean_title = volume_data.get('title') + ', The'
@@ -114,7 +114,7 @@ def _get_formatting_data(
 	if not isinstance(volume_data.get('volume_number'), tuple):
 		volume_number = (str(volume_data.get('volume_number'))
 			.zfill(volume_padding))
-	
+
 	else:
 		volume_number = ' - '.join((
 			str(n).zfill(volume_padding)
@@ -135,18 +135,18 @@ def _get_formatting_data(
 		'year': volume_data.get('year') or 'Unknown',
 		'publisher': volume_data.get('publisher') or 'Unknown'
 	}
-	
+
 	if issue_id:
 		# Add issue data if issue is found
 		issue_data = Issue(issue_id, check_existence=True).get_keys(
 			('comicvine_id', 'issue_number', 'title', 'date')
 		)
-			
+
 		formatting_data.update({
 			'issue_comicvine_id': issue_data.get('comicvine_id') or 'Unknown',
 			'issue_number': (
 				str(issue_data.get('issue_number'))
-					.zfill(issue_padding) 
+					.zfill(issue_padding)
 				or 'Unknown'
 			),
 			'issue_title': ((issue_data.get('title') or 'Unknown')
@@ -159,7 +159,7 @@ def _get_formatting_data(
 				or 'Unknown'
 			)
 		})
-		
+
 	return formatting_data
 
 def generate_volume_folder_name(volume_id: int, _volume_data: dict=None) -> str:
@@ -294,12 +294,12 @@ def generate_issue_name(volume_id: int, calculated_issue_number: float) -> str:
 
 	Returns:
 		str: The issue name
-	"""	
+	"""
 	issue = Issue.from_volume_and_calc_number(
 		volume_id,
 		calculated_issue_number
 	)
-	
+
 	formatting_data = _get_formatting_data(volume_id, issue.id)
 	settings = Settings()
 
@@ -329,7 +329,7 @@ def check_format(format: str, type: str) -> None:
 
 	Raises:
 		InvalidSettingValue: Something in the string is invalid
-	"""	
+	"""
 	keys = [fn for _, fn, _, _ in Formatter().parse(format) if fn is not None]
 
 	if type in ('file_naming', 'file_naming_tpb', 'file_naming_empty'):
@@ -496,7 +496,7 @@ def preview_mass_rename(
 				issues[0],
 				issues[-1]
 			)
-		
+
 		else:
 			# File covers one issue
 			suggested_name = generate_issue_name(volume_id, issues[0])
@@ -547,7 +547,7 @@ def preview_mass_rename(
 				'before': file,
 				'after': suggested_name
 			})
-		
+
 	return result
 
 def mass_rename(
@@ -587,7 +587,7 @@ def mass_rename(
 	for r in renames:
 		rename_file(r['before'], r['after'])
 		if r['before'].endswith(image_extensions):
-			delete_empty_folders(r['before'], root_folder)
+			delete_empty_folders(dirname(r['before']), root_folder)
 
 	cursor.executemany(
 		"UPDATE files SET filepath = ? WHERE filepath = ?;",
@@ -595,7 +595,7 @@ def mass_rename(
 	)
 
 	if renames:
-		delete_empty_folders(renames[0]['before'], root_folder)
+		delete_empty_folders(dirname(renames[0]['before']), root_folder)
 
 	logging.info(
 		f'Renamed volume {volume_id} {f"issue {issue_id}" if issue_id else ""}'
