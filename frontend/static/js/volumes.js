@@ -1,6 +1,3 @@
-//
-// Library
-//
 const library_els = {
 	pages: {
 		loading: document.querySelector('#loading-library'),
@@ -10,6 +7,19 @@ const library_els = {
 	views: {
 		list: document.querySelector('#list-library'),
 		table: document.querySelector('#table-library'),
+	},
+	view_options: {
+		sort: document.querySelector('#sort-button'),
+		view: document.querySelector('#view-button'),
+		filter: document.querySelector('#filter-button')
+	},
+	task_buttons: {
+		update_all: document.querySelector('#updateall-button'),
+		search_all: document.querySelector('#searchall-button')
+	},
+	search: {
+		clear: document.querySelector('#clear-search'),
+		container: document.querySelector('#search-container')
 	},
 	stats: {
 		volume_count: document.querySelector('#volume-count'),
@@ -39,12 +49,10 @@ class LibraryEntry {
 		this.list_entry = library_els.views.list.querySelector(`.vol-${id}`);
 		this.table_entry = library_els.views.table.querySelector(`.vol-${id}`);
 	};
-	
+
 	setMonitored(monitored) {
-		fetch(`${url_base}/api/volumes/${this.id}?api_key=${this.api_key}`, {
-			'method': 'PUT',
-			'headers': {'Content-Type': 'application/json'},
-			'body': JSON.stringify({'monitored': monitored})
+		sendAPI('PUT', `/volumes/${this.id}`, this.api_key, {}, {
+			monitored: monitored
 		})
 		.then(response => {
 			const monitored_button = this.table_entry.querySelector('.table-monitored');
@@ -53,15 +61,11 @@ class LibraryEntry {
 	
 			if (monitored) {
 				this.list_entry.setAttribute('monitored', '');
-				monitored_button.title = 'Monitored'
-				monitored_button.innerHTML =
-					icons.monitored;
-	
+				setIcon(monitored_button, icons.monitored, 'Monitored');
+
 			} else {
 				this.list_entry.removeAttribute('monitored');
-				monitored_button.title = 'Unmonitored'
-				monitored_button.innerHTML =
-					icons.unmonitored;
+				setIcon(monitored_button, icons.unmonitored, 'Unmonitored');
 			};
 		});
 	};
@@ -143,16 +147,9 @@ function populateLibrary(volumes, api_key) {
 			.setMonitored(!volume.monitored);
 		if (volume.monitored) {
 			list_entry.setAttribute('monitored', '');
-
-			monitored_button.title = 'Monitored'
-			monitored_button.innerHTML =
-				icons.monitored;
-
-		} else {
-			monitored_button.title = 'Unmonitored'
-			monitored_button.innerHTML =
-				icons.unmonitored;
-		};
+			setIcon(monitored_button, icons.monitored, 'Monitored');
+		} else
+			setIcon(monitored_button, icons.unmonitored, 'Unmonitored');
 		
 		// Add to view
 		library_els.views.list.insertBefore(list_entry, space_taker);
@@ -163,17 +160,15 @@ function populateLibrary(volumes, api_key) {
 function fetchLibrary(api_key) {
 	showLibraryPage(library_els.pages.loading);
 
-	const sort = document.querySelector('#sort-button').value;
-	const filter = document.querySelector('#filter-button').value;
+	const params = {
+		sort: library_els.view_options.sort.value,
+		filter: library_els.view_options.filter.value
+	};
 	const query = document.querySelector('#search-input').value;
-	let url;
-	if (query === '')
-		url = `${url_base}/api/volumes?api_key=${api_key}&sort=${sort}&filter=${filter}`;
-	else
-		url = `${url_base}/api/volumes?api_key=${api_key}&sort=${sort}&query=${query}&filter=${filter}`;
+	if (query !== '')
+		params.query = query;
 
-	fetch(url)
-	.then(response => response.json())
+	fetchAPI('/volumes', api_key, params)
 	.then(json => {
 		if (json.result.length === 0) {
 			showLibraryPage(library_els.pages.empty);
@@ -194,8 +189,7 @@ function clearSearch(api_key) {
 };
 
 function fetchStats(api_key) {
-	fetch(`${url_base}/api/volumes/stats?api_key=${api_key}`)
-	.then(response => response.json())
+	fetchAPI('/volumes/stats', api_key)
 	.then(json => {
 		library_els.stats.volume_count.innerText = json.result.volumes;
 		library_els.stats.volume_monitored_count.innerText = json.result.monitored;
@@ -207,46 +201,33 @@ function fetchStats(api_key) {
 	});
 };
 
-//
-// Actions
-//
-function updateAll(api_key) {
-	fetch(
-		`${url_base}/api/system/tasks?api_key=${api_key}&cmd=update_all`,
-		{'method': 'POST'}
-	);
-};
-
-function searchAll(api_key) {
-	fetch(
-		`${url_base}/api/system/tasks?api_key=${api_key}&cmd=search_all`,
-		{'method': 'POST'}
-	);
-};
-
 // code run on load
 
-document.querySelector('#sort-button').value = getLocalStorage('lib_sorting')['lib_sorting'];
-document.querySelector('#view-button').value = getLocalStorage('lib_view')['lib_view'];
-document.querySelector('#filter-button').value = getLocalStorage('lib_filter')['lib_filter'];
+library_els.view_options.sort.value = getLocalStorage('lib_sorting')['lib_sorting'];
+library_els.view_options.view.value = getLocalStorage('lib_view')['lib_view'];
+library_els.view_options.filter.value = getLocalStorage('lib_filter')['lib_filter'];
 usingApiKey()
 .then(api_key => {
 	fetchLibrary(api_key);
 	fetchStats(api_key);
 
-	addEventListener('#clear-search', 'click', e => clearSearch(api_key));
-	addEventListener('#updateall-button', 'click', e => updateAll(api_key));
-	addEventListener('#searchall-button', 'click', e => searchAll(api_key));
-	addEventListener('#sort-button', 'change', e => {
-		setLocalStorage({'lib_sorting': document.querySelector('#sort-button').value});
+	library_els.search.clear.onclick =
+		e => clearSearch(api_key);
+
+	library_els.task_buttons.update_all.onclick =
+		e => sendAPI('POST', '/system/tasks', api_key, {'cmd': 'update_all'});
+	library_els.task_buttons.search_all.onclick =
+		e => sendAPI('POST', '/system/tasks', api_key, {'cmd': 'search_all'});
+
+	library_els.view_options.sort.onchange = e => {
+		setLocalStorage({'lib_sorting': library_els.view_options.sort.value});
 		fetchLibrary(api_key);
-	});
-	addEventListener('#view-button', 'change', e => {
-		setLocalStorage({'lib_view': document.querySelector('#view-button').value});
-	});
-	addEventListener('#filter-button', 'change', e => {
-		setLocalStorage({'lib_filter': document.querySelector('#filter-button').value});
+	};
+	library_els.view_options.view.onchange =
+		e => setLocalStorage({'lib_view': library_els.view_options.view.value});
+	library_els.view_options.filter.onchange = e => {
+		setLocalStorage({'lib_filter': library_els.view_options.filter.value});
 		fetchLibrary(api_key);
-	});
+	};
 });
-setAttribute('#search-container', 'action', 'javascript:searchLibrary();');
+library_els.search.container.action = 'javascript:searchLibrary();';

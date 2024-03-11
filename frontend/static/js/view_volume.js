@@ -4,7 +4,10 @@ const ViewEls = {
 		main: document.querySelector('main')
 	},
 	pre_build: {
-		issue_entry: document.querySelector('.pre-build-els .issue-entry')
+		issue_entry: document.querySelector('.pre-build-els .issue-entry'),
+		manual_search: document.querySelector('.pre-build-els .search-entry'),
+		rename_before: document.querySelector('.pre-build-els .rename-before'),
+		rename_after: document.querySelector('.pre-build-els .rename-after')
 	},
 	vol_data: {
 		monitor: document.querySelector('#volume-monitor'),
@@ -18,65 +21,98 @@ const ViewEls = {
 	issues_list: document.querySelector('#issues-list')
 };
 
-// 
+//
 // Filling data
-// 
+//
+class IssueEntry {
+	constructor(id, api_key) {
+		this.id = id;
+		this.api_key = api_key;
+		this.entry = ViewEls.issues_list.querySelector(`tr[data-id="${id}"]`);
+
+		this.monitored = this.entry.querySelector('.issue-monitored button');
+		this.issue_number = this.entry.querySelector('.issue-number');
+		this.title = this.entry.querySelector('.issue-title');
+		this.date = this.entry.querySelector('.issue-date');
+		this.status = this.entry.querySelector('.issue-status');
+		this.auto_search = this.entry.querySelector('.action-column :nth-child(1)');
+		this.manual_search = this.entry.querySelector('.action-column :nth-child(2)');
+		this.convert = this.entry.querySelector('.action-column :nth-child(3)');
+	};
+
+	setMonitorIcon() {
+		if (this.monitored.dataset.monitored === 'true') {
+			setIcon(
+				this.monitored,
+				icons.monitored,
+				'Issue is monitored. Click to unmonitor.'
+			);
+		} else {
+			setIcon(
+				this.monitored,
+				icons.unmonitored,
+				'Issue is umonitored. Click to monitor.'
+			);
+		};
+	};
+
+	toggleMonitored() {
+		const monitored = this.monitored.dataset.monitored !== 'true';
+		sendAPI('PUT', `/issues/${this.id}`, this.api_key, {}, {
+			'monitored': monitored
+		})
+		.then(response => {
+			this.monitored.dataset.monitored = monitored;
+			this.setMonitorIcon();
+		});
+	};
+
+	setDownloaded(downloaded) {
+		if (downloaded) {
+			// Downloaded
+			setImage(this.status, images.check, 'Issue is downloaded');
+		} else {
+			// Not downloaded
+			setImage(this.status, images.cancel, 'Issue is not downloaded');
+		};
+	};
+};
+
 function fillTable(issues, api_key) {
 	ViewEls.issues_list.innerHTML = '';
 
 	for (i = issues.length - 1; i >= 0; i--) {
 		const obj = issues[i];
-		
+
 		const entry = ViewEls.pre_build.issue_entry.cloneNode(deep=true);
 		entry.dataset.id = obj.id;
+		ViewEls.issues_list.appendChild(entry);
+
+		const inst = new IssueEntry(obj.id, api_key);
 
 		// Monitored
-		const monitored = entry.querySelector('.issue-monitored button');
-		monitored.dataset.monitored = obj.monitored;
-		monitored.dataset.id = obj.id;
-		monitored.onclick = e => toggleMonitoredIssue(obj.id, api_key);
-		if (obj.monitored) {
-			// Issue is monitored
-			monitored.innerHTML = icons.monitored;
-			monitored.title = 'Issue is monitored. Click to unmonitor.';
-		} else {
-			// Issue is unmonitored
-			monitored.innerHTML = icons.unmonitored;
-			monitored.title = 'Issue is unmonitored. Click to monitor.';
-		};
+		inst.monitored.dataset.monitored = obj.monitored;
+		inst.monitored.dataset.id = obj.id;
+		inst.monitored.onclick = e => inst.toggleMonitored();
+		inst.setMonitorIcon();
 
 		// Issue number
-		entry.querySelector('.issue-number').innerText = obj.issue_number;
+		inst.issue_number.innerText = obj.issue_number;
 
 		// Title
-		const title = entry.querySelector('.issue-title')
-		title.innerText = obj.title;
-		title.onclick = e => showIssueInfo(obj.id, api_key);
+		inst.title.innerText = obj.title;
+		inst.title.onclick = e => showIssueInfo(obj.id, api_key);
 
 		// Release date
-		entry.querySelector('.issue-date').innerText = obj.date;
+		inst.date.innerText = obj.date;
 
 		// Download status
-		const status = entry.querySelector('.issue-status');
-		const status_icon = status.querySelector('img');
-		if (obj.files.length) {
-			// Downloaded
-			status_icon.src = `${url_base}/static/img/check.svg`;
-			status.title = 'Issue is downloaded';
-		} else {
-			// Not downloaded
-			status_icon.src = `${url_base}/static/img/cancel.svg`;
-			status.title = 'Issue is not downloaded';
-		};
+		inst.setDownloaded(obj.files.length);
 
-		entry.querySelector('.action-column :nth-child(1)').onclick =
-			e => autosearchIssue(obj.id, api_key);
-		entry.querySelector('.action-column :nth-child(2)').onclick =
-			e => showManualSearch(api_key, obj.id);
-		entry.querySelector('.action-column :nth-child(3)').onclick =
-			e => showConvert(api_key, obj.id);
-
-		ViewEls.issues_list.appendChild(entry);
+		// Actions
+		inst.auto_search.onclick = e => autosearchIssue(obj.id, api_key);
+		inst.manual_search.onclick = e => showManualSearch(api_key, obj.id);
+		inst.convert.onclick = e => showConvert(api_key, obj.id);
 	};
 };
 
@@ -88,15 +124,12 @@ function fillPage(data, api_key) {
 	const monitor = ViewEls.vol_data.monitor;
 	monitor.dataset.monitored = data.monitored;
 	monitor.onclick = e => toggleMonitored(api_key);
-	if (data.monitored) {
+	if (data.monitored)
 		// Volume is monitored
-		monitor.innerHTML = icons.monitored;
-		monitor.title = 'Volume is monitored. Click to unmonitor.';
-	} else {
+		setIcon(monitor, icons.monitored, 'Volume is monitored. Click to unmonitor.');
+	else
 		// Volume is unmonitored
-		monitor.innerHTML = icons.unmonitored;
-		monitor.title = 'Volume is unmonitored. Click to monitor.';
-	};
+		setIcon(monitor, icons.unmonitored, 'Volume is unmonitored. Click to monitor.');
 
 	// Title
 	ViewEls.vol_data.title.innerText = data.title;
@@ -132,53 +165,45 @@ function fillPage(data, api_key) {
 	ViewEls.views.main.classList.remove('hidden');
 };
 
-// 
+//
 // Actions
-// 
+//
 function toggleMonitored(api_key) {
 	const button = document.querySelector('#volume-monitor');
-	data = {
-		'monitored': button.dataset.monitored !== 'true'
-	};
-	fetch(`${url_base}/api/volumes/${id}?api_key=${api_key}`, {
-		'method': 'PUT',
-		'body': JSON.stringify(data),
-		'headers': {'Content-Type': 'application/json'}
+	const monitored = button.dataset.monitored !== 'true';
+	sendAPI('PUT', `/volumes/${id}`, api_key, {}, {
+		monitored: monitored
 	})
 	.then(response => {
-		button.dataset.monitored = data.monitored;
-		button.innerHTML = data.monitored ? icons.monitored : icons.unmonitored;
+		button.dataset.monitored = monitored;
+		if (monitored)
+			setIcon(
+				button,
+				icons.monitored,
+				'Volume is monitored. Click to unmonitor.'
+			);
+		else
+			setIcon(
+				button,
+				icons.unmonitored,
+				'Volume is unmonitored. Click to monitor.'
+			);
 	});
 };
 
-function toggleMonitoredIssue(issue_id, api_key) {
-	const issue = document.querySelector(`button[data-id="${issue_id}"]`);
-	data = {
-		'monitored': issue.dataset.monitored !== 'true'
-	};
-	fetch(`${url_base}/api/issues/${issue_id}?api_key=${api_key}`, {
-		'method': 'PUT',
-		'body': JSON.stringify(data),
-		'headers': {'Content-Type': 'application/json'}
-	})
-	.then(response => {
-		issue.dataset.monitored = data.monitored;
-		issue.innerHTML = data.monitored ? icons.monitored : icons.unmonitored;
-	});
-};
-
-// 
+//
 // Tasks
-// 
+//
 function refreshVolume(api_key) {
 	const button_info = task_to_button[`refresh_and_scan#${id}`];
 	const icon = button_info.button.querySelector('img');
 	icon.src = button_info.loading_icon;
 	icon.classList.add('spinning');
 
-	fetch(`${url_base}/api/system/tasks?api_key=${api_key}&cmd=refresh_and_scan&volume_id=${id}`, {
-		'method': 'POST'
-	});
+	sendAPI('POST', '/system/tasks', api_key, {
+		cmd: 'refresh_and_scan',
+		volume_id: id
+	}, {})
 };
 
 function autosearchVolume(api_key) {
@@ -187,9 +212,10 @@ function autosearchVolume(api_key) {
 	icon.src = button_info.loading_icon;
 	icon.classList.add('spinning');
 
-	fetch(`${url_base}/api/system/tasks?api_key=${api_key}&cmd=auto_search&volume_id=${id}`, {
-		'method': 'POST'
-	});
+	sendAPI('POST', '/system/tasks', api_key, {
+		cmd: 'auto_search',
+		volume_id: id
+	}, {})
 };
 
 function autosearchIssue(issue_id, api_key) {
@@ -197,15 +223,17 @@ function autosearchIssue(issue_id, api_key) {
 	const icon = button_info.button.querySelector('img');
 	icon.src = button_info.loading_icon;
 	icon.classList.add('spinning');
-	
-	fetch(`${url_base}/api/system/tasks?api_key=${api_key}&cmd=auto_search_issue&volume_id=${id}&issue_id=${issue_id}`, {
-		'method': 'POST'
-	});
+
+	sendAPI('POST', '/system/tasks', api_key, {
+		cmd: 'auto_search_issue',
+		volume_id: id,
+		issue_id: issue_id
+	}, {})
 };
 
-// 
+//
 // Manual search
-// 
+//
 function showManualSearch(api_key, issue_id=null) {
 	// Display searching message
 	const message = document.querySelector('#searching-message');
@@ -219,60 +247,53 @@ function showManualSearch(api_key, issue_id=null) {
 
 	// Start search
 	tbody.innerHTML = '';
-	const url = issue_id ? `${url_base}/api/issues/${issue_id}/manualsearch` : `${url_base}/api/volumes/${id}/manualsearch`;
-	fetch(`${url}?api_key=${api_key}`)
-	.then(response => response.json())
+	const url = issue_id
+			? `/issues/${issue_id}/manualsearch`
+			: `/volumes/${id}/manualsearch`;
+
+	fetchAPI(url, api_key)
 	.then(json => {
 		json.result.forEach(result => {
-			const entry = document.createElement('tr');
-			entry.classList.add('search-entry');
-
-			const match = document.createElement('td');
-			match.classList.add('match-column');
-			const match_icon = document.createElement('img');
-			if (result.match) {
-				match_icon.src = `${url_base}/static/img/check.svg`;
-			} else {
-				match_icon.src = `${url_base}/static/img/cancel.svg`;
-				match.title = result.match_issue;
-			};
-			match.appendChild(match_icon);
-			entry.appendChild(match);
-			
-			const title = document.createElement('td');
-			const title_link = document.createElement('a');
-			title_link.href = result.link;
-			title_link.innerText = result.display_title;
-			title_link.setAttribute('target', '_blank');
-			title.appendChild(title_link);
-			entry.appendChild(title);
-
-			const source = document.createElement('td');
-			source.classList.add('source-column');
-			source.innerText = result.source;
-			entry.appendChild(source);
-
-			const action = document.createElement('td');
-			action.classList.add('search-action-column', 'action-list');
-			const add_entry = document.createElement('button');
-			add_entry.title = 'Download';
-			add_entry.addEventListener('click', e => addManualSearch(result.link, add_entry, api_key, issue_id));
-			const add_entry_icon = document.createElement('img');
-			add_entry_icon.src = `${url_base}/static/img/download.svg`;
-			add_entry.appendChild(add_entry_icon);
-			action.appendChild(add_entry);
-			if (result.match_issue === null || !result.match_issue.includes('blocklist')) {
-				const blocklist_entry = document.createElement('button');
-				blocklist_entry.title = 'Add to blocklist';
-				blocklist_entry.addEventListener('click', e => blockManualSearch(result.link, blocklist_entry, match, api_key));
-				const blocklist_entry_icon = document.createElement('img');
-				blocklist_entry_icon.src = `${url_base}/static/img/blocklist.svg`;
-				blocklist_entry.appendChild(blocklist_entry_icon);
-				action.appendChild(blocklist_entry);
-			};
-			entry.appendChild(action);
-
+			const entry = ViewEls.pre_build.manual_search.cloneNode(true);
 			tbody.appendChild(entry);
+
+			const match = entry.querySelector('.match-column');
+			if (result.match)
+				setImage(
+					match,
+					images.check,
+					''
+				);
+			else
+				setImage(
+					match,
+					images.cancel,
+					result.match_issue
+				);
+
+			const title = entry.querySelector('a');
+			title.href = result.link;
+			title.innerText = result.display_title;
+
+			entry.querySelector('.source-column').innerText = result.source;
+
+			const download_button = entry.querySelector('.search-action-column :nth-child(1)')
+			download_button.onclick =
+				e => addManualSearch(result.link, download_button, api_key, issue_id);
+
+			const blocklist_button = entry.querySelector('.search-action-column :nth-child(2)')
+			if (result.match_issue === null || !result.match_issue.includes('blocklist'))
+				// Show blocklist button
+				blocklist_button.onclick =
+					e => blockManualSearch(
+						result.link,
+						blocklist_button,
+						match,
+						api_key
+					);
+			else
+				// No blocklist button
+				blocklist_button.remove()
 		});
 
 		message.classList.add('hidden');
@@ -285,10 +306,11 @@ function addManualSearch(link, button, api_key, issue_id=null) {
 	img.src = `${url_base}/static/img/loading.svg`;
 	img.classList.add('spinning');
 
-	const url = issue_id ? `${url_base}/api/issues/${issue_id}/download` : `${url_base}/api/volumes/${id}/download`;
-	fetch(`${url}?api_key=${api_key}&link=${link}`, {
-		'method': 'POST'
-	})
+	const url = issue_id
+		? `/issues/${issue_id}/download`
+		: `/volumes/${id}/download`;
+
+	sendAPI('POST', url, api_key, {link: link})
 	.then(response => response.json())
 	.then(json => {
 		img.classList.remove('spinning');
@@ -298,8 +320,9 @@ function addManualSearch(link, button, api_key, issue_id=null) {
 };
 
 function blockManualSearch(link, button, match, api_key) {
-	fetch(`${url_base}/api/blocklist?api_key=${api_key}&link=${link}&reason_id=4`, {
-		'method': 'POST'
+	sendAPI('POST', '/blocklist', api_key, {
+		link: link,
+		reason_id: 4
 	})
 	.then(response => {
 		button.querySelector('img').src = `${url_base}/static/img/check.svg`;
@@ -308,72 +331,45 @@ function blockManualSearch(link, button, match, api_key) {
 	});
 };
 
-// 
+//
 // Renaming
-// 
+//
 function showRename(api_key, issue_id=null) {
 	document.querySelector('#selectall-input').checked = true;
-	
+
 	const rename_button = document.querySelector('#submit-rename');
 	let url;
 	if (issue_id === null) {
 		// Preview volume rename
-		url = `${url_base}/api/volumes/${id}/rename?api_key=${api_key}`;
+		url = `/volumes/${id}/rename`;
 		rename_button.dataset.issue_id = '';
 	} else {
 		// Preview issue rename
-		url = `${url_base}/api/issues/${issue_id}/rename?api_key=${api_key}`;
+		url = `/issues/${issue_id}/rename`;
 		rename_button.dataset.issue_id = issue_id;
 	};
-	fetch(url)
-	.then(response => response.json())
+	fetchAPI(url, api_key)
 	.then(json => {
-		const table = document.querySelector('.rename-preview > tbody');
+		const empty_message = document.querySelector('#rename-window .empty-rename-message');
+		const table_container = document.querySelector('.rename-preview');
+		const table = table_container.querySelector('tbody');
 		table.innerHTML = '';
-		
 
 		if (!json.result.length) {
-			const message = document.createElement('p');
-			message.classList.add('empty-rename-message');
-			message.innerText = 'Nothing to rename';
-			table.appendChild(message);
-			rename_button.classList.add('hidden');
-			table.parentNode.querySelector('thead').classList.add('hidden');
+			empty_message.classList.remove('hidden');
+			table_container.classList.add('hidden');
 		} else {
+			empty_message.classList.add('hidden');
+			table_container.classList.remove('hidden');
 			rename_button.classList.remove('hidden');
-			table.parentNode.querySelector('thead').classList.remove('hidden');
 			json.result.forEach(rename_entry => {
-				const before = document.createElement('tr');
-				
-				const checkbox = document.createElement('td');
-				checkbox.setAttribute('rowspan', '2');
-				const checkbox_input = document.createElement('input');
-				checkbox_input.type = 'checkbox';
-				checkbox_input.checked = true;
-				checkbox.appendChild(checkbox_input);
-				before.appendChild(checkbox);
-				
-				const before_icon = document.createElement('td');
-				before_icon.innerText = '-';
-				before.appendChild(before_icon);
-				
-				const before_path = document.createElement('td');
-				before_path.innerText = rename_entry.before;
-				before.appendChild(before_path);
-				
+				const before = ViewEls.pre_build.rename_before.cloneNode(true);
 				table.appendChild(before);
-				
-				const after = document.createElement('tr');
-				
-				const after_icon = document.createElement('td');
-				after_icon.innerText = '+';
-				after.appendChild(after_icon);
-				
-				const after_path = document.createElement('td');
-				after_path.innerText = rename_entry.after;
-				after.appendChild(after_path);
-				
+				const after = ViewEls.pre_build.rename_after.cloneNode(true);
 				table.appendChild(after);
+
+				before.querySelector('td:last-child').innerText = rename_entry.before;
+				after.querySelector('td:last-child').innerText = rename_entry.after;
 			});
 		};
 		showWindow('rename-window');
@@ -382,40 +378,43 @@ function showRename(api_key, issue_id=null) {
 
 function toggleAllRenames() {
 	const checked = document.querySelector('#selectall-input').checked;
-	document.querySelectorAll('#rename-window > tbody input[type="checkbox"]').forEach(e => e.checked = checked);
+	document.querySelectorAll(
+		'#rename-window tbody input[type="checkbox"]'
+	).forEach(e => e.checked = checked);
 };
 
 function renameVolume(api_key, issue_id=null) {
-	if ([...document.querySelectorAll('.rename-preview > tbody input[type="checkbox"]')].every(e => !e.checked)) {
+	const checkboxes = [...document.querySelectorAll('#rename-window tbody input[type="checkbox"]')];
+	
+	if (checkboxes.every(e => !e.checked)) {
 		closeWindow();
 		return;
 	};
 
 	showLoadWindow('rename-window');
 	let url;
-	if (issue_id === null) url = `${url_base}/api/volumes/${id}/rename?api_key=${api_key}`;
-	else url = `${url_base}/api/issues/${issue_id}/rename?api_key=${api_key}`;
-
-	let args;
-	if ([...document.querySelectorAll('#rename-preview > tbody input[type="checkbox"]')].every(e => e.checked))
-		args = { 'method': 'POST' };
+	if (issue_id === null)
+		url = `/volumes/${id}/rename`;
 	else
-		args = {
-			'method': 'POST',
-			'headers': {'Content-Type': 'application/json'},
-			'body': JSON.stringify(
-				[...document.querySelectorAll('#rename-preview > tbody > tr > td > input[type="checkbox"]:checked')]
-					.map(e => e.parentNode.nextSibling.nextSibling.innerText)
-			)
-		}
+		url = `/issues/${issue_id}/rename`;
 
-	fetch(url, args)
-	.then(response => window.location.reload());
+	sendAPI(
+		'POST',
+		url,
+		api_key,
+		{}, 
+		checkboxes
+			.filter(e => e.checked)
+			.map(e => e.parentNode.parentNode.querySelector('td:last-child').innerText)
+	)
+	.then(response => 
+		window.location.reload()
+	);
 };
 
-// 
+//
 // Converting
-// 
+//
 function loadConvertPreference(api_key) {
 	const el = document.querySelector('#convert-preference');
 	if (el.innerHTML !== '')
@@ -466,7 +465,7 @@ function showConvert(api_key, issue_id=null) {
 			table.parentNode.querySelector('thead').classList.remove('hidden');
 			json.result.forEach(convert_entry => {
 				const before = document.createElement('tr');
-				
+
 				const checkbox = document.createElement('td');
 				checkbox.setAttribute('rowspan', '2');
 				const checkbox_input = document.createElement('input');
@@ -474,27 +473,27 @@ function showConvert(api_key, issue_id=null) {
 				checkbox_input.checked = true;
 				checkbox.appendChild(checkbox_input);
 				before.appendChild(checkbox);
-				
+
 				const before_icon = document.createElement('td');
 				before_icon.innerText = '-';
 				before.appendChild(before_icon);
-				
+
 				const before_path = document.createElement('td');
 				before_path.innerText = convert_entry.before;
 				before.appendChild(before_path);
-				
+
 				table.appendChild(before);
-				
+
 				const after = document.createElement('tr');
-				
+
 				const after_icon = document.createElement('td');
 				after_icon.innerText = '+';
 				after.appendChild(after_icon);
-				
+
 				const after_path = document.createElement('td');
 				after_path.innerText = convert_entry.after;
 				after.appendChild(after_path);
-				
+
 				table.appendChild(after);
 			});
 		};
@@ -535,9 +534,9 @@ function convertVolume(api_key, issue_id=null) {
 	.then(response => window.location.reload());
 };
 
-// 
+//
 // Editing
-// 
+//
 function showEdit(api_key) {
 	document.querySelector('#monitored-input').value = document.querySelector('#volume-monitor').dataset.monitored;
 	const volume_root_folder = parseInt(document.querySelector('#volume-path').dataset.root_folder),
@@ -582,7 +581,7 @@ function editVolume() {
 
 //
 // Deleting
-// 
+//
 function deleteVolume() {
 	const delete_error = document.querySelector('#volume-downloading-error');
 	delete_error.classList.add('hidden');
@@ -603,9 +602,9 @@ function deleteVolume() {
 	});
 };
 
-// 
+//
 // Issue info
-// 
+//
 function showIssueInfo(id, api_key) {
 	document.querySelector('#issue-rename-selector').dataset.issue_id = id;
 	fetch(`${url_base}/api/issues/${id}?api_key=${api_key}`)
@@ -660,7 +659,7 @@ usingApiKey()
 	addEventListener('#submit-convert', 'click', e => convertVolume(api_key, e.target.dataset.issue_id || null));
 
 	addEventListener('#edit-button', 'click', e => showEdit(api_key));
-	
+
 	addEventListener('#issue-rename-selector', 'click', e => showRename(api_key, e.target.dataset.issue_id));
 });
 
