@@ -93,7 +93,7 @@
 		<section id="delete-window">
 			<div>
 				<h2>Delete volume</h2>
-				<button aria-label="Cancel deleting volume" title="Cancel deleting volume">
+				<button title="Cancel deleting volume">
 					<img src="{{url_base}}/static/img/cancel.svg" alt="">
 				</button>
 			</div>
@@ -123,7 +123,7 @@
 		<section id="edit-window" data-loading_window="updating-window">
 			<div>
 				<h2>Edit volume</h2>
-				<button aria-label="Cancel editing volume" title="Cancel editing volume">
+				<button title="Cancel editing volume">
 					<img src="{{url_base}}/static/img/cancel.svg" alt="">
 				</button>
 			</div>
@@ -167,7 +167,7 @@
 		<section id="rename-window" class="wide-window" data-loading_window="renaming-window">
 			<div>
 				<h2>Rename volume files</h2>
-				<button aria-label="Cancel renaming volume files" title="Cancel renaming volume files">
+				<button title="Cancel renaming volume files">
 					<img src="{{url_base}}/static/img/cancel.svg" alt="">
 				</button>
 			</div>
@@ -192,7 +192,7 @@
 		<section id="manual-search-window" class="wide-window">
 			<div>
 				<h2>Manual Search</h2>
-				<button aria-label="Cancel manual search" title="Cancel manual search">
+				<button title="Cancel manual search">
 					<img src="{{url_base}}/static/img/cancel.svg" alt="">
 				</button>
 			</div>
@@ -207,9 +207,7 @@
 							<th class="search-action-column">Action</th>
 						</tr>
 					</thead>
-					<tbody>
-						
-					</tbody>
+					<tbody></tbody>
 				</table>
 			</div>
 			<div>
@@ -220,7 +218,7 @@
 		<section id="issue-info-window">
 			<div>
 				<h2>Issue Info</h2>
-				<button aria-label="Close window" title="Close window">
+				<button title="Close window">
 					<img src="{{url_base}}/static/img/cancel.svg" alt="">
 				</button>
 			</div>
@@ -245,12 +243,13 @@
 		<section id="convert-window" class="wide-window" data-loading_window="converting-window">
 			<div>
 				<h2>Convert volume files</h2>
-				<button aria-label="Cancel converting volume files" title="Cancel converting volume files">
+				<button title="Cancel converting volume files">
 					<img src="{{url_base}}/static/img/cancel.svg" alt="">
 				</button>
 			</div>
 			<div>
 				<p id="convert-preference"></p>
+				<p class="empty-rename-message">Nothing to Rename</p>
 				<table class="rename-preview">
 					<thead>
 						<th colspan="2">
@@ -325,7 +324,7 @@
 						<button id="convert-button" aria-label="Convert files to a different format" title="Convert files to a different format">
 							<img src="{{url_base}}/static/img/convert.svg" alt="">
 							<div>
-								<p>Convert</p>
+								<p>Preview Convert</p>
 							</div>
 						</button>
 						<button id="edit-button" aria-label="Edit the volume" title="Edit the volume">

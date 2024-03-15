@@ -18,6 +18,20 @@ const ViewEls = {
 		description: document.querySelector('#volume-description'),
 		mobile_description: document.querySelector('#volume-description-mobile')
 	},
+	vol_edit: {
+		monitor: document.querySelector('#monitored-input'),
+		root_folder: document.querySelector('#root-folder-input'),
+		volume_folder: document.querySelector('#volumefolder-input')
+	},
+	tool_bar: {
+		refresh: document.querySelector('#refresh-button'),
+		auto_search: document.querySelector('#autosearch-button'),
+		manual_search: document.querySelector('#manualsearch-button'),
+		rename: document.querySelector('#rename-button'),
+		convert: document.querySelector('#convert-button'),
+		edit: document.querySelector('#edit-button'),
+		delete: document.querySelector('#delete-button')
+	},
 	issues_list: document.querySelector('#issues-list')
 };
 
@@ -172,22 +186,21 @@ function fillPage(data, api_key) {
 // Actions
 //
 function toggleMonitored(api_key) {
-	const button = document.querySelector('#volume-monitor');
-	const monitored = button.dataset.monitored !== 'true';
+	const monitored = ViewEls.vol_data.monitor.dataset.monitored !== 'true';
 	sendAPI('PUT', `/volumes/${id}`, api_key, {}, {
 		monitored: monitored
 	})
 	.then(response => {
-		button.dataset.monitored = monitored;
+		ViewEls.vol_data.monitor.dataset.monitored = monitored;
 		if (monitored)
 			setIcon(
-				button,
+				ViewEls.vol_data.monitor,
 				icons.monitored,
 				'Volume is monitored. Click to unmonitor.'
 			);
 		else
 			setIcon(
-				button,
+				ViewEls.vol_data.monitor,
 				icons.unmonitored,
 				'Volume is unmonitored. Click to monitor.'
 			);
@@ -353,9 +366,9 @@ function showRename(api_key, issue_id=null) {
 	};
 	fetchAPI(url, api_key)
 	.then(json => {
-		const empty_message = document.querySelector('#rename-window .empty-rename-message');
-		const table_container = document.querySelector('.rename-preview');
-		const table = table_container.querySelector('tbody');
+		const empty_message = document.querySelector('#rename-window .empty-rename-message'),
+			table_container = document.querySelector('#rename-window .rename-preview'),
+			table = table_container.querySelector('tbody');
 		table.innerHTML = '';
 
 		if (!json.result.length) {
@@ -387,7 +400,9 @@ function toggleAllRenames() {
 };
 
 function renameVolume(api_key, issue_id=null) {
-	const checkboxes = [...document.querySelectorAll('#rename-window tbody input[type="checkbox"]')];
+	const checkboxes = [...document.querySelectorAll(
+		'#rename-window tbody input[type="checkbox"]'
+	)];
 	
 	if (checkboxes.every(e => !e.checked)) {
 		closeWindow();
@@ -408,7 +423,12 @@ function renameVolume(api_key, issue_id=null) {
 		{}, 
 		checkboxes
 			.filter(e => e.checked)
-			.map(e => e.parentNode.parentNode.querySelector('td:last-child').innerText)
+			.map(e => e
+				.parentNode
+				.parentNode
+				.querySelector('td:last-child')
+				.innerText
+			)
 	)
 	.then(response => 
 		window.location.reload()
@@ -423,8 +443,7 @@ function loadConvertPreference(api_key) {
 	if (el.innerHTML !== '')
 		return;
 
-	fetch(`${url_base}/api/settings?api_key=${api_key}`)
-	.then(response => response.json())
+	fetchAPI('/settings', api_key)
 	.then(json => {
 		el.innerHTML = [
 			'source',
@@ -442,62 +461,38 @@ function showConvert(api_key, issue_id=null) {
 	let url;
 	if (issue_id === null) {
 		// Preview issue conversion
-		url = `${url_base}/api/volumes/${id}/convert?api_key=${api_key}`;
+		url = `/volumes/${id}/convert`;
 		convert_button.dataset.issue_id = '';
 	} else {
 		// Preview issue conversion
-		url = `${url_base}/api/issues/${issue_id}/convert?api_key=${api_key}`;
+		url = `/issues/${issue_id}/convert`;
 		convert_button.dataset.issue_id = issue_id;
 	};
-	fetch(url)
-	.then(response => response.json())
+
+	fetchAPI(url, api_key)
 	.then(json => {
-		const table = document.querySelector('#convert-window tbody');
+		const empty_rename = document.querySelector('#convert-window .empty-rename-message'),
+			table_container = document.querySelector('#convert-window table');
+		const table = table_container.querySelector('tbody');
 		table.innerHTML = '';
 
 		if (!json.result.length) {
-			const message = document.createElement('p');
-			message.classList.add('empty-rename-message');
-			message.innerText = 'Nothing to convert';
-			table.appendChild(message);
+			table_container.classList.add('hidden');
+			empty_rename.classList.remove('hidden');
 			convert_button.classList.add('hidden');
-			table.parentNode.querySelector('thead').classList.add('hidden');
 
 		} else {
+			table_container.classList.remove('hidden');
+			empty_rename.classList.add('hidden');
 			convert_button.classList.remove('hidden');
-			table.parentNode.querySelector('thead').classList.remove('hidden');
 			json.result.forEach(convert_entry => {
-				const before = document.createElement('tr');
-
-				const checkbox = document.createElement('td');
-				checkbox.setAttribute('rowspan', '2');
-				const checkbox_input = document.createElement('input');
-				checkbox_input.type = 'checkbox';
-				checkbox_input.checked = true;
-				checkbox.appendChild(checkbox_input);
-				before.appendChild(checkbox);
-
-				const before_icon = document.createElement('td');
-				before_icon.innerText = '-';
-				before.appendChild(before_icon);
-
-				const before_path = document.createElement('td');
-				before_path.innerText = convert_entry.before;
-				before.appendChild(before_path);
-
+				const before = ViewEls.pre_build.rename_before.cloneNode(true);
 				table.appendChild(before);
-
-				const after = document.createElement('tr');
-
-				const after_icon = document.createElement('td');
-				after_icon.innerText = '+';
-				after.appendChild(after_icon);
-
-				const after_path = document.createElement('td');
-				after_path.innerText = convert_entry.after;
-				after.appendChild(after_path);
-
+				const after = ViewEls.pre_build.rename_after.cloneNode(true);
 				table.appendChild(after);
+
+				before.querySelector('td:last-child').innerText = convert_entry.before;
+				after.querySelector('td:last-child').innerText = convert_entry.after;
 			});
 		};
 		showWindow('convert-window');
@@ -506,49 +501,58 @@ function showConvert(api_key, issue_id=null) {
 
 function toggleAllConverts() {
 	const checked = document.querySelector('#selectall-convert-input').checked;
-	document.querySelectorAll('#convert-window tbody input[type="checkbox"]').forEach(e => e.checked = checked);
+	document.querySelectorAll(
+		'#convert-window tbody input[type="checkbox"]'
+	).forEach(e => e.checked = checked);
 };
 
 function convertVolume(api_key, issue_id=null) {
-	if ([...document.querySelectorAll('#convert-window tbody input[type="checkbox"]')].every(e => !e.checked)) {
+	const checkboxes = [...document.querySelectorAll(
+		'#convert-window tbody input[type="checkbox"]'
+	)];
+
+	if (checkboxes.every(e => !e.checked)) {
 		closeWindow();
 		return;
 	};
 
 	showLoadWindow('convert-window');
 	let url;
-	if (issue_id === null) url = `${url_base}/api/volumes/${id}/convert?api_key=${api_key}`;
-	else url = `${url_base}/api/issues/${issue_id}/convert?api_key=${api_key}`;
-
-	let args;
-	if ([...document.querySelectorAll('#convert-window tbody input[type="checkbox"]')].every(e => e.checked))
-		args = { 'method': 'POST' };
+	if (issue_id === null)
+		url = `/volumes/${id}/convert`;
 	else
-		args = {
-			'method': 'POST',
-			'headers': {'Content-Type': 'application/json'},
-			'body': JSON.stringify(
-				[...document.querySelectorAll('#convert-window tbody > tr > td > input[type="checkbox"]:checked')]
-					.map(e => e.parentNode.nextSibling.nextSibling.innerText)
-			)
-		}
+		url = `/issues/${issue_id}/convert`;
 
-	fetch(url, args)
-	.then(response => window.location.reload());
+	sendAPI(
+		'POST',
+		url,
+		api_key,
+		{}, 
+		checkboxes
+			.filter(e => e.checked)
+			.map(e => e
+				.parentNode
+				.parentNode
+				.querySelector('td:last-child')
+				.innerText
+			)
+	)
+	.then(response => 
+		window.location.reload()
+	);
 };
 
 //
 // Editing
 //
 function showEdit(api_key) {
-	document.querySelector('#monitored-input').value = document.querySelector('#volume-monitor').dataset.monitored;
-	const volume_root_folder = parseInt(document.querySelector('#volume-path').dataset.root_folder),
-		volume_folder = document.querySelector('#volume-path').dataset.volume_folder;
-	fetch(`${url_base}/api/rootfolder?api_key=${api_key}`)
-	.then(response => response.json())
+	ViewEls.vol_edit.monitor.value = ViewEls.vol_data.monitor.dataset.monitored;
+	const volume_root_folder = parseInt(ViewEls.vol_data.path.dataset.root_folder),
+		volume_folder = ViewEls.vol_data.path.dataset.volume_folder;
+
+	fetchAPI('/rootfolder', api_key)
 	.then(json => {
-		const table = document.querySelector('#root-folder-input');
-		table.innerHTML = '';
+		ViewEls.vol_edit.root_folder.innerHTML = '';
 		json.result.forEach(root_folder => {
 			const entry = document.createElement('option');
 			entry.value = root_folder.id;
@@ -556,28 +560,24 @@ function showEdit(api_key) {
 			if (root_folder.id === volume_root_folder) {
 				entry.setAttribute('selected', 'true');
 			};
-			table.appendChild(entry);
+			ViewEls.vol_edit.root_folder.appendChild(entry);
 		});
 		showWindow('edit-window');
 	});
-	document.querySelector('#volumefolder-input').value = volume_folder;
+	ViewEls.vol_edit.volume_folder.value = volume_folder;
 };
 
 function editVolume() {
 	showLoadWindow('edit-window');
 
 	const data = {
-		'monitored': document.querySelector('#monitored-input').value == 'true',
-		'root_folder': parseInt(document.querySelector('#root-folder-input').value),
-		'volume_folder': document.querySelector('#volumefolder-input').value
+		'monitored': ViewEls.vol_edit.monitor.value == 'true',
+		'root_folder': parseInt(ViewEls.vol_edit.root_folder.value),
+		'volume_folder': ViewEls.vol_edit.volume_folder.value
 	};
 	usingApiKey()
 	.then(api_key => {
-		fetch(`${url_base}/api/volumes/${id}?api_key=${api_key}`, {
-			'method': 'PUT',
-			'body': JSON.stringify(data),
-			'headers': {'Content-Type': 'application/json'}
-		})
+		sendAPI('PUT', `/volumes/${id}`, api_key, {}, data)
 		.then(response => window.location.reload());
 	});
 };
@@ -591,15 +591,12 @@ function deleteVolume() {
 	const delete_folder = document.querySelector('#delete-folder-input').value;
 	usingApiKey()
 	.then(api_key => {
-		fetch(`${url_base}/api/volumes/${id}?api_key=${api_key}&delete_folder=${delete_folder}`, {
-			'method': 'DELETE'
-		})
+		sendAPI('DELETE', `/volumes/${id}`, api_key, {delete_folder: delete_folder})
 		.then(response => {
-			if (!response.ok) return Promise.reject(response.status);
 			window.location.href = `${url_base}/`;
 		})
 		.catch(e => {
-			if (e === 400) delete_error.classList.remove('hidden');
+			if (e.status === 400) delete_error.classList.remove('hidden');
 			else console.log(e);
 		});
 	});
@@ -610,10 +607,10 @@ function deleteVolume() {
 //
 function showIssueInfo(id, api_key) {
 	document.querySelector('#issue-rename-selector').dataset.issue_id = id;
-	fetch(`${url_base}/api/issues/${id}?api_key=${api_key}`)
-	.then(response => response.json())
+	fetchAPI(`/issues/${id}`, api_key)
 	.then(json => {
-		document.querySelector('#issue-info-title').innerText = `${json.result.title} - #${json.result.issue_number} - ${json.result.date}`;
+		document.querySelector('#issue-info-title').innerText =
+			`${json.result.title} - #${json.result.issue_number} - ${json.result.date}`;
 		document.querySelector('#issue-info-desc').innerHTML = json.result.description;
 		const files_table = document.querySelector('#issue-files');
 		files_table.innerHTML = '';
@@ -638,45 +635,40 @@ const id = window.location.pathname.split('/').at(-1);
 
 usingApiKey()
 .then(api_key => {
-	fetch(`${url_base}/api/volumes/${id}?api_key=${api_key}`)
-	.then(response => {
-		if (!response.ok) return Promise.reject(response.status);
-		return response.json();
-	})
+	fetchAPI(`/volumes/${id}`, api_key)
 	.then(json => fillPage(json.result, api_key))
 	.catch(e => {
-		if (e === 404)
+		if (e.status === 404)
 			window.location.href = `${url_base}/`
 		else
 			console.log(e);
 	});
 
-	addEventListener('#refresh-button', 'click', e => refreshVolume(api_key));
-	addEventListener('#autosearch-button', 'click', e => autosearchVolume(api_key));
-	addEventListener('#manualsearch-button', 'click', e => showManualSearch(api_key));
+	ViewEls.tool_bar.refresh.onclick = e => refreshVolume(api_key);
+	ViewEls.tool_bar.auto_search.onclick = e => autosearchVolume(api_key);
+	ViewEls.tool_bar.manual_search.onclick = e => showManualSearch(api_key);
+	ViewEls.tool_bar.rename.onclick = e => showRename(api_key);
+	ViewEls.tool_bar.convert.onclick = e => showConvert(api_key);
+	ViewEls.tool_bar.edit.onclick = e => showEdit(api_key);
 
-	addEventListener('#rename-button', 'click', e => showRename(api_key));
-	addEventListener('#submit-rename', 'click', e => renameVolume(api_key, e.target.dataset.issue_id || null));
+	addEventListener('#submit-rename', 'click',
+		e => renameVolume(api_key, e.target.dataset.issue_id || null));
 
-	addEventListener('#convert-button', 'click', e => showConvert(api_key));
-	addEventListener('#submit-convert', 'click', e => convertVolume(api_key, e.target.dataset.issue_id || null));
+	addEventListener('#submit-convert', 'click',
+		e => convertVolume(api_key, e.target.dataset.issue_id || null));
 
-	addEventListener('#edit-button', 'click', e => showEdit(api_key));
-
-	addEventListener('#issue-rename-selector', 'click', e => showRename(api_key, e.target.dataset.issue_id));
+	addEventListener('#issue-rename-selector', 'click',
+		e => showRename(api_key, e.target.dataset.issue_id));
 });
 
-addEventListener('#cancel-search', 'click', e => closeWindow());
-addEventListener('#cancel-rename', 'click', e => closeWindow());
-addEventListener('#cancel-edit', 'click', e => closeWindow());
-addEventListener('#delete-button', 'click', e => showWindow('delete-window'));
-addEventListener('#cancel-delete', 'click', e => closeWindow());
-addEventListener('#cancel-info', 'click', e => closeWindow());
+['search', 'rename', 'edit', 'delete', 'info', 'convert'].forEach(
+	e => document.querySelector(`#cancel-${e}`).onclick = e => closeWindow()
+)
+ViewEls.tool_bar.delete.onclick = e => showWindow('delete-window');
 addEventListener('#issue-info-selector', 'click', e => showInfoWindow('issue-info'));
 addEventListener('#issue-files-selector', 'click', e => showInfoWindow('issue-files'));
-addEventListener('#cancel-convert', 'click', e => closeWindow());
 addEventListener('#selectall-input', 'change', e => toggleAllRenames());
 addEventListener('#selectall-convert-input', 'change', e => toggleAllConverts());
 
-document.querySelector('#edit-form').setAttribute('action', 'javascript:editVolume();');
-document.querySelector('#delete-form').setAttribute('action', 'javascript:deleteVolume();');
+document.querySelector('#edit-form').action = 'javascript:editVolume();';
+document.querySelector('#delete-form').action = 'javascript:deleteVolume();';
