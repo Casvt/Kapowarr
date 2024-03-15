@@ -13,6 +13,19 @@ select:hover {
 	cursor: pointer;
 }
 
+noscript {
+	position: absolute;
+	margin: clamp(1rem, 4vw, 2rem);
+
+	padding: clamp(1rem, 4vw, 2rem);
+	border-radius: 15px;
+	background-color: red;
+	color: white;
+
+	font-size: clamp(1.25rem, 4vw, 2rem);
+	text-align: center;
+}
+
 :root {
 	--header-height: 65px;
 	--tool-bar-height: 3.5rem;
