@@ -310,7 +310,7 @@ main h2:not(:first-of-type) {
 	position: relative;
 	width: 5rem;
 	display: flex;
-	overflow-x: hidden;
+	overflow: hidden;
 	background-color: var(--tool-bar-color);
 	transition: background-color 300ms linear;
 }
