@@ -1,6 +1,6 @@
-// 
+//
 // Filling data
-// 
+//
 function addQueueEntry(api_key, obj) {
 	const table = document.getElementById('queue');
 
@@ -25,12 +25,12 @@ function addQueueEntry(api_key, obj) {
 	source.classList.add('status-column');
 	source.innerText = obj.source.charAt(0).toUpperCase() + obj.source.slice(1);
 	entry.appendChild(source);
-	
+
 	const size = document.createElement('td');
 	size.classList.add('number-column');
 	size.innerText = convertSize(obj.size);
 	entry.append(size);
-	
+
 	const speed = document.createElement('td');
 	speed.classList.add('number-column');
 	speed.innerText = (Math.round(obj.speed / 100000) / 10) + 'MB/s';
@@ -38,12 +38,12 @@ function addQueueEntry(api_key, obj) {
 
 	const progress = document.createElement('td');
 	progress.classList.add('number-column');
-	if (obj.progress > 100)
-		progress.innerText = convertSize(obj.progress)
+	if (obj.size === -1)
+		progress.innerText = convertSize(obj.progress);
 	else
 		progress.innerText = (Math.round(obj.progress * 10) / 10) + '%';
 	entry.append(progress);
-	
+
 	const delete_entry = document.createElement('td');
 	delete_entry.classList.add('option-column');
 	const delete_button = document.createElement('button');
@@ -62,7 +62,7 @@ function updateQueueEntry(obj) {
 	tr.querySelector('td:nth-child(1)').innerText = obj.status.charAt(0).toUpperCase() + obj.status.slice(1);
 	tr.querySelector('td:nth-child(4)').innerText = convertSize(obj.size);
 	tr.querySelector('td:nth-child(5)').innerText = (Math.round(obj.speed / 100000) / 10) + 'MB/s';
-	tr.querySelector('td:nth-child(6)').innerText = obj.progress > 100 ? convertSize(obj.progress) : (Math.round(obj.progress * 10) / 10) + '%';
+	tr.querySelector('td:nth-child(6)').innerText = obj.size === -1 ? convertSize(obj.progress) : (Math.round(obj.progress * 10) / 10) + '%';
 };
 
 function removeQueueEntry(id) {
@@ -85,9 +85,9 @@ function fillQueue(api_key) {
 		});
 };
 
-// 
+//
 // Actions
-// 
+//
 function deleteEntry(id, api_key) {
 	fetch(`${url_base}/api/activity/queue/${id}?api_key=${api_key}`, {
 		'method': 'DELETE'
