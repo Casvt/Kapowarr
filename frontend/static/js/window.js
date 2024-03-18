@@ -33,9 +33,9 @@ function closeWindow() {
 
 document.querySelector('body').onkeydown = e => {
 	if (
-		document.querySelector('.window[show-window]')
-		&&
 		e.code === "Escape"
+		&&
+		document.querySelector('.window[show-window]')
 	) {
 		e.stopImmediatePropagation();
 		closeWindow();
