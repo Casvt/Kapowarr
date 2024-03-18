@@ -186,7 +186,7 @@ main > div {
 /*  */
 /* ADD VOLUME WINDOW */
 /*  */
-#add-title {
+#add-window h2 {
 	font-weight: 400;
 	white-space: nowrap;
 	overflow-x: hidden;

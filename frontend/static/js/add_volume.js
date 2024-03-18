@@ -196,7 +196,7 @@ function showAddWindow(comicvine_id, api_key) {
 		showWindow("add-window");
 	});
 	
-	document.querySelector('#add-title').innerText = volume_data.title;
+	document.querySelector('#add-window h2').innerText = volume_data.title;
 	document.querySelector('#add-cover').src = volume_data.cover;
 	document.querySelector('#comicvine-input').value = comicvine_id;
 };

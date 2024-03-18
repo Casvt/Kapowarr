@@ -403,7 +403,7 @@ function renameVolume(api_key, issue_id=null) {
 	const checkboxes = [...document.querySelectorAll(
 		'#rename-window tbody input[type="checkbox"]'
 	)];
-	
+
 	if (checkboxes.every(e => !e.checked)) {
 		closeWindow();
 		return;
@@ -420,7 +420,7 @@ function renameVolume(api_key, issue_id=null) {
 		'POST',
 		url,
 		api_key,
-		{}, 
+		{},
 		checkboxes
 			.filter(e => e.checked)
 			.map(e => e
@@ -430,7 +430,7 @@ function renameVolume(api_key, issue_id=null) {
 				.innerText
 			)
 	)
-	.then(response => 
+	.then(response =>
 		window.location.reload()
 	);
 };
@@ -527,7 +527,7 @@ function convertVolume(api_key, issue_id=null) {
 		'POST',
 		url,
 		api_key,
-		{}, 
+		{},
 		checkboxes
 			.filter(e => e.checked)
 			.map(e => e
@@ -537,7 +537,7 @@ function convertVolume(api_key, issue_id=null) {
 				.innerText
 			)
 	)
-	.then(response => 
+	.then(response =>
 		window.location.reload()
 	);
 };
@@ -661,9 +661,6 @@ usingApiKey()
 		e => showRename(api_key, e.target.dataset.issue_id));
 });
 
-['search', 'rename', 'edit', 'delete', 'info', 'convert'].forEach(
-	e => document.querySelector(`#cancel-${e}`).onclick = e => closeWindow()
-)
 ViewEls.tool_bar.delete.onclick = e => showWindow('delete-window');
 addEventListener('#issue-info-selector', 'click', e => showInfoWindow('issue-info'));
 addEventListener('#issue-files-selector', 'click', e => showInfoWindow('issue-files'));

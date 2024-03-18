@@ -203,9 +203,13 @@ header {
 	background-color: var(--nav-background-color);
 }
 
-nav {
+nav, .sub-nav {
 	display: flex;
 	flex-direction: column;
+}
+
+nav > a:not(.current-nav) + div.sub-nav:not(:has(a.current-nav)) {
+	display: none;
 }
 
 nav a {
@@ -222,7 +226,7 @@ nav a:hover {
 	color: var(--accent-color);	
 }
 
-.sub-entry {
+.sub-nav a {
 	padding-left: 2.3rem;
 	font-size: .8rem;
 }

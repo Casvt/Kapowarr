@@ -205,6 +205,9 @@ function loadAddTorrent(api_key, type) {
 	document.querySelector('#test-torrent-add').classList.remove(
 		'show-success', 'show-fail'
 	)
+	form.querySelectorAll(
+		'#add-title-input, #add-baseurl-input'
+	).forEach(el => el.value = '');
 	
 	fetch(`${url_base}/api/torrentclients/options?api_key=${api_key}`)
 	.then(response => response.json())
@@ -304,14 +307,11 @@ function loadTorrentClients(api_key) {
 usingApiKey()
 .then(api_key => {
 	loadTorrentClients(api_key);
-	document.querySelector('#delete-torrent-edit').onclick = (e) => deleteTorrent(api_key);
-	document.querySelector('#test-torrent-edit').onclick = (e) => testEditTorrent(api_key);
-	document.querySelector('#test-torrent-add').onclick = (e) => testAddTorrent(api_key);
-	document.querySelector('#torrent-client-list > .add-client-button').onclick = (e) => loadTorrentList(api_key);
+	document.querySelector('#delete-torrent-edit').onclick = e => deleteTorrent(api_key);
+	document.querySelector('#test-torrent-edit').onclick = e => testEditTorrent(api_key);
+	document.querySelector('#test-torrent-add').onclick = e => testAddTorrent(api_key);
+	document.querySelector('#torrent-client-list > .add-client-button').onclick = e => loadTorrentList(api_key);
 });
 
-document.querySelector('#cancel-torrent-edit').onclick = (e) => closeWindow();
-document.querySelector('#cancel-torrent-add').onclick = (e) => closeWindow();
-document.querySelector('#cancel-torrent-choose').onclick = (e) => closeWindow();
 document.querySelector('#edit-torrent-form').action = 'javascript:saveEditTorrent()';
 document.querySelector('#add-torrent-form').action = 'javascript:saveAddTorrent()';

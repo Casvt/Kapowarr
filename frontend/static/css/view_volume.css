@@ -206,22 +206,6 @@
 	max-width: 30rem;
 }
 
-#cancel-delete,
-#cancel-edit,
-#cancel-rename,
-#cancel-convert,
-#cancel-search,
-#cancel-info {
-	background-color: var(--error-color);
-}
-
-#submit-delete,
-#submit-edit,
-#submit-rename,
-#submit-convert {
-	background-color: var(--success-color);
-}
-
 /*  */
 /* Delete volume window */
 /*  */

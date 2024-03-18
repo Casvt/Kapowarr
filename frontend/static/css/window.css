@@ -128,6 +128,14 @@
 	color: var(--light-color);
 }
 
+.cancel-window {
+	background-color: var(--error-color);
+}
+
+.window div:last-child button[type="submit"] {
+	background-color: var(--success-color);
+}
+
 @media (max-width: 850px) {
 	.window > section[show-window].wide-window {
 		width: 90%;

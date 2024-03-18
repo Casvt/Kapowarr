@@ -1,201 +1,164 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta id="url_base" data-value="{{url_base}}">
-
-	<link rel="manifest" href="{{ url_for('static', filename='json/manifest.json') }}">
-	<link rel="apple-touch-icon" href="{{ url_for('static', filename='img/favicon.svg') }}">
-	<meta name="apple-mobile-web-app-status-bar" content="#ebc700">
-	<meta name="theme-color" content="#ebc700">
-
-	<link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/x-icon">
-
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
+{% extends "base.html" %}
+{% from "base.html" import icon_button %}
+{% block title %}Volumes{% endblock %}
+{% block css %}
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/volumes.css') }}">
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
-	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
-	<script src="{{ url_for('static', filename='js/general.js') }}" defer></script>
+{% endblock %}
+{% block js %}
 	<script src="{{ url_for('static', filename='js/volumes.js') }}" defer></script>
+{% endblock %}
 
-	<title>Volumes - Kapowarr</title>
-</head>
-<body>
-	<div class="pre-build-els hidden">
-		<a href="" class="list-entry">
-			<img class="list-img" src="" alt="" loading="lazy">
-			<div class="list-prog-container">
-				<div class="list-prog-bar"></div>
-				<div class="list-prog-num"></div>
-			</div>
-			<h2 class="list-title" title=""></h2>
-			<p class="list-volume"></p>
-			<p class="list-monitored">Monitored</p>
-			<p class="list-unmonitored">Unmonitored</p>
-		</a>
-	</div>
-	<table class="pre-build-els hidden">
-		<tbody>
-			<tr class="table-entry">
-				<td>
-					<a class="table-link" href=""></a>
-				</td>
-				<td class="table-year"></td>
-				<td class="table-volume"></td>
-				<td>
-					<div class="table-prog-container">
-						<div class="table-prog-bar"></div>
-						<div class="table-prog-num"></div>
-					</div>
-				</td>
-				<td class="table-monitored-container">
-					<button class="table-monitored">
-					</button>
-				</td>
-			</tr>
-		</tbody>
-	</table>
-	
-	<header>
-		<div class="menu-title-container">
-			<button id="toggle-nav" aria-label="Toggle menu">
-				<img src="{{url_base}}/static/img/menu.svg" alt="">
-			</button>
-			<a href="{{url_base}}/">
-				<img src="{{ url_for('static', filename='img/favicon.svg') }}" alt="">
-			</a>
+{% block pre_build_els %}
+	<a href="" class="list-entry">
+		<img class="list-img" src="" alt="" loading="lazy">
+		<div class="list-prog-container">
+			<div class="list-prog-bar"></div>
+			<div class="list-prog-num"></div>
 		</div>
-		<form id="search-container" class="icon-dark-color">
-			<button type="submit" id="start-search" aria-label="Start search">
-				<img src="{{url_base}}/static/img/search.svg" alt="">
+		<h2 class="list-title" title=""></h2>
+		<p class="list-volume"></p>
+		<p class="list-monitored">Monitored</p>
+		<p class="list-unmonitored">Unmonitored</p>
+	</a>
+{% endblock %}
+
+{% block pre_build_rows %}
+	<tr class="table-entry">
+		<td>
+			<a class="table-link" href=""></a>
+		</td>
+		<td class="table-year"></td>
+		<td class="table-volume"></td>
+		<td>
+			<div class="table-prog-container">
+				<div class="table-prog-bar"></div>
+				<div class="table-prog-num"></div>
+			</div>
+		</td>
+		<td class="table-monitored-container">
+			<button class="table-monitored">
 			</button>
-			<input type="text" id="search-input" placeholder="Search" aria-label="Search input">
-			<button type="button" id="clear-search" aria-label="Clear search">
-				<img src="{{url_base}}/static/img/cancel.svg" alt="">
-			</button>
-		</form>
-	</header>
-	<div class="nav-main">
-		<div id="nav-bar">
-			<nav>
-				<a href="{{url_base}}/" class="current-nav">Volumes</a>
-					<a href="{{url_base}}/add" class="sub-entry">Add Volume</a>
-					<a href="{{url_base}}/library-import" class="sub-entry">Library Import</a>
-					<a href="{{url_base}}/mass-editor" class="sub-entry">Mass Editor</a>
-				<a href="{{url_base}}/activity/queue">Activity</a>
-				<a href="{{url_base}}/settings">Settings</a>
-				<a href="{{url_base}}/system/status">System</a>
-			</nav>
-			<div id="task-queue"></div>
+		</td>
+	</tr>
+{% endblock %}
+
+{% block right_side_header %}
+	<form id="search-container" class="icon-dark-color">
+		<button type="submit" id="start-search" aria-label="Start search">
+			<img src="{{url_base}}/static/img/search.svg" alt="">
+		</button>
+		<input type="text" id="search-input" placeholder="Search" aria-label="Search input">
+		<button type="button" id="clear-search" aria-label="Clear search">
+			<img src="{{url_base}}/static/img/cancel.svg" alt="">
+		</button>
+	</form>
+{% endblock %}
+
+{% block main %}
+<main>
+	<div class="tool-bar-container">
+		<div class="tool-bar">
+			{{ icon_button(
+				"updateall-button",
+				"Trigger a 'refresh and scan' for all volumes",
+				"refresh.svg",
+				"Update All"
+			) }}
+			{{ icon_button(
+				"searchall-button",
+				"Trigger a 'search monitored' for all volumes",
+				"search.svg",
+				"Search All"
+			) }}
 		</div>
-		<main>
-			<div class="tool-bar-container">
-				<div class="tool-bar">
-					<button id="updateall-button" aria-label="Trigger a 'refresh and scan' for all volumes" title="Trigger a 'refresh and scan' for all volumes">
-						<img src="{{url_base}}/static/img/refresh.svg" alt="">
-						<div>
-							<p>Update All</p>
-						</div>
-					</button>
-					<button id="searchall-button" aria-label="Trigger a 'search monitored' for all volumes" title="Trigger a 'search monitored' for all volumes">
-						<img src="{{url_base}}/static/img/search.svg" alt="">
-						<div>
-							<p>Search All</p>
-						</div>
-					</button>
-				</div>
-				<div class="tool-bar">
-					<select id="filter-button" aria-label="Apply a filter">
-						<option value="">No Filter</option>
-						<option value="wanted">Wanted</option>
-						<option value="monitored">Monitored</option>
-					</select>
-					<select id="view-button" aria-label="Change the view">
-						<option value="posters">Posters</option>
-						<option value="table">Table</option>
-					</select>
-					<select id="sort-button" aria-label="Sort the list of volumes">
-						<option value="title">Title</option>
-						<option value="volume_number">Volume Number</option>
-						<option value="year">Year</option>
-						<option value="recently_added">Recently Added</option>
-						<option value="publisher">Publisher</option>
-					</select>
-				</div>
-			</div>
-			<div id="loading-library">
-				<h2>Loading...</h2>
-				<noscript>
-					WARNING: This web-UI does not work without JavaScript.
-				</noscript>
-			</div>
-			<div id="empty-library" class="hidden">
-				<h2>Library is empty</h2>
-			</div>
-			<div id="library-container" class="hidden">
-				<div id="list-library">
-					<div class="space-taker"></div>
-				</div>
-				<div id="table-container">
-					<table>
-						<thead>
-							<tr>
-								<th>Volume Title</th>
-								<th>Year</th>
-								<th>Volume</th>
-								<th>Progress</th>
-								<th>Monitored</th>
-							</tr>
-						</thead>
-						<tbody id="table-library"></tbody>
-					</table>
-				</div>
-				<div id="lib-stats">
-					<table>
-						<tbody>
-							<tr>
-								<th>Volumes</th>
-								<td id="volume-count"></td>
-							</tr>
-							<tr>
-								<th>Monitored</th>
-								<td id="volume-monitored-count"></td>
-							</tr>
-							<tr>
-								<th>Unmonitored</th>
-								<td id="volume-unmonitored-count"></td>
-							</tr>
-						</tbody>
-					</table>
-					<table>
-						<tbody>
-							<tr>
-								<th>Issues</th>
-								<td id="issue-count"></td>
-							</tr>
-							<tr>
-								<th>Issues downloaded</th>
-								<td id="issue-download-count"></td>
-							</tr>
-						</tbody>
-					</table>
-					<table>
-						<tbody>
-							<tr>
-								<th>Files</th>
-								<td id="file-count"></td>
-							</tr>
-							<tr>
-								<th>Total file size</th>
-								<td id="total-file-size"></td>
-							</tr>
-						</tbody>
-					</table>
-				</div>
-			</div>
-		</main>
+		<div class="tool-bar">
+			<select id="filter-button" aria-label="Apply a filter">
+				<option value="">No Filter</option>
+				<option value="wanted">Wanted</option>
+				<option value="monitored">Monitored</option>
+			</select>
+			<select id="view-button" aria-label="Change the view">
+				<option value="posters">Posters</option>
+				<option value="table">Table</option>
+			</select>
+			<select id="sort-button" aria-label="Sort the list of volumes">
+				<option value="title">Title</option>
+				<option value="volume_number">Volume Number</option>
+				<option value="year">Year</option>
+				<option value="recently_added">Recently Added</option>
+				<option value="publisher">Publisher</option>
+			</select>
+		</div>
 	</div>
-</body>
-</html>
+	<div id="loading-library">
+		<h2>Loading...</h2>
+		<noscript>
+			WARNING: This web-UI does not work without JavaScript.
+		</noscript>
+	</div>
+	<div id="empty-library" class="hidden">
+		<h2>Library is empty</h2>
+	</div>
+	<div id="library-container" class="hidden">
+		<div id="list-library">
+			<div class="space-taker"></div>
+		</div>
+		<div id="table-container">
+			<table>
+				<thead>
+					<tr>
+						<th>Volume Title</th>
+						<th>Year</th>
+						<th>Volume</th>
+						<th>Progress</th>
+						<th>Monitored</th>
+					</tr>
+				</thead>
+				<tbody id="table-library"></tbody>
+			</table>
+		</div>
+		<div id="lib-stats">
+			<table>
+				<tbody>
+					<tr>
+						<th>Volumes</th>
+						<td id="volume-count"></td>
+					</tr>
+					<tr>
+						<th>Monitored</th>
+						<td id="volume-monitored-count"></td>
+					</tr>
+					<tr>
+						<th>Unmonitored</th>
+						<td id="volume-unmonitored-count"></td>
+					</tr>
+				</tbody>
+			</table>
+			<table>
+				<tbody>
+					<tr>
+						<th>Issues</th>
+						<td id="issue-count"></td>
+					</tr>
+					<tr>
+						<th>Issues downloaded</th>
+						<td id="issue-download-count"></td>
+					</tr>
+				</tbody>
+			</table>
+			<table>
+				<tbody>
+					<tr>
+						<th>Files</th>
+						<td id="file-count"></td>
+					</tr>
+					<tr>
+						<th>Total file size</th>
+						<td id="total-file-size"></td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+</main>
+{% endblock main %}

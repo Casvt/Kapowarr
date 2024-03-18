@@ -1,165 +1,125 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta id="url_base" data-value="{{url_base}}">
-
-	<link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/x-icon">
-
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
+{% extends "base.html" %}
+{% from "base.html" import icon_button %}
+{% block title %}Download Settings{% endblock %}
+{% block css %}
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
-	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
-	<script src="{{ url_for('static', filename='js/general.js') }}" defer></script>
+{% endblock %}
+{% block js %}
 	<script src="{{ url_for('static', filename='js/settings_download.js') }}" defer></script>
+{% endblock %}
 
-	<title>Download Settings - Kapowarr</title>
-</head>
-<body>
-	<header>
-		<div class="menu-title-container">
-			<button id="toggle-nav" aria-label="Toggle menu">
-				<img src="{{url_base}}/static/img/menu.svg" alt="">
-			</button>
-			<a href="{{url_base}}/">
-				<img src="{{ url_for('static', filename='img/favicon.svg') }}" alt="">
-			</a>
+{% block main %}
+<main>
+	<div class="tool-bar-container">
+		<div class="tool-bar">
+			{{ icon_button("save-button", "Save the changes made", "save.svg", "Save", True) }}
 		</div>
-	</header>
-	<div class="nav-main">
-		<div id="nav-bar">
-			<nav>
-				<a href="{{url_base}}/">Volumes</a>
-				<a href="{{url_base}}/activity/queue">Activity</a>
-				<a href="{{url_base}}/settings">Settings</a>
-					<a href="{{url_base}}/settings/mediamanagement" class="sub-entry">Media Management</a>
-					<a href="{{url_base}}/settings/download" class="sub-entry current-nav">Download</a>
-					<a href="{{url_base}}/settings/downloadclients" class="sub-entry">Download Clients</a>
-					<a href="{{url_base}}/settings/general" class="sub-entry">General</a>
-			<a href="{{url_base}}/system/status">System</a>
-			</nav>
-			<div id="task-queue"></div>
-		</div>
-		<main>
-			<div class="tool-bar-container">
-				<div class="tool-bar">
-					<button id="save-button" type="submit" aria-label="Save the changes made" title="Save the changes made">
-						<img src="{{url_base}}/static/img/save.svg" alt="">
-						<div>
-							<p>Save</p>
-						</div>
-					</button>
-				</div>
-			</div>
-			<div class="settings-container">
-				<form id="settings-form">
-					<h2>Download Location</h2>
-					<table class="fold">
-						<tbody>
-							<tr>
-								<th><label for="download-folder-input">Direct Download Temporary Folder</label></th>
-								<td>
-									<input type="text" id="download-folder-input" required spellcheck="false">
-									<p>The folder that direct downloads temporarily get downloaded to before being moved to the correct location</p>
-								</td>
-							</tr>
-							<tr>
-								<th><label for="empty-download-folder">Empty Temporary Download Folder</label></th>
-								<td>
-									<button type="button" id="empty-download-folder">Reset</button>
-									<p>Removes any "ghost" files in the direct download temporary folder (handy if the application crashed while downloading, leading to half-downloaded files in the folder).</p>
-								</td>
-							</tr>
-						</tbody>
-					</table>
-					<h2>Completed Download Handling</h2>
-					<table class="fold">
-						<tbody>
-							<tr>
-								<th><label for="seeding-handling-input">Seeding Handling</label></th>
-								<td>
-									<select id="seeding-handling-input">
-										<option value="complete">Complete</option>
-										<option value="copy">Copy</option>
-									</select>
-									<p>How a torrent that goes seeding should be handled. Either wait until it has completed seeding and then move the files, or copy the files and then delete the original when seeding finishes.</p>
-								</td>
-							</tr>
-							<tr>
-								<th><label for="delete-torrents-input">Delete Completed Torrents</label></th>
-								<td>
-									<input type="checkbox" id="delete-torrents-input">
-									<p>Remove torrents from the download client history when they have completed.</p>
-								</td>
-							</tr>
-						</tbody>
-					</table>
-					<h2>Service preference</h2>
-					<p>The preference for service to download from when using GetComics as the source.</p>
-					<table id="pref-table" class="short-table">
-						<tbody>
-							<tr>
-								<th>1</th>
-								<td>
-									<select data-place="1">
-									</select>
-								</td>
-							</tr>
-							<tr>
-								<th>2</th>
-								<td>
-									<select data-place="2">
-									</select>
-								</td>
-							</tr>
-							<tr>
-								<th>3</th>
-								<td>
-									<select data-place="3">
-									</select>
-								</td>
-							</tr>
-							<tr>
-								<th>4</th>
-								<td>
-									<select data-place="4">
-									</select>
-								</td>
-							</tr>
-						</tbody>
-					</table>
-					<h2>Credentials</h2>
-					<p>Account credentials for supported services can be added here. Kapowarr will download from the service using these credentials, taking advantage of the (probably) larger bandwidth and download quota.</p>
-					<div id="cred-container">
-						<table id="cred-table" class="icon-text-color">
-							<thead>
-								<tr>
-									<th>Service</th>
-									<th>Email</th>
-									<th>Password</th>
-									<th class="action-column">Action</th>
-								</tr>
-							</thead>
-							<tbody id="cred-list"></tbody>
-							<tbody>
-								<tr id="add-row" class="hidden">
-									<td>
-										<select id="cred-service-input"></select>
-										<p class="error hidden" id="cred-error">*The credentials aren't valid (Kapowarr can't login)</p>
-									</td>
-									<td><input type="email" id="cred-email-input"></td>
-									<td><input type="text" id="cred-password-input"></td>
-									<td><button id="add-cred" type="button">Add</button></td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-					<button type="button" id="toggle-cred">Add credential</button>
-				</form>
-			</div>
-		</main>
 	</div>
-</body>
-</html>
+	<div class="settings-container">
+		<form id="settings-form">
+			<h2>Download Location</h2>
+			<table class="fold">
+				<tbody>
+					<tr>
+						<th><label for="download-folder-input">Direct Download Temporary Folder</label></th>
+						<td>
+							<input type="text" id="download-folder-input" required spellcheck="false">
+							<p>The folder that direct downloads temporarily get downloaded to before being moved to the correct location</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="empty-download-folder">Empty Temporary Download Folder</label></th>
+						<td>
+							<button type="button" id="empty-download-folder">Reset</button>
+							<p>Removes any "ghost" files in the direct download temporary folder (handy if the application crashed while downloading, leading to half-downloaded files in the folder).</p>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			<h2>Completed Download Handling</h2>
+			<table class="fold">
+				<tbody>
+					<tr>
+						<th><label for="seeding-handling-input">Seeding Handling</label></th>
+						<td>
+							<select id="seeding-handling-input">
+								<option value="complete">Complete</option>
+								<option value="copy">Copy</option>
+							</select>
+							<p>How a torrent that goes seeding should be handled. Either wait until it has completed seeding and then move the files, or copy the files and then delete the original when seeding finishes.</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="delete-torrents-input">Delete Completed Torrents</label></th>
+						<td>
+							<input type="checkbox" id="delete-torrents-input">
+							<p>Remove torrents from the download client history when they have completed.</p>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			<h2>Service preference</h2>
+			<p>The preference for service to download from when using GetComics as the source.</p>
+			<table id="pref-table" class="short-table">
+				<tbody>
+					<tr>
+						<th>1</th>
+						<td>
+							<select data-place="1">
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<th>2</th>
+						<td>
+							<select data-place="2">
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<th>3</th>
+						<td>
+							<select data-place="3">
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<th>4</th>
+						<td>
+							<select data-place="4">
+							</select>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			<h2>Credentials</h2>
+			<p>Account credentials for supported services can be added here. Kapowarr will download from the service using these credentials, taking advantage of the (probably) larger bandwidth and download quota.</p>
+			<div id="cred-container">
+				<table id="cred-table" class="icon-text-color">
+					<thead>
+						<tr>
+							<th>Service</th>
+							<th>Email</th>
+							<th>Password</th>
+							<th class="action-column">Action</th>
+						</tr>
+					</thead>
+					<tbody id="cred-list"></tbody>
+					<tbody>
+						<tr id="add-row" class="hidden">
+							<td>
+								<select id="cred-service-input"></select>
+								<p class="error hidden" id="cred-error">*The credentials aren't valid (Kapowarr can't login)</p>
+							</td>
+							<td><input type="email" id="cred-email-input"></td>
+							<td><input type="text" id="cred-password-input"></td>
+							<td><button id="add-cred" type="button">Add</button></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<button type="button" id="toggle-cred">Add credential</button>
+		</form>
+	</div>
+</main>
+{% endblock main %}
