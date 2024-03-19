@@ -33,7 +33,7 @@ function addQueueEntry(api_key, obj) {
 
 	const speed = document.createElement('td');
 	speed.classList.add('number-column');
-	speed.innerText = (Math.round(obj.speed / 100000) / 10) + 'MB/s';
+	speed.innerText = twoDigits(Math.round(obj.speed / 100000) / 10) + 'MB/s';
 	entry.append(speed);
 
 	const progress = document.createElement('td');
@@ -41,7 +41,7 @@ function addQueueEntry(api_key, obj) {
 	if (obj.size === -1)
 		progress.innerText = convertSize(obj.progress);
 	else
-		progress.innerText = (Math.round(obj.progress * 10) / 10) + '%';
+		progress.innerText = twoDigits(Math.round(obj.progress * 10) / 10) + '%';
 	entry.append(progress);
 
 	const delete_entry = document.createElement('td');
@@ -61,8 +61,8 @@ function updateQueueEntry(obj) {
 	const tr = document.querySelector(`#queue > tr#d-${obj.id}`);
 	tr.querySelector('td:nth-child(1)').innerText = obj.status.charAt(0).toUpperCase() + obj.status.slice(1);
 	tr.querySelector('td:nth-child(4)').innerText = convertSize(obj.size);
-	tr.querySelector('td:nth-child(5)').innerText = (Math.round(obj.speed / 100000) / 10) + 'MB/s';
-	tr.querySelector('td:nth-child(6)').innerText = obj.size === -1 ? convertSize(obj.progress) : (Math.round(obj.progress * 10) / 10) + '%';
+	tr.querySelector('td:nth-child(5)').innerText = twoDigits(Math.round(obj.speed / 100000) / 10) + 'MB/s';
+	tr.querySelector('td:nth-child(6)').innerText = obj.size === -1 ? convertSize(obj.progress) : twoDigits(Math.round(obj.progress * 10) / 10) + '%';
 };
 
 function removeQueueEntry(id) {

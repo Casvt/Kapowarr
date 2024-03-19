@@ -13,6 +13,10 @@ function setAttribute(target, key, value) {
 	});
 };
 
+function twoDigits(n) {
+	return n.toLocaleString("en", { minimumFractionDigits: 2 });
+};
+
 function setIcon(container, icon, title='') {
 	container.title = title;
 	container.innerHTML = icon;
@@ -252,11 +256,11 @@ function convertSize(size) {
 	for (const [term, division_size] of Object.entries(sizes)) {
 		let resulting_size = size / division_size
 		if (0 <= resulting_size && resulting_size <= 1000) {
-			size = (
+			size = twoDigits(
 				Math.round(
 					(size / division_size * 100)
 				) / 100
-			).toString() + term;
+			) + term;
 			return size;
 		};
 	};
