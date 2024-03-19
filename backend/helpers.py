@@ -11,6 +11,7 @@ from sys import version_info
 from threading import current_thread
 from typing import (TYPE_CHECKING, Any, Iterable, Iterator, List, Tuple,
                     TypeVar, TypedDict, Union)
+from urllib.parse import unquote
 
 from flask_socketio import SocketIO
 
@@ -111,6 +112,25 @@ def create_range(
 		return n
 	else:
 		return (n, n)
+
+
+def normalize_string(s: str) -> str:
+	"""Fix some common stuff in strings coming from online sources. Parses
+	html escapes (`%20` -> ` `), fixing encoding errors (`_28` -> `(`), and
+	replaces unicode chars by standard chars (`’` -> `'`).
+
+	Args:
+		s (str): Input string.
+
+	Returns:
+		str: Normilized string.
+	"""	
+	return (unquote(s)
+		.replace('_28','(')
+		.replace('_29',')')
+		.replace('–', '-')
+		.replace('’', "'")
+	)
 
 
 def extract_year_from_date(

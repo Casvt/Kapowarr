@@ -22,7 +22,7 @@ from backend.custom_exceptions import (CVRateLimitReached,
 from backend.db import get_db
 from backend.file_extraction import (convert_volume_number_to_int,
                                      process_issue_number, volume_regex)
-from backend.helpers import T, batched
+from backend.helpers import T, batched, normalize_string
 from backend.settings import Settings, private_settings
 
 translation_regex = compile(
@@ -299,7 +299,7 @@ class ComicVine:
 		result = {
 			'comicvine_id': int(volume_data['id']),
 
-			'title': volume_data['name'].strip(),
+			'title': normalize_string(volume_data['name'].strip()),
 			'year': None,
 			'volume_number': 1,
 			'cover': volume_data['image']['small_url'],
