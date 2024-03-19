@@ -10,6 +10,8 @@ RUN pip3 install -r requirements.txt
 
 COPY . .
 
+RUN chmod -R 755 /app
+
 EXPOSE 5656
 
 CMD [ "python3", "/app/Kapowarr.py" ]
