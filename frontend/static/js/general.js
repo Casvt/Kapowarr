@@ -39,6 +39,7 @@ async function fetchAPI(endpoint, api_key, params={}, json_return=true) {
 	})
 	.catch(response => {
 		if (response.status === 401) {
+			setLocalStorage({api_key: null})
 			window.location.href = `${url_base}/login?redirect=${window.location.pathname}`;
 		} else {
 			return Promise.reject(response);
@@ -63,6 +64,7 @@ async function sendAPI(method, endpoint, api_key, params={}, body={}) {
 	})
 	.catch(response => {
 		if (response.status === 401) {
+			setLocalStorage({api_key: null})
 			window.location.href = `${url_base}/login?redirect=${window.location.pathname}`;
 		} else {
 			return Promise.reject(response);
