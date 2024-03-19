@@ -183,7 +183,13 @@ class extract_filename_data(unittest.TestCase):
 				{'series': 'Batman Annual', 'year': 1961, 'volume_number': 1, 'special_version': None, 'issue_number': 14.0, 'annual': True},
 
 			'Action Comics/Volume 2 (2011)/Action Comics 000 (2012) (4 covers) (digital) (Minutemen-PhD).cbr':
-				{'series': 'Action Comics', 'year': 2012, 'volume_number': 2, 'special_version': None, 'issue_number': 0.0, 'annual': False}
+				{'series': 'Action Comics', 'year': 2012, 'volume_number': 2, 'special_version': None, 'issue_number': 0.0, 'annual': False},
+
+			'Undiscovered Country Volume 2 Issue 3.cbr':
+				{'series': 'Undiscovered Country', 'year': None, 'volume_number': 2, 'special_version': None, 'issue_number': 3.0, 'annual': False},
+
+			'Undiscovered Country Volume 2 Issue 3/Undiscovered Country Volume 2 Issue 3 Cover.jpg':
+				{'series': 'Undiscovered Country', 'year': None, 'volume_number': 2, 'special_version': 'cover', 'issue_number': 3.0, 'annual': False}
 		}
 		self.run_cases(cases)
 
