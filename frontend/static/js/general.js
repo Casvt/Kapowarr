@@ -27,6 +27,12 @@ function setImage(container, img, title='') {
 	container.querySelector('img').src = `${url_base}/static/img/${img}`;
 };
 
+function hide(to_hide, to_show=null) {
+	to_hide.forEach(el => el.classList.add('hidden'));
+	if (to_show !== null)
+		to_show.forEach(el => el.classList.remove('hidden'));
+};
+
 async function fetchAPI(endpoint, api_key, params={}, json_return=true) {
 	let formatted_params;
 	if (params) {

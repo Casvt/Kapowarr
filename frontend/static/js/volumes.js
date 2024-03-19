@@ -38,8 +38,7 @@ const pre_build_els = {
 };
 
 function showLibraryPage(el) {
-	Object.values(library_els.pages).forEach(v => v.classList.add('hidden'));
-	el.classList.remove('hidden');
+	hide(Object.values(library_els.pages), [el]);
 };
 
 class LibraryEntry {

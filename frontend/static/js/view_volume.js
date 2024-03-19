@@ -178,8 +178,7 @@ function fillPage(data, api_key) {
 
 	mapButtons(id);
 
-	ViewEls.views.loading.classList.add('hidden');
-	ViewEls.views.main.classList.remove('hidden');
+	hide([ViewEls.views.loading], [ViewEls.views.main]);
 };
 
 //
@@ -253,10 +252,10 @@ function autosearchIssue(issue_id, api_key) {
 function showManualSearch(api_key, issue_id=null) {
 	// Display searching message
 	const message = document.querySelector('#searching-message');
-	message.classList.remove('hidden');
 	const table = document.querySelector('#search-result-table');
-	table.classList.add('hidden');
 	const tbody = table.querySelector('tbody');
+
+	hide([table], [message]);
 
 	// Show window
 	showWindow('manual-search-window');
@@ -312,8 +311,7 @@ function showManualSearch(api_key, issue_id=null) {
 				blocklist_button.remove()
 		});
 
-		message.classList.add('hidden');
-		table.classList.remove('hidden');
+		hide([message], [table]);
 	});
 };
 
@@ -372,12 +370,9 @@ function showRename(api_key, issue_id=null) {
 		table.innerHTML = '';
 
 		if (!json.result.length) {
-			empty_message.classList.remove('hidden');
-			table_container.classList.add('hidden');
+			hide([table_container, rename_button], [empty_message]);
 		} else {
-			empty_message.classList.add('hidden');
-			table_container.classList.remove('hidden');
-			rename_button.classList.remove('hidden');
+			hide([empty_message], [table_container, rename_button]);
 			json.result.forEach(rename_entry => {
 				const before = ViewEls.pre_build.rename_before.cloneNode(true);
 				table.appendChild(before);
@@ -477,14 +472,10 @@ function showConvert(api_key, issue_id=null) {
 		table.innerHTML = '';
 
 		if (!json.result.length) {
-			table_container.classList.add('hidden');
-			empty_rename.classList.remove('hidden');
-			convert_button.classList.add('hidden');
+			hide([table_container, convert_button], [empty_rename]);
 
 		} else {
-			table_container.classList.remove('hidden');
-			empty_rename.classList.add('hidden');
-			convert_button.classList.remove('hidden');
+			hide([empty_rename], [table_container, convert_button]);
 			json.result.forEach(convert_entry => {
 				const before = ViewEls.pre_build.rename_before.cloneNode(true);
 				table.appendChild(before);
@@ -587,7 +578,7 @@ function editVolume() {
 //
 function deleteVolume() {
 	const delete_error = document.querySelector('#volume-downloading-error');
-	delete_error.classList.add('hidden');
+	hide([delete_error]);
 	const delete_folder = document.querySelector('#delete-folder-input').value;
 	usingApiKey()
 	.then(api_key => {
@@ -596,8 +587,10 @@ function deleteVolume() {
 			window.location.href = `${url_base}/`;
 		})
 		.catch(e => {
-			if (e.status === 400) delete_error.classList.remove('hidden');
-			else console.log(e);
+			if (e.status === 400)
+				hide([], [delete_error]);
+			else
+				console.log(e);
 		});
 	});
 };
@@ -624,10 +617,12 @@ function showIssueInfo(id, api_key) {
 };
 
 function showInfoWindow(window) {
-	document.querySelectorAll(
-		`#issue-info-window > div:nth-child(2) > div:not(#issue-info-selectors)`
-	).forEach(w => w.classList.add('hidden'));
-	document.querySelector(`#${window}`).classList.remove('hidden');
+	hide(
+		[...document.querySelectorAll(
+			`#issue-info-window > div:nth-child(2) > div:not(#issue-info-selectors)`
+		)],
+		document.querySelector(`#${window}`)
+	);
 };
 
 // code run on load
