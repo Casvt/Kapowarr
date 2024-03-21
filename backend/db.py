@@ -6,11 +6,11 @@ Setting up the database and handling connections
 
 import logging
 from os.path import dirname
-from sqlite3 import (PARSE_DECLTYPES, Connection, ProgrammingError, Row,
-                     register_adapter, register_converter)
+from sqlite3 import (PARSE_DECLTYPES, Connection, Cursor, ProgrammingError,
+                     Row, register_adapter, register_converter)
 from threading import current_thread
 from time import time
-from typing import List, Type, Union
+from typing import Any, Dict, List, Tuple, Type, Union
 
 from flask import g
 
@@ -20,6 +20,18 @@ from backend.logging import set_log_level
 __DATABASE_FILEPATH__ = 'db', 'Kapowarr.db'
 __DATABASE_VERSION__ = 18
 __DATABASE_TIMEOUT__ = 10.0
+
+class NoNoneCursor(Cursor):
+	"""
+	`Cursor` but `lastrowid` typehinting is overwritten to remove `None`.
+	The `lastrowid` property is only called when we know that we'll get
+	an `int`, so remove the `None` possibility to fix loads of type hinting
+	problems.
+	"""
+
+	@property
+	def lastrowid(self) -> int:
+		return super().lastrowid or 1
 
 class DBConnection(Connection, metaclass=DB_ThreadSafeSingleton):
 	"For creating a connection with a database"
@@ -41,6 +53,9 @@ class DBConnection(Connection, metaclass=DB_ThreadSafeSingleton):
 		super().cursor().execute("PRAGMA foreign_keys = ON;")
 		self.closed = False
 		return
+
+	def cursor(self) -> NoNoneCursor:
+		return super().cursor() # type: ignore
 
 	def close(self) -> None:
 		"""Close the connection
@@ -76,6 +91,9 @@ class TempDBConnection(Connection):
 		self.closed = False
 		return
 
+	def cursor(self) -> NoNoneCursor:
+		return super().cursor() # type: ignore
+
 	def close(self) -> None:
 		"""Close the temporary connection
 		"""
@@ -104,14 +122,14 @@ def set_db_location(db_file_location: str) -> None:
 
 	return
 
-db_output_mapping = {
+db_output_mapping: Dict[type, Any] = {
 	dict: Row,
 	tuple: None
 }
 def get_db(
-	output_type: Union[Type[dict], Type[tuple]] = tuple,
+	output_type: Union[Type[Dict[Any, Any]], Type[Tuple[Any]]] = tuple,
 	temp: bool = False
-):
+) -> NoNoneCursor:
 	"""
 	Get a database cursor instance or create a new one if needed
 
@@ -125,13 +143,13 @@ def get_db(
 			Defaults to False.
 
 	Returns:
-		Cursor: Database cursor instance with desired output type set
+		NoAnyCursor: Database cursor instance with desired output type set.
 	"""
 	if temp:
 		cursor = TempDBConnection(timeout=__DATABASE_TIMEOUT__).cursor()
 	else:
 		try:
-			cursor = g.cursor
+			cursor: NoNoneCursor = g.cursor
 		except AttributeError:
 			db = DBConnection(timeout=__DATABASE_TIMEOUT__)
 			cursor = g.cursor = db.cursor()
@@ -140,11 +158,11 @@ def get_db(
 
 	return cursor
 
-def close_db(e: str=None):
+def close_db(e: Union[str, None] = None):
 	"""Close database cursor, commit database and close database.
 
 	Args:
-		e (str, optional): Error. Defaults to None.
+		e (Union[str, None], optional): Error. Defaults to None.
 	"""
 	try:
 		cursor = g.cursor

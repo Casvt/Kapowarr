@@ -9,12 +9,13 @@ Note: Not all CE's inherit from CustomException.
 """
 
 import logging
+from typing import Any
 
 from backend.enums import BlocklistReason, BlocklistReasonID
 
 
 class CustomException(Exception):
-	def __init__(self, e = None) -> None:
+	def __init__(self, e: Any = None) -> None:
 		logging.warning(self.__doc__)
 		super().__init__(e)
 		return
@@ -52,7 +53,7 @@ class VolumeAlreadyAdded(CustomException):
 	api_response = {'error': 'VolumeAlreadyAdded', 'result': {}, 'code': 400}
 
 class VolumeDownloadedFor(Exception):
-	"""The volume is desired to be deleted but there is a download for it going"""	
+	"""The volume is desired to be deleted but there is a download for it going"""
 	def __init__(self, volume_id: int):
 		self.volume_id = volume_id
 		super().__init__(self.volume_id)
@@ -60,7 +61,7 @@ class VolumeDownloadedFor(Exception):
 			f'Deleting volume failed because there is a download for the volume: {self.volume_id}'
 		)
 		return
-		
+
 	@property
 	def api_response(self):
 		return {
@@ -70,7 +71,7 @@ class VolumeDownloadedFor(Exception):
 		}
 
 class TaskForVolumeRunning(Exception):
-	"""The volume is desired to be deleted but there is a task running for it"""	
+	"""The volume is desired to be deleted but there is a task running for it"""
 	def __init__(self, volume_id: int):
 		self.volume_id = volume_id
 		super().__init__(self.volume_id)
@@ -78,7 +79,7 @@ class TaskForVolumeRunning(Exception):
 			f'Deleting volume failed because there is a task for the volume: {self.volume_id}'
 		)
 		return
-		
+
 	@property
 	def api_response(self):
 		return {
@@ -119,7 +120,7 @@ class LinkBroken(Exception):
 		self.reason_id = BlocklistReasonID[reason.name].value
 		super().__init__(self.reason_id)
 		return
-	
+
 	@property
 	def api_response(self):
 		return {
@@ -133,7 +134,7 @@ class LinkBroken(Exception):
 
 class InvalidSettingKey(Exception):
 	"""The setting key is unknown"""
-	def __init__(self, key: str=''):
+	def __init__(self, key: str = ''):
 		self.key = key
 		super().__init__(self.key)
 		logging.warning(f'No setting matched the given key: {key}')
@@ -149,13 +150,13 @@ class InvalidSettingKey(Exception):
 
 class InvalidSettingValue(Exception):
 	"""The setting value is invalid"""
-	def __init__(self, key: str='', value: str=''):
+	def __init__(self, key: str = '', value: Any = ''):
 		self.key = key
 		self.value = value
 		super().__init__(self.key)
 		logging.warning(f'The value for this setting is invalid: {key}: {value}')
 		return
-		
+
 	@property
 	def api_response(self):
 		return {
@@ -166,7 +167,7 @@ class InvalidSettingValue(Exception):
 
 class InvalidSettingModification(Exception):
 	"""The setting is not allowed to be changed this way"""
-	def __init__(self, key: str='', instead: str=''):
+	def __init__(self, key: str = '', instead: str = ''):
 		self.key = key
 		self.instead = instead
 		super().__init__(key)
@@ -185,7 +186,7 @@ class InvalidSettingModification(Exception):
 
 class KeyNotFound(Exception):
 	"""A key that is required to be given in the api request was not found"""
-	def __init__(self, key: str=''):
+	def __init__(self, key: str = ''):
 		self.key = key
 		super().__init__(self.key)
 		if key != 'password':
@@ -201,13 +202,13 @@ class KeyNotFound(Exception):
 
 class InvalidKeyValue(Exception):
 	"""A key given in the api request has an invalid value"""
-	def __init__(self, key: str='', value: str=''):
+	def __init__(self, key: str = '', value: Any = ''):
 		self.key = key
 		self.value = value
 		super().__init__(self.key)
 		if value not in ('undefined', 'null'):
 			logging.warning(
-				'This key in the API request has an invalid value: ' + 
+				'This key in the API request has an invalid value: ' +
 				f'{key} = {value}'
 			)
 		return
@@ -225,7 +226,7 @@ class CredentialNotFound(CustomException):
 	api_response = {'error': 'CredentialNotFound', 'result': {}, 'code': 404}
 
 class CredentialSourceNotFound(Exception):
-	"""The credential source with the given string was not found"""	
+	"""The credential source with the given string was not found"""
 	def __init__(self, string: str) -> None:
 		self.string = string
 		logging.warning(f'Credential source with given string not found: {string}')
@@ -253,7 +254,7 @@ class DownloadLimitReached(Exception):
 		self.string = string
 		logging.warning(f"Credential source {string} has reached it's download limit")
 		return
-	
+
 	@property
 	def api_response(self):
 		return {
@@ -270,7 +271,7 @@ class TorrentClientDownloading(Exception):
 	"""
 	The torrent client is desired to be deleted
 	but there is a torrent downloading with it
-	"""	
+	"""
 	def __init__(self, torrent_client_id: int):
 		self.torrent_client_id = torrent_client_id
 		super().__init__(self.torrent_client_id)
@@ -279,7 +280,7 @@ class TorrentClientDownloading(Exception):
 			+ f'a torrent downloading with it: {self.torrent_client_id}'
 		)
 		return
-		
+
 	@property
 	def api_response(self):
 		return {

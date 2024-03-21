@@ -29,7 +29,7 @@ download_chunk_size = 4194304 # 4MB Chunks
 
 class BaseDownload(Download):
 	def __init__(self):
-		self.id = None
+		self.id = None # type: ignore
 		self.state: DownloadState = DownloadState.QUEUED_STATE
 
 	def todict(self) -> dict:
@@ -56,7 +56,7 @@ class BaseDownload(Download):
 			'progress': self.progress,
 			'speed': self.speed,
 		}
-	
+
 	def __repr__(self) -> str:
 		return f'<{self.__class__.__name__}, {self.download_link}, {self.file}>'
 
@@ -123,7 +123,7 @@ class DirectDownload(BaseDownload):
 
 		Returns:
 			str: The extension of the file, including the `.`
-		"""		
+		"""
 		match = file_extension_regex.findall(
 			' '.join((
 				content_disposition,
@@ -145,7 +145,7 @@ class DirectDownload(BaseDownload):
 
 		Returns:
 			str: The filename
-		"""		
+		"""
 		folder = Settings()['download_folder']
 		extension = self.__extract_extension(
 			r.headers.get('Content-Type', ''),
@@ -184,11 +184,11 @@ class DirectDownload(BaseDownload):
 						self.progress = size_downloaded
 					else:
 						self.progress = round(
-							size_downloaded / self.size * 100, 
+							size_downloaded / self.size * 100,
 							2
 						)
 					start_time = perf_counter()
-					
+
 					ws.update_queue_status(self)
 
 			except ChunkedEncodingError:
@@ -261,7 +261,7 @@ class MegaDownload(BaseDownload):
 		self.file = self.__build_filename()
 		self.title = splitext(basename(self.file))[0]
 		return
-		
+
 	def __extract_extension(self) -> str:
 		"""Find the extension of the file behind the link
 
@@ -284,10 +284,10 @@ class MegaDownload(BaseDownload):
 	def run(self) -> None:
 		"""
 		Start the download
-		
+
 		Raises:
 			DownloadLimitReached: The Mega download limit is reached mid-download
-		"""		
+		"""
 		self.state = DownloadState.DOWNLOADING_STATE
 		ws = WebSocket()
 		self._mega.download_url(

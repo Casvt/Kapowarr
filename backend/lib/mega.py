@@ -34,7 +34,7 @@ from random import randint
 from re import findall, search
 from struct import pack, unpack
 from time import perf_counter, time
-from typing import Callable
+from typing import Any, Callable, Dict, List, Union
 
 from Crypto.Cipher import AES
 from Crypto.PublicKey import RSA
@@ -240,7 +240,13 @@ def decrypt_attr(attr, key):
 
 sids = {}
 class Mega:
-	def __init__(self, url: str, email: str=None, password: str=None, only_check_login: bool=False):
+	def __init__(
+		self,
+		url: str,
+		email: Union[str, None] = None,
+		password: Union[str, None] = None,
+		only_check_login: bool = False
+	):
 		self.downloading: bool = False
 		self.progress: float = 0.0
 		self.speed: float = 0.0
@@ -255,7 +261,7 @@ class Mega:
 
 		logged_in = False
 		try:
-			if email is not None:
+			if email is not None and password is not None:
 				if not email in sids or only_check_login:
 					# No sid fetched for user yet
 					self._login_user(email, password)
@@ -280,17 +286,17 @@ class Mega:
 					self.login_anonymous()
 					sids.update({-1: (self.sid, time() + 3600)})
 				self.sid = sids[-1][0]
-					
+
 			except JSONDecodeError:
 				raise RequestError(-16)
-		
+
 		self.file_id, file_key = self._parse_url(url).split('!')
 		try:
-			file_data = self._api_request({
+			file_data: Dict[str, Any] = self._api_request({
 				'a': 'g',
 				'g': 1,
 				'p': self.file_id
-			})
+			}) # type: ignore
 		except JSONDecodeError:
 			raise RequestError(-18)
 
@@ -315,13 +321,16 @@ class Mega:
 		self.meta_mac = file_key[6:8]
 
 		attribs = base64_url_decode(file_data['at'])
-		attribs = decrypt_attr(attribs, self.k)
+		attribs: Any = decrypt_attr(attribs, self.k)
 		self.mega_filename = attribs.get('n', '')
 
 	def _login_user(self, email: str, password: str):
 		logging.debug('Logging into Mega with user account')
 		email = email.lower()
-		get_user_salt_resp = self._api_request({'a': 'us0', 'user': email})
+		get_user_salt_resp: Dict[str, Any] = self._api_request({
+			'a': 'us0',
+			'user': email
+		}) # type: ignore
 		user_salt = None
 		try:
 			user_salt = base64_to_a32(get_user_salt_resp['s'])
@@ -420,7 +429,7 @@ class Mega:
 	@retry(retry=retry_if_exception_type(RuntimeError),
 		   wait=wait_exponential(multiplier=2, min=2, max=60))
 	def _api_request(self, data):
-		params = {'id': self.sequence_num}
+		params: Dict[str, Any] = {'id': self.sequence_num}
 		self.sequence_num += 1
 
 		if self.sid:
@@ -431,7 +440,7 @@ class Mega:
 			data = [data]
 
 		url = f'{self.schema}://g.api.{self.domain}/cs'
-		json_resp = post(
+		json_resp: Union[List[int], int] = post(
 			url,
 			params=params,
 			data=dumps(data),
@@ -482,7 +491,7 @@ class Mega:
 			'a': 'g',
 			'g': 1,
 			'p': self.file_id
-		})['g']
+		})['g'] # type: ignore
 
 		r = get(url, stream=True).raw
 		size_downloaded = 0
@@ -521,7 +530,7 @@ class Mega:
 				else:
 					last_block = chunk[-modchunk:] + (b'\0' * (16 - modchunk))
 				rest_of_chunk = mv[:-modchunk]
-				
+
 				encryptor.encrypt(rest_of_chunk)
 				input_to_mac = encryptor.encrypt(last_block)
 				mac_bytes = mac_encryptor.encrypt(input_to_mac)

@@ -17,7 +17,7 @@ class Credentials:
 	"""
 	cache = {}
 	__load_first = True
-	
+
 	def __init__(self, sids: dict) -> None:
 		"""Set up the credential class
 
@@ -26,7 +26,7 @@ class Credentials:
 		"""
 		self.sids = sids
 		return
-	
+
 	def get_all(self, use_cache: bool=True) -> List[dict]:
 		"""Get all credentials
 
@@ -37,7 +37,7 @@ class Credentials:
 
 		Returns:
 			List[dict]: The list of credentials
-		"""		
+		"""
 		if not use_cache or not self.cache or self.__load_first:
 			cred = dict(
 				(c['id'], dict(c))
@@ -55,7 +55,7 @@ class Credentials:
 			self.__load_first = False
 
 		return list(self.cache.values())
-	
+
 	def get_one(self, id: int, use_cache: bool=True) -> dict:
 		"""Get a credential based on it's id.
 
@@ -72,7 +72,7 @@ class Credentials:
 
 		Returns:
 			dict: The credential info
-		"""		
+		"""
 		if not use_cache or self.__load_first:
 			self.get_all(use_cache=False)
 		cred = self.cache.get(id)
@@ -98,14 +98,14 @@ class Credentials:
 		for cred in self.cache.values():
 			if cred['source'] == source:
 				return cred
-			
+
 		# If no cred is set for the source,
 		# return a 'ghost' cred because other code can then
 		# simply grab value of 'email' and 'password' and it'll be None
 		return {
 			'id': -1,
 			'source': source,
-			'email': None, 
+			'email': None,
 			'password': None
 		}
 
@@ -139,7 +139,7 @@ class Credentials:
 		try:
 			if source == 'mega':
 				Mega('', email, password, only_check_login=True)
-			
+
 			id = get_db().execute("""
 				INSERT INTO credentials(source, email, password)
 				VALUES (?,?,?);
@@ -152,9 +152,9 @@ class Credentials:
 
 		except IntegrityError:
 			raise CredentialAlreadyAdded
-		
+
 		return self.get_one(id, use_cache=False)
-	
+
 	def delete(self, cred_id: int) -> None:
 		"""Delete a credential
 
@@ -165,7 +165,7 @@ class Credentials:
 			CredentialNotFound: The id doesn't map to any credential
 		"""
 		logging.info(f'Deleting credential: {cred_id}')
-		
+
 		if not get_db().execute(
 			"DELETE FROM credentials WHERE id = ?", (cred_id,)
 		).rowcount:

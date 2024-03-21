@@ -9,16 +9,16 @@ from os import listdir, makedirs, remove, scandir, sep, stat
 from os.path import (abspath, basename, commonpath, dirname, exists, isdir,
                      isfile, join, relpath, samefile, splitext)
 from shutil import copytree, move, rmtree
-from typing import List, Tuple
+from typing import Iterable, List, Tuple, Union
 
 from backend.db import get_db
 
 
-def folder_path(*folders) -> str:
-	"""Turn filepaths relative to the project folder into absolute paths
+def folder_path(*folders: str) -> str:
+	"""Turn filepaths relative to the project folder into absolute paths.
 
 	Returns:
-		str: The absolute filepath
+		str: The absolute filepath.
 	"""
 	return join(dirname(dirname(abspath(__file__))), *folders)
 
@@ -67,13 +67,13 @@ def delete_file_folder(path: str) -> None:
 	return
 
 
-def list_files(folder: str, ext: list=[]) -> List[str]:
+def list_files(folder: str, ext: Iterable[str] = []) -> List[str]:
 	"""List all files in a folder recursively with absolute paths
 
 	Args:
 		folder (str): The root folder to search through
 
-		ext (list, optional): File extensions to only include.
+		ext (Iterable[str], optional): File extensions to only include.
 			Give WITH preceding `.`.
 
 			Defaults to [].
@@ -81,7 +81,7 @@ def list_files(folder: str, ext: list=[]) -> List[str]:
 	Returns:
 		List[str]: The paths of the files in the folder
 	"""
-	files = []
+	files: List[str] = []
 	for f in scandir(folder):
 		if f.is_dir():
 			files += list_files(f.path, ext)
@@ -98,7 +98,7 @@ def list_files(folder: str, ext: list=[]) -> List[str]:
 
 
 def propose_basefolder_change(
-	files: List[str],
+	files: Iterable[str],
 	current_base_folder: str,
 	desired_base_folder: str
 ) -> List[Tuple[str, str]]:
@@ -146,7 +146,7 @@ def delete_empty_folders(top_folder: str, root_folder: str) -> None:
 
 	parent_folder = top_folder
 	child_folder = None
-	
+
 	while parent_folder:
 		if exists(parent_folder):
 			if samefile(parent_folder, root_folder):
@@ -180,17 +180,18 @@ def create_folder(folder: str) -> None:
 def create_volume_folder(
 	root_folder: str,
 	volume_id: int,
-	volume_folder: str=None
+	volume_folder: Union[str, None] = None
 ) -> str:
-	"""Generate, register and create a folder for a volume
+	"""Generate, register and create a folder for a volume.
 
 	Args:
-		root_folder (str): The rootfolder (path, not id)
-		volume_id (int): The id of the volume for which the folder is
-		volume_folder (str, optional): Custom volume folder. Defaults to None.
+		root_folder (str): The rootfolder (path, not id).
+		volume_id (int): The id of the volume for which the folder is.
+		volume_folder (Union[str, None], optional): Custom volume folder.
+			Defaults to None.
 
 	Returns:
-		str: The path to the folder
+		str: The path to the folder.
 	"""
 	# Generate and register folder
 	if volume_folder is None:
@@ -249,7 +250,7 @@ def copy_directory(source: str, target: str) -> None:
 	Args:
 		source (str): The path to the source directory.
 		target (str): The path to where the directory should be copied.
-	"""	
+	"""
 	try:
 		copytree(source, target)
 	except PermissionError:
@@ -260,7 +261,7 @@ def copy_directory(source: str, target: str) -> None:
 		pass
 
 	return
-		
+
 
 def get_file_id(
 	filepath: str,
@@ -315,5 +316,5 @@ def filepath_to_volume_id(filepath: str) -> int:
 		""",
 		(filepath,)
 	).fetchone()[0]
-	
+
 	return volume_id

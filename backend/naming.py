@@ -10,7 +10,7 @@ from os import listdir
 from os.path import basename, dirname, isdir, isfile, join, splitext
 from re import compile, escape, match
 from string import Formatter
-from typing import Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 from backend.custom_exceptions import InvalidSettingValue
 from backend.db import get_db
@@ -64,8 +64,8 @@ def make_filename_safe(unsafe_filename: str) -> str:
 
 def _get_formatting_data(
 	volume_id: int,
-	issue_id: int = None,
-	_volume_data: dict = None,
+	issue_id: Union[int, None] = None,
+	_volume_data: Union[Dict[str, Any], None] = None,
 	_volume_number: Union[int, Tuple[int, int], None] = None
 ) -> dict:
 	"""Get the values of the formatting keys for a volume or issue
@@ -73,11 +73,11 @@ def _get_formatting_data(
 	Args:
 		volume_id (int): The id of the volume
 
-		issue_id (int, optional): The id of the issue.
+		issue_id (Union[int, None], optional): The id of the issue.
 			Defaults to None.
 
-		_volume_data (dict, optional): Instead of fetching data based on
-		the volume id, work with the data given in this variable.
+		_volume_data (Union[dict, None], optional): Instead of fetching data
+		based on the volume id, work with the data given in this variable.
 			Defaults to None.
 
 		_volume_number (Union[int, Tuple[int, int], None], optional):
@@ -102,19 +102,19 @@ def _get_formatting_data(
 	settings = Settings()
 	volume_padding = settings['volume_padding']
 	issue_padding = settings['issue_padding']
-		
-	# Build formatted data
-	if volume_data.get('title').startswith('The '):
-		clean_title = volume_data.get('title') + ', The'
-	elif volume_data.get('title').startswith('A '):
-		clean_title = volume_data.get('title') + ', A'
-	else:
-		clean_title = volume_data.get('title') or 'Unknown'
 
-	if not isinstance(volume_data.get('volume_number'), tuple):
-		volume_number = (str(volume_data.get('volume_number'))
+	# Build formatted data
+	if volume_data['title'].startswith('The '):
+		clean_title = volume_data['title'] + ', The'
+	elif volume_data['title'].startswith('A '):
+		clean_title = volume_data['title'] + ', A'
+	else:
+		clean_title = volume_data['title'] or 'Unknown'
+
+	if not isinstance(volume_data['volume_number'], tuple):
+		volume_number = (str(volume_data['volume_number'])
 			.zfill(volume_padding))
-	
+
 	else:
 		volume_number = ' - '.join((
 			str(n).zfill(volume_padding)
@@ -135,18 +135,18 @@ def _get_formatting_data(
 		'year': volume_data.get('year') or 'Unknown',
 		'publisher': volume_data.get('publisher') or 'Unknown'
 	}
-	
+
 	if issue_id:
 		# Add issue data if issue is found
 		issue_data = Issue(issue_id, check_existence=True).get_keys(
 			('comicvine_id', 'issue_number', 'title', 'date')
 		)
-			
+
 		formatting_data.update({
 			'issue_comicvine_id': issue_data.get('comicvine_id') or 'Unknown',
 			'issue_number': (
 				str(issue_data.get('issue_number'))
-					.zfill(issue_padding) 
+					.zfill(issue_padding)
 				or 'Unknown'
 			),
 			'issue_title': ((issue_data.get('title') or 'Unknown')
@@ -159,16 +159,19 @@ def _get_formatting_data(
 				or 'Unknown'
 			)
 		})
-		
+
 	return formatting_data
 
-def generate_volume_folder_name(volume_id: int, _volume_data: dict=None) -> str:
+def generate_volume_folder_name(
+	volume_id: int,
+	_volume_data: Union[Dict[str, Any], None] = None
+) -> str:
 	"""Generate a volume folder name based on the format string
 
 	Args:
 		volume_id (int): The id of the volume for which to generate the string
 
-		_volume_data (dict, optional): Instead of fetching data based on
+		_volume_data (Union[Dict[str, Any], None], optional): Instead of fetching data based on
 		the volume id, work with the data given in this variable.
 			Defaults to None.
 
@@ -283,7 +286,10 @@ def generate_issue_range_name(
 	save_name = make_filename_safe(name)
 	return save_name
 
-def generate_issue_name(volume_id: int, calculated_issue_number: float) -> str:
+def generate_issue_name(
+	volume_id: int,
+	calculated_issue_number: float
+) -> str:
 	"""Generate a issue name based on the format string
 
 	Args:
@@ -294,12 +300,12 @@ def generate_issue_name(volume_id: int, calculated_issue_number: float) -> str:
 
 	Returns:
 		str: The issue name
-	"""	
+	"""
 	issue = Issue.from_volume_and_calc_number(
 		volume_id,
 		calculated_issue_number
 	)
-	
+
 	formatting_data = _get_formatting_data(volume_id, issue.id)
 	settings = Settings()
 
@@ -329,7 +335,7 @@ def check_format(format: str, type: str) -> None:
 
 	Raises:
 		InvalidSettingValue: Something in the string is invalid
-	"""	
+	"""
 	keys = [fn for _, fn, _, _ in Formatter().parse(format) if fn is not None]
 
 	if type in ('file_naming', 'file_naming_tpb', 'file_naming_empty'):
@@ -407,18 +413,20 @@ def same_name_indexing(
 
 def preview_mass_rename(
 	volume_id: int,
-	issue_id: int=None,
-	filepath_filter: List[str]=None
+	issue_id: Union[int, None] = None,
+	filepath_filter: Union[List[str], None] = None
 ) -> List[Dict[str, str]]:
 	"""Preview what naming.mass_rename() will do.
 
 	Args:
 		volume_id (int): The id of the volume for which to check the renaming.
 
-		issue_id (int, optional): The id of the issue for which to check the renaming.
+		issue_id (Union[int, None], optional): The id of the issue for which to
+		check the renaming.
 			Defaults to None.
 
-		filepath_filter (List[str], optional): Only process files that are in the list.
+		filepath_filter (Union[List[str], None], optional): Only process files
+		that are in the list.
 			Defaults to None.
 
 	Returns:
@@ -496,7 +504,7 @@ def preview_mass_rename(
 				issues[0],
 				issues[-1]
 			)
-		
+
 		else:
 			# File covers one issue
 			suggested_name = generate_issue_name(volume_id, issues[0])
@@ -547,23 +555,25 @@ def preview_mass_rename(
 				'before': file,
 				'after': suggested_name
 			})
-		
+
 	return result
 
 def mass_rename(
 	volume_id: int,
-	issue_id: int=None,
-	filepath_filter: List[str]=None
+	issue_id: Union[int, None] = None,
+	filepath_filter: Union[List[str], None] = None
 ) -> List[str]:
 	"""Carry out proposal of `naming.preview_mass_rename()`.
 
 	Args:
 		volume_id (int): The id of the volume for which to rename.
 
-		issue_id (int, optional): The id of the issue for which to rename.
+		issue_id (Union[int, None], optional): The id of the issue for which
+		to rename.
 			Defaults to None.
 
-		filepath_filter (List[str], optional): Only rename files that are in the list.
+		filepath_filter (Union[List[str], None], optional): Only rename files
+		that are in the list.
 			Defaults to None.
 
 	Returns:

@@ -187,6 +187,8 @@ class PostProcesser:
 		PPA.add_file_to_database
 	]
 
+	actions_seeding = []
+
 	actions_canceled = [
 		PPA.delete_file,
 		PPA.remove_from_queue
@@ -212,6 +214,12 @@ class PostProcesser:
 	def success(cls, download) -> None:
 		logging.info(f'Postprocessing of successful download: {download.id}')
 		cls._run_actions(cls.actions_success, download)
+		return
+
+	@classmethod
+	def seeding(cls, download) -> None:
+		logging.info(f'Postprocessing of seeding download: {download.id}')
+		cls._run_actions(cls.actions_seeding, download)
 		return
 
 	@classmethod
@@ -246,7 +254,7 @@ class PostProcesserTorrentsCopy(PostProcesser):
 		PPA.remove_from_queue,
 		PPA.delete_file
 	]
-	
+
 	actions_seeding = [
 		PPA.add_to_history,
 		PPA.copy_file_torrent,
@@ -254,9 +262,3 @@ class PostProcesserTorrentsCopy(PostProcesser):
 		PPA.add_file_to_database,
 		PPA.reset_file_link
 	]
-	
-	@classmethod
-	def seeding(cls, download) -> None:
-		logging.info(f'Postprocessing of seeding download: {download.id}')
-		cls._run_actions(cls.actions_seeding, download)
-		return

@@ -11,7 +11,7 @@ from os import listdir
 from os.path import basename, join
 from threading import Thread
 from time import sleep
-from typing import TYPE_CHECKING, Dict, List, Union
+from typing import TYPE_CHECKING, Dict, List, Type, Union
 
 from backend.blocklist import add_to_blocklist
 from backend.custom_exceptions import (DownloadLimitReached, DownloadNotFound,
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 #=====================
 # Download handling
 #=====================
-download_type_to_class: Dict[str, Download] = {
+download_type_to_class: Dict[str, Type[Download]] = {
 	c.type: c
 	for c in Download.__subclasses__()[0].__subclasses__()
 }
@@ -43,13 +43,13 @@ download_type_to_class: Dict[str, Download] = {
 class DownloadHandler:
 	queue: List[Download] = []
 	downloading_item: Union[Thread, None] = None
-	
+
 	def __init__(self, context: Flask) -> None:
 		"""Setup the download handler
 
 		Args:
 			context (Flask): A flask app instance
-		"""		
+		"""
 		self.context = context.app_context
 		self.load_download_thread = Thread(
 			target=self.__load_downloads,
@@ -82,7 +82,7 @@ class DownloadHandler:
 		Args:
 			download (Download): The download to run.
 				One of the entries in self.queue.
-		"""	
+		"""
 		logging.info(f'Starting download: {download.id}')
 
 		with self.context():
@@ -106,7 +106,7 @@ class DownloadHandler:
 
 			elif download.state == DownloadState.FAILED_STATE:
 				PostProcesser.failed(download)
-			
+
 			elif download.state == DownloadState.SHUTDOWN_STATE:
 				PostProcesser.shutdown(download)
 				return
@@ -129,14 +129,14 @@ class DownloadHandler:
 		Args:
 			download (TorrentDownload): The torrent download to run.
 				One of the entries in self.queue.
-		"""	
+		"""
 		download.run()
-		
+
 		with self.context():
 			ws = WebSocket()
 			settings = Settings()
 			seeding_handling = settings['seeding_handling']
-			
+
 			if seeding_handling == SeedingHandling.COMPLETE:
 				post_processer = PostProcesserTorrentsComplete
 			elif seeding_handling == SeedingHandling.COPY:
@@ -144,7 +144,7 @@ class DownloadHandler:
 			else:
 				raise NotImplementedError
 
-			# When seeding_handling is 'copy', keep track if we already copied 
+			# When seeding_handling is 'copy', keep track if we already copied
 			# the files
 			files_copied = False
 
@@ -220,7 +220,7 @@ class DownloadHandler:
 			name="Download Handler"
 		)
 		self.downloading_item.start()
-		
+
 		return
 
 	def __prepare_downloads_for_queue(
@@ -334,7 +334,7 @@ class DownloadHandler:
 					# Link is broken
 					add_to_blocklist(download['link'], lb.reason)
 					# Link is broken, which triggers a write to the database
-					# To avoid the database being locked for a long time while 
+					# To avoid the database being locked for a long time while
 					# importing, we commit in-between.
 					cursor.connection.commit()
 					continue
@@ -358,20 +358,20 @@ class DownloadHandler:
 	def add(self,
 		link: str,
 		volume_id: int,
-		issue_id: int=None
+		issue_id: Union[int, None] = None
 	) -> List[dict]:
 		"""Add a download to the queue
 
 		Args:
 			link (str): A getcomics link to download from
 			volume_id (int): The id of the volume for which the download is intended
-			issue_id (int, optional): The id of the issue for which the download
-			is intended.
+			issue_id (Union[int, None], optional): The id of the issue for which
+			the download is intended.
 				Defaults to None.
 
 		Returns:
 			List[dict]: Queue entries that were added from the link.
-		"""		
+		"""
 		logging.info(
 			'Adding download for '
 			+ f'volume {volume_id}{f" issue {issue_id}" if issue_id else ""}: {link}'
@@ -418,7 +418,7 @@ class DownloadHandler:
 	def stop_handle(self) -> None:
 		"""
 		Cancel any running download and stop the handler
-		"""		
+		"""
 		logging.debug('Stopping download thread')
 
 		for e in self.queue:
@@ -434,7 +434,7 @@ class DownloadHandler:
 
 		Returns:
 			List[dict]: All queue entries, formatted using `Download.todict()`.
-		"""		
+		"""
 		return [e.todict() for e in self.queue]
 
 	def get_one(self, download_id: int) -> dict:
@@ -448,9 +448,9 @@ class DownloadHandler:
 
 		Returns:
 			dict: The queue entry, formatted using `Download.todict()`.
-		"""		
+		"""
 		for entry in self.queue:
-			if entry['id'] == download_id:
+			if entry.id == download_id:
 				return entry.todict()
 		raise DownloadNotFound
 
@@ -462,7 +462,7 @@ class DownloadHandler:
 
 		Raises:
 			DownloadNotFound: The id doesn't map to any download in the queue
-		"""	
+		"""
 		logging.info(f'Removing download with id {download_id}')
 
 		for download in self.queue:
@@ -524,7 +524,7 @@ def get_download_history(offset: int=0) -> List[dict]:
 
 	Returns:
 		List[dict]: The history entries.
-	"""	
+	"""
 	result = list(map(
 		dict,
 		get_db(dict).execute(

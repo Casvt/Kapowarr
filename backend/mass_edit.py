@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, List, Union
-from backend.conversion import mass_convert
+from typing import TYPE_CHECKING, List
 
+from backend.conversion import mass_convert
 from backend.custom_exceptions import InvalidKeyValue, VolumeDownloadedFor
 from backend.db import get_db
 from backend.naming import mass_rename
@@ -21,7 +21,7 @@ class MassEditorVariables:
 	it needs a value by seting it as a class variable. That
 	way, the value 'sent back' to here where the value can be used.
 	"""
-	download_handler: Union[None, DownloadHandler] = None
+	download_handler: DownloadHandler = None # type: ignore
 
 def mass_editor_delete(volume_ids: List[int], **kwargs) -> None:
 	delete_volume_folder = kwargs.get('delete_folder', False)
@@ -29,7 +29,7 @@ def mass_editor_delete(volume_ids: List[int], **kwargs) -> None:
 		raise InvalidKeyValue('delete_folder', delete_volume_folder)
 
 	logging.info(f'Using mass editor, deleting volumes: {volume_ids}')
-	
+
 	for volume_id in volume_ids:
 		try:
 			Volume(volume_id).delete(delete_volume_folder)

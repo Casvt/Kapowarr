@@ -9,7 +9,7 @@ from multiprocessing import cpu_count
 from multiprocessing.pool import Pool
 from os.path import dirname, splitext
 from sys import platform
-from typing import Dict, List, Set, Tuple, Union
+from typing import Dict, Iterable, List, Set, Tuple, Type, Union
 
 from backend.converters import FileConverter, rar_executables
 from backend.enums import SpecialVersion
@@ -17,7 +17,7 @@ from backend.file_extraction import extract_filename_data
 from backend.settings import Settings
 from backend.volumes import Volume, scan_files
 
-conversion_methods: Dict[str, Dict[str, FileConverter]] = {}
+conversion_methods: Dict[str, Dict[str, Type[FileConverter]]] = {}
 "source_format -> target_format -> conversion class"
 for fc in FileConverter.__subclasses__():
 	conversion_methods.setdefault(fc.source_format, {})[fc.target_format] = fc
@@ -32,16 +32,16 @@ def get_available_formats() -> Set[str]:
 
 def find_target_format_file(
 	file: str,
-	formats: List[str]
-) -> Union[FileConverter, None]:
+	formats: Iterable[str]
+) -> Union[Type[FileConverter], None]:
 	"""Get a FileConverter class based on source format and desired formats.
 
 	Args:
 		file (str): The file to get the converter for.
-		formats (List[str]): The formats to convert to, in order of preference.
+		formats (Iterable[str]): The formats to convert to, in order of preference.
 
 	Returns:
-		Union[FileConverter, None]: The converter class that is possible
+		Union[Type[FileConverter], None]: The converter class that is possible
 		and most prefered.
 			In case of no possible conversion, `None` is returned.
 	"""
@@ -67,18 +67,18 @@ def find_target_format_file(
 
 	return
 
-def convert_file(file: str, formats: List[str]) -> str:
+def convert_file(file: str, formats: Iterable[str]) -> Union[str, List[str]]:
 	"""Convert a file from one format to another.
 
 	Args:
 		file (str): The file to convert.
-		formats (List[str]): A list of formats to convert the file to.
+		formats (Iterable[str]): A iterable of formats to convert the file to.
 			Order of list is preference of format (left to right).
-			
+
 			Should be key `conversion.conversion_methods` -> source_format dict.
 
 	Returns:
-		str: The path of the converted file.
+		Union[str, List[str]]: The path of the converted file.
 	"""
 	conversion_class = find_target_format_file(
 		file,
@@ -91,22 +91,22 @@ def convert_file(file: str, formats: List[str]) -> str:
 
 def preview_mass_convert(
 	volume_id: int,
-	issue_id: int = None
+	issue_id: Union[int, None] = None
 ) -> List[Dict[str, str]]:
 	"""Get a list of suggested conversions for a volume or issue
 
 	Args:
 		volume_id (int): The ID of the volume to check for.
-		issue_id (int, optional): The ID of the issue to check for.
+		issue_id (Union[int, None], optional): The ID of the issue to check for.
 			Defaults to None.
 
 	Returns:
 		List[Dict[str, str]]: The list of suggestions.
 			Dicts have the keys `before` and `after`.
-	"""	
+	"""
 	settings = Settings()
 	volume = Volume(volume_id)
-	
+
 	format_preference = settings['format_preference']
 	extract_issue_ranges = settings['extract_issue_ranges']
 	special_version = volume['special_version']
@@ -164,14 +164,14 @@ def mass_convert(
 
 		files (List[str], optional): Only convert files mentioned in this list.
 			Defaults to [].
-	"""	
+	"""
 	# We're checking a lot if strings are in this list,
 	# so making it a set will increase performance (due to hashing).
-	files = set(files)
+	hashed_files = set(files)
 
 	settings = Settings()
 	volume = Volume(volume_id)
-	
+
 	format_preference = settings['format_preference']
 	extract_issue_ranges = settings['extract_issue_ranges']
 	special_version = volume['special_version']
@@ -179,7 +179,7 @@ def mass_convert(
 
 	planned_conversions: List[Tuple[str, List[str]]] = []
 	for f in volume.get_files(issue_id):
-		if files and f not in files:
+		if hashed_files and f not in hashed_files:
 			continue
 
 		converted = False
@@ -213,16 +213,16 @@ def mass_convert(
 	# Don't start more processes than files, but also not
 	# more than that is supported by the CPU
 	processes = min(len(planned_conversions), cpu_count())
-	
+
 	if processes == 0:
 		return
-	
+
 	elif processes == 1:
 		# Avoid mp overhead when we're only converting one file
 		convert_file(
 			*planned_conversions[0]
 		)
-	
+
 	else:
 		with Pool(processes=processes) as pool:
 			pool.starmap(

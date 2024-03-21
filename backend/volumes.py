@@ -1,5 +1,7 @@
 #-*- coding: utf-8 -*-
 
+from __future__ import annotations
+
 import logging
 from asyncio import run
 from dataclasses import dataclass
@@ -8,11 +10,13 @@ from os import remove
 from os.path import abspath, isdir, join, relpath
 from re import IGNORECASE, compile
 from time import time
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, Iterable, List, Sequence, Tuple, Union
 
 from backend.comicvine import ComicVine
-from backend.custom_exceptions import (InvalidKeyValue, IssueNotFound, TaskForVolumeRunning, VolumeAlreadyAdded,
-                                       VolumeDownloadedFor, VolumeNotFound)
+from backend.custom_exceptions import (InvalidKeyValue, IssueNotFound,
+                                       TaskForVolumeRunning,
+                                       VolumeAlreadyAdded, VolumeDownloadedFor,
+                                       VolumeNotFound)
 from backend.db import get_db
 from backend.enums import SpecialVersion
 from backend.file_extraction import extract_filename_data, supported_extensions
@@ -30,14 +34,14 @@ vol_regex = compile(r'^volume\.?\s\d+$', IGNORECASE)
 def determine_special_version(
 	volume_title: str,
 	volume_description: str,
-	issue_titles: List[str]
+	issue_titles: Sequence[str]
 ) -> SpecialVersion:
 	"""Determine if a volume is a special version.
 
 	Args:
 		volume_title (str): The title of the volume.
 		volume_description (str): The description of the volume.
-		issue_titles (List[str]): The titles of all issues in the volume.
+		issue_titles (Sequence[str]): The titles of all issues in the volume.
 
 	Returns:
 		SpecialVersion: The result.
@@ -63,7 +67,7 @@ def determine_special_version(
 		# leading to a false hit.
 		if os_regex.search(volume_description):
 			return SpecialVersion.ONE_SHOT
-		
+
 		if hc_regex.search(volume_description):
 			return SpecialVersion.HARD_COVER
 
@@ -91,9 +95,9 @@ class Issue:
 		Raises:
 			IssueNotFound: The issue was not found.
 				Can only be raised when check_existence is `True`.
-		"""		
+		"""
 		self.id = id
-		
+
 		if check_existence:
 			if not (1,) in get_db().execute(
 				"SELECT 1 FROM issues WHERE id = ? LIMIT 1;",
@@ -106,7 +110,7 @@ class Issue:
 		cls,
 		volume_id: int,
 		calculated_issue_number: float
-	) -> None:
+	) -> Issue:
 		"""Create instance of issue based on volume ID and calculated issue
 		number of issue.
 
@@ -117,6 +121,9 @@ class Issue:
 
 		Raises:
 			IssueNotFound: No issue found with the given arguments.
+
+		Returns:
+			Issue: The issue instance.
 		"""
 		issue_id = get_db().execute("""
 			SELECT id
@@ -127,10 +134,10 @@ class Issue:
 			""",
 			(volume_id, calculated_issue_number)
 		).fetchone()
-		
+
 		if not issue_id:
 			raise IssueNotFound
-		
+
 		return cls(issue_id[0])
 
 	def get_public_keys(self) -> dict:
@@ -140,7 +147,7 @@ class Issue:
 			dict: The data.
 		"""
 		cursor = get_db(dict)
-		
+
 		# Get issue data
 		data = dict(cursor.execute(
 			"""
@@ -160,11 +167,11 @@ class Issue:
 		data['files'] = self.get_files()
 		return data
 
-	def get_keys(self, keys: Union[Tuple[str], str]) -> dict:
+	def get_keys(self, keys: Union[Iterable[str], str]) -> dict:
 		"""Get a dict with the values of the given keys.
 
 		Args:
-			keys (Union[Tuple[str], str]): The keys or just one key.
+			keys (Union[Iterable[str], str]): The keys or just one key.
 
 		Returns:
 			dict: The dict with the keys and their values.
@@ -252,15 +259,15 @@ def get_calc_number_range(
 
 def get_calc_number_id_range(
 	volume_id: int,
-	calculated_issue_number_start: float,
-	calculated_issue_number_end: float
+	calculated_issue_number_start: Union[float, int],
+	calculated_issue_number_end: Union[float, int]
 ) -> List[int]:
 	"""Get all id's of issues between a range for a volume.
 
 	Args:
 		volume_id (int): The ID of the volume.
-		calculated_issue_number_start (float): Start of the range.
-		calculated_issue_number_end (float): End of the range.
+		calculated_issue_number_start (Union[float, int]): Start of the range.
+		calculated_issue_number_end (Union[float, int]): End of the range.
 
 	Returns:
 		List[int]: All issue id's in the range.
@@ -287,21 +294,44 @@ def get_calc_number_id_range(
 @dataclass(frozen=True)
 class VolumeData:
 	# All types should actually be Union[None, {TYPE}]
-	id: int = None
-	comicvine_id: int = None
-	title: str = None
-	year: int = None
-	publisher: str = None
-	volume_number: int = None
-	description: str = None
-	monitored: bool = None
-	root_folder: int = None
-	folder: str = None
-	special_version: SpecialVersion = None
-	special_version_locked: bool = None
+	id: int = None # type: ignore
+	comicvine_id: int = None # type: ignore
+	title: str = None # type: ignore
+	year: int = None # type: ignore
+	publisher: str = None # type: ignore
+	volume_number: int = None # type: ignore
+	description: str = None # type: ignore
+	monitored: bool = None # type: ignore
+	root_folder: int = None # type: ignore
+	folder: str = None # type: ignore
+	special_version: SpecialVersion = None # type: ignore
+	special_version_locked: bool = None # type: ignore
 
 
 class _VolumeBackend:
+	def __init__(
+		self,
+		id: int,
+		check_existence: bool = False
+	) -> None:
+		"""Create instance of Volume.
+
+		Args:
+			id (int): The ID of the volume.
+			check_existence (bool, optional): Check if volume exists, based on ID.
+				Defaults to False.
+
+		Raises:
+			VolumeNotFound: The volume was not found.
+				Can only be raised when check_existence is `True`.
+		"""
+		self.id = id
+
+		if check_existence and not self._check_existence():
+			raise VolumeNotFound
+
+		return
+
 	def _check_existence(self) -> bool:
 		"""Check if volume exists based on ID
 
@@ -312,28 +342,28 @@ class _VolumeBackend:
 			"SELECT 1 FROM volumes WHERE id = ? LIMIT 1;",
 			(self.id,)
 		)
-		
+
 		return (1,) in volume_found
-	
-	def _get_keys(self, keys: Union[Tuple[str], str]) -> dict:
+
+	def _get_keys(self, keys: Union[Iterable[str], str]) -> dict:
 		"""Get a dict with the values of the given keys.
 
 		Args:
-			keys (Union[Tuple[str], str]): The keys or just one key.
+			keys (Union[Iterable[str], str]): The keys or just one key.
 
 		Returns:
 			dict: The dict with the keys and their values.
 		"""
 		if isinstance(keys, str):
 			keys = (keys,)
-		
+
 		result = dict(
 			get_db(dict).execute(
 				f"SELECT {','.join(keys)} FROM volumes WHERE id = ? LIMIT 1;",
 				(self.id,)
 			).fetchone()
 		)
-		
+
 		if 'special_version' in result:
 			result['special_version'] = SpecialVersion(result['special_version'])
 
@@ -365,8 +395,17 @@ class _VolumeBackend:
 			""",
 			(self.id,)
 		).fetchone()[0]
-		
+
 		return last_issue_date
+
+	def __getitem__(self, key: str) -> Any:
+		if key == 'cover':
+			return self._get_cover()
+
+		if key == 'last_issue_date':
+			return self._get_last_issue_date()
+
+		return self._get_keys(key)[key]
 
 	def _check_key(self, key: str) -> bool:
 		"""Check key is allowed.
@@ -448,7 +487,7 @@ class _VolumeBackend:
 			not folder_is_inside_folder(root_folders[0][1], volume_folder)
 		)
 		current_root_folder = root_folders[current_index]
-		desired_root_folder = root_folders[current_index - 1]		
+		desired_root_folder = root_folders[current_index - 1]
 
 		logging.info(f'Changing root folder of volume {self.id} from {current_root_folder[1]} to {desired_root_folder[1]}')
 
@@ -466,14 +505,14 @@ class _VolumeBackend:
 			"UPDATE files SET filepath = ? WHERE filepath = ?",
 			reversed_tuples(file_changes)
 		)
-		
+
 		self._set_value('root_folder', desired_root_folder[0])
 		self['folder'] = propose_basefolder_change(
 			(volume_folder,),
 			current_root_folder[1],
 			desired_root_folder[1]
 		)[0][1]
-		
+
 		delete_empty_folders(
 			volume_folder,
 			current_root_folder[1]
@@ -499,22 +538,22 @@ class _VolumeBackend:
 			# Generate default folder and set custom_folder to False
 			new_volume_folder = generate_volume_folder_name(self.id)
 			custom_folder = False
-		
+
 		else:
 			# Make custom folder safe and set custom_folder to True
 			new_volume_folder = make_filename_safe(new_volume_folder)
 			custom_folder = True
 
 		new_volume_folder = abspath(join(root_folder, new_volume_folder))
-		
+
 		if current_volume_folder == new_volume_folder:
 			return
 
 		logging.info(f'Moving volume folder from {current_volume_folder} to {new_volume_folder}')
 
-		self['custom_folder'] = custom_folder		
+		self['custom_folder'] = custom_folder
 		self['folder'] = new_volume_folder
-		
+
 		file_changes = propose_basefolder_change(
 			self.get_files(),
 			current_volume_folder,
@@ -544,31 +583,30 @@ class _VolumeBackend:
 
 		return
 
+	def __setitem__(self, key: str, value: Any) -> None:
+		if not self._check_key(key):
+			raise KeyError
 
-class Volume(_VolumeBackend):
-	def __init__(
-		self,
-		id: int,
-		check_existence: bool = False
-	) -> None:
-		"""Create instance of Volume.
+		if key == 'special_version':
+			try:
+				SpecialVersion(value or None)
+			except ValueError:
+				raise InvalidKeyValue(key, value)
+			value = value or None
 
-		Args:
-			id (int): The ID of the volume.
-			check_existence (bool, optional): Check if volume exists, based on ID.
-				Defaults to False.
+		if key == 'root_folder':
+			self._change_root_folder(value)
 
-		Raises:
-			VolumeNotFound: The volume was not found.
-				Can only be raised when check_existence is `True`.
-		"""
-		self.id = id
+		elif key == 'volume_folder':
+			self._change_volume_folder(value)
 
-		if check_existence and not self._check_existence():
-			raise VolumeNotFound
+		else:
+			self._set_value(key, value)
 
 		return
 
+
+class Volume(_VolumeBackend):
 	def get_public_keys(self) -> dict:
 		"""Get data about the volume for the public to see (the API).
 
@@ -616,20 +654,11 @@ class Volume(_VolumeBackend):
 
 		return volume_info
 
-	def __getitem__(self, key: str) -> Any:
-		if key == 'cover':
-			return self._get_cover()
-	
-		if key == 'last_issue_date':
-			return self._get_last_issue_date()
-
-		return self._get_keys(key)[key]
-
-	def get_keys(self, keys: Tuple[str]) -> VolumeData:
+	def get_keys(self, keys: Iterable[str]) -> VolumeData:
 		"""The data of the volume based on the keys.
 
 		Args:
-			keys (Tuple[str]): The keys of which to get the value.
+			keys (Iterable[str]): The keys of which to get the value.
 
 		Returns:
 			VolumeData: The data. The given keys will have their values set.
@@ -639,11 +668,12 @@ class Volume(_VolumeBackend):
 		result = VolumeData(**data)
 		return result
 
-	def get_files(self, issue_id: int = None) -> List[str]:
+	def get_files(self, issue_id: Union[int, None] = None) -> List[str]:
 		"""Get the files matched to the volume.
 
 		Args:
-			issue_id (int, optional): The specific issue to get the files of.
+			issue_id (Union[int, None], optional): The specific issue to get
+			the files of.
 				Based on ID of issue.
 
 				Defaults to None.
@@ -675,7 +705,7 @@ class Volume(_VolumeBackend):
 				""",
 				(issue_id,)
 			))
-			
+
 		return files
 
 	def get_issues(self) -> List[dict]:
@@ -700,30 +730,8 @@ class Volume(_VolumeBackend):
 		]
 		for issue in issues:
 			issue['files'] = self.get_files(issue['id'])
-		
+
 		return issues
-
-	def __setitem__(self, key: str, value: Any) -> None:
-		if not self._check_key(key):
-			raise KeyError
-
-		if key == 'special_version':
-			try:
-				SpecialVersion(value or None)
-			except ValueError:
-				raise InvalidKeyValue(key, value)
-			value = value or None
-
-		if key == 'root_folder':
-			self._change_root_folder(value)
-
-		elif key == 'volume_folder':
-			self._change_volume_folder(value)
-
-		else:
-			self._set_value(key, value)
-
-		return
 
 	def update(self, changes: dict) -> None:
 		"""Change settings of the volume.
@@ -755,7 +763,7 @@ class Volume(_VolumeBackend):
 			VolumeDownloadedFor: There is a download in the queue for the volume.
 		"""
 		from backend.tasks import TaskHandler
-		
+
 		logging.info(f'Deleting volume {self.id} with delete_folder set to {delete_folder}')
 		cursor = get_db()
 
@@ -778,7 +786,7 @@ class Volume(_VolumeBackend):
 		if delete_folder:
 			for f in self.get_files():
 				remove(f)
-			
+
 			delete_empty_folders(
 				self['folder'],
 				RootFolders()[self['root_folder']]
@@ -817,7 +825,7 @@ def scan_files(volume_id: int) -> None:
 	"""
 	logging.debug(f'Scanning for files for {volume_id}')
 	cursor = get_db()
-	
+
 	volume = Volume(volume_id, check_existence=False)
 	volume_data = volume.get_keys(
 		('folder', 'root_folder', 'special_version', 'year', 'id')
@@ -827,13 +835,13 @@ def scan_files(volume_id: int) -> None:
 	# so convert to set for speed improvement.
 	volume_files = set(volume.get_files())
 
-	if not isdir(volume_data.folder):
-		root_folder = RootFolders()[volume_data.root_folder]
+	if not isdir(volume_data.folder): # type: ignore
+		root_folder = RootFolders()[volume_data.root_folder] # type: ignore
 		create_volume_folder(root_folder, volume_id)
 
 	bindings = []
 	folder_contents = list_files(
-		folder=volume_data.folder,
+		folder=volume_data.folder, # type: ignore
 		ext=supported_extensions
 	)
 	for file in folder_contents:
@@ -865,9 +873,9 @@ def scan_files(volume_id: int) -> None:
 				if file_data['issue_number'] is not None:
 					issue_range = file_data['issue_number']
 				else:
-					issue_range = file_data['volume_number']
+					issue_range = file_data['volume_number'] or 1
 			else:
-				issue_range = file_data['issue_number']
+				issue_range = file_data['issue_number'] or 1
 
 			if not isinstance(issue_range, tuple):
 				issue_range = (issue_range, issue_range)
@@ -927,13 +935,13 @@ def scan_files(volume_id: int) -> None:
 	return
 
 
-def refresh_and_scan(volume_id: int=None) -> None:
+def refresh_and_scan(volume_id: Union[int, None] = None) -> None:
 	"""Refresh and scan one or more volumes
 
 	Args:
-		volume_id (int, optional): The id of the volume if it is desired to
-		only refresh and scan one. If left to `None`, all volumes are refreshed
-		and scanned.
+		volume_id (Union[int, None], optional): The id of the volume if it is
+		desired to only refresh and scan one. If left to `None`, all volumes are
+		refreshed and scanned.
 			Defaults to None.
 	"""
 	cursor = get_db()
@@ -987,7 +995,7 @@ def refresh_and_scan(volume_id: int=None) -> None:
 		update_volumes
 	)
 	cursor.connection.commit()
-		
+
 	# Update issues
 	issue_datas = run(cv.fetch_issues_async([str(v['comicvine_id']) for v in volume_datas]))
 	issue_updates = ((
@@ -1003,7 +1011,7 @@ def refresh_and_scan(volume_id: int=None) -> None:
 			issue_data['date'],
 			issue_data['description'],
 			True,
-			
+
 			issue_data['issue_number'],
 			issue_data['calculated_issue_number'],
 			issue_data['title'],
@@ -1015,7 +1023,7 @@ def refresh_and_scan(volume_id: int=None) -> None:
 
 	cursor.executemany("""
 		INSERT INTO issues(
-			volume_id, 
+			volume_id,
 			comicvine_id,
 			issue_number,
 			calculated_issue_number,
@@ -1036,7 +1044,7 @@ def refresh_and_scan(volume_id: int=None) -> None:
 		issue_updates
 	)
 	cursor.connection.commit()
-	
+
 	# Check special version
 	sv_updates = list((
 			determine_special_version(
@@ -1083,7 +1091,7 @@ class Library:
 		'recently_added': 'id DESC, title, year, volume_number',
 		'publisher': 'publisher, title, year, volume_number'
 	}
-	
+
 	filters = {
 		'wanted': 'WHERE issues_downloaded_monitored < issue_count_monitored',
 		'monitored': 'WHERE monitored = 1'
@@ -1106,9 +1114,9 @@ class Library:
 
 		Returns:
 			List[dict]: The list of volumes in the library.
-		"""		
+		"""
 		sort = self.sorting_orders[sort]
-		filter = self.filters.get(filter, '')
+		filter = self.filters.get(filter or '', '')
 
 		volumes = [
 			dict(v) for v in get_db(dict).execute(f"""
@@ -1150,7 +1158,7 @@ class Library:
 		]
 
 		return volumes
-		
+
 	def search(self,
 		query: str,
 		sort: str='title',
@@ -1176,7 +1184,7 @@ class Library:
 			for v in self.get_volumes(sort, filter)
 			if query.lower() in v['title'].lower()
 		]
-		
+
 		return volumes
 
 	def get_volume(self, volume_id: int) -> Volume:
@@ -1187,7 +1195,7 @@ class Library:
 
 		Raises:
 			VolumeNotFound: The id doesn't map to any volume in the library
-			
+
 		Returns:
 			Volume: The `volumes.Volume` instance representing the volume
 			with the given id.
@@ -1202,18 +1210,18 @@ class Library:
 
 		Raises:
 			IssueNotFound: The id doesn't map to any issue in the library
-			
+
 		Returns:
 			Issue: The `volumes.Issue` instance representing the issue
 			with the given id.
-		"""		
+		"""
 		return Issue(issue_id, check_existence=True)
-		
+
 	def add(self,
 		comicvine_id: str,
 		root_folder_id: int,
-		monitor: bool=True,
-		volume_folder: str=None
+		monitor: bool = True,
+		volume_folder: Union[str, None] = None
 	) -> int:
 		"""Add a volume to the library
 
@@ -1226,7 +1234,7 @@ class Library:
 			monitor (bool, optional): Whether or not to mark the volume as monitored.
 				Defaults to True.
 
-			volume_folder (str, optional): Custom volume folder.
+			volume_folder (Union[str, None], optional): Custom volume folder.
 				Defaults to None.
 
 		Raises:
@@ -1258,7 +1266,7 @@ class Library:
 		volume_data = run(ComicVine().fetch_volume_async(comicvine_id))
 		volume_data['monitored'] = monitor
 		volume_data['root_folder'] = root_folder_id
-		
+
 		special_version = determine_special_version(
 			volume_data['title'],
 			volume_data['description'],
@@ -1317,7 +1325,7 @@ class Library:
 			)
 			for i in volume_data['issues']
 		)
-		
+
 		cursor.executemany("""
 			INSERT INTO issues(
 				volume_id,
@@ -1354,9 +1362,9 @@ class Library:
 				volumes,
 				monitored,
 				volumes - monitored AS unmonitored,
-				issues, 
+				issues,
 				downloaded_issues,
-				COUNT(files.id) AS files, 
+				COUNT(files.id) AS files,
 				SUM(files.size) AS total_file_size
 			FROM
 				v_stats,
@@ -1373,7 +1381,7 @@ def search_volumes(query: str) -> List[dict]:
 
 	Raises:
 		InvalidComicVineApiKey: The ComicVine API key is not set or is invalid
-		
+
 	Returns:
 		List[dict]: The list with search results
 	"""

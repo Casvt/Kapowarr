@@ -97,7 +97,7 @@ def update_manifest(url_base: str) -> None:
 
 class Settings(metaclass=Singleton):
 	"Note: Is singleton"
-	
+
 	def __init__(self) -> None:
 		cursor = get_db()
 
@@ -118,7 +118,7 @@ class Settings(metaclass=Singleton):
 					'delete_completed_torrents')
 		for bv in bool_values:
 			settings[bv] = settings[bv] == 1
-		
+
 		settings['format_preference'] = CommaList(settings['format_preference'])
 		settings['service_preference'] = CommaList(settings['service_preference'])
 
@@ -139,7 +139,8 @@ class Settings(metaclass=Singleton):
 
 		Returns:
 			Any: (Converted) Setting value
-		"""		
+		"""
+		converted_value = value
 		if key == 'port' and not value.isdigit():
 			raise InvalidSettingValue(key, value)
 
@@ -148,8 +149,8 @@ class Settings(metaclass=Singleton):
 
 		elif key == 'comicvine_api_key':
 			from backend.comicvine import ComicVine
-			value = value.strip()
-			if not ComicVine(value).test_token():
+			converted_value = value.strip()
+			if not ComicVine(converted_value).test_token():
 				raise InvalidSettingValue(key, value)
 
 		elif key == 'download_folder' and not isdir(value):
@@ -171,8 +172,8 @@ class Settings(metaclass=Singleton):
 			raise InvalidSettingValue(key, value)
 
 		elif key == 'url_base':
-			if value:
-				value = ('/' + value.lstrip('/')).rstrip('/')
+			if isinstance(value, str) and value:
+				converted_value = ('/' + value.lstrip('/')).rstrip('/')
 
 		elif key == 'volume_padding':
 			try:
@@ -194,7 +195,7 @@ class Settings(metaclass=Singleton):
 				available = get_available_formats()
 			elif key == 'service_preference':
 				available = first_of_column(supported_source_strings)
-			
+
 			if not isinstance(value, list):
 				raise InvalidSettingValue(key, value)
 
@@ -204,7 +205,7 @@ class Settings(metaclass=Singleton):
 				if not entry in available:
 					raise InvalidSettingValue(key, value)
 
-			value = CommaList(value)
+			converted_value = CommaList(value)
 
 		elif key == 'seeding_handling':
 			try:
@@ -212,7 +213,7 @@ class Settings(metaclass=Singleton):
 			except ValueError:
 				raise InvalidSettingValue(key, value)
 
-		return value
+		return converted_value
 
 	def __getitem__(self, __name: str) -> Any:
 		return self.settings[__name]
@@ -235,20 +236,20 @@ class Settings(metaclass=Singleton):
 			raise InvalidSettingKey(name)
 
 		value = self.__check_value(name, value)
-		
+
 		self.settings[name] = value
-		
+
 		get_db().execute(
 			"UPDATE config SET value = ? WHERE key = ?;",
 			(value, name)
 		)
-		
+
 		if name == 'log_level':
 			set_log_level(value)
 
 		elif name == 'url_base':
 			update_manifest(value)
-		
+
 		return
 
 	def update(self, changes: dict) -> None:
@@ -263,13 +264,13 @@ class Settings(metaclass=Singleton):
 			InvalidSettingValue: Value of the key is not allowed
 			InvalidSettingModification: Key can not be modified this way
 			FolderNotFound: Folder not found
-		"""		
+		"""
 		for key, value in changes.items():
 			if not key in default_settings:
 				raise InvalidSettingKey(key)
-			
+
 			value = self.__check_value(key, value)
-			
+
 			changes[key] = value
 
 		self.settings.update(changes)
@@ -277,7 +278,7 @@ class Settings(metaclass=Singleton):
 			"UPDATE config SET value = ? WHERE key = ?;",
 			((value, key) for key, value in changes.items())
 		)
-		
+
 		if 'log_level' in changes:
 			set_log_level(changes['log_level'])
 		if 'url_base' in changes:

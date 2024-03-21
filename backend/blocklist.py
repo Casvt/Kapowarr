@@ -3,25 +3,25 @@
 import logging
 from sqlite3 import IntegrityError
 from time import time
-from typing import List
+from typing import Any, Dict, List
 
 from backend.custom_exceptions import BlocklistEntryNotFound
 from backend.db import get_db
 from backend.enums import BlocklistReason, BlocklistReasonID
 
 
-def get_blocklist(offset: int=0) -> List[dict]:
+def get_blocklist(offset: int=0) -> List[Dict[str, Any]]:
 	"""Get the blocklist entries in blocks of 50
 
 	Args:
 		offset (int, optional): The offset of the list.
 			The higher the number, the deeper into the list you go.
-			
+
 			Defaults to 0.
 
 	Returns:
-		List[dict]: A list of dicts where each dict is a blocklist entry
-	"""	
+		List[Dict[str, Any]]: A list of dicts where each dict is a blocklist entry
+	"""
 	logging.debug(f'Fetching blocklist with offset {offset}')
 	entries = list(map(
 		dict,
@@ -43,19 +43,19 @@ def get_blocklist(offset: int=0) -> List[dict]:
 				BlocklistReasonID(entry['reason']).name
 			].value
 		})
-	
+
 	return entries
 
 def delete_blocklist() -> None:
 	"""Delete all blocklist entries
-	"""	
+	"""
 	logging.info('Deleting blocklist')
 	get_db().execute(
 		"DELETE FROM blocklist;"
 	)
 	return
 
-def get_blocklist_entry(id: int) -> dict:
+def get_blocklist_entry(id: int) -> Dict[str, Any]:
 	"""Get info about a blocklist entry
 
 	Args:
@@ -65,9 +65,9 @@ def get_blocklist_entry(id: int) -> dict:
 		BlocklistEntryNotFound: The id doesn't map to any blocklist entry
 
 	Returns:
-		dict: The info about the blocklist entry, similar to the dicts in
-		the output of `blocklist.get_blocklist()`
-	"""	
+		Dict[str, Any]: The info about the blocklist entry, similar to the dicts
+		in the output of `blocklist.get_blocklist()`
+	"""
 	logging.debug(f'Fetching blocklist entry {id}')
 	entry = get_db(dict).execute("""
 		SELECT
@@ -78,12 +78,12 @@ def get_blocklist_entry(id: int) -> dict:
 		FROM blocklist
 		WHERE id = ?
 		LIMIT 1;
-		""", 
+		""",
 		(id,)
 	).fetchone()
-	
+
 	if not entry:
-		BlocklistEntryNotFound
+		raise BlocklistEntryNotFound
 
 	result = dict(entry)
 	result['reason'] = BlocklistReason[
@@ -99,13 +99,13 @@ def delete_blocklist_entry(id: int) -> None:
 
 	Raises:
 		BlocklistEntryNotFound: The id doesn't map to any blocklist entry
-	"""	
+	"""
 	logging.debug(f'Deleting blocklist entry {id}')
 	entry_found = get_db().execute(
 		"DELETE FROM blocklist WHERE id = ?",
 		(id,)
 	).rowcount
-	
+
 	if entry_found:
 		return
 	raise BlocklistEntryNotFound
@@ -118,14 +118,14 @@ def blocklist_contains(link: str) -> bool:
 
 	Returns:
 		bool: `True` if the link is in the blocklist, otherwise `False`.
-	"""	
+	"""
 	result = (1,) in get_db().execute(
 		"SELECT 1 FROM blocklist WHERE link = ? LIMIT 1",
 		(link,)
 	)
 	return result
 
-def add_to_blocklist(link: str, reason: BlocklistReason) -> dict:
+def add_to_blocklist(link: str, reason: BlocklistReason) -> Dict[str, Any]:
 	"""Add a link to the blocklist
 
 	Args:
@@ -134,8 +134,8 @@ def add_to_blocklist(link: str, reason: BlocklistReason) -> dict:
 			See `backend.enums.BlocklistReason`.
 
 	Returns:
-		dict: Info about the blocklist entry.
-	"""	
+		Dict[str, Any]: Info about the blocklist entry.
+	"""
 	logging.info(f'Adding {link} to blocklist with reason "{reason.value}"')
 	cursor = get_db()
 	reason_id = BlocklistReasonID[reason.name].value

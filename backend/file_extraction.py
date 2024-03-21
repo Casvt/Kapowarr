@@ -18,6 +18,7 @@ from backend.helpers import FilenameData
 from backend.helpers import fix_year as fix_broken_year
 from backend.helpers import normalize_string
 
+cover = 'cover'
 alphabet = 'abcdefghijklmnopqrstuvwxyz'
 alphabet = {letter: str(alphabet.index(letter) + 1).zfill(2) for letter in alphabet}
 digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
@@ -55,7 +56,7 @@ issue_regex_7 = compile(r'^(\-?' + issue_regex_snippet + r')$', IGNORECASE)
 year_regex = compile(r'\((?:\w+\s)?' + year_regex_snippet + r'\)|--' + year_regex_snippet + r'--|, ' + year_regex_snippet + r'\s{3}|\b(?:(?:\d{2}-){1,2}(\d{4})|(\d{4})(?:-\d{2}){1,2})\b', IGNORECASE)
 series_regex = compile(r'(^(\d+\.)?\s+|^\d+\s{3}|\s(?=\s)|[\s,]+$)')
 annual_regex = compile(r'\+[\s\.]?annuals?|annuals?[\s\.]?\+|^((?!annuals?).)*$', IGNORECASE)
-cover_regex = compile(r'\b(?<!no[ \-])(?<!\d[ \-]covers)cover\b|n\d+c(\d+)|(?:\b|\d)i?fc\b', IGNORECASE)
+cover_regex = compile(r'\b(?<!no[ \-])(?<!hard[ \-])(?<!\d[ \-]covers)cover\b|n\d+c(\d+)|(?:\b|\d)i?fc\b', IGNORECASE)
 
 def _calc_float_issue_number(issue_number: str) -> Union[float, None]:
 	"""Convert an issue number from string to representive float
@@ -95,7 +96,7 @@ def _calc_float_issue_number(issue_number: str) -> Union[float, None]:
 
 			if c == '½':
 				converted_issue_number += '5'
-	
+
 			elif c == '¼':
 				converted_issue_number += '3'
 
@@ -109,15 +110,15 @@ def _calc_float_issue_number(issue_number: str) -> Union[float, None]:
 def process_issue_number(
 	issue_number: str
 ) -> Union[float, Tuple[float, float], None]:
-	"""Convert an issue number or issue range to a (tuple of) float
+	"""Convert an issue number or issue range to a (tuple of) float.
 
 	Args:
-		issue_number (str): The issue number
+		issue_number (str): The issue number.
 
 	Returns:
 		Union[float, Tuple[float, float], None]: Either a
 		float representing the issue number,
-		a tuple of floats representing the issue numbers when 
+		a tuple of floats representing the issue numbers when
 		the original issue number was a range of numbers (e.g. 1a-5b)
 		or `None` if it wasn't succesfull in converting.
 	"""
@@ -134,17 +135,18 @@ def process_issue_number(
 		):
 			return _calc_float_issue_number(issue_number)
 
-		entries = (
-			_calc_float_issue_number(entries[0]),
-			_calc_float_issue_number(entries[1])
-		)
-		if entries[0] is None:
-			if entries[1] is None:
+		start = _calc_float_issue_number(entries[0])
+		end = _calc_float_issue_number(entries[1])
+
+		if start is None:
+			if end is None:
 				return None
-			return entries[1]
-		if entries[1] is None:
-			return entries[0]
-		return entries
+			else:
+				return end
+		elif end is None:
+			return start
+		else:
+			return (start, end)
 
 	return _calc_float_issue_number(issue_number)
 
@@ -200,7 +202,7 @@ def extract_filename_data(
 
 	Returns:
 		FilenameData: The extracted data in a formatted way
-	"""	
+	"""
 	logging.debug(f'Extracting filename data: {filepath}')
 	series, year, volume_number, special_version, issue_number = (
 		None, None, None, None, None
@@ -247,7 +249,7 @@ def extract_filename_data(
 		clean_filename += ' '
 	else:
 		clean_filename = stripped_filename_temp
-		
+
 	foldername = basename(dirname(filepath))
 	upper_foldername = basename(dirname(dirname(filepath)))
 
@@ -296,11 +298,12 @@ def extract_filename_data(
 		volume_number = 1
 
 	# Check if it's a special version
-	issue_pos, issue_folderpos, special_pos = 10_000, 10_000, 10_000
+	issue_pos, issue_folderpos = 10_000, 10_000
+	special_pos, special_end = 10_000, 0
 	special_result = special_version_regex.search(filename)
 	cover_result = cover_regex.search(filename)
 	if cover_result:
-		special_version = 'cover'
+		special_version = cover
 		if cover_result.group(1):
 			special_pos = cover_result.start(1)
 			special_end = cover_result.end(1)
@@ -308,14 +311,14 @@ def extract_filename_data(
 			special_pos = cover_result.start(0)
 			special_end = cover_result.end(0)
 
-	if special_result:
+	elif special_result:
 		special_version = [
 			k for k, v in special_result.groupdict().items()
 			if v is not None
 		][0].replace('_', '-')
 		special_pos = special_result.start(0)
 
-	else:
+	if special_version in (None, cover):
 		# No special version so find issue number
 		if not is_image_file:
 			pos_options = (
@@ -436,15 +439,15 @@ def extract_filename_data(
 	if fix_year and year is not None:
 		year = fix_broken_year(year)
 
-	file_data = {
+	file_data = FilenameData({
 		'series': series,
 		'year': year,
 		'volume_number': volume_number,
 		'special_version': special_version,
 		'issue_number': calculated_issue_number,
 		'annual': annual
-	}
-		
+	})
+
 	logging.debug(f'Extracting filename data: {file_data}')
 
 	return file_data

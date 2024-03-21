@@ -4,7 +4,7 @@ from enum import Enum
 
 
 class BaseEnum(Enum):
-	def __eq__(self, other) -> bool:
+	def __eq__(self, other: object) -> bool:
 		return self.value == other
 
 class SeedingHandling(BaseEnum):
@@ -31,11 +31,11 @@ class BlocklistReason(BaseEnum):
 
 class SpecialVersion(BaseEnum):
 	TPB = 'tpb'
-	
+
 	ONE_SHOT = 'one-shot'
-	
+
 	HARD_COVER = 'hard-cover'
-	
+
 	VOLUME_AS_ISSUE = 'volume-as-issue'
 	"Volume where each issue is named `Volume N`"
 

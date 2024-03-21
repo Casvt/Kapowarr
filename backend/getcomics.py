@@ -7,9 +7,9 @@ Getting downloads from a GC page
 import logging
 from hashlib import sha1
 from re import IGNORECASE, compile
-from typing import Dict, List, Tuple, Union
+from typing import Callable, Dict, List, Tuple, Union
 
-from bencoding import bdecode, bencode
+from bencoding import bencode
 from bs4 import BeautifulSoup, Tag
 from requests import get
 from requests.exceptions import ConnectionError as requests_ConnectionError
@@ -22,7 +22,8 @@ from backend.download_direct_clients import (DirectDownload, Download,
 from backend.download_torrent_clients import TorrentDownload
 from backend.enums import BlocklistReason, SpecialVersion
 from backend.file_extraction import extract_filename_data
-from backend.helpers import check_overlapping_issues
+from backend.helpers import (DownloadGroup, FilenameData,
+                             check_overlapping_issues, get_torrent_info)
 from backend.matching import GC_group_filter
 from backend.naming import (generate_empty_name, generate_issue_name,
                             generate_issue_range_name, generate_tpb_name)
@@ -52,7 +53,7 @@ def _check_download_link(
 	Returns:
 		Union[str, None]: Either the name of the service (e.g. `mega`)
 		or `None` if it's not allowed.
-	"""	
+	"""
 	logging.debug(f'Checking download link: {link}, {link_text}')
 	if not link:
 		return
@@ -60,7 +61,7 @@ def _check_download_link(
 	# Check if link is in blocklist
 	if blocklist_contains(link):
 		return
-	
+
 	# Check if link is from a service that should be avoided
 	if link.startswith('https://sh.st/'):
 		return
@@ -69,10 +70,10 @@ def _check_download_link(
 	for source in supported_source_strings:
 		if any(s in link_text for s in source):
 			logging.debug(f'Checking download link: {link_text} maps to {source[0]}')
-			
+
 			if 'torrent' in source[0] and not torrent_client_available:
 				return
-			
+
 			return source[0]
 
 	return
@@ -105,25 +106,25 @@ def _purify_link(link: str) -> dict:
 	elif link.startswith('http'):
 		r = get(link, headers={'User-Agent': 'Kapowarr'}, stream=True)
 		url = r.url
-		
+
 		if mega_regex.search(url):
 			# Link is mega
 			if '#F!' in url:
 				# Link is not supported (folder)
 				raise LinkBroken(BlocklistReason.SOURCE_NOT_SUPPORTED)
-			
+
 			if '/folder/' in url:
 				# Link is not supported (folder)
 				raise LinkBroken(BlocklistReason.SOURCE_NOT_SUPPORTED)
-			
+
 			return {'link': url, 'target': MegaDownload, 'source': 'mega'}
-		
+
 		elif mediafire_regex.search(url):
 			# Link is mediafire
 			if 'error.php' in url:
 				# Link is broken
 				raise LinkBroken(BlocklistReason.LINK_BROKEN)
-			
+
 			elif '/folder/' in url:
 				# Link is not supported
 				raise LinkBroken(BlocklistReason.SOURCE_NOT_SUPPORTED)
@@ -135,10 +136,10 @@ def _purify_link(link: str) -> dict:
 					'target': DirectDownload,
 					'source': 'mediafire'
 				}
-			
+
 			soup = BeautifulSoup(r.text, 'html.parser')
 			button = soup.find('a', {'id': 'downloadButton'})
-			if button:
+			if isinstance(button, Tag):
 				return {
 					'link': button['href'],
 					'target': DirectDownload,
@@ -151,7 +152,7 @@ def _purify_link(link: str) -> dict:
 
 		elif r.headers.get('Content-Type','') == 'application/x-bittorrent':
 			# Link is torrent file
-			hash = sha1(bencode(bdecode(r.content)[b"info"])).hexdigest()
+			hash = sha1(bencode(get_torrent_info(r.content))).hexdigest()
 			return {
 				'link': "magnet:?xt=urn:btih:" + hash + "&tr=udp://tracker.cyberia.is:6969/announce&tr=udp://tracker.port443.xyz:6969/announce&tr=http://tracker3.itzmx.com:6961/announce&tr=udp://tracker.moeking.me:6969/announce&tr=http://vps02.net.orel.ru:80/announce&tr=http://tracker.openzim.org:80/announce&tr=udp://tracker.skynetcloud.tk:6969/announce&tr=https://1.tracker.eu.org:443/announce&tr=https://3.tracker.eu.org:443/announce&tr=http://re-tracker.uz:80/announce&tr=https://tracker.parrotsec.org:443/announce&tr=udp://explodie.org:6969/announce&tr=udp://tracker.filemail.com:6969/announce&tr=udp://tracker.nyaa.uk:6969/announce&tr=udp://retracker.netbynet.ru:2710/announce&tr=http://tracker.gbitt.info:80/announce&tr=http://tracker2.dler.org:80/announce",
 				'target': TorrentDownload,
@@ -165,7 +166,7 @@ def _purify_link(link: str) -> dict:
 	else:
 		raise LinkBroken(BlocklistReason.SOURCE_NOT_SUPPORTED)
 
-link_filter_1 = lambda e: (
+link_filter_1: Callable[[Tag], bool] = lambda e: (
 	e.name == 'p'
 	and 'Language' in e.text
 	and e.find('p') is None
@@ -184,10 +185,11 @@ def _extract_button_links(
 		dict: The download groups.
 		Follows format described in `_extract_get_comics_links()`.
 	"""
-	download_groups = {}
+	download_groups: Dict[str, Dict[str, List[str]]] = {}
 	for result in body.find_all(link_filter_1):
-		extracted_title: str = result.get_text('\x00')
-		title: str = extracted_title.partition('\x00')[0]
+		result: Tag
+		extracted_title = result.get_text('\x00')
+		title = extracted_title.partition('\x00')[0]
 
 		if 'variant cover' in title.lower():
 			continue
@@ -197,14 +199,15 @@ def _extract_button_links(
 			and not check_year.search(title)
 		):
 			# Append year to title
-			year: str = (
+			year = (
 				extracted_title
 					.split("Year :\x00\xa0")[1]
 					.split(" |")[0]
 			)
 			title += ' --' + year + '--'
 
-		for e in result.next_sibling.next_elements:
+		for e in result.next_sibling.next_elements: # type: ignore
+			e: Tag
 			if e.name == 'hr':
 				break
 
@@ -212,26 +215,27 @@ def _extract_button_links(
 				e.name == 'div'
 				and 'aio-button-center' in (e.attrs.get('class', []))
 			):
-				group_link: Tag = e.find('a')
+				group_link: Tag = e.find('a') # type: ignore
 				link_title = group_link.text.strip().lower()
 				match = _check_download_link(
 					link_title,
-					group_link['href'],
+					group_link['href'], # type: ignore
 					torrent_client_available
 				)
 				if match:
 					(download_groups
 						.setdefault(title, {})
 						.setdefault(match, [])
-						.append(group_link['href'])
+						.append(group_link['href']) # type: ignore
 					)
 
 	return download_groups
 
-link_filter_2 = lambda e: (
+link_filter_2: Callable[[Tag], bool] = lambda e: (
 	e.name == 'li'
+	and e.parent is not None
 	and e.parent.name == 'ul'
-	and e.find('a')
+	and e.find('a') is not None
 )
 def _extract_list_links(
 	body: Tag,
@@ -247,7 +251,7 @@ def _extract_list_links(
 		dict: The download groups.
 		Follows format described in `_extract_get_comics_links()`.
 	"""
-	download_groups = {}
+	download_groups: Dict[str, Dict[str, List[str]]] = {}
 	for result in body.find_all(link_filter_2):
 		title: str = result.get_text('\x00').partition('\x00')[0]
 
@@ -259,16 +263,16 @@ def _extract_list_links(
 			link_title = group_link.text.strip().lower()
 			match = _check_download_link(
 				link_title,
-				group_link['href'],
+				group_link['href'], # type: ignore
 				torrent_client_available
 			)
 			if match:
 				(download_groups
 					.setdefault(title, {})
 					.setdefault(match, [])
-					.append(group_link['href'])
+					.append(group_link['href']) # type: ignore
 				)
-	
+
 	return download_groups
 
 def _extract_get_comics_links(
@@ -303,7 +307,10 @@ def _extract_get_comics_links(
 		"SELECT 1 FROM torrent_clients"
 	).fetchone() is not None
 
-	body = soup.find('section', {'class': 'post-contents'})
+	body = soup.find('section', {'class': 'post-contents'}) # type: ignore
+	if not body:
+		return {}
+	body: Tag
 	download_groups = {
 		**_extract_button_links(body, torrent_client_available),
 		**_extract_list_links(body, torrent_client_available)
@@ -312,15 +319,15 @@ def _extract_get_comics_links(
 	logging.debug(f'Download groups: {download_groups}')
 	return download_groups
 
-def _sort_link_paths(p: List[dict]) -> Tuple[float, int]:
+def _sort_link_paths(p: List[DownloadGroup]) -> Tuple[float, int]:
 	"""Sort the link paths. TPB's are sorted highest, then from largest range to least.
 
 	Args:
-		p (List[dict]): A link path
+		p (List[DownloadGroup]): A link path
 
 	Returns:
 		Tuple[float, int]: The rating (lower is better)
-	"""	
+	"""
 	if p[0]['info']['special_version']:
 		return (0.0, 0)
 
@@ -340,7 +347,7 @@ def _sort_link_paths(p: List[dict]) -> Tuple[float, int]:
 def _create_link_paths(
 	download_groups: Dict[str, Dict[str, List[str]]],
 	volume_id: int
-) -> List[List[Dict[str, dict]]]:
+) -> List[List[DownloadGroup]]:
 	"""Based on the download groups, find different "paths" to download
 	the most amount of content. On the same page, there might be a download
 	for `TPB + Extra's`, `TPB`, `Issue A-B` and for `Issue C-D`. This function
@@ -356,12 +363,12 @@ def _create_link_paths(
 		volume_id (int): The id of the volume.
 
 	Returns:
-		List[List[Dict[str, dict]]]: The list contains all paths. Each path is
-		a list of download groups. The `info` key has as it's value the output 
+		List[List[DownloadGroup]]: The list contains all paths. Each path is
+		a list of download groups. The `info` key has as it's value the output
 		of `file_extraction.extract_filename_data()` for the title of the group.
 		The `links` key contains the download links grouped together with
 		their service.
-	"""	
+	"""
 	logging.debug('Creating link paths')
 
 	# Get info of volume
@@ -372,7 +379,7 @@ def _create_link_paths(
 	last_issue_date = volume['last_issue_date']
 	service_preference: List[str] = Settings()['service_preference']
 
-	link_paths: List[List[dict]] = []
+	link_paths: List[List[DownloadGroup]] = []
 	for desc, sources in download_groups.items():
 		processed_desc = extract_filename_data(
 			desc,
@@ -415,7 +422,7 @@ def _create_link_paths(
 				link_paths.append([{'info': processed_desc, 'links': sources}])
 
 			else:
-				# Find path with ranges and single issues that doesn't have 
+				# Find path with ranges and single issues that doesn't have
 				# a link that already covers this one
 				for path in link_paths:
 					for entry in path:
@@ -427,8 +434,8 @@ def _create_link_paths(
 							break
 
 						elif check_overlapping_issues(
-							entry['info']['issue_number'],
-							processed_desc['issue_number']
+							entry['info']['issue_number'], # type: ignore
+							processed_desc['issue_number'] # type: ignore
 						):
 							break
 
@@ -439,7 +446,7 @@ def _create_link_paths(
 				else:
 					# Conflict in all paths found so start a new one
 					link_paths.append([{'info': processed_desc, 'links': sources}])
-	
+
 	link_paths.sort(key=_sort_link_paths)
 
 	logging.debug(f'Link paths: {link_paths}')
@@ -447,15 +454,14 @@ def _create_link_paths(
 
 def _generate_name(
 	volume_id: int,
-	download_info: dict,
+	download_info: FilenameData,
 	name_volume_as_issue: bool
 ) -> str:
 	"""Generate filename based on info.
 
 	Args:
 		volume_id (int): The ID of the volume for which the file is.
-		download_info (dict): Output of `file_extraction.extract_filename_data()`
-		for download group title.
+		download_info (FilenameData): Filename data	for download group title.
 		name_volume_as_issue (bool): Whether or not to name the volume as an
 		issue.
 
@@ -475,7 +481,7 @@ def _generate_name(
 			else:
 				return generate_issue_name(
 					volume_id,
-					download_info['volume_number']
+					download_info['volume_number'] # type: ignore
 				)
 		else:
 			return generate_empty_name(
@@ -494,17 +500,17 @@ def _generate_name(
 
 	return generate_issue_name(
 		volume_id,
-		download_info['issue_number']
+		download_info['issue_number'] # type: ignore
 	)
 
 def _test_paths(
-	link_paths: List[List[Dict[str, dict]]],
+	link_paths: List[List[DownloadGroup]],
 	volume_id: int
 ) -> Tuple[List[Download], bool]:
 	"""Test the links of the paths and determine, based on which links work, which path to go for.
 
 	Args:
-		link_paths (List[List[Dict[str, dict]]]): The link paths (output of `download._process_extracted_get_comics_links()`).
+		link_paths (List[List[DownloadGroup]]): The link paths (output of `download._process_extracted_get_comics_links()`).
 		volume_id (int): The id of the volume.
 
 	Returns:
@@ -514,7 +520,7 @@ def _test_paths(
 
 		If the list is empty and the bool is True, the page has working links but the service of the links has reached it's download limit, so nothing on the page can be downloaded.
 		However, the page shouldn't be blacklisted because the links _are_ working.
-		
+
 		If the list has content, the page has working links that can be used.
 	"""
 	logging.debug('Testing paths')
@@ -532,7 +538,7 @@ def _test_paths(
 					download['info'],
 					name_volume_as_issue
 				)
-				
+
 			else:
 				name = ''
 
@@ -576,21 +582,23 @@ def _test_paths(
 				# Try next path
 				continue
 		downloads = []
-	
+
 	logging.debug(f'Chosen links: {downloads}')
 	return downloads, limit_reached
-		
+
 def extract_GC_download_links(
 	link: str,
 	volume_id: int,
-	issue_id: int = None
-) -> Tuple[List[dict], bool]:
+	issue_id: Union[int, None] = None
+) -> Tuple[List[Download], bool]:
 	"""Filter, select and setup downloads from a getcomic page
 
 	Args:
-		link (str): Link to the getcomics page
-		volume_id (int): The id of the volume for which the getcomics page is
-		issue_id (int, optional): The id of the issue for which the getcomics page is. Defaults to None.
+		link (str): Link to the getcomics page.
+		volume_id (int): The id of the volume for which the getcomics page is.
+		issue_id (Union[int, None], optional): The id of the issue for which the
+		getcomics page is.
+			Defaults to None.
 
 	Returns:
 		Tuple[List[dict], bool]: List of downloads and whether or not the download limit for a service on the page is reached.
@@ -599,9 +607,9 @@ def extract_GC_download_links(
 
 		If the list is empty and the bool is True, the page has working links but the service of the links has reached it's download limit, so nothing on the page can be downloaded.
 		However, the page shouldn't be blacklisted because the links _are_ working.
-		
+
 		If the list has content, the page has working links that can be used.
-	"""	
+	"""
 	logging.debug(f'Extracting download links from {link} for volume {volume_id} and issue {issue_id}')
 
 	try:
@@ -611,7 +619,7 @@ def extract_GC_download_links(
 
 	except requests_ConnectionError:
 		# Link broken
-		add_to_blocklist(link, 1)
+		add_to_blocklist(link, BlocklistReason.LINK_BROKEN)
 		return [], True
 
 	# Link is to a getcomics page

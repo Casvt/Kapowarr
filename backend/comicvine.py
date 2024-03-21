@@ -7,7 +7,7 @@ Search for volumes/issues and fetch metadata for them on ComicVine
 import logging
 from asyncio import create_task, gather
 from re import IGNORECASE, compile
-from typing import List, Union
+from typing import Any, Dict, List, Union
 
 from aiohttp import ClientSession
 from aiohttp.client_exceptions import ContentTypeError
@@ -64,7 +64,11 @@ def _clean_description(description: str, short: bool=False) -> str:
 		# Remove everything after the first title with list
 		removed_elements = []
 		for el in soup:
-			if el.name is None: continue
+			if not isinstance(el, Tag):
+				continue
+			if el.name is None:
+				continue
+
 			if (removed_elements
 			or el.name in headers):
 				removed_elements.append(el)
@@ -108,11 +112,11 @@ class ComicVine:
 	issue_field_list = ','.join(('id', 'issue_number', 'name', 'cover_date', 'description', 'volume'))
 	search_field_list = ','.join(('aliases', 'count_of_issues', 'deck', 'description', 'id', 'image', 'name', 'publisher', 'site_detail_url', 'start_year'))
 	
-	def __init__(self, comicvine_api_key: str=None) -> None:
+	def __init__(self, comicvine_api_key: Union[str, None] = None) -> None:
 		"""Start interacting with ComicVine
 
 		Args:
-			comicvine_api_key (str, optional): Override the API key that is used.
+			comicvine_api_key (Union[str, None], optional): Override the API key that is used.
 				Defaults to None.
 
 		Raises:
@@ -129,19 +133,21 @@ class ComicVine:
 		self.ssn = Session()
 		self._params = {'format': 'json', 'api_key': api_key}
 		self._headers = {'user-agent': 'Kapowarr'}
-		self.ssn.params.update(self._params)
+		self.ssn.params.update(self._params) # type: ignore
 		self.ssn.headers.update(self._headers)
 		return
 
-	def __normalize_cv_id(self, cv_id: str) -> Union[str, None]:
+	def __normalize_cv_id(self, cv_id: str) -> str:
 		"""Turn user entered cv id in to formatted id
 
 		Args:
 			cv_id (str): The user entered cv id
 
+		Raises:
+			VolumeNotMatched: Invalid ID.
+
 		Returns:
-			Union[str, None]: The cv id as `4050-NNNN`.
-				`None` in case of invalid ID.
+			str: The cv id as `4050-NNNN`.
 		"""
 		if cv_id.startswith('cv:'):
 			cv_id = cv_id.partition(':')[2]
@@ -152,7 +158,7 @@ class ComicVine:
 		if cv_id.replace('-','0').isdigit():
 			return cv_id
 
-		return None
+		raise VolumeNotMatched
 
 	async def __call_request_async(self,
 		session: ClientSession,
@@ -221,8 +227,8 @@ class ComicVine:
 		session: ClientSession,
 		url_path: str,
 		params: dict,
-		default: T = None
-	) -> Union[dict, T]:
+		default: Union[T, None] = None
+	) -> Union[Dict[str, Any], T]:
 		"""Make an CV API call asynchronously (with error handling).
 
 		Args:
@@ -234,8 +240,8 @@ class ComicVine:
 			params (dict): The URL params that should go with the request.
 				Standard params (api key, format, etc.) not needed.
 
-			default (T, optional): Return value in case of error instead of raising
-			error.
+			default (Union[T, None], optional): Return value in case of error
+			instead of raising error.
 				Defaults to None.
 
 		Raises:
@@ -243,7 +249,7 @@ class ComicVine:
 			and no 'default' was supplied.
 
 		Returns:
-			Union[dict, T]: The raw API response or the value of 'default' on error.
+			Union[Dict[str, Any], T]: The raw API response or the value of 'default' on error.
 		"""		
 		if not url_path.endswith('/'):
 			url_path += '/'
@@ -254,7 +260,7 @@ class ComicVine:
 				params={**self._params, **params},
 				headers=self._headers
 			) as response:
-				result: dict = await response.json()
+				result: Dict[str, Any] = await response.json()
 
 		except (ContentTypeError, requests_ConnectionError):
 			if default is not None:
