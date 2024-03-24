@@ -8,6 +8,15 @@ img {
 	width: 100%;
 }
 
+a {
+	color: inherit;
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
 button {
 	background-color: transparent;
 }
@@ -224,6 +233,7 @@ header {
 	/* Z-index avoids button animations from showing in front of the nav */
 	z-index: 2;
 	background-color: var(--nav-background-color);
+	color: var(--nav-color);
 }
 
 nav, .sub-nav {
@@ -236,16 +246,17 @@ nav > a:not(.current-nav) + div.sub-nav:not(:has(a.current-nav)) {
 }
 
 nav a {
-	color: var(--nav-color);
-	text-decoration: none;
 	padding: .9rem;
 	padding-left: 1.3rem;
-	font-size: .9rem;
 	border-left: 3px solid var(--accent-color);
+
+	font-size: .9rem;
+
 	transition: color 200ms ease-in-out;
 }
 
 nav a:hover {
+	text-decoration: none;
 	color: var(--accent-color);
 }
 

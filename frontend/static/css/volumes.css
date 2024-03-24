@@ -172,15 +172,6 @@ main:has(#view-button > option[value="table"]:checked) #list-library {
 	padding-block: .5rem;
 }
 
-.table-link {
-	color: inherit;
-	text-decoration: none;
-}
-
-.table-link:hover {
-	text-decoration: underline;
-}
-
 .table-prog-container {
 	min-width: 5rem;
 	border-radius: 4px;

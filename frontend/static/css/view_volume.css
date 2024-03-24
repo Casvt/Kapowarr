@@ -156,7 +156,7 @@
 	border-top: 2px solid var(--border-color);
 }
 
-.issue-title:hover {
+tbody .issue-title:hover {
 	text-decoration: underline;
 	cursor: pointer;
 }
@@ -212,15 +212,6 @@
 
 .search-entry > td {
 	border-top: 1px solid var(--border-color);
-}
-
-#search-result-table a {
-	color: inherit;
-	text-decoration: none;
-}
-
-#search-result-table a:hover {
-	text-decoration: underline;
 }
 
 .match-column {
