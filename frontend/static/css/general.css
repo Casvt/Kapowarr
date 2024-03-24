@@ -388,6 +388,19 @@ main > *:not(.tool-bar-container) {
 	animation: spin-element 2.5s linear infinite forwards;
 }
 
+.loading-screen {
+	height: 100%;
+	
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	
+	color: var(--text-color);
+	
+	font-size: 1.5rem;
+	text-align: center;
+}
+
 .fold-table th {
 	width: 30%;
 }

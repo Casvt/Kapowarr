@@ -86,6 +86,7 @@
 
 .window-content table {
 	width: 100%;
+	border-spacing: 0px;
 }
 
 .window-content tr > * {

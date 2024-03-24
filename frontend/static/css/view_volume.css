@@ -3,19 +3,6 @@
 	width: 100%;
 }
 
-#loading-screen {
-	height: 100%;
-
-	display: flex;
-	justify-content: center;
-	align-items: center;
-
-	color: var(--text-color);
-
-	text-align: center;
-	font-size: 1.5rem;
-}
-
 #volume-content {
 	display: flex;
 	flex-direction: column;
@@ -163,20 +150,16 @@
 	background-color: var(--hover-color);
 }
 
-.issues-table > thead > tr > :first-child,
-.issue-entry > *:first-child {
+.issues-table tr > :first-child {
 	padding-left: .75rem;
 }
-.issues-table > thead > tr > :last-child,
-.issue-entry > *:last-child {
+
+.issues-table tr > :last-child {
 	padding-right: .75rem;
 }
 
-.issue-entry > * {
+.issue-entry > td {
 	padding-block: .25rem;
-}
-
-.issue-entry > * {
 	border-top: 2px solid var(--border-color);
 }
 
@@ -210,14 +193,14 @@
 /*  */
 /* Delete volume window */
 /*  */
-#delete-window > div:nth-child(2) p {
+#delete-window .window-content p {
 	text-align: center;
 }
 
 /*  */
 /* Manual search window */
 /*  */
-#manual-search-window > :nth-child(2) {
+#manual-search-window .window-content {
 	justify-content: flex-start;
 	overflow-x: auto;
 }
@@ -228,7 +211,23 @@
 
 #search-result-table {
 	min-width: 500px;
-	border-spacing: 0px;
+}
+
+.search-entry {
+	transition: background-color 400ms linear;
+}
+
+.search-entry:hover {
+	background-color: var(--hover-color);
+}
+
+#search-result-table :where(th, td) {
+	text-align: left;
+	padding: .5rem;
+}
+
+.search-entry > td {
+	border-top: 1px solid var(--border-color);
 }
 
 #search-result-table a {
@@ -266,24 +265,6 @@
 	aspect-ratio: 1/1;
 }
 
-#search-result-table th,
-.search-entry > * {
-	text-align: left;
-	padding: .5rem;
-}
-
-.search-entry > * {
-	border-top: 1px solid var(--border-color);
-}
-
-.search-entry {
-	transition: background-color 400ms linear;
-}
-
-.search-entry:hover {
-	background-color: var(--hover-color);
-}
-
 .action-list {
 	display: flex;
 	gap: .1rem;
@@ -293,8 +274,8 @@
 /*  */
 /* Rename and convert window */
 /*  */
-#rename-window > :nth-child(2),
-#convert-window > :nth-child(2) {
+#rename-window .window-content,
+#convert-window .window-content {
 	display: block;
 }
 
@@ -311,46 +292,35 @@
 	padding-right: .5rem;
 }
 
-.rename-preview tr:nth-child(odd) > td {
+.rename-preview .rename-before > td {
 	padding-top: .75rem;
 	padding-bottom: .25rem;
 }
 
-.rename-preview tr:nth-child(even) > td {
+.rename-preview .rename-after > td {
 	padding-bottom: .75rem;
 	padding-top: .25rem;
 }
 
-.rename-preview tr:nth-child(odd):not(:nth-last-child(2)) > td:first-child,
-.rename-preview tr:nth-child(even):not(:last-child) > td {
-	border-bottom: 1px solid var(--border-color);
+.rename-preview .rename-before:not(:first-child) > td {
+	border-top: 1px solid var(--border-color);
 }
 
-.rename-preview tr:nth-child(odd) > td:nth-child(2),
-.rename-preview tr:nth-child(even) > td:first-child {
+.rename-preview td:nth-last-child(2) {
 	text-align: center;
 	padding-right: .5rem;
 }
 
-.rename-preview tr:nth-child(odd) > td:nth-child(2) {
+.rename-preview .rename-before > td:nth-last-child(2) {
 	color: var(--error-color);
 }
 
-.rename-preview tr:nth-child(even) > td:first-child {
+.rename-preview .rename-after > td:nth-last-child(2) {
 	color: var(--success-color);
 }
 
 .empty-rename-message {
 	font-size: 1.2rem;
-	text-align: center;
-}
-
-.rename-minus,
-.rename-plus {
-	font-size: 1.2rem;
-	width: 1.5rem;
-	display: inline-block;
-	font-weight: 600;
 	text-align: center;
 }
 
@@ -370,7 +340,7 @@
 /*  */
 /* Issue info window */
 /*  */
-.window > section#issue-info-window > div:nth-child(2) {
+#issue-info-window .window-content {
 	justify-content: flex-start;
 }
 
