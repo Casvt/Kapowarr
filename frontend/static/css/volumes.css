@@ -7,28 +7,21 @@
 	gap: .5rem;
 	justify-content: center;
 	align-items: center;
-	
+
 	border-bottom: 1px solid var(--nav-background-color);
 }
 
 #start-search,
 #clear-search {
-	height: 2rem;
 	width: 2rem;
-
-	display: flex;
-	justify-content: center;
-	align-items: center;
-
 	padding: .5rem;
-	background-color: transparent;
 }
 
 #clear-search {
 	opacity: 0;
-	
+
 	padding: .55rem;
-	
+
 	transition: opacity 0.3s ease-out;
 }
 
@@ -101,10 +94,7 @@ main:has(#view-button > option[value="table"]:checked) #list-library {
 	aspect-ratio: 2/3;
 }
 
-.list-title,
-.list-volume,
-.list-monitored,
-.list-unmonitored {
+.list-entry > :where(h2, p) {
 	padding: .1rem .2rem;
 	text-align: center;
 	white-space: nowrap;
@@ -159,18 +149,13 @@ main:has(#view-button > option[value="table"]:checked) #list-library {
 #table-container {
 	width: 100%;
 	overflow-x: auto;
-	
+
 	color: var(--dimmed-text-color);
 }
 
 #table-container > table {
 	width: max(100%, 25rem);
-	
 	border-collapse: collapse;
-}
-
-#table-container th {
-	text-align: left;
 }
 
 .table-entry {
@@ -209,13 +194,10 @@ main:has(#view-button > option[value="table"]:checked) #list-library {
 }
 
 .table-monitored {
-	background-color: transparent;
+	width: 1.5rem;
 }
 
 .table-monitored > svg {
-	height: 1.5rem;
-	width: fit-content;
-
 	fill: var(--dimmed-text-color);
 }
 
@@ -232,10 +214,6 @@ main:has(#view-button > option[value="table"]:checked) #list-library {
 	color: var(--text-color);
 
 	font-size: .8rem;
-}
-
-#lib-stats table {
-	border-spacing: 0px;
 }
 
 #lib-stats th {

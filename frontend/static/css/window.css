@@ -86,7 +86,6 @@
 
 .window-content table {
 	width: 100%;
-	border-spacing: 0px;
 }
 
 .window-content tr > * {
@@ -94,9 +93,7 @@
 }
 
 .window-content th {
-	text-align: right;
 	font-size: .8rem;
-	font-weight: 600;
 }
 
 .window-content table th :where(input) {

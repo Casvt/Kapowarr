@@ -8,9 +8,33 @@ img {
 	width: 100%;
 }
 
+button {
+	background-color: transparent;
+}
+
+button:has(img, svg) {
+	display: inline-flex;
+	justify-content: center;
+	align-items: center;
+
+	padding: 0;
+}
+
+button > :where(img, svg) {
+	height: auto;
+}
+
 button:hover,
 select:hover {
 	cursor: pointer;
+}
+
+table {
+	border-spacing: 0px;
+}
+
+th {
+	text-align: left;
 }
 
 noscript {
@@ -115,7 +139,7 @@ noscript {
 :root:not(.dark-mode) :where(
 	.icon-dark-color,
 	.icon-text-color,
-	.window > section > div:first-child,
+	.window > section > .window-header,
 	#toggle-nav
 ) img {
 	/* Equal to --dark-color */
@@ -126,7 +150,7 @@ noscript {
 	.icon-light-color,
 	.icon-text-color,
 	.tool-bar,
-	.window > section > div:first-child
+	.window > section > .window-header
 ) img {
 	/* Equal to --light-color */
 	filter: invert(97%) sepia(10%) saturate(337%) hue-rotate(164deg) brightness(94%) contrast(93%);
@@ -176,16 +200,11 @@ header {
 }
 
 #toggle-nav {
-	height: 100%;
 	width: 2rem;
 	display: none;
-	padding: 0;
-	background-color: transparent;
 }
 
 #toggle-nav img {
-	height: 100%;
-	aspect-ratio: 1/1;
 	transform: scale(0.6);
 }
 
@@ -291,9 +310,7 @@ main > *:not(.tool-bar-container) {
 	height: 3.5rem;
 	width: 4rem;
 
-	display: flex;
 	flex-direction: column;
-	align-items: center;
 	gap: .125rem;
 
 	padding: .5rem;
@@ -390,19 +407,20 @@ main > *:not(.tool-bar-container) {
 
 .loading-screen {
 	height: 100%;
-	
+
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	
+
 	color: var(--text-color);
-	
+
 	font-size: 1.5rem;
 	text-align: center;
 }
 
 .fold-table th {
 	width: 30%;
+	text-align: right;
 }
 
 @media (max-width: 520px) {
@@ -433,7 +451,7 @@ main > *:not(.tool-bar-container) {
 
 @media (max-width: 720px) {
 	#toggle-nav {
-		display: block;
+		display: inline-flex;
 	}
 	#nav-bar {
 		position: absolute;
