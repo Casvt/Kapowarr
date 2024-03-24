@@ -12,13 +12,13 @@
 
 {% block pre_build_rows %}
 	<tr data-id="" class="issue-entry">
-		<td class="issue-monitored monitor-column">
+		<td class="issue-monitored">
 			<button data-monitored="" data-id="" title=""></button>
 		</td>
-		<td class="issue-number number-column"></td>
-		<td class="issue-title title-column"></td>
-		<td class="issue-date date-column"></td>
-		<td class="issue-status download-column" title="">
+		<td class="issue-number"></td>
+		<td class="issue-title"></td>
+		<td class="issue-date"></td>
+		<td class="issue-status" title="">
 			<img src="" alt="">
 		</td>
 		<td class="action-column">
@@ -62,7 +62,7 @@
 		<p>Are you sure you want to delete this volume?</p>
 		<p id="volume-downloading-error" class="error hidden">*There is a download in the queue for this volume</p>
 		<form id="delete-form">
-			<table>
+			<table class="fold-table">
 				<tr>
 					<th><label for="delete-folder-input">Delete folder</label></th>
 					<td>
@@ -82,7 +82,7 @@
 
 	{% set edit_content %}
 		<form id="edit-form">
-			<table>
+			<table class="fold-table">
 				<tr>
 					<th><label for="monitored-input">Monitored</label></th>
 					<td>
@@ -256,11 +256,11 @@
 				<table class="issues-table">
 					<thead>
 						<tr>
-							<th class="monitor-column" aria-label="Monitored status"></th>
-							<th class="number-column" aria-label="Issue number">#</th>
-							<th class="title-column">Title</th>
-							<th class="date-column">Release Date</th>
-							<th class="download-column" aria-label="Downloaded"><img src="{{url_base}}/static/img/download.svg" alt=""></th>
+							<th class="issue-monitored" aria-label="Monitored status"></th>
+							<th class="issue-number" aria-label="Issue number">#</th>
+							<th class="issue-title">Title</th>
+							<th class="issue-date">Release Date</th>
+							<th class="issue-status" aria-label="Downloaded"><img src="{{url_base}}/static/img/download.svg" alt=""></th>
 							<th class="action-column" aria-label="Actions"><img src="{{url_base}}/static/img/settings.svg" alt=""></th>
 						</tr>
 					</thead>

@@ -6,14 +6,14 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta id="url_base" data-value="{{url_base}}">
-	
+
 	<link rel="manifest" href="{{ url_for('static', filename='json/manifest.json') }}">
 	<link rel="apple-touch-icon" href="{{ url_for('static', filename='img/favicon.svg') }}">
 	<meta name="apple-mobile-web-app-status-bar" content="#ebc700">
 	<meta name="theme-color" content="#ebc700">
-	
+
 	<link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/x-icon">
-	
+
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
 	{% block css %}
 	{% endblock css %}
@@ -22,7 +22,7 @@
 	<script src="{{ url_for('static', filename='js/general.js') }}" defer></script>
 	{% block js %}
 	{% endblock js %}
-	
+
 	<title>{% block title %}{% endblock %} - Kapowarr</title>
 
 </head>
@@ -154,14 +154,14 @@
 		{% if wide_window == True %}class="wide-window"{% endif %}
 		{% if loading_id %}data-loading_window="{{loading_id}}"{% endif %}
 	>
-		<div>
+		<div class="window-header">
 			<h2>{{ title }}</h2>
 			{{ icon_button('', "Cancel", "cancel.svg") }}
 		</div>
-		<div>
+		<div class="window-content">
 			{{ content }}
 		</div>
-		<div>
+		<div class="window-footer">
 			<button class="cancel-window">Cancel</button>
 			{{ save_button }}
 		</div>

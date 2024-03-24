@@ -621,7 +621,7 @@ function showInfoWindow(window) {
 		[...document.querySelectorAll(
 			`#issue-info-window > div:nth-child(2) > div:not(#issue-info-selectors)`
 		)],
-		document.querySelector(`#${window}`)
+		[document.querySelector(`#${window}`)]
 	);
 };
 

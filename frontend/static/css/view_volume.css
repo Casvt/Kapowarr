@@ -5,13 +5,13 @@
 
 #loading-screen {
 	height: 100%;
-	
+
 	display: flex;
 	justify-content: center;
 	align-items: center;
 
 	color: var(--text-color);
-	
+
 	text-align: center;
 	font-size: 1.5rem;
 }
@@ -30,7 +30,7 @@
 .volume-mobile-description-container {
 	display: flex;
 	flex-direction: column;
-	gap: clamp(1rem, 3.75vw, 2rem);	
+	gap: clamp(1rem, 3.75vw, 2rem);
 
 	padding: clamp(1rem, 3.75vw, 2rem);
 	backdrop-filter: brightness(70%);
@@ -74,7 +74,7 @@
 #volume-monitor svg {
 	width: 100%;
 	height: 100%;
-	
+
 	fill: var(--nav-color);
 }
 
@@ -135,21 +135,22 @@
 	width: 15px;
 }
 
-.monitor-column {
+.issue-monitored {
 	width: 2.5rem;
 }
-.number-column {
+.issue-number {
 	width: 3.5rem;
 }
-.date-column {
+.issue-date {
 	width: 6.5rem;
 }
-.download-column {
+.issue-status {
 	width: 3rem;
 }
 .action-column {
 	width: 6rem;
 }
+
 .action-column > :not(:first-child) {
 	margin-left: .5rem;
 }
@@ -193,7 +194,7 @@
 .issue-entry :where(svg, img) {
 	width: 18px;
 	height: 100%;
-	
+
 	fill: var(--text-color);
 }
 
@@ -257,7 +258,7 @@
 
 .search-action-column > button {
 	width: 2rem;
-	
+
 	background-color: transparent;
 }
 
@@ -404,24 +405,6 @@
 	}
 	#volume-description-mobile {
 		display: block;
-	}
-	
-	/*  */
-	/* Windows */
-	/*  */
-	.window > section > div:nth-child(2) form table tr {
-		width: 100%;
-		display: inline-flex;
-		flex-direction: column;
-	}
-	.window > section > div:nth-child(2) form table tr > th,
-	.window > section > div:nth-child(2) form table tr > td {
-		width: 100%;
-		text-align: left;
-	}
-	.window > section > div:nth-child(2) form table tr > td > select,
-	.window > section > div:nth-child(2) form table tr > td > input[type="text"] {
-		width: 100%;
 	}
 }
 
