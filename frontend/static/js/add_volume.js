@@ -16,7 +16,11 @@ const SearchEls = {
 		loading: document.querySelector('#search-loading')
 	},
 	filters: {
-		translations: document.querySelector('#filter-translations')
+		translations: document.querySelector('#filter-translations'),
+		publisher: document.querySelector('#filter-publisher'),
+		volume_number: document.querySelector('#filter-volume-number'),
+		year: document.querySelector('#filter-year'),
+		issue_count: document.querySelector('#filter-issue-count')
 	},
 	window: {
 		form: document.querySelector('#add-form'),
@@ -54,6 +58,7 @@ function buildResults(results, api_key) {
 		entry.dataset._year = result.year;
 		entry.dataset._volume_number = result.volume_number;
 		entry.dataset._publisher = result.publisher;
+		entry.dataset._issue_count = result.issue_count;
 
 		// Only allow adding volume if it isn't already added
 		if (!result.already_added)
@@ -111,7 +116,64 @@ function buildResults(results, api_key) {
 		SearchEls.search_results.appendChild(entry);
 	});
 
-	applyTranslationFilter();
+	// Fill filters
+	const years = new Set(results.map(r => r.year).sort());
+	SearchEls.filters.year.innerHTML = '';
+	const all_years_option = document.createElement('option');
+	all_years_option.value = '';
+	all_years_option.innerText = 'All Years';
+	all_years_option.selected = true;
+	SearchEls.filters.year.appendChild(all_years_option);
+
+	years.forEach(y => {
+		const entry = document.createElement('option');
+		entry.value = entry.innerText = y;
+		SearchEls.filters.year.appendChild(entry);
+	});
+
+	const issue_counts = new Set(results.map(r => r.issue_count).sort((a, b) => a - b));
+	SearchEls.filters.issue_count.innerHTML = '';
+	const all_issue_counts_option = document.createElement('option');
+	all_issue_counts_option.value = '';
+	all_issue_counts_option.innerText = 'All Issue Counts';
+	all_issue_counts_option.selected = true;
+	SearchEls.filters.issue_count.appendChild(all_issue_counts_option);
+
+	issue_counts.forEach(ic => {
+		const entry = document.createElement('option');
+		entry.value = entry.innerText = `${ic} issues`;
+		SearchEls.filters.issue_count.appendChild(entry);
+	});
+
+	const volume_numbers = new Set(results.map(r => r.volume_number).sort((a, b) => a - b));
+	SearchEls.filters.volume_number.innerHTML = '';
+	const all_volume_numbers_option = document.createElement('option');
+	all_volume_numbers_option.value = '';
+	all_volume_numbers_option.innerText = 'All Volume Numbers';
+	all_volume_numbers_option.selected = true;
+	SearchEls.filters.volume_number.appendChild(all_volume_numbers_option);
+
+	volume_numbers.forEach(vn => {
+		const entry = document.createElement('option');
+		entry.value = entry.innerText = `Volume ${vn}`;
+		SearchEls.filters.volume_number.appendChild(entry);
+	});
+
+	const publishers = new Set(results.map(r => r.publisher).sort());
+	SearchEls.filters.publisher.innerHTML = '';
+	const all_publishers_option = document.createElement('option');
+	all_publishers_option.value = '';
+	all_publishers_option.innerText = 'All Publishers';
+	all_publishers_option.selected = true;
+	SearchEls.filters.publisher.appendChild(all_publishers_option);
+
+	publishers.forEach(pub => {
+		const entry = document.createElement('option');
+		entry.value = entry.innerText = pub;
+		SearchEls.filters.publisher.appendChild(entry);
+	});
+
+	applyFilters();
 };
 
 function search() {
@@ -161,16 +223,39 @@ function clearSearch(e) {
 	SearchEls.search_bar.input.value = '';
 };
 
-function applyTranslationFilter() {
-	const value = SearchEls.filters.translations.value;
-	setLocalStorage({'translated_filter': value});
-	const els = [...SearchEls.search_results.querySelectorAll(
-		'button[data-_translated="true"]'
-	)]
-	if (value === 'all')
-		hide([], els);
-	else if (value == 'only-english')
-		hide(els);
+function applyFilters() {
+	const translation = SearchEls.filters.translations.value,
+		year = SearchEls.filters.year.value,
+		issue_count = (
+			SearchEls.filters.issue_count.value || ' issues'
+		).split(' issues')[0],
+		volume_number = (
+			SearchEls.filters.volume_number.value || 'Volume '
+			).split('Volume ')[1],
+		publisher = SearchEls.filters.publisher.value;
+
+	setLocalStorage({'translated_filter': translation});
+
+	let filter = '';
+
+	if (translation === 'only-english')
+		filter += '[data-_translated="false"]';
+	if (year !== '')
+		filter += `[data-_year="${year}"]`;
+	if (issue_count !== '')
+		filter += `[data-_issue_count="${issue_count}"]`;
+	if (volume_number !== '')
+		filter += `[data-_volume_number="${volume_number}"]`;
+	if (publisher !== '')
+		filter += `[data-_publisher="${publisher}"]`;
+
+	if (filter === '')
+		hide([], SearchEls.search_results.querySelectorAll('button'));
+	else
+		hide(
+			SearchEls.search_results.querySelectorAll('button'),
+			SearchEls.search_results.querySelectorAll(`button${filter}`)
+		);
 };
 
 //
@@ -262,7 +347,13 @@ usingApiKey()
 SearchEls.search_bar.cancel.onclick = clearSearch;
 SearchEls.window.form.action = 'javascript:addVolume();';
 SearchEls.search_bar.bar.action = 'javascript:search();';
-SearchEls.filters.translations.onchange = e => applyTranslationFilter();
+
+SearchEls.filters.translations.onchange =
+SearchEls.filters.publisher.onchange =
+SearchEls.filters.volume_number.onchange =
+SearchEls.filters.year.onchange =
+SearchEls.filters.issue_count.onchange =
+	e => applyFilters();
 
 const translated_filter = getLocalStorage('translated_filter')['translated_filter'];
 SearchEls.filters.translations.querySelector(`option[value="${translated_filter}"]`).setAttribute('selected', '');

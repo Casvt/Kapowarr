@@ -89,6 +89,8 @@ main > div {
 }
 
 .filter-bar > * {
+	flex-grow: 1;
+	width: max(18%, 11rem);
 	padding: 1rem;
 	border-radius: 4px;
 	background-color: var(--foreground-color);
@@ -208,6 +210,12 @@ main > div {
 
 #add-volume {
 	background-color: var(--success-color);
+}
+
+@media (max-width: 1205px) {
+	.filter-bar > * {
+		min-width: 30%;
+	}
 }
 
 @media (max-width: 720px) {
