@@ -50,7 +50,7 @@
 Layout is reversed so that in the tree
 the title comes before the monitor button.
 This flows better for ARIA.
- */
+*/
 .volume-title-monitored {
 	display: flex;
 	flex-direction: row-reverse;
@@ -227,6 +227,10 @@ tbody .issue-title:hover {
 
 .match-column > img {
 	width: 18px;
+}
+
+.search-entry > td:nth-child(2) {
+	width: 100%;
 }
 
 .source-column {
