@@ -44,7 +44,9 @@ function buildResults(results, api_key) {
 	SearchEls.search_results.querySelectorAll('button:not(.filter-bar)').forEach(e => e.remove());
 	results.forEach(result => {
 		const entry = SearchEls.pre_build.search_entry.cloneNode(true);
-		entry.dataset.title = result.year !== null ? `${result.title} (${result.year})` : result.title;
+		entry.dataset.title =
+		entry.ariaLabel =
+			result.year !== null ? `${result.title} (${result.year})` : result.title;
 		entry.dataset.cover = result.cover;
 		entry.dataset.comicvine_id = result.comicvine_id;
 		entry.dataset._translated = result.translated;
