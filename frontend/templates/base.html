@@ -17,7 +17,7 @@
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
 	{% block css %}
 	{% endblock css %}
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
+	<script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO" crossorigin="anonymous"></script>
 	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 	<script src="{{ url_for('static', filename='js/general.js') }}" defer></script>
 	{% block js %}
