@@ -20,7 +20,6 @@ main > div {
 	height: 100%;
 	aspect-ratio: 1/1;
 
-	padding: 0;
 	border: 1px solid var(--border-color);
 	background-color: var(--foreground-color);
 }
@@ -35,10 +34,7 @@ main > div {
 	border-left: 0px;
 }
 
-#search-button > img,
-#search-cancel-button > img {
-	height: 100%;
-	aspect-ratio: 1/1;
+:where(#search-button, #search-cancel-button) > img {
 	transform: scale(0.4);
 }
 
@@ -61,7 +57,9 @@ main > div {
 #search-input:focus {
 	outline: 0;
 	border-color: var(--accent-color);
-	box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 6px var(--accent-color);
+	box-shadow:
+		inset 0 1px 1px rgba(0, 0, 0, 0.075),
+		0 0 6px var(--accent-color);
 }
 
 /*  */
@@ -198,7 +196,7 @@ main > div {
 	width: 10rem;
 }
 
-.window > section > div:nth-child(2) {
+.window .window-content {
 	flex-direction: row;
 }
 
@@ -209,27 +207,6 @@ main > div {
 
 #add-volume {
 	background-color: var(--success-color);
-}
-
-@media (max-width: 1000px) {
-	#add-form {
-		width: 85%;
-		flex-grow: 0;
-	}
-	#add-form table tr {
-		width: 100%;
-		display: inline-flex;
-		flex-direction: column;
-	}
-	#add-form table tr > th,
-	#add-form table tr > td {
-		width: 100%;
-		text-align: left;
-	}
-	#add-form table tr > td > select,
-	#add-form table tr > td > input[type="text"] {
-		width: 100%;
-	}
 }
 
 @media (max-width: 720px) {

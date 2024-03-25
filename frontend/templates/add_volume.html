@@ -10,14 +10,41 @@
 	<script src="{{ url_for('static', filename='js/add_volume.js') }}" defer></script>
 {% endblock %}
 
+{% block pre_build_els %}
+<button
+	class="search-entry"
+	data-title=""
+	data-cover=""
+	data-comicvine_id=""
+	data-_translated=""
+	data-_title=""
+	data-_year=""
+	data-_volume_number=""
+	data-_publisher=""
+>
+	<div class="cover-info-container">
+		<div>
+			<img src="" alt="" loading="lazy">
+		</div>
+		<div class="entry-info-container">
+			<h2></h2>
+			<div class="entry-tags"></div>
+			<div class="entry-aliases"></div>
+			<div class="entry-description description"></div>
+		</div>
+	</div>
+	<div class="entry-spare-description description"></div>
+</button>
+{% endblock pre_build_els %}
+
 {% block windows %}
 	{{ loading_window("loading-window", "Adding volume...") }}
 
 	{% set add_content %}
-		<img src="" id="add-cover">
+		<img src="" id="add-cover" alt="">
 		<form id="add-form">
 			<input type="hidden" id="comicvine-input" value="">
-			<table>
+			<table class="fold-table">
 				<tr>
 					<th><label for="rootfolder-input">Root Folder</label></th>
 					<td>
@@ -55,34 +82,34 @@
 {% block main %}
 <main>
 	<div>
-		<form class="search-bar icon-text-color">
-			<button type="submit" id="search-button" aria-label="Start the search" title="Start the search">
+		<form class="search-bar icon-text-color" aria-label="Search Bar">
+			<button type="submit" id="search-button" title="Start the search">
 				<img src="{{url_base}}/static/img/search.svg" alt="">
 			</button>
 			<input type="text" id="search-input" autofocus aria-label="Search term">
-			<button type="button" id="search-cancel-button" aria-label="Clear search" title="Clear search">
+			<button type="button" id="search-cancel-button" title="Clear search">
 				<img src="{{url_base}}/static/img/cancel.svg" alt="">
 			</button>
 		</form>
-		<section id="search-explain">
+		<section id="search-explain" aria-label="Explanation">
 			<p>It's easy to add a new volume, just start typing the name of the volume you want to add</p>
 			<br>
-			<p>You can also search using the CV id of a volume. e.g. 'cv:4050-2127', 'cv:2127' or '4050-2127'</p>
+			<p>You can also search using the CV ID of a volume. e.g. 'cv:4050-2127', 'cv:2127' or '4050-2127'</p>
 		</section>
-		<div id="search-empty" class="hidden">
+		<section id="search-empty" class="hidden">
 			<p>No results</p>
-		</div>
-		<div id="search-failed" class="hidden">
+		</section>
+		<section id="search-failed" class="hidden">
 			<p>The Comic Vine api key is not set or is invalid</p>
 			<p>Please set a working Comic Vine api key at Settings -> General -> Comic Vine API</p>
-		</div>
-		<div id="search-blocked" class="hidden">
+		</section>
+		<section id="search-blocked" class="hidden">
 			<p>You can't add volumes before having added at least one root folder</p>
 			<p>A root folder can be added at Settings -> Media Management -> Root Folders</p>
-		</div>
-		<section id="search-results">
-			<div class="filter-bar hidden">
-				<select id="filter-translations">
+		</section>
+		<section id="search-results" class="hidden" aria-label="Search Results">
+			<div class="filter-bar" aria-label="Filter Bar">
+				<select id="filter-translations" aria-label="Filter translations">
 					<option value="all">All Languages</option>
 					<option value="only-english">Only English</option>
 				</select>

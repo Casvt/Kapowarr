@@ -1,19 +1,48 @@
-// 
+const SearchEls = {
+	pre_build: {
+		search_entry: document.querySelector('.pre-build-els .search-entry')
+	},
+	search_bar: {
+		bar: document.querySelector('.search-bar'),
+		cancel: document.querySelector('#search-cancel-button'),
+		input: document.querySelector('#search-input')
+	},
+	search_results: document.querySelector('#search-results'),
+	msgs: {
+		blocked: document.querySelector('#search-blocked'),
+		failed: document.querySelector('#search-failed'),
+		empty: document.querySelector('#search-empty'),
+		explain: document.querySelector('#search-explain')
+	},
+	filters: {
+		translations: document.querySelector('#filter-translations')
+	},
+	window: {
+		form: document.querySelector('#add-form'),
+		title: document.querySelector('#add-window h2'),
+		cover: document.querySelector('#add-cover'),
+		cv_input: document.querySelector('#comicvine-input'),
+		monitor_input: document.querySelector('#monitor-input'),
+		root_folder_input: document.querySelector('#rootfolder-input'),
+		volume_folder_input: document.querySelector('#volumefolder-input'),
+		submit: document.querySelector('#add-volume')
+	}
+};
+
+//
 // Searching
-// 
+//
 function addAlreadyAdded(title) {
 	const aa_icon = document.createElement('img');
-	aa_icon.alt = 'Volume is already added';
 	aa_icon.src = `${url_base}/static/img/check_circle.svg`;
+	aa_icon.alt = 'Volume is already added';
 	title.appendChild(aa_icon);
 }
 
 function buildResults(results, api_key) {
-	const table = document.querySelector('#search-results');
-	table.querySelectorAll('button:not(.filter-bar)').forEach(e => e.remove());
+	SearchEls.search_results.querySelectorAll('button:not(.filter-bar)').forEach(e => e.remove());
 	results.forEach(result => {
-		const entry = document.createElement('button');
-		entry.classList.add('search-entry');
+		const entry = SearchEls.pre_build.search_entry.cloneNode(true);
 		entry.dataset.title = result.year !== null ? `${result.title} (${result.year})` : result.title;
 		entry.dataset.cover = result.cover;
 		entry.dataset.comicvine_id = result.comicvine_id;
@@ -25,41 +54,23 @@ function buildResults(results, api_key) {
 
 		// Only allow adding volume if it isn't already added
 		if (!result.already_added)
-			entry.addEventListener('click', e => showAddWindow(result.comicvine_id, api_key));
+			entry.onclick = e => showAddWindow(result.comicvine_id, api_key);
 
-		const cover_info_container = document.createElement('div');
-		cover_info_container.classList.add('cover-info-container');
-		entry.appendChild(cover_info_container);
+		entry.querySelector('img').src = result.cover;
 
-		const cover_container = document.createElement('div');
-		cover_info_container.appendChild(cover_container);
-		
-		const cover = document.createElement('img');
-		cover.src = result.cover;
-		cover.alt = "";
-		cover.loading = "lazy";
-		cover_container.appendChild(cover);
-
-		const info_container = document.createElement('div');
-		info_container.classList.add('entry-info-container');
-		cover_info_container.appendChild(info_container);
-
-		const title = document.createElement("h2");
+		const title = entry.querySelector('h2');
 		title.innerText = result.title;
-		info_container.appendChild(title);
-		
+
 		if (result.year !== null) {
 			const year = document.createElement("span");
 			year.innerText = ` (${result.year})`;
 			title.appendChild(year);
 		};
-		
+
 		if (result.already_added)
 			addAlreadyAdded(title);
-		
-		const tags = document.createElement('div');
-		tags.classList.add('entry-tags');
-		info_container.appendChild(tags);
+
+		const tags = entry.querySelector('.entry-tags');
 
 		if (result.volume_number !== null) {
 			const volume_number = document.createElement('p');
@@ -78,104 +89,107 @@ function buildResults(results, api_key) {
 		const info_link = document.createElement('a');
 		info_link.href = result.comicvine_info;
 		info_link.innerText = 'Link';
+		info_link.onclick = e => e.stopImmediatePropagation();
 		tags.appendChild(info_link);
 
 		if (result.aliases.length) {
-			const aliases = document.createElement('div');
-			aliases.classList.add('entry-aliases');
-			info_container.appendChild(aliases);
-			
+			const aliases = entry.querySelector('.entry-aliases');
 			result.aliases.forEach(alias_text => {
 				const alias = document.createElement('p');
 				alias.innerText = alias_text;
 				aliases.appendChild(alias);
 			});
 		};
-		
-		const description = document.createElement('div');
-		description.classList.add('entry-description', 'description');
-		description.innerHTML = result.description;
-		info_container.appendChild(description);
 
-		const spare_description = document.createElement('div');
-		spare_description.classList.add('entry-spare-description', 'description');
-		spare_description.innerHTML = result.description;
-		entry.appendChild(spare_description);
+		entry.querySelectorAll('.entry-description, .entry-spare-description').forEach(
+			d => d.innerHTML = result.description
+		);
 
-		table.appendChild(entry);
+		SearchEls.search_results.appendChild(entry);
 	});
+
 	applyTranslationFilter();
-	if (table.innerHTML === '') {
-		document.querySelector('#search-empty').classList.remove('hidden');
-	};
 };
 
 function search() {
-	if (!document.querySelector('#search-blocked').classList.contains('hidden'))
-		return;
+	if (!SearchEls.msgs.blocked.classList.contains('hidden'))
+	return;
+
+	SearchEls.search_bar.input.blur();
+
+	hide([
+		SearchEls.msgs.empty,
+		SearchEls.msgs.explain,
+		SearchEls.msgs.failed,
+		SearchEls.search_results
+	]);
 	usingApiKey().then(api_key => {
-		const query = document.querySelector('#search-input').value;
-		fetch(`${url_base}/api/volumes/search?api_key=${api_key}&query=${query}`)
-		.then(response => {
-			if (!response.ok) return Promise.reject(response.status);
-			return response.json();
+		const query = SearchEls.search_bar.input.value;
+		fetchAPI('/volumes/search', api_key, {query: query})
+		.then(json => {
+
+			buildResults(json.result, api_key);
+
+			if (!SearchEls.search_results.querySelector('button:not(.filter-bar)'))
+				hide([], [SearchEls.msgs.empty]);
+			else
+				hide([], [SearchEls.search_results]);
 		})
-		.then(json => buildResults(json.result, api_key))
 		.catch(e => {
-			if (e === 400) document.querySelector('#search-failed').classList.remove('hidden');
+			if (e.status === 400)
+				hide([], [SearchEls.msgs.failed]);
+			else
+				console.log(e);
 		});
 	});
-	document.querySelector('#search-explain').classList.add('hidden');
-	document.querySelector('#search-empty').classList.add('hidden');
-	document.querySelector('#search-failed').classList.add('hidden');
-	document.querySelector('.filter-bar').classList.remove('hidden');
-	document.querySelector('#search-input').blur();
 };
 
 function clearSearch(e) {
-	document.querySelector('#search-results').querySelectorAll('button:not(.filter-bar)').forEach(e => e.remove());
-	document.querySelector('#search-empty').classList.add('hidden');
-	document.querySelector('#search-failed').classList.add('hidden');
-	if (document.querySelector('#search-blocked').classList.contains('hidden'))
-		document.querySelector('#search-explain').classList.remove('hidden');
-	else
-		document.querySelector('#search-explain').classList.add('hidden');
-	document.querySelector('#search-input').value = '';
-	document.querySelector('.filter-bar').classList.add('hidden');
+	hide([
+		SearchEls.search_results,
+		SearchEls.msgs.empty,
+		SearchEls.msgs.failed
+	], [
+		SearchEls.msgs.explain
+	])
+	SearchEls.search_results.querySelectorAll('button:not(.filter-bar)').forEach(e => e.remove());
+	SearchEls.search_bar.input.value = '';
 };
 
 function applyTranslationFilter() {
-	const value = document.querySelector('#filter-translations').value;
+	const value = SearchEls.filters.translations.value;
 	setLocalStorage({'translated_filter': value});
+	const els = [...SearchEls.search_results.querySelectorAll(
+		'button[data-_translated="true"]'
+	)]
 	if (value === 'all')
-		document.querySelectorAll('#search-results > button[data-_translated="true"]').forEach(e => e.classList.remove('hidden'));
+		hide([], els);
 	else if (value == 'only-english')
-		document.querySelectorAll('#search-results > button[data-_translated="true"]').forEach(e => e.classList.add('hidden'));
+		hide(els);
 };
 
-// 
+//
 // Adding
 //
 function fillRootFolderInput(api_key) {
-	const root_folder_list = document.querySelector('#rootfolder-input');
-	fetch(`${url_base}/api/rootfolder?api_key=${api_key}`)
-	.then(response => response.json())
+	fetchAPI('/rootfolder', api_key)
 	.then(json => {
-		if (json.result.length) {
+		if (json.result.length)
 			json.result.forEach(folder => {
 				const option = document.createElement('option');
 				option.value = folder.id;
 				option.innerText = folder.folder;
-				root_folder_list.appendChild(option);
+				SearchEls.window.root_folder_input.appendChild(option);
 			});
-		} else {
-			document.querySelector('#search-blocked').classList.remove('hidden');
-		};
+		else
+			hide([], [SearchEls.msgs.blocked]);
 	});
 };
 
 function showAddWindow(comicvine_id, api_key) {
-	const volume_data = document.querySelector(`button[data-comicvine_id="${comicvine_id}"]`).dataset;
+	const volume_data = document.querySelector(
+		`button[data-comicvine_id="${comicvine_id}"]`
+	).dataset;
 	const body = {
 		'comicvine_id': volume_data.comicvine_id,
 		'title': volume_data._title,
@@ -183,68 +197,67 @@ function showAddWindow(comicvine_id, api_key) {
 		'volume_number': volume_data._volume_number,
 		'publisher': volume_data._publisher
 	};
-	
-	fetch(`${url_base}/api/volumes/search?api_key=${api_key}`, {
-		'method': 'POST',
-		'headers': {'Content-Type': 'application/json'},
-		'body': JSON.stringify(body)
-	})
+
+	sendAPI('POST', '/volumes/search', api_key, {}, body)
 	.then(response => response.json())
 	.then(json => {
 		volume_data._volume_folder = json.result.folder;
-		document.getElementById('volumefolder-input').value = json.result.folder;
+		SearchEls.window.volume_folder_input.value = json.result.folder;
 		showWindow("add-window");
 	});
-	
-	document.querySelector('#add-window h2').innerText = volume_data.title;
-	document.querySelector('#add-cover').src = volume_data.cover;
-	document.querySelector('#comicvine-input').value = comicvine_id;
+
+	SearchEls.window.title.innerText = volume_data.title;
+	SearchEls.window.cover.src = volume_data.cover;
+	SearchEls.window.cv_input.value = comicvine_id;
 };
 
 function addVolume() {
 	showLoadWindow("add-window");
-	const volume_folder = document.querySelector('#volumefolder-input').value;
+	const volume_folder = SearchEls.window.volume_folder_input.value;
 
 	const data = {
-		'comicvine_id': document.querySelector('#comicvine-input').value,
-		'root_folder_id': parseInt(document.querySelector('#rootfolder-input').value),
-		'monitor': document.querySelector('#monitor-input').value == 'true',
+		'comicvine_id': SearchEls.window.cv_input.value,
+		'root_folder_id': parseInt(SearchEls.window.root_folder_input.value),
+		'monitor': SearchEls.window.monitor_input.value == 'true',
 		'volume_folder': ''
 	};
-	if (volume_folder !== '' && volume_folder !== document.querySelector(`button[data-comicvine_id="${data.comicvine_id}"]`).dataset._volume_folder) {
+	if (
+		volume_folder !== ''
+		&& volume_folder !== document.querySelector(
+			`button[data-comicvine_id="${data.comicvine_id}"]`
+		).dataset._volume_folder
+	) {
 		// Custom volume folder
 		data.volume_folder = volume_folder;
 	};
+
 	usingApiKey()
 	.then(api_key => {
-		fetch(`${url_base}/api/volumes?api_key=${api_key}`, {
-			'method': 'POST',
-			'headers': {'Content-Type': 'application/json'},
-			'body': JSON.stringify(data)
-		})
+		sendAPI('POST', '/volumes', api_key, {}, data)
 		.then(response => {
-			if (!response.ok) return Promise.reject(response.status);
-
-			const title = document.querySelector(`button[data-comicvine_id="${data.comicvine_id}"] h2`);
+			const title = document.querySelector(
+				`button[data-comicvine_id="${data.comicvine_id}"] h2`
+			);
 			addAlreadyAdded(title);
 			closeWindow();
 		})
 		.catch(e => {
-			if (e === 401) window.location.href = `${url_base}/login?redirect=${window.location.pathname}`;
-			else if (e === 509) document.querySelector('#add-volume').innerText = 'ComicVine API rate limit reached';
-			else {
+			if (e.status === 509)
+				SearchEls.window.submit.innerText = 'ComicVine API rate limit reached';
+			else
 				console.log(e);
-			};
 		});
 	});
 };
 
 // code run on load
-addEventListener('#search-cancel-button', 'click', clearSearch);
-setAttribute('#add-form', 'action', 'javascript:addVolume()');
-
 usingApiKey()
 .then(api_key => fillRootFolderInput(api_key));
-document.querySelector('.search-bar').setAttribute('action', 'javascript:search();')
-document.querySelector(`#filter-translations > option[value="${getLocalStorage('translated_filter')['translated_filter']}"]`).setAttribute('selected', '');
-document.querySelector('#filter-translations').addEventListener('change', e => applyTranslationFilter());
+
+SearchEls.search_bar.cancel.onclick = clearSearch;
+SearchEls.window.form.action = 'javascript:addVolume();';
+SearchEls.search_bar.bar.action = 'javascript:search();';
+SearchEls.filters.translations.onchange = e => applyTranslationFilter();
+
+const translated_filter = getLocalStorage('translated_filter')['translated_filter'];
+SearchEls.filters.translations.querySelector(`option[value="${translated_filter}"]`).setAttribute('selected', '');
