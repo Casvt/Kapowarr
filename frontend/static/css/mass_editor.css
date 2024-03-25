@@ -30,7 +30,7 @@ main {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 1rem;
-	
+
 	padding: .5rem;
 	border-radius: 4px;
 	background-color: var(--tool-bar-color);
@@ -45,7 +45,7 @@ main {
 
 .action-bar button {
 	min-width: 5rem;
-	
+
 	border: 2px solid var(--border-color);
 	border-radius: 4px;
 	padding: .4rem .5rem;
@@ -112,7 +112,13 @@ tbody > tr {
 }
 
 tbody > tr:hover {
-	background-color: var(--dark-hover-color);
+	background-color: var(--hover-color);
+}
+
+tbody svg {
+	width: 1.5rem;
+	height: auto;
+	fill: var(--text-color);
 }
 
 @media (max-width: 820px) {

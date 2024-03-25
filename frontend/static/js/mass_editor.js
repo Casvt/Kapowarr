@@ -1,19 +1,24 @@
-const windows = {
-	loading: document.querySelector('#loading-window'),
-	list: document.querySelector('#list-window')
+const EditorEls = {
+	windows: {
+		loading: document.querySelector('#loading-window'),
+		list: document.querySelector('#list-window')
+	},
+	select_all: document.querySelector('#selectall-input'),
+	volumes: document.querySelector('.volume-list'),
+	action_bar: document.querySelector('.action-bar')
 };
 
 function fillVolumeList(api_key) {
-	document.querySelector('#selectall-input').checked = false;
-	const table = document.querySelector('.volume-list');
-	table.innerHTML = '';
-	fetch(`${url_base}/api/volumes?api_key=${api_key}`)
-	.then(response => response.json())
+	hide([EditorEls.windows.list], [EditorEls.windows.loading]);
+	EditorEls.select_all.checked = false;
+	EditorEls.volumes.innerHTML = '';
+
+	fetchAPI('/volumes', api_key)
 	.then(json => {
 		json.result.forEach(vol => {
 			const entry = document.createElement('tr');
 			entry.dataset.id = vol.id;
-			
+
 			const select_container = document.createElement('td');
 			const select = document.createElement('input');
 			select.type = 'checkbox';
@@ -33,39 +38,36 @@ function fillVolumeList(api_key) {
 			volume_number.innerText = vol.volume_number;
 			entry.appendChild(volume_number);
 
-			table.appendChild(entry);
+			const monitored = document.createElement('td');
+			monitored.innerHTML = vol.monitored ? icons.monitored : icons.unmonitored;
+			monitored.title = vol.monitored ? 'Monitored' : 'Unmonitored';
+			entry.appendChild(monitored);
+
+			EditorEls.volumes.appendChild(entry);
 		});
+		hide([EditorEls.windows.loading], [EditorEls.windows.list]);
 	});
 };
 
 function toggleSelection() {
-	const checked = document.querySelector('#selectall-input').checked;
-	document.querySelectorAll('.volume-list input[type="checkbox"]')
+	const checked = EditorEls.select_all.checked;
+	EditorEls.volumes.querySelectorAll('input[type="checkbox"]')
 		.forEach(c => c.checked = checked);
 };
 
 function runAction(api_key, action, args={}) {
-	windows.list.classList.add('hidden');
-	windows.loading.classList.remove('hidden');
+	hide([EditorEls.windows.list], [EditorEls.windows.loading]);
 
-	const volume_ids = [...document.querySelectorAll(
-		'.volume-list input[type="checkbox"]:checked'
+	const volume_ids = [...EditorEls.volumes.querySelectorAll(
+		'input[type="checkbox"]:checked'
 	)].map(v => parseInt(v.parentNode.parentNode.dataset.id))
-	
-	fetch(`${url_base}/api/masseditor?api_key=${api_key}`, {
-		'method': 'POST',
-		'headers': {'Content-Type': 'application/json'},
-		'body': JSON.stringify({
-			'volume_ids': volume_ids,
-			'action': action,
-			'args': args
-		})
+
+	sendAPI('POST', '/masseditor', api_key, {}, {
+		'volume_ids': volume_ids,
+		'action': action,
+		'args': args
 	})
-	.then(response => {
-		fillVolumeList(api_key);
-		windows.loading.classList.add('hidden');
-		windows.list.classList.remove('hidden');
-	});
+	.then(response => fillVolumeList(api_key));
 };
 
 // code run on load
@@ -73,10 +75,11 @@ function runAction(api_key, action, args={}) {
 usingApiKey()
 .then(api_key => {
 	fillVolumeList(api_key);
-	addEventListener('.action-bar > div > button', 'click',
-		e => runAction(api_key, e.target.dataset.action)
+
+	EditorEls.action_bar.querySelectorAll('.action-divider > button').forEach(
+		b => b.onclick = e => runAction(api_key, e.target.dataset.action)
 	);
-	addEventListener('button[data-action="delete"]', 'click',
+	EditorEls.action_bar.querySelector('button[data-action="delete"]').onclick =
 		e => runAction(
 			api_key,
 			e.target.dataset.action,
@@ -85,8 +88,7 @@ usingApiKey()
 					'select[name="delete_folder"]'
 				).value === "true"
 			}
-		)
-	);
+		);
 });
 
-addEventListener('#selectall-input', 'change', e => toggleSelection());
+EditorEls.select_all.onchange = e => toggleSelection();
