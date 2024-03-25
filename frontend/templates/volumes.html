@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block pre_build_els %}
-	<a href="" class="list-entry">
+	<a href="" class="list-entry" aria-label="">
 		<img class="list-img" src="" alt="" loading="lazy">
 		<div class="list-prog-container">
 			<div class="list-prog-bar"></div>
@@ -23,7 +23,7 @@
 {% endblock %}
 
 {% block pre_build_rows %}
-	<tr class="table-entry">
+	<tr class="table-entry" aria-label="">
 		<td>
 			<a class="table-link" href=""></a>
 		</td>
@@ -43,7 +43,7 @@
 {% endblock %}
 
 {% block right_side_header %}
-	<form id="search-container" class="icon-dark-color">
+	<form id="search-container" class="icon-dark-color" aria-label="Search bar">
 		<button type="submit" id="start-search" aria-label="Start search">
 			<img src="{{url_base}}/static/img/search.svg" alt="">
 		</button>
@@ -56,7 +56,7 @@
 
 {% block main %}
 <main>
-	<div class="tool-bar-container">
+	<section class="tool-bar-container" aria-label="Tool bar">
 		<div class="tool-bar">
 			{{ icon_button(
 				"updateall-button",
@@ -89,7 +89,7 @@
 				<option value="publisher">Publisher</option>
 			</select>
 		</div>
-	</div>
+	</section>
 	<div id="loading-library" class="loading-screen">
 		<h2>Loading...</h2>
 		<noscript>
@@ -117,7 +117,7 @@
 				<tbody id="table-library"></tbody>
 			</table>
 		</div>
-		<div id="lib-stats">
+		<footer id="lib-stats" aria-label="Library statistics">
 			<table>
 				<tbody>
 					<tr>
@@ -158,7 +158,7 @@
 					</tr>
 				</tbody>
 			</table>
-		</div>
+		</footer>
 	</div>
 </main>
 {% endblock main %}

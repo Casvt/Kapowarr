@@ -46,10 +46,10 @@
 
 	<header>
 		<div class="menu-title-container">
-			<button id="toggle-nav" aria-label="Toggle menu">
+			<button id="toggle-nav" aria-label="Toggle menu" aria-hidden="true">
 				<img src="{{url_base}}/static/img/menu.svg" alt="">
 			</button>
-			<a href="{{url_base}}/">
+			<a href="{{url_base}}/" aria-label="Go to homepage">
 				<img src="{{ url_for('static', filename='img/favicon.svg') }}" alt="">
 			</a>
 		</div>
@@ -140,7 +140,7 @@
 	>
 		<img src="{{ url_for('static', filename='img/' + icon) }}" alt="">
 		{% if desc %}
-		<div>
+		<div aria-hidden="true">
 			<p>{{ desc }}</p>
 		</div>
 		{% endif %}
@@ -151,6 +151,7 @@
 	<!-- {{ title }} -->
 	<section
 		id="{{ id }}"
+		aria-label="{{ title }}"
 		{% if wide_window == True %}class="wide-window"{% endif %}
 		{% if loading_id %}data-loading_window="{{loading_id}}"{% endif %}
 	>

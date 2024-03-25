@@ -46,8 +46,15 @@
 	font-size: 1.15rem;
 }
 
+/*
+Layout is reversed so that in the tree
+the title comes before the monitor button.
+This flows better for ARIA.
+ */
 .volume-title-monitored {
 	display: flex;
+	flex-direction: row-reverse;
+	justify-content: flex-end;
 	gap: clamp(.6rem, 2.4vw, 1rem);
 }
 

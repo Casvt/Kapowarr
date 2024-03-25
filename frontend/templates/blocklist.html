@@ -10,12 +10,12 @@
 
 {% block main %}
 <main>
-	<div class="tool-bar-container">
+	<section class="tool-bar-container" aria-label="Tool bar">
 		<div class="tool-bar">
 			{{ icon_button("refresh-button", "Refresh the list", "refresh.svg", "Refresh") }}
 			{{ icon_button("clear-button", "Empty the complete blocklist", "delete.svg", "Clear Blocklist") }}
 		</div>
-	</div>
+	</section>
 	<div class="main-window">
 		<div class="page-turner">
 			<button id="previous-page"><<</button>

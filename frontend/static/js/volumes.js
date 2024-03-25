@@ -80,7 +80,11 @@ function populateLibrary(volumes, api_key) {
 	volumes.forEach(volume => {
 		const list_entry = pre_build_els.list_entry.cloneNode(true),
 			table_entry = pre_build_els.table_entry.cloneNode(true);
-		
+
+		// Label
+		list_entry.ariaLabel = table_entry.ariaLabel =
+			`View the volume ${volume.title} (${volume.year}) Volume ${volume.volume_number}`;
+
 		// ID
 		list_entry.classList.add(`vol-${volume.id}`);
 		table_entry.classList.add(`vol-${volume.id}`);

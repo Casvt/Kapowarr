@@ -104,6 +104,9 @@ function fillTable(issues, api_key) {
 
 		const inst = new IssueEntry(obj.id, api_key);
 
+		// ARIA
+		inst.entry.ariaLabel = `Issue ${obj.issue_number}`;
+
 		// Monitored
 		inst.monitored.dataset.monitored = obj.monitored;
 		inst.monitored.dataset.id = obj.id;
@@ -277,7 +280,7 @@ function showManualSearch(api_key, issue_id=null) {
 				setImage(
 					match,
 					images.check,
-					''
+					'Search result matches'
 				);
 			else
 				setImage(
@@ -440,11 +443,13 @@ function loadConvertPreference(api_key) {
 
 	fetchAPI('/settings', api_key)
 	.then(json => {
-		el.innerHTML = [
+		const pref = [
 			'source',
 			...json.result.format_preference,
 			'no conversion'
 		].join(' - ');
+		el.innerHTML = pref;
+		el.ariaLabel = `The format preference is the following: ${pref}`
 	});
 };
 

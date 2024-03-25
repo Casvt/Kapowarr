@@ -11,7 +11,7 @@
 {% endblock %}
 
 {% block pre_build_rows %}
-	<tr data-id="" class="issue-entry">
+	<tr data-id="" class="issue-entry" aria-label="">
 		<td class="issue-monitored">
 			<button data-monitored="" data-id="" title=""></button>
 		</td>
@@ -21,7 +21,7 @@
 		<td class="issue-status" title="">
 			<img src="" alt="">
 		</td>
-		<td class="action-column">
+		<td class="action-column" aria-label="Actions">
 			{{ icon_button('', "Auto search for this issue", "search.svg") }}
 			{{ icon_button('', "Manually search for this issue", "manual_search.svg") }}
 			{{ icon_button('', "Convert files for this issue", "convert.svg") }}
@@ -35,7 +35,7 @@
 			<a href="" target="_blank"></a>
 		</td>
 		<td class="source-column"></td>
-		<td class="search-action-column action-list">
+		<td class="search-action-column action-list" aria-label="Actions">
 			{{ icon_button('', "Download", "download.svg") }}
 			{{ icon_button('', "Add to blocklist", "blocklist.svg") }}
 		</td>
@@ -120,7 +120,7 @@
 		<p class="empty-rename-message">Nothing to Rename</p>
 		<table class="rename-preview">
 			<thead>
-				<th colspan="2">
+				<th colspan="2" aria-label="Select All">
 					<input type="checkbox" id="selectall-input" checked>
 				</th>
 				<th>Files</th>
@@ -169,7 +169,7 @@
 		<p class="empty-rename-message">Nothing to Convert</p>
 		<table class="rename-preview">
 			<thead>
-				<th colspan="2">
+				<th colspan="2" aria-label="Select All">
 					<input type="checkbox" id="selectall-convert-input" checked>
 				</th>
 				<th>Files</th>
@@ -190,7 +190,7 @@
 		<h2>Loading...</h2>
 	</div>
 	<main class="hidden">
-		<div class="tool-bar-container">
+		<section class="tool-bar-container" aria-label="Tool bar">
 			<div class="tool-bar">
 				{{ icon_button(
 					"refresh-button",
@@ -218,7 +218,7 @@
 				) }}
 				{{ icon_button(
 					"convert-button",
-					"Convert files to a different format",
+					"Preview how the files of the volume will be converted to a different format",
 					"convert.svg",
 					"Preview Convert"
 				) }}
@@ -235,33 +235,37 @@
 					"Delete"
 				) }}
 			</div>
-		</div>
+		</section>
 		<div id="volume-content">
 			<div class="volume-mobile-description-container">
 				<div class="volume-info">
 					<img src="" alt="">
 					<div class="volume-info-container">
 						<div class="volume-title-monitored">
-							<button id="volume-monitor"></button>
 							<h2></h2>
+							<button id="volume-monitor"></button>
 						</div>
-						<div id="volume-tags"></div>
-						<p id="volume-path"></p>
-						<p id="volume-description" class="description"></p>
+						<section id="volume-tags" aria-label="Tags"></section>
+						<p id="volume-path" aria-label="Volume folder path"></p>
+						<section id="volume-description" class="description" aria-label="Description"></section>
 					</div>
 				</div>
-				<p id="volume-description-mobile" class="description"></p>
+				<section id="volume-description-mobile" class="description" aria-label="Description"></section>
 			</div>
 			<div class="issues-table-container icon-text-color">
-				<table class="issues-table">
+				<table class="issues-table" aria-label="Issue list">
 					<thead>
 						<tr>
 							<th class="issue-monitored" aria-label="Monitored status"></th>
 							<th class="issue-number" aria-label="Issue number">#</th>
 							<th class="issue-title">Title</th>
 							<th class="issue-date">Release Date</th>
-							<th class="issue-status" aria-label="Downloaded"><img src="{{url_base}}/static/img/download.svg" alt=""></th>
-							<th class="action-column" aria-label="Actions"><img src="{{url_base}}/static/img/settings.svg" alt=""></th>
+							<th class="issue-status" aria-label="Downloaded">
+								<img src="{{url_base}}/static/img/download.svg" alt="">
+							</th>
+							<th class="action-column" aria-label="Actions">
+								<img src="{{url_base}}/static/img/settings.svg" alt="">
+							</th>
 						</tr>
 					</thead>
 					<tbody id="issues-list">
