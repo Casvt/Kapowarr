@@ -12,7 +12,8 @@ const SearchEls = {
 		blocked: document.querySelector('#search-blocked'),
 		failed: document.querySelector('#search-failed'),
 		empty: document.querySelector('#search-empty'),
-		explain: document.querySelector('#search-explain')
+		explain: document.querySelector('#search-explain'),
+		loading: document.querySelector('#search-loading')
 	},
 	filters: {
 		translations: document.querySelector('#filter-translations')
@@ -113,7 +114,7 @@ function buildResults(results, api_key) {
 
 function search() {
 	if (!SearchEls.msgs.blocked.classList.contains('hidden'))
-	return;
+		return;
 
 	SearchEls.search_bar.input.blur();
 
@@ -122,6 +123,8 @@ function search() {
 		SearchEls.msgs.explain,
 		SearchEls.msgs.failed,
 		SearchEls.search_results
+	], [
+		SearchEls.msgs.loading
 	]);
 	usingApiKey().then(api_key => {
 		const query = SearchEls.search_bar.input.value;
@@ -131,13 +134,13 @@ function search() {
 			buildResults(json.result, api_key);
 
 			if (!SearchEls.search_results.querySelector('button:not(.filter-bar)'))
-				hide([], [SearchEls.msgs.empty]);
+				hide([SearchEls.msgs.loading], [SearchEls.msgs.empty]);
 			else
-				hide([], [SearchEls.search_results]);
+				hide([SearchEls.msgs.loading], [SearchEls.search_results]);
 		})
 		.catch(e => {
 			if (e.status === 400)
-				hide([], [SearchEls.msgs.failed]);
+				hide([SearchEls.msgs.loading], [SearchEls.msgs.failed]);
 			else
 				console.log(e);
 		});
