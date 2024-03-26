@@ -19,7 +19,8 @@ const library_els = {
 	},
 	search: {
 		clear: document.querySelector('#clear-search'),
-		container: document.querySelector('#search-container')
+		container: document.querySelector('#search-container'),
+		input: document.querySelector('#search-input')
 	},
 	stats: {
 		volume_count: document.querySelector('#volume-count'),
@@ -29,6 +30,13 @@ const library_els = {
 		issue_download_count: document.querySelector('#issue-download-count'),
 		file_count: document.querySelector('#file-count'),
 		total_file_size: document.querySelector('#total-file-size')
+	},
+	mass_edit: {
+		bar: document.querySelector('.action-bar'),
+		button: document.querySelector('#massedit-button'),
+		toggle: document.querySelector('#massedit-toggle'),
+		select_all: document.querySelector('#selectall-input'),
+		cancel: document.querySelector('#cancel-massedit')
 	}
 };
 
@@ -57,7 +65,7 @@ class LibraryEntry {
 			const monitored_button = this.table_entry.querySelector('.table-monitored');
 			monitored_button.onclick = e => new LibraryEntry(this.id, this.api_key)
 				.setMonitored(!monitored);
-	
+
 			if (monitored) {
 				this.list_entry.setAttribute('monitored', '');
 				setIcon(monitored_button, icons.monitored, 'Monitored');
@@ -88,6 +96,7 @@ function populateLibrary(volumes, api_key) {
 		// ID
 		list_entry.classList.add(`vol-${volume.id}`);
 		table_entry.classList.add(`vol-${volume.id}`);
+		table_entry.dataset.id = volume.id;
 
 		// Link
 		list_entry.href =
@@ -125,7 +134,7 @@ function populateLibrary(volumes, api_key) {
 		table_entry.querySelector('.table-prog-num').innerText =
 			`${volume.issues_downloaded_monitored}/${volume.issue_count_monitored}`;
 
-		list_bar.style.width = 
+		list_bar.style.width =
 		table_bar.style.width =
 			`${progress}%`;
 
@@ -153,7 +162,7 @@ function populateLibrary(volumes, api_key) {
 			setIcon(monitored_button, icons.monitored, 'Monitored');
 		} else
 			setIcon(monitored_button, icons.unmonitored, 'Unmonitored');
-		
+
 		// Add to view
 		library_els.views.list.insertBefore(list_entry, space_taker);
 		library_els.views.table.appendChild(table_entry);
@@ -167,7 +176,7 @@ function fetchLibrary(api_key) {
 		sort: library_els.view_options.sort.value,
 		filter: library_els.view_options.filter.value
 	};
-	const query = document.querySelector('#search-input').value;
+	const query = library_els.search.input.value;
 	if (query !== '')
 		params.query = query;
 
@@ -187,7 +196,7 @@ function searchLibrary() {
 };
 
 function clearSearch(api_key) {
-	document.querySelector('#search-input').value = '';
+	library_els.search.input.value = '';
 	fetchLibrary(api_key);
 };
 
@@ -201,6 +210,27 @@ function fetchStats(api_key) {
 		library_els.stats.issue_download_count.innerText = json.result.downloaded_issues;
 		library_els.stats.file_count.innerText = json.result.files;
 		library_els.stats.total_file_size.innerText = convertSize(json.result.total_file_size);
+	});
+};
+
+//
+// Mass Edit
+//
+function runAction(api_key, action, args={}) {
+	showLibraryPage(library_els.pages.loading);
+
+	const volume_ids = [...library_els.views.table.querySelectorAll(
+		'input[type="checkbox"]:checked'
+	)].map(v => parseInt(v.parentNode.parentNode.dataset.id))
+
+	sendAPI('POST', '/masseditor', api_key, {}, {
+		'volume_ids': volume_ids,
+		'action': action,
+		'args': args
+	})
+	.then(response => {
+		library_els.mass_edit.select_all.checked = false;
+		fetchLibrary(api_key);
 	});
 };
 
@@ -232,5 +262,25 @@ usingApiKey()
 		setLocalStorage({'lib_filter': library_els.view_options.filter.value});
 		fetchLibrary(api_key);
 	};
+
+	library_els.mass_edit.bar.querySelectorAll('.action-divider > button[data-action]').forEach(
+		b => b.onclick = e => runAction(api_key, e.target.dataset.action)
+	);
+	library_els.mass_edit.bar.querySelector('button[data-action="delete"]').onclick =
+		e => runAction(
+			api_key,
+			e.target.dataset.action,
+			{
+				'delete_folder': document.querySelector(
+					'select[name="delete_folder"]'
+				).value === "true"
+			}
+		);
 });
 library_els.search.container.action = 'javascript:searchLibrary();';
+library_els.mass_edit.button.onclick =
+library_els.mass_edit.cancel.onclick =
+	e => library_els.mass_edit.toggle.toggleAttribute('checked');
+library_els.mass_edit.select_all.onchange =
+	e => library_els.views.table.querySelectorAll('input[type="checkbox"]')
+			.forEach(c => c.checked = library_els.mass_edit.select_all.checked);

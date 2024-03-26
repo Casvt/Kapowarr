@@ -51,8 +51,13 @@
 /*  */
 /* Library Views */
 /*  */
-main:has(#view-button > option[value="posters"]:checked) #table-container,
-main:has(#view-button > option[value="table"]:checked) #list-library {
+main:has(#massedit-toggle:checked) #list-library,
+main:not(
+	:has(#massedit-toggle:checked)
+):has(#view-button > option[value="posters"]:checked) #table-container,
+main:not(
+	:has(#massedit-toggle:checked)
+):has(#view-button > option[value="table"]:checked) #list-library {
 	display: none;
 }
 
@@ -151,7 +156,7 @@ main:has(#view-button > option[value="table"]:checked) #list-library {
 	width: 100%;
 	overflow-x: auto;
 
-	color: var(--dimmed-text-color);
+	color: var(--text-color);
 }
 
 #table-container > table {
@@ -212,6 +217,90 @@ main:has(#view-button > option[value="table"]:checked) #list-library {
 	padding-right: 1rem;
 	padding-block: .25rem;
 	text-align: right;
+}
+
+/*  */
+/* Mass Editor */
+/*  */
+main:not(:has(#massedit-toggle:checked)) #table-container :where(td, th):first-child {
+	display: none;
+}
+
+.action-bar {
+	margin-bottom: 1rem;
+
+	display: none;
+	flex-wrap: wrap;
+	gap: 1rem;
+
+	padding: .5rem;
+	border-radius: 4px;
+	background-color: var(--tool-bar-color);
+}
+
+main:has(#massedit-toggle:checked) .action-bar {
+	display: flex;
+}
+
+.action-divider {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1rem;
+}
+
+.action-bar button {
+	min-width: 5rem;
+
+	border: 2px solid var(--border-color);
+	border-radius: 4px;
+	padding: .4rem .5rem;
+	color: var(--text-color);
+	background-color: var(--background-color);
+
+	transition: background-color 100ms linear;
+}
+
+.action-bar button:hover {
+	background-color: var(--foreground-color);
+}
+
+.option-container {
+	overflow: hidden;
+	border-radius: 4px;
+	border: 2px solid var(--border-color);
+	background-color: var(--background-color);
+}
+
+.option-container button {
+	border-radius: 0px;
+	border: none;
+}
+
+.option-container select {
+	height: 100%;
+	background-color: var(--background-color);
+	color: var(--text-color);
+}
+
+#cancel-massedit {
+	background-color: var(--error-color);
+	border-color: var(--error-color);
+}
+
+@media (max-width: 850px) {
+	.action-bar {
+		justify-content: center;
+	}
+	.action-divider {
+		width: 100%;
+	}
+	.option-container {
+		flex: 1 1 auto;
+	}
+	.action-divider > *,
+	.action-divider  {
+		flex: 1 1 0;
+	}
 }
 
 @media (max-width: 535px) {

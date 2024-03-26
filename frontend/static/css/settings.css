@@ -50,7 +50,7 @@ main h2:not(:first-of-type) {
 	padding: .5rem .75rem;
 	border-radius: 6px;
 	border: 2px solid var(--border-color);
-	background-color: var(--inverted-text-color);
+	background-color: var(--background-color);
 	color: var(--text-color);
 
 	font-size: 1rem;
@@ -64,7 +64,7 @@ main h2:not(:first-of-type) {
 
 .settings-container table tr > td p {
 	margin-top: .3rem;
-	color: var(--dark-text-color);
+	color: var(--dimmed-text-color);
 }
 
 /*  */
