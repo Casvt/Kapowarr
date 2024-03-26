@@ -1,6 +1,7 @@
 const LIEls = {
 	pre_build: {
-		li_result: document.querySelector('.pre-build-els .li-result')
+		li_result: document.querySelector('.pre-build-els .li-result'),
+		search_result: document.querySelector('.pre-build-els .search-result')
 	},
 	views: {
 		start: document.querySelector('#start-window'),
@@ -19,12 +20,14 @@ const LIEls = {
 		bar: document.querySelector('.search-bar')
 	},
 	buttons: {
-		cancel: document.querySelector('.cancel-button'),
+		cancel: document.querySelectorAll('.cancel-button'),
 		run: document.querySelector('#run-import-button'),
 		import: document.querySelector('#import-button'),
 		import_rename: document.querySelector('#import-rename-button')
 	}
 };
+
+const rowid_to_filepath = {};
 
 function loadProposal(api_key) {
 	hide([LIEls.views.start], [LIEls.views.loading]);
@@ -39,11 +42,14 @@ function loadProposal(api_key) {
 
 	fetchAPI('/libraryimport', api_key, params)
 	.then(json => {
-		json.result.forEach(result => {
+		json.result.forEach((result, rowid) => {
 			const entry = LIEls.pre_build.li_result.cloneNode(true);
-			entry.dataset.cv_id = result.cv.id || '';
+			entry.dataset.rowid = rowid;
 			entry.dataset.group_number = result.group_number;
-			entry.dataset.filepath = encodeURIComponent(result.filepath);
+			rowid_to_filepath[rowid] = {
+				cv_id: result.cv.id || null,
+				filepath: result.filepath
+			};
 
 			const title = entry.querySelector('.file-column');
 			title.innerText = result.file_title;
@@ -55,7 +61,7 @@ function loadProposal(api_key) {
 
 			entry.querySelector('.issue-count').innerText = result.cv.issue_count;
 
-			entry.querySelector('button').onclick = e => openEditCVMatch(result.filepath);
+			entry.querySelector('button').onclick = e => openEditCVMatch(rowid);
 
 			LIEls.proposal_list.appendChild(entry);
 		});
@@ -80,9 +86,8 @@ function toggleSelectAll() {
 	);
 };
 
-function openEditCVMatch(filepath) {
-	LIEls.search.window.dataset.filepath =
-		encodeURIComponent(filepath);
+function openEditCVMatch(rowid) {
+	LIEls.search.window.dataset.rowid = rowid;
 	LIEls.search.results.innerHTML = '';
 	hide([LIEls.search.container]);
 	LIEls.search.input.value = '';
@@ -91,7 +96,7 @@ function openEditCVMatch(filepath) {
 };
 
 function editCVMatch(
-	filepath,
+	rowid,
 	comicvine_id,
 	comicvine_info,
 	title,
@@ -101,12 +106,12 @@ function editCVMatch(
 ) {
 	let target_td;
 	if (group_number === null)
-		target_td = document.querySelectorAll(`tr[data-filepath="${filepath}"]`);
+		target_td = document.querySelectorAll(`tr[data-rowid="${rowid}"]`);
 	else
 		target_td = document.querySelectorAll(`tr[data-group_number="${group_number}"]`);
 
 	target_td.forEach(tr => {
-		tr.dataset.cv_id = comicvine_id;
+		rowid_to_filepath[tr.dataset.rowid].cv_id = parseInt(comicvine_id);
 		const link = tr.querySelector('a');
 		link.href = comicvine_info;
 		link.innerText = `${title} (${year})`;
@@ -123,26 +128,19 @@ function searchCV() {
 		fetchAPI('/volumes/search', api_key, {query: input.value})
 		.then(json => {
 			json.result.forEach(result => {
-				const entry = document.createElement('tr');
+				const entry = LIEls.pre_build.search_result.cloneNode(true);
 
-				const title = document.createElement('td');
-				const title_link = document.createElement('a');
-				title_link.target = '_blank';
-				title_link.href = result.comicvine_info;
-				title_link.innerText = `${result.title} (${result.year})`;
-				title.appendChild(title_link);
-				entry.appendChild(title);
+				const title = entry.querySelector('td:nth-child(1) a');
+				title.href = result.comicvine_info;
+				title.innerText = `${result.title} (${result.year})`;
 
-				const issue_count = document.createElement('td');
-				issue_count.innerText = result.issue_count;
-				entry.appendChild(issue_count);
+				entry.querySelector('td:nth-child(2)').innerText =
+					result.issue_count;
 
-				const select = document.createElement('td');
-				const select_button = document.createElement('button');
-				select_button.innerText = 'Select';
-				select_button.addEventListener('click', e => {
+				const select_button = entry.querySelector('td:nth-child(3) button');
+				select_button.onclick = e => {
 					editCVMatch(
-						document.querySelector('#cv-window').dataset.filepath,
+						LIEls.search.window.dataset.rowid,
 						result.comicvine_id,
 						result.comicvine_info,
 						result.title,
@@ -150,19 +148,15 @@ function searchCV() {
 						result.issue_count
 					);
 					closeWindow();
-				});
-				select.appendChild(select_button);
-				entry.appendChild(select);
+				};
 
-				const select_for_all = document.createElement('td');
-				const select_for_all_button = document.createElement('button');
-				select_for_all_button.innerText = 'Select for group';
-				select_for_all_button.addEventListener('click', e => {
-					const filepath = LIEls.search.window.dataset.filepath;
-					const group_number = document.querySelector(`tr[data-filepath="${filepath}"]`)
+				const select_for_all_button = entry.querySelector('td:nth-child(4) button');
+				select_for_all_button.onclick = e => {
+					const rowid = LIEls.search.window.dataset.rowid;
+					const group_number = document.querySelector(`tr[data-rowid="${rowid}"]`)
 						.dataset.group_number;
 					editCVMatch(
-						filepath,
+						rowid,
 						result.comicvine_id,
 						result.comicvine_info,
 						result.title,
@@ -171,9 +165,7 @@ function searchCV() {
 						group_number
 					);
 					closeWindow();
-				});
-				select_for_all.appendChild(select_for_all_button);
-				entry.appendChild(select_for_all);
+				};
 
 				LIEls.search.results.appendChild(entry);
 			});
@@ -184,11 +176,16 @@ function searchCV() {
 
 function importLibrary(api_key, rename=false) {
 	const data = [...LIEls.proposal_list.querySelectorAll(
-		'tr:not([data-cv_id=""]) input[type="checkbox"]:checked'
-	)].map(e => { return {
-		'filepath': e.parentNode.nextSibling.nextSibling.title,
-		'id': parseInt(e.parentNode.parentNode.dataset.cv_id)
-	} });
+		'tr:has(input[type="checkbox"]:checked)'
+	)]
+		.filter(i => rowid_to_filepath[i.dataset.rowid].cv_id !== null)
+		.map(e => {
+			const rowid = e.dataset.rowid;
+			return {
+				'filepath': rowid_to_filepath[rowid].filepath,
+				'id': rowid_to_filepath[rowid].cv_id
+			};
+		});
 
 	hide([LIEls.views.list], [LIEls.views.loading]);
 	sendAPI('POST', '/libraryimport', api_key, {rename_files: rename}, data)
@@ -206,7 +203,9 @@ usingApiKey()
 
 LIEls.search.bar.action = 'javascript:searchCV();';
 LIEls.select_all.onchange = e => toggleSelectAll();
-LIEls.buttons.cancel.onclick = e => hide(
-	[LIEls.views.list, LIEls.views.no_result, LIEls.views.no_cv],
-	[LIEls.views.start]
+LIEls.buttons.cancel.forEach(b =>
+	b.onclick = e => hide(
+		[LIEls.views.list, LIEls.views.no_result, LIEls.views.no_cv],
+		[LIEls.views.start]
+	)
 );
