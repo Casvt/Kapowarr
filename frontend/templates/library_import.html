@@ -10,6 +10,24 @@
 	<script src="{{ url_for('static', filename='js/library_import.js') }}" defer></script>
 {% endblock %}
 
+{% block pre_build_rows %}
+<tr class="li-result" data-cv_id="" data-group_number="" data-filepath="">
+	<td>
+		<input type="checkbox" checked>
+	</td>
+	<td class="file-column" title=""></td>
+	<td>
+		<a href="" target="_blank"></a>
+	</td>
+	<td class="issue-count"></td>
+	<td>
+		<button title="Change match">
+			<img src="/static/img/edit.svg" alt="">
+		</button>
+	</td>
+</tr>
+{% endblock pre_build_rows %}
+
 {% block windows %}
 	{% set edit_cv_content %}
 		<form class="search-bar icon-text-color">
@@ -43,7 +61,7 @@
 			<li>Importing a lot of volumes in one go will quickly make Kapowarr reach the rate limit of ComicVine. Import volumes in batches to avoid this. It's advised to not go above 50 volumes at a time.</li>
 			<li>If each issue has a separate sub-folder, enable 'Apply limit to parent folder' so that the limit is correctly applied.</li>
 		</ul>
-		<table>
+		<table class="fold-table">
 			<tbody>
 				<tr>
 					<td><label for="limit-input">Max folders scanned</label></td>
@@ -80,7 +98,7 @@
 		<button id="run-import-button">Scan</button>
 	</div>
 	<div id="loading-window" class="hidden">
-		<h2>Loading</h2>
+		<h2>Loading...</h2>
 	</div>
 	<div id="no-result-window" class="hidden">
 		<h2>No results</h2>
@@ -98,14 +116,14 @@
 			<button id="import-rename-button">Import and Rename</button>
 		</div>
 		<div class="table-container icon-text-color">
-			<table>
+			<table aria-label="File list">
 				<thead>
 					<th>
-						<input type="checkbox" id="selectall-input" checked>
+						<input type="checkbox" id="selectall-input" aria-label="Select all entries for importing" checked>
 					</th>
 					<th>File</th>
 					<th>Match</th>
-					<th>Issue Count Match</th>
+					<th>Issues in match</th>
 					<th>Action</th>
 				</thead>
 				<tbody class="proposal-list"></tbody>
