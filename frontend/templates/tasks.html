@@ -8,11 +8,25 @@
 	<script src="{{ url_for('static', filename='js/tasks.js') }}" defer></script>
 {% endblock %}
 
+{% block pre_build_rows %}
+<tr class="task-entry">
+	<td class="name-column"></td>
+	<td class="interval-column"></td>
+	<td class="prev-column"></td>
+	<td class="next-column"></td>
+</tr>
+<tr class="history-entry">
+	<td class="title-column"></td>
+	<td class="date-column"></td>
+</tr>
+{% endblock %}
+
 {% block main %}
 <main>
 	<section class="tool-bar-container" aria-label="Tool bar">
 		<div class="tool-bar">
-			{{ icon_button("clear-button", "Delete task history", "delete.svg", "Clear History") }}
+			{{ icon_button("refresh-button", "Refresh the list", "refresh.svg", "Refresh") }}
+			{{ icon_button("clear-button", "Clear Task History", "delete.svg", "Clear History") }}
 		</div>
 	</section>
 	<div class="main-window">
@@ -27,8 +41,7 @@
 					<th>Next Execution</th>
 				</tr>
 			</thead>
-			<tbody id="task-intervals">
-			</tbody>
+			<tbody id="task-intervals"></tbody>
 		</table>
 		</div>
 		<h2>History</h2>
@@ -39,9 +52,7 @@
 					<th>Date</th>
 				</tr>
 			</thead>
-			<tbody id="history">
-				
-			</tbody>
+			<tbody id="history"></tbody>
 		</table>
 	</div>
 </main>
