@@ -8,14 +8,30 @@
 	<script src="{{ url_for('static', filename='js/queue.js') }}" defer></script>
 {% endblock %}
 
+{% block pre_build_rows %}
+<tr class="queue-entry">
+	<td class="status-column"></td>
+	<td>
+		<a href="" target="_blank"></a>
+	</td>
+	<td class="status-column"></td>
+	<td class="number-column"></td>
+	<td class="number-column"></td>
+	<td class="number-column"></td>
+	<td class="option-column">
+		<button>
+			<img src="/static/img/delete.svg">
+		</button>
+	</td>
+</tr>
+{% endblock %}
+
 {% block main %}
 <main>
-	<section class="tool-bar-container" aria-label="Tool bar">
-		<div class="tool-bar">
-			{{ icon_button("refresh-button", "Refresh the queue", "refresh.svg", "Refresh") }}
-		</div>
+	<section id="empty-window" class="loading-screen">
+		<p>Queue empty</p>
 	</section>
-	<div class="main-window icon-text-color">
+	<section id="queue-window" class="main-window icon-text-color">
 		<table>
 			<thead>
 				<tr>
@@ -28,10 +44,8 @@
 					<th class="option-column">Delete</th>
 				</tr>
 			</thead>
-			<tbody id="queue">
-				
-			</tbody>
+			<tbody id="queue"></tbody>
 		</table>
-	</div>
+	</section>
 </main>
 {% endblock main %}
