@@ -10,57 +10,63 @@
 {% block main %}
 <main>
 	<div>
-		<h2>About</h2>
-		<div class="container">
-			<table id="about-table">
-				<tr>
-					<th><label for="version">Kapowarr version</label></th>
-					<td id="version"></td>
-				</tr>
-				<tr>
-					<th><label for="python-version">Python version</label></th>
-					<td id="python-version"></td>
-				</tr>
-				<tr>
-					<th><label for="database-version">Database version</label></th>
-					<td id="database-version"></td>
-				</tr>
-				<tr>
-					<th><label for="database-location">Database location</label></th>
-					<td id="database-location"></td>
-				</tr>
-				<tr>
-					<th><label for="data-folder">Data folder</label></th>
-					<td id="data-folder"></td>
-				</tr>
-			</table>
-		</div>
-		<h2>Donate</h2>
-		<div class="donate-list">
-			<a href="https://getcomics.org/support/">
-				<img src="{{url_base}}/static/img/getcomics.png" alt="">
-				Donate to GetComics
-			</a>
-			<a href="https://ko-fi.com/casvt">
-				<img src="{{url_base}}/static/img/ko-fi.webp" alt="">
-				Donate to Kapowarr
-			</a>
-		</div>
-		<h2>Contact</h2>
-		<div class="contact-list">
-			<a href="https://github.com/Casvt/Kapowarr/issues">
-				<img src="{{url_base}}/static/img/github.svg" alt="">
-				Report an issue
-			</a>
-			<a href="https://casvt.github.io/Kapowarr/">
-				<img src="{{url_base}}/static/img/github.svg" alt="">
-				Documentation
-			</a>
-			<a href="https://discord.gg/nMNdgG7vsE">
-				<img src="{{url_base}}/static/img/discord.ico" alt="">
-				Discord server
-			</a>
-		</div>
+		<section aria-label="About">
+			<h2>About</h2>
+			<div class="container">
+				<table id="about-table">
+					<tr>
+						<th><label for="version">Kapowarr version</label></th>
+						<td id="version"></td>
+					</tr>
+					<tr>
+						<th><label for="python-version">Python version</label></th>
+						<td id="python-version"></td>
+					</tr>
+					<tr>
+						<th><label for="database-version">Database version</label></th>
+						<td id="database-version"></td>
+					</tr>
+					<tr>
+						<th><label for="database-location">Database location</label></th>
+						<td id="database-location"></td>
+					</tr>
+					<tr>
+						<th><label for="data-folder">Data folder</label></th>
+						<td id="data-folder"></td>
+					</tr>
+				</table>
+			</div>
+		</section>
+		<section aria-label="Donate">
+			<h2>Donate</h2>
+			<div class="link-list">
+				<a href="https://getcomics.org/support/">
+					<img src="{{url_base}}/static/img/getcomics.png" alt="">
+					Donate to GetComics
+				</a>
+				<a href="https://ko-fi.com/casvt">
+					<img src="{{url_base}}/static/img/ko-fi.webp" alt="">
+					Donate to Kapowarr
+				</a>
+			</div>
+		</section>
+		<section aria-label="Contact">
+			<h2>Contact</h2>
+			<div class="link-list">
+				<a href="https://github.com/Casvt/Kapowarr/issues">
+					<img src="{{url_base}}/static/img/github.svg" alt="">
+					Report an issue
+				</a>
+				<a href="https://casvt.github.io/Kapowarr/">
+					<img src="{{url_base}}/static/img/github.svg" alt="">
+					Documentation
+				</a>
+				<a href="https://discord.gg/nMNdgG7vsE">
+					<img src="{{url_base}}/static/img/discord.ico" alt="">
+					Discord server
+				</a>
+			</div>
+		</section>
 	</div>
 </main>
 {% endblock main %}
