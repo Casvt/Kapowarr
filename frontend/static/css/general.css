@@ -246,6 +246,10 @@ nav > a:not(.current-nav) + div.sub-nav:not(:has(a.current-nav)) {
 }
 
 nav a {
+	display: flex;
+	align-items: center;
+	gap: .5rem;
+
 	padding: .9rem;
 	padding-left: 1.3rem;
 	border-left: 3px solid var(--accent-color);
@@ -260,8 +264,13 @@ nav a:hover {
 	color: var(--accent-color);
 }
 
+nav svg {
+	height: 1rem;
+	aspect-ratio: 1/1;
+}
+
 .sub-nav a {
-	padding-left: 2.3rem;
+	padding-left: 2.8rem;
 	font-size: .8rem;
 }
 
