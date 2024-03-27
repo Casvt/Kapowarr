@@ -505,7 +505,11 @@ def api_volume(id: int):
 @auth
 def api_volume_cover(id: int):
 	cover = library.get_volume(id)['cover']
-	return send_file(cover, 'image/jpeg'), 200
+	return send_file(
+		cover,
+		mimetype='image/jpeg',
+		max_age=3600
+	), 200
 
 @api.route('/issues/<int:id>', methods=['GET','PUT'])
 @error_handler
