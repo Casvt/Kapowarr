@@ -8,6 +8,21 @@
 	<script src="{{ url_for('static', filename='js/blocklist.js') }}" defer></script>
 {% endblock %}
 
+{% block pre_build_rows %}
+<tr class="list-entry" data-id="">
+	<td class="link-column">
+		<a href="" target="_blank"></a>
+	</td>
+	<td class="reason-column"></td>
+	<td class="date-column"></td>
+	<td class="option-column">
+		<button class="delete-entry">
+			<img src="/static/img/delete.svg">
+		</button>
+	</td>
+</tr>
+{% endblock %}
+
 {% block main %}
 <main>
 	<section class="tool-bar-container" aria-label="Tool bar">
@@ -18,7 +33,7 @@
 	</section>
 	<div class="main-window">
 		{{ page_turner() }}
-		<div class="icon-text-color">
+		<div class="table-container icon-text-color">
 			<table>
 				<thead>
 					<tr>
@@ -28,9 +43,7 @@
 						<th class="option-column">Delete</th>
 					</tr>
 				</thead>
-				<tbody id="blocklist">
-					
-				</tbody>
+				<tbody id="blocklist"></tbody>
 			</table>
 		</div>
 	</div>
