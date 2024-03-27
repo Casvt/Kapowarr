@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "base.html" import icon_button %}
+{% from "base.html" import icon_button, page_turner %}
 {% block title %}Blocklist{% endblock %}
 {% block css %}
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/blocklist.css') }}">
@@ -17,11 +17,7 @@
 		</div>
 	</section>
 	<div class="main-window">
-		<div class="page-turner">
-			<button id="previous-page"><<</button>
-			<p id="page-number">Page 1</p>
-			<button id="next-page">>></button>
-		</div>
+		{{ page_turner() }}
 		<div class="icon-text-color">
 			<table>
 				<thead>

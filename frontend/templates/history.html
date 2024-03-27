@@ -1,11 +1,20 @@
 {% extends "base.html" %}
-{% from "base.html" import icon_button %}
+{% from "base.html" import icon_button, page_turner %}
 {% block title %}History{% endblock %}
 {% block css %}
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/history.css') }}">
 {% endblock %}
 {% block js %}
 	<script src="{{ url_for('static', filename='js/history.js') }}" defer></script>
+{% endblock %}
+
+{% block pre_build_rows %}
+<tr class="history-entry">
+	<td>
+		<a href="" target="_blank"></a>
+	</td>
+	<td></td>
+</tr>
 {% endblock %}
 
 {% block main %}
@@ -17,12 +26,8 @@
 		</div>
 	</section>
 	<div class="main-window">
-		<div class="page-turner">
-			<button id="previous-page"><<</button>
-			<p id="page-number">Page 1</p>
-			<button id="next-page">>></button>
-		</div>
-		<div>
+		{{ page_turner() }}
+		<div class="table-container">
 			<table>
 				<thead>
 					<tr>
@@ -30,9 +35,7 @@
 						<th>Date</th>
 					</tr>
 				</thead>
-				<tbody id="history">
-					
-				</tbody>
+				<tbody id="history"></tbody>
 			</table>
 		</div>
 	</div>

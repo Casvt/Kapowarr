@@ -194,3 +194,11 @@
 		<p>{{ msg }}</p>
 	</section>
 {% endmacro %}
+
+{% macro page_turner() %}
+	<section class="page-turner" aria-label="Page Turner">
+		<button id="previous-page" aria-label="Previous Page"><<</button>
+		<p id="page-number" aria-label="Current Page">Page 1</p>
+		<button id="next-page" aria-label="Next Page">>></button>
+	</section>
+{% endmacro %}
