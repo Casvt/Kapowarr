@@ -70,11 +70,11 @@ function loadEditTorrent(api_key, id) {
 		.then(response => response.json())
 		.then(options => {
 			const client_options = options.result[client_type];
-			
-			form.querySelector('#edit-title-input').value = 
+
+			form.querySelector('#edit-title-input').value =
 				client_data.result.title || '';
 
-			form.querySelector('#edit-baseurl-input').value = 
+			form.querySelector('#edit-baseurl-input').value =
 				client_data.result.base_url;
 
 			if (client_options.includes('username')) {
@@ -83,17 +83,17 @@ function loadEditTorrent(api_key, id) {
 					client_data.result.username || '';
 				form.appendChild(username_input);
 			};
-			
+
 			if (client_options.includes('password')) {
 				const password_input = createPasswordInput('edit-password-input');
 				password_input.querySelector('input').value =
 					client_data.result.password || '';
 				form.appendChild(password_input);
 			};
-			
+
 			if (client_options.includes('api_token')) {
 				const token_input = createApiTokenInput('edit-token-input');
-				token_input.querySelector('input').value = 
+				token_input.querySelector('input').value =
 					client_data.result.api_token || '';
 				form.appendChild(token_input);
 			};
@@ -182,7 +182,7 @@ function deleteTorrent(api_key) {
 function loadTorrentList(api_key) {
 	const table = document.querySelector('#choose-torrent-list');
 	table.innerHTML = '';
-	
+
 	fetch(`${url_base}/api/torrentclients/options?api_key=${api_key}`)
 	.then(response => response.json())
 	.then(json => {
@@ -208,7 +208,7 @@ function loadAddTorrent(api_key, type) {
 	form.querySelectorAll(
 		'#add-title-input, #add-baseurl-input'
 	).forEach(el => el.value = '');
-	
+
 	fetch(`${url_base}/api/torrentclients/options?api_key=${api_key}`)
 	.then(response => response.json())
 	.then(json => {
@@ -216,10 +216,10 @@ function loadAddTorrent(api_key, type) {
 
 		if (client_options.includes('username'))
 			form.appendChild(createUsernameInput('add-username-input'));
-		
+
 		if (client_options.includes('password'))
 			form.appendChild(createPasswordInput('add-password-input'));
-		
+
 		if (client_options.includes('api_token'))
 			form.appendChild(createApiTokenInput('add-token-input'));
 
@@ -295,9 +295,45 @@ function loadTorrentClients(api_key) {
 		json.result.forEach(client => {
 			const entry = document.createElement('button');
 			entry.onclick = (e) => loadEditTorrent(api_key, client.id);
-			entry.type = 'button';
 			entry.innerText = client.title;
 			table.appendChild(entry);
+		});
+	});
+};
+
+function fillCredentials(api_key) {
+	fetchAPI('/credentials', api_key)
+	.then(json => {
+		document.querySelectorAll('.cred-entry').forEach(e => e.dataset.id = '');
+		json.result.forEach(result => {
+			if (result.source === 'mega') {
+				const row = document.querySelector('.cred-entry[data-source="mega"]');
+				row.dataset.id = result.id;
+				row.querySelector('.mega-email').innerText = result.email;
+				row.querySelector('.mega-password').innerText = result.password;
+				row.querySelector('#delete-mega').onclick =
+					e => sendAPI('DELETE', `/credentials/${result.id}`, api_key)
+						.then(response => fillCredentials(api_key));
+			}
+		});
+	});
+};
+
+function addCredential() {
+	hide([document.querySelector('#builtin-window p.error')]);
+	const data = {
+		source: 'mega',
+		email: document.querySelector('#add-mega .mega-email input').value,
+		password: document.querySelector('#add-mega .mega-password input').value
+	};
+	usingApiKey().then(api_key => {
+		sendAPI('POST', '/credentials', api_key, data)
+		.then(response => fillCredentials(api_key))
+		.catch(e => {
+			if (e.status === 400)
+				hide([], [document.querySelector('#builtin-window p.error')]);
+			else
+				console.log(e);
 		});
 	});
 };
@@ -306,12 +342,23 @@ function loadTorrentClients(api_key) {
 
 usingApiKey()
 .then(api_key => {
+	fillCredentials(api_key);
 	loadTorrentClients(api_key);
 	document.querySelector('#delete-torrent-edit').onclick = e => deleteTorrent(api_key);
 	document.querySelector('#test-torrent-edit').onclick = e => testEditTorrent(api_key);
 	document.querySelector('#test-torrent-add').onclick = e => testAddTorrent(api_key);
-	document.querySelector('#torrent-client-list > .add-client-button').onclick = e => loadTorrentList(api_key);
+	document.querySelector('#add-torrent-client').onclick = e => loadTorrentList(api_key);
 });
 
+document.querySelector('#cred-form').action = 'javascript:addCredential();';
+document.querySelectorAll('#builtin-client-list > button').forEach(b => {
+	const tag = b.dataset.tag;
+	b.onclick = e => {
+		document.querySelector('#builtin-window').dataset.tag = tag;
+		hide([document.querySelector('#builtin-window p.error')]);
+		document.querySelectorAll('#builtin-window input').forEach(i => i.value = '');
+		showWindow('builtin-window');
+	};
+});
 document.querySelector('#edit-torrent-form').action = 'javascript:saveEditTorrent()';
 document.querySelector('#add-torrent-form').action = 'javascript:saveAddTorrent()';

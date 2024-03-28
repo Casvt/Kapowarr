@@ -18,7 +18,7 @@
 	<div class="settings-container">
 		<form id="settings-form">
 			<h2>Download Location</h2>
-			<table class="fold">
+			<table class="fold-table">
 				<tbody>
 					<tr>
 						<th><label for="download-folder-input">Direct Download Temporary Folder</label></th>
@@ -37,7 +37,7 @@
 				</tbody>
 			</table>
 			<h2>Completed Download Handling</h2>
-			<table class="fold">
+			<table class="fold-table">
 				<tbody>
 					<tr>
 						<th><label for="seeding-handling-input">Seeding Handling</label></th>
@@ -92,33 +92,6 @@
 					</tr>
 				</tbody>
 			</table>
-			<h2>Credentials</h2>
-			<p>Account credentials for supported services can be added here. Kapowarr will download from the service using these credentials, taking advantage of the (probably) larger bandwidth and download quota.</p>
-			<div id="cred-container">
-				<table id="cred-table" class="icon-text-color">
-					<thead>
-						<tr>
-							<th>Service</th>
-							<th>Email</th>
-							<th>Password</th>
-							<th class="action-column">Action</th>
-						</tr>
-					</thead>
-					<tbody id="cred-list"></tbody>
-					<tbody>
-						<tr id="add-row" class="hidden">
-							<td>
-								<select id="cred-service-input"></select>
-								<p class="error hidden" id="cred-error">*The credentials aren't valid (Kapowarr can't login)</p>
-							</td>
-							<td><input type="email" id="cred-email-input"></td>
-							<td><input type="text" id="cred-password-input"></td>
-							<td><button id="add-cred" type="button">Add</button></td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
-			<button type="button" id="toggle-cred">Add credential</button>
 		</form>
 	</div>
 </main>

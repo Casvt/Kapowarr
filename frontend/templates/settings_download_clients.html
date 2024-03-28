@@ -11,10 +11,84 @@
 {% endblock %}
 
 {% block windows %}
+	{% set builtin_content %}
+		<h2 id="mega-title">Mega</h2>
+		<p id="mega-desc" class="description">
+			<a href="https://mega.io/" target="_blank">Mega</a> is a cloud storage service from which Kapowarr can download files.
+			These files are uploaded by GetComics, as an alternative way of downloading the file compared to MediaFire,
+			torrents or the direct downloads from their own servers. An advantage of Mega is that their downloads
+			are end-to-end encrypted, which Kapowarr makes use of. There are free and paid accounts that offer higher
+			bandwidth/limits for downloading files. Kapowarr is able to download files using an account to take advantage
+			of these higher limits (e.g. being able to download more than 5GB per day). If you have a Mega account, it's
+			advised to enter the credentials below so that Kapowarr can take advantage of it's premium features. Also make
+			sure to set Mega as the highest service in the service preference, so that Kapowarr will prefer using it.
+			<br><br>
+			Note: Kapowarr can download files from Mega, but not Mega folders (yet).
+		</p>
+		<h2 id="mf-title">MediaFire</h2>
+		<p id="mf-desc" class="description">
+			<a href="https://www.mediafire.com/" target="_blank">MediaFire</a> is a cloud storage service from which Kapowarr can
+			download files. These files are uploaded by GetComics, as an alternative way of downloading the file compared
+			to Mega, torrents or the direct downloads from their own servers.
+			<br><br>
+			Note: Kapowarr does not support downloading content from MediaFire using an account, like it can with Mega.
+			<br><br>
+			Note: Kapowarr can download files from MediaFire, but not MediaFire folders (yet).
+		</p>
+		<h2 id="gc-title">GetComics</h2>
+		<p id="gc-desc" class="description">
+			<a href="https://getcomics.org" target="_blank">GetComics</a> is a website that offers a vast amount of downloads for comics.
+			Kapowarr can search this website to find downloads for the volumes in the library. The comics can be downloaded
+			via multiple services, for instance: MediaFire, Mega, torrents (magnet links) and direct downloads from their
+			servers. Kapowarr supports downloading via all the services mentioned before.
+			<br><br>
+			Note: When downloading from the servers of GetComics (instead of using an external service), the download speed
+			will be significantly reduced 400MB into the download. This behaviour is set up by the owner of the website, is
+			intentional, and is not planned to be removed.
+		</p>
+
+		<form id="cred-form">
+			<p class="error hidden">Failed to add credentials</p>
+			<table>
+				<thead>
+					<th>Email</th>
+					<th>Password</th>
+					<th>Action</th>
+				</thead>
+				<tbody class="icon-text-color">
+					<tr data-source="mega" data-id="" class="cred-entry">
+						<td class="mega-email"></td>
+						<td class="mega-password"></td>
+						<td>
+							<button type="button" id="delete-mega">
+								<img src="{{url_base}}/static/img/delete.svg" alt="">
+							</button>
+						</td>
+					</tr>
+					<tr id="add-mega">
+						<td class="mega-email">
+							<input type="email" required>
+						</td>
+						<td class="mega-password">
+							<input type="password" required>
+						</td>
+						<td>
+							<button type="submit" id="submit-mega">
+								<img src="{{url_base}}/static/img/cancel.svg" alt="">
+							</button>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</form>
+	{% endset %}
+
+	{{ window(False, "builtin-window", "Client Information", builtin_content) }}
+
 	{% set choose_content %}
 		<div id="choose-torrent-list"></div>
 	{% endset %}
-	
+
 	{{ window(False, "choose-torrent-window", "Choose Torrent Client", choose_content) }}
 
 	{% set add_content %}
@@ -86,14 +160,18 @@
 {% block main %}
 <main>
 	<div class="settings-container">
-		<form id="settings-form">
-			<h2>Torrent Clients</h2>
-			<div id="torrent-client-list" class="client-list">
-				<button class="add-client-button icon-text-color" type="button" title="Add torrent client">
-					<img src="{{url_base}}/static/img/cancel.svg" alt="">
-				</button>
-			</div>
-		</form>
+		<h2>Built-in Clients</h2>
+		<div id="builtin-client-list" class="client-list">
+			<button id="mega-client" data-tag="mega">Mega</button>
+			<button id="mf-client" data-tag="mf">MediaFire</button>
+			<button id="gc-client" data-tag="gc">GetComics</button>
+		</div>
+		<h2>Torrent Clients</h2>
+		<div id="torrent-client-list" class="client-list">
+			<button id="add-torrent-client" class="add-button icon-text-color" title="Add torrent client">
+				<img src="{{url_base}}/static/img/cancel.svg" alt="">
+			</button>
+		</div>
 	</div>
 </main>
 {% endblock main %}

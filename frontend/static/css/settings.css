@@ -11,14 +11,16 @@
 /*  */
 /* Sections titles */
 /*  */
-main h2 {
-	font-size: 1.5rem;
-	border-bottom: 1px solid var(--border-color);
+.settings-container h2 {
 	margin-bottom: 1rem;
+
+	border-bottom: 1px solid var(--border-color);
+
 	font-weight: 500;
+	font-size: 1.5rem;
 }
 
-main h2:not(:first-of-type) {
+.settings-container h2:not(:first-of-type) {
 	margin-top: 1rem;
 }
 
@@ -27,24 +29,25 @@ main h2:not(:first-of-type) {
 /*  */
 .settings-container table {
 	width: 100%;
-	border-spacing: 0px;
 }
 
-.settings-container table tr > * {
+.settings-container table :where(th, td) {
 	padding: .5rem;
 }
 
-.settings-container table tr > th {
+.settings-container table th {
 	width: clamp(9rem, 24vw, 14rem);
-	text-align: right;
 	vertical-align: top;
 	padding-top: 1.1rem;
 }
 
-.settings-container table tr > td select,
-.settings-container table tr > td input[type="text"],
-.settings-container table tr > td input[type="email"],
-.settings-container table tr > td input[type="password"] {
+.settings-container table tr:has(input[type="checkbox"]) th {
+	padding-top: 0.5rem;
+}
+
+.settings-container table select,
+.settings-container table input,
+#convert-table tr:nth-last-child(2) td p {
 	width: min(50rem, 100%);
 
 	padding: .5rem .75rem;
@@ -57,12 +60,12 @@ main h2:not(:first-of-type) {
 	font-family: "Ubuntu Mono", Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
-.settings-container table tr > td input[type="checkbox"] {
+.settings-container table input[type="checkbox"] {
 	width: 1.15rem;
 	aspect-ratio: 1/1;
 }
 
-.settings-container table tr > td p {
+.settings-container td p {
 	margin-top: .3rem;
 	color: var(--dimmed-text-color);
 }
@@ -85,27 +88,15 @@ main h2:not(:first-of-type) {
 /*  */
 #convert-table button {
 	width: 2rem;
-	padding: 0;
-	background-color: transparent;
-}
-
-#convert-table button img {
-	width: 2rem;
+	padding: .3rem;
 }
 
 #convert-table tr:nth-last-child(2) td p {
-	padding: .5rem .75rem;
-	border-radius: 6px;
-	border: 2px solid var(--border-color);
-	background-color: var(--inverted-text-color);
-	color: var(--text-color);
-	font-size: 1rem;
-	font-family: "Ubuntu Mono", Menlo, Monaco, Consolas, "Courier New", monospace;
+	width: unset;
 }
 
 #convert-table #add-convert-button img {
-	width: 1.5rem;
-	transform: rotate(45deg);
+	transform: rotate(45deg) scale(.7);
 }
 
 /*  */
@@ -117,26 +108,19 @@ main h2:not(:first-of-type) {
 
 #root-folder-table {
 	min-width: 27rem;
-	border-spacing: 0px;
 }
 
 #root-folder-table th {
-	text-align: left;
 	padding-top: 0rem;
 	width: unset;
 }
 
-#root-folder-list > tr > * {
+#root-folder-list tr > * {
 	border-top: 1px solid var(--border-color);
 }
 
 .action-column {
 	width: 4.5rem;
-}
-
-.action-column button {
-	background-color: transparent;
-	padding: 0;
 }
 
 .action-column img {
@@ -150,18 +134,17 @@ main h2:not(:first-of-type) {
 
 	padding: .8rem;
 	border-radius: 4px;
-	color: var(--dark-color);
+	color: var(--nav-background-color);
 	background-color: var(--accent-color);
-	
-	font-weight: 600;
+
+	font-weight: 700;
 }
 
 #add-row td {
 	padding-block: 0;
 }
 
-#add-row input,
-#add-row select {
+#add-row :where(input, select) {
 	width: 20rem;
 
 	padding-inline: .3rem;
@@ -170,47 +153,8 @@ main h2:not(:first-of-type) {
 #add-row button {
 	padding: .4rem .6rem;
 	border-radius: 4px;
-	color: var(--dark-color);
+	color: var(--nav-background-color);
 	background-color: var(--accent-color);
-}
-
-/*  */
-/* Credentials list */
-/*  */
-#cred-container {
-	margin-top: 1rem;
-	overflow-x: auto;
-}
-
-#cred-table {
-	min-width: 33rem;
-	border-spacing: 0px;
-}
-
-#cred-table th {
-	text-align: left;
-	padding-top: 0rem;
-	width: unset;
-}
-
-#cred-list > tr > * {
-	border-top: 1px solid var(--border-color);
-}
-
-#cred-table #add-row select,
-#cred-table #add-row input {
-	width: min(100%, 20rem);
-}
-
-#toggle-cred {
-	margin-top: .5rem;
-
-	padding: .8rem;
-	border-radius: 4px;
-	color: var(--dark-color);
-	background-color: var(--accent-color);
-	
-	font-weight: 600;
 }
 
 /*  */
@@ -230,7 +174,7 @@ main h2:not(:first-of-type) {
 
 #generate-api {
 	width: 3rem;
-	
+
 	flex: 0 0 auto;
 	display: flex;
 	justify-content: center;
@@ -261,10 +205,10 @@ main h2:not(:first-of-type) {
 
 	border-radius: 6px;
 	padding-inline: 1rem;
-	background-color: var(--library-entry-color);
-	color: var(--library-entry-font-color);
+	background-color: var(--foreground-color);
+	color: var(--text-color);
 
-	overflow-x: hidden;
+	overflow: hidden;
 	font-size: 1.2rem;
 
 	box-shadow: 0 0 9px 0px #00000075;
@@ -274,34 +218,69 @@ main h2:not(:first-of-type) {
 	content: '';
 	position: absolute;
 	inset: 0 0 0 auto;
-	
-	box-shadow: 0px 0px 20px 36px var(--library-entry-color);
+
+	box-shadow: 0px 0px 20px 36px var(--foreground-color);
 }
 
-.add-client-button {
+#builtin-window .window-content {
+	justify-content: flex-start;
+}
+
+#builtin-window .window-content > :where(h2, p, form) {
+	display: none;
+	width: 100%;
+}
+
+#builtin-window[data-tag="mega"] :where(#mega-title, #mega-desc, #cred-form) {
+	display: block;
+}
+
+#builtin-window[data-tag="mf"] :where(#mf-title, #mf-desc) {
+	display: block;
+}
+
+#builtin-window[data-tag="gc"] :where(#gc-title, #gc-desc) {
+	display: block;
+}
+
+#builtin-window tbody:has(.cred-entry:not([data-id=""])) #add-mega,
+#builtin-window tbody:has(.cred-entry[data-id=""]) .cred-entry {
+	display: none;
+}
+
+#builtin-window #cred-form button {
+	width: 2rem;
+	padding: .4rem;
+}
+
+#builtin-window #cred-form button[type="submit"] {
+	transform: rotate(45deg);
+}
+
+.add-button {
 	display: flex;
 	justify-content: center;
 	align-items: center;
 }
 
-.add-client-button > img {
-	width: 2rem;
+.add-button > img {
+	width: 1.6rem;
 	transform: rotate(45deg);
 }
 
-.window > section > div:nth-child(3) > button {
+.window-footer > button {
 	background-color: var(--error-color);
 }
 
-.window > section > div:nth-child(3) > button[type="submit"] {
+.window-footer > button[type="submit"] {
 	background-color: var(--success-color);
 }
 
-.window > section > div:nth-child(2) p.error {
+.window-content p.error {
 	text-align: center;
 }
 
-.window > section > div:nth-child(2) form {
+.window-content form {
 	width: 60%;
 }
 
@@ -377,29 +356,13 @@ main h2:not(:first-of-type) {
 #choose-torrent-list > button {
 	width: 10rem;
 	height: 4rem;
-	
+
 	border-radius: 4px;
 	padding: 1rem 2rem;
-	background-color: var(--library-entry-color);
-	color: var(--library-entry-font-color);
+	background-color: var(--foreground-color);
+	color: var(--text-color);
 
 	font-size: 1rem;
 
 	box-shadow: 0 0 9px 0px #00000075;
-}
-
-@media (max-width: 1000px) {
-	table.fold tbody {
-		display: flex;
-		flex-direction: column;
-	}
-	table.fold tr {
-		display: inline-flex;
-		flex-direction: column;
-	}
-	table.fold tr > th,
-	table.fold tr > td {
-		width: 100%;
-		text-align: left;
-	}
 }

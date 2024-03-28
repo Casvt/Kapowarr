@@ -15,10 +15,10 @@
 			{{ icon_button("save-button", "Save the changes made", "save.svg", "Save", True) }}
 		</div>
 	</section>
-	<div class="settings-container">
-		<form id="settings-form">
+	<form id="settings-form">
+		<div class="settings-container">
 			<h2>File Naming</h2>
-			<table class="fold">
+			<table class="fold-table">
 				<tbody>
 					<tr>
 						<th><label for="renaming-input">Rename Downloaded Files</label></th>
@@ -88,7 +88,7 @@
 			</table>
 			<h2>Converting</h2>
 			<p>Convert files to a different format. The list below is the desired format, in order of preference.</p>
-			<table class="fold">
+			<table class="fold-table">
 				<tbody>
 					<tr>
 						<th><label for="convert-input">Convert Files</label></th>
@@ -148,7 +148,7 @@
 				</table>
 			</div>
 			<button type="button" id="toggle-root-folder">Add Root Folder</button>
-		</form>
-	</div>
+		</div>
+	</form>
 </main>
 {% endblock main %}

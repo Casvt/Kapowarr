@@ -455,7 +455,7 @@ main > *:not(.tool-bar-container) {
 		text-align: left !important;
 	}
 
-	.fold-table tr > td :where(input, select) {
+	.fold-table tr > td :where(input:not([type="checkbox"]), select) {
 		width: 100% !important;
 	}
 }
