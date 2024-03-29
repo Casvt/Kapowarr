@@ -884,9 +884,9 @@ def scan_files(volume_id: int) -> None:
 				if file_data['issue_number'] is not None:
 					issue_range = file_data['issue_number']
 				else:
-					issue_range = file_data['volume_number'] or 1
+					issue_range = file_data['volume_number']
 			else:
-				issue_range = file_data['issue_number'] or 1
+				issue_range = file_data['issue_number']
 
 			if not isinstance(issue_range, tuple):
 				issue_range = (issue_range, issue_range)
@@ -894,7 +894,7 @@ def scan_files(volume_id: int) -> None:
 			matching_issues = get_calc_number_id_range(
 				volume_id,
 				*issue_range
-			)
+			) # type: ignore
 
 			if matching_issues:
 				file_id = get_file_id(
