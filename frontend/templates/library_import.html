@@ -1,157 +1,142 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta id="url_base" data-value="{{url_base}}">
-
-	<link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/x-icon">
-
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
+{% extends "base.html" %}
+{% from "base.html" import window %}
+{% block title %}Library Import{% endblock %}
+{% block css %}
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/window.css') }}">
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/library_import.css') }}">
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
-	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
-	<script src="{{ url_for('static', filename='js/general.js') }}" defer></script>
+{% endblock %}
+{% block js %}
 	<script src="{{ url_for('static', filename='js/window.js') }}" defer></script>
 	<script src="{{ url_for('static', filename='js/library_import.js') }}" defer></script>
+{% endblock %}
 
-	<title>Library Import - Kapowarr</title>
-</head>
-<body>
-	<div class="window">
-		<section id="cv-window">
-			<div>
-				<h2>Edit ComicVine Match</h2>
-				<button aria-label="Cancel editing match" title="Cancel editing match">
-					<img src="{{url_base}}/static/img/cancel_search.svg" alt="">
-				</button>
-			</div>
-			<div>
-				<form class="search-bar">
-					<input type="text" id="search-input">
-					<button type="submit">
-						<img src="{{url_base}}/static/img/search.svg" alt="">
-					</button>
-				</form>
-				<div class="search-results-container">
-					<table>
-						<thead>
-							<th>Search Result</th>
-							<th>Issue Count</th>
-							<th>Action</th>
-						</thead>
-						<tbody class="search-results"></tbody>
-					</table>
-				</div>
-			</div>
-		</section>
-	</div>
-	
-	<header>
-		<div class="menu-title-container">
-			<button id="toggle-nav" aria-label="Toggle menu">
-				<img src="{{url_base}}/static/img/menu.svg" alt="">
+{% block pre_build_rows %}
+<tr class="li-result" data-group_number="" data-rowid="">
+	<td>
+		<input type="checkbox" checked>
+	</td>
+	<td class="file-column" title=""></td>
+	<td>
+		<a href="" target="_blank"></a>
+	</td>
+	<td class="issue-count"></td>
+	<td>
+		<button title="Change match">
+			<img src="/static/img/edit.svg" alt="">
+		</button>
+	</td>
+</tr>
+<tr class="search-result">
+	<td>
+		<a target="_blank" href=""></a>
+	</td>
+	<td></td>
+	<td><button>Select</button></td>
+	<td><button>Select for group</button></td>
+</tr>
+{% endblock pre_build_rows %}
+
+{% block windows %}
+	{% set edit_cv_content %}
+		<form class="search-bar icon-text-color">
+			<input type="text" id="search-input">
+			<button type="submit">
+				<img src="{{url_base}}/static/img/search.svg" alt="">
 			</button>
-			<a href="{{url_base}}/">
-				<img src="{{ url_for('static', filename='img/favicon.svg') }}" alt="">
-			</a>
+		</form>
+		<div class="search-results-container">
+			<table>
+				<thead>
+					<th>Search Result</th>
+					<th>Issue Count</th>
+					<th>Action</th>
+				</thead>
+				<tbody class="search-results"></tbody>
+			</table>
 		</div>
-	</header>
+	{% endset %}
 
-	<div class="nav-main">
-		<div id="nav-bar">
-			<nav>
-				<a href="{{url_base}}/">Volumes</a>
-					<a href="{{url_base}}/add" class="sub-entry">Add Volume</a>
-					<a href="{{url_base}}/library-import" class="sub-entry current-nav">Library Import</a>
-					<a href="{{url_base}}/mass-editor" class="sub-entry">Mass Editor</a>
-				<a href="{{url_base}}/activity/queue">Activity</a>
-				<a href="{{url_base}}/settings">Settings</a>
-				<a href="{{url_base}}/system/status">System</a>
-			</nav>
-			<div id="task-queue"></div>
-		</div>
-		<main>
-			<div id="start-window">
-				<h2>Import an existing organized library to add volumes to Kapowarr</h2>
-				<p>A few notes:</p>
-				<ul>
-					<li>Check if Kapowarr matched correctly! Comicvine has separate releases for normal volumes, TPB's, one shots, hard covers, etc. So even though the name and year match, it could still be a wrong match.</li>
-					<li>Importing a lot of volumes in one go will quickly make Kapowarr reach the rate limit of ComicVine. Import volumes in batches to avoid this. It's advised to not go above 50 volumes at a time.</li>
-					<li>If each issue has a separate sub-folder, enable 'Apply limit to parent folder' so that the limit is correctly applied.</li>
-				</ul>
-				<table>
-					<tbody>
-						<tr>
-							<td><label for="limit-input">Max folders scanned</label></td>
-							<td>
-								<select id="limit-input">
-									<option value="1">1</option>
-									<option value="5">5</option>
-									<option value="20" selected>20</option>
-									<option value="100">100</option>
-									<option value="500">500</option>
-								</select>
-							</td>
-						</tr>
-						<tr>
-							<td><label for="folder-input">Apply limit to parent folder</label></td>
-							<td>
-								<select id="folder-input">
-									<option value="true">Yes</option>
-									<option value="false" selected>No</option>
-								</select>
-							</td>
-						</tr>
-						<tr>
-							<td><label for="lang-input">Only match english volumes</label></td>
-							<td>
-								<select id="lang-input">
-									<option value="true" selected>Yes</option>
-									<option value="false">No</option>
-								</select>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-				<button id="run-import-button">Scan</button>
-			</div>
-			<div id="loading-window" class="hidden">
-				<h2>Loading</h2>
-			</div>
-			<div id="no-result-window" class="hidden">
-				<h2>No results</h2>
-				<button class="cancel-button">Go Back</button>
-			</div>
-			<div id="no-cv-window" class="hidden">
-				<h2>Set ComicVine API Key first in the settings</h2>
-				<button class="cancel-button">Go Back</button>
-				<a href="{{url_base}}/settings/general#cv-input">Go to settings</a>
-			</div>
-			<div id="list-window" class="hidden">
-				<div class="action-container">
-					<button class="cancel-button">Cancel</button>
-					<button id="import-button">Import</button>
-					<button id="import-rename-button">Import and Rename</button>
-				</div>
-				<div class="table-container">
-					<table>
-						<thead>
-							<th>
-								<input type="checkbox" id="selectall-input" checked>
-							</th>
-							<th>File</th>
-							<th>Match</th>
-							<th>Issue Count Match</th>
-							<th>Action</th>
-						</thead>
-						<tbody class="proposal-list"></tbody>
-					</table>
-				</div>
-			</div>
-		</main>
+	{{ window(False, "cv-window", "Edit ComicVine Match", edit_cv_content) }}
+{% endblock windows %}
+
+{% block main %}
+<main>
+	<div id="start-window">
+		<h2>Import an existing organized library to add volumes to Kapowarr</h2>
+		<p>A few notes:</p>
+		<ul>
+			<li>Check if Kapowarr matched correctly! Comicvine has separate releases for normal volumes, TPB's, one shots, hard covers, etc. So even though the name and year match, it could still be a wrong match.</li>
+			<li>Importing a lot of volumes in one go will quickly make Kapowarr reach the rate limit of ComicVine. Import volumes in batches to avoid this. It's advised to not go above 50 volumes at a time.</li>
+			<li>If each issue has a separate sub-folder, enable 'Apply limit to parent folder' so that the limit is correctly applied.</li>
+		</ul>
+		<table class="fold-table">
+			<tbody>
+				<tr>
+					<td><label for="limit-input">Max folders scanned</label></td>
+					<td>
+						<select id="limit-input">
+							<option value="1">1</option>
+							<option value="5">5</option>
+							<option value="20" selected>20</option>
+							<option value="100">100</option>
+							<option value="500">500</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<td><label for="folder-input">Apply limit to parent folder</label></td>
+					<td>
+						<select id="folder-input">
+							<option value="true">Yes</option>
+							<option value="false" selected>No</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<td><label for="lang-input">Only match english volumes</label></td>
+					<td>
+						<select id="lang-input">
+							<option value="true" selected>Yes</option>
+							<option value="false">No</option>
+						</select>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+		<button id="run-import-button">Scan</button>
 	</div>
-</body>
-</html>
+	<div id="loading-window" class="hidden">
+		<h2>Loading...</h2>
+	</div>
+	<div id="no-result-window" class="hidden">
+		<h2>No results</h2>
+		<button class="cancel-button">Go Back</button>
+	</div>
+	<div id="no-cv-window" class="hidden">
+		<h2>Set ComicVine API Key first in the settings</h2>
+		<button class="cancel-button">Go Back</button>
+		<a href="{{url_base}}/settings/general#cv-input">Go to settings</a>
+	</div>
+	<div id="list-window" class="hidden">
+		<div class="action-container">
+			<button class="cancel-button">Cancel</button>
+			<button id="import-button">Import</button>
+			<button id="import-rename-button">Import and Rename</button>
+		</div>
+		<div class="table-container icon-text-color">
+			<table aria-label="File list">
+				<thead>
+					<th>
+						<input type="checkbox" id="selectall-input" aria-label="Select all entries for importing" checked>
+					</th>
+					<th>File</th>
+					<th>Match</th>
+					<th>Issues in match</th>
+					<th>Action</th>
+				</thead>
+				<tbody class="proposal-list"></tbody>
+			</table>
+		</div>
+	</div>
+</main>
+{% endblock %}

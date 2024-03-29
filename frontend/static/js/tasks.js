@@ -1,6 +1,19 @@
-// 
+const TaskEls = {
+	pre_build: {
+		task: document.querySelector('.pre-build-els .task-entry'),
+		history: document.querySelector('.pre-build-els .history-entry')
+	},
+	intervals: document.querySelector('#task-intervals'),
+	history: document.querySelector('#history'),
+	buttons: {
+		refresh: document.querySelector('#refresh-button'),
+		clear: document.querySelector('#clear-button')
+	}
+};
+
+//
 // Task planning
-// 
+//
 function convertInterval(interval) {
 	result = Math.round(interval / 3600); // seconds -> hours
 	return `${result} hours`;
@@ -13,74 +26,49 @@ function convertTime(epoch, future) {
 };
 
 function fillPlanning(api_key) {
-	fetch(`${url_base}/api/system/tasks/planning?api_key=${api_key}`)
-	.then(response => response.json())
+	fetchAPI('/system/tasks/planning', api_key)
 	.then(json => {
-		const table = document.querySelector('#task-intervals');
-		table.innerHTML = '';
+		TaskEls.intervals.innerHTML = '';
 		json.result.forEach(e => {
-			const entry = document.createElement('tr');
+			const entry = TaskEls.pre_build.task.cloneNode(true);
 
-			const name = document.createElement('td');
-			name.innerText = e.display_name;
-			entry.appendChild(name);
+			entry.querySelector('.name-column').innerText = e.display_name;
+			entry.querySelector('.interval-column').innerText =
+				convertInterval(e.interval);
+			entry.querySelector('.prev-column').innerText =
+				convertTime(e.last_run, false);
+			entry.querySelector('.next-column').innerText =
+				convertTime(e.next_run, true);
 
-			const interval = document.createElement('td');
-			interval.innerText = convertInterval(e.interval);
-			entry.appendChild(interval);
-
-			const last_run = document.createElement('td');
-			last_run.innerText = convertTime(e.last_run, false);
-			entry.appendChild(last_run);
-
-			const next_run = document.createElement('td');
-			next_run.innerText = convertTime(e.next_run, true);
-			entry.appendChild(next_run);
-
-			table.appendChild(entry);
+			TaskEls.intervals.appendChild(entry);
 		});
 	});
 };
 
-// 
+//
 // Task history
-// 
+//
 function fillHistory(api_key) {
-	fetch(`${url_base}/api/system/tasks/history?api_key=${api_key}`)
-		.then(response => {
-			if (!response.ok) return Promise.reject(response.status);
-			return response.json();
-		})
-		.then(json => {
-			const table = document.querySelector('#history');
-			table.innerHTML = '';
-			json.result.forEach(obj => {
-				const entry = document.createElement('tr');
-				entry.classList.add('history-entry');
+	fetchAPI('/system/tasks/history', api_key)
+	.then(json => {
+		TaskEls.history.innerHTML = '';
+		json.result.forEach(obj => {
+			const entry = TaskEls.pre_build.history.cloneNode(true);
 
-				const title = document.createElement('td');
-				title.innerText = obj.display_title;
-				entry.appendChild(title);
+			entry.querySelector('.title-column').innerText = obj.display_title;
 
-				const date = document.createElement('td');
-				var d = new Date(obj.run_at * 1000);
-				var formatted_date = d.toLocaleString('en-CA').slice(0,10) + ' ' + d.toTimeString().slice(0,5)
-				date.innerText = formatted_date;
-				entry.append(date);
+			var d = new Date(obj.run_at * 1000);
+			var formatted_date = d.toLocaleString('en-CA').slice(0,10) + ' ' + d.toTimeString().slice(0,5)
+			entry.querySelector('.date-column').innerText = formatted_date;
 
-				table.appendChild(entry);
-			});
-		})
-		.catch(e => {
-			if (e === 401) window.location.href = `${url_base}/`;
+			TaskEls.history.appendChild(entry);
 		});
+	});
 };
 
 function clearHistory(api_key) {
-	fetch(`${url_base}/api/system/tasks/history?api_key=${api_key}`, {
-		'method': 'DELETE'
-	})
-	document.querySelector('#history').innerHTML = '';
+	sendAPI('DELETE', '/system/tasks/history', api_key)
+	TaskEls.history.innerHTML = '';
 };
 
 // code run on load
@@ -89,5 +77,6 @@ usingApiKey()
 .then(api_key => {
 	fillHistory(api_key);
 	fillPlanning(api_key);
-	addEventListener('#clear-button', 'click', e => clearHistory(api_key));
+	TaskEls.buttons.refresh.onclick = e => fillHistory(api_key);
+	TaskEls.buttons.clear.onclick = e => clearHistory(api_key);
 });

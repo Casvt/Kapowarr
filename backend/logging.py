@@ -3,9 +3,9 @@
 import logging
 from typing import Union
 
-
 def setup_logging() -> None:
 	"Setup the basic config of the logging module"
+	logging.getLogger('engineio.server').level = logging.CRITICAL
 	logging.basicConfig(
 		level=logging.INFO,
 		format='[%(asctime)s][%(threadName)s][%(levelname)s] %(message)s',

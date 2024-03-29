@@ -1,13 +1,21 @@
+const StatEls = {
+	version: document.querySelector('#version'),
+	python_version: document.querySelector('#python-version'),
+	database_version: document.querySelector('#database-version'),
+	database_location: document.querySelector('#database-location'),
+	data_folder: document.querySelector('#data-folder')
+};
+
 // code run on load
+
 usingApiKey()
 .then(api_key => {
-	fetch(`${url_base}/api/system/about?api_key=${api_key}`)
-	.then(response => response.json())
+	fetchAPI('/system/about', api_key)
 	.then(json => {
-		document.querySelector('#version').innerText = json.result.version;
-		document.querySelector('#python-version').innerText = json.result.python_version;
-		document.querySelector('#database-version').innerText = json.result.database_version;
-		document.querySelector('#database-location').innerText = json.result.database_location;
-		document.querySelector('#data-folder').innerText = json.result.data_folder;
+		StatEls.version.innerText = json.result.version;
+		StatEls.python_version.innerText = json.result.python_version;
+		StatEls.database_version.innerText = json.result.database_version;
+		StatEls.database_location.innerText = json.result.database_location;
+		StatEls.data_folder.innerText = json.result.data_folder;
 	});
 })

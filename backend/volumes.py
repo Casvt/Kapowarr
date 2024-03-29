@@ -635,7 +635,18 @@ class Volume(_VolumeBackend):
 					INNER JOIN issues_files if
 					ON i.id = if.issue_id
 					WHERE volume_id = v.id
-				) AS issues_downloaded
+				) AS issues_downloaded,
+				(
+					SELECT SUM(size) FROM (
+						SELECT DISTINCT f.id, size
+						FROM issues i
+						INNER JOIN issues_files if
+						INNER JOIN files f
+						ON i.id = if.issue_id
+							AND if.file_id = f.id
+						WHERE volume_id = v.id
+					)
+				) AS total_size
 			FROM volumes v
 			INNER JOIN root_folders rf
 			ON v.root_folder = rf.id

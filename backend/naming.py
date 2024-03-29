@@ -597,7 +597,7 @@ def mass_rename(
 	for r in renames:
 		rename_file(r['before'], r['after'])
 		if r['before'].endswith(image_extensions):
-			delete_empty_folders(r['before'], root_folder)
+			delete_empty_folders(dirname(r['before']), root_folder)
 
 	cursor.executemany(
 		"UPDATE files SET filepath = ? WHERE filepath = ?;",
@@ -605,7 +605,7 @@ def mass_rename(
 	)
 
 	if renames:
-		delete_empty_folders(renames[0]['before'], root_folder)
+		delete_empty_folders(dirname(renames[0]['before']), root_folder)
 
 	logging.info(
 		f'Renamed volume {volume_id} {f"issue {issue_id}" if issue_id else ""}'

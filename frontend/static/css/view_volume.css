@@ -1,25 +1,37 @@
+.loading-container {
+	height: 100%;
+	width: 100%;
+}
+
+#volume-content {
+	display: flex;
+	flex-direction: column;
+
+	background-color: var(--volume-info-background-color);
+	color: var(--nav-color);
+}
+
 /*  */
 /* Volume info */
 /*  */
 .volume-mobile-description-container {
 	display: flex;
 	flex-direction: column;
-	gap: clamp(1rem, 3.75vw, 2rem);	
+	gap: clamp(1rem, 3.75vw, 2rem);
 
 	padding: clamp(1rem, 3.75vw, 2rem);
-	background-color: var(--dark-color);
-	color: var(--light-color);
+	backdrop-filter: brightness(70%);
 }
 
-:root:not(.dark-mode) .volume-mobile-description-container {
-	background-color: rgba(0,0,0,.65);
+:root.dark-mode .volume-mobile-description-container {
+	backdrop-filter: brightness(85%);
 }
 
 .volume-info {
 	overflow-y: auto;
 	display: flex;
-	gap: clamp(1rem, 3.75vw, 2rem);
 	align-items: flex-start;
+	gap: clamp(1rem, 3.75vw, 2rem);
 }
 
 .volume-info > img {
@@ -34,16 +46,24 @@
 	font-size: 1.15rem;
 }
 
+/*
+Layout is reversed so that in the tree
+the title comes before the monitor button.
+This flows better for ARIA.
+*/
 .volume-title-monitored {
 	display: flex;
+	flex-direction: row-reverse;
+	justify-content: flex-end;
 	gap: clamp(.6rem, 2.4vw, 1rem);
 }
 
 #volume-monitor {
 	width: clamp(30px, 4vw, 42px);
-	flex: 0 0 auto;
-	padding: 0;
-	background-color: transparent;
+}
+
+#volume-monitor svg {
+	fill: var(--nav-color);
 }
 
 .volume-title-monitored > h2 {
@@ -58,10 +78,11 @@
 }
 
 #volume-tags > p {
-	background-color: var(--accent-color);
-	color: var(--dark-color);
 	padding: .3rem;
 	border-radius: 3px;
+	background-color: var(--accent-color);
+	color: var(--nav-background-color);
+
 	font-size: .9rem;
 }
 
@@ -74,25 +95,25 @@
 /*  */
 .issues-table-container {
 	overflow-x: auto;
+	flex: 1 0 auto;
 	display: flex;
-	background-color: var(--dark-hover-color);
+	background-color: var(--background-color);
 }
 
 .issues-table {
+	height: min-content;
 	width: 100%;
 	min-width: 485px;
 	margin: clamp(.3rem, calc(2.1vw * 2), 1.75rem);
 
-	border-spacing: 0px;
 	border: 2px solid var(--border-color);
 	border-radius: 6px;
-	background-color: var(--inverted-text-color);
+	background-color: var(--background-color);
 	color: var(--text-color);
 }
 
 .issues-table th {
-	text-align: left;
-	font-size: smaller;
+	font-size: .8rem;
 	padding-block: .75rem;
 	padding-right: .5rem;
 }
@@ -101,21 +122,22 @@
 	width: 15px;
 }
 
-.monitor-column {
+.issue-monitored {
 	width: 2.5rem;
 }
-.number-column {
+.issue-number {
 	width: 3.5rem;
 }
-.date-column {
+.issue-date {
 	width: 6.5rem;
 }
-.download-column {
+.issue-status {
 	width: 3rem;
 }
 .action-column {
 	width: 6rem;
 }
+
 .action-column > :not(:first-child) {
 	margin-left: .5rem;
 }
@@ -125,39 +147,34 @@
 }
 
 .issue-entry:hover {
-	background-color: var(--issue-entry-hover);
+	background-color: var(--hover-color);
 }
 
-.issues-table > thead > tr > :first-child,
-.issue-entry > *:first-child {
+.issues-table tr > :first-child {
 	padding-left: .75rem;
 }
-.issues-table > thead > tr > :last-child,
-.issue-entry > *:last-child {
+
+.issues-table tr > :last-child {
 	padding-right: .75rem;
 }
 
-.issue-entry > * {
+.issue-entry > td {
 	padding-block: .25rem;
-}
-
-.issue-entry > * {
 	border-top: 2px solid var(--border-color);
 }
 
-.issue-title:hover {
+tbody .issue-title:hover {
 	text-decoration: underline;
 	cursor: pointer;
 }
 
 .issue-entry button {
 	height: 18px;
-	padding: 0;
-	background-color: transparent;
 }
 
-.issue-entry img {
+.issue-entry :where(svg, img) {
 	width: 18px;
+	fill: var(--text-color);
 }
 
 /*  */
@@ -169,33 +186,17 @@
 	max-width: 30rem;
 }
 
-#cancel-delete,
-#cancel-edit,
-#cancel-rename,
-#cancel-convert,
-#cancel-search,
-#cancel-info {
-	background-color: var(--error-color);
-}
-
-#submit-delete,
-#submit-edit,
-#submit-rename,
-#submit-convert {
-	background-color: var(--success-color);
-}
-
 /*  */
 /* Delete volume window */
 /*  */
-#delete-window > div:nth-child(2) p {
+#delete-window .window-content p {
 	text-align: center;
 }
 
 /*  */
 /* Manual search window */
 /*  */
-#manual-search-window > :nth-child(2) {
+#manual-search-window .window-content {
 	justify-content: flex-start;
 	overflow-x: auto;
 }
@@ -206,16 +207,18 @@
 
 #search-result-table {
 	min-width: 500px;
-	border-spacing: 0px;
 }
 
-#search-result-table a {
-	color: var(--text-color);
-	text-decoration: none;
+.search-entry {
+	transition: background-color 400ms linear;
 }
 
-#search-result-table a:hover {
-	text-decoration: underline;
+.search-entry:hover {
+	background-color: var(--hover-color);
+}
+
+.search-entry > td {
+	border-top: 1px solid var(--border-color);
 }
 
 .match-column {
@@ -226,109 +229,71 @@
 	width: 18px;
 }
 
+.search-entry > td:nth-child(2) {
+	width: 100%;
+}
+
 .source-column {
 	width: 6rem;
 }
 
 .search-action-column {
 	width: 6rem;
-}
-
-.search-action-column > button {
-	width: 2rem;
-	
-	background-color: transparent;
-}
-
-.search-action-column > button > img {
-	aspect-ratio: 1/1;
-}
-
-#search-result-table th,
-.search-entry > * {
-	text-align: left;
-	padding: .5rem;
-}
-
-.search-entry > * {
-	border-top: 1px solid var(--border-color);
-}
-
-.search-entry {
-	transition: background-color 400ms linear;
-}
-
-.search-entry:hover {
-	background-color: var(--dark-hover-color);
-}
-
-.action-list {
 	display: flex;
 	gap: .1rem;
 	flex-wrap: wrap;
 }
 
+.search-action-column > button {
+	width: 2rem;
+	padding: .40rem;
+}
+
 /*  */
 /* Rename and convert window */
 /*  */
-#rename-window > :nth-child(2),
-#convert-window > :nth-child(2) {
+#rename-window .window-content,
+#convert-window .window-content {
 	display: block;
 }
 
 .rename-preview {
 	min-width: 40rem;
-	border-spacing: 0px;
-}
-
-.rename-preview th {
-	text-align: left;
 }
 
 .rename-preview tr > td:first-child {
 	padding-right: .5rem;
 }
 
-.rename-preview tr:nth-child(odd) > td {
+.rename-preview .rename-before > td {
 	padding-top: .75rem;
 	padding-bottom: .25rem;
 }
 
-.rename-preview tr:nth-child(even) > td {
+.rename-preview .rename-after > td {
 	padding-bottom: .75rem;
 	padding-top: .25rem;
 }
 
-.rename-preview tr:nth-child(odd):not(:nth-last-child(2)) > td:first-child,
-.rename-preview tr:nth-child(even):not(:last-child) > td {
-	border-bottom: 1px solid var(--border-color);
+.rename-preview .rename-before:not(:first-child) > td {
+	border-top: 1px solid var(--border-color);
 }
 
-.rename-preview tr:nth-child(odd) > td:nth-child(2),
-.rename-preview tr:nth-child(even) > td:first-child {
+.rename-preview td:nth-last-child(2) {
 	text-align: center;
 	padding-right: .5rem;
 }
 
-.rename-preview tr:nth-child(odd) > td:nth-child(2) {
+.rename-preview .rename-before > td:nth-last-child(2) {
 	color: var(--error-color);
 }
 
-.rename-preview tr:nth-child(even) > td:first-child {
+.rename-preview .rename-after > td:nth-last-child(2) {
 	color: var(--success-color);
 }
 
 .empty-rename-message {
 	font-size: 1.2rem;
-	text-align: center;
-}
-
-.rename-minus,
-.rename-plus {
-	font-size: 1.2rem;
-	width: 1.5rem;
-	display: inline-block;
-	font-weight: 600;
 	text-align: center;
 }
 
@@ -348,7 +313,7 @@
 /*  */
 /* Issue info window */
 /*  */
-.window > section#issue-info-window > div:nth-child(2) {
+#issue-info-window .window-content {
 	justify-content: flex-start;
 }
 
@@ -375,32 +340,11 @@
 }
 
 @media (max-width: 520px) {
-	/*  */
-	/* Volume info */
-	/*  */
 	#volume-description {
 		display: none;
 	}
 	#volume-description-mobile {
 		display: block;
-	}
-	
-	/*  */
-	/* Windows */
-	/*  */
-	.window > section > div:nth-child(2) form table tr {
-		width: 100%;
-		display: inline-flex;
-		flex-direction: column;
-	}
-	.window > section > div:nth-child(2) form table tr > th,
-	.window > section > div:nth-child(2) form table tr > td {
-		width: 100%;
-		text-align: left;
-	}
-	.window > section > div:nth-child(2) form table tr > td > select,
-	.window > section > div:nth-child(2) form table tr > td > input[type="text"] {
-		width: 100%;
 	}
 }
 

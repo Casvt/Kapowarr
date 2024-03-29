@@ -2,12 +2,15 @@ main {
 	overflow-x: hidden;
 }
 
+main:has(#queue tr) #empty-window,
+main:not(:has(#queue tr)) #queue-window {
+	display: none;
+}
+
 table {
 	width: 100%;
 	min-width: 50rem;
-	border-spacing: 0px;
 	padding: 1rem;
-	text-align: left;
 	color: var(--text-color);
 }
 
@@ -31,19 +34,6 @@ th, td {
 	width: 3.5rem;
 }
 
-.option-column button {
-	background-color: transparent;
-}
-
 .option-column button img {
 	width: 20px;
-}
-
-table a {
-	text-decoration: none;
-	color: var(--text-color);
-}
-
-table a:hover {
-	text-decoration: underline;
 }

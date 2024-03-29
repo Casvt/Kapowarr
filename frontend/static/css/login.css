@@ -5,7 +5,7 @@ body {
 	justify-content: center;
 	align-items: center;
 	gap: 8rem;
-	
+
 	background-color: var(--background-color);
 }
 
@@ -34,7 +34,7 @@ body {
 
 #password-input {
 	margin-bottom: .3rem;
-	
+
 	padding: .6rem;
 	outline: 0;
 	border: 1px solid transparent;
@@ -42,7 +42,7 @@ body {
 	color: var(--dark-color);
 
 	font-size: 1.3rem;
-	
+
 	transition: border .3s ease-in;
 }
 

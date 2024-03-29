@@ -1,166 +1,177 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta id="url_base" data-value="{{url_base}}">
-
-	<link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/x-icon">
-
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
+{% extends "base.html" %}
+{% from "base.html" import icon_button, window %}
+{% block title %}Download Clients{% endblock %}
+{% block css %}
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/window.css') }}">
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
-	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
-	<script src="{{ url_for('static', filename='js/general.js') }}" defer></script>
+{% endblock %}
+{% block js %}
 	<script src="{{ url_for('static', filename='js/window.js') }}" defer></script>
 	<script src="{{ url_for('static', filename='js/settings_download_clients.js') }}" defer></script>
+{% endblock %}
 
-	<title>Download Clients - Kapowarr</title>
-</head>
-<body>
-	<!-- Windows -->
-	<div class="window">
-		<!-- Choose torrent client window -->
-		<section id="choose-torrent-window">
-			<div>
-				<h2>Choose Torrent Client</h2>
-				<button aria-label="Close window" title="Close window">
-					<img src="{{url_base}}/static/img/cancel_search.svg" alt="">
-				</button>
-			</div>
-			<div>
-				<div id="choose-torrent-list"></div>
-			</div>
-			<div>
-				<button id="cancel-torrent-choose" type="button">Cancel</button>
-			</div>
-		</section>
-		<!-- Add torrent client window -->
-		<section id="add-torrent-window">
-			<div>
-				<h2>Add Torrent Client</h2>
-				<button aria-label="Close window" title="Close window">
-					<img src="{{url_base}}/static/img/cancel_search.svg" alt="">
-				</button>
-			</div>
-			<div>
-				<form id="add-torrent-form">
-					<table>
-						<tr>
-							<th><label for="add-title-input">Title</label></th>
-							<td>
-								<input type="text" id="add-title-input" required>
-							</td>
-						</tr>
-						<tr>
-							<th><label for="add-baseurl-input">Base URL</label></th>
-							<td>
-								<input type="text" id="add-baseurl-input" required>
-								<p>E.g. 'http://192.168.2.15:8008/torrent_client'</p>
-							</td>
-						</tr>
-					</table>
-				</form>
-			</div>
-			<div>
-				<button id="cancel-torrent-add" type="button">Cancel</button>
-				<button id="test-torrent-add" type="button">
-					<div>Failed</div>
-					<div>Test</div>
-					<div>Success</div>
-				</button>
-				<button id="submit-torrent-add" type="submit" form="add-torrent-form">Add</button>
-			</div>
-		</section>
-		<!-- Edit torrent client window -->
-		<section id="edit-torrent-window">
-			<div>
-				<h2>Edit Torrent Client</h2>
-				<button aria-label="Close window" title="Close window">
-					<img src="{{url_base}}/static/img/cancel_search.svg" alt="">
-				</button>
-			</div>
-			<div>
-				<p class="error hidden">*Client is downloading</p>
-				<form id="edit-torrent-form">
-					<table>
-						<tr>
-							<th><label for="edit-title-input">Title</label></th>
-							<td>
-								<input type="text" id="edit-title-input" required>
-							</td>
-						</tr>
-						<tr>
-							<th><label for="edit-baseurl-input">Base URL</label></th>
-							<td>
-								<input type="text" id="edit-baseurl-input" required>
-								<p>E.g. 'http://192.168.2.15:8008/torrent_client'</p>
-							</td>
-						</tr>
-					</table>
-				</form>
-			</div>
-			<div>
-				<button id="cancel-torrent-edit" type="button">Cancel</button>
-				<button id="delete-torrent-edit" type="button">Delete</button>
-				<button id="test-torrent-edit" type="button">
-					<div>Failed</div>
-					<div>Test</div>
-					<div>Success</div>
-				</button>
-				<button id="submit-torrent-edit" type="submit" form="edit-torrent-form">Save</button>
-			</div>
-		</section>
-	</div>
-	
-	<header>
-		<div class="menu-title-container">
-			<button id="toggle-nav" aria-label="Toggle menu">
-				<img src="{{url_base}}/static/img/menu.svg" alt="">
+{% block windows %}
+	{% set builtin_content %}
+		<h2 id="mega-title">Mega</h2>
+		<p id="mega-desc" class="description">
+			<a href="https://mega.io/" target="_blank">Mega</a> is a cloud storage service from which Kapowarr can download files.
+			These files are uploaded by GetComics, as an alternative way of downloading the file compared to MediaFire,
+			torrents or the direct downloads from their own servers. An advantage of Mega is that their downloads
+			are end-to-end encrypted, which Kapowarr makes use of. There are free and paid accounts that offer higher
+			bandwidth/limits for downloading files. Kapowarr is able to download files using an account to take advantage
+			of these higher limits (e.g. being able to download more than 5GB per day). If you have a Mega account, it's
+			advised to enter the credentials below so that Kapowarr can take advantage of it's premium features. Also make
+			sure to set Mega as the highest service in the service preference, so that Kapowarr will prefer using it.
+			<br><br>
+			Note: Kapowarr can download files from Mega, but not Mega folders (yet).
+		</p>
+		<h2 id="mf-title">MediaFire</h2>
+		<p id="mf-desc" class="description">
+			<a href="https://www.mediafire.com/" target="_blank">MediaFire</a> is a cloud storage service from which Kapowarr can
+			download files. These files are uploaded by GetComics, as an alternative way of downloading the file compared
+			to Mega, torrents or the direct downloads from their own servers.
+			<br><br>
+			Note: Kapowarr does not support downloading content from MediaFire using an account, like it can with Mega.
+			<br><br>
+			Note: Kapowarr can download files from MediaFire, but not MediaFire folders (yet).
+		</p>
+		<h2 id="gc-title">GetComics</h2>
+		<p id="gc-desc" class="description">
+			<a href="https://getcomics.org" target="_blank">GetComics</a> is a website that offers a vast amount of downloads for comics.
+			Kapowarr can search this website to find downloads for the volumes in the library. The comics can be downloaded
+			via multiple services, for instance: MediaFire, Mega, torrents (magnet links) and direct downloads from their
+			servers. Kapowarr supports downloading via all the services mentioned before.
+			<br><br>
+			Note: When downloading from the servers of GetComics (instead of using an external service), the download speed
+			will be significantly reduced 400MB into the download. This behaviour is set up by the owner of the website, is
+			intentional, and is not planned to be removed.
+		</p>
+
+		<form id="cred-form">
+			<p class="error hidden">Failed to add credentials</p>
+			<table>
+				<thead>
+					<th>Email</th>
+					<th>Password</th>
+					<th>Action</th>
+				</thead>
+				<tbody class="icon-text-color">
+					<tr data-source="mega" data-id="" class="cred-entry">
+						<td class="mega-email"></td>
+						<td class="mega-password"></td>
+						<td>
+							<button type="button" id="delete-mega">
+								<img src="{{url_base}}/static/img/delete.svg" alt="">
+							</button>
+						</td>
+					</tr>
+					<tr id="add-mega">
+						<td class="mega-email">
+							<input type="email" required>
+						</td>
+						<td class="mega-password">
+							<input type="password" required>
+						</td>
+						<td>
+							<button type="submit" id="submit-mega">
+								<img src="{{url_base}}/static/img/cancel.svg" alt="">
+							</button>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</form>
+	{% endset %}
+
+	{{ window(False, "builtin-window", "Client Information", builtin_content) }}
+
+	{% set choose_content %}
+		<div id="choose-torrent-list"></div>
+	{% endset %}
+
+	{{ window(False, "choose-torrent-window", "Choose Torrent Client", choose_content) }}
+
+	{% set add_content %}
+		<form id="add-torrent-form">
+			<table>
+				<tr>
+					<th><label for="add-title-input">Title</label></th>
+					<td>
+						<input type="text" id="add-title-input" required>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="add-baseurl-input">Base URL</label></th>
+					<td>
+						<input type="text" id="add-baseurl-input" required>
+						<p>E.g. 'http://192.168.2.15:8008/torrent_client'</p>
+					</td>
+				</tr>
+			</table>
+		</form>
+	{% endset %}
+
+	{% set add_submit %}
+		<button id="test-torrent-add" type="button">
+			<div>Failed</div>
+			<div>Test</div>
+			<div>Success</div>
+		</button>
+		<button id="submit-torrent-add" type="submit" form="add-torrent-form">Add</button>
+	{% endset %}
+
+	{{ window(False, "add-torrent-window", "Add Torrent Client", add_content, add_submit) }}
+
+	{% set edit_content %}
+		<p class="error hidden">*Client is downloading</p>
+		<form id="edit-torrent-form">
+			<table>
+				<tr>
+					<th><label for="edit-title-input">Title</label></th>
+					<td>
+						<input type="text" id="edit-title-input" required>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="edit-baseurl-input">Base URL</label></th>
+					<td>
+						<input type="text" id="edit-baseurl-input" required>
+						<p>E.g. 'http://192.168.2.15:8008/torrent_client'</p>
+					</td>
+				</tr>
+			</table>
+		</form>
+	{% endset %}
+
+	{% set edit_submit %}
+		<button id="delete-torrent-edit" type="button">Delete</button>
+		<button id="test-torrent-edit" type="button">
+			<div>Failed</div>
+			<div>Test</div>
+			<div>Success</div>
+		</button>
+		<button id="submit-torrent-edit" type="submit" form="edit-torrent-form">Save</button>
+	{% endset %}
+
+	{{ window(False, "edit-torrent-window", "Edit Torrent Client", edit_content, edit_submit) }}
+
+{% endblock windows %}
+
+{% block main %}
+<main>
+	<div class="settings-container">
+		<h2>Built-in Clients</h2>
+		<div id="builtin-client-list" class="client-list">
+			<button id="mega-client" data-tag="mega">Mega</button>
+			<button id="mf-client" data-tag="mf">MediaFire</button>
+			<button id="gc-client" data-tag="gc">GetComics</button>
+		</div>
+		<h2>Torrent Clients</h2>
+		<div id="torrent-client-list" class="client-list">
+			<button id="add-torrent-client" class="add-button icon-text-color" title="Add torrent client">
+				<img src="{{url_base}}/static/img/cancel.svg" alt="">
 			</button>
-			<a href="{{url_base}}/">
-				<img src="{{ url_for('static', filename='img/favicon.svg') }}" alt="">
-			</a>
 		</div>
-	</header>
-	<div class="nav-main">
-		<div id="nav-bar">
-			<nav>
-				<a href="{{url_base}}/">Volumes</a>
-				<a href="{{url_base}}/activity/queue">Activity</a>
-				<a href="{{url_base}}/settings">Settings</a>
-					<a href="{{url_base}}/settings/mediamanagement" class="sub-entry">Media Management</a>
-					<a href="{{url_base}}/settings/download" class="sub-entry">Download</a>
-					<a href="{{url_base}}/settings/downloadclients" class="sub-entry current-nav">Download Clients</a>
-					<a href="{{url_base}}/settings/general" class="sub-entry">General</a>
-				<a href="{{url_base}}/system/status">System</a>
-			</nav>
-			<div id="task-queue"></div>
-		</div>
-		<main>
-			<div class="tool-bar-container">
-				<div class="tool-bar">
-					<button id="save-button" type="submit" aria-label="Save the changes made" title="Save the changes made">
-						<img src="{{url_base}}/static/img/save.svg" alt="">
-						<div>
-							<p>Save</p>
-						</div>
-					</button>
-				</div>
-			</div>
-			<div class="settings-container">
-				<form id="settings-form">
-					<h2>Torrent Clients</h2>
-					<div id="torrent-client-list" class="client-list">
-						<button class="add-client-button" type="button" title="Add torrent client">
-							<img src="{{url_base}}/static/img/cancel_search.svg" alt="">
-						</button>
-					</div>
-				</form>
-			</div>
-		</main>
 	</div>
-</body>
-</html>
+</main>
+{% endblock main %}

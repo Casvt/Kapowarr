@@ -29,7 +29,7 @@ default_settings = {
 	'api_key': None,
 	'comicvine_api_key': '',
 	'auth_password': '',
-	'log_level': 'info',
+	'log_level': logging.INFO,
 
 	'volume_folder_naming': join('{series_name}', 'Volume {volume_number} ({year})'),
 	'file_naming': '{series_name} ({year}) Volume {volume_number} Issue {issue_number}',

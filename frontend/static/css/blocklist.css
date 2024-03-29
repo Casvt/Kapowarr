@@ -2,27 +2,16 @@
 	padding: 1rem;
 }
 
-.main-window > div:nth-child(2) {
+.table-container {
 	overflow-x: auto;
 }
 
 table {
 	width: 100%;
 	min-width: 33.3rem;
-	text-align: left;
-	border-spacing: 0px;
 	table-layout: fixed;
-	
-	color: var(--text-color);
-}
 
-table a {
-	text-decoration: none;
 	color: var(--text-color);
-}
-
-table a:hover {
-	text-decoration: underline;
 }
 
 th, td {
@@ -49,10 +38,6 @@ th, td {
 	border-top: 1px solid var(--border-color);
 }
 
-.delete-entry {
-	background-color: transparent;
-}
-
-.delete-entry-icon {
+.delete-entry > img {
 	width: 20px;
 }

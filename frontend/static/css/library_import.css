@@ -8,6 +8,8 @@ main {
 	flex-direction: column;
 	align-items: center;
 	gap: 1rem;
+
+	padding-bottom: 1.5rem;
 }
 
 #start-window h2 {
@@ -21,7 +23,7 @@ main {
 #start-window > p,
 #start-window > ul {
 	max-width: 50rem;
-	color: var(--dark-text-color);
+	color: var(--text-color);
 }
 
 #start-window > ul > li {
@@ -44,16 +46,16 @@ main {
 	border-radius: 4px;
 	border: 2px solid var(--border-color);
 	padding: .25rem .5rem;
-	background-color: var(--library-entry-color);
-	color: var(--library-entry-font-color);
+	background-color: var(--foreground-color);
+	color: var(--text-color);
 
 	font-size: .9rem;
-	
+
 	transition: background-color 100ms linear;
 }
 
 #start-window table select:hover {
-	background-color: var(--dark-hover-color);
+	background-color: var(--hover-color);
 }
 
 #run-import-button,
@@ -66,7 +68,7 @@ main {
 	border-radius: 4px;
 	padding: .4rem .5rem;
 	color: var(--text-color);
-	background-color: var(--library-entry-color);
+	background-color: var(--foreground-color);
 
 	font-size: 1rem;
 	text-decoration: none;
@@ -78,7 +80,7 @@ main {
 .cancel-button:hover,
 .action-container button:hover,
 #no-cv-window h2:hover {
-	background-color: var(--dark-hover-color);
+	background-color: var(--hover-color);
 }
 
 #loading-window,
@@ -116,18 +118,14 @@ main {
 .table-container > table {
 	min-width: 30rem;
 	width: 100%;
-	
-	border-spacing: 0px;
 }
 
-.table-container thead,
-.proposal-list {
-	color: var(--text-color);
+.table-container :where(td, th) {
+	padding: .5rem 1rem;
 }
 
-.table-container thead th {
+.table-container th {
 	padding-left: 1rem;
-	text-align: left;
 }
 
 .proposal-list > tr {
@@ -135,15 +133,11 @@ main {
 }
 
 .proposal-list > tr:hover {
-	background-color: var(--dark-hover-color);
+	background-color: var(--hover-color);
 }
 
 .proposal-list td {
 	border-top: 1px solid var(--border-color);
-}
-
-.proposal-list td {
-	padding: .5rem 1rem;
 }
 
 .proposal-list td:first-child {
@@ -154,35 +148,32 @@ main {
 	color: var(--accent-color);
 }
 
-.proposal-list button {
-	background-color: transparent;
-}
-
 .proposal-list button img {
 	height: 1.5rem;
 }
 
-#cv-window > div:nth-child(2) {
+#cv-window .window-content {
 	justify-content: flex-start;
 }
 
 .search-bar {
 	width: 100%;
-	
+	height: 2.5rem;
+
 	display: flex;
 	justify-content: center;
 	align-items: center;
 }
 
 .search-bar > input {
-	height: 2.5rem;
+	height: 100%;
 	width: min(100%, 20rem);
-	
+
 	padding: .5rem;
 	border: 2px solid var(--border-color);
 	border-radius: 4px 0px 0px 4px;
-	background-color: var(--search-bar-color);
-	color: var(--search-bar-font-color);
+	background-color: var(--background-color);
+	color: var(--text-color);
 }
 
 .search-bar > input:focus {
@@ -194,20 +185,13 @@ main {
 }
 
 .search-bar > button {
-	height: 2.5rem;
-	width: 2.5rem;
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	
+	height: 100%;
+	aspect-ratio: 1/1;
+
+	padding: .6rem;
 	border: 2px solid var(--border-color);
 	border-left: none;
 	border-radius: 0px 4px 4px 0px;
-	background-color: var(--search-bar-button-color);
-}
-
-.search-bar > button > img {
-	height: 1.4rem;
 }
 
 .search-results-container {
@@ -215,18 +199,12 @@ main {
 	overflow-x: auto;
 }
 
-.search-results-container * {
-	color: var(--text-color);
-}
-
 .search-results-container table {
 	min-width: 25rem;
-	border-spacing: 0px;
 }
 
 .search-results-container th {
 	padding-left: 1rem;
-	text-align: left;
 }
 
 .search-results > tr {
@@ -234,7 +212,7 @@ main {
 }
 
 .search-results > tr:hover {
-	background-color: var(--dark-hover-color);
+	background-color: var(--hover-color);
 }
 
 .search-results td {
@@ -251,9 +229,9 @@ main {
 }
 
 .search-results button {
-	border: 2px solid var(--dark-text-color);
+	border: 2px solid var(--border-color);
 	border-radius: 4px;
 	padding: .3rem;
 	color: var(--text-color);
-	background-color: var(--dark-hover-color);
+	background-color: var(--foreground-color);
 }
