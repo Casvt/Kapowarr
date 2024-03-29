@@ -5,7 +5,7 @@ General classes (ABC's, base classes) regarding downloading
 """
 
 from abc import ABC, abstractmethod
-from typing import Tuple, Union
+from typing import Sequence, Union
 
 from backend.custom_exceptions import (InvalidKeyValue, KeyNotFound,
                                        TorrentClientDownloading,
@@ -16,8 +16,9 @@ from backend.enums import DownloadState
 
 class Download(ABC):
 	# This block is assigned after initialisation of the object
-	id: Union[int, None]
-	volume_id: Union[int, None]
+	# All types should actually be Union[None, {TYPE}]
+	id: int
+	volume_id: int
 	issue_id: Union[int, None]
 	page_link: Union[str, None]
 
@@ -62,10 +63,10 @@ class Download(ABC):
 		"""Start the download
 		"""
 		return
-		
+
 	@abstractmethod
 	def stop(
-		self, 
+		self,
 		state: DownloadState = DownloadState.CANCELED_STATE
 	) -> None:
 		"""Interrupt the download
@@ -93,9 +94,9 @@ class TorrentClient(ABC):
 	username: Union[str, None]
 	password: Union[str, None]
 	api_token: Union[str, None]
-	
-	_tokens: Tuple[str] = ('title', 'base_url')
-	"""The keys the client needs or could need for operation 
+
+	_tokens: Sequence[str] = ('title', 'base_url')
+	"""The keys the client needs or could need for operation
 	(mostly whether it's username + password or api_token)"""
 
 	@abstractmethod
@@ -136,7 +137,7 @@ class TorrentClient(ABC):
 	@abstractmethod
 	def delete(self) -> None:
 		"""Delete the torrent client
-		
+
 		Raises:
 			TorrentClientDownloading: There is a download in the queue
 			using the client
@@ -148,7 +149,7 @@ class TorrentClient(ABC):
 		magnet_link: str,
 		target_folder: str,
 		torrent_name: Union[str, None]
-	) -> int:
+	) -> str:
 		"""Add a torrent to the client for downloading
 
 		Args:
@@ -158,16 +159,16 @@ class TorrentClient(ABC):
 			Set to `None` to keep original name.
 
 		Returns:
-			int: The id of the entry in the download client
+			str: The id/hash of the entry in the download client
 		"""
 		return
-	
+
 	@abstractmethod
-	def get_torrent_status(self, torrent_id: int) -> Union[dict, None]:
+	def get_torrent_status(self, torrent_id: str) -> Union[dict, None]:
 		"""Get the status of the torrent in a dict
 
 		Args:
-			torrent_id (int): The id of the torrent to get status of
+			torrent_id (str): The id/hash of the torrent to get status of.
 
 		Returns:
 			Union[dict, None]: The status of the torrent,
@@ -177,12 +178,12 @@ class TorrentClient(ABC):
 		return
 
 	@abstractmethod
-	def delete_torrent(self, torrent_id: int, delete_files: bool) -> None:
-		"""Remove the torrent from the client
+	def delete_torrent(self, torrent_id: str, delete_files: bool) -> None:
+		"""Remove the torrent from the client.
 
 		Args:
-			torrent_id (int): The id of the torrent to delete
-			delete_files (bool): Delete the downloaded files
+			torrent_id (str): The id/hash of the torrent to delete.
+			delete_files (bool): Delete the downloaded files.
 		"""
 		return
 
@@ -229,7 +230,7 @@ class BaseTorrentClient(TorrentClient):
 		self.password = data['password']
 		self.api_token = data['api_token']
 		return
-	
+
 	def todict(self) -> dict:
 		return {
 			'id': self.id,
@@ -240,14 +241,14 @@ class BaseTorrentClient(TorrentClient):
 			'password': self.password,
 			'api_token': self.api_token
 		}
-	
+
 	def edit(self, edits: dict) -> dict:
 		cursor = get_db()
 		if cursor.execute(
 			"SELECT 1 FROM download_queue WHERE torrent_client_id = ? LIMIT 1;",
 			(self.id,)
 		).fetchone() is not None:
-			raise TorrentClientDownloading
+			raise TorrentClientDownloading(self.id)
 
 		from backend.download_torrent_clients import client_types
 		data = {}
@@ -262,6 +263,8 @@ class BaseTorrentClient(TorrentClient):
 			raise InvalidKeyValue('password', data['password'])
 
 		data['base_url'] = data['base_url'].rstrip('/')
+		if not data["base_url"].startswith(('http://', 'https://')):
+			data["base_url"] = f'http://{data["base_url"]}'
 
 		ClientClass = client_types[self.type]
 		test_result = ClientClass.test(

@@ -6,7 +6,7 @@ Searching online sources (GC) for downloads
 
 import logging
 from asyncio import create_task, gather, run
-from typing import List
+from typing import Dict, List, Union
 
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
@@ -15,7 +15,8 @@ from requests import get
 from backend.db import get_db
 from backend.enums import SpecialVersion
 from backend.file_extraction import extract_filename_data
-from backend.helpers import (check_overlapping_issues, create_range,
+from backend.helpers import (MatchedSearchResultData, SearchResultData,
+                             check_overlapping_issues, create_range,
                              extract_year_from_date, first_of_column)
 from backend.matching import _match_special_version, check_search_result_match
 from backend.settings import private_settings
@@ -23,26 +24,26 @@ from backend.volumes import Issue, Volume, get_calc_number_range
 
 
 def _sort_search_results(
-	result: dict,
+	result: MatchedSearchResultData,
 	title: str,
 	volume_number: int,
-	year: int=None,
-	calculated_issue_number: float=None
+	year: Union[int, None] = None,
+	calculated_issue_number: Union[float, None] = None
 ) -> List[int]:
 	"""Sort the search results
 
 	Args:
-		result (dict): A result from `search.SearchSources.search_all()`.
+		result (MatchedSearchResultData): A result from `search.SearchSources.search_all()`.
 
 		title (str): Title of volume
 
 		volume_number (int): The volume number of the volume
 
-		year (int, optional): The year of the volume.
+		year (Union[int, None], optional): The year of the volume.
 			Defaults to None.
 
-		calculated_issue_number (float, optional): The calculated_issue_number of
-		the issue.
+		calculated_issue_number (Union[float, None], optional): The
+		calculated_issue_number of the issue.
 			Defaults to None.
 
 	Returns:
@@ -127,9 +128,9 @@ class SearchSources:
 			self._get_comics,
 		]
 
-	def search_all(self) -> List[dict]:
+	def search_all(self) -> List[SearchResultData]:
 		"Search all sources for the query"
-		result = []
+		result: List[SearchResultData] = []
 		for source in self.source_list:
 			result += source()
 		return result
@@ -157,12 +158,12 @@ class SearchSources:
 			responses = await gather(*tasks)
 			return [BeautifulSoup(r, 'html.parser') for r in responses]
 
-	def _get_comics(self) -> List[dict]:
+	def _get_comics(self) -> List[SearchResultData]:
 		"""Search for the query in getcomics
 
 		Returns:
-			List[dict]: The search results
-		"""		
+			List[SearchResultData]: The search results
+		"""
 		search_results = get(
 			private_settings["getcomics_url"],
 			params={'s': self.query},
@@ -178,7 +179,7 @@ class SearchSources:
 		for page in [soup] + parsed_results:
 			results += page.find_all('article', {'class': 'post'})
 
-		formatted_results = []
+		formatted_results: List[SearchResultData] = []
 		for result in results:
 			link = result.find('a')['href']
 			title = (result
@@ -186,45 +187,53 @@ class SearchSources:
 				.get_text(strip=True)
 			)
 
-			data = extract_filename_data(title, False)
-			data.update({
+			data = extract_filename_data(
+				title,
+				assume_volume_number=False,
+				fix_year=True
+			)
+			formatted_results.append(SearchResultData(**{
+				**data,
 				'link': link,
 				'display_title': title,
 				'source': 'GetComics'
-			})
-			formatted_results.append(data)
-		
+			}))
+
 		return formatted_results
 
 def manual_search(
 	volume_id: int,
-	issue_id: int=None
-) -> List[dict]:
+	issue_id: Union[int, None] = None
+) -> List[MatchedSearchResultData]:
 	"""Do a manual search for a volume or issue
 
 	Args:
 		volume_id (int): The id of the volume to search for
-		issue_id (int, optional): The id of the issue to search for
+		issue_id (Union[int, None], optional): The id of the issue to search for
 		(in the case that you want to search for an issue instead of a volume).
 		Defaults to None.
 
 	Returns:
-		List[dict]: List with search results.
+		List[MatchedSearchResultData]: List with search results.
 	"""
 	volume = Volume(volume_id)
 	volume_data = volume.get_keys(
 		('title', 'volume_number', 'year', 'special_version')
 	)
-	
-	issue_number: int = None
-	calculated_issue_number: int = None
+
 	if issue_id and not volume_data.special_version.value:
 		issue_data = Issue(issue_id).get_keys(
 			('issue_number', 'calculated_issue_number')
 		)
-		issue_number = issue_data['issue_number']
-		calculated_issue_number = issue_data['calculated_issue_number']
-	
+		issue_number: Union[str, None] = issue_data['issue_number']
+		calculated_issue_number: Union[float, None] = issue_data[
+			'calculated_issue_number'
+		]
+
+	else:
+		issue_number: Union[str, None] = None
+		calculated_issue_number: Union[float, None] = None
+
 	logging.info(
 		f'Starting manual search: {volume_data.title} ({volume_data.year}) {"#" + issue_number if issue_number else ""}'
 	)
@@ -264,7 +273,7 @@ def manual_search(
 		query_formats = tuple(f.replace('({year})', '') for f in query_formats)
 
 	# Get formatted search results
-	results = []
+	search_results: List[SearchResultData] = []
 	for format in query_formats:
 		search = SearchSources(
 			format.format(
@@ -272,46 +281,52 @@ def manual_search(
 				year=volume_data.year, issue_number=issue_number
 			)
 		)
-		results += search.search_all()
+		search_results += search.search_all()
 
-	# Remove duplicates 
+	# Remove duplicates
 	# because multiple formats can return the same result
-	results: List[dict] = list({r['link']: r for r in results}.values())
+	search_results = list({r['link']: r for r in search_results}.values())
 
 	# Decide what is a match and what not
-	issue_numbers = {
+	issue_numbers: Dict[float, Union[int, None]] = {
 		i['calculated_issue_number']: extract_year_from_date(i['date'])
 		for i in volume.get_issues()
 	}
-	for result in results:
-		result.update(
-			check_search_result_match(result, volume_id, title,
+	results = [
+		MatchedSearchResultData({
+			**result,
+			**check_search_result_match(result, volume_id, title,
 				volume_data.special_version, issue_numbers,
 				calculated_issue_number, volume_data.year
 			)
-		)
+		})
+		for result in search_results
+	]
 
 	# Sort results; put best result at top
 	results.sort(key=lambda r: _sort_search_results(
 		r, title, volume_data.volume_number, volume_data.year,
 		calculated_issue_number
 	))
-		
+
 	logging.debug(f'Manual search results: {results}')
 	return results
 
-def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
+def auto_search(
+	volume_id: int,
+	issue_id: Union[int, None] = None
+) -> List[MatchedSearchResultData]:
 	"""Search for a volume or issue and automatically choose a result
 
 	Args:
 		volume_id (int): The id of the volume to search for
-		issue_id (int, optional): The id of the issue to search for
-		(in the case that you want to search for an issue instead of a volume). 
+		issue_id (Union[int, None], optional): The id of the issue to search for
+		(in the case that you want to search for an issue instead of a volume).
 		Defaults to None.
 
 	Returns:
-		List[dict]: List with chosen search results.
-	"""	
+		List[MatchedSearchResultData]: List with chosen search results.
+	"""
 	cursor = get_db()
 
 	volume = Volume(volume_id)
@@ -326,11 +341,11 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 		logging.debug(f'Auto search results: {result}')
 		return result
 
+	searchable_issues: List[float] = []
 	if issue_id is None:
 		# Auto search volume
-		issue_number = None
 		# Get issue numbers that are open (monitored and no file)
-		searchable_issues = first_of_column(cursor.execute(
+		searchable_issues: List[float] = first_of_column(cursor.execute(
 			"""
 			SELECT calculated_issue_number
 			FROM issues i
@@ -351,11 +366,7 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 	else:
 		# Auto search issue
 		issue = Issue(issue_id)
-		issue_data = issue.get_keys(
-			('issue_number', 'monitored')
-		)
-		issue_number, monitored = issue_data['issue_number'], issue_data['monitored']
-		if not monitored:
+		if not issue['monitored']:
 			# Auto search for issue but issue is unmonitored
 			result = []
 			logging.debug(f'Auto search results: {result}')
@@ -367,12 +378,9 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 				logging.debug(f'Auto search results: {result}')
 				return result
 
-	results = list(filter(
-		lambda r: r['match'],
-		manual_search(volume_id, issue_id)
-	))
+	results = [r for r in manual_search(volume_id, issue_id) if r['match']]
 
-	if issue_number is not None or (
+	if issue_id is not None or (
 		special_version.value is not None
 		and special_version != SpecialVersion.VOLUME_AS_ISSUE
 	):
@@ -401,7 +409,17 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 		elif (special_version == SpecialVersion.VOLUME_AS_ISSUE
 		and result['special_version'] == SpecialVersion.TPB):
 			# VAS with volume number
-			result['_issue_number'] = result['volume_number']
+			if result['volume_number'] is None:
+				continue
+
+			if isinstance(result['volume_number'], tuple):
+				result['_issue_number'] = (
+					float(result['volume_number'][0]),
+					float(result['volume_number'][1])
+				)
+			else:
+				result['_issue_number'] = float(result['volume_number'])
+
 			covered_issues = get_calc_number_range(
 				volume_id,
 				*create_range(result['volume_number'])
@@ -437,6 +455,6 @@ def auto_search(volume_id: int, issue_id: int=None) -> List[dict]:
 				break
 		else:
 			volume_parts.append(result)
-	
+
 	logging.debug(f'Auto search results: {volume_parts}')
 	return volume_parts

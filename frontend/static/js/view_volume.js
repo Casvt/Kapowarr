@@ -134,6 +134,13 @@ function fillTable(issues, api_key) {
 };
 
 function fillPage(data, api_key) {
+	const special_override = document.querySelector('#specialoverride-input');
+
+	if (data.special_version_locked)
+		special_override.value = data.special_version || '';
+	else
+		special_override.value = 'auto';
+
 	// Cover
 	ViewEls.vol_data.cover.src = `${url_base}/api/volumes/${data.id}/cover?api_key=${api_key}`;
 
@@ -571,6 +578,13 @@ function editVolume() {
 		'root_folder': parseInt(ViewEls.vol_edit.root_folder.value),
 		'volume_folder': ViewEls.vol_edit.volume_folder.value
 	};
+
+	const so = document.querySelector('#specialoverride-input').value;
+
+	data['special_version_locked'] = so !== 'auto';
+	if (so !== 'auto')
+		data['special_version'] = so || null;
+
 	usingApiKey()
 	.then(api_key => {
 		sendAPI('PUT', `/volumes/${id}`, api_key, {}, data)

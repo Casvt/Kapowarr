@@ -6,9 +6,8 @@ Clients for downloading a torrent using a torrent client
 
 import logging
 from os.path import join
-from typing import Dict, List, Union
+from typing import TYPE_CHECKING, Dict, List, Type, Union
 
-from bencoding import bdecode
 from requests import post
 
 from backend.custom_exceptions import (InvalidKeyValue, LinkBroken,
@@ -18,14 +17,19 @@ from backend.db import get_db
 from backend.download_direct_clients import BaseDownload
 from backend.download_general import TorrentClient
 from backend.enums import BlocklistReason, DownloadState
+from backend.helpers import get_torrent_info
 from backend.settings import Settings
 from backend.torrent_clients import qBittorrent
+
+if TYPE_CHECKING:
+	from threading import Thread
+
 
 #=====================
 # Managing clients
 #=====================
 
-client_types: Dict[str, TorrentClient] = {
+client_types: Dict[str, Type[TorrentClient]] = {
 	'qBittorrent': qBittorrent.qBittorrent
 }
 
@@ -65,7 +69,9 @@ class TorrentClients:
 			raise InvalidKeyValue('type', type)
 
 		base_url = base_url.rstrip('/')
-		
+		if not base_url.startswith(('http://', 'https://')):
+			base_url = f'http://{base_url}'
+
 		result = client_types[type].test(
 			base_url,
 			username,
@@ -116,14 +122,16 @@ class TorrentClients:
 
 		if title is None:
 			raise InvalidKeyValue('title', title)
-		
+
 		if base_url is None:
 			raise InvalidKeyValue('base_url', base_url)
-		
+
 		if username is not None and password is None:
 			raise InvalidKeyValue('password', password)
 
 		base_url = base_url.rstrip('/')
+		if not base_url.startswith(('http://', 'https://')):
+			base_url = f'http://{base_url}'
 
 		ClientClass = client_types[type]
 		test_result = ClientClass.test(
@@ -220,25 +228,26 @@ class TorrentDownload(BaseDownload):
 		link: str,
 		filename_body: str,
 		source: str,
-		custom_name: bool=True
+		custom_name: bool = True
 	) -> None:
 		logging.debug(f'Creating torrent download: {link}, {filename_body}')
 		super().__init__()
-		self.client: Union[TorrentClient, None] = None
+		self.client: TorrentClient = None # type: ignore
 		self.source = source
 		self.download_link = link
 		self._filename_body = filename_body
-		self.file = None
 		self.size: int = 0
 		self.progress: float = 0.0
 		self.speed: float = 0.0
+		self.resulting_files: List[str] = []
+		self.original_file: str = ''
 		self._torrent_id = None
-		self._download_thread = None
+		self._download_thread: Union[None, Thread] = None
 		self._download_folder = Settings()['download_folder']
-		
+
 		if custom_name:
 			self.title = filename_body.rstrip('.')
-			
+
 		# Find name of torrent as it is folder that it's downloaded in
 		r = post(
 			'https://magnet2torrent.com/upload/',
@@ -248,7 +257,7 @@ class TorrentDownload(BaseDownload):
 		if r.headers.get('content-type') != 'application/x-bittorrent':
 			raise LinkBroken(BlocklistReason.LINK_BROKEN)
 
-		name = bdecode(r.content)[b'info'][b'name'].decode()
+		name = get_torrent_info(r.content)[b'name'].decode()
 		self.title = self.title or name
 		self.file = join(self._download_folder, name)
 
@@ -267,6 +276,9 @@ class TorrentDownload(BaseDownload):
 		Update the various variables about the state/progress
 		of the torrent download
 		"""
+		if not self._torrent_id:
+			return
+
 		torrent_status = self.client.get_torrent_status(self._torrent_id)
 		if not torrent_status:
 			if torrent_status is None:
@@ -292,11 +304,14 @@ class TorrentDownload(BaseDownload):
 		Args:
 			delete_files (bool): Delete downloaded files
 		"""
+		if not self._torrent_id:
+			return
+
 		self.client.delete_torrent(self._torrent_id, delete_files)
 		return
 
 	def todict(self) -> dict:
 		return {
 			**super().todict(),
-			'client': self.client.id
+			'client': self.client.id if self.client else None
 		}

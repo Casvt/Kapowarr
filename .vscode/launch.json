@@ -1,0 +1,19 @@
+{
+	"configurations": [
+		{
+			"name": "Current File",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${file}",
+			"justMyCode": true
+		},
+		{
+			"name": "Main File",
+			"type": "debugpy",
+			"request": "launch",
+			"python": "/bin/python3",
+			"program": "${workspaceFolder}/Kapowarr.py",
+			"justMyCode": true
+		}
+	]
+}

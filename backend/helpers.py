@@ -9,9 +9,11 @@ from __future__ import annotations
 import logging
 from sys import version_info
 from threading import current_thread
-from typing import (TYPE_CHECKING, Any, Iterable, Iterator, List, Tuple,
-                    TypeVar, Union)
+from typing import (TYPE_CHECKING, Any, Dict, Generator, Iterable, Iterator,
+                    List, Mapping, Sequence, Tuple, TypedDict, TypeVar, Union)
+from urllib.parse import unquote
 
+from bencoding import bdecode
 from flask_socketio import SocketIO
 
 from backend.enums import SocketEvent
@@ -43,74 +45,93 @@ def check_python_version() -> bool:
 	"""
 	if not (version_info.major == 3 and version_info.minor >= 8):
 		logging.critical(
-			'The minimum python version required is python3.8 ' + 
-			'(currently ' + version_info.major + '.' + version_info.minor + '.' + version_info.micro + ').'
+			'The minimum python version required is python3.8 ' +
+			'(currently ' + str(version_info.major) + '.' + str(version_info.minor) + '.' + str(version_info.micro) + ').'
 		)
 		return False
 	return True
 
 
-def batched(l: list, n: int):
-	"""Iterate over list (or tuple, set, etc.) in batches
+def batched(l: Sequence[T], n: int) -> Generator[Sequence[T], Any, Any]:
+	"""Iterate over l in batches.
 
 	Args:
-		l (list): The list to iterate over
-		n (int): The batch size
+		l (Sequence[T]): The list to iterate over.
+		n (int): The batch size.
 
 	Yields:
-		A batch of size n from l
+		Generator[Sequence[T], Any, Any]: A batch of size n from l
 	"""
 	for ndx in range(0, len(l), n):
 		yield l[ndx : ndx+n]
 
 
-def reversed_tuples(i: Tuple[Tuple[T, U]]) -> Iterator[Tuple[Tuple[U, T]]]:
+def reversed_tuples(i: Iterable[Tuple[T, U]]) -> Generator[Tuple[U, T], Any, Any]:
 	"""Yield sub-tuples in reversed order.
 
 	Args:
-		i (Tuple[Tuple[T, U]]): Iterator.
+		i (Iterable[Tuple[T, U]]): Iterator.
 
 	Yields:
-		Iterator[Tuple[Tuple[U, T]]]: Sub-tuple with reversed order.
+		Generator[Tuple[U, T], Any, Any]: Sub-tuple with reversed order.
 	"""
 	for entry_1, entry_2 in i:
 		yield entry_2, entry_1
 
 
 def get_first_of_range(
-	n: Union[T, Tuple[T, T], List[T]]
+	n: Union[T, Sequence[T]]
 ) -> T:
 	"""Get the first element from a variable that could potentially be a range,
 	but could also be a single value. In the case of a single value, the value
 	is returned.
 
 	Args:
-		n (Union[T, Tuple[T, T], List[T]]): The range or single value.
+		n (Union[T, Sequence[T]]): The range or single value.
 
 	Returns:
 		T: The first element or single value.
 	"""
-	if isinstance(n, (list, tuple)):
+	if isinstance(n, Sequence):
 		return n[0]
 	else:
 		return n
 
 
 def create_range(
-	n: Union[T, Tuple[T, T], List[T]]
-) -> Union[Tuple[T, T], List[T]]:
+	n: Union[T, Sequence[T]]
+) -> Sequence[T]:
 	"""Create range if input isn't already.
 
 	Args:
-		n (Union[T, Tuple[T, T], List[T]]): The value or range.
+		n (Union[T, Sequence[T]]): The value or range.
 
 	Returns:
-		Union[Tuple[T, T], List[T]]: The range.
+		Sequence[T]: The range.
 	"""
-	if isinstance(n, (list, tuple)):
+	if isinstance(n, Sequence):
 		return n
 	else:
 		return (n, n)
+
+
+def normalize_string(s: str) -> str:
+	"""Fix some common stuff in strings coming from online sources. Parses
+	html escapes (`%20` -> ` `), fixing encoding errors (`_28` -> `(`), and
+	replaces unicode chars by standard chars (`’` -> `'`).
+
+	Args:
+		s (str): Input string.
+
+	Returns:
+		str: Normilized string.
+	"""
+	return (unquote(s)
+		.replace('_28','(')
+		.replace('_29',')')
+		.replace('–', '-')
+		.replace('’', "'")
+	)
 
 
 def extract_year_from_date(
@@ -149,13 +170,13 @@ def check_overlapping_issues(
 	Returns:
 		bool: Whether or not they overlap.
 	"""
-	if isinstance(issues_1, float):
-		if isinstance(issues_2, float):
+	if isinstance(issues_1, (float, int)):
+		if isinstance(issues_2, (float, int)):
 			return issues_1 == issues_2
 		else:
 			return issues_2[0] <= issues_1 <= issues_2[1]
 	else:
-		if isinstance(issues_2, float):
+		if isinstance(issues_2, (float, int)):
 			return issues_1[0] <= issues_2 <= issues_1[1]
 		else:
 			return (issues_1[0] <= issues_2[0] <= issues_1[1]
@@ -163,17 +184,87 @@ def check_overlapping_issues(
 
 
 def first_of_column(
-	columns: Tuple[Tuple[T]]
+	columns: Iterable[Sequence[T]]
 ) -> List[T]:
 	"""Get the first element of each sub-array.
 
 	Args:
-		columns (Tuple[Tuple[T]]): List of sub-arrays.
+		columns (Iterable[Sequence[T]]): List of sub-arrays.
 
 	Returns:
 		List[T]: List with first value of each sub-array.
 	"""
 	return [e[0] for e in columns]
+
+
+def fix_year(year: int) -> int:
+	"""Fix year numbers that are probably a typo.
+	E.g. 2204 -> 2024, 1890 -> 1980, 2010 -> 2010
+
+	Args:
+		year (int): The possibly broken year.
+
+	Returns:
+		int: The fixed year or input year if not broken.
+	"""
+	if 1900 <= year < 2100:
+		return year
+
+	year_str = list(str(year))
+	if len(year_str) != 4:
+		return year
+
+	return int(year_str[0] + year_str[2] + year_str[1] + year_str[3])
+
+
+def get_torrent_info(torrent: bytes) -> Dict[bytes, Any]:
+	"""Get the info from the contents of a torrent file.
+
+	Args:
+		torrent (bytes): The contents of a torrent file.
+
+	Returns:
+		Dict[bytes, Any]: The info.
+	"""
+	return bdecode(torrent)[b"info"] # type: ignore
+
+
+class FilenameData(TypedDict):
+	series: str
+	year: Union[int, None]
+	volume_number: Union[int, Tuple[int, int], None]
+	special_version: Union[str, None]
+	issue_number: Union[float, Tuple[float, float], None]
+	annual: bool
+
+
+class SearchResultData(FilenameData):
+	link: str
+	display_title: str
+	source: str
+
+
+class SearchResultMatchData(TypedDict):
+	match: bool
+	match_issue: Union[str, None]
+
+
+class MatchedSearchResultData(
+	SearchResultMatchData,
+	SearchResultData,
+	total=False
+):
+	_issue_number: Union[float, Tuple[float, float]]
+
+
+class CVFileMapping(TypedDict):
+	id: int
+	filepath: str
+
+
+class DownloadGroup(TypedDict):
+	info: FilenameData
+	links: Dict[str, List[str]]
 
 
 class Singleton(type):
@@ -203,7 +294,7 @@ class CommaList(list):
 		`'blue,green,red'` -> `['blue', 'green', 'red']`.
 	Using str() will convert it back to a string with comma seperated values.
 	"""
-	
+
 	def __init__(self, value: Union[str, Iterable]):
 		if not isinstance(value, str):
 			super().__init__(value)
@@ -224,47 +315,47 @@ class DictKeyedDict(dict):
 	Normal dict but key is dict.
 	"""
 
-	def __convert_dict(self, key: dict) -> str:
+	def __convert_dict(self, key: Mapping) -> str:
 		converted_key = ','.join(
 			sorted(key.keys()) + sorted(map(str, key.values()))
 		)
 		return converted_key
 
-	def __getitem__(self, key: dict) -> Any:
+	def __getitem__(self, key: Mapping) -> Any:
 		return super().__getitem__(
 			self.__convert_dict(key)
 		)[1]
 
-	def get(self, key: dict, default: Any = None) -> Any:
+	def get(self, key: Mapping, default: Any = None) -> Any:
 		try:
-			return self[self.__convert_dict(key)][1]
+			return self[key]
 		except KeyError:
 			return default
-		
-	def __setitem__(self, key: dict, value: Any) -> None:
+
+	def __setitem__(self, key: Mapping, value: Any) -> None:
 		return super().__setitem__(
 			self.__convert_dict(key),
 			(key, value)
 		)
 
-	def setdefault(self, key: dict, default: Any = None) -> Any:
+	def setdefault(self, key: Mapping, default: Any = None) -> Any:
 		if not key in self:
 			self[key] = default
 
 		return self[key]
 
-	def __contains__(self, key: Any) -> bool:
+	def __contains__(self, key: Mapping) -> bool:
 		return super().__contains__(
 			self.__convert_dict(key)
 		)
 
-	def keys(self) -> Iterator:
+	def keys(self) -> Iterator[Any]:
 		return (v[0] for v in super().values())
 
-	def values(self) -> Iterator:
+	def values(self) -> Iterator[Any]:
 		return (v[1] for v in super().values())
 
-	def items(self) -> Iterator:
+	def items(self) -> Iterator[Tuple[Any, Any]]:
 		return zip(self.keys(), self.values())
 
 

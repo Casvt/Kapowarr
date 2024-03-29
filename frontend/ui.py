@@ -35,7 +35,7 @@ def ui_queue():
 @ui.route('/activity/history', methods=methods)
 def ui_history():
 	return render_template('history.html', url_base=ui_vars['url_base'])
-	
+
 @ui.route('/activity/blocklist', methods=methods)
 def ui_blocklist():
 	return render_template('blocklist.html', url_base=ui_vars['url_base'])
@@ -51,7 +51,7 @@ def ui_tasks():
 @ui.route('/settings', methods=methods)
 def ui_settings():
 	return redirect(f'{ui_vars["url_base"]}/settings/mediamanagement')
-	
+
 @ui.route('/settings/mediamanagement', methods=methods)
 def ui_mediamanagement():
 	return render_template('settings_mediamanagement.html', url_base=ui_vars['url_base'])

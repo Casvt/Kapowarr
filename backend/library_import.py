@@ -3,7 +3,7 @@
 import logging
 from asyncio import create_task, gather, run
 from os.path import basename, dirname, isfile, join, splitext
-from typing import Dict, List, Union
+from typing import Dict, Iterator, List, Sequence
 
 from aiohttp import ClientSession
 
@@ -14,7 +14,8 @@ from backend.file_extraction import (extract_filename_data, image_extensions,
                                      supported_extensions)
 from backend.files import (delete_empty_folders, find_lowest_common_folder,
                            folder_is_inside_folder, list_files, rename_file)
-from backend.helpers import DictKeyedDict, batched, first_of_column
+from backend.helpers import (CVFileMapping, DictKeyedDict, FilenameData,
+                             batched, create_range)
 from backend.matching import _match_title, _match_year
 from backend.naming import mass_rename
 from backend.root_folders import RootFolders
@@ -22,7 +23,7 @@ from backend.volumes import Library, Volume, scan_files
 
 
 async def __search_matches(
-	datas: List[dict],
+	datas: Sequence[FilenameData],
 	only_english: bool
 ) -> DictKeyedDict:
 
@@ -152,8 +153,8 @@ def propose_library_import(
 	unimported_files = DictKeyedDict()
 	for f in limited_files:
 		efd = extract_filename_data(f, prefer_folder_year=True)
-		del efd['issue_number']
-		
+		del efd['issue_number'] # type: ignore
+
 		(unimported_files
 			.setdefault(efd, [])
 			.append(f))
@@ -161,17 +162,18 @@ def propose_library_import(
 
 	# Find a match for the files on CV
 	result: List[dict] = []
+	uf: Iterator[FilenameData] = unimported_files.keys()
 	group_number = 1
 	for uf_batch in batched(
-		sorted(unimported_files.items(), key=lambda f: (
-			f[0]['series'],
-			f[0]['volume_number'] or 0,
-			f[0]['year'] or 0
+		sorted(uf, key=lambda f: (
+			f['series'],
+			create_range(f['volume_number'] or 0)[0],
+			f['year'] or 0
 		)),
 		10
 	):
 		group_to_cv = run(__search_matches(
-			first_of_column(uf_batch),
+			uf_batch,
 			only_english
 		))
 		for group_data, search_result in group_to_cv.items():
@@ -195,13 +197,13 @@ def propose_library_import(
 	return result
 
 def import_library(
-	matches: List[Dict[str, Union[str, int]]],
+	matches: List[CVFileMapping],
 	rename_files: bool=False
 ) -> None:
 	"""Add volume to library and import linked files
 
 	Args:
-		matches (List[Dict[str, Union[str, int]]]): List of dicts.
+		matches (List[CVFileMapping]): List of dicts.
 		The key `id` should supply the CV id of the volume
 		and `filepath` the linked file.
 
@@ -269,7 +271,7 @@ def import_library(
 				delete_empty_folders(dirname(f), root_folder['folder'])
 
 			scan_files(volume_id)
-			
+
 			# Trigger rename
 			mass_rename(volume_id, filepath_filter=new_files)
 

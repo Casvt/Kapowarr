@@ -6,11 +6,11 @@ Setting up the database and handling connections
 
 import logging
 from os.path import dirname
-from sqlite3 import (PARSE_DECLTYPES, Connection, ProgrammingError, Row,
-                     register_adapter, register_converter)
+from sqlite3 import (PARSE_DECLTYPES, Connection, Cursor, ProgrammingError,
+                     Row, register_adapter, register_converter)
 from threading import current_thread
 from time import time
-from typing import List, Type, Union
+from typing import Any, Dict, List, Tuple, Type, Union
 
 from flask import g
 
@@ -18,13 +18,25 @@ from backend.helpers import CommaList, DB_ThreadSafeSingleton
 from backend.logging import set_log_level
 
 __DATABASE_FILEPATH__ = 'db', 'Kapowarr.db'
-__DATABASE_VERSION__ = 17
+__DATABASE_VERSION__ = 18
 __DATABASE_TIMEOUT__ = 10.0
 
+class NoNoneCursor(Cursor):
+	"""
+	`Cursor` but `lastrowid` typehinting is overwritten to remove `None`.
+	The `lastrowid` property is only called when we know that we'll get
+	an `int`, so remove the `None` possibility to fix loads of type hinting
+	problems.
+	"""
+
+	@property
+	def lastrowid(self) -> int:
+		return super().lastrowid or 1
+
 class DBConnection(Connection, metaclass=DB_ThreadSafeSingleton):
-	"For creating a connection with a database"	
+	"For creating a connection with a database"
 	file = ''
-	
+
 	def __init__(self, timeout: float) -> None:
 		"""Create a connection with a database
 
@@ -41,7 +53,10 @@ class DBConnection(Connection, metaclass=DB_ThreadSafeSingleton):
 		super().cursor().execute("PRAGMA foreign_keys = ON;")
 		self.closed = False
 		return
-	
+
+	def cursor(self) -> NoNoneCursor:
+		return super().cursor() # type: ignore
+
 	def close(self) -> None:
 		"""Close the connection
 		"""
@@ -75,7 +90,10 @@ class TempDBConnection(Connection):
 		super().cursor().execute("PRAGMA foreign_keys = ON;")
 		self.closed = False
 		return
-	
+
+	def cursor(self) -> NoNoneCursor:
+		return super().cursor() # type: ignore
+
 	def close(self) -> None:
 		"""Close the temporary connection
 		"""
@@ -104,14 +122,14 @@ def set_db_location(db_file_location: str) -> None:
 
 	return
 
-db_output_mapping = {
+db_output_mapping: Dict[type, Any] = {
 	dict: Row,
 	tuple: None
 }
 def get_db(
-	output_type: Union[Type[dict], Type[tuple]] = tuple,
+	output_type: Union[Type[Dict[Any, Any]], Type[Tuple[Any]]] = tuple,
 	temp: bool = False
-):
+) -> NoNoneCursor:
 	"""
 	Get a database cursor instance or create a new one if needed
 
@@ -125,13 +143,13 @@ def get_db(
 			Defaults to False.
 
 	Returns:
-		Cursor: Database cursor instance with desired output type set
+		NoAnyCursor: Database cursor instance with desired output type set.
 	"""
 	if temp:
 		cursor = TempDBConnection(timeout=__DATABASE_TIMEOUT__).cursor()
 	else:
 		try:
-			cursor = g.cursor
+			cursor: NoNoneCursor = g.cursor
 		except AttributeError:
 			db = DBConnection(timeout=__DATABASE_TIMEOUT__)
 			cursor = g.cursor = db.cursor()
@@ -140,11 +158,11 @@ def get_db(
 
 	return cursor
 
-def close_db(e: str=None):
+def close_db(e: Union[str, None] = None):
 	"""Close database cursor, commit database and close database.
 
 	Args:
-		e (str, optional): Error. Defaults to None.
+		e (Union[str, None], optional): Error. Defaults to None.
 	"""
 	try:
 		cursor = g.cursor
@@ -171,7 +189,7 @@ def migrate_db(current_db_version: int) -> None:
 	if current_db_version == 1:
 		# V1 -> V2
 		cursor.executescript("DELETE FROM download_queue;")
-		
+
 		current_db_version = s['database_version'] = 2
 		s._save_to_database()
 
@@ -180,7 +198,7 @@ def migrate_db(current_db_version: int) -> None:
 		cursor.executescript("""
 			BEGIN TRANSACTION;
 			PRAGMA defer_foreign_keys = ON;
-			
+
 			-- Issues
 			CREATE TEMPORARY TABLE temp_issues AS
 				SELECT * FROM issues;
@@ -203,11 +221,11 @@ def migrate_db(current_db_version: int) -> None:
 			INSERT INTO issues
 				SELECT * FROM temp_issues;
 
-			-- Issues files				
+			-- Issues files
 			CREATE TEMPORARY TABLE temp_issues_files AS
 				SELECT * FROM issues_files;
 			DROP TABLE issues_files;
-			
+
 			CREATE TABLE issues_files(
 				file_id INTEGER NOT NULL,
 				issue_id INTEGER NOT NULL,
@@ -225,13 +243,13 @@ def migrate_db(current_db_version: int) -> None:
 
 			COMMIT;
 		""")
-		
+
 		current_db_version = s['database_version'] = 3
 		s._save_to_database()
-	
+
 	if current_db_version == 3:
 		# V3 -> V4
-		
+
 		cursor.execute("""
 			DELETE FROM files
 			WHERE rowid IN (
@@ -245,7 +263,7 @@ def migrate_db(current_db_version: int) -> None:
 
 		current_db_version = s['database_version'] = 4
 		s._save_to_database()
-	
+
 	if current_db_version == 4:
 		# V4 -> V5
 		from backend.file_extraction import process_issue_number
@@ -261,11 +279,11 @@ def migrate_db(current_db_version: int) -> None:
 
 		current_db_version = s['database_version'] = 5
 		s._save_to_database()
-	
+
 	if current_db_version == 5:
 		# V5 -> V6
 		from backend.comicvine import ComicVine
-		
+
 		cursor.executescript("""
 			BEGIN TRANSACTION;
 			PRAGMA defer_foreign_keys = ON;
@@ -291,13 +309,13 @@ def migrate_db(current_db_version: int) -> None:
 			);
 			INSERT INTO issues
 				SELECT * FROM temp_issues;
-				
+
 			-- Volumes
 			ALTER TABLE volumes
 				ADD last_cv_update VARCHAR(255);
 			ALTER TABLE volumes
 				ADD last_cv_fetch INTEGER(8) DEFAULT 0;
-				
+
 			COMMIT;
 		""")
 
@@ -316,26 +334,26 @@ def migrate_db(current_db_version: int) -> None:
 
 		current_db_version = s['database_version'] = 6
 		s._save_to_database()
-		
+
 	if current_db_version == 6:
 		# V6 -> V7
 		cursor.execute("""
 			ALTER TABLE volumes
 				ADD custom_folder BOOL NOT NULL DEFAULT 0;
 		""")
-		
+
 		current_db_version = s['database_version'] = 7
 		s._save_to_database()
 
 	if current_db_version == 7:
 		# V7 -> V8
 		from backend.volumes import determine_special_version
-		
+
 		cursor.execute("""
 			ALTER TABLE volumes
 				ADD special_version VARCHAR(255);
 		""")
-		
+
 		volumes = cursor.execute("""
 			SELECT
 				v.id,
@@ -358,7 +376,7 @@ def migrate_db(current_db_version: int) -> None:
 			"UPDATE volumes SET special_version = ? WHERE id = ?;",
 			updates
 		)
-		
+
 		current_db_version = s['database_version'] = 8
 		s._save_to_database()
 
@@ -382,7 +400,7 @@ def migrate_db(current_db_version: int) -> None:
 				custom_folder BOOL NOT NULL DEFAULT 0,
 				last_cv_fetch INTEGER(8) DEFAULT 0,
 				special_version VARCHAR(255),
-				
+
 				FOREIGN KEY (root_folder) REFERENCES root_folders(id)
 			);
 
@@ -393,7 +411,7 @@ def migrate_db(current_db_version: int) -> None:
 					root_folder, folder, custom_folder,
 					0 AS last_cv_fetch, special_version
 				FROM volumes;
-		
+
 			DROP TABLE volumes;
 
 			ALTER TABLE new_volumes RENAME TO volumes;
@@ -406,7 +424,7 @@ def migrate_db(current_db_version: int) -> None:
 
 	if current_db_version == 9:
 		# V9 -> V10
-		
+
 		# Nothing is changed in the database
 		# It's just that this code needs to run once
 		# and the DB migration system does exactly that:
@@ -417,7 +435,7 @@ def migrate_db(current_db_version: int) -> None:
 			"SELECT value FROM config WHERE key = 'url_base' LIMIT 1;"
 		).fetchone()[0]
 		update_manifest(url_base)
-		
+
 		current_db_version = s['database_version'] = 10
 		s._save_to_database()
 
@@ -477,7 +495,7 @@ def migrate_db(current_db_version: int) -> None:
 				FOREIGN KEY (issue_id) REFERENCES issues(id)
 			);
 		""")
-		
+
 		current_db_version = s['database_version'] = 12
 		s._save_to_database()
 
@@ -496,13 +514,13 @@ def migrate_db(current_db_version: int) -> None:
 				UPDATE config
 				SET value = 'folder'
 				WHERE key = 'format_preference';
-				
+
 				UPDATE config
 				SET value = 1
 				WHERE key = 'convert';
 				"""
 			)
-		
+
 		current_db_version = s['database_version'] = 13
 		s._save_to_database()
 
@@ -514,7 +532,7 @@ def migrate_db(current_db_version: int) -> None:
 			WHERE key = 'format_preference'
 			LIMIT 1;
 		""").fetchone()[0].split(',')
-		
+
 		if 'folder' in format_preference:
 			cursor.execute("""
 				UPDATE config
@@ -530,7 +548,7 @@ def migrate_db(current_db_version: int) -> None:
 				""",
 				(",".join(format_preference),)
 			)
-		
+
 		current_db_version = s['database_version'] = 14
 		s._save_to_database()
 
@@ -548,7 +566,7 @@ def migrate_db(current_db_version: int) -> None:
 		cursor.execute(
 			"DROP TABLE service_preference;"
 		)
-		
+
 		current_db_version = s['database_version'] = 15
 		s._save_to_database()
 
@@ -576,17 +594,28 @@ def migrate_db(current_db_version: int) -> None:
 
 			COMMIT;
 		""")
-		
+
 		current_db_version = s['database_version'] = 16
 		s._save_to_database()
 
 	if current_db_version == 16:
 		# V16 -> V17
-		
+
 		log_number = 20 if s['log_level'] == 'info' else 10
 		s['log_level'] = log_number
-		
-		current_db_version = s['database_version'] = 16
+
+		current_db_version = s['database_version'] = 17
+		s._save_to_database()
+
+	if current_db_version == 17:
+		# V17 -> V18
+
+		cursor.execute("""
+			ALTER TABLE volumes ADD
+				special_version_locked BOOL NOT NULL DEFAULT 0
+		""")
+
+		current_db_version = s['database_version'] = current_db_version + 1
 		s._save_to_database()
 
 	return
@@ -627,7 +656,8 @@ def setup_db() -> None:
 			custom_folder BOOL NOT NULL DEFAULT 0,
 			last_cv_fetch INTEGER(8) DEFAULT 0,
 			special_version VARCHAR(255),
-			
+			special_version_locked BOOL NOT NULL DEFAULT 0,
+
 			FOREIGN KEY (root_folder) REFERENCES root_folders(id)
 		);
 		CREATE TABLE IF NOT EXISTS issues(
@@ -719,7 +749,7 @@ def setup_db() -> None:
 			source INTEGER NOT NULL UNIQUE,
 			email VARCHAR(255) NOT NULL,
 			password VARCHAR(255) NOT NULL,
-			
+
 			FOREIGN KEY (source) REFERENCES credentials_sources(id)
 				ON DELETE CASCADE
 		);
@@ -727,9 +757,9 @@ def setup_db() -> None:
 	cursor.executescript(setup_commands)
 
 	settings = Settings()
-	
+
 	set_log_level(settings['log_level'])
-	
+
 	# Migrate database if needed
 	current_db_version = settings['database_version']
 
@@ -761,7 +791,7 @@ def setup_db() -> None:
 		""",
 		((k, v, current_time, v) for k, v in task_intervals.items())
 	)
-	
+
 	# Add credentials sources
 	logging.debug(f'Inserting credentials sources: {credential_sources}')
 	cursor.executemany(

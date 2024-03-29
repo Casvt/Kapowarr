@@ -48,21 +48,27 @@ class PostProcessingActions:
 	@staticmethod
 	def move_file(download: Download) -> None:
 		"Move file from download folder to final destination"
-		if exists(download.file):
-			folder = Volume(download.volume_id)['folder']
-			file_dest = join(folder, basename(download.file))
-			logging.debug(
-				f'Moving download to final destination: {download}, Dest: {file_dest}'
+		if not exists(download.file):
+			return
+
+		# If it takes very long to move the file (because of it's size),
+		# the DB is left locked for a long period leading to timeouts.
+		get_db().connection.commit()
+
+		folder = Volume(download.volume_id)['folder']
+		file_dest = join(folder, basename(download.file))
+		logging.debug(
+			f'Moving download to final destination: {download}, Dest: {file_dest}'
+		)
+
+		if exists(file_dest):
+			logging.warning(
+				f'The file/folder {file_dest} already exists; replacing with downloaded file'
 			)
+			delete_file_folder(file_dest)
 
-			if exists(file_dest):
-				logging.warning(
-					f'The file/folder {file_dest} already exists; replacing with downloaded file'
-				)
-				delete_file_folder(file_dest)
-
-			rename_file(download.file, file_dest)
-			download.file = file_dest
+		rename_file(download.file, file_dest)
+		download.file = file_dest
 		return
 
 	@staticmethod
@@ -101,6 +107,9 @@ class PostProcessingActions:
 	def move_file_torrent(download: TorrentDownload) -> None:
 		"""Move file downloaded using torrent from download folder to
 		final destination"""
+		if not exists(download.file):
+			return
+
 		PPA.move_file(download)
 
 		download.resulting_files = extract_files_from_folder(
@@ -178,6 +187,8 @@ class PostProcesser:
 		PPA.add_file_to_database
 	]
 
+	actions_seeding = []
+
 	actions_canceled = [
 		PPA.delete_file,
 		PPA.remove_from_queue
@@ -203,6 +214,12 @@ class PostProcesser:
 	def success(cls, download) -> None:
 		logging.info(f'Postprocessing of successful download: {download.id}')
 		cls._run_actions(cls.actions_success, download)
+		return
+
+	@classmethod
+	def seeding(cls, download) -> None:
+		logging.info(f'Postprocessing of seeding download: {download.id}')
+		cls._run_actions(cls.actions_seeding, download)
 		return
 
 	@classmethod
@@ -237,7 +254,7 @@ class PostProcesserTorrentsCopy(PostProcesser):
 		PPA.remove_from_queue,
 		PPA.delete_file
 	]
-	
+
 	actions_seeding = [
 		PPA.add_to_history,
 		PPA.copy_file_torrent,
@@ -245,9 +262,3 @@ class PostProcesserTorrentsCopy(PostProcesser):
 		PPA.add_file_to_database,
 		PPA.reset_file_link
 	]
-	
-	@classmethod
-	def seeding(cls, download) -> None:
-		logging.info(f'Postprocessing of seeding download: {download.id}')
-		cls._run_actions(cls.actions_seeding, download)
-		return

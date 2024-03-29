@@ -68,7 +68,7 @@ class extract_filename_data(unittest.TestCase):
 				{'series': 'X Men', 'year': 2022, 'volume_number': 2, 'special_version': None, 'issue_number': (1.0, 25.0), 'annual': False},
 
 			'Batman ’66 Meets the Man From U.N.C.L.E. (2016)':
-				{'series': 'Batman ’66 Meets the Man From U.N.C.L.E.', 'year': 2016, 'volume_number': 1, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
+				{'series': 'Batman \'66 Meets the Man From U.N.C.L.E.', 'year': 2016, 'volume_number': 1, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
 
 			'Thor Vol. 3 #1 – 12 (Also known 588-599) + #600 – 621 (2007-2011) --2007-2011--':
 				{'series': 'Thor', 'year': 2007, 'volume_number': 3, 'special_version': None, 'issue_number': (600.0, 621.0), 'annual': False},
@@ -183,7 +183,16 @@ class extract_filename_data(unittest.TestCase):
 				{'series': 'Batman Annual', 'year': 1961, 'volume_number': 1, 'special_version': None, 'issue_number': 14.0, 'annual': True},
 
 			'Action Comics/Volume 2 (2011)/Action Comics 000 (2012) (4 covers) (digital) (Minutemen-PhD).cbr':
-				{'series': 'Action Comics', 'year': 2012, 'volume_number': 2, 'special_version': None, 'issue_number': 0.0, 'annual': False}
+				{'series': 'Action Comics', 'year': 2012, 'volume_number': 2, 'special_version': None, 'issue_number': 0.0, 'annual': False},
+
+			'Undiscovered Country Volume 2 Issue 3.cbr':
+				{'series': 'Undiscovered Country', 'year': None, 'volume_number': 2, 'special_version': None, 'issue_number': 3.0, 'annual': False},
+
+			'Undiscovered Country Volume 2 Issue 3/Undiscovered Country Volume 2 Issue 3 Cover.jpg':
+				{'series': 'Undiscovered Country', 'year': None, 'volume_number': 2, 'special_version': 'cover', 'issue_number': 3.0, 'annual': False},
+
+			'Iron-Man (1980) Volume 2 One-Shot Cover':
+				{'series': 'Iron Man', 'year': 1980, 'volume_number': 2, 'special_version': 'cover', 'issue_number': None, 'annual': False}
 		}
 		self.run_cases(cases)
 
@@ -196,3 +205,37 @@ class extract_filename_data(unittest.TestCase):
 				{'series': 'Iron Man', 'year': 1950, 'volume_number': 1, 'special_version': None, 'issue_number': 100.0, 'annual': False},
 		}
 		self.run_cases_folder_year(cases)
+
+	def test_special_version(self):
+		cases = {
+			'Superman Lost Volume 2 Issue 3.cbr':
+				{'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': None, 'issue_number': 3.0, 'annual': False},
+
+			'Superman Lost Volume 2.cbr':
+				{'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
+
+			'Superman Lost Volume 2 Issue 3 TPB.cbr':
+				{'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
+
+			'Superman Lost Volume 2 Trade paper BACK.cbr':
+				{'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
+
+			'Superman Lost Volume 2 OS.cbr':
+				{'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'one-shot', 'issue_number': None, 'annual': False},
+
+			'Superman Lost Volume 2 One Shot.cbr':
+				{'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'one-shot', 'issue_number': None, 'annual': False},
+
+			'Superman Lost Volume 2 ONE-SHOT.cbr':
+				{'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'one-shot', 'issue_number': None, 'annual': False},
+
+			'Superman Lost Volume 2 Hc.cbr':
+				{'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'hard-cover', 'issue_number': None, 'annual': False},
+
+			'Superman Lost Volume 2 Hard Cover.cbr':
+				{'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'hard-cover', 'issue_number': None, 'annual': False},
+
+			'Superman Lost Volume 2 Issue 3 HARD-COVER.cbr':
+				{'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'hard-cover', 'issue_number': None, 'annual': False},
+		}
+		self.run_cases(cases)

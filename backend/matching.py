@@ -9,12 +9,14 @@ from __future__ import annotations
 
 import logging
 from re import compile
-from typing import TYPE_CHECKING, Dict, List, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Mapping, Tuple, Union
 
 from backend.blocklist import blocklist_contains
 from backend.db import get_db
 from backend.enums import SpecialVersion
-from backend.helpers import create_range, extract_year_from_date, get_first_of_range
+from backend.helpers import (FilenameData, SearchResultData,
+                             SearchResultMatchData, create_range,
+                             extract_year_from_date, get_first_of_range)
 
 if TYPE_CHECKING:
 	from backend.volumes import VolumeData
@@ -77,7 +79,7 @@ def _match_year(
 	Returns:
 		bool: `True` if the years 'match', otherwise `False`.
 	"""
-	if None in (reference_year, check_year):
+	if reference_year is None or check_year is None:
 		return conservative
 
 	end_border = end_year or reference_year
@@ -91,7 +93,7 @@ def _match_volume_number(
 	conservative: bool = False
 ) -> bool:
 	"""Check if the volume number matches the one of the volume or it's year.
-	If volume is 'volume-as-issue', then the volume number (or range) should 
+	If volume is 'volume-as-issue', then the volume number (or range) should
 	match to an issue number in the volume.
 
 	Args:
@@ -152,7 +154,7 @@ def _match_volume_number(
 		)
 
 		return len(cursor.fetchall()) == 2
-		
+
 	else:
 		cursor.execute("""
 			SELECT 1
@@ -163,7 +165,7 @@ def _match_volume_number(
 			""",
 			(volume_id, check_number)
 		)
-	
+
 		return cursor.fetchone() is not None
 
 
@@ -185,7 +187,7 @@ def _match_special_version(
 		issue_number (Union[None, float, Tuple[float, float]], optional):
 		The issue number to check for if applicable.
 		So that issue_number == 1 and special_version == 'one-shot' | 'hard-cover'
-		will match.	
+		will match.
 			Defaults to None.
 
 	Returns:
@@ -218,7 +220,7 @@ def _match_special_version(
 
 
 def folder_extraction_filter(
-	file_data: dict,
+	file_data: FilenameData,
 	volume_data: VolumeData,
 	end_year: Union[int, None]
 ) -> bool:
@@ -227,7 +229,7 @@ def folder_extraction_filter(
 	This filter is relatively conservative.
 
 	Args:
-		file_data (dict): The output of `backend.files.extract_filename_data()`
+		file_data (FilenameData): The output of `backend.files.extract_filename_data()`
 		for the file.
 		volume_data (VolumeData): The info about the volume.
 		end_year (Union[int, None]): Year of last issue or volume year.
@@ -257,14 +259,14 @@ def folder_extraction_filter(
 
 
 def file_importing_filter(
-	file_data: dict,
+	file_data: FilenameData,
 	volume_data: VolumeData,
 	volume_issues: List[dict]
 ) -> bool:
 	"""Filter for matching files to volumes.
 
 	Args:
-		file_data (dict): The output of files.extract_filename_data() for the file.
+		file_data (FilenameData): The output of files.extract_filename_data() for the file.
 		volume_data (VolumeData): The data of the volume.
 		volume_issues (List[dict]): The issues of the volume.
 
@@ -290,9 +292,9 @@ def file_importing_filter(
 		file_data['year'],
 		issue_number_to_year.get(
 			get_first_of_range(
-				file_data['volume_number']
+				(file_data['volume_number']
 				if volume_data.special_version == SpecialVersion.VOLUME_AS_ISSUE else
-				file_data['issue_number']
+				file_data['issue_number']) or -882005
 			)
 		)
 	)
@@ -310,23 +312,23 @@ def file_importing_filter(
 			matching_year
 		)
 	)
-	
+
 	return is_match
 
 
 def GC_group_filter(
-	processed_desc: dict,
+	processed_desc: FilenameData,
 	volume_id: int,
 	volume_title: str,
 	volume_year: int,
 	last_issue_date: str,
 	special_version: SpecialVersion
 ) -> bool:
-	"""A filter for deciding if a GC download group is a match for the 
+	"""A filter for deciding if a GC download group is a match for the
 	volume/issue.
 
 	Args:
-		processed_desc (dict): Output of files.extract_filename_data() for 
+		processed_desc (FilenameData): Output of files.extract_filename_data() for
 		group title.
 		volume_id (int): The ID of the volume.
 		volume_title (str): The title of the volume.
@@ -350,20 +352,20 @@ def GC_group_filter(
 		processed_desc['volume_number'],
 		conservative=True
 	)
-	
+
 	matching_year = _match_year(
 		volume_year,
 		processed_desc['year'],
 		last_year,
 		conservative=True
 	)
-	
+
 	matching_special_version = _match_special_version(
 		special_version.value,
 		processed_desc['special_version'],
 		processed_desc['issue_number']
 	)
-	
+
 	is_match = (
 		matching_title
 		and matching_volume_number
@@ -371,23 +373,23 @@ def GC_group_filter(
 		and matching_special_version
 		and processed_desc['annual'] == annual
 	)
-	
+
 	return is_match
 
 
 def check_search_result_match(
-	result: dict,
+	result: SearchResultData,
 	volume_id: int,
 	title: str,
 	special_version: SpecialVersion,
-	issue_numbers: Dict[float, int],
-	calculated_issue_number: float=None,
-	year: int=None
-) -> dict:
+	issue_numbers: Mapping[float, Union[int, None]],
+	calculated_issue_number: Union[float, None] = None,
+	year: Union[int, None] = None
+) -> SearchResultMatchData:
 	"""Determine if a result is a match with what is searched for
 
 	Args:
-		result (dict): A result in SearchSources.search_all()
+		result (SearchResultData): A result in SearchSources.search_all()
 
 		title (str): Title of volume
 
@@ -395,20 +397,20 @@ def check_search_result_match(
 
 		special_version (SpecialVersion): What type of special version the volume is.
 
-		issue_numbers (Dict[float, int]): calculated_issue_number to release year
+		issue_numbers (Mapping[float, Union[int, None]]): calculated_issue_number to release year
 		for all issues of volume
 
-		calculated_issue_number (float, optional): The calculated issue number of
+		calculated_issue_number (Union[float, None], optional): The calculated issue number of
 		the issue.
 			Output of `files.process_issue_number()`.
 
 			Defaults to None.
 
-		year (int, optional): The year of the volume.
+		year (Union[int, None], optional): The year of the volume.
 			Defaults to None.
 
 	Returns:
-		dict: A dict with the key `match` having a bool value for if it matches or not and
+		SearchResultMatchData: A dict with the key `match` having a bool value for if it matches or not and
 		the key `match_issue` with the reason for why it isn't a match
 		if that's the case (otherwise `None`).
 	"""
@@ -442,7 +444,7 @@ def check_search_result_match(
 			issue_key = 'issue_number'
 		else:
 			issue_key = 'volume_number'
-		
+
 		issue_number_is_equal = (
 			(
 				# Search result for volume
@@ -467,9 +469,9 @@ def check_search_result_match(
 		result['year'],
 		issue_numbers.get(
 			get_first_of_range(
-				result['volume_number']
+				(result['volume_number']
 				if special_version == SpecialVersion.VOLUME_AS_ISSUE else
-				result['issue_number']
+				result['issue_number']) or -882005
 			)
 		),
 		conservative=True

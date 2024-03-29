@@ -11,7 +11,6 @@ from backend.enums import DownloadState
 from backend.settings import private_settings
 
 filename_magnet_link = compile(r'(?<=&dn=).*?(?=&)', IGNORECASE)
-hash_magnet_link = compile(r'(?<=urn:btih:)\w+?(?=&)', IGNORECASE)
 
 class qBittorrent(BaseTorrentClient):
 	_tokens = ('title', 'base_url', 'username', 'password')
@@ -33,7 +32,7 @@ class qBittorrent(BaseTorrentClient):
 			f'{self.base_url}/api/v2/auth/login',
 			data=data
 		)
-		
+
 		self.torrent_found = False
 
 		return
@@ -42,24 +41,24 @@ class qBittorrent(BaseTorrentClient):
 		magnet_link: str,
 		target_folder: str,
 		torrent_name: Union[str, None]
-	) -> int:
+	) -> str:
 		if torrent_name is not None:
 			magnet_link = filename_magnet_link.sub(torrent_name, magnet_link)
-			
+
 		files = {
 			'urls': (None, magnet_link),
 			'savepath': (None, target_folder),
 			'category': (None, private_settings['torrent_tag'])
 		}
-			
+
 		self.ssn.post(
 			f'{self.base_url}/api/v2/torrents/add',
 			files=files
 		)
-		
-		return hash_magnet_link.search(magnet_link).group(0)
 
-	def get_torrent_status(self, torrent_id: int) -> Union[dict, None]:
+		return magnet_link.split('urn:btih:')[1].split('&')[0]
+
+	def get_torrent_status(self, torrent_id: str) -> Union[dict, None]:
 		r = self.ssn.get(
 			f'{self.base_url}/api/v2/torrents/properties',
 			params={'hash': torrent_id}
@@ -78,7 +77,7 @@ class qBittorrent(BaseTorrentClient):
 
 		elif result['eta'] != 8640000:
 			state = DownloadState.SEEDING_STATE
-		
+
 		else:
 			state = DownloadState.IMPORTING_STATE
 
@@ -95,7 +94,7 @@ class qBittorrent(BaseTorrentClient):
 			'state': state
 		}
 
-	def delete_torrent(self, torrent_id: int, delete_files: bool) -> None:
+	def delete_torrent(self, torrent_id: str, delete_files: bool) -> None:
 		self.ssn.post(
 			f'{self.base_url}/api/v2/torrents/delete',
 			data={
@@ -128,8 +127,8 @@ class qBittorrent(BaseTorrentClient):
 			if auth_request.status_code == 404:
 				return False
 			cookie = auth_request.headers.get('set-cookie')
-			
+
 			return cookie is not None
-		
+
 		except RequestException:
 			return False

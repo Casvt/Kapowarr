@@ -82,7 +82,7 @@ def extract_files_from_folder(
 
 		else:
 			dest = join(volume_data.folder, basename(c))
-		
+
 		rename_file(c, dest)
 		result_append(dest)
 
@@ -101,13 +101,14 @@ def _run_rar(args: List[str]) -> int:
 		int: The exit code of the executable.
 	"""
 	exe = rar_executables[platform]
-	
+
 	return spc([exe, *args])
 
 class FileConverter(ABC):
 	source_format: str
 	target_format: str
 
+	@staticmethod
 	@abstractmethod
 	def convert(file: str) -> Union[str, List[str]]:
 		"""Convert a file from source_format to target_format.
@@ -139,7 +140,7 @@ class ZIPtoCBZ(FileConverter):
 class ZIPtoRAR(FileConverter):
 	source_format = 'zip'
 	target_format = 'rar'
-	
+
 	@staticmethod
 	def convert(file: str) -> str:
 		volume_id = filepath_to_volume_id(file)
@@ -169,7 +170,7 @@ class ZIPtoRAR(FileConverter):
 class ZIPtoCBR(FileConverter):
 	source_format = 'zip'
 	target_format = 'cbr'
-	
+
 	@staticmethod
 	def convert(file: str) -> str:
 		rar_file = ZIPtoRAR.convert(file)
@@ -218,7 +219,7 @@ class CBZtoZIP(FileConverter):
 	source_format = 'cbz'
 	target_format = 'zip'
 
-	@staticmethod	
+	@staticmethod
 	def convert(file: str) -> str:
 		target = splitext(file)[0] + '.zip'
 		rename_file(
@@ -230,7 +231,7 @@ class CBZtoZIP(FileConverter):
 class CBZtoRAR(FileConverter):
 	source_format = 'cbz'
 	target_format = 'rar'
-	
+
 	@staticmethod
 	def convert(file: str) -> str:
 		return ZIPtoRAR.convert(file)
@@ -238,7 +239,7 @@ class CBZtoRAR(FileConverter):
 class CBZtoCBR(FileConverter):
 	source_format = 'cbz'
 	target_format = 'cbr'
-	
+
 	@staticmethod
 	def convert(file: str) -> str:
 		rar_file = ZIPtoRAR.convert(file)
@@ -260,7 +261,7 @@ class RARtoCBR(FileConverter):
 	source_format = 'rar'
 	target_format = 'cbr'
 
-	@staticmethod	
+	@staticmethod
 	def convert(file: str) -> str:
 		target = splitext(file)[0] + '.cbr'
 		rename_file(
@@ -318,7 +319,7 @@ class RARtoCBZ(FileConverter):
 class RARtoFOLDER(FileConverter):
 	source_format = 'rar'
 	target_format = 'folder'
-	
+
 	@staticmethod
 	def convert(file: str) -> List[str]:
 		volume_id = filepath_to_volume_id(file)
@@ -363,7 +364,7 @@ class CBRtoRAR(FileConverter):
 	source_format = 'cbr'
 	target_format = 'rar'
 
-	@staticmethod	
+	@staticmethod
 	def convert(file: str) -> str:
 		target = splitext(file)[0] + '.rar'
 		rename_file(
@@ -375,7 +376,7 @@ class CBRtoRAR(FileConverter):
 class CBRtoZIP(FileConverter):
 	source_format = 'cbr'
 	target_format = 'zip'
-	
+
 	@staticmethod
 	def convert(file: str) -> str:
 		return RARtoZIP.convert(file)
@@ -393,7 +394,7 @@ class CBRtoCBZ(FileConverter):
 class CBRtoFOLDER(FileConverter):
 	source_format = 'cbr'
 	target_format = 'folder'
-	
+
 	@staticmethod
 	def convert(file: str) -> List[str]:
 		return RARtoFOLDER.convert(file)

@@ -14,7 +14,7 @@ from backend.files import folder_is_inside_folder
 
 class RootFolders:
 	cache = {}
-	
+
 	def get_all(self, use_cache: bool=True) -> List[dict]:
 		"""Get all rootfolders
 
@@ -25,7 +25,7 @@ class RootFolders:
 
 		Returns:
 			List[dict]: The list of rootfolders
-		"""		
+		"""
 		if not use_cache or not self.cache:
 			root_folders = get_db(dict).execute(
 				"SELECT id, folder FROM root_folders;"
@@ -49,7 +49,7 @@ class RootFolders:
 
 		Returns:
 			dict: The rootfolder info
-		"""		
+		"""
 		if not use_cache or not self.cache:
 			self.get_all(use_cache=False)
 		root_folder = self.cache.get(root_folder_id)
@@ -96,7 +96,7 @@ class RootFolders:
 
 		logging.debug(f'Adding rootfolder result: {root_folder_id}')
 		return root_folder
-		
+
 	def delete(self, id: int) -> None:
 		"""Delete a rootfolder
 
