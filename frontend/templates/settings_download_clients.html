@@ -92,6 +92,7 @@
 	{{ window(False, "choose-torrent-window", "Choose Torrent Client", choose_content) }}
 
 	{% set add_content %}
+		<p class="error hidden" id="add-error"></p>
 		<form id="add-torrent-form">
 			<table>
 				<tr>
@@ -123,7 +124,7 @@
 	{{ window(False, "add-torrent-window", "Add Torrent Client", add_content, add_submit) }}
 
 	{% set edit_content %}
-		<p class="error hidden">*Client is downloading</p>
+		<p class="error hidden" id="edit-error"></p>
 		<form id="edit-torrent-form">
 			<table>
 				<tr>

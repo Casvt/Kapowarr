@@ -1,7 +1,7 @@
 #-*- coding: utf-8 -*-
 
 from re import IGNORECASE, compile
-from typing import Union
+from typing import Tuple, Union
 
 from requests import Session, post
 from requests.exceptions import RequestException
@@ -110,7 +110,7 @@ class qBittorrent(BaseTorrentClient):
 		username: Union[str, None] = None,
 		password: Union[str, None] = None,
 		api_token: Union[str, None] = None
-	) -> bool:
+	) -> Tuple[bool, str]:
 		try:
 			if username and password:
 				params = {
@@ -125,10 +125,15 @@ class qBittorrent(BaseTorrentClient):
 				data=params
 			)
 			if auth_request.status_code == 404:
-				return False
-			cookie = auth_request.headers.get('set-cookie')
+				return False, "Invalid base URL or version too low; at least v4.1"
+			elif not auth_request.ok:
+				return False, "Invalid instance; not Qbittorrent"
+			auth_success = auth_request.headers.get('set-cookie') is not None
 
-			return cookie is not None
+			if auth_success:
+				return True, None
+			else:
+				return False, "Can't authenticate"
 
 		except RequestException:
-			return False
+			return False, "Can't connect; invalid base URL"

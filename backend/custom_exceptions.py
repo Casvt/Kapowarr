@@ -9,7 +9,7 @@ Note: Not all CE's inherit from CustomException.
 """
 
 import logging
-from typing import Any
+from typing import Any, Union
 
 from backend.enums import BlocklistReason, BlocklistReasonID
 
@@ -289,6 +289,21 @@ class TorrentClientDownloading(Exception):
 			'code': 400
 		}
 
-class TorrentClientNotWorking(CustomException):
+class TorrentClientNotWorking(Exception):
 	"""Torrent client is not working"""
-	api_response = {'error': 'TorrentClientNotWorking', 'result': {}, 'code': 400}
+
+	def __init__(self, description: Union[str, None] = None) -> None:
+		self.desc = description
+		super().__init__(self.desc)
+		logging.warning(
+			f'Failed to connect to torrent client with the following reason: {self.desc}'
+		)
+		return
+
+	@property
+	def api_response(self):
+		return {
+			'error': 'TorrentClientNotWorking',
+			'result': {'description': self.desc},
+			'code': 400
+		}

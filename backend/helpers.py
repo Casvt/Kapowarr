@@ -267,6 +267,11 @@ class DownloadGroup(TypedDict):
 	links: Dict[str, List[str]]
 
 
+class ClientTestResult(TypedDict):
+	success: bool
+	description: Union[None, str]
+
+
 class Singleton(type):
 	_instances = {}
 	def __call__(cls, *args, **kwargs):

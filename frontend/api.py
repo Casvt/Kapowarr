@@ -795,7 +795,7 @@ def api_torrent_clients_test():
 		)
 	}
 	result = TorrentClients.test(**data)
-	return return_api({'result': result})
+	return return_api(result)
 
 @api.route('/torrentclients/<int:id>', methods=['GET', 'PUT', 'DELETE'])
 @error_handler

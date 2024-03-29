@@ -5,7 +5,7 @@ General classes (ABC's, base classes) regarding downloading
 """
 
 from abc import ABC, abstractmethod
-from typing import Sequence, Union
+from typing import Sequence, Tuple, Union
 
 from backend.custom_exceptions import (InvalidKeyValue, KeyNotFound,
                                        TorrentClientDownloading,
@@ -194,7 +194,7 @@ class TorrentClient(ABC):
 		username: Union[str, None],
 		password: Union[str, None],
 		api_token: Union[str, None]
-	) -> bool:
+	) -> Tuple[bool, str]:
 		"""Check if a torrent client is working
 
 		Args:
@@ -204,7 +204,8 @@ class TorrentClient(ABC):
 			api_token (Union[str, None]): The api token to access the client, if set.
 
 		Returns:
-			bool: Whether or not the test succeeded
+			Tuple[bool, str]: Whether or not the test succeeded and the reason
+			for failing if so.
 		"""
 		return
 
@@ -273,8 +274,8 @@ class BaseTorrentClient(TorrentClient):
 			data['password'],
 			data['api_token']
 		)
-		if not test_result:
-			raise TorrentClientNotWorking
+		if not test_result[0]:
+			raise TorrentClientNotWorking(test_result[1])
 
 		cursor.execute("""
 			UPDATE torrent_clients SET

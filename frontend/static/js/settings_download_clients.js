@@ -58,8 +58,7 @@ function loadEditTorrent(api_key, id) {
 	document.querySelector('#test-torrent-edit').classList.remove(
 		'show-success', 'show-fail'
 	)
-	document.querySelector('#edit-torrent-window > div > p.error')
-		.classList.add('hidden');
+	hide([document.querySelector('#edit-error')]);
 
 	fetchAPI(`/torrentclients/${id}`, api_key)
 	.then(client_data => {
@@ -127,6 +126,8 @@ function saveEditTorrent() {
 };
 
 async function testEditTorrent(api_key) {
+	const error = document.querySelector('#edit-error');
+	hide([error]);
 	const form = document.querySelector('#edit-torrent-form tbody');
 	const test_button = document.querySelector('#test-torrent-edit');
 	test_button.classList.remove('show-success', 'show-fail');
@@ -140,13 +141,16 @@ async function testEditTorrent(api_key) {
 	return await sendAPI('POST', '/torrentclients/test', api_key, {}, data)
 	.then(response => response.json())
 	.then(json => {
-		if (json.result.result)
+		if (json.result.success)
 			// Test successful
 			test_button.classList.add('show-success');
 		else
 			// Test failed
 			test_button.classList.add('show-fail');
-		return json.result.result;
+			error.innerText = json.result.description;
+			hide([], [error]);
+
+		return json.result.success;
 	});
 };
 
@@ -160,8 +164,9 @@ function deleteTorrent(api_key) {
 	.catch(e => {
 		if (e.status === 400) {
 			// Client is downloading
-			document.querySelector('#edit-torrent-window > div > p.error')
-				.classList.remove('hidden');
+			const error = document.querySelector('#edit-error');
+			error.innerText = '*Client is downloading';
+			hide([], [error]);
 		};
 	});
 };
@@ -238,6 +243,8 @@ function saveAddTorrent() {
 };
 
 async function testAddTorrent(api_key) {
+	const error = document.querySelector('#add-error');
+	hide([error]);
 	const form = document.querySelector('#add-torrent-form tbody');
 	const test_button = document.querySelector('#test-torrent-add');
 	test_button.classList.remove('show-success', 'show-fail');
@@ -251,13 +258,15 @@ async function testAddTorrent(api_key) {
 	return await sendAPI('POST', '/torrentclients/test', api_key, {}, data)
 	.then(response => response.json())
 	.then(json => {
-		if (json.result.result)
+		if (json.result.success)
 			// Test successful
 			test_button.classList.add('show-success');
 		else
 			// Test failed
 			test_button.classList.add('show-fail');
-		return json.result.result;
+			error.innerText = json.result.description;
+			hide([], [error]);
+		return json.result.success;
 	});
 };
 

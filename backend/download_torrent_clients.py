@@ -17,7 +17,7 @@ from backend.db import get_db
 from backend.download_direct_clients import BaseDownload
 from backend.download_general import TorrentClient
 from backend.enums import BlocklistReason, DownloadState
-from backend.helpers import get_torrent_info
+from backend.helpers import ClientTestResult, get_torrent_info
 from backend.settings import Settings
 from backend.torrent_clients import qBittorrent
 
@@ -41,7 +41,7 @@ class TorrentClients:
 		username: Union[str, None],
 		password: Union[str, None],
 		api_token: Union[str, None]
-	) -> bool:
+	) -> ClientTestResult:
 		"""Test if a client is supported, working and available
 
 		Args:
@@ -63,7 +63,7 @@ class TorrentClients:
 			InvalidKeyValue: One of the parameters has an invalid argument
 
 		Returns:
-			bool: Whether or not the test was successful or not
+			ClientTestResult: Whether or not the test was successful or not
 		"""
 		if not type in client_types:
 			raise InvalidKeyValue('type', type)
@@ -78,7 +78,10 @@ class TorrentClients:
 			password,
 			api_token
 		)
-		return result
+		return ClientTestResult({
+			'success': result[0],
+			'description': result[1]
+		})
 
 	@staticmethod
 	def add(
@@ -140,8 +143,8 @@ class TorrentClients:
 			password,
 			api_token
 		)
-		if not test_result:
-			raise TorrentClientNotWorking
+		if not test_result[0]:
+			raise TorrentClientNotWorking(test_result[1])
 
 		data = {
 			'type': type,
