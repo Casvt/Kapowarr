@@ -303,7 +303,7 @@ function addCredential() {
 		password: document.querySelector('#add-mega .mega-password input').value
 	};
 	usingApiKey().then(api_key => {
-		sendAPI('POST', '/credentials', api_key, data)
+		sendAPI('POST', '/credentials', api_key, {}, data)
 		.then(response => fillCredentials(api_key))
 		.catch(e => {
 			if (e.status === 400)

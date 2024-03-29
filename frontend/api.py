@@ -721,10 +721,15 @@ def api_credentials():
 		return return_api(result)
 
 	elif request.method == 'POST':
-		source = extract_key(request, 'source')
-		email = extract_key(request, 'email')
-		password = extract_key(request, 'password')
-		result = credentials.add(source, email, password)
+		data: dict = request.get_json()
+		for k in ('source', 'email', 'password'):
+			if not k in data:
+				raise KeyNotFound(k)
+		result = credentials.add(
+			data['source'],
+			data['email'],
+			data['password']
+		)
 		return return_api(result, code=201)
 
 @api.route('/credentials/open', methods=['GET'])
