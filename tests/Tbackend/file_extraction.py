@@ -237,5 +237,8 @@ class extract_filename_data(unittest.TestCase):
 
 			'Superman Lost Volume 2 Issue 3 HARD-COVER.cbr':
 				{'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'hard-cover', 'issue_number': None, 'annual': False},
+
+			'Iron Man Vol. 2 #1 – 13 + TPB (1996-1997 + 2006)':
+				{'series': 'Iron Man', 'year': 1996, 'volume_number': 2, 'special_version': None, 'issue_number': (1.0, 13.0), 'annual': False}
 		}
 		self.run_cases(cases)
