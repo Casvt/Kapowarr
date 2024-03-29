@@ -1,7 +1,7 @@
 #-*- coding: utf-8 -*-
 
 import logging
-from json import dumps, loads
+from json import dump, load
 from os import urandom
 from os.path import isdir, join
 from typing import Any
@@ -87,12 +87,15 @@ def update_manifest(url_base: str) -> None:
 	Args:
 		url_base (str): The url base to use in the file.
 	"""
-	with open(folder_path('frontend', 'static', 'json', 'manifest.json'), 'r+') as f:
-		manifest = loads(f.read())
+	filename = folder_path('frontend', 'static', 'json', 'pwa_manifest.json')
+
+	with open(filename, 'r') as f:
+		manifest = load(f)
 		manifest['start_url'] = url_base + '/'
 		manifest['icons'][0]['src'] = f'{url_base}/static/img/favicon.svg'
-		f.seek(0)
-		f.write(dumps(manifest, indent=4))
+
+	with open(filename, 'w') as f:
+		dump(manifest, f, indent=4)
 	return
 
 class Settings(metaclass=Singleton):
