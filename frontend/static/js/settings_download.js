@@ -1,6 +1,5 @@
 function fillSettings(api_key) {
-	fetch(`${url_base}/api/settings?api_key=${api_key}`)
-	.then(response => response.json())
+	fetchAPI('/settings', api_key)
 	.then(json => {
 		document.querySelector('#download-folder-input').value = json.result.download_folder;
 		document.querySelector('#seeding-handling-input').value = json.result.seeding_handling;
@@ -17,16 +16,9 @@ function saveSettings(api_key) {
 		'delete_completed_torrents': document.querySelector('#delete-torrents-input').checked,
 		'service_preference': [...document.querySelectorAll('#pref-table select')].map(e => e.value)
 	};
-	fetch(`${url_base}/api/settings?api_key=${api_key}`, {
-		'method': 'PUT',
-		'body': JSON.stringify(data),
-		'headers': {'Content-Type': 'application/json'}
-	})
-	.then(response => {
-		if (!response.ok) return Promise.reject(response.status);
-	})
+	sendAPI('PUT', '/settings', api_key, {}, data)
 	.catch(e => {
-		if (e === 404) {
+		if (e.status === 404) {
 			document.querySelector('#download-folder-input').classList.add('error-input');
 		} else {
 			console.log(e);
@@ -38,9 +30,7 @@ function saveSettings(api_key) {
 // Empty download folder
 //
 function emptyFolder(api_key) {
-	fetch(`${url_base}/api/activity/folder?api_key=${api_key}`, {
-		'method': 'DELETE'
-	})
+	sendAPI('DELETE', '/activity/folder', api_key)
 	.then(response => {
 		document.querySelector('#empty-download-folder').innerText = 'Done';
 	});
@@ -54,7 +44,7 @@ function fillPref(pref) {
 	for (let i = 0; i < pref.length; i++) {
 		const service = pref[i];
 		const select = selects[i];
-		select.addEventListener('change', updatePrefOrder);
+		select.onchange = updatePrefOrder;
 		pref.forEach(option => {
 			const entry = document.createElement('option');
 			entry.value = option;
@@ -88,6 +78,6 @@ usingApiKey()
 .then(api_key => {
 	fillSettings(api_key);
 
-	addEventListener('#save-button', 'click', e => saveSettings(api_key));
-	addEventListener('#empty-download-folder', 'click', e => emptyFolder(api_key));
+	document.querySelector('#save-button').onclick = e => saveSettings(api_key);
+	document.querySelector('#empty-download-folder').onclick = e => emptyFolder(api_key);
 });

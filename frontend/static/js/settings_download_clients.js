@@ -61,13 +61,11 @@ function loadEditTorrent(api_key, id) {
 	document.querySelector('#edit-torrent-window > div > p.error')
 		.classList.add('hidden');
 
-	fetch(`${url_base}/api/torrentclients/${id}?api_key=${api_key}`)
-	.then(response => response.json())
+	fetchAPI(`/torrentclients/${id}`, api_key)
 	.then(client_data => {
 		const client_type = client_data.result.type;
 		form.dataset.type = client_type;
-		fetch(`${url_base}/api/torrentclients/options?api_key=${api_key}`)
-		.then(response => response.json())
+		fetchAPI('/torrentclients/options', api_key)
 		.then(options => {
 			const client_options = options.result[client_type];
 
@@ -119,11 +117,7 @@ function saveEditTorrent() {
 				password: form.querySelector('#edit-password-input')?.value || null,
 				api_token: form.querySelector('#edit-token-input')?.value || null
 			};
-			fetch(`${url_base}/api/torrentclients/${id}?api_key=${api_key}`, {
-				'method': 'PUT',
-				'headers': {'Content-Type': 'application/json'},
-				'body': JSON.stringify(data)
-			})
+			sendAPI('PUT', `/torrentclients/${id}`, api_key, {}, data)
 			.then(response => {
 				loadTorrentClients(api_key);
 				closeWindow();
@@ -143,11 +137,7 @@ async function testEditTorrent(api_key) {
 		password: form.querySelector('#edit-password-input')?.value || null,
 		api_token: form.querySelector('#edit-token-input')?.value || null,
 	};
-	return await fetch(`${url_base}/api/torrentclients/test?api_key=${api_key}`, {
-		'method': 'POST',
-		'headers': {'Content-Type': 'application/json'},
-		'body': JSON.stringify(data)
-	})
+	return await sendAPI('POST', '/torrentclients/test', api_key, {}, data)
 	.then(response => response.json())
 	.then(json => {
 		if (json.result.result)
@@ -162,16 +152,13 @@ async function testEditTorrent(api_key) {
 
 function deleteTorrent(api_key) {
 	const id = document.querySelector('#edit-torrent-form tbody').dataset.id;
-	fetch(`${url_base}/api/torrentclients/${id}?api_key=${api_key}`, {
-		'method': 'DELETE'
-	})
+	sendAPI('DELETE', `/torrentclients/${id}`, api_key)
 	.then(response => {
-		if (!response.ok) Promise.reject(response.status);
 		loadTorrentClients(api_key);
 		closeWindow();
 	})
 	.catch(e => {
-		if (e === 400) {
+		if (e.status === 400) {
 			// Client is downloading
 			document.querySelector('#edit-torrent-window > div > p.error')
 				.classList.remove('hidden');
@@ -183,13 +170,12 @@ function loadTorrentList(api_key) {
 	const table = document.querySelector('#choose-torrent-list');
 	table.innerHTML = '';
 
-	fetch(`${url_base}/api/torrentclients/options?api_key=${api_key}`)
-	.then(response => response.json())
+	fetchAPI('/torrentclients/options', api_key)
 	.then(json => {
 		Object.keys(json.result).forEach(c => {
 			const entry = document.createElement('button');
 			entry.innerText = c;
-			entry.onclick = (e) => loadAddTorrent(api_key, c);
+			entry.onclick = e => loadAddTorrent(api_key, c);
 			table.appendChild(entry);
 		});
 		showWindow('choose-torrent-window');
@@ -209,8 +195,7 @@ function loadAddTorrent(api_key, type) {
 		'#add-title-input, #add-baseurl-input'
 	).forEach(el => el.value = '');
 
-	fetch(`${url_base}/api/torrentclients/options?api_key=${api_key}`)
-	.then(response => response.json())
+	fetchAPI('/torrentclients/options', api_key)
 	.then(json => {
 		const client_options = json.result[type];
 
@@ -243,11 +228,7 @@ function saveAddTorrent() {
 				password: form.querySelector('#add-password-input')?.value || null,
 				api_token: form.querySelector('#add-token-input')?.value || null
 			};
-			fetch(`${url_base}/api/torrentclients?api_key=${api_key}`, {
-				'method': 'POST',
-				'headers': {'Content-Type': 'application/json'},
-				'body': JSON.stringify(data)
-			})
+			sendAPI('POST', '/torrentclients', api_key, {}, data)
 			.then(response => {
 				loadTorrentClients(api_key);
 				closeWindow();
@@ -267,11 +248,7 @@ async function testAddTorrent(api_key) {
 		password: form.querySelector('#add-password-input')?.value || null,
 		api_token: form.querySelector('#add-token-input')?.value || null,
 	};
-	return await fetch(`${url_base}/api/torrentclients/test?api_key=${api_key}`, {
-		'method': 'POST',
-		'headers': {'Content-Type': 'application/json'},
-		'body': JSON.stringify(data)
-	})
+	return await sendAPI('POST', '/torrentclients/test', api_key, {}, data)
 	.then(response => response.json())
 	.then(json => {
 		if (json.result.result)
@@ -285,8 +262,7 @@ async function testAddTorrent(api_key) {
 };
 
 function loadTorrentClients(api_key) {
-	fetch(`${url_base}/api/torrentclients?api_key=${api_key}`)
-	.then(response => response.json())
+	fetchAPI('/torrentclients', api_key)
 	.then(json => {
 		const table = document.querySelector('#torrent-client-list');
 		document.querySelectorAll('#torrent-client-list > :not(:first-child)')

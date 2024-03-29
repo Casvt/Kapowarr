@@ -651,21 +651,22 @@ usingApiKey()
 	ViewEls.tool_bar.convert.onclick = e => showConvert(api_key);
 	ViewEls.tool_bar.edit.onclick = e => showEdit(api_key);
 
-	addEventListener('#submit-rename', 'click',
-		e => renameVolume(api_key, e.target.dataset.issue_id || null));
+	document.querySelector('#submit-rename').onclick =
+		e => renameVolume(api_key, e.target.dataset.issue_id || null);
 
-	addEventListener('#submit-convert', 'click',
-		e => convertVolume(api_key, e.target.dataset.issue_id || null));
+	document.querySelector('#submit-convert').onclick =
+		e => convertVolume(api_key, e.target.dataset.issue_id || null);
 
-	addEventListener('#issue-rename-selector', 'click',
-		e => showRename(api_key, e.target.dataset.issue_id));
+	document.querySelector('#issue-rename-selector').onclick =
+		e => showRename(api_key, e.target.dataset.issue_id);
 });
 
 ViewEls.tool_bar.delete.onclick = e => showWindow('delete-window');
-addEventListener('#issue-info-selector', 'click', e => showInfoWindow('issue-info'));
-addEventListener('#issue-files-selector', 'click', e => showInfoWindow('issue-files'));
-addEventListener('#selectall-input', 'change', e => toggleAllRenames());
-addEventListener('#selectall-convert-input', 'change', e => toggleAllConverts());
+
+document.querySelector('#issue-info-selector').onclick = e => showInfoWindow('issue-info');
+document.querySelector('#issue-files-selector').onclick = e => showInfoWindow('issue-files');
+document.querySelector('#selectall-input').onchange = e => toggleAllRenames();
+document.querySelector('#selectall-convert-input').onchange = e => toggleAllConverts();
 
 document.querySelector('#edit-form').action = 'javascript:editVolume();';
 document.querySelector('#delete-form').action = 'javascript:deleteVolume();';

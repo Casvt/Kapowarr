@@ -15,7 +15,7 @@ function addQueueEntry(api_key, obj) {
 	title.innerText = obj.title;
 	title.href = obj.page_link;
 
-	entry.querySelector('td:nth-child(3)').innerText = 
+	entry.querySelector('td:nth-child(3)').innerText =
 		obj.source.charAt(0).toUpperCase() + obj.source.slice(1);
 
 	entry.querySelector('button').onclick = e => deleteEntry(obj.id, api_key);
@@ -33,7 +33,7 @@ function updateQueueEntry(obj) {
 		twoDigits(Math.round(obj.speed / 100000) / 10) + 'MB/s';
 	tr.querySelector('td:nth-child(6)').innerText =
 		obj.size === -1
-			? convertSize(obj.progress) 
+			? convertSize(obj.progress)
 			: twoDigits(Math.round(obj.progress * 10) / 10) + '%';
 };
 

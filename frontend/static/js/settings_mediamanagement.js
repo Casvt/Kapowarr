@@ -13,10 +13,9 @@ const inputs = {
 
 //
 // Settings
-// 
+//
 function fillSettings(api_key) {
-	fetch(`${url_base}/api/settings?api_key=${api_key}`)
-	.then(response => response.json())
+	fetchAPI('/settings', api_key)
 	.then(json => {
 		inputs.renaming_input.checked = json.result.rename_downloaded_files;
 		inputs.volume_folder_naming_input.value = json.result.volume_folder_naming;
@@ -28,7 +27,7 @@ function fillSettings(api_key) {
 		inputs.extract_input.checked = json.result.extract_issue_ranges;
 		inputs.issue_padding_input.value = json.result.issue_padding;
 		inputs.volume_padding_input.value = json.result.volume_padding;
-		
+
 		fillConvert(api_key, json.result.format_preference);
 	});
 };
@@ -50,11 +49,7 @@ function saveSettings(api_key) {
 		'issue_padding': parseInt(inputs.issue_padding_input.value),
 		'volume_padding': parseInt(inputs.volume_padding_input.value)
 	};
-	fetch(`${url_base}/api/settings?api_key=${api_key}`, {
-		'method': 'PUT',
-		'body': JSON.stringify(data),
-		'headers': {'Content-Type': 'application/json'}
-	})
+	sendAPI('PUT', '/settings', api_key, {}, data)
 	.then(response => response.json())
 	.then(json => {
 		if (json.error !== null) return Promise.reject(json);
@@ -78,8 +73,7 @@ function saveSettings(api_key) {
 let convert_options = [];
 let convert_preference = [];
 function fillConvert(api_key, convert_pref) {
-	fetch(`${url_base}/api/settings/availableformats?api_key=${api_key}`)
-	.then(response => response.json())
+	fetchAPI('/settings/availableformats', api_key)
 	.then(json => {
 		convert_options = json.result;
 
@@ -135,12 +129,12 @@ function updateConvertList() {
 			const missing_value = convert_preference
 				.filter(f => !used_values.has(f))[0];
 			other_el.value = missing_value;
-			
+
 			convert_preference = getConvertList();
 		};
 		select_container.appendChild(select);
 		entry.appendChild(select_container);
-		
+
 		const delete_container = document.createElement('td');
 		const delete_button = document.createElement('button');
 		delete_button.title = 'Delete format from list';
@@ -179,12 +173,11 @@ function updateConvertList() {
 	};
 };
 
-// 
+//
 // Root folders
-// 
+//
 function fillRootFolder(api_key) {
-	fetch(`${url_base}/api/rootfolder?api_key=${api_key}`)
-	.then(response => response.json())
+	fetchAPI('/rootfolder', api_key)
 	.then(json => {
 		const table = document.querySelector('#root-folder-list');
 		table.innerHTML = '';
@@ -199,8 +192,8 @@ function fillRootFolder(api_key) {
 			const delete_root_folder_container = document.createElement('td');
 			delete_root_folder_container.classList.add('action-column');
 			const delete_root_folder = document.createElement('button');
-			delete_root_folder.addEventListener('click', e => deleteRootFolder(root_folder.id, api_key));
-			delete_root_folder.setAttribute('type', 'button');
+			delete_root_folder.onclick = e => deleteRootFolder(root_folder.id, api_key);
+			delete_root_folder.type = 'button';
 			const delete_root_folder_icon = document.createElement('img');
 			delete_root_folder_icon.src = `${url_base}/static/img/delete.svg`;
 			delete_root_folder.appendChild(delete_root_folder_icon);
@@ -213,7 +206,7 @@ function fillRootFolder(api_key) {
 }
 
 function toggleAddRootFolder(e) {
-	document.querySelector('#folder-error').classList.add('hidden');
+	hide([document.querySelector('#folder-error')]);
 	document.querySelector('#folder-input').value = '';
 	document.querySelector('#add-row').classList.toggle('hidden');
 };
@@ -223,33 +216,24 @@ function addRootFolder(api_key) {
 	const folder = folder_input.value;
 	folder_input.value = '';
 
-	fetch(`${url_base}/api/rootfolder?api_key=${api_key}`, {
-		'method': 'POST',
-		'headers': {'Content-Type': 'application/json'},
-		'body': JSON.stringify({'folder': folder})
-	})
+	sendAPI('POST', '/rootfolder', api_key, {}, {folder: folder})
 	.then(response => {
-		if (!response.ok) return Promise.reject(response.status);
-		
 		fillRootFolder(api_key);
 		toggleAddRootFolder(1);
 	})
 	.catch(e => {
-		if (e === 404) document.querySelector('#folder-error').classList.remove('hidden');
+		if (e.status === 404)
+			hide([], [document.querySelector('#folder-error')]);
 	});
 };
 
 function deleteRootFolder(id, api_key) {
-	fetch(`${url_base}/api/rootfolder/${id}?api_key=${api_key}`, {
-		'method': 'DELETE'
-	})
+	sendAPI('DELETE', `/rootfolder/${id}`, api_key)
 	.then(response => {
-		if (!response.ok) return Promise.reject(response.status);
-		
 		document.querySelector(`tr[data-id="${id}"]`).remove();
 	})
 	.catch(e => {
-		if (e === 400) {
+		if (e.status === 400) {
 			const message = document.createElement('p');
 			message.classList.add('error');
 			message.innerText = 'Root folder is still in use by a volume';
@@ -264,15 +248,15 @@ usingApiKey()
 .then(api_key => {
 	fillSettings(api_key);
 	fillRootFolder(api_key);
-	addEventListener('#save-button', 'click', e => saveSettings(api_key));
-	addEventListener('#add-folder', 'click', e => addRootFolder(api_key));
-	addEventListener('#folder-input', 'keydown', e => e.code === 'Enter' ? addRootFolder(api_key) : null);
+	document.querySelector('#save-button').onclick = e => saveSettings(api_key);
+	document.querySelector('#add-folder').onclick = e => addRootFolder(api_key);
+	document.querySelector('#folder-input').onkeydown = e => e.code === 'Enter' ? addRootFolder(api_key) : null;
 });
 
-addEventListener('#toggle-root-folder', 'click', toggleAddRootFolder);
-addEventListener('#add-convert-button', 'click', e => {
+document.querySelector('#toggle-root-folder').onclick = toggleAddRootFolder;
+document.querySelector('#add-convert-button').onclick = e => {
 	convert_preference.push(
 		document.querySelector('#add-convert-input').value
 	);
 	updateConvertList();
-});
+};

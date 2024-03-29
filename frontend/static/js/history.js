@@ -26,7 +26,7 @@ function fillHistory(api_key) {
 			title.innerText = obj.title;
 			title.href = obj.original_link;
 
-			
+
 			let d = new Date(obj.downloaded_at * 1000);
 			let formatted_date = d.toLocaleString('en-CA').slice(0,10) + ' ' + d.toTimeString().slice(0,5);
 			entry.querySelector('td:last-child').innerText = formatted_date;
