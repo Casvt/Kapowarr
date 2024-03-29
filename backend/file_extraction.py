@@ -32,7 +32,6 @@ issue_regex_snippet = r'(?!\d+(?:th|rd|st|\s?(?:gb|mb)))(?<!\')(?:\d+(?:\.\d{1,2
 
 # Cleaning the filename
 strip_filename_regex = compile(r'\(.*?\)|\[.*?\]|\{.*?\}', IGNORECASE)
-strip_filename_regex_2 = compile(file_extensions, IGNORECASE)
 
 # Supporting languages by translating them
 russian_volume_regex = compile(r'Томa?[\s\.]?(\d+)', IGNORECASE)
@@ -231,7 +230,7 @@ def extract_filename_data(
 
 	is_image_file = filepath.endswith(image_extensions)
 
-	# Only keep filename
+	# filename without .extension
 	filename = basename(filepath)
 	if splitext(filename)[1].lower() in supported_extensions:
 		filename = splitext(filename)[0]
@@ -239,16 +238,7 @@ def extract_filename_data(
 	# Keep stripped version of filename without (), {}, [] and extensions
 	clean_filename = strip_filename_regex.sub(
 		lambda m: " " * len(m.group()), filename
-	)
-	no_ext_clean_filename = strip_filename_regex_2.sub('', clean_filename)
-
-	# Add space before extension for regex matching
-	# If there is no extension, append space to the end
-	stripped_filename_temp = strip_filename_regex_2.sub(r' \1', clean_filename)
-	if stripped_filename_temp == clean_filename:
-		clean_filename += ' '
-	else:
-		clean_filename = stripped_filename_temp
+	) + ' '
 
 	foldername = basename(dirname(filepath))
 	upper_foldername = basename(dirname(dirname(filepath)))
@@ -395,7 +385,7 @@ def extract_filename_data(
 
 		else:
 			if not is_image_file:
-				issue_result = issue_regex_7.search(no_ext_clean_filename)
+				issue_result = issue_regex_7.search(clean_filename)
 				if issue_result:
 					# Issue number found. File starts with issue number
 					# (e.g. Series/Volume N/{issue_number}.ext)
@@ -415,7 +405,7 @@ def extract_filename_data(
 	if series_pos and not is_image_file:
 		# Series name is assumed to be in the filename,
 		# left of all other information
-		series = no_ext_clean_filename[:series_pos - 1]
+		series = clean_filename[:series_pos - 1]
 	else:
 		series_folder_pos = min(
 			all_year_folderpos[0][0], volume_folderpos, issue_folderpos
