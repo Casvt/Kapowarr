@@ -472,11 +472,11 @@ class DownloadHandler:
 
 				if prev_state == DownloadState.QUEUED_STATE:
 					WebSocket().update_queue_status(download)
-					self.queue.remove(download)
 					if isinstance(download, TorrentDownload):
 						download.remove_from_client(delete_files=True)
 						PostProcesserTorrentsComplete.canceled(download)
 					else:
+						self.queue.remove(download)
 						PostProcesser.canceled(download)
 					WebSocket().send_queue_ended(download)
 
