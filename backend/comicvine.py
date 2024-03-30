@@ -322,12 +322,16 @@ class ComicVine:
 			y: str = volume_data['start_year']
 
 			if '/' in y:
-				y = y.split('/')[-1]
+				y = next(
+					(e for e in y.split('/') if len(e) == 4),
+					None
+				)
 
-			y = (y
-				.replace('-', '0')
-				.replace('?', '')
-			)
+			if y:
+				y = (y
+					.replace('-', '0')
+					.replace('?', '')
+				)
 
 			if y and y.isdigit():
 				result['year'] = int(y)
