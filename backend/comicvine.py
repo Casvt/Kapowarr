@@ -27,12 +27,12 @@ from backend.settings import Settings, private_settings
 
 translation_regex = compile(
 	r'^<p>\s*\w+ publication(\.?</p>$|,\s| \(in the \w+ language\)|, translates )|' +
-	r'^<p>\s*published by the \w+ wing of|' + 
-	r'^<p>\s*\w+ translations? of|' + 
+	r'^<p>\s*published by the \w+ wing of|' +
+	r'^<p>\s*\w+ translations? of|' +
 	r'from \w+</p>$|' +
 	r'^<p>\s*published in \w+|' +
 	r'^<p>\s*\w+ language|' +
-	r'^<p>\s*\w+ edition of|' + 
+	r'^<p>\s*\w+ edition of|' +
 	r'^<p>\s*\w+ reprint of|' +
 	r'^<p>\s*\w+ trade collection of',
 	IGNORECASE
@@ -50,7 +50,7 @@ def _clean_description(description: str, short: bool=False) -> str:
 
 	Returns:
 		str: The cleaned description (written in html)
-	"""	
+	"""
 	if not description:
 		return description
 
@@ -59,7 +59,7 @@ def _clean_description(description: str, short: bool=False) -> str:
 	# Remove images
 	for el in soup.find_all(["figure", "img"]):
 		el.decompose()
-	
+
 	if not short:
 		# Remove everything after the first title with list
 		removed_elements = []
@@ -73,7 +73,7 @@ def _clean_description(description: str, short: bool=False) -> str:
 			or el.name in headers):
 				removed_elements.append(el)
 				continue
-			
+
 			if el.name in lists:
 				removed_elements.append(el)
 				prev_sib = el.previous_sibling
@@ -107,11 +107,11 @@ def _clean_description(description: str, short: bool=False) -> str:
 
 class ComicVine:
 	"""Used for interacting with ComicVine
-	"""	
+	"""
 	volume_field_list = ','.join(('deck', 'description', 'id', 'image', 'issues', 'name', 'publisher', 'start_year', 'count_of_issues'))
 	issue_field_list = ','.join(('id', 'issue_number', 'name', 'cover_date', 'description', 'volume'))
 	search_field_list = ','.join(('aliases', 'count_of_issues', 'deck', 'description', 'id', 'image', 'name', 'publisher', 'site_detail_url', 'start_year'))
-	
+
 	def __init__(self, comicvine_api_key: Union[str, None] = None) -> None:
 		"""Start interacting with ComicVine
 
@@ -173,7 +173,7 @@ class ComicVine:
 		Returns:
 			Union[bytes, None]: The content in bytes.
 				`None` in case of error.
-		"""		
+		"""
 		try:
 			async with session.get(url) as response:
 				return await response.content.read()
@@ -250,7 +250,7 @@ class ComicVine:
 
 		Returns:
 			Union[Dict[str, Any], T]: The raw API response or the value of 'default' on error.
-		"""		
+		"""
 		if not url_path.endswith('/'):
 			url_path += '/'
 
@@ -289,7 +289,7 @@ class ComicVine:
 		except (CVRateLimitReached,
 		  		InvalidComicVineApiKey):
 			return False
-	
+
 		return True
 
 	def __format_volume_output(self, volume_data: dict) -> dict:
@@ -328,7 +328,7 @@ class ComicVine:
 				.replace('-', '0')
 				.replace('?', '')
 			)
-			
+
 			if y and y.isdigit():
 				result['year'] = int(y)
 
@@ -358,7 +358,7 @@ class ComicVine:
 
 		Returns:
 			dict: The formatted version
-		"""		
+		"""
 		result = {
 			'comicvine_id': issue_data['id'],
 			'volume_id': int(issue_data['volume']['id']),
@@ -389,10 +389,10 @@ class ComicVine:
 
 		Returns:
 			dict: The metadata of the volume
-		"""	
+		"""
 		id = self.__normalize_cv_id(id)
 		logging.debug(f'Fetching volume data for {id}')
-		
+
 		async with ClientSession() as session:
 			result = await self.__call_api_async(
 				session,
@@ -426,7 +426,7 @@ class ComicVine:
 			List[dict]: The metadata of the volumes
 		"""
 		logging.debug(f'Fetching volume data for {ids}')
-		
+
 		volume_infos = []
 		async with ClientSession() as session:
 			# 10 requests of 100 vol per round
@@ -478,7 +478,7 @@ class ComicVine:
 			List[dict]: The metadata of all the issues inside the volumes
 		"""
 		logging.debug(f'Fetching issue data for volumes {ids}')
-		
+
 		issue_infos = []
 		async with ClientSession() as session:
 			for id_batch in batched(ids, 50):
@@ -513,7 +513,7 @@ class ComicVine:
 							for offset in offset_batch
 						]
 						responses = await gather(*tasks)
-						
+
 						for batch in responses:
 							issue_infos += [
 								self.__format_issue_output(r)
@@ -536,19 +536,19 @@ class ComicVine:
 			List[dict]: The formatted search results
 		"""
 		cursor = get_db()
-		
+
 		results = [self.__format_volume_output(r) for r in results]
 
 		# Mark entries that are already added
-		volume_ids = set(c[0] for c in cursor.execute(f"""
-			SELECT comicvine_id
+		volume_ids: Dict[int, int] = dict(cursor.execute(f"""
+			SELECT comicvine_id, id
 			FROM volumes
 			WHERE {' OR '.join('comicvine_id = ' + str(r['comicvine_id']) for r in results)}
 			LIMIT 50;
 		"""))
 		for result in results:
 			result.update({
-				'already_added': result['comicvine_id'] in volume_ids
+				'already_added': volume_ids.get(result['comicvine_id'])
 			})
 
 		# Sort results (prefer direct title matches and then sort those on volume number)
@@ -574,7 +574,7 @@ class ComicVine:
 
 		Returns:
 			List[dict]: A list with search results
-		"""		
+		"""
 		logging.debug(f'Searching for volumes with the query {query}')
 
 		if query.startswith('4050-') or query.startswith('cv:'):
@@ -613,7 +613,7 @@ class ComicVine:
 
 		Returns:
 			List[dict]: A list with search results
-		"""		
+		"""
 		logging.debug(f'Searching for volumes with the query {query}')
 
 		if query.startswith('4050-') or query.startswith('cv:'):
@@ -644,11 +644,11 @@ class ComicVine:
 					'limit': 50,
 					'field_list': self.search_field_list}
 				))['results']
-			
+
 			except CVRateLimitReached:
 				return []
 
 			if not results:
 				return []
-		
+
 		return self.__process_search_results(query, results)

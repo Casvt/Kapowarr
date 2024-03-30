@@ -37,12 +37,15 @@ const SearchEls = {
 //
 // Searching
 //
-function addAlreadyAdded(title) {
+function addAlreadyAdded(entry, id) {
+	entry.onclick = e => window.location.href = `${url_base}/volumes/${id}`;
+
+	const title = entry.querySelector('h2');
 	const aa_icon = document.createElement('img');
 	aa_icon.src = `${url_base}/static/img/check_circle.svg`;
 	aa_icon.alt = 'Volume is already added';
 	title.appendChild(aa_icon);
-}
+};
 
 function buildResults(results, api_key) {
 	SearchEls.search_results.querySelectorAll('button:not(.filter-bar)').forEach(e => e.remove());
@@ -61,7 +64,7 @@ function buildResults(results, api_key) {
 		entry.dataset._issue_count = result.issue_count;
 
 		// Only allow adding volume if it isn't already added
-		if (!result.already_added)
+		if (result.already_added === null)
 			entry.onclick = e => showAddWindow(result.comicvine_id, api_key);
 
 		entry.querySelector('img').src = result.cover;
@@ -75,8 +78,8 @@ function buildResults(results, api_key) {
 			title.appendChild(year);
 		};
 
-		if (result.already_added)
-			addAlreadyAdded(title);
+		if (result.already_added !== null)
+			addAlreadyAdded(entry, result.already_added);
 
 		const tags = entry.querySelector('.entry-tags');
 
@@ -324,11 +327,12 @@ function addVolume() {
 	usingApiKey()
 	.then(api_key => {
 		sendAPI('POST', '/volumes', api_key, {}, data)
-		.then(response => {
-			const title = document.querySelector(
-				`button[data-comicvine_id="${data.comicvine_id}"] h2`
+		.then(response => response.json())
+		.then(json => {
+			const entry = document.querySelector(
+				`button[data-comicvine_id="${data.comicvine_id}"]`
 			);
-			addAlreadyAdded(title);
+			addAlreadyAdded(entry, json.result.id);
 			closeWindow();
 		})
 		.catch(e => {
