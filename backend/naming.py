@@ -43,9 +43,14 @@ issue_formatting_keys = formatting_keys + (
 	'issue_release_year'
 )
 
-sv_mapping = dict((
+short_sv_mapping: Dict[str, str] = dict((
 	(SpecialVersion.HARD_COVER, 'HC'),
 	(SpecialVersion.ONE_SHOT, 'OS'),
+	(SpecialVersion.TPB, 'TPB')
+))
+full_sv_mapping: Dict[str, str] = dict((
+	(SpecialVersion.HARD_COVER, 'Hard-Cover'),
+	(SpecialVersion.ONE_SHOT, 'One-Shot'),
 	(SpecialVersion.TPB, 'TPB')
 ))
 
@@ -112,6 +117,7 @@ def _get_formatting_data(
 		volume_data['volume_number'] = _volume_number
 
 	settings = Settings()
+	long_special_version = settings['long_special_version']
 	volume_padding = settings['volume_padding']
 	issue_padding = settings['issue_padding']
 
@@ -132,6 +138,11 @@ def _get_formatting_data(
 			str(n).zfill(volume_padding)
 			for n in volume_data['volume_number']
 		))
+
+	if long_special_version:
+		sv_mapping = full_sv_mapping
+	else:
+		sv_mapping = short_sv_mapping
 
 	formatting_data = {
 		'series_name': ((volume_data.get('title') or 'Unknown')

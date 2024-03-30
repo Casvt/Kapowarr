@@ -5,10 +5,11 @@ const inputs = {
 	'file_naming_sv_input': document.querySelector('#file-naming-sv-input'),
 	'file_naming_empty_input': document.querySelector('#file-naming-empty-input'),
 	'volume_as_empty_input': document.querySelector('#volume-as-empty-input'),
-	'convert_input': document.querySelector('#convert-input'),
-	'extract_input': document.querySelector('#extract-input'),
+	'long_sv_input': document.querySelector('#long-sv-input'),
 	'issue_padding_input': document.querySelector('#issue-padding-input'),
-	'volume_padding_input': document.querySelector('#volume-padding-input')
+	'volume_padding_input': document.querySelector('#volume-padding-input'),
+	'convert_input': document.querySelector('#convert-input'),
+	'extract_input': document.querySelector('#extract-input')
 };
 
 //
@@ -23,10 +24,11 @@ function fillSettings(api_key) {
 		inputs.file_naming_sv_input.value = json.result.file_naming_special_version;
 		inputs.file_naming_empty_input.value = json.result.file_naming_empty;
 		inputs.volume_as_empty_input.checked = json.result.volume_as_empty;
-		inputs.convert_input.checked = json.result.convert;
-		inputs.extract_input.checked = json.result.extract_issue_ranges;
+		inputs.long_sv_input.checked = json.result.long_special_version;
 		inputs.issue_padding_input.value = json.result.issue_padding;
 		inputs.volume_padding_input.value = json.result.volume_padding;
+		inputs.convert_input.checked = json.result.convert;
+		inputs.extract_input.checked = json.result.extract_issue_ranges;
 
 		fillConvert(api_key, json.result.format_preference);
 	});
@@ -43,11 +45,12 @@ function saveSettings(api_key) {
 		'file_naming_special_version': inputs.file_naming_sv_input.value,
 		'file_naming_empty': inputs.file_naming_empty_input.value,
 		'volume_as_empty': inputs.volume_as_empty_input.checked,
+		'long_special_version': inputs.long_sv_input.checked,
+		'issue_padding': parseInt(inputs.issue_padding_input.value),
+		'volume_padding': parseInt(inputs.volume_padding_input.value),
 		'convert': inputs.convert_input.checked,
 		'extract_issue_ranges': inputs.extract_input.checked,
 		'format_preference': convert_preference,
-		'issue_padding': parseInt(inputs.issue_padding_input.value),
-		'volume_padding': parseInt(inputs.volume_padding_input.value)
 	};
 	sendAPI('PUT', '/settings', api_key, {}, data)
 	.then(response => response.json())

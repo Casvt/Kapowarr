@@ -31,14 +31,15 @@ default_settings = {
 	'auth_password': '',
 	'log_level': logging.INFO,
 
+	'rename_downloaded_files': True,
 	'volume_folder_naming': join('{series_name}', 'Volume {volume_number} ({year})'),
 	'file_naming': '{series_name} ({year}) Volume {volume_number} Issue {issue_number}',
 	'file_naming_special_version': '{series_name} ({year}) Volume {volume_number} {special_version}',
 	'file_naming_empty': '{series_name} ({year}) Volume {volume_number} Issue {issue_number}',
 	'volume_as_empty': False,
+	'long_special_version': False,
 	'volume_padding': 2,
 	'issue_padding': 3,
-	'rename_downloaded_files': True,
 
 	'service_preference': str(CommaList(
 		first_of_column(supported_source_strings)
@@ -118,7 +119,7 @@ class Settings(metaclass=Singleton):
 
 		bool_values = ('rename_downloaded_files', 'volume_as_empty',
 					'convert', 'extract_issue_ranges',
-					'delete_completed_torrents')
+					'delete_completed_torrents', 'long_special_version')
 		for bv in bool_values:
 			settings[bv] = settings[bv] == 1
 
@@ -161,7 +162,7 @@ class Settings(metaclass=Singleton):
 
 		elif key in ('rename_downloaded_files', 'volumes_as_empty',
 					'convert', 'extract_issue_ranges',
-					'delete_completed_torrents'):
+					'delete_completed_torrents', 'long_special_version'):
 			if not isinstance(value, bool):
 				raise InvalidSettingValue(key, value)
 
