@@ -33,7 +33,7 @@ default_settings = {
 
 	'volume_folder_naming': join('{series_name}', 'Volume {volume_number} ({year})'),
 	'file_naming': '{series_name} ({year}) Volume {volume_number} Issue {issue_number}',
-	'file_naming_tpb': '{series_name} ({year}) Volume {volume_number} TPB',
+	'file_naming_special_version': '{series_name} ({year}) Volume {volume_number} {special_version}',
 	'file_naming_empty': '{series_name} ({year}) Volume {volume_number} Issue {issue_number}',
 	'volume_as_empty': False,
 	'volume_padding': 2,
@@ -129,7 +129,7 @@ class Settings(metaclass=Singleton):
 		return
 
 	def __check_value(self, key: str, value: Any) -> Any:
-		"""Check if value of setting is allowed and covert if needed
+		"""Check if value of setting is allowed and convert if needed
 
 		Args:
 			key (str): Key of setting
@@ -165,11 +165,12 @@ class Settings(metaclass=Singleton):
 			if not isinstance(value, bool):
 				raise InvalidSettingValue(key, value)
 
-		elif key in ('volume_folder_naming','file_naming',
-					'file_naming_tpb','file_naming_empty'):
+		elif key in ('volume_folder_naming', 'file_naming',
+					'file_naming_special_version', 'file_naming_empty'):
 			from backend.naming import check_format
 
-			check_format(value, key)
+			converted_value = value.strip()
+			check_format(converted_value, key)
 
 		elif key == 'log_level' and not isinstance(value, int):
 			raise InvalidSettingValue(key, value)

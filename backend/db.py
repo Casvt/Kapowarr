@@ -18,7 +18,7 @@ from backend.helpers import CommaList, DB_ThreadSafeSingleton
 from backend.logging import set_log_level
 
 __DATABASE_FILEPATH__ = 'db', 'Kapowarr.db'
-__DATABASE_VERSION__ = 18
+__DATABASE_VERSION__ = 19
 __DATABASE_TIMEOUT__ = 10.0
 
 class NoNoneCursor(Cursor):
@@ -617,6 +617,27 @@ def migrate_db(current_db_version: int) -> None:
 
 		current_db_version = s['database_version'] = current_db_version + 1
 		s._save_to_database()
+
+	if current_db_version == 18:
+		# V18 -> V19
+
+		from re import IGNORECASE, compile
+
+		format: str = cursor.execute(
+			"SELECT value FROM config WHERE key = 'file_naming_tpb' LIMIT 1;"
+		).fetchone()[0]
+		cursor.execute("DELETE FROM config WHERE key = 'file_naming_tpb';")
+
+		tpb_replacer = compile(
+			r'\b(tpb|trade[\s\.\-]?paper[\s\.\-]?back)\b',
+			IGNORECASE
+		)
+		format = tpb_replacer.sub('{special_version}', format)
+
+		cursor.execute(
+			"UPDATE config SET value = ? WHERE key = 'file_naming_special_version';",
+			(format,)
+		)
 
 	return
 

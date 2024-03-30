@@ -2,7 +2,7 @@ const inputs = {
 	'renaming_input': document.querySelector('#renaming-input'),
 	'volume_folder_naming_input': document.querySelector('#volume-folder-naming-input'),
 	'file_naming_input': document.querySelector('#file-naming-input'),
-	'file_naming_tpb_input': document.querySelector('#file-naming-tpb-input'),
+	'file_naming_sv_input': document.querySelector('#file-naming-sv-input'),
 	'file_naming_empty_input': document.querySelector('#file-naming-empty-input'),
 	'volume_as_empty_input': document.querySelector('#volume-as-empty-input'),
 	'convert_input': document.querySelector('#convert-input'),
@@ -20,7 +20,7 @@ function fillSettings(api_key) {
 		inputs.renaming_input.checked = json.result.rename_downloaded_files;
 		inputs.volume_folder_naming_input.value = json.result.volume_folder_naming;
 		inputs.file_naming_input.value = json.result.file_naming;
-		inputs.file_naming_tpb_input.value = json.result.file_naming_tpb;
+		inputs.file_naming_sv_input.value = json.result.file_naming_special_version;
 		inputs.file_naming_empty_input.value = json.result.file_naming_empty;
 		inputs.volume_as_empty_input.checked = json.result.volume_as_empty;
 		inputs.convert_input.checked = json.result.convert;
@@ -34,13 +34,13 @@ function fillSettings(api_key) {
 
 function saveSettings(api_key) {
 	inputs.file_naming_input.classList.remove('error-input');
-	inputs.file_naming_tpb_input.classList.remove('error-input');
+	inputs.file_naming_sv_input.classList.remove('error-input');
 	inputs.file_naming_empty_input.classList.remove('error-input');
 	const data = {
 		'rename_downloaded_files': document.querySelector('#renaming-input').checked,
 		'volume_folder_naming': document.querySelector('#volume-folder-naming-input').value,
 		'file_naming': inputs.file_naming_input.value,
-		'file_naming_tpb': inputs.file_naming_tpb_input.value,
+		'file_naming_special_version': inputs.file_naming_sv_input.value,
 		'file_naming_empty': inputs.file_naming_empty_input.value,
 		'volume_as_empty': inputs.volume_as_empty_input.checked,
 		'convert': inputs.convert_input.checked,
@@ -58,8 +58,8 @@ function saveSettings(api_key) {
 		if (e.error === 'InvalidSettingValue') {
 			if (e.result.key === 'file_naming')
 				inputs.file_naming_input.classList.add('error-input');
-			else if (e.result.key === 'file_naming_tpb')
-				inputs.file_naming_tpb_input.classList.add('error-input');
+			else if (e.result.key === 'file_naming_special_version')
+				inputs.file_naming_sv_input.classList.add('error-input');
 			else if (e.result.key === 'file_naming_empty')
 				inputs.file_naming_empty_input.classList.add('error-input');
 		} else

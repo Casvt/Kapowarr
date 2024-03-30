@@ -31,6 +31,10 @@ formatting_keys = (
 	'publisher'
 )
 
+formatting_keys_sv = formatting_keys + (
+	'special_version',
+)
+
 issue_formatting_keys = formatting_keys + (
 	'issue_comicvine_id',
 	'issue_number',
@@ -38,6 +42,12 @@ issue_formatting_keys = formatting_keys + (
 	'issue_release_date',
 	'issue_release_year'
 )
+
+sv_mapping = dict((
+	(SpecialVersion.HARD_COVER, 'HC'),
+	(SpecialVersion.ONE_SHOT, 'OS'),
+	(SpecialVersion.TPB, 'TPB')
+))
 
 filename_cleaner = compile(r'(<|>|(?<!^\w):|\"|\||\?|\*|\x00|(?:\s|\.)+(?=$|\\|/))')
 remove_year_in_image_regex = compile(r'(?:19|20)\d{2}')
@@ -93,7 +103,9 @@ def _get_formatting_data(
 	"""
 	volume_data = _volume_data or asdict(
 		Volume(volume_id, check_existence=True).get_keys(
-			('comicvine_id', 'title', 'year', 'publisher', 'volume_number')
+			('comicvine_id',
+			'title', 'year', 'volume_number',
+			'publisher', 'special_version')
 		)
 	)
 	if _volume_number is not None:
@@ -131,9 +143,10 @@ def _get_formatting_data(
 			.replace(r'\\', '')
 		),
 		'volume_number': volume_number,
-		'comicvine_id': volume_data.get('comicvine_id') or 'Unknown',
-		'year': volume_data.get('year') or 'Unknown',
-		'publisher': volume_data.get('publisher') or 'Unknown'
+		'comicvine_id': volume_data['comicvine_id'] or 'Unknown',
+		'year': volume_data['year'] or 'Unknown',
+		'publisher': volume_data['publisher'] or 'Unknown',
+		'special_version': sv_mapping.get(volume_data['special_version'])
 	}
 
 	if issue_id:
@@ -185,11 +198,11 @@ def generate_volume_folder_name(
 	save_name = make_filename_safe(name)
 	return save_name
 
-def generate_tpb_name(
+def generate_sv_name(
 	volume_id: int,
 	_volume_number: Union[int, Tuple[int, int], None] = None
 ) -> str:
-	"""Generate a TPB name based on the format string
+	"""Generate a special version name based on the format string
 
 	Args:
 		volume_id (int): The id of the volume for which to generate the string.
@@ -199,13 +212,13 @@ def generate_tpb_name(
 			Defaults to None.
 
 	Returns:
-		str: The TPB name
+		str: The name for special versions
 	"""
 	formatting_data = _get_formatting_data(
 		volume_id,
 		_volume_number=_volume_number
 	)
-	format: str = Settings()['file_naming_tpb']
+	format: str = Settings()['file_naming_special_version']
 
 	name = format.format(**formatting_data)
 	save_name = make_filename_safe(name)
@@ -215,7 +228,7 @@ def generate_empty_name(
 	volume_id: int,
 	_volume_number: Union[int, Tuple[int, int], None] = None
 ) -> str:
-	"""Generate a name without issue number or TPB marking
+	"""Generate a name without issue number or sv marking
 
 	Args:
 		volume_id (int): The id of the volume for which to generate the string.
@@ -228,8 +241,12 @@ def generate_empty_name(
 	Returns:
 		str: The empty name
 	"""
-	save_tpb_name = generate_tpb_name(volume_id, _volume_number)
-	save_name = save_tpb_name.replace('tpb', '').replace('TPB', '').strip()
+	save_sv_name = generate_sv_name(volume_id, _volume_number)
+	sv_l = save_sv_name.split(' ')
+	sv_l.reverse()
+	sv_l.remove('None')
+	sv_l.reverse()
+	save_name = ' '.join(sv_l).strip()
 	return save_name
 
 def generate_issue_range_name(
@@ -331,24 +348,31 @@ def check_format(format: str, type: str) -> None:
 	Args:
 		format (str): The format string to check
 		type (str): What type of format string it is
-			Options: 'file_naming', 'file_naming_tpb', 'folder_naming'
+			Options: 'file_naming', 'file_naming_special_version',
+			'file_naming_empty', 'folder_naming'.
 
 	Raises:
 		InvalidSettingValue: Something in the string is invalid
 	"""
 	keys = [fn for _, fn, _, _ in Formatter().parse(format) if fn is not None]
 
-	if type in ('file_naming', 'file_naming_tpb', 'file_naming_empty'):
-		if r'/' in format or r'\\' in format:
-			raise InvalidSettingValue(type, format)
+	if (
+		type in (
+			'file_naming',
+			'file_naming_special_version',
+			'file_naming_empty'
+		)
+		and
+		(r'/' in format or r'\\' in format)
+	):
+		raise InvalidSettingValue(type, format)
 
-		if type == 'file_naming_tpb':
-			naming_keys = formatting_keys
-		else:
-			naming_keys = issue_formatting_keys
-
-	else:
+	if type == 'folder_naming':
 		naming_keys = formatting_keys
+	elif type == 'file_naming_special_version':
+		naming_keys = formatting_keys_sv
+	else:
+		naming_keys = issue_formatting_keys
 
 	for format_key in keys:
 		if not format_key in naming_keys:
@@ -478,8 +502,12 @@ def preview_mass_rename(
 			""",
 			(file,)
 		))
-		if special_version == SpecialVersion.TPB:
-			suggested_name = generate_tpb_name(volume_id)
+		if special_version in (
+			SpecialVersion.TPB,
+			SpecialVersion.ONE_SHOT,
+			SpecialVersion.HARD_COVER
+		):
+			suggested_name = generate_sv_name(volume_id)
 
 		elif (special_version == SpecialVersion.VOLUME_AS_ISSUE
 		and not name_volume_as_issue):

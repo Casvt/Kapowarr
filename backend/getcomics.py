@@ -26,7 +26,7 @@ from backend.helpers import (DownloadGroup, FilenameData,
                              check_overlapping_issues, get_torrent_info)
 from backend.matching import GC_group_filter
 from backend.naming import (generate_empty_name, generate_issue_name,
-                            generate_issue_range_name, generate_tpb_name)
+                            generate_issue_range_name, generate_sv_name)
 from backend.settings import Settings, supported_source_strings
 from backend.volumes import Volume
 
@@ -468,8 +468,12 @@ def _generate_name(
 	Returns:
 		str: The generated name.
 	"""
-	if download_info['special_version'] == SpecialVersion.TPB:
-		return generate_tpb_name(volume_id)
+	if download_info['special_version'] in (
+		SpecialVersion.TPB,
+		SpecialVersion.ONE_SHOT,
+		SpecialVersion.HARD_COVER
+	):
+		return generate_sv_name(volume_id)
 
 	if download_info['special_version'] == SpecialVersion.VOLUME_AS_ISSUE:
 		if name_volume_as_issue:
@@ -488,9 +492,6 @@ def _generate_name(
 				volume_id,
 				download_info['volume_number']
 			)
-
-	if download_info['special_version'] is not None:
-		return generate_empty_name(volume_id)
 
 	if isinstance(download_info['issue_number'], tuple):
 		return generate_issue_range_name(

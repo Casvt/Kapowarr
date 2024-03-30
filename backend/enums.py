@@ -7,6 +7,9 @@ class BaseEnum(Enum):
 	def __eq__(self, other: object) -> bool:
 		return self.value == other
 
+	def __hash__(self) -> int:
+		return id(self.value)
+
 class SeedingHandling(BaseEnum):
 	COMPLETE = 'complete'
 	"Let torrent complete (finish seeding) and then move all files"
