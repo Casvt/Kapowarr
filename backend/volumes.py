@@ -10,7 +10,7 @@ from os import remove
 from os.path import abspath, isdir, join, relpath
 from re import IGNORECASE, compile
 from time import time
-from typing import Any, Dict, Iterable, List, Sequence, Tuple, Union
+from typing import Any, Dict, Iterable, List, Sequence, Union
 
 from backend.comicvine import ComicVine
 from backend.custom_exceptions import (InvalidKeyValue, IssueNotFound,
@@ -46,18 +46,26 @@ def determine_special_version(
 	Returns:
 		SpecialVersion: The result.
 	"""
-	if os_regex.search(volume_title):
-		return SpecialVersion.ONE_SHOT
+	issue_count = len(issue_titles)
 
-	if issue_titles:
-		if (issue_titles[0] or '').lower() == 'hc':
+	if issue_count and all(
+		vol_regex.search(title or '')
+		for title in issue_titles
+	):
+		return SpecialVersion.VOLUME_AS_ISSUE
+
+	if issue_count == 1:
+		if os_regex.search(volume_title):
+			return SpecialVersion.ONE_SHOT
+
+		if hc_regex.search(volume_title):
 			return SpecialVersion.HARD_COVER
 
-		if all(
-			vol_regex.search(title or '')
-			for title in issue_titles
-		):
-			return SpecialVersion.VOLUME_AS_ISSUE
+		if (issue_titles[0] or '').lower() in ('hc', 'hard-cover', 'hard cover'):
+			return SpecialVersion.HARD_COVER
+
+		if (issue_titles[0] or '').lower() in ('os', 'one-shot', 'one shot'):
+			return SpecialVersion.ONE_SHOT
 
 	if volume_description and len(split_regex.split(volume_description)) == 1:
 		# Description is only one sentence, so it's allowed to
@@ -71,10 +79,10 @@ def determine_special_version(
 		if hc_regex.search(volume_description):
 			return SpecialVersion.HARD_COVER
 
-	if len(issue_titles) == 1:
+	if issue_count == 1:
 		return SpecialVersion.TPB
-
-	return SpecialVersion.NORMAL
+	else:
+		return SpecialVersion.NORMAL
 
 #=====================
 # Main issue class
