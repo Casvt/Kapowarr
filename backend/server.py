@@ -4,25 +4,29 @@
 Setting up, running and shutting down the API and web-ui
 """
 
+from __future__ import annotations
+
 import logging
-from os import urandom
-from threading import current_thread
+from os import execv, urandom
+from sys import argv
+from threading import Timer, current_thread
+from typing import TYPE_CHECKING, NoReturn
 
 from flask import Flask, render_template, request
 from waitress import create_server
-from waitress.task import ThreadedTaskDispatcher as OldThreadedTaskDispatcher
+from waitress.task import ThreadedTaskDispatcher as TTD
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
 from backend.db import DBConnection, close_db
 from backend.files import folder_path
-from backend.helpers import DB_ThreadSafeSingleton, WebSocket
+from backend.helpers import DB_ThreadSafeSingleton, Singleton, WebSocket
 from backend.settings import private_settings
-from frontend.api import api
-from frontend.ui import ui, ui_vars
 
-__API_PREFIX__ = '/api'
+if TYPE_CHECKING:
+	from waitress.server import TcpWSGIServer
 
-class ThreadedTaskDispatcher(OldThreadedTaskDispatcher):
+
+class ThreadedTaskDispatcher(TTD):
 	def handler_thread(self, thread_no: int) -> None:
 		super().handler_thread(thread_no)
 
@@ -40,95 +44,163 @@ class ThreadedTaskDispatcher(OldThreadedTaskDispatcher):
 		cancel_pending: bool = True,
 		timeout: int = 5
 	) -> bool:
+		print()
 		logging.info('Shutting down Kapowarr...')
-		WebSocket().request_disconnect()
+
+		ws = WebSocket()
+		if '/' in ws.server.manager.rooms:
+			for sid in tuple(ws.server.manager.rooms['/'][None]):
+				ws.server.disconnect(sid)
+
 		result = super().shutdown(cancel_pending, timeout)
 		DBConnection(20.0).close()
 		return result
 
-def create_app() -> Flask:
-	"""Creates an flask app instance that can be used to start a web server
 
-	Returns:
-		Flask: The app instance
-	"""
-	app = Flask(
-		__name__,
-		template_folder=folder_path('frontend','templates'),
-		static_folder=folder_path('frontend','static'),
-		static_url_path='/static'
-	)
-	app.config['SECRET_KEY'] = urandom(32)
-	app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
-	app.config['JSON_SORT_KEYS'] = False
+class Server(metaclass=Singleton):
+	api_prefix = "/api"
 
-	WebSocket().init_app(
-		app,
-		path=f'{__API_PREFIX__}/socket.io',
-		cors_allowed_origins='*',
-		async_mode='threading',
-		transports='polling'
-	)
+	def __init__(self) -> None:
+		self.do_restart = False
+		self.url_base = ''
+		return
 
-	# Add error handlers
-	@app.errorhandler(404)
-	def not_found(e):
-		if request.path.startswith(__API_PREFIX__):
-			return {'error': 'NotFound', 'result': {}}, 404
-		return render_template('page_not_found.html')
+	def create_app(self) -> None:
+		"""Creates an flask app instance that can be used to start a web server"""
 
-	@app.errorhandler(400)
-	def bad_request(e):
-		return {'error': 'BadRequest', 'result': {}}, 400
+		from frontend.api import api
+		from frontend.ui import ui
 
-	@app.errorhandler(405)
-	def method_not_allowed(e):
-		return {'error': 'MethodNotAllowed', 'result': {}}, 405
+		app = Flask(
+			__name__,
+			template_folder=folder_path('frontend', 'templates'),
+			static_folder=folder_path('frontend', 'static'),
+			static_url_path='/static'
+		)
+		app.config['SECRET_KEY'] = urandom(32)
+		app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
+		app.config['JSON_SORT_KEYS'] = False
 
-	@app.errorhandler(500)
-	def internal_error(e):
-		return {'error': 'InternalError', 'result': {}}, 500
+		ws = WebSocket()
+		ws.init_app(
+			app,
+			path=f'{self.api_prefix}/socket.io',
+			cors_allowed_origins='*',
+			async_mode='threading',
+			transports='polling'
+		)
 
-	# Add endpoints
-	app.register_blueprint(ui)
-	app.register_blueprint(api, url_prefix=__API_PREFIX__)
+		# Add error handlers
+		@app.errorhandler(404)
+		def not_found(e):
+			if request.path.startswith(self.api_prefix):
+				return {'error': 'NotFound', 'result': {}}, 404
+			return render_template('page_not_found.html')
 
-	# Setup db handling
-	app.teardown_appcontext(close_db)
+		@app.errorhandler(400)
+		def bad_request(e):
+			return {'error': 'BadRequest', 'result': {}}, 400
 
-	return app
+		@app.errorhandler(405)
+		def method_not_allowed(e):
+			return {'error': 'MethodNotAllowed', 'result': {}}, 405
 
-def set_url_base(app: Flask, url_base: str) -> None:
-	"""Change the URL base of the server.
+		@app.errorhandler(500)
+		def internal_error(e):
+			return {'error': 'InternalError', 'result': {}}, 500
 
-	Args:
-		app (Flask): The `Flask` instance to change the URL base of.
-		url_base (str): The desired URL base to set it to.
-	"""
-	app.config['APPLICATION_ROOT'] = url_base
-	app.wsgi_app = DispatcherMiddleware(Flask(__name__), {url_base: app.wsgi_app})
-	ui_vars.update({'url_base': url_base})
-	return
+		# Add endpoints
+		app.register_blueprint(ui)
+		app.register_blueprint(api, url_prefix=self.api_prefix)
 
-def create_waitress_server(app: Flask, host: str, port: int):
-	"""Create a waitress server with a Flask instance.
+		# Setup db handling
+		app.teardown_appcontext(close_db)
 
-	Args:
-		app (Flask): The `Flask` instance to build the server for.
-		host (str): Where to host the server on (e.g. `0.0.0.0`).
-		port (int): The port to host the server on (e.g. `5656`).
+		self.app = app
+		return
 
-	Returns:
-		TcpWSGIServer: The waitress server instance.
-	"""
-	dispatcher = ThreadedTaskDispatcher()
-	dispatcher.set_thread_count(private_settings['hosting_threads'])
+	def set_url_base(self, url_base: str) -> None:
+		"""Change the URL base of the server.
 
-	server = create_server(
-		app,
-		_dispatcher=dispatcher,
-		host=host,
-		port=port,
-		threads=private_settings['hosting_threads']
-	)
-	return server
+		Args:
+			url_base (str): The desired URL base to set it to.
+		"""
+		self.app.config['APPLICATION_ROOT'] = url_base
+		self.app.wsgi_app = DispatcherMiddleware(
+			Flask(__name__),
+			{url_base: self.app.wsgi_app}
+		)
+		self.url_base = url_base
+		return
+
+	def __create_waitress_server(self, host: str, port: int) -> TcpWSGIServer:
+		"""From the `Flask` instance created in `self.create_app()`, create
+		a waitress server instance.
+
+		Args:
+			host (str): Where to host the server on (e.g. `0.0.0.0`).
+			port (int): The port to host the server on (e.g. `5656`).
+
+		Returns:
+			TcpWSGIServer: The waitress server instance.
+		"""
+		dispatcher = ThreadedTaskDispatcher()
+		dispatcher.set_thread_count(private_settings['hosting_threads'])
+
+		server = create_server(
+			self.app,
+			_dispatcher=dispatcher,
+			host=host,
+			port=port,
+			threads=private_settings['hosting_threads']
+		)
+		return server
+
+	def run(self, host: str, port: int) -> None:
+		"""Start the webserver.
+
+		Args:
+			host (str): The host to bind to.
+			port (int): The port to listen on.
+		"""
+		self.server = self.__create_waitress_server(host, port)
+		logging.info(f'Kapowarr running on http://{host}:{port}{self.url_base}')
+		self.server.run()
+
+		return
+
+	def __shutdown_thread_function(self) -> None:
+		"""Shutdown waitress server. Intended to be run in a thread.
+		"""
+		self.server.task_dispatcher.shutdown()
+		self.server.close()
+		self.server._map.clear()
+		return
+
+	def shutdown(self) -> None:
+		"""Stop the waitress server. Starts a thread that
+		shuts down the server.
+		"""
+		t = Timer(1.0, self.__shutdown_thread_function)
+		t.name = "InternalStateHandler"
+		t.start()
+		return
+
+	def restart(self) -> None:
+		"""Same as `self.shutdown()`, but restart instead of shutting down.
+		"""
+		self.do_restart = True
+		self.shutdown()
+		return
+
+	def handle_restart(self) -> NoReturn:
+		"""Restart the interpreter.
+
+		Returns:
+			NoReturn: No return because it replaces the interpreter.
+		"""
+		logging.info('Restarting Kapowarr')
+		from Kapowarr import __file__ as k_file
+		execv(folder_path(k_file), [argv[0]])
+
+SERVER = Server()

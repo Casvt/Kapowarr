@@ -6,8 +6,12 @@ main > div {
 h2 {
 	font-size: 2rem;
 	border-bottom: 1px solid var(--border-color);
-	margin-block: 1rem;
+	margin-bottom: 1rem;
 	font-weight: 500;
+}
+
+section:not(:first-of-type) h2 {
+	margin-top: 1rem;
 }
 
 .container {
@@ -40,7 +44,7 @@ h2 {
 	gap: 1rem;
 }
 
-.link-list > a {
+.link-list > :where(a, button) {
 	display: flex;
 	justify-content: center;
 	align-items: center;
@@ -57,7 +61,7 @@ h2 {
 }
 
 @media (max-width: 720px) {
-	.link-list > a {
+	.link-list > :where(a, button) {
 		flex-grow: 1;
 	}
 }

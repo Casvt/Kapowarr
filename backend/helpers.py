@@ -367,13 +367,6 @@ class DictKeyedDict(dict):
 # It's more logical to have this class in the server.py file,
 # but then we have an import loop so this is the second-best file...
 class WebSocket(SocketIO, metaclass=Singleton):
-	def request_disconnect(self) -> None:
-		"Request the clients to disconnect"
-		self.emit(
-			SocketEvent.DISCONNECT.value
-		)
-		return
-
 	def send_task_added(self, task: Task) -> None:
 		"""Send a message stating a task that has been added
 		to the queue.

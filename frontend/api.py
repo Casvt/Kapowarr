@@ -39,6 +39,7 @@ from backend.naming import (generate_volume_folder_name, mass_rename,
                             preview_mass_rename)
 from backend.root_folders import RootFolders
 from backend.search import manual_search
+from backend.server import SERVER
 from backend.settings import Settings, about_data
 from backend.tasks import (Task, TaskHandler, delete_task_history,
                            get_task_history, get_task_planning, task_library)
@@ -312,6 +313,20 @@ def api_task(task_id: int):
 	elif request.method == 'DELETE':
 		task_handler.remove(task_id)
 		return return_api({})
+
+@api.route('/system/power/shutdown', methods=['POST'])
+@error_handler
+@auth
+def api_shutdown():
+	SERVER.shutdown()
+	return return_api({})
+
+@api.route('/system/power/restart', methods=['POST'])
+@error_handler
+@auth
+def api_restart():
+	SERVER.restart()
+	return return_api({})
 
 #=====================
 # Settings

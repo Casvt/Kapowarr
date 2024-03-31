@@ -89,7 +89,7 @@ const images = {
 const task_to_button = {};
 function mapButtons(id) {
 	if (window.location.pathname === '/' ||
-		window.location.pathname === url_base) {
+		window.location.pathname === (url_base + '/')) {
 		task_to_button['search_all'] = {
 			'button': document.querySelector('#searchall-button'),
 			'icon': `${url_base}/static/img/search.svg`,
@@ -214,11 +214,11 @@ function connectToWebSocket() {
 		autoConnect: false
 	});
 	socket.on('connect', () => console.log('Connected to WebSocket'));
-	socket.on('disconnect', () => console.log('Disconnected from WebSocket'));
-	socket.on('request_disconnect', () => {
-		console.log('Disconnecting from WebSocket');
-		socket.disconnect();
+	socket.on('disconnect', () => {
+		console.log('Disconnected from WebSocket')
+		setTimeout(() => window.location.reload(), 500);
 	});
+
 	socket.on('task_added', handleTaskAdded);
 	socket.on('task_ended', handleTaskRemoved);
 	socket.on('task_status', data => setTaskMessage(data.message));
