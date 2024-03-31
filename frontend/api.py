@@ -468,8 +468,15 @@ def api_volumes():
 		if root_folder_id is None: raise KeyNotFound('root_folder_id')
 		monitor = data.get('monitor', True)
 		volume_folder = data.get('volume_folder') or None
+		auto_search = data.get('auto_search', False)
 
-		volume_id = library.add(comicvine_id, root_folder_id, monitor, volume_folder)
+		volume_id = library.add(
+			comicvine_id,
+			root_folder_id,
+			monitor,
+			volume_folder,
+			auto_search
+		)
 		volume_info = library.get_volume(volume_id).get_public_keys()
 		return return_api(volume_info, code=201)
 

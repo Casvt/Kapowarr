@@ -46,7 +46,7 @@
 
 .window-header,
 .window-footer {
-	height: 4.5rem;
+	min-height: 4.5rem;
 	display: flex;
 	align-items: center;
 	font-size: .8rem;
@@ -122,7 +122,6 @@
 }
 
 .window-footer button {
-	height: 2rem;
 	padding: .5rem 1rem;
 	border-radius: 2px;
 	color: var(--light-color);

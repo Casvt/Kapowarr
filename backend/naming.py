@@ -154,10 +154,10 @@ def _get_formatting_data(
 			.replace(r'\\', '')
 		),
 		'volume_number': volume_number,
-		'comicvine_id': volume_data['comicvine_id'] or 'Unknown',
-		'year': volume_data['year'] or 'Unknown',
-		'publisher': volume_data['publisher'] or 'Unknown',
-		'special_version': sv_mapping.get(volume_data['special_version'])
+		'comicvine_id': volume_data.get('comicvine_id') or 'Unknown',
+		'year': volume_data.get('year') or 'Unknown',
+		'publisher': volume_data.get('publisher') or 'Unknown',
+		'special_version': sv_mapping.get(volume_data.get('special_version'))
 	}
 
 	if issue_id:

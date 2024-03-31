@@ -14,7 +14,7 @@ from backend.custom_exceptions import (InvalidComicVineApiKey,
                                        TaskNotDeletable, TaskNotFound)
 from backend.db import get_db
 from backend.download_queue import DownloadHandler
-from backend.helpers import WebSocket
+from backend.helpers import Singleton, WebSocket
 from backend.search import auto_search
 from backend.volumes import Issue, Volume, refresh_and_scan
 
@@ -70,7 +70,7 @@ class Task(ABC):
 #=====================
 class AutoSearchIssue(Task):
 	"Do an automatic search for an issue"
-  
+
 	stop = False
 	message = ''
 	action = 'auto_search_issue'
@@ -193,7 +193,7 @@ class UpdateAll(Task):
 
 class SearchAll(Task):
 	"Trigger an automatic search for each volume in the library"
-	
+
 	stop = False
 	message = ''
 	action = 'search_all'
@@ -227,7 +227,9 @@ class SearchAll(Task):
 # Only works for classes that directly inherit from Task
 task_library: Dict[str, Task] = {c.action: c for c in Task.__subclasses__()}
 
-class TaskHandler:
+class TaskHandler(metaclass=Singleton):
+	"Note: Singleton"
+
 	queue: List[dict] = []
 	task_interval_waiter: Timer = None
 	def __init__(self, context, download_handler: DownloadHandler) -> None:
@@ -388,7 +390,7 @@ class TaskHandler:
 
 	def stop_handle(self) -> None:
 		"Stop the task handler"
-    
+
 		logging.debug('Stopping task thread')
 		self.task_interval_waiter.cancel()
 		if self.queue:

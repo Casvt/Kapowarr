@@ -1240,7 +1240,8 @@ class Library:
 		comicvine_id: str,
 		root_folder_id: int,
 		monitor: bool = True,
-		volume_folder: Union[str, None] = None
+		volume_folder: Union[str, None] = None,
+		auto_search: bool = False
 	) -> int:
 		"""Add a volume to the library
 
@@ -1255,6 +1256,10 @@ class Library:
 
 			volume_folder (Union[str, None], optional): Custom volume folder.
 				Defaults to None.
+
+			auto_search (bool, optional): Start an auto search for the volume after
+			adding it.
+				Defaults to False.
 
 		Raises:
 			RootFolderNotFound: The root folder with the given id was not found
@@ -1357,6 +1362,14 @@ class Library:
 				monitored
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		""", issue_list)
+
+		scan_files(volume_id)
+
+		if auto_search:
+			from backend.tasks import AutoSearchVolume, TaskHandler
+			task = AutoSearchVolume(volume_id)
+			cursor.connection.commit()
+			TaskHandler().add(task)
 
 		logging.info(f'Added volume with comicvine id {comicvine_id} and id {volume_id}')
 		return volume_id

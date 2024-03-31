@@ -26,7 +26,7 @@ def Kapowarr() -> None:
 
 	with app.app_context():
 		setup_db()
-		
+
 		settings = Settings()
 		url_base = settings['url_base']
 		set_url_base(app, url_base)

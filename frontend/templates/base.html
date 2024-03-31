@@ -167,7 +167,7 @@
 	</button>
 {% endmacro %}
 
-{% macro window(wide_window, id, title, content, save_button='', loading_id='') %}
+{% macro window(wide_window, id, title, content, save_button='', loading_id='', cancel=True) %}
 	<!-- {{ title }} -->
 	<section
 		id="{{ id }}"
@@ -183,7 +183,9 @@
 			{{ content }}
 		</div>
 		<div class="window-footer">
-			<button class="cancel-window">Cancel</button>
+			{% if cancel == True %}
+				<button class="cancel-window">Cancel</button>
+			{% endif %}
 			{{ save_button }}
 		</div>
 	</section>

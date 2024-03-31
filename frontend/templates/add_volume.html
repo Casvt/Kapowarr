@@ -72,10 +72,12 @@
 	{% endset %}
 
 	{% set add_submit %}
+		<label for="auto-search-input">Start search for missing volume</label>
+		<input type="checkbox" id="auto-search-input">
 		<button id="add-volume" type="submit" form="add-form">Add Volume</button>
 	{% endset %}
 
-	{{ window(False, "add-window", "Add volume", add_content, add_submit, "loading-window") }}
+	{{ window(False, "add-window", "Add volume", add_content, add_submit, "loading-window", False) }}
 
 {% endblock windows %}
 
