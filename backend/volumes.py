@@ -7,7 +7,7 @@ from asyncio import run
 from dataclasses import dataclass
 from io import BytesIO
 from os import remove
-from os.path import abspath, isdir, join, relpath
+from os.path import abspath, dirname, isdir, join, relpath
 from re import IGNORECASE, compile
 from time import time
 from typing import Any, Dict, Iterable, List, Sequence, Union
@@ -507,7 +507,8 @@ class _VolumeBackend:
 		for old_name, new_name in file_changes:
 			rename_file(
 				old_name,
-				new_name
+				new_name,
+				True
 			)
 		cursor.executemany(
 			"UPDATE files SET filepath = ? WHERE filepath = ?",
@@ -570,7 +571,8 @@ class _VolumeBackend:
 		for old_name, new_name in file_changes:
 			rename_file(
 				old_name,
-				new_name
+				new_name,
+				True
 			)
 		get_db().executemany(
 			"UPDATE files SET filepath = ? WHERE filepath = ?",
@@ -805,6 +807,7 @@ class Volume(_VolumeBackend):
 		if delete_folder:
 			for f in self.get_files():
 				remove(f)
+				delete_empty_folders(dirname(f))
 
 			delete_empty_folders(
 				self['folder'],
@@ -854,13 +857,13 @@ def scan_files(volume_id: int) -> None:
 	# so convert to set for speed improvement.
 	volume_files = set(volume.get_files())
 
-	if not isdir(volume_data.folder): # type: ignore
-		root_folder = RootFolders()[volume_data.root_folder] # type: ignore
+	if not isdir(volume_data.folder):
+		root_folder = RootFolders()[volume_data.root_folder]
 		create_volume_folder(root_folder, volume_id)
 
 	bindings = []
 	folder_contents = list_files(
-		folder=volume_data.folder, # type: ignore
+		folder=volume_data.folder,
 		ext=supported_extensions
 	)
 	for file in folder_contents:

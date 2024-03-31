@@ -7,7 +7,7 @@ The (re)naming of folders and media
 import logging
 from dataclasses import asdict
 from os import listdir
-from os.path import basename, dirname, isdir, isfile, join, splitext
+from os.path import basename, dirname, isdir, isfile, join, sep, splitext
 from re import compile, escape, match
 from string import Formatter
 from typing import Any, Dict, List, Tuple, Union
@@ -367,17 +367,6 @@ def check_format(format: str, type: str) -> None:
 	"""
 	keys = [fn for _, fn, _, _ in Formatter().parse(format) if fn is not None]
 
-	if (
-		type in (
-			'file_naming',
-			'file_naming_special_version',
-			'file_naming_empty'
-		)
-		and
-		(r'/' in format or r'\\' in format)
-	):
-		raise InvalidSettingValue(type, format)
-
 	if type == 'folder_naming':
 		naming_keys = formatting_keys
 	elif type == 'file_naming_special_version':
@@ -430,7 +419,7 @@ def same_name_indexing(
 						f
 					)
 				),
-				[splitext(f)[0] for f in listdir(folder)]
+				[splitext(f)[0] for f in listdir(folder) if isfile(f)]
 			)
 		)
 
@@ -623,20 +612,18 @@ def mass_rename(
 
 	volume = Volume(volume_id)
 	root_folder = RootFolders()[volume['root_folder']]
+	vf_format: str = Settings()['volume_folder_naming']
 
 	if not issue_id and renames:
 		# Update volume folder in case it gets renamed
-		if renames[0]['after'].endswith(image_extensions):
-			new_volume_folder = dirname(dirname(renames[0]['after']))
-		else:
-			new_volume_folder = dirname(renames[0]['after'])
-
-		volume['folder'] = new_volume_folder
+		volume['folder'] = sep.join(
+			renames[0]['after'].split(sep)[
+				:len(join(root_folder, vf_format).split(sep))
+			]
+		)
 
 	for r in renames:
-		rename_file(r['before'], r['after'])
-		if r['before'].endswith(image_extensions):
-			delete_empty_folders(dirname(r['before']), root_folder)
+		rename_file(r['before'], r['after'], True)
 
 	cursor.executemany(
 		"UPDATE files SET filepath = ? WHERE filepath = ?;",

@@ -6,7 +6,7 @@ Used when downloading from GC.
 """
 
 import logging
-from os.path import basename, join, splitext
+from os.path import basename, join, sep, splitext
 from re import IGNORECASE, compile
 from time import perf_counter
 from urllib.parse import unquote_plus
@@ -152,7 +152,7 @@ class DirectDownload(BaseDownload):
 			r.headers.get('Content-Disposition', ''),
 			r.url
 		)
-		return join(folder, self.title + extension)
+		return join(folder, '_'.join(self.title.split(sep)) + extension)
 
 	def run(self) -> None:
 		self.state = DownloadState.DOWNLOADING_STATE
@@ -279,7 +279,7 @@ class MegaDownload(BaseDownload):
 		"""
 		folder = Settings()['download_folder']
 		extension = self.__extract_extension()
-		return join(folder, self._filename_body + extension)
+		return join(folder, join(folder, '_'.join(self.title.split(sep)) + extension))
 
 	def run(self) -> None:
 		"""

@@ -3,7 +3,7 @@
 import logging
 from json import dump, load
 from os import urandom
-from os.path import isdir, join
+from os.path import isdir, join, sep
 from typing import Any
 
 from backend.custom_exceptions import (FolderNotFound, InvalidSettingKey,
@@ -170,7 +170,7 @@ class Settings(metaclass=Singleton):
 					'file_naming_special_version', 'file_naming_empty'):
 			from backend.naming import check_format
 
-			converted_value = value.strip()
+			converted_value = value.strip().strip(sep)
 			check_format(converted_value, key)
 
 		elif key == 'log_level' and not isinstance(value, int):

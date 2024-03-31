@@ -218,13 +218,20 @@ def create_volume_folder(
 	return volume_folder
 
 
-def rename_file(before: str, after: str) -> None:
+def rename_file(
+	before: str,
+	after: str,
+	delete_empty_folder: bool = False
+) -> None:
 	"""Rename a file, taking care of new folder locations and
 	the possible complications with files on OS'es.
 
 	Args:
 		before (str): The current filepath of the file.
 		after (str): The new desired filepath of the file.
+		delete_empty_folder (bool, optional): Delete the empty folders
+		that the original file was in.
+			Defaults to False.
 	"""
 	if folder_is_inside_folder(before, after):
 		# Cannot move folder into itself
@@ -243,6 +250,9 @@ def rename_file(before: str, after: str) -> None:
 		# Checking the source code, chmod is used at the very end,
 		# 	so just skipping it is alright I think.
 		pass
+
+	if delete_empty_folder:
+		delete_empty_folders(dirname(before), dirname(dirname(before)))
 
 	return
 

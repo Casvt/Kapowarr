@@ -7,7 +7,7 @@ Contains all the converters for converting from one format to another
 import logging
 from abc import ABC, abstractmethod
 from os import mkdir, utime
-from os.path import basename, dirname, getmtime, join, splitext
+from os.path import basename, dirname, getmtime, join, sep, splitext
 from shutil import make_archive
 from subprocess import call as spc
 from sys import platform
@@ -163,6 +163,7 @@ class ZIPtoRAR(FileConverter):
 
 		delete_file_folder(archive_folder)
 		delete_file_folder(file)
+		delete_empty_folders(dirname(file), volume_folder)
 		delete_empty_folders(dirname(archive_folder), volume_folder)
 
 		return splitext(file)[0] + '.rar'
@@ -188,7 +189,7 @@ class ZIPtoFOLDER(FileConverter):
 		zip_folder = join(
 			volume_folder,
 			archive_extract_folder,
-			splitext(basename(file))[0]
+			splitext('_'.join(file.split(sep)))[0]
 		)
 
 		with ZipFile(file, 'r') as zip:
@@ -208,6 +209,7 @@ class ZIPtoFOLDER(FileConverter):
 
 		delete_file_folder(zip_folder)
 		delete_file_folder(file)
+		delete_empty_folders(dirname(file), volume_folder)
 		delete_empty_folders(dirname(zip_folder), volume_folder)
 
 		return resulting_files
@@ -302,6 +304,7 @@ class RARtoZIP(FileConverter):
 
 		delete_file_folder(rar_folder)
 		delete_file_folder(file)
+		delete_empty_folders(dirname(file), volume_folder)
 		delete_empty_folders(dirname(rar_folder), volume_folder)
 
 		return target_archive
@@ -353,6 +356,7 @@ class RARtoFOLDER(FileConverter):
 
 		delete_file_folder(rar_folder)
 		delete_file_folder(file)
+		delete_empty_folders(dirname(file), volume_folder)
 		delete_empty_folders(dirname(rar_folder), volume_folder)
 
 		return resulting_files

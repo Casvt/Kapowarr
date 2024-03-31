@@ -109,6 +109,7 @@ def preview_mass_convert(
 
 	format_preference = settings['format_preference']
 	extract_issue_ranges = settings['extract_issue_ranges']
+	volume_folder = volume['folder']
 	special_version = volume['special_version']
 	volume_as_issue = special_version == SpecialVersion.VOLUME_AS_ISSUE
 
@@ -141,7 +142,7 @@ def preview_mass_convert(
 			if converter.target_format == 'folder':
 				result.append({
 					'before': f,
-					'after': dirname(f)
+					'after': volume_folder
 				})
 			else:
 				result.append({
@@ -149,6 +150,7 @@ def preview_mass_convert(
 					'after': splitext(f)[0] + '.' + converter.target_format
 				})
 	return result
+
 def mass_convert(
 	volume_id: int,
 	issue_id: Union[int, None] = None,

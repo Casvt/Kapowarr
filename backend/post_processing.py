@@ -7,7 +7,7 @@ The post-download processing (a.k.a. post-processing or PP) of downloads
 from __future__ import annotations
 
 import logging
-from os.path import basename, exists, join
+from os.path import basename, exists, join, splitext
 from time import time
 from typing import TYPE_CHECKING
 
@@ -56,7 +56,7 @@ class PostProcessingActions:
 		get_db().connection.commit()
 
 		folder = Volume(download.volume_id)['folder']
-		file_dest = join(folder, basename(download.file))
+		file_dest = join(folder, download._filename_body + splitext(download.file)[1])
 		logging.debug(
 			f'Moving download to final destination: {download}, Dest: {file_dest}'
 		)
