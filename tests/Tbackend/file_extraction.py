@@ -98,7 +98,10 @@ class extract_filename_data(unittest.TestCase):
 				{'series': 'Batman Annual', 'year': 1961, 'volume_number': 1, 'special_version': None, 'issue_number': 10.0, 'annual': True},
 
 			'Action Comics (2011) #31 - Infected Chapter 1 True Believers':
-				{'series': 'Action Comics', 'year': 2011, 'volume_number': 1, 'special_version': None, 'issue_number': 31.0, 'annual': False}
+				{'series': 'Action Comics', 'year': 2011, 'volume_number': 1, 'special_version': None, 'issue_number': 31.0, 'annual': False},
+
+			'The Wicked + The Divine (2014) - 035 1-2-3-4! ; The Curse in My Hands - [2018-04-30]':
+				{'series': 'The Wicked The Divine', 'year': 2014, 'volume_number': 1, 'special_version': None, 'issue_number': 35.0, 'annual': False}
 		}
 		self.run_cases(cases)
 
