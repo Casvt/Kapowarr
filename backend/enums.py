@@ -66,3 +66,6 @@ class SocketEvent(BaseEnum):
 	QUEUE_ADDED = 'queue_added'
 	QUEUE_STATUS = 'queue_status'
 	QUEUE_ENDED = 'queue_ended'
+
+class GeneralFileType(BaseEnum):
+	METADATA = 'metadata'

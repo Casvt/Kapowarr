@@ -714,6 +714,16 @@ def setup_db() -> None:
 				issue_id
 			)
 		);
+		CREATE TABLE IF NOT EXISTS volume_files(
+			file_id INTEGER PRIMARY KEY,
+			volume_id INTEGER NOT NULL,
+			file_type VARCHAR(15) NOT NULL,
+
+			FOREIGN KEY (volume_id) REFERENCES volumes(id)
+				ON DELETE CASCADE,
+			FOREIGN KEY (file_id) REFERENCES files(id)
+				ON DELETE CASCADE
+		);
 		CREATE TABLE IF NOT EXISTS torrent_clients(
 			id INTEGER PRIMARY KEY,
 			type VARCHAR(255) NOT NULL,

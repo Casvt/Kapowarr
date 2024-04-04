@@ -7,10 +7,10 @@ from asyncio import run
 from dataclasses import dataclass
 from io import BytesIO
 from os import remove
-from os.path import abspath, dirname, isdir, join, relpath
+from os.path import abspath, basename, dirname, isdir, join, relpath
 from re import IGNORECASE, compile
 from time import time
-from typing import Any, Dict, Iterable, List, Sequence, Union
+from typing import Any, Dict, Iterable, List, Sequence, Tuple, Union
 
 from backend.comicvine import ComicVine
 from backend.custom_exceptions import (InvalidKeyValue, IssueNotFound,
@@ -18,8 +18,9 @@ from backend.custom_exceptions import (InvalidKeyValue, IssueNotFound,
                                        VolumeAlreadyAdded, VolumeDownloadedFor,
                                        VolumeNotFound)
 from backend.db import get_db
-from backend.enums import SpecialVersion
-from backend.file_extraction import extract_filename_data, supported_extensions
+from backend.enums import GeneralFileType, SpecialVersion
+from backend.file_extraction import (extract_filename_data, md_extensions,
+                                     md_files, supported_extensions)
 from backend.files import (create_volume_folder, delete_empty_folders,
                            folder_is_inside_folder, get_file_id, list_files,
                            propose_basefolder_change, rename_file)
@@ -500,7 +501,10 @@ class _VolumeBackend:
 		logging.info(f'Changing root folder of volume {self.id} from {current_root_folder[1]} to {desired_root_folder[1]}')
 
 		file_changes = propose_basefolder_change(
-			self.get_files(),
+			(
+				*self.get_files(),
+				*(f['filepath'] for f in self.get_general_files())
+			),
 			current_root_folder[1],
 			desired_root_folder[1]
 		)
@@ -564,7 +568,10 @@ class _VolumeBackend:
 		self['folder'] = new_volume_folder
 
 		file_changes = propose_basefolder_change(
-			self.get_files(),
+			(
+				*self.get_files(),
+				*(f['filepath'] for f in self.get_general_files())
+			),
 			current_volume_folder,
 			new_volume_folder
 		)
@@ -672,6 +679,7 @@ class Volume(_VolumeBackend):
 		)
 		del volume_info['root_folder_path']
 		volume_info['issues'] = self.get_issues()
+		volume_info['general_files'] = self.get_general_files()
 
 		return volume_info
 
@@ -728,6 +736,32 @@ class Volume(_VolumeBackend):
 			))
 
 		return files
+
+	def get_general_files(self, include_id: bool = False) -> List[dict]:
+		"""Get the general files linked to the volume.
+
+		Args:
+			include_id (bool, optional): Also fetch the file ids.
+				Defaults to False.
+
+		Returns:
+			List[dict]: The general files. The 'filepath' key gives the
+			filepath. The 'file_type' key gives the type of the general file
+			(e.g. 'metadata').
+		"""
+		file_ids = ', file_id' if include_id else ''
+		return [
+			dict(r)
+			for r in get_db(dict).execute(f"""
+				SELECT filepath, file_type{file_ids}
+				FROM files f
+				INNER JOIN volume_files vf
+				ON f.id = vf.file_id
+				WHERE volume_id = ?;
+				""",
+				(self.id,)
+			)
+		]
 
 	def get_issues(self) -> List[dict]:
 		"""Get list of issues that are in the volume.
@@ -846,7 +880,6 @@ def scan_files(volume_id: int) -> None:
 		volume_id (int): The ID of the volume to scan for.
 	"""
 	logging.debug(f'Scanning for files for {volume_id}')
-	cursor = get_db()
 
 	volume = Volume(volume_id, check_existence=False)
 	volume_data = volume.get_keys(
@@ -856,17 +889,33 @@ def scan_files(volume_id: int) -> None:
 	# We're going to check a lot of a string is in here,
 	# so convert to set for speed improvement.
 	volume_files = set(volume.get_files())
+	_general_files = volume.get_general_files(True)
+	general_files = set(
+		f['filepath']
+		for f in _general_files
+	)
 
 	if not isdir(volume_data.folder):
 		root_folder = RootFolders()[volume_data.root_folder]
 		create_volume_folder(root_folder, volume_id)
 
-	bindings = []
+	cursor = get_db()
+	bindings: List[Tuple[int, int]] = []
+	general_bindings: List[Tuple[int, GeneralFileType]] = []
 	folder_contents = list_files(
 		folder=volume_data.folder,
-		ext=supported_extensions
+		ext=(*supported_extensions, *md_extensions)
 	)
 	for file in folder_contents:
+		if basename(file).lower() in md_files:
+			# Volume metadata file
+			file_id = get_file_id(
+				file,
+				add_file = not file in general_files
+			)
+			general_bindings.append((file_id, GeneralFileType.METADATA))
+			continue
+
 		file_data = extract_filename_data(file)
 
 		# Check if file matches volume
@@ -941,17 +990,41 @@ def scan_files(volume_id: int) -> None:
 		new_bindings
 	)
 
+	# Delete bindings for general files that aren't in new bindings
+	delete_general_bindings = (
+		(b['file_id'],)
+		for b in _general_files
+		if not (b['file_id'], b['file_type']) in general_bindings
+	)
+	cursor.executemany(
+		"DELETE FROM volume_files WHERE file_id = ?;",
+		delete_general_bindings
+	)
+
+	# Add bindings for general files that aren't in current bindings
+	general_ids = set((b['file_id'] for b in _general_files))
+	new_general_bindings = (
+		(b[0], b[1].value, volume_id)
+		for b in general_bindings
+		if b[0] not in general_ids
+	)
+	cursor.executemany(
+		"INSERT INTO volume_files(file_id, file_type, volume_id) VALUES (?, ?, ?);",
+		new_general_bindings
+	)
+
 	# Delete all file entries that aren't binded
 	# AKA files that were present last scan but this scan not anymore
 	cursor.execute("""
+		WITH ids AS (
+			SELECT file_id
+			FROM issues_files
+			UNION
+			SELECT file_id
+			FROM volume_files
+		)
 		DELETE FROM files
-		WHERE rowid IN (
-			SELECT f.rowid
-			FROM files f
-			LEFT JOIN issues_files if
-			ON f.id = if.file_id
-			WHERE if.file_id IS NULL
-		);
+		WHERE id NOT IN ids;
 	""")
 
 	return

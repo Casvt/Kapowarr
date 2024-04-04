@@ -25,6 +25,8 @@ digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 image_extensions = ('.png','.jpeg','.jpg','.webp','.gif',
 					'.PNG','.JPEG','.JPG','.WEBP','.GIF')
 supported_extensions = image_extensions + ('.cbz','.zip','.rar','.cbr','.tar.gz','.7zip','.7z','.cb7','.cbt','.epub','.pdf')
+md_extensions = {'.xml', '.XML', '.json', '.JSON'}
+md_files = {'cvinfo.xml', 'comicinfo.xml', 'series.json', 'comicinfo.xml'}
 file_extensions = r'\.(' + '|'.join(e[1:] for e in supported_extensions) + r')$'
 volume_regex_snippet = r'\b(?:v(?:ol|olume)?)(?:\.\s|[\.\-\s])?(\d+(?:\s?\-\s?\d+)?|(?<!v)I{1,3})'
 year_regex_snippet = r'(?:(\d{4})(?:-\d{2}){0,2}|(\d{4})[\s\.]?-(?:[\s\.]?\d{4})?|(?:\d{2}-){1,2}(\d{4})|(\d{4})[\s\.\-_]Edition|(\d{4})\-\d{4}\s{3}\d{4})'

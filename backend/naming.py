@@ -16,7 +16,8 @@ from backend.custom_exceptions import InvalidSettingValue
 from backend.db import get_db
 from backend.enums import SpecialVersion
 from backend.file_extraction import cover_regex, image_extensions
-from backend.files import delete_empty_folders, rename_file
+from backend.files import (delete_empty_folders, propose_basefolder_change,
+                           rename_file)
 from backend.helpers import first_of_column
 from backend.root_folders import RootFolders
 from backend.settings import Settings
@@ -471,7 +472,7 @@ def preview_mass_rename(
 		file_infos = volume.get_files(issue_id)
 		if not file_infos:
 			return result
-		folder = dirname(file_infos[0])
+		folder = volume['folder']
 
 	if filepath_filter is not None:
 		file_infos = filter(
@@ -582,6 +583,26 @@ def preview_mass_rename(
 			result.append({
 				'before': file,
 				'after': suggested_name
+			})
+
+	if folder != volume['folder']:
+		# New volume folder so rename general files too
+		new_general_files = propose_basefolder_change(
+			(
+				f['filepath']
+				for f in volume.get_general_files()
+				if not filepath_filter or f in filepath_filter
+			),
+			volume['folder'],
+			folder
+		)
+		for old, new in new_general_files:
+			logging.debug(f'Renaming: original filename: {old}')
+			logging.debug(f'Renaming: suggested filename: {new}')
+			logging.debug(f'Renaming: added rename')
+			result.append({
+				'before': old,
+				'after': new
 			})
 
 	return result

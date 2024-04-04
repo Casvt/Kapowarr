@@ -15,6 +15,7 @@ from typing import List, Union
 from zipfile import ZipFile
 
 from backend.file_extraction import (extract_filename_data, image_extensions,
+                                     md_extensions, md_files,
                                      supported_extensions)
 from backend.files import (create_folder, delete_empty_folders,
                            delete_file_folder, filepath_to_volume_id,
@@ -47,7 +48,10 @@ def extract_files_from_folder(
 	Returns:
 		List[str]: The filepaths of the files that were extracted.
 	"""
-	folder_contents = list_files(source_folder, supported_extensions)
+	folder_contents = list_files(
+		source_folder,
+		(*supported_extensions, *md_extensions)
+	)
 
 	volume = Volume(volume_id)
 	volume_data = volume.get_keys(
@@ -64,10 +68,14 @@ def extract_files_from_folder(
 		for c in folder_contents
 		if (
 			not 'variant cover' in c.lower()
-			and folder_extraction_filter(
-				extract_filename_data(c, False),
-				volume_data,
-				end_year
+			and (
+				basename(c).lower() in md_files
+				or
+				folder_extraction_filter(
+					extract_filename_data(c, False),
+					volume_data,
+					end_year
+				)
 			)
 		)
 	]
@@ -83,7 +91,7 @@ def extract_files_from_folder(
 		else:
 			dest = join(volume_data.folder, basename(c))
 
-		rename_file(c, dest)
+		rename_file(c, dest, True)
 		result_append(dest)
 
 	delete_file_folder(source_folder)

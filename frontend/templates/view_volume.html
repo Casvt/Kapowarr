@@ -51,6 +51,10 @@
 		<td>+</td>
 		<td></td>
 	</tr>
+	<tr class="files-entry">
+		<td></td>
+		<td></td>
+	</tr>
 {% endblock pre_build_rows %}
 
 {% block windows %}
@@ -196,6 +200,18 @@
 	{% endset %}
 	{{ window(True, "convert-window", "Convert volume files", convert_content, convert_submit, "converting-window") }}
 
+	{% set files_content %}
+		<p class="empty-rename-message">No general files</p>
+		<table>
+			<thead>
+				<th>File</th>
+				<th>Type</th>
+			</thead>
+			<tbody></tbody>
+		</table>
+	{% endset %}
+	{{ window(False, "files-window", "General volume files", files_content) }}
+
 {% endblock windows %}
 
 {% block main %}
@@ -235,6 +251,12 @@
 					"Preview how the files of the volume will be converted to a different format",
 					"convert.svg",
 					"Preview Convert"
+				) }}
+				{{ icon_button(
+					"files-button",
+					"View the general files of the volume",
+					"files.svg",
+					"General Files"
 				) }}
 				{{ icon_button(
 					"edit-button",

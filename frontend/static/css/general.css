@@ -480,4 +480,7 @@ main > *:not(.tool-bar-container) {
 	#nav-bar.show-nav {
 		left: 0;
 	}
+	.tool-bar > * {
+		width: 3.5rem;
+	}
 }

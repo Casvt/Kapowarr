@@ -339,6 +339,43 @@ tbody .issue-title:hover {
 	border-top: 1px solid var(--border-color);
 }
 
+/*  */
+/* General files window */
+/*  */
+#files-window:has(tbody tr) p,
+#files-window:not(:has(tbody tr)) table {
+	display: none;
+}
+
+#files-window:has(tbody tr) .window-content {
+	justify-content: flex-start;
+}
+
+#files-window :where(td, th):first-child {
+	padding-left: 1rem;
+}
+
+#files-window :where(td, th):last-child {
+	padding-right: 1rem;
+}
+
+.files-entry {
+	transition: background-color 200ms linear;
+}
+
+.files-entry:hover {
+	background-color: var(--hover-color);
+}
+
+.files-entry td {
+	border-top: 1px solid var(--border-color);
+	padding: .5rem;
+}
+
+.files-entry td:first-child {
+	width: 100%;
+}
+
 @media (max-width: 520px) {
 	#volume-description {
 		display: none;

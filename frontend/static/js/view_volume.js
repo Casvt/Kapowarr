@@ -7,7 +7,8 @@ const ViewEls = {
 		issue_entry: document.querySelector('.pre-build-els .issue-entry'),
 		manual_search: document.querySelector('.pre-build-els .search-entry'),
 		rename_before: document.querySelector('.pre-build-els .rename-before'),
-		rename_after: document.querySelector('.pre-build-els .rename-after')
+		rename_after: document.querySelector('.pre-build-els .rename-after'),
+		files_entry: document.querySelector('.pre-build-els .files-entry')
 	},
 	vol_data: {
 		monitor: document.querySelector('#volume-monitor'),
@@ -29,6 +30,7 @@ const ViewEls = {
 		manual_search: document.querySelector('#manualsearch-button'),
 		rename: document.querySelector('#rename-button'),
 		convert: document.querySelector('#convert-button'),
+		files: document.querySelector('#files-button'),
 		edit: document.querySelector('#edit-button'),
 		delete: document.querySelector('#delete-button')
 	},
@@ -189,6 +191,22 @@ function fillPage(data, api_key) {
 	mapButtons(id);
 
 	hide([ViewEls.views.loading], [ViewEls.views.main]);
+
+	const table = document.querySelector('#files-window tbody');
+	table.innerHTML = '';
+	data.general_files.forEach(gf => {
+		const entry = ViewEls.pre_build.files_entry.cloneNode(true);
+		const short_f = gf.filepath.slice(
+			gf.filepath.indexOf(data.volume_folder)
+			+ data.volume_folder.length
+			+ 1
+		);
+		const file_name = entry.querySelector(':first-child');
+		file_name.innerText = short_f;
+		file_name.title = gf.filepath;
+		entry.querySelector(':last-child').innerText = gf.file_type;
+		table.appendChild(entry);
+	});
 };
 
 //
@@ -675,6 +693,7 @@ usingApiKey()
 		e => showRename(api_key, e.target.dataset.issue_id);
 });
 
+ViewEls.tool_bar.files.onclick = e => showWindow('files-window');
 ViewEls.tool_bar.delete.onclick = e => showWindow('delete-window');
 
 document.querySelector('#issue-info-selector').onclick = e => showInfoWindow('issue-info');
