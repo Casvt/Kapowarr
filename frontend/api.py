@@ -636,7 +636,13 @@ def api_volume_download(id: int):
 	library.get_volume(id)
 	link = extract_key(request, 'link')
 	result = download_handler.add(link, id)
-	return return_api(result, code=201)
+	return return_api(
+		{
+			'result': result[0],
+			'fail_reason': result[1].value if result[1] else result[1]
+		},
+		code=201
+	)
 
 @api.route('/issues/<int:id>/manualsearch', methods=['GET'])
 @error_handler
@@ -656,7 +662,13 @@ def api_issue_download(id: int):
 	volume_id = library.get_issue(id)['volume_id']
 	link = extract_key(request, 'link')
 	result = download_handler.add(link, volume_id, id)
-	return return_api(result, code=201)
+	return return_api(
+		{
+			'result': result[0],
+			'fail_reason': result[1].value if result[1] else result[1]
+		},
+		code=201
+	)
 
 @api.route('/activity/queue', methods=['GET'])
 @error_handler

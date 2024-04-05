@@ -144,12 +144,12 @@ async function testEditTorrent(api_key) {
 		if (json.result.success)
 			// Test successful
 			test_button.classList.add('show-success');
-		else
+		else {
 			// Test failed
 			test_button.classList.add('show-fail');
 			error.innerText = json.result.description;
 			hide([], [error]);
-
+		};
 		return json.result.success;
 	});
 };

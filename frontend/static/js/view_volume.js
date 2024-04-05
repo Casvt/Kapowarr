@@ -320,7 +320,8 @@ function showManualSearch(api_key, issue_id=null) {
 
 			entry.querySelector('.source-column').innerText = result.source;
 
-			const download_button = entry.querySelector('.search-action-column :nth-child(1)')
+			const download_button = entry.querySelector('.search-action-column :nth-child(1)');
+			download_button.classList.add('icon-text-color');
 			download_button.onclick =
 				e => addManualSearch(result.link, download_button, api_key, issue_id);
 
@@ -344,6 +345,8 @@ function showManualSearch(api_key, issue_id=null) {
 };
 
 function addManualSearch(link, button, api_key, issue_id=null) {
+	button.classList.remove('error');
+	button.title = 'Download';
 	const img = button.querySelector('img');
 	img.src = `${url_base}/static/img/loading.svg`;
 	img.classList.add('spinning');
@@ -356,8 +359,13 @@ function addManualSearch(link, button, api_key, issue_id=null) {
 	.then(response => response.json())
 	.then(json => {
 		img.classList.remove('spinning');
-		if (json.result.length) img.src = `${url_base}/static/img/check.svg`;
-		else img.src = `${url_base}/static/img/download_failed.svg`;
+		if (json.result.fail_reason === null)
+			img.src = `${url_base}/static/img/check.svg`;
+		else {
+			img.src = `${url_base}/static/img/download.svg`;
+			button.classList.add('error');
+			button.title = json.result.fail_reason;
+		};
 	});
 };
 

@@ -173,6 +173,10 @@ noscript {
 	filter: invert(16%) sepia(0%) saturate(23%) hue-rotate(241deg) brightness(95%) contrast(97%);
 }
 
+.error img {
+	filter: invert(38%) sepia(86%) saturate(1816%) hue-rotate(328deg) brightness(97%) contrast(76%) !important;
+}
+
 /*  */
 /* Body */
 /*  */

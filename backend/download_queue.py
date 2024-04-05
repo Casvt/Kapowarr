@@ -11,7 +11,7 @@ from os import listdir
 from os.path import basename, join
 from threading import Thread
 from time import sleep
-from typing import TYPE_CHECKING, Dict, List, Type, Union
+from typing import TYPE_CHECKING, Dict, List, Tuple, Type, Union
 
 from backend.blocklist import add_to_blocklist
 from backend.custom_exceptions import (DownloadLimitReached, DownloadNotFound,
@@ -20,7 +20,8 @@ from backend.db import get_db
 from backend.download_direct_clients import (DirectDownload, Download,
                                              MegaDownload)
 from backend.download_torrent_clients import TorrentClients, TorrentDownload
-from backend.enums import BlocklistReason, DownloadState, SeedingHandling
+from backend.enums import (BlocklistReason, DownloadState, FailReason,
+                           SeedingHandling)
 from backend.files import create_folder, delete_file_folder
 from backend.getcomics import extract_GC_download_links
 from backend.helpers import WebSocket, first_of_column
@@ -359,7 +360,7 @@ class DownloadHandler:
 		link: str,
 		volume_id: int,
 		issue_id: Union[int, None] = None
-	) -> List[dict]:
+	) -> Tuple[List[dict], Union[FailReason, None]]:
 		"""Add a download to the queue
 
 		Args:
@@ -370,7 +371,9 @@ class DownloadHandler:
 				Defaults to None.
 
 		Returns:
-			List[dict]: Queue entries that were added from the link.
+			Tuple[List[dict], Union[FailReason, None]]:
+			Queue entries that were added from the link and reason for failing
+			if no entries were added.
 		"""
 		logging.info(
 			'Adding download for '
@@ -387,20 +390,25 @@ class DownloadHandler:
 		downloads: List[Download] = []
 		if is_gc_link:
 			# Extract download links and convert into Download instances
-			GC_downloads, limit_reached = extract_GC_download_links(
+			GC_downloads, fail_reason = extract_GC_download_links(
 				link,
 				volume_id,
 				issue_id
 			)
 
-			if not GC_downloads:
-				if not limit_reached:
-					# No links extracted from page so add it to blocklist
+			if fail_reason:
+				if fail_reason == FailReason.BROKEN:
+					# Can't even fetch the GC page
+					add_to_blocklist(link, BlocklistReason.LINK_BROKEN)
+
+				elif fail_reason == FailReason.NO_WORKING_LINKS:
+					# Page has links that matched but all are broken
 					add_to_blocklist(link, BlocklistReason.NO_WORKING_LINKS)
+
 				logging.warning(
-					f'Unable to extract download links from source; {limit_reached=}'
+					f'Unable to extract download links from source; fail_reason="{fail_reason.value}"'
 				)
-				return []
+				return [], fail_reason
 
 			downloads = GC_downloads
 
@@ -413,7 +421,7 @@ class DownloadHandler:
 		self.queue += result
 
 		self._process_queue()
-		return [r.todict() for r in result]
+		return [r.todict() for r in result], None
 
 	def stop_handle(self) -> None:
 		"""

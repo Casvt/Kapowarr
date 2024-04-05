@@ -67,5 +67,11 @@ class SocketEvent(BaseEnum):
 	QUEUE_STATUS = 'queue_status'
 	QUEUE_ENDED = 'queue_ended'
 
+class FailReason(BaseEnum):
+	BROKEN = 'GetComics page unavailable'
+	NO_WORKING_LINKS = 'No working download links on page'
+	LIMIT_REACHED = 'Download limit reached for service'
+	NO_MATCHES = 'No links found that match to volume and are not blocklisted'
+
 class GeneralFileType(BaseEnum):
 	METADATA = 'metadata'

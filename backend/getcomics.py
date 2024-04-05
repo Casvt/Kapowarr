@@ -20,7 +20,7 @@ from backend.db import get_db
 from backend.download_direct_clients import (DirectDownload, Download,
                                              MegaDownload)
 from backend.download_torrent_clients import TorrentDownload
-from backend.enums import BlocklistReason, SpecialVersion
+from backend.enums import BlocklistReason, FailReason, SpecialVersion
 from backend.file_extraction import extract_filename_data
 from backend.helpers import (DownloadGroup, FilenameData,
                              check_overlapping_issues, get_torrent_info)
@@ -507,26 +507,21 @@ def _generate_name(
 def _test_paths(
 	link_paths: List[List[DownloadGroup]],
 	volume_id: int
-) -> Tuple[List[Download], bool]:
+) -> Tuple[List[Download], Union[FailReason, None]]:
 	"""Test the links of the paths and determine, based on which links work, which path to go for.
 
 	Args:
-		link_paths (List[List[DownloadGroup]]): The link paths (output of `download._process_extracted_get_comics_links()`).
+		link_paths (List[List[DownloadGroup]]): The link paths.
+			Output of `download._process_extracted_get_comics_links()`.
 		volume_id (int): The id of the volume.
 
 	Returns:
-		Tuple[List[Download], bool]: A list of downloads and wether or not the download limit for a service on the page is reached.
-
-		If the list is empty and the bool is False, the page doesn't have any working links and can be blacklisted.
-
-		If the list is empty and the bool is True, the page has working links but the service of the links has reached it's download limit, so nothing on the page can be downloaded.
-		However, the page shouldn't be blacklisted because the links _are_ working.
-
-		If the list has content, the page has working links that can be used.
+		Tuple[List[Download], Union[FailReason, None]]:
+			A list of downloads and the reason the list is empty is so.
 	"""
 	logging.debug('Testing paths')
 	cursor = get_db()
-	limit_reached = False
+	limit_reached = None
 	downloads: List[Download] = []
 	settings = Settings()
 	rename_downloaded_files = settings['rename_downloaded_files']
@@ -563,7 +558,7 @@ def _test_paths(
 
 					except DownloadLimitReached:
 						# Link works but the download limit for the service is reached
-						limit_reached = True
+						limit_reached = FailReason.LIMIT_REACHED
 
 					else:
 						downloads.append(dl_instance)
@@ -591,7 +586,7 @@ def extract_GC_download_links(
 	link: str,
 	volume_id: int,
 	issue_id: Union[int, None] = None
-) -> Tuple[List[Download], bool]:
+) -> Tuple[List[Download], Union[FailReason, None]]:
 	"""Filter, select and setup downloads from a getcomic page
 
 	Args:
@@ -602,14 +597,8 @@ def extract_GC_download_links(
 			Defaults to None.
 
 	Returns:
-		Tuple[List[dict], bool]: List of downloads and whether or not the download limit for a service on the page is reached.
-
-		If the list is empty and the bool is False, the page doesn't have any working links and can be blacklisted.
-
-		If the list is empty and the bool is True, the page has working links but the service of the links has reached it's download limit, so nothing on the page can be downloaded.
-		However, the page shouldn't be blacklisted because the links _are_ working.
-
-		If the list has content, the page has working links that can be used.
+		Tuple[List[Download], Union[FailReason, None]]:
+			A list of downloads and the reason the list is empty is so.
 	"""
 	logging.debug(f'Extracting download links from {link} for volume {volume_id} and issue {issue_id}')
 
@@ -620,8 +609,7 @@ def extract_GC_download_links(
 
 	except requests_ConnectionError:
 		# Link broken
-		add_to_blocklist(link, BlocklistReason.LINK_BROKEN)
-		return [], True
+		return [], FailReason.BROKEN
 
 	# Link is to a getcomics page
 	soup = BeautifulSoup(r.text, 'html.parser')
@@ -635,5 +623,12 @@ def extract_GC_download_links(
 		volume_id
 	)
 
+	if not link_paths:
+		return [], FailReason.NO_MATCHES
+
 	# Decide which path to take by testing the links
-	return _test_paths(link_paths, volume_id)
+	result = _test_paths(link_paths, volume_id)
+	if result[0]:
+		return result
+	else:
+		return result[0], FailReason.NO_WORKING_LINKS

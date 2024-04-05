@@ -288,6 +288,7 @@
 #test-torrent-add {
 	position: relative;
 	width: 5rem;
+	height: 2rem;
 	display: flex;
 	overflow: hidden;
 	background-color: var(--tool-bar-color);
