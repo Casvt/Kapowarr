@@ -86,7 +86,7 @@ def determine_special_version(
 		return SpecialVersion.NORMAL
 
 #=====================
-# Main issue class
+# region Main issue class
 #=====================
 class Issue:
 	def __init__(
@@ -298,7 +298,7 @@ def get_calc_number_id_range(
 	return result
 
 #=====================
-# Main volume class
+# region Main volume class
 #=====================
 @dataclass(frozen=True)
 class VolumeData:
@@ -872,7 +872,9 @@ class Volume(_VolumeBackend):
 	def __repr__(self) -> str:
 		return f'<{self.__class__.__name__}; ID {self.id}>'
 
-
+#=====================
+# region Scanning and updating
+#=====================
 def scan_files(volume_id: int) -> None:
 	"""Scan inside the volume folder for files and map them to issues
 
@@ -1176,7 +1178,7 @@ def refresh_and_scan(volume_id: Union[int, None] = None) -> None:
 	return
 
 #=====================
-# Library class
+# region Library class
 #=====================
 class Library:
 	sorting_orders = {
