@@ -4,7 +4,6 @@
 Setting up the database and handling connections
 """
 
-import logging
 from os.path import dirname
 from sqlite3 import (PARSE_DECLTYPES, Connection, Cursor, ProgrammingError,
                      Row, register_adapter, register_converter)
@@ -15,7 +14,7 @@ from typing import Any, Dict, List, Tuple, Type, Union
 from flask import g
 
 from backend.helpers import CommaList, DB_ThreadSafeSingleton
-from backend.logging import set_log_level
+from backend.logging import LOGGER, set_log_level
 
 __DATABASE_FILEPATH__ = 'db', 'Kapowarr.db'
 __DATABASE_VERSION__ = 19
@@ -43,7 +42,7 @@ class DBConnection(Connection, metaclass=DB_ThreadSafeSingleton):
 		Args:
 			timeout (float): How long to wait before giving up on a command
 		"""
-		logging.debug(f'Creating connection {self}')
+		LOGGER.debug(f'Creating connection {self}')
 		super().__init__(
 			self.file,
 			timeout=timeout,
@@ -60,7 +59,7 @@ class DBConnection(Connection, metaclass=DB_ThreadSafeSingleton):
 	def close(self) -> None:
 		"""Close the connection
 		"""
-		logging.debug(f'Closing connection {self}')
+		LOGGER.debug(f'Closing connection {self}')
 		self.closed = True
 		super().close()
 		return
@@ -80,7 +79,7 @@ class TempDBConnection(Connection):
 		Args:
 			timeout (float): How long to wait before giving up on a command
 		"""
-		logging.debug(f'Creating temporary connection {self}')
+		LOGGER.debug(f'Creating temporary connection {self}')
 		super().__init__(
 			self.file,
 			timeout=timeout,
@@ -97,7 +96,7 @@ class TempDBConnection(Connection):
 	def close(self) -> None:
 		"""Close the temporary connection
 		"""
-		logging.debug(f'Closing temporary connection {self}')
+		LOGGER.debug(f'Closing temporary connection {self}')
 		self.closed = True
 		super().close()
 		return
@@ -113,7 +112,7 @@ def set_db_location(db_file_location: str) -> None:
 		db_file_location (str): The absolute path to the database file
 	"""
 	from backend.files import create_folder
-	logging.debug(f'Setting database location: {db_file_location}')
+	LOGGER.debug(f'Setting database location: {db_file_location}')
 
 	create_folder(dirname(db_file_location))
 
@@ -183,7 +182,7 @@ def migrate_db(current_db_version: int) -> None:
 	to the newest version supported by the Kapowarr version installed.
 	"""
 	from backend.settings import Settings
-	logging.info('Migrating database to newer version...')
+	LOGGER.info('Migrating database to newer version...')
 	s = Settings()
 	cursor = get_db()
 	if current_db_version == 1:
@@ -789,13 +788,13 @@ def setup_db() -> None:
 
 	settings = Settings()
 
-	set_log_level(settings['log_level'])
+	set_log_level(settings['log_level'], clear_file=False)
 
 	# Migrate database if needed
 	current_db_version = settings['database_version']
 
 	if current_db_version < __DATABASE_VERSION__:
-		logging.debug(
+		LOGGER.debug(
 			f'Database migration: {current_db_version} -> {__DATABASE_VERSION__}'
 		)
 		migrate_db(current_db_version)
@@ -809,7 +808,7 @@ def setup_db() -> None:
 		settings.generate_api_key()
 
 	# Add task intervals
-	logging.debug(f'Inserting task intervals: {task_intervals}')
+	LOGGER.debug(f'Inserting task intervals: {task_intervals}')
 	current_time = round(time())
 	cursor.executemany(
 		"""
@@ -824,7 +823,7 @@ def setup_db() -> None:
 	)
 
 	# Add credentials sources
-	logging.debug(f'Inserting credentials sources: {credential_sources}')
+	LOGGER.debug(f'Inserting credentials sources: {credential_sources}')
 	cursor.executemany(
 		"""
 		INSERT OR IGNORE INTO credentials_sources(source)

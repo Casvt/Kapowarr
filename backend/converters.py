@@ -4,7 +4,6 @@
 Contains all the converters for converting from one format to another
 """
 
-import logging
 from abc import ABC, abstractmethod
 from os import mkdir, utime
 from os.path import basename, dirname, getmtime, join, sep, splitext
@@ -21,6 +20,7 @@ from backend.files import (create_folder, delete_empty_folders,
                            delete_file_folder, filepath_to_volume_id,
                            folder_path, list_files, rename_file)
 from backend.helpers import extract_year_from_date
+from backend.logging import LOGGER
 from backend.matching import folder_extraction_filter
 from backend.naming import mass_rename
 from backend.volumes import Volume, scan_files
@@ -79,7 +79,7 @@ def extract_files_from_folder(
 			)
 		)
 	]
-	logging.debug(f'Relevant files: {rel_files}')
+	LOGGER.debug(f'Relevant files: {rel_files}')
 
 	# Move remaining files to main folder and delete source folder
 	result = []

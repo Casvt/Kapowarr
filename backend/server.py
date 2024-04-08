@@ -6,7 +6,6 @@ Setting up, running and shutting down the API and web-ui
 
 from __future__ import annotations
 
-import logging
 from os import execv, urandom
 from sys import argv
 from threading import Timer, current_thread
@@ -20,6 +19,7 @@ from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from backend.db import DBConnection, close_db
 from backend.files import folder_path
 from backend.helpers import DB_ThreadSafeSingleton, Singleton, WebSocket
+from backend.logging import LOGGER
 from backend.settings import private_settings
 
 if TYPE_CHECKING:
@@ -45,7 +45,7 @@ class ThreadedTaskDispatcher(TTD):
 		timeout: int = 5
 	) -> bool:
 		print()
-		logging.info('Shutting down Kapowarr...')
+		LOGGER.info('Shutting down Kapowarr...')
 
 		ws = WebSocket()
 		if '/' in ws.server.manager.rooms:
@@ -164,7 +164,7 @@ class Server(metaclass=Singleton):
 			port (int): The port to listen on.
 		"""
 		self.server = self.__create_waitress_server(host, port)
-		logging.info(f'Kapowarr running on http://{host}:{port}{self.url_base}')
+		LOGGER.info(f'Kapowarr running on http://{host}:{port}{self.url_base}')
 		self.server.run()
 
 		return
@@ -199,7 +199,7 @@ class Server(metaclass=Singleton):
 		Returns:
 			NoReturn: No return because it replaces the interpreter.
 		"""
-		logging.info('Restarting Kapowarr')
+		LOGGER.info('Restarting Kapowarr')
 		from Kapowarr import __file__ as k_file
 		execv(folder_path(k_file), [argv[0]])
 

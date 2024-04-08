@@ -23,7 +23,6 @@ DIFFERENCES:
 		5. Made imports more specific
 """
 
-import logging
 from base64 import b64decode, b64encode
 from binascii import hexlify, unhexlify
 from codecs import latin_1_decode, latin_1_encode
@@ -44,6 +43,7 @@ from simplejson.errors import JSONDecodeError
 from tenacity import retry, retry_if_exception_type, wait_exponential
 
 from backend.custom_exceptions import DownloadLimitReached
+from backend.logging import LOGGER
 
 _CODE_TO_DESCRIPTIONS = {
 	-1: ('EINTERNAL',
@@ -271,7 +271,7 @@ class Mega:
 					return
 				logged_in = True
 		except JSONDecodeError:
-			logging.error('Login credentials for mega are invalid. Login failed.')
+			LOGGER.error('Login credentials for mega are invalid. Login failed.')
 			raise RequestError(-16)
 		if not logged_in:
 			try:
@@ -325,7 +325,7 @@ class Mega:
 		self.mega_filename = attribs.get('n', '')
 
 	def _login_user(self, email: str, password: str):
-		logging.debug('Logging into Mega with user account')
+		LOGGER.debug('Logging into Mega with user account')
 		email = email.lower()
 		get_user_salt_resp: Dict[str, Any] = self._api_request({
 			'a': 'us0',
@@ -353,7 +353,7 @@ class Mega:
 		self._login_process(resp, password_aes)
 
 	def login_anonymous(self):
-		logging.debug('Logging into Mega anonymously')
+		LOGGER.debug('Logging into Mega anonymously')
 		master_key = [randint(0, 0xFFFFFFFF)] * 4
 		password_key = [randint(0, 0xFFFFFFFF)] * 4
 		session_self_challenge = [randint(0, 0xFFFFFFFF)] * 4

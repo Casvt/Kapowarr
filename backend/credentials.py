@@ -1,6 +1,5 @@
 #-*- coding: utf-8 -*-
 
-import logging
 from sqlite3 import IntegrityError
 from typing import List
 
@@ -10,6 +9,7 @@ from backend.custom_exceptions import (CredentialAlreadyAdded,
 from backend.db import get_db
 from backend.helpers import first_of_column
 from backend.lib.mega import Mega, RequestError
+from backend.logging import LOGGER
 
 
 class Credentials:
@@ -135,7 +135,7 @@ class Credentials:
 		if not source_id:
 			raise CredentialSourceNotFound(source)
 
-		logging.info(f'Adding credential for {source}')
+		LOGGER.info(f'Adding credential for {source}')
 		try:
 			if source == 'mega':
 				Mega('', email, password, only_check_login=True)
@@ -164,7 +164,7 @@ class Credentials:
 		Raises:
 			CredentialNotFound: The id doesn't map to any credential
 		"""
-		logging.info(f'Deleting credential: {cred_id}')
+		LOGGER.info(f'Deleting credential: {cred_id}')
 
 		if not get_db().execute(
 			"DELETE FROM credentials WHERE id = ?", (cred_id,)

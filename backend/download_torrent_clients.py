@@ -4,7 +4,6 @@
 Clients for downloading a torrent using a torrent client
 """
 
-import logging
 from os.path import join
 from typing import TYPE_CHECKING, Dict, List, Type, Union
 
@@ -18,6 +17,7 @@ from backend.download_direct_clients import BaseDownload
 from backend.download_general import TorrentClient
 from backend.enums import BlocklistReason, DownloadState
 from backend.helpers import ClientTestResult, get_torrent_info
+from backend.logging import LOGGER
 from backend.settings import Settings
 from backend.torrent_clients import qBittorrent
 
@@ -233,7 +233,7 @@ class TorrentDownload(BaseDownload):
 		source: str,
 		custom_name: bool = True
 	) -> None:
-		logging.debug(f'Creating torrent download: {link}, {filename_body}')
+		LOGGER.debug(f'Creating torrent download: {link}, {filename_body}')
 		super().__init__()
 		self.client: TorrentClient = None # type: ignore
 		self.source = source

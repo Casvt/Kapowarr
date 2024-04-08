@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 #-*- coding: utf-8 -*-
 
-import logging
-
 from backend.db import __DATABASE_FILEPATH__, set_db_location, setup_db
 from backend.files import folder_path
 from backend.helpers import check_python_version
-from backend.logging import setup_logging
+from backend.logging import LOGGER, setup_logging
 from backend.server import SERVER
 from frontend.api import Settings, download_handler, task_handler
 
@@ -15,7 +13,7 @@ def Kapowarr() -> None:
 	"""The main function of Kapowarr
 	"""
 	setup_logging()
-	logging.info('Starting up Kapowarr')
+	LOGGER.info('Starting up Kapowarr')
 
 	if not check_python_version():
 		exit(1)

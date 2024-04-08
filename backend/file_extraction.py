@@ -8,7 +8,6 @@ extract_filename_data() is inspired by the file parsing of Kavita and Comictagge
 	https://github.com/comictagger/comictagger/blob/develop/comicapi/filenameparser.py
 """
 
-import logging
 from os.path import basename, dirname, splitext
 from re import IGNORECASE, compile
 from typing import Tuple, Union
@@ -17,6 +16,7 @@ from backend.enums import SpecialVersion
 from backend.helpers import FilenameData
 from backend.helpers import fix_year as fix_broken_year
 from backend.helpers import normalize_string
+from backend.logging import LOGGER
 
 alphabet = 'abcdefghijklmnopqrstuvwxyz'
 alphabet = {letter: str(alphabet.index(letter) + 1).zfill(2) for letter in alphabet}
@@ -203,7 +203,7 @@ def extract_filename_data(
 	Returns:
 		FilenameData: The extracted data in a formatted way
 	"""
-	logging.debug(f'Extracting filename data: {filepath}')
+	LOGGER.debug(f'Extracting filename data: {filepath}')
 	series, year, volume_number, special_version, issue_number = (
 		None, None, None, None, None
 	)
@@ -438,7 +438,7 @@ def extract_filename_data(
 		'annual': annual
 	})
 
-	logging.debug(f'Extracting filename data: {file_data}')
+	LOGGER.debug(f'Extracting filename data: {file_data}')
 
 	return file_data
 

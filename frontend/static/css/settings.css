@@ -120,7 +120,8 @@
 }
 
 #toggle-root-folder,
-#empty-download-folder {
+#empty-download-folder,
+#download-logs-button {
 	margin-top: .5rem;
 	min-width: 5rem;
 

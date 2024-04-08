@@ -7,7 +7,6 @@ file and CV result, issue/volume and GC result, etc.
 
 from __future__ import annotations
 
-import logging
 from re import compile
 from typing import TYPE_CHECKING, Dict, List, Mapping, Tuple, Union
 
@@ -17,6 +16,7 @@ from backend.enums import SpecialVersion
 from backend.helpers import (FilenameData, SearchResultData,
                              SearchResultMatchData, create_range,
                              extract_year_from_date, get_first_of_range)
+from backend.logging import LOGGER
 
 if TYPE_CHECKING:
 	from backend.volumes import VolumeData
@@ -51,7 +51,7 @@ def _match_title(title1: str, title2: str) -> bool:
 	)
 
 	result = clean_reference_title == clean_title
-	logging.debug(f'Matching titles ({title1} -> {clean_reference_title}, {title2} -> {clean_title}): {result}')
+	LOGGER.debug(f'Matching titles ({title1} -> {clean_reference_title}, {title2} -> {clean_title}): {result}')
 	return result
 
 

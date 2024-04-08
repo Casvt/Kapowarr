@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 from asyncio import run
 from dataclasses import dataclass
 from io import BytesIO
@@ -25,6 +24,7 @@ from backend.files import (create_volume_folder, delete_empty_folders,
                            folder_is_inside_folder, get_file_id, list_files,
                            propose_basefolder_change, rename_file)
 from backend.helpers import first_of_column, reversed_tuples
+from backend.logging import LOGGER
 from backend.matching import file_importing_filter
 from backend.root_folders import RootFolders
 
@@ -226,7 +226,7 @@ class Issue:
 		if key != 'monitored':
 			raise KeyError
 
-		logging.debug(f'For issue {self.id}, setting {key} to {value}')
+		LOGGER.debug(f'For issue {self.id}, setting {key} to {value}')
 
 		get_db().execute(
 			f"UPDATE issues SET {key} = ? WHERE id = ?;",
@@ -460,7 +460,7 @@ class _VolumeBackend:
 		if key == 'special_version' and isinstance(value, SpecialVersion):
 			value = value.value
 
-		logging.debug(f'For volume {self.id}, setting {key} to {value}')
+		LOGGER.debug(f'For volume {self.id}, setting {key} to {value}')
 
 		get_db().execute(
 			f"UPDATE volumes SET {key} = ? WHERE id = ?;",
@@ -498,7 +498,7 @@ class _VolumeBackend:
 		current_root_folder = root_folders[current_index]
 		desired_root_folder = root_folders[current_index - 1]
 
-		logging.info(f'Changing root folder of volume {self.id} from {current_root_folder[1]} to {desired_root_folder[1]}')
+		LOGGER.info(f'Changing root folder of volume {self.id} from {current_root_folder[1]} to {desired_root_folder[1]}')
 
 		file_changes = propose_basefolder_change(
 			(
@@ -562,7 +562,7 @@ class _VolumeBackend:
 		if current_volume_folder == new_volume_folder:
 			return
 
-		logging.info(f'Moving volume folder from {current_volume_folder} to {new_volume_folder}')
+		LOGGER.info(f'Moving volume folder from {current_volume_folder} to {new_volume_folder}')
 
 		self['custom_folder'] = custom_folder
 		self['folder'] = new_volume_folder
@@ -819,7 +819,7 @@ class Volume(_VolumeBackend):
 		"""
 		from backend.tasks import TaskHandler
 
-		logging.info(f'Deleting volume {self.id} with delete_folder set to {delete_folder}')
+		LOGGER.info(f'Deleting volume {self.id} with delete_folder set to {delete_folder}')
 		cursor = get_db()
 
 		# Check if there is no task running for the volume
@@ -881,7 +881,7 @@ def scan_files(volume_id: int) -> None:
 	Args:
 		volume_id (int): The ID of the volume to scan for.
 	"""
-	logging.debug(f'Scanning for files for {volume_id}')
+	LOGGER.debug(f'Scanning for files for {volume_id}')
 
 	volume = Volume(volume_id, check_existence=False)
 	volume_data = volume.get_keys((
@@ -1362,7 +1362,7 @@ class Library:
 		Returns:
 			int: The new id of the volume
 		"""
-		logging.debug(
+		LOGGER.debug(
 			'Adding a volume to the library: ' +
 			f'CV ID {comicvine_id}, RF ID {root_folder_id}, Monitor {monitor}, VF {volume_folder}'
 		)
@@ -1464,7 +1464,7 @@ class Library:
 			cursor.connection.commit()
 			TaskHandler().add(task)
 
-		logging.info(f'Added volume with comicvine id {comicvine_id} and id {volume_id}')
+		LOGGER.info(f'Added volume with comicvine id {comicvine_id} and id {volume_id}')
 		return volume_id
 
 	def get_stats(self) -> Dict[str, int]:

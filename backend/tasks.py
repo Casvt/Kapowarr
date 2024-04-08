@@ -4,7 +4,6 @@
 Background tasks and their handling
 """
 
-import logging
 from abc import ABC, abstractmethod
 from threading import Thread, Timer
 from time import sleep, time
@@ -15,6 +14,7 @@ from backend.custom_exceptions import (InvalidComicVineApiKey,
 from backend.db import get_db
 from backend.download_queue import DownloadHandler
 from backend.helpers import Singleton, WebSocket
+from backend.logging import LOGGER
 from backend.search import auto_search
 from backend.volumes import Issue, Volume, refresh_and_scan
 
@@ -251,7 +251,7 @@ class TaskHandler(metaclass=Singleton):
 		Args:
 			task (Task): The task to run
 		"""
-		logging.debug(f'Running task {task.display_title}')
+		LOGGER.debug(f'Running task {task.display_title}')
 		with self.context():
 			socket = WebSocket()
 			try:
@@ -272,10 +272,10 @@ class TaskHandler(metaclass=Singleton):
 							# to avoid locking up the db
 							cursor.connection.commit()
 
-					logging.info(f'Finished task {task.display_title}')
+					LOGGER.info(f'Finished task {task.display_title}')
 
 			except Exception:
-				logging.exception('An error occured while trying to run a task: ')
+				LOGGER.exception('An error occured while trying to run a task: ')
 				task.message = 'AN ERROR OCCURED'
 				socket.update_task_status(task)
 				sleep(1.5)
@@ -312,7 +312,7 @@ class TaskHandler(metaclass=Singleton):
 		Returns:
 			int: The id of the entry in the queue
 		"""
-		logging.debug(f'Adding task to queue: {task.display_title}')
+		LOGGER.debug(f'Adding task to queue: {task.display_title}')
 		id = self.queue[-1]['id'] + 1 if self.queue else 1
 		task_data = {
 			'task': task,
@@ -325,7 +325,7 @@ class TaskHandler(metaclass=Singleton):
 			)
 		}
 		self.queue.append(task_data)
-		logging.info(f'Added task: {task.display_title} ({id})')
+		LOGGER.info(f'Added task: {task.display_title} ({id})')
 		WebSocket().send_task_added(task)
 		self._process_queue()
 		return id
@@ -349,7 +349,7 @@ class TaskHandler(metaclass=Singleton):
 
 	def __check_intervals(self)	-> None:
 		"Check if any interval task needs to be run and add to queue if so"
-		logging.debug('Checking task intervals')
+		LOGGER.debug('Checking task intervals')
 		with self.context():
 			current_time = time()
 
@@ -357,7 +357,7 @@ class TaskHandler(metaclass=Singleton):
 			interval_tasks = cursor.execute(
 				"SELECT task_name, interval, next_run FROM task_intervals;"
 			).fetchall()
-			logging.debug(f'Task intervals: {list(map(dict, interval_tasks))}')
+			LOGGER.debug(f'Task intervals: {list(map(dict, interval_tasks))}')
 			for task in interval_tasks:
 				if task['next_run'] <= current_time:
 					# Add task to queue
@@ -381,7 +381,7 @@ class TaskHandler(metaclass=Singleton):
 				"SELECT MIN(next_run) FROM task_intervals"
 			).fetchone()[0]
 		timedelta = next_run - round(time()) + 1
-		logging.debug(f'Next interval task is in {timedelta} seconds')
+		LOGGER.debug(f'Next interval task is in {timedelta} seconds')
 
 		# Create sleep thread for that time and that will run self.__check_intervals.
 		self.task_interval_waiter = Timer(timedelta, self.__check_intervals)
@@ -391,7 +391,7 @@ class TaskHandler(metaclass=Singleton):
 	def stop_handle(self) -> None:
 		"Stop the task handler"
 
-		logging.debug('Stopping task thread')
+		LOGGER.debug('Stopping task thread')
 		self.task_interval_waiter.cancel()
 		if self.queue:
 			self.queue[0]['task'].stop = True
@@ -465,7 +465,7 @@ class TaskHandler(metaclass=Singleton):
 		task['task'].stop = True
 		task['thread'].join()
 		self.queue.remove(task)
-		logging.info(f'Removed task: {task["task"].display_name} ({task_id})')
+		LOGGER.info(f'Removed task: {task["task"].display_name} ({task_id})')
 		WebSocket().send_task_ended(task['task'])
 		return
 
@@ -499,7 +499,7 @@ def get_task_history(offset: int=0) -> List[dict]:
 
 def delete_task_history() -> None:
 	"Delete the complete task history"
-	logging.info(f'Deleting task history')
+	LOGGER.info(f'Deleting task history')
 	get_db().execute("DELETE FROM task_history;")
 	return
 

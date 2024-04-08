@@ -1,7 +1,7 @@
 #-*- coding: utf-8 -*-
 
-import logging
 from json import dump, load
+from logging import INFO
 from os import urandom
 from os.path import isdir, join, sep
 from typing import Any
@@ -14,7 +14,7 @@ from backend.enums import SeedingHandling
 from backend.files import folder_path
 from backend.helpers import (CommaList, Singleton, first_of_column,
                              get_python_version)
-from backend.logging import set_log_level
+from backend.logging import LOGGER, set_log_level
 
 supported_source_strings = (('mega',),
 							('mediafire',),
@@ -29,7 +29,7 @@ default_settings = {
 	'api_key': None,
 	'comicvine_api_key': '',
 	'auth_password': '',
-	'log_level': logging.INFO,
+	'log_level': INFO,
 
 	'rename_downloaded_files': True,
 	'volume_folder_naming': join('{series_name}', 'Volume {volume_number} ({year})'),
@@ -235,7 +235,7 @@ class Settings(metaclass=Singleton):
 		name = __name
 		value = __value
 
-		logging.info(f'Changing setting: {name}->{value}')
+		LOGGER.info(f'Changing setting: {name}->{value}')
 
 		if not name in default_settings:
 			raise InvalidSettingKey(name)
@@ -289,7 +289,7 @@ class Settings(metaclass=Singleton):
 		if 'url_base' in changes:
 			update_manifest(changes['url_base'])
 
-		logging.info(f'Settings changed: {changes}')
+		LOGGER.info(f'Settings changed: {changes}')
 
 		return
 
@@ -302,7 +302,7 @@ class Settings(metaclass=Singleton):
 		Raises:
 			InvalidSettingKey: The key is not valid
 		"""
-		logging.debug(f'Setting reset: {key}')
+		LOGGER.debug(f'Setting reset: {key}')
 
 		if not key in default_settings:
 			raise InvalidSettingKey(key)
@@ -319,19 +319,19 @@ class Settings(metaclass=Singleton):
 		elif key == 'url_base':
 			update_manifest(default_settings[key])
 
-		logging.info(f'Setting reset: {key}->{default_settings[key]}')
+		LOGGER.info(f'Setting reset: {key}->{default_settings[key]}')
 		return
 
 	def generate_api_key(self) -> None:
 		"Generate a new api key"
-		logging.debug('Generating new api key')
+		LOGGER.debug('Generating new api key')
 		api_key = urandom(16).hex()
 		self.settings['api_key'] = api_key
 		get_db().execute(
 			"UPDATE config SET value = ? WHERE key = 'api_key';",
 			(api_key,)
 		)
-		logging.info(f'Setting api key regenerated: {api_key}')
+		LOGGER.info(f'Setting api key regenerated: {api_key}')
 
 		return
 

@@ -8,15 +8,15 @@ All custom exceptions are defined here
 Note: Not all CE's inherit from CustomException.
 """
 
-import logging
 from typing import Any, Union
 
 from backend.enums import BlocklistReason, BlocklistReasonID
+from backend.logging import LOGGER
 
 
 class CustomException(Exception):
 	def __init__(self, e: Any = None) -> None:
-		logging.warning(self.__doc__)
+		LOGGER.warning(self.__doc__)
 		super().__init__(e)
 		return
 
@@ -57,7 +57,7 @@ class VolumeDownloadedFor(Exception):
 	def __init__(self, volume_id: int):
 		self.volume_id = volume_id
 		super().__init__(self.volume_id)
-		logging.warning(
+		LOGGER.warning(
 			f'Deleting volume failed because there is a download for the volume: {self.volume_id}'
 		)
 		return
@@ -75,7 +75,7 @@ class TaskForVolumeRunning(Exception):
 	def __init__(self, volume_id: int):
 		self.volume_id = volume_id
 		super().__init__(self.volume_id)
-		logging.warning(
+		LOGGER.warning(
 			f'Deleting volume failed because there is a task for the volume: {self.volume_id}'
 		)
 		return
@@ -137,7 +137,7 @@ class InvalidSettingKey(Exception):
 	def __init__(self, key: str = ''):
 		self.key = key
 		super().__init__(self.key)
-		logging.warning(f'No setting matched the given key: {key}')
+		LOGGER.warning(f'No setting matched the given key: {key}')
 		return
 
 	@property
@@ -154,7 +154,7 @@ class InvalidSettingValue(Exception):
 		self.key = key
 		self.value = value
 		super().__init__(self.key)
-		logging.warning(f'The value for this setting is invalid: {key}: {value}')
+		LOGGER.warning(f'The value for this setting is invalid: {key}: {value}')
 		return
 
 	@property
@@ -171,7 +171,7 @@ class InvalidSettingModification(Exception):
 		self.key = key
 		self.instead = instead
 		super().__init__(key)
-		logging.warning(
+		LOGGER.warning(
 			f'This setting is not allowed to be changed this way: {key}.' +
 			f' Instead: {instead}')
 		return
@@ -190,7 +190,7 @@ class KeyNotFound(Exception):
 		self.key = key
 		super().__init__(self.key)
 		if key != 'password':
-			logging.warning(
+			LOGGER.warning(
 				"This key was not found in the API request,"
 				+ f" eventhough it's required: {key}"
 			)
@@ -207,7 +207,7 @@ class InvalidKeyValue(Exception):
 		self.value = value
 		super().__init__(self.key)
 		if value not in ('undefined', 'null'):
-			logging.warning(
+			LOGGER.warning(
 				'This key in the API request has an invalid value: ' +
 				f'{key} = {value}'
 			)
@@ -229,7 +229,7 @@ class CredentialSourceNotFound(Exception):
 	"""The credential source with the given string was not found"""
 	def __init__(self, string: str) -> None:
 		self.string = string
-		logging.warning(f'Credential source with given string not found: {string}')
+		LOGGER.warning(f'Credential source with given string not found: {string}')
 		return
 
 	@property
@@ -252,7 +252,7 @@ class DownloadLimitReached(Exception):
 	"""The download limit (download quota) for the service is reached"""
 	def __init__(self, string: str) -> None:
 		self.string = string
-		logging.warning(f"Credential source {string} has reached it's download limit")
+		LOGGER.warning(f"Credential source {string} has reached it's download limit")
 		return
 
 	@property
@@ -275,7 +275,7 @@ class TorrentClientDownloading(Exception):
 	def __init__(self, torrent_client_id: int):
 		self.torrent_client_id = torrent_client_id
 		super().__init__(self.torrent_client_id)
-		logging.warning(
+		LOGGER.warning(
 			f'Deleting torrent client failed because there is '
 			+ f'a torrent downloading with it: {self.torrent_client_id}'
 		)
@@ -295,7 +295,7 @@ class TorrentClientNotWorking(Exception):
 	def __init__(self, description: Union[str, None] = None) -> None:
 		self.desc = description
 		super().__init__(self.desc)
-		logging.warning(
+		LOGGER.warning(
 			f'Failed to connect to torrent client with the following reason: {self.desc}'
 		)
 		return
@@ -307,3 +307,7 @@ class TorrentClientNotWorking(Exception):
 			'result': {'description': self.desc},
 			'code': 400
 		}
+
+class LogFileNotFound(CustomException):
+	"""No log file was found"""
+	api_response = {'error': 'LogFileNotFound', 'result': {}, 'code': 404}

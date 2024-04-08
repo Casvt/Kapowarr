@@ -1,6 +1,6 @@
 #-*- coding: utf-8 -*-
 
-import logging
+from os.path import exists
 from typing import Any, Dict, List, Tuple, Type, Union
 
 from flask import Blueprint, Flask, request, send_file
@@ -19,8 +19,9 @@ from backend.custom_exceptions import (BlocklistEntryNotFound,
                                        InvalidKeyValue, InvalidSettingKey,
                                        InvalidSettingModification,
                                        InvalidSettingValue, IssueNotFound,
-                                       KeyNotFound, RootFolderInUse,
-                                       RootFolderInvalid, RootFolderNotFound,
+                                       KeyNotFound, LogFileNotFound,
+                                       RootFolderInUse, RootFolderInvalid,
+                                       RootFolderNotFound,
                                        TaskForVolumeRunning, TaskNotDeletable,
                                        TaskNotFound, TorrentClientDownloading,
                                        TorrentClientNotFound,
@@ -34,6 +35,7 @@ from backend.download_queue import (DownloadHandler, delete_download_history,
 from backend.download_torrent_clients import TorrentClients, client_types
 from backend.enums import BlocklistReason, BlocklistReasonID
 from backend.library_import import import_library, propose_library_import
+from backend.logging import LOGGER, get_debug_log_filepath
 from backend.mass_edit import MassEditorVariables, action_to_func
 from backend.naming import (generate_volume_folder_name, mass_rename,
                             preview_mass_rename)
@@ -66,7 +68,8 @@ def error_handler(method):
 		try:
 			return method(*args, **kwargs)
 
-		except (BlocklistEntryNotFound,
+		except (
+			BlocklistEntryNotFound,
 			CredentialAlreadyAdded,
 			CredentialInvalid, CredentialNotFound,
 			CredentialSourceNotFound,
@@ -75,8 +78,9 @@ def error_handler(method):
 			InvalidKeyValue, InvalidSettingKey,
 			InvalidSettingModification,
 			InvalidSettingValue, IssueNotFound,
-			KeyNotFound, RootFolderInUse,
-			RootFolderInvalid, RootFolderNotFound,
+			KeyNotFound, LogFileNotFound,
+			RootFolderInUse, RootFolderInvalid,
+			RootFolderNotFound,
 			TaskForVolumeRunning, TaskNotDeletable,
 			TaskNotFound, TorrentClientDownloading,
 			TorrentClientNotFound,
@@ -209,7 +213,7 @@ def auth(method):
 			and (request.path in ('/api/system/tasks', '/api/activity/queue')
 				or request.path.endswith('/cover'))
 		):
-			logging.debug(f'{request.method} {request.path}')
+			LOGGER.debug(f'{request.method} {request.path}')
 		try:
 			extract_key(request, 'api_key')
 		except (KeyNotFound, InvalidKeyValue):
@@ -217,7 +221,7 @@ def auth(method):
 
 		result = method(*args, **kwargs)
 		if result[1] > 300:
-			logging.debug(f'{request.method} {request.path} {result[1]} {result[0]}')
+			LOGGER.debug(f'{request.method} {request.path} {result[1]} {result[0]}')
 		return result
 
 	wrapper.__name__ = method.__name__
@@ -236,10 +240,10 @@ def api_auth():
 
 		auth_password = settings['auth_password']
 		if auth_password is not None and given_password != auth_password:
-			logging.warning(f'Login attempt failed from {ip}')
+			LOGGER.warning(f'Login attempt failed from {ip}')
 			return return_api({}, 'PasswordInvalid', 401)
 
-	logging.info(f'Login attempt successful from {ip}')
+	LOGGER.info(f'Login attempt successful from {ip}')
 	return return_api({'api_key': settings['api_key']})
 
 @api.route('/auth/check', methods=['POST'])
@@ -256,6 +260,16 @@ def api_auth_check():
 @auth
 def api_about():
 	return return_api(about_data)
+
+@api.route('/system/logs', methods=['GET'])
+@error_handler
+@auth
+def api_logs():
+	file = get_debug_log_filepath()
+	if not exists(file):
+		raise LogFileNotFound
+
+	return send_file(file), 200
 
 @api.route('/system/tasks', methods=['GET','POST'])
 @error_handler

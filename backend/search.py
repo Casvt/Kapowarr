@@ -4,7 +4,6 @@
 Searching online sources (GC) for downloads
 """
 
-import logging
 from asyncio import create_task, gather, run
 from typing import Dict, List, Union
 
@@ -18,6 +17,7 @@ from backend.file_extraction import extract_filename_data
 from backend.helpers import (MatchedSearchResultData, SearchResultData,
                              check_overlapping_issues, create_range,
                              extract_year_from_date, first_of_column)
+from backend.logging import LOGGER
 from backend.matching import _match_special_version, check_search_result_match
 from backend.settings import private_settings
 from backend.volumes import Issue, Volume, get_calc_number_range
@@ -234,7 +234,7 @@ def manual_search(
 		issue_number: Union[str, None] = None
 		calculated_issue_number: Union[float, None] = None
 
-	logging.info(
+	LOGGER.info(
 		f'Starting manual search: {volume_data.title} ({volume_data.year}) {"#" + issue_number if issue_number else ""}'
 	)
 
@@ -309,7 +309,7 @@ def manual_search(
 		calculated_issue_number
 	))
 
-	logging.debug(f'Manual search results: {results}')
+	LOGGER.debug(f'Manual search results: {results}')
 	return results
 
 def auto_search(
@@ -332,13 +332,13 @@ def auto_search(
 	volume = Volume(volume_id)
 	monitored = volume['monitored']
 	special_version = volume['special_version']
-	logging.info(
+	LOGGER.info(
 		f'Starting auto search for volume {volume_id} {f"issue {issue_id}" if issue_id else ""}'
 	)
 	if not monitored:
 		# Volume is unmonitored so regardless of what to search for, ignore searching
 		result = []
-		logging.debug(f'Auto search results: {result}')
+		LOGGER.debug(f'Auto search results: {result}')
 		return result
 
 	searchable_issues: List[float] = []
@@ -360,7 +360,7 @@ def auto_search(
 		))
 		if not searchable_issues:
 			result = []
-			logging.debug(f'Auto search results: {result}')
+			LOGGER.debug(f'Auto search results: {result}')
 			return result
 
 	else:
@@ -369,13 +369,13 @@ def auto_search(
 		if not issue['monitored']:
 			# Auto search for issue but issue is unmonitored
 			result = []
-			logging.debug(f'Auto search results: {result}')
+			LOGGER.debug(f'Auto search results: {result}')
 			return result
 		else:
 			if issue.get_files():
 				# Auto search for issue but issue already has file
 				result = []
-				logging.debug(f'Auto search results: {result}')
+				LOGGER.debug(f'Auto search results: {result}')
 				return result
 
 	results = [r for r in manual_search(volume_id, issue_id) if r['match']]
@@ -385,7 +385,7 @@ def auto_search(
 		and special_version != SpecialVersion.VOLUME_AS_ISSUE
 	):
 		result = results[:1] if results else []
-		logging.debug(f'Auto search results: {result}')
+		LOGGER.debug(f'Auto search results: {result}')
 		return result
 
 	volume_parts = []
@@ -456,5 +456,5 @@ def auto_search(
 		else:
 			volume_parts.append(result)
 
-	logging.debug(f'Auto search results: {volume_parts}')
+	LOGGER.debug(f'Auto search results: {volume_parts}')
 	return volume_parts

@@ -1,6 +1,5 @@
 #-*- coding: utf-8 -*-
 
-import logging
 from sqlite3 import IntegrityError
 from time import time
 from typing import Any, Dict, List
@@ -8,6 +7,7 @@ from typing import Any, Dict, List
 from backend.custom_exceptions import BlocklistEntryNotFound
 from backend.db import get_db
 from backend.enums import BlocklistReason, BlocklistReasonID
+from backend.logging import LOGGER
 
 
 def get_blocklist(offset: int=0) -> List[Dict[str, Any]]:
@@ -22,7 +22,7 @@ def get_blocklist(offset: int=0) -> List[Dict[str, Any]]:
 	Returns:
 		List[Dict[str, Any]]: A list of dicts where each dict is a blocklist entry
 	"""
-	logging.debug(f'Fetching blocklist with offset {offset}')
+	LOGGER.debug(f'Fetching blocklist with offset {offset}')
 	entries = list(map(
 		dict,
 		get_db(dict).execute("""
@@ -49,7 +49,7 @@ def get_blocklist(offset: int=0) -> List[Dict[str, Any]]:
 def delete_blocklist() -> None:
 	"""Delete all blocklist entries
 	"""
-	logging.info('Deleting blocklist')
+	LOGGER.info('Deleting blocklist')
 	get_db().execute(
 		"DELETE FROM blocklist;"
 	)
@@ -68,7 +68,7 @@ def get_blocklist_entry(id: int) -> Dict[str, Any]:
 		Dict[str, Any]: The info about the blocklist entry, similar to the dicts
 		in the output of `blocklist.get_blocklist()`
 	"""
-	logging.debug(f'Fetching blocklist entry {id}')
+	LOGGER.debug(f'Fetching blocklist entry {id}')
 	entry = get_db(dict).execute("""
 		SELECT
 			id,
@@ -100,7 +100,7 @@ def delete_blocklist_entry(id: int) -> None:
 	Raises:
 		BlocklistEntryNotFound: The id doesn't map to any blocklist entry
 	"""
-	logging.debug(f'Deleting blocklist entry {id}')
+	LOGGER.debug(f'Deleting blocklist entry {id}')
 	entry_found = get_db().execute(
 		"DELETE FROM blocklist WHERE id = ?",
 		(id,)
@@ -136,7 +136,7 @@ def add_to_blocklist(link: str, reason: BlocklistReason) -> Dict[str, Any]:
 	Returns:
 		Dict[str, Any]: Info about the blocklist entry.
 	"""
-	logging.info(f'Adding {link} to blocklist with reason "{reason.value}"')
+	LOGGER.info(f'Adding {link} to blocklist with reason "{reason.value}"')
 	cursor = get_db()
 	reason_id = BlocklistReasonID[reason.name].value
 

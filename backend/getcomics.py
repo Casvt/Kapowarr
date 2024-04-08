@@ -4,7 +4,6 @@
 Getting downloads from a GC page
 """
 
-import logging
 from hashlib import sha1
 from re import IGNORECASE, compile
 from typing import Callable, Dict, List, Tuple, Union
@@ -24,6 +23,7 @@ from backend.enums import BlocklistReason, FailReason, SpecialVersion
 from backend.file_extraction import extract_filename_data
 from backend.helpers import (DownloadGroup, FilenameData,
                              check_overlapping_issues, get_torrent_info)
+from backend.logging import LOGGER
 from backend.matching import GC_group_filter
 from backend.naming import (generate_empty_name, generate_issue_name,
                             generate_issue_range_name, generate_sv_name)
@@ -54,7 +54,7 @@ def _check_download_link(
 		Union[str, None]: Either the name of the service (e.g. `mega`)
 		or `None` if it's not allowed.
 	"""
-	logging.debug(f'Checking download link: {link}, {link_text}')
+	LOGGER.debug(f'Checking download link: {link}, {link_text}')
 	if not link:
 		return
 
@@ -69,7 +69,7 @@ def _check_download_link(
 	# Check if link is from supported source
 	for source in supported_source_strings:
 		if any(s in link_text for s in source):
-			logging.debug(f'Checking download link: {link_text} maps to {source[0]}')
+			LOGGER.debug(f'Checking download link: {link_text} maps to {source[0]}')
 
 			if 'torrent' in source[0] and not torrent_client_available:
 				return
@@ -93,7 +93,7 @@ def _purify_link(link: str) -> dict:
 		a download instance for the correct service (child of `download_general.Download`)
 		and the source title.
 	"""
-	logging.debug(f'Purifying link: {link}')
+	LOGGER.debug(f'Purifying link: {link}')
 	# Go through every link and get it all down to direct download or magnet links
 	if link.startswith('magnet:?'):
 		# Link is already magnet link
@@ -301,7 +301,7 @@ def _extract_get_comics_links(
 				'Amazing Spider-Man V1 Issue 11-20': {...}
 			}
 	"""
-	logging.debug('Extracting download groups')
+	LOGGER.debug('Extracting download groups')
 
 	torrent_client_available = get_db().execute(
 		"SELECT 1 FROM torrent_clients"
@@ -316,7 +316,7 @@ def _extract_get_comics_links(
 		**_extract_list_links(body, torrent_client_available)
 	}
 
-	logging.debug(f'Download groups: {download_groups}')
+	LOGGER.debug(f'Download groups: {download_groups}')
 	return download_groups
 
 def _sort_link_paths(p: List[DownloadGroup]) -> Tuple[float, int]:
@@ -369,7 +369,7 @@ def _create_link_paths(
 		The `links` key contains the download links grouped together with
 		their service.
 	"""
-	logging.debug('Creating link paths')
+	LOGGER.debug('Creating link paths')
 
 	# Get info of volume
 	volume = Volume(volume_id)
@@ -449,7 +449,7 @@ def _create_link_paths(
 
 	link_paths.sort(key=_sort_link_paths)
 
-	logging.debug(f'Link paths: {link_paths}')
+	LOGGER.debug(f'Link paths: {link_paths}')
 	return link_paths
 
 def _generate_name(
@@ -519,7 +519,7 @@ def _test_paths(
 		Tuple[List[Download], Union[FailReason, None]]:
 			A list of downloads and the reason the list is empty is so.
 	"""
-	logging.debug('Testing paths')
+	LOGGER.debug('Testing paths')
 	cursor = get_db()
 	limit_reached = None
 	downloads: List[Download] = []
@@ -579,7 +579,7 @@ def _test_paths(
 				continue
 		downloads = []
 
-	logging.debug(f'Chosen links: {downloads}')
+	LOGGER.debug(f'Chosen links: {downloads}')
 	return downloads, limit_reached
 
 def extract_GC_download_links(
@@ -600,7 +600,7 @@ def extract_GC_download_links(
 		Tuple[List[Download], Union[FailReason, None]]:
 			A list of downloads and the reason the list is empty is so.
 	"""
-	logging.debug(f'Extracting download links from {link} for volume {volume_id} and issue {issue_id}')
+	LOGGER.debug(f'Extracting download links from {link} for volume {volume_id} and issue {issue_id}')
 
 	try:
 		r = get(link, headers={'user-agent': 'Kapowarr'}, stream=True)

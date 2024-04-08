@@ -4,7 +4,6 @@
 The (re)naming of folders and media
 """
 
-import logging
 from dataclasses import asdict
 from os import listdir
 from os.path import basename, dirname, isdir, isfile, join, sep, splitext
@@ -19,6 +18,7 @@ from backend.file_extraction import cover_regex, image_extensions
 from backend.files import (delete_empty_folders, propose_basefolder_change,
                            rename_file)
 from backend.helpers import first_of_column
+from backend.logging import LOGGER
 from backend.root_folders import RootFolders
 from backend.settings import Settings
 from backend.volumes import Issue, Volume
@@ -486,7 +486,7 @@ def preview_mass_rename(
 	for file in file_infos:
 		if not isfile(file):
 			continue
-		logging.debug(f'Renaming: original filename: {file}')
+		LOGGER.debug(f'Renaming: original filename: {file}')
 
 		# Find the issues that the file covers
 		issues = first_of_column(cursor.execute("""
@@ -577,9 +577,9 @@ def preview_mass_rename(
 			suggested_name + splitext(file)[1]
 		)
 
-		logging.debug(f'Renaming: suggested filename: {suggested_name}')
+		LOGGER.debug(f'Renaming: suggested filename: {suggested_name}')
 		if file != suggested_name:
-			logging.debug(f'Renaming: added rename')
+			LOGGER.debug(f'Renaming: added rename')
 			result.append({
 				'before': file,
 				'after': suggested_name
@@ -597,9 +597,9 @@ def preview_mass_rename(
 			folder
 		)
 		for old, new in new_general_files:
-			logging.debug(f'Renaming: original filename: {old}')
-			logging.debug(f'Renaming: suggested filename: {new}')
-			logging.debug(f'Renaming: added rename')
+			LOGGER.debug(f'Renaming: original filename: {old}')
+			LOGGER.debug(f'Renaming: suggested filename: {new}')
+			LOGGER.debug(f'Renaming: added rename')
 			result.append({
 				'before': old,
 				'after': new
@@ -654,7 +654,7 @@ def mass_rename(
 	if renames:
 		delete_empty_folders(dirname(renames[0]['before']), root_folder)
 
-	logging.info(
+	LOGGER.info(
 		f'Renamed volume {volume_id} {f"issue {issue_id}" if issue_id else ""}'
 	)
 	return [r['after'] for r in renames]

@@ -4,7 +4,7 @@
 Search for volumes/issues and fetch metadata for them on ComicVine
 """
 
-import logging
+from backend.logging import LOGGER
 from asyncio import create_task, gather
 from re import IGNORECASE, compile
 from typing import Any, Dict, List, Union
@@ -395,7 +395,7 @@ class ComicVine:
 			dict: The metadata of the volume
 		"""
 		id = self.__normalize_cv_id(id)
-		logging.debug(f'Fetching volume data for {id}')
+		LOGGER.debug(f'Fetching volume data for {id}')
 
 		async with ClientSession() as session:
 			result = await self.__call_api_async(
@@ -410,12 +410,12 @@ class ComicVine:
 				volume_info['cover']
 			)
 
-			logging.debug(f'Fetching issue data for volume {id}')
+			LOGGER.debug(f'Fetching issue data for volume {id}')
 			volume_info['issues'] = await self.fetch_issues_async([
 				id.split('-')[-1]
 			])
 
-			logging.debug(f'Fetching volume data result: {volume_info}')
+			LOGGER.debug(f'Fetching volume data result: {volume_info}')
 			return volume_info
 
 	async def fetch_volumes_async(self, ids: List[str]) -> List[dict]:
@@ -429,7 +429,7 @@ class ComicVine:
 		Returns:
 			List[dict]: The metadata of the volumes
 		"""
-		logging.debug(f'Fetching volume data for {ids}')
+		LOGGER.debug(f'Fetching volume data for {ids}')
 
 		volume_infos = []
 		async with ClientSession() as session:
@@ -481,7 +481,7 @@ class ComicVine:
 		Returns:
 			List[dict]: The metadata of all the issues inside the volumes
 		"""
-		logging.debug(f'Fetching issue data for volumes {ids}')
+		LOGGER.debug(f'Fetching issue data for volumes {ids}')
 
 		issue_infos = []
 		async with ClientSession() as session:
@@ -567,7 +567,7 @@ class ComicVine:
 			)
 		)
 
-		logging.debug(f'Searching for volumes with query result: {results}')
+		LOGGER.debug(f'Searching for volumes with query result: {results}')
 		return results
 
 	def search_volumes(self, query: str) -> List[dict]:
@@ -579,7 +579,7 @@ class ComicVine:
 		Returns:
 			List[dict]: A list with search results
 		"""
-		logging.debug(f'Searching for volumes with the query {query}')
+		LOGGER.debug(f'Searching for volumes with the query {query}')
 
 		if query.startswith('4050-') or query.startswith('cv:'):
 			query = self.__normalize_cv_id(query)
@@ -618,7 +618,7 @@ class ComicVine:
 		Returns:
 			List[dict]: A list with search results
 		"""
-		logging.debug(f'Searching for volumes with the query {query}')
+		LOGGER.debug(f'Searching for volumes with the query {query}')
 
 		if query.startswith('4050-') or query.startswith('cv:'):
 			query = self.__normalize_cv_id(query)

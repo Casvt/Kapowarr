@@ -1,6 +1,5 @@
 #-*- coding: utf-8 -*-
 
-import logging
 from asyncio import create_task, gather, run
 from os.path import basename, dirname, isfile, join, splitext
 from typing import Dict, Iterator, List, Sequence
@@ -16,6 +15,7 @@ from backend.files import (delete_empty_folders, find_lowest_common_folder,
                            folder_is_inside_folder, list_files, rename_file)
 from backend.helpers import (CVFileMapping, DictKeyedDict, FilenameData,
                              batched, create_range)
+from backend.logging import LOGGER
 from backend.matching import _match_title, _match_year
 from backend.naming import mass_rename
 from backend.root_folders import RootFolders
@@ -108,7 +108,7 @@ def propose_library_import(
 	Returns:
 		List[dict]: The list of files and their matches.
 	"""
-	logging.info('Loading library import')
+	LOGGER.info('Loading library import')
 
 	# Get all files in all root folders
 	root_folders = RootFolders().get_all()
@@ -158,7 +158,7 @@ def propose_library_import(
 		(unimported_files
 			.setdefault(efd, [])
 			.append(f))
-	logging.debug(f'File groupings: {unimported_files}')
+	LOGGER.debug(f'File groupings: {unimported_files}')
 
 	# Find a match for the files on CV
 	result: List[dict] = []
@@ -211,11 +211,11 @@ def import_library(
 		after importing files?
 			Defaults to False.
 	"""
-	logging.info('Starting library import')
+	LOGGER.info('Starting library import')
 	cvid_to_filepath: Dict[int, List[str]] = {}
 	for match in matches:
 		cvid_to_filepath.setdefault(match['id'], []).append(match['filepath'])
-	logging.debug(f'id_to_filepath: {cvid_to_filepath}')
+	LOGGER.debug(f'id_to_filepath: {cvid_to_filepath}')
 
 	root_folders = RootFolders().get_all()
 

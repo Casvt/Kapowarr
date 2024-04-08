@@ -4,7 +4,6 @@
 Handling folders, files and filenames.
 """
 
-import logging
 from os import listdir, makedirs, remove, scandir, sep, stat
 from os.path import (abspath, basename, commonpath, dirname, isdir, isfile,
                      join, relpath, samefile, splitext)
@@ -12,6 +11,7 @@ from shutil import copytree, move, rmtree
 from typing import Iterable, List, Tuple, Union
 
 from backend.db import get_db
+from backend.logging import LOGGER
 
 
 def folder_path(*folders: str) -> str:
@@ -138,10 +138,10 @@ def delete_empty_folders(top_folder: str, root_folder: str) -> None:
 		top_folder (str): The folder to start deleting from
 		root_folder (str): The root folder to stop at in case we reach it
 	"""
-	logging.debug(f'Deleting folders from {top_folder} until {root_folder}')
+	LOGGER.debug(f'Deleting folders from {top_folder} until {root_folder}')
 
 	if not folder_is_inside_folder(root_folder, top_folder):
-		logging.error(f'The folder {top_folder} is not in {root_folder}')
+		LOGGER.error(f'The folder {top_folder} is not in {root_folder}')
 		return
 
 	if isfile(top_folder):
@@ -164,7 +164,7 @@ def delete_empty_folders(top_folder: str, root_folder: str) -> None:
 
 	if child_folder:
 		lowest_empty_folder = join(parent_folder, child_folder)
-		logging.debug(f'Deleting folder and children: {lowest_empty_folder}')
+		LOGGER.debug(f'Deleting folder and children: {lowest_empty_folder}')
 		delete_file_folder(lowest_empty_folder)
 
 	return
@@ -237,7 +237,7 @@ def rename_file(
 		# Cannot move folder into itself
 		return
 
-	logging.debug(f'Renaming file {before} to {after}')
+	LOGGER.debug(f'Renaming file {before} to {after}')
 
 	create_folder(dirname(after))
 
@@ -292,7 +292,7 @@ def get_file_id(
 	cursor = get_db()
 
 	if add_file:
-		logging.debug(f'Adding file to the database: {filepath}')
+		LOGGER.debug(f'Adding file to the database: {filepath}')
 		cursor.execute(
 			"INSERT OR IGNORE INTO files(filepath, size) VALUES (?,?)",
 			(filepath, stat(filepath).st_size)

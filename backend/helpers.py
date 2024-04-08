@@ -6,7 +6,6 @@ General "helper" functions and classes
 
 from __future__ import annotations
 
-import logging
 from sys import version_info
 from threading import current_thread
 from typing import (TYPE_CHECKING, Any, Dict, Generator, Iterable, Iterator,
@@ -17,6 +16,7 @@ from bencoding import bdecode
 from flask_socketio import SocketIO
 
 from backend.enums import SocketEvent
+from backend.logging import LOGGER
 
 if TYPE_CHECKING:
 	from backend.download_general import Download
@@ -44,7 +44,7 @@ def check_python_version() -> bool:
 		bool: Whether or not the python version is version 3.8 or above or not.
 	"""
 	if not (version_info.major == 3 and version_info.minor >= 8):
-		logging.critical(
+		LOGGER.critical(
 			'The minimum python version required is python3.8 ' +
 			'(currently ' + str(version_info.major) + '.' + str(version_info.minor) + '.' + str(version_info.micro) + ').'
 		)

@@ -6,7 +6,6 @@ The post-download processing (a.k.a. post-processing or PP) of downloads
 
 from __future__ import annotations
 
-import logging
 from os.path import basename, exists, join, splitext
 from time import time
 from typing import TYPE_CHECKING
@@ -16,6 +15,7 @@ from backend.converters import extract_files_from_folder
 from backend.db import get_db
 from backend.download_torrent_clients import TorrentDownload
 from backend.files import copy_directory, delete_file_folder, rename_file
+from backend.logging import LOGGER
 from backend.naming import mass_rename
 from backend.settings import Settings
 from backend.volumes import Volume, scan_files
@@ -57,12 +57,12 @@ class PostProcessingActions:
 
 		folder = Volume(download.volume_id)['folder']
 		file_dest = join(folder, download._filename_body + splitext(download.file)[1])
-		logging.debug(
+		LOGGER.debug(
 			f'Moving download to final destination: {download}, Dest: {file_dest}'
 		)
 
 		if exists(file_dest):
-			logging.warning(
+			LOGGER.warning(
 				f'The file/folder {file_dest} already exists; replacing with downloaded file'
 			)
 			delete_file_folder(file_dest)
@@ -138,12 +138,12 @@ class PostProcessingActions:
 		if exists(download.file):
 			folder = Volume(download.volume_id)['folder']
 			file_dest = join(folder, basename(download.file))
-			logging.debug(
+			LOGGER.debug(
 				f'Copying download to final destination: {download}, Dest: {file_dest}'
 			)
 
 			if exists(file_dest):
-				logging.warning(
+				LOGGER.warning(
 					f'The file/folder {file_dest} already exists; replacing with downloaded file'
 				)
 				delete_file_folder(file_dest)
@@ -212,31 +212,31 @@ class PostProcesser:
 
 	@classmethod
 	def success(cls, download) -> None:
-		logging.info(f'Postprocessing of successful download: {download.id}')
+		LOGGER.info(f'Postprocessing of successful download: {download.id}')
 		cls._run_actions(cls.actions_success, download)
 		return
 
 	@classmethod
 	def seeding(cls, download) -> None:
-		logging.info(f'Postprocessing of seeding download: {download.id}')
+		LOGGER.info(f'Postprocessing of seeding download: {download.id}')
 		cls._run_actions(cls.actions_seeding, download)
 		return
 
 	@classmethod
 	def canceled(cls, download) -> None:
-		logging.info(f'Postprocessing of canceled download: {download.id}')
+		LOGGER.info(f'Postprocessing of canceled download: {download.id}')
 		cls._run_actions(cls.actions_canceled, download)
 		return
 
 	@classmethod
 	def shutdown(cls, download) -> None:
-		logging.info(f'Postprocessing of shut down download: {download.id}')
+		LOGGER.info(f'Postprocessing of shut down download: {download.id}')
 		cls._run_actions(cls.actions_shutdown, download)
 		return
 
 	@classmethod
 	def failed(cls, download) -> None:
-		logging.info(f'Postprocessing of failed download: {download.id}')
+		LOGGER.info(f'Postprocessing of failed download: {download.id}')
 		cls._run_actions(cls.actions_failed, download)
 		return
 

@@ -7,7 +7,7 @@ Converting files to a different format
 from itertools import chain
 from multiprocessing import cpu_count
 from multiprocessing.pool import Pool
-from os.path import dirname, splitext
+from os.path import splitext
 from sys import platform
 from typing import Dict, Iterable, List, Set, Tuple, Type, Union
 

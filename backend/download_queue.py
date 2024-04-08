@@ -6,7 +6,6 @@ Handling the download queue and history
 
 from __future__ import annotations
 
-import logging
 from os import listdir
 from os.path import basename, join
 from threading import Thread
@@ -25,6 +24,7 @@ from backend.enums import (BlocklistReason, DownloadState, FailReason,
 from backend.files import create_folder, delete_file_folder
 from backend.getcomics import extract_GC_download_links
 from backend.helpers import WebSocket, first_of_column
+from backend.logging import LOGGER
 from backend.post_processing import (PostProcesser,
                                      PostProcesserTorrentsComplete,
                                      PostProcesserTorrentsCopy)
@@ -84,7 +84,7 @@ class DownloadHandler:
 			download (Download): The download to run.
 				One of the entries in self.queue.
 		"""
-		logging.info(f'Starting download: {download.id}')
+		LOGGER.info(f'Starting download: {download.id}')
 
 		with self.context():
 			ws = WebSocket()
@@ -314,10 +314,10 @@ class DownloadHandler:
 			""").fetchall()
 
 			if downloads:
-				logging.info('Loading downloads')
+				LOGGER.info('Loading downloads')
 
 			for download in downloads:
-				logging.debug(f'Download from database: {dict(download)}')
+				LOGGER.debug(f'Download from database: {dict(download)}')
 				try:
 					dl_instance = download_type_to_class[download['client_type']](
 						link=download['link'],
@@ -375,14 +375,14 @@ class DownloadHandler:
 			Queue entries that were added from the link and reason for failing
 			if no entries were added.
 		"""
-		logging.info(
+		LOGGER.info(
 			'Adding download for '
 			+ f'volume {volume_id}{f" issue {issue_id}" if issue_id else ""}: {link}'
 		)
 
 		# Check if link isn't already in queue
 		if any(d for d in self.queue if link in (d.page_link, d.download_link)):
-			logging.info('Download already in queue')
+			LOGGER.info('Download already in queue')
 			return []
 
 		is_gc_link = link.startswith(private_settings['getcomics_url'])
@@ -405,7 +405,7 @@ class DownloadHandler:
 					# Page has links that matched but all are broken
 					add_to_blocklist(link, BlocklistReason.NO_WORKING_LINKS)
 
-				logging.warning(
+				LOGGER.warning(
 					f'Unable to extract download links from source; fail_reason="{fail_reason.value}"'
 				)
 				return [], fail_reason
@@ -427,7 +427,7 @@ class DownloadHandler:
 		"""
 		Cancel any running download and stop the handler
 		"""
-		logging.debug('Stopping download thread')
+		LOGGER.debug('Stopping download thread')
 
 		for e in self.queue:
 			e.stop(DownloadState.SHUTDOWN_STATE)
@@ -471,7 +471,7 @@ class DownloadHandler:
 		Raises:
 			DownloadNotFound: The id doesn't map to any download in the queue
 		"""
-		logging.info(f'Removing download with id {download_id}')
+		LOGGER.info(f'Removing download with id {download_id}')
 
 		for download in self.queue:
 			if download.id == download_id:
@@ -506,7 +506,7 @@ class DownloadHandler:
 		Empty the temporary download folder of files that aren't being downloaded.
 		Handy in the case that a crash left half-downloaded files behind in the folder.
 		"""
-		logging.info(f'Emptying the temporary download folder')
+		LOGGER.info(f'Emptying the temporary download folder')
 		folder = Settings()['download_folder']
 		files_in_queue = [basename(download.file) for download in self.queue]
 		files_in_folder = listdir(folder)
@@ -553,6 +553,6 @@ def delete_download_history() -> None:
 	"""
 	Delete complete download history
 	"""
-	logging.info('Deleting download history')
+	LOGGER.info('Deleting download history')
 	get_db().execute("DELETE FROM download_history;")
 	return

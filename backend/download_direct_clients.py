@@ -5,7 +5,6 @@ Clients for downloading from a direct URL and Mega.
 Used when downloading from GC.
 """
 
-import logging
 from os.path import basename, join, sep, splitext
 from re import IGNORECASE, compile
 from time import perf_counter
@@ -19,6 +18,7 @@ from backend.custom_exceptions import LinkBroken
 from backend.download_general import Download
 from backend.enums import BlocklistReason, DownloadState
 from backend.helpers import WebSocket
+from backend.logging import LOGGER
 from backend.settings import Settings
 
 from .lib.mega import Mega, RequestError, sids
@@ -84,7 +84,7 @@ class DirectDownload(BaseDownload):
 		Raises:
 			LinkBroken: The link doesn't work
 		"""
-		logging.debug(f'Creating download: {link}, {filename_body}')
+		LOGGER.debug(f'Creating download: {link}, {filename_body}')
 		super().__init__()
 		self.progress: float = 0.0
 		self.speed: float = 0.0
@@ -243,7 +243,7 @@ class MegaDownload(BaseDownload):
 		Raises:
 			LinkBroken: The link doesn't work
 		"""
-		logging.debug(f'Creating mega download: {link}, {filename_body}')
+		LOGGER.debug(f'Creating mega download: {link}, {filename_body}')
 		super().__init__()
 		self.download_link = link
 		self.source = source

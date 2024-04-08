@@ -1,6 +1,5 @@
 #-*- coding: utf-8 -*-
 
-import logging
 from os.path import isdir
 from os.path import sep as path_sep
 from sqlite3 import IntegrityError
@@ -10,6 +9,7 @@ from backend.custom_exceptions import (FolderNotFound, RootFolderInUse,
                                        RootFolderInvalid, RootFolderNotFound)
 from backend.db import get_db
 from backend.files import folder_is_inside_folder
+from backend.logging import LOGGER
 
 
 class RootFolders:
@@ -73,7 +73,7 @@ class RootFolders:
 			dict: The rootfolder info
 		"""
 		# Format folder and check if it exists
-		logging.info(f'Adding rootfolder from {folder}')
+		LOGGER.info(f'Adding rootfolder from {folder}')
 		if not isdir(folder):
 			raise FolderNotFound
 		if not folder.endswith(path_sep):
@@ -94,7 +94,7 @@ class RootFolders:
 
 		root_folder = self.get_one(root_folder_id, use_cache=False)
 
-		logging.debug(f'Adding rootfolder result: {root_folder_id}')
+		LOGGER.debug(f'Adding rootfolder result: {root_folder_id}')
 		return root_folder
 
 	def delete(self, id: int) -> None:
@@ -107,7 +107,7 @@ class RootFolders:
 			RootFolderNotFound: The id doesn't map to any rootfolder
 			RootFolderInUse: The rootfolder is still in use by a volume
 		"""
-		logging.info(f'Deleting rootfolder {id}')
+		LOGGER.info(f'Deleting rootfolder {id}')
 		cursor = get_db()
 
 		# Remove from database
