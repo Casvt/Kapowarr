@@ -95,12 +95,12 @@ function getConvertList() {
 
 function updateConvertList() {
 	const table = document.querySelector('#convert-table tbody');
-	table.querySelectorAll('tr:not(:nth-last-child(-n+2))').forEach(
+	table.querySelectorAll('tr[data-place]').forEach(
 		e => e.remove()
 		);
-	const no_conversion = table.querySelector('tr:nth-last-child(2)');
+	const no_conversion = table.querySelector('tr:has(#add-convert-input)');
 
-	let last_index = -1
+	let last_index = -1;
 	convert_preference.forEach((format, index) => {
 		last_index = index;
 		const entry = document.createElement('tr');
@@ -121,13 +121,13 @@ function updateConvertList() {
 		select.onchange = (e) => {
 			const other_el = [
 				...table.querySelectorAll(
-					`tr:not([data-place="${index + 1}"]) select`
+					`tr[data-place]:not([data-place="${index + 1}"]) select`
 				)
 			].filter(
 				el => el.value === select.value
 			)[0];
 			const used_values = new Set([
-				...table.querySelectorAll('select')
+				...table.querySelectorAll('tr[data-place] select')
 			].map(el => el.value));
 			const missing_value = convert_preference
 				.filter(f => !used_values.has(f))[0];
@@ -160,20 +160,19 @@ function updateConvertList() {
 
 	no_conversion.querySelector('th').innerText = last_index + 2;
 
-	const add_select = table.querySelector('#add-convert-input');
+	const add_select = no_conversion.querySelector('select');
 	add_select.innerHTML = '';
-	const not_added_formats = convert_options
-		.filter(el => !convert_preference.includes(el));
-	if (not_added_formats.length > 0) {
-		not_added_formats.forEach(format => {
-			const option = document.createElement('option');
-			option.value = option.innerText = format;
-			add_select.appendChild(option);
-		});
-		table.querySelector('tr:last-child').classList.remove('hidden');
-	} else {
-		table.querySelector('tr:last-child').classList.add('hidden');
-	};
+	const not_added_formats = [
+		'No Conversion',
+		...convert_options
+			.filter(el => !convert_preference.includes(el))
+			.sort()
+	];
+	not_added_formats.forEach(format => {
+		const option = document.createElement('option');
+		option.value = option.innerText = format;
+		add_select.appendChild(option);
+	});
 };
 
 //
@@ -257,9 +256,10 @@ usingApiKey()
 });
 
 document.querySelector('#toggle-root-folder').onclick = toggleAddRootFolder;
-document.querySelector('#add-convert-button').onclick = e => {
-	convert_preference.push(
-		document.querySelector('#add-convert-input').value
-	);
-	updateConvertList();
+document.querySelector('#add-convert-input').onchange = e => {
+	const value = e.target.value;
+	if (value !== 'No Conversion') {
+		convert_preference.push(value);
+		updateConvertList();
+	};
 };

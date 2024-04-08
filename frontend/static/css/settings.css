@@ -91,14 +91,6 @@
 	padding: .3rem;
 }
 
-#convert-table tr:nth-last-child(2) td p {
-	width: unset;
-}
-
-#convert-table #add-convert-button img {
-	transform: rotate(45deg) scale(.7);
-}
-
 /*  */
 /* Root folder list */
 /*  */
