@@ -884,14 +884,16 @@ def scan_files(volume_id: int) -> None:
 	logging.debug(f'Scanning for files for {volume_id}')
 
 	volume = Volume(volume_id, check_existence=False)
-	volume_data = volume.get_keys(
-		('folder', 'root_folder', 'special_version', 'year', 'id')
-	)
+	volume_data = volume.get_keys((
+		'id', 'volume_number', 'year',
+		'folder', 'root_folder',
+		'special_version'
+	))
 	volume_issues = volume.get_issues()
 	# We're going to check a lot of a string is in here,
 	# so convert to set for speed improvement.
 	volume_files = set(volume.get_files())
-	_general_files = volume.get_general_files(True)
+	_general_files = volume.get_general_files(include_id=True)
 	general_files = set(
 		f['filepath']
 		for f in _general_files
@@ -919,6 +921,19 @@ def scan_files(volume_id: int) -> None:
 			continue
 
 		file_data = extract_filename_data(file)
+
+		if (
+			file_data['special_version'] == SpecialVersion.COVER
+			and file_data['volume_number'] == volume_data.volume_number
+			and	file_data['issue_number'] is None
+		):
+			# Volume cover file
+			file_id = get_file_id(
+				file,
+				add_file = not file in general_files
+			)
+			general_bindings.append((file_id, GeneralFileType.COVER))
+			continue
 
 		# Check if file matches volume
 		if not file_importing_filter(file_data, volume_data, volume_issues):

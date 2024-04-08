@@ -42,6 +42,9 @@ class SpecialVersion(BaseEnum):
 	VOLUME_AS_ISSUE = 'volume-as-issue'
 	"Volume where each issue is named `Volume N`"
 
+	COVER = 'cover'
+	"Image file is cover of either issue or volume. Overrules over SV's."
+
 	NORMAL = None
 	"Normal volume, so not a special version"
 
@@ -75,3 +78,4 @@ class FailReason(BaseEnum):
 
 class GeneralFileType(BaseEnum):
 	METADATA = 'metadata'
+	COVER = 'cover'

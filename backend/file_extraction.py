@@ -18,7 +18,6 @@ from backend.helpers import FilenameData
 from backend.helpers import fix_year as fix_broken_year
 from backend.helpers import normalize_string
 
-sv_cover = 'cover'
 alphabet = 'abcdefghijklmnopqrstuvwxyz'
 alphabet = {letter: str(alphabet.index(letter) + 1).zfill(2) for letter in alphabet}
 digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
@@ -294,7 +293,7 @@ def extract_filename_data(
 	special_result = special_version_regex.search(filename)
 	cover_result = cover_regex.search(filename)
 	if cover_result:
-		special_version = sv_cover
+		special_version = SpecialVersion.COVER.value
 		if cover_result.group(1):
 			special_pos = cover_result.start(1)
 			special_end = cover_result.end(1)
@@ -309,7 +308,7 @@ def extract_filename_data(
 		][0].replace('_', '-')
 		special_pos = special_result.start(0)
 
-	if special_version in (None, sv_cover):
+	if special_version in (None, SpecialVersion.COVER):
 		# No special version so find issue number
 		if not is_image_file:
 			pos_options = (

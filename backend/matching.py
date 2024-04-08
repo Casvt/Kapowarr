@@ -193,7 +193,7 @@ def _match_special_version(
 	Returns:
 		bool: `True` if the states 'match', otherwise `False`.
 	"""
-	if reference_version == check_version:
+	if check_version in (reference_version, SpecialVersion.COVER):
 		return True
 
 	if issue_number == 1.0 and reference_version in (
