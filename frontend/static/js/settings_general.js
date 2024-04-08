@@ -44,19 +44,6 @@ function generateApiKey(api_key) {
 	});
 };
 
-function downloadLogFile(api_key) {
-	fetchAPI('/system/logs', api_key, {}, json_return=false)
-	.then(response => {
-		window.location.href = response.url;
-	})
-	.catch(e => {
-		if (e.status === 404)
-			alert("No debug log file to download. Enable debug logging first.");
-		else
-			console.log(e);
-	});
-};
-
 // code run on load
 
 usingApiKey()
@@ -64,7 +51,8 @@ usingApiKey()
 	fillSettings(api_key);
 	document.querySelector('#save-button').onclick = e => saveSettings(api_key);
 	document.querySelector('#generate-api').onclick = e => generateApiKey(api_key);
-	document.querySelector('#download-logs-button').onclick = e => downloadLogFile(api_key);
+	document.querySelector('#download-logs-button').onclick = e =>
+		window.location.href = `${url_base}/api/system/logs?api_key=${api_key}`;
 });
 
 document.querySelector('#theme-input').onchange = e => {
