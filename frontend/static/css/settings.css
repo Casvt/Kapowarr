@@ -276,8 +276,7 @@
 	width: 60%;
 }
 
-#test-torrent-edit,
-#test-torrent-add {
+.test-button {
 	position: relative;
 	width: 5rem;
 	height: 2rem;
@@ -287,51 +286,41 @@
 	transition: background-color 300ms linear;
 }
 
-#test-torrent-edit > div,
-#test-torrent-add > div {
+.test-button > div {
 	position: absolute;
 	width: 3rem;
 	transition: left 100ms linear;
 }
 
-#test-torrent-edit > div:first-child,
-#test-torrent-add > div:first-child {
+.test-button > div:first-child {
 	left: -100%;
 }
 
-#test-torrent-edit > div:nth-child(2),
-#test-torrent-add > div:nth-child(2) {
+.test-button > div:nth-child(2) {
 	left: 20%;
 }
 
-#test-torrent-edit > div:last-child,
-#test-torrent-add > div:last-child {
+.test-button > div:last-child {
 	left: 100%;
 }
 
-#test-torrent-edit.show-success,
-#test-torrent-add.show-success {
+.test-button.show-success {
 	background-color: var(--success-color);
 }
-#test-torrent-edit.show-success > div:nth-child(2),
-#test-torrent-add.show-success > div:nth-child(2) {
+.test-button.show-success > div:nth-child(2) {
 	left: -100%;
 }
-#test-torrent-edit.show-success > div:last-child,
-#test-torrent-add.show-success > div:last-child {
+.test-button.show-success > div:last-child {
 	left: 20%;
 }
 
-#test-torrent-edit.show-fail,
-#test-torrent-add.show-fail {
+.test-button.show-fail {
 	background-color: var(--error-color);
 }
-#test-torrent-edit.show-fail > div:nth-child(2),
-#test-torrent-add.show-fail > div:nth-child(2) {
+.test-button.show-fail > div:nth-child(2) {
 	left: 100%;
 }
-#test-torrent-edit.show-fail > div:first-child,
-#test-torrent-add.show-fail > div:first-child {
+.test-button.show-fail > div:first-child {
 	left: 20%;
 }
 
