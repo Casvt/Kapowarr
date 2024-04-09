@@ -248,9 +248,9 @@ usingApiKey()
 		e => clearSearch(api_key);
 
 	library_els.task_buttons.update_all.onclick =
-		e => sendAPI('POST', '/system/tasks', api_key, {'cmd': 'update_all'});
+		e => sendAPI('POST', '/system/tasks', api_key, {}, {'cmd': 'update_all'});
 	library_els.task_buttons.search_all.onclick =
-		e => sendAPI('POST', '/system/tasks', api_key, {'cmd': 'search_all'});
+		e => sendAPI('POST', '/system/tasks', api_key, {}, {'cmd': 'search_all'});
 
 	library_els.view_options.sort.onchange = e => {
 		setLocalStorage({'lib_sorting': library_els.view_options.sort.value});

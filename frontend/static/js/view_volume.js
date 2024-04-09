@@ -243,10 +243,10 @@ function refreshVolume(api_key) {
 	icon.src = button_info.loading_icon;
 	icon.classList.add('spinning');
 
-	sendAPI('POST', '/system/tasks', api_key, {
+	sendAPI('POST', '/system/tasks', api_key, {}, {
 		cmd: 'refresh_and_scan',
 		volume_id: id
-	}, {})
+	});
 };
 
 function autosearchVolume(api_key) {
@@ -255,10 +255,10 @@ function autosearchVolume(api_key) {
 	icon.src = button_info.loading_icon;
 	icon.classList.add('spinning');
 
-	sendAPI('POST', '/system/tasks', api_key, {
+	sendAPI('POST', '/system/tasks', api_key, {}, {
 		cmd: 'auto_search',
 		volume_id: id
-	}, {})
+	});
 };
 
 function autosearchIssue(issue_id, api_key) {
@@ -267,11 +267,11 @@ function autosearchIssue(issue_id, api_key) {
 	icon.src = button_info.loading_icon;
 	icon.classList.add('spinning');
 
-	sendAPI('POST', '/system/tasks', api_key, {
+	sendAPI('POST', '/system/tasks', api_key, {}, {
 		cmd: 'auto_search_issue',
 		volume_id: id,
 		issue_id: issue_id
-	}, {})
+	});
 };
 
 //
@@ -440,30 +440,26 @@ function renameVolume(api_key, issue_id=null) {
 		return;
 	};
 
-	showLoadWindow('rename-window');
-	let url;
-	if (issue_id === null)
-		url = `/volumes/${id}/rename`;
-	else
-		url = `/issues/${issue_id}/rename`;
+	const data = {
+		cmd: 'mass_rename',
+		volume_id: id,
+		filepath_filter:
+			checkboxes
+				.filter(e => e.checked)
+				.map(e => e
+					.parentNode
+					.parentNode
+					.querySelector('td:last-child')
+					.innerText
+				)
+	};
+	if (issue_id !== null) {
+		data.cmd = 'mass_rename_issue';
+		data.issue_id = issue_id;
+	};
 
-	sendAPI(
-		'POST',
-		url,
-		api_key,
-		{},
-		checkboxes
-			.filter(e => e.checked)
-			.map(e => e
-				.parentNode
-				.parentNode
-				.querySelector('td:last-child')
-				.innerText
-			)
-	)
-	.then(response =>
-		window.location.reload()
-	);
+	sendAPI('POST', '/system/tasks', api_key, {}, data)
+	.then(response => closeWindow());
 };
 
 //
@@ -545,30 +541,26 @@ function convertVolume(api_key, issue_id=null) {
 		return;
 	};
 
-	showLoadWindow('convert-window');
-	let url;
-	if (issue_id === null)
-		url = `/volumes/${id}/convert`;
-	else
-		url = `/issues/${issue_id}/convert`;
+	const data = {
+		cmd: 'mass_convert',
+		volume_id: id,
+		filepath_filter:
+			checkboxes
+				.filter(e => e.checked)
+				.map(e => e
+					.parentNode
+					.parentNode
+					.querySelector('td:last-child')
+					.innerText
+				)
+	};
+	if (issue_id !== null) {
+		data.cmd = 'mass_convert_issue';
+		data.issue_id = issue_id;
+	};
 
-	sendAPI(
-		'POST',
-		url,
-		api_key,
-		{},
-		checkboxes
-			.filter(e => e.checked)
-			.map(e => e
-				.parentNode
-				.parentNode
-				.querySelector('td:last-child')
-				.innerText
-			)
-	)
-	.then(response =>
-		window.location.reload()
-	);
+	sendAPI('POST', '/system/tasks', api_key, {}, data)
+	.then(response => closeWindow());
 };
 
 //

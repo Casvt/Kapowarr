@@ -93,13 +93,13 @@ class PostProcessingActions:
 			mass_convert(
 				download.volume_id,
 				download.issue_id,
-				files=download.resulting_files
+				filepath_filter=download.resulting_files
 			)
 		else:
 			mass_convert(
 				download.volume_id,
 				download.issue_id,
-				files=[download.file]
+				filepath_filter=[download.file]
 			)
 		return
 

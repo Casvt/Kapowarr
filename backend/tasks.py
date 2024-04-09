@@ -9,12 +9,14 @@ from threading import Thread, Timer
 from time import sleep, time
 from typing import Dict, List, Union
 
+from backend.conversion import mass_convert
 from backend.custom_exceptions import (InvalidComicVineApiKey,
                                        TaskNotDeletable, TaskNotFound)
 from backend.db import get_db
 from backend.download_queue import DownloadHandler
 from backend.helpers import Singleton, WebSocket
 from backend.logging import LOGGER
+from backend.naming import mass_rename
 from backend.search import auto_search
 from backend.volumes import Issue, Volume, refresh_and_scan
 
@@ -90,8 +92,8 @@ class AutoSearchIssue(Task):
 		self.issue_id = issue_id
 
 	def run(self) -> List[tuple]:
+		volume = Volume(self.volume_id)
 		issue = Issue(self.issue_id)
-		volume = Volume(issue['volume_id'])
 		self.message = f'Searching for {volume["title"]} #{issue["issue_number"]}'
 		WebSocket().update_task_status(self)
 
@@ -103,6 +105,98 @@ class AutoSearchIssue(Task):
 				for result in results
 			]
 		return []
+
+
+class MassRenameIssue(Task):
+	"Trigger a mass rename for an issue"
+
+	stop = False
+	message = ''
+	action = 'mass_rename_issue'
+	display_title = 'Mass Rename'
+	category = ''
+	volume_id = None
+	issue_id = None
+
+	def __init__(
+		self,
+		volume_id: int,
+		issue_id: int,
+		filepath_filter: Union[List[str], None] = []
+	):
+		"""Create the task
+
+		Args:
+			volume_id (int): The ID of the volume for which to perform the task.
+			issue_id (int): The ID of the issue for which to perform the task.
+			filepath_filter (Union[List[str], None], optional): Only rename
+			files in this list.
+				Defaults to [].
+		"""
+		self.volume_id = volume_id
+		self.issue_id = issue_id
+		self.filepath_filter = filepath_filter
+		return
+
+	def run(self) -> None:
+		volume = Volume(self.volume_id)
+		issue = Issue(self.issue_id)
+		self.message = f'Renaming files for {volume["title"]} #{issue["issue_number"]}'
+		WebSocket().update_task_status(self)
+
+		mass_rename(
+			self.volume_id,
+			self.issue_id,
+			filepath_filter=self.filepath_filter
+		)
+
+		return
+
+
+class MassConvertIssue(Task):
+	"Trigger a mass convert for an issue"
+
+	stop = False
+	message = ''
+	action = 'mass_convert_issue'
+	display_title = 'Mass Convert'
+	category = ''
+	volume_id = None
+	issue_id = None
+
+	def __init__(
+		self,
+		volume_id: int,
+		issue_id: int,
+		filepath_filter: Union[List[str], None] = []
+	):
+		"""Create the task
+
+		Args:
+			volume_id (int): The ID of the volume for which to perform the task.
+			issue_id (int): The ID of the issue for which to perform the task.
+			filepath_filter (Union[List[str], None], optional): Only rename
+			files in this list.
+				Defaults to [].
+		"""
+		self.volume_id = volume_id
+		self.issue_id = issue_id
+		self.filepath_filter = filepath_filter
+		return
+
+	def run(self) -> None:
+		volume = Volume(self.volume_id)
+		issue = Issue(self.issue_id)
+		self.message = f'Converting files for {volume["title"]} #{issue["issue_number"]}'
+		WebSocket().update_task_status(self)
+
+		mass_convert(
+			self.volume_id,
+			self.issue_id,
+			filepath_filter=self.filepath_filter
+		)
+
+		return
 
 #=====================
 # Volume tasks
@@ -136,6 +230,7 @@ class AutoSearchVolume(Task):
 			return [(result['link'], self.volume_id) for result in results]
 		return []
 
+
 class RefreshAndScanVolume(Task):
 	"Trigger a refresh and scan for a volume"
 
@@ -163,6 +258,86 @@ class RefreshAndScanVolume(Task):
 			refresh_and_scan(self.volume_id)
 		except InvalidComicVineApiKey:
 			pass
+
+		return
+
+
+class MassRenameVolume(Task):
+	"Trigger a mass rename for a volume"
+
+	stop = False
+	message = ''
+	action = 'mass_rename'
+	display_title = 'Mass Rename'
+	category = ''
+	volume_id = None
+	issue_id = None
+
+	def __init__(
+		self,
+		volume_id: int,
+		filepath_filter: Union[List[str], None] = []
+	):
+		"""Create the task
+
+		Args:
+			volume_id (int): The ID of the volume for which to perform the task.
+			filepath_filter (Union[List[str], None], optional): Only rename
+			files in this list.
+				Defaults to [].
+		"""
+		self.volume_id = volume_id
+		self.filepath_filter = filepath_filter
+		return
+
+	def run(self) -> None:
+		self.message = f'Renaming files for {Volume(self.volume_id)["title"]}'
+		WebSocket().update_task_status(self)
+
+		mass_rename(
+			self.volume_id,
+			filepath_filter=self.filepath_filter
+		)
+
+		return
+
+
+class MassConvertVolume(Task):
+	"Trigger a mass convert for a volume"
+
+	stop = False
+	message = ''
+	action = 'mass_convert'
+	display_title = 'Mass Convert'
+	category = ''
+	volume_id = None
+	issue_id = None
+
+	def __init__(
+		self,
+		volume_id: int,
+		filepath_filter: Union[List[str], None] = []
+	):
+		"""Create the task
+
+		Args:
+			volume_id (int): The ID of the volume for which to perform the task.
+			filepath_filter (Union[List[str], None], optional): Only convert
+			files in this list.
+				Defaults to [].
+		"""
+		self.volume_id = volume_id
+		self.filepath_filter = filepath_filter
+		return
+
+	def run(self) -> None:
+		self.message = f'Converting files for {Volume(self.volume_id)["title"]}'
+		WebSocket().update_task_status(self)
+
+		mass_convert(
+			self.volume_id,
+			filepath_filter=self.filepath_filter
+		)
 
 		return
 

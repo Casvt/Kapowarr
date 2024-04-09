@@ -112,12 +112,26 @@ function mapButtons(id) {
 			'icon': `${url_base}/static/img/search.svg`,
 			'loading_icon': `${url_base}/static/img/loading.svg`
 		};
+		task_to_button[`mass_rename#${id}`] = {
+			'button': document.querySelector('#rename-button'),
+			'icon': `${url_base}/static/img/rename.svg`,
+			'loading_icon': `${url_base}/static/img/loading.svg`
+		};
+		task_to_button[`mass_convert#${id}`] = {
+			'button': document.querySelector('#convert-button'),
+			'icon': `${url_base}/static/img/convert.svg`,
+			'loading_icon': `${url_base}/static/img/loading.svg`
+		};
 
 		document.querySelectorAll('.issue-entry').forEach(entry => {
-			const button = entry.querySelector('.action-column > button:first-child');
 			task_to_button[`auto_search_issue#${id}#${entry.dataset.id}`] = {
-				'button': button,
+				'button': entry.querySelector('.action-column > button:first-child'),
 				'icon': `${url_base}/static/img/search.svg`,
+				'loading_icon': `${url_base}/static/img/loading.svg`
+			};
+			task_to_button[`mass_convert_issue#${id}#${entry.dataset.id}`] = {
+				'button': entry.querySelector('.action-column > button:last-child'),
+				'icon': `${url_base}/static/img/convert.svg`,
 				'loading_icon': `${url_base}/static/img/loading.svg`
 			};
 		});

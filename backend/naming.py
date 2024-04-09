@@ -475,8 +475,12 @@ def preview_mass_rename(
 		folder = volume['folder']
 
 	if filepath_filter is not None:
+		# We're checking a lot if strings are in this list,
+		# so making it a set will increase performance (due to hashing).
+		hashed_files = set(filepath_filter)
+
 		file_infos = filter(
-			lambda f: f in filepath_filter,
+			lambda f: f in hashed_files,
 			file_infos
 		)
 

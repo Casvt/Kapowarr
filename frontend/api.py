@@ -280,19 +280,49 @@ def api_tasks():
 		return return_api(tasks)
 
 	elif request.method == 'POST':
-		task: Type[Task] = extract_key(request, 'cmd')
+		data = request.get_json()
+		if not isinstance(data, dict):
+			raise InvalidKeyValue(value=data)
 
-		if task.action in ('auto_search_issue', 'auto_search', 'refresh_and_scan'):
-			volume_id = extract_key(request, 'volume_id')
+		task: Type[Task] = task_library.get(data.get('cmd'))
+		if not task:
+			raise TaskNotFound
 
-			if task.action in ('auto_search_issue',):
-				issue_id = extract_key(request, 'issue_id')
-				task_instance = task(volume_id, issue_id)
-			else:
-				task_instance = task(volume_id)
-		else:
-			task_instance = task()
+		kwargs = {}
+		if task.action in (
+			'refresh_and_scan',
+			'auto_search', 'auto_search_issue',
+			'mass_rename', 'mass_rename_issue',
+			'mass_convert', 'mass_convert_issue'
+		):
+			volume_id = data.get('volume_id')
+			if not volume_id:
+				raise InvalidKeyValue('volume_id', volume_id)
+			kwargs['volume_id'] = volume_id
 
+		if task.action in (
+			'auto_search_issue',
+			'mass_rename_issue',
+			'mass_convert_issue'
+		):
+			issue_id = data.get('issue_id')
+			if not issue_id:
+				raise InvalidKeyValue('issue_id', issue_id)
+			kwargs['issue_id'] = issue_id
+
+		if task.action in (
+			'mass_rename', 'mass_rename_issue',
+			'mass_convert', 'mass_convert_issue'
+		):
+			filepath_filter = data.get('filepath_filter')
+			if not (
+				filepath_filter is None
+				or isinstance(filepath_filter, list)
+			):
+				raise InvalidKeyValue('filepath_filter', filepath_filter)
+			kwargs['filepath_filter'] = filepath_filter
+
+		task_instance = task(**kwargs)
 		result = task_handler.add(task_instance)
 		return return_api({'id': result}, code=201)
 
@@ -569,68 +599,40 @@ def api_issues(id: int):
 #=====================
 # Renaming
 #=====================
-@api.route('/volumes/<int:id>/rename', methods=['GET','POST'])
+@api.route('/volumes/<int:id>/rename', methods=['GET'])
 @error_handler
 @auth
 def api_rename(id: int):
 	library.get_volume(id)
+	result = preview_mass_rename(id)
+	return return_api(result)
 
-	if request.method == 'GET':
-		result = preview_mass_rename(id)
-		return return_api(result)
-
-	elif request.method == 'POST':
-		filepath_filter = request.get_json(silent=True)
-		mass_rename(id, filepath_filter=filepath_filter)
-		return return_api({})
-
-@api.route('/issues/<int:id>/rename', methods=['GET','POST'])
+@api.route('/issues/<int:id>/rename', methods=['GET'])
 @error_handler
 @auth
 def api_rename_issue(id: int):
 	volume_id = library.get_issue(id)['volume_id']
-
-	if request.method == 'GET':
-		result = preview_mass_rename(volume_id, id)
-		return return_api(result)
-
-	elif request.method == 'POST':
-		filepath_filter = request.get_json(silent=True)
-		mass_rename(volume_id, id, filepath_filter=filepath_filter)
-		return return_api({})
+	result = preview_mass_rename(volume_id, id)
+	return return_api(result)
 
 #=====================
 # File Conversion
 #=====================
-@api.route('/volumes/<int:id>/convert', methods=['GET','POST'])
+@api.route('/volumes/<int:id>/convert', methods=['GET'])
 @error_handler
 @auth
 def api_convert(id: int):
 	library.get_volume(id)
+	result = preview_mass_convert(id)
+	return return_api(result)
 
-	if request.method == 'GET':
-		result = preview_mass_convert(id)
-		return return_api(result)
-
-	elif request.method == 'POST':
-		files = request.get_json(silent=True) or []
-		mass_convert(id, files=files)
-		return return_api({})
-
-@api.route('/issues/<int:id>/convert', methods=['GET','POST'])
+@api.route('/issues/<int:id>/convert', methods=['GET'])
 @error_handler
 @auth
 def api_convert_issue(id: int):
 	volume_id = library.get_issue(id)['volume_id']
-
-	if request.method == 'GET':
-		result = preview_mass_convert(volume_id, id)
-		return return_api(result)
-
-	elif request.method == 'POST':
-		files = request.get_json(silent=True) or []
-		mass_convert(volume_id, id, files=files)
-		return return_api({})
+	result = preview_mass_convert(volume_id, id)
+	return return_api(result)
 
 #=====================
 # Manual search + Download

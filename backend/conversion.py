@@ -154,7 +154,7 @@ def preview_mass_convert(
 def mass_convert(
 	volume_id: int,
 	issue_id: Union[int, None] = None,
-	files: List[str] = []
+	filepath_filter: Union[List[str], None] = None
 ) -> None:
 	"""Convert files for a volume or issue.
 
@@ -164,12 +164,13 @@ def mass_convert(
 		issue_id (Union[int, None], optional): The ID of the issue to convert for.
 			Defaults to None.
 
-		files (List[str], optional): Only convert files mentioned in this list.
-			Defaults to [].
+		files (Union[List[str], None], optional): Only convert files mentioned
+		in this list.
+			Defaults to None.
 	"""
 	# We're checking a lot if strings are in this list,
 	# so making it a set will increase performance (due to hashing).
-	hashed_files = set(files)
+	hashed_files = set(filepath_filter or [])
 
 	settings = Settings()
 	volume = Volume(volume_id)
