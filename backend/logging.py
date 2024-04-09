@@ -74,12 +74,10 @@ LOGGING_CONFIG = {
 		}
 	},
 	"loggers": {
-		LOGGER_NAME: {
-			"level": "INFO"
-		}
+		LOGGER_NAME: {}
 	},
 	"root": {
-		"level": "DEBUG",
+		"level": "INFO",
 		"handlers": [
 			"console",
 			"console_error",
@@ -119,11 +117,12 @@ def set_log_level(
 		clear_file (bool, optional): Empty the debug logging file.
 			Defaults to True.
 	"""
-	if LOGGER.level == level:
+	root_logger = logging.getLogger()
+	if root_logger.level == level:
 		return
 
 	LOGGER.debug(f'Setting logging level: {level}')
-	LOGGER.setLevel(level)
+	root_logger.setLevel(level)
 
 	if level == logging.DEBUG and clear_file:
 		file = get_debug_log_filepath()
