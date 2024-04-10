@@ -17,7 +17,7 @@ from backend.enums import SpecialVersion
 from backend.file_extraction import cover_regex, image_extensions
 from backend.files import (delete_empty_folders, propose_basefolder_change,
                            rename_file)
-from backend.helpers import first_of_column
+from backend.helpers import WebSocket, first_of_column
 from backend.logging import LOGGER
 from backend.root_folders import RootFolders
 from backend.settings import Settings
@@ -614,7 +614,8 @@ def preview_mass_rename(
 def mass_rename(
 	volume_id: int,
 	issue_id: Union[int, None] = None,
-	filepath_filter: Union[List[str], None] = None
+	filepath_filter: Union[List[str], None] = None,
+	update_websocket: bool = False
 ) -> List[str]:
 	"""Carry out proposal of `naming.preview_mass_rename()`.
 
@@ -628,6 +629,10 @@ def mass_rename(
 		filepath_filter (Union[List[str], None], optional): Only rename files
 		that are in the list.
 			Defaults to None.
+
+		update_websocket (bool, optional): Send task progress updates over
+		the websocket.
+			Defaults to False.
 
 	Returns:
 		List[str]: The new files.
@@ -647,7 +652,15 @@ def mass_rename(
 			]
 		)
 
-	for r in renames:
+	if update_websocket:
+		ws = WebSocket()
+		total_renames = len(renames)
+
+	for idx, r in enumerate(renames):
+		if update_websocket:
+			ws.update_task_status(
+				message=f'Renaming file {idx+1}/{total_renames}'
+			)
 		rename_file(r['before'], r['after'], True)
 
 	cursor.executemany(

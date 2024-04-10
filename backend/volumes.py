@@ -23,7 +23,7 @@ from backend.file_extraction import (extract_filename_data, md_extensions,
 from backend.files import (create_volume_folder, delete_empty_folders,
                            folder_is_inside_folder, get_file_id, list_files,
                            propose_basefolder_change, rename_file)
-from backend.helpers import first_of_column, reversed_tuples
+from backend.helpers import WebSocket, first_of_column, reversed_tuples
 from backend.logging import LOGGER
 from backend.matching import file_importing_filter
 from backend.root_folders import RootFolders
@@ -1047,7 +1047,10 @@ def scan_files(volume_id: int) -> None:
 	return
 
 
-def refresh_and_scan(volume_id: Union[int, None] = None) -> None:
+def refresh_and_scan(
+	volume_id: Union[int, None] = None,
+	update_websocket: bool = False
+) -> None:
 	"""Refresh and scan one or more volumes
 
 	Args:
@@ -1055,6 +1058,10 @@ def refresh_and_scan(volume_id: Union[int, None] = None) -> None:
 		desired to only refresh and scan one. If left to `None`, all volumes are
 		refreshed and scanned.
 			Defaults to None.
+
+		update_websocket (bool, optional): Send task progress updates over
+		the websocket.
+			Defaults to False.
 	"""
 	cursor = get_db()
 	cv = ComicVine()
@@ -1185,9 +1192,18 @@ def refresh_and_scan(volume_id: Union[int, None] = None) -> None:
 		scan_files(volume_id)
 	else:
 		cursor2 = get_db(temp=True)
+		if update_websocket:
+			ws = WebSocket()
+			total_count = cursor2.execute(
+				"SELECT COUNT(id) FROM volumes;"
+			).fetchone()[0]
 		cursor2.execute("SELECT id FROM volumes;")
-		for volume in cursor2:
-			scan_files(volume[0])
+		for idx, (volume,) in enumerate(cursor2):
+			if update_websocket:
+				ws.update_task_status(
+					message=f'Scanning files for volume {idx+1}/{total_count}'
+				)
+			scan_files(volume)
 		cursor2.connection.close()
 
 	return

@@ -9,11 +9,12 @@ from multiprocessing import cpu_count
 from multiprocessing.pool import Pool
 from os.path import splitext
 from sys import platform
-from typing import Dict, Iterable, List, Set, Tuple, Type, Union
+from typing import Callable, Dict, Iterable, List, Set, Tuple, Type, Union
 
 from backend.converters import FileConverter, rar_executables
 from backend.enums import SpecialVersion
 from backend.file_extraction import extract_filename_data
+from backend.helpers import WebSocket
 from backend.settings import Settings
 from backend.volumes import Volume, scan_files
 
@@ -67,11 +68,15 @@ def find_target_format_file(
 
 	return
 
-def convert_file(file: str, formats: Iterable[str]) -> Union[str, List[str]]:
+def convert_file(
+	file: str,
+	formats: Iterable[str]
+) -> Union[str, List[str]]:
 	"""Convert a file from one format to another.
 
 	Args:
 		file (str): The file to convert.
+
 		formats (Iterable[str]): A iterable of formats to convert the file to.
 			Order of list is preference of format (left to right).
 
@@ -88,6 +93,11 @@ def convert_file(file: str, formats: Iterable[str]) -> Union[str, List[str]]:
 		return conversion_class.convert(file)
 	else:
 		return file
+
+
+def map_convert_file(a: Tuple[str, Iterable[str]]) -> Union[str, List[str]]:
+	return convert_file(*a)
+
 
 def preview_mass_convert(
 	volume_id: int,
@@ -154,7 +164,8 @@ def preview_mass_convert(
 def mass_convert(
 	volume_id: int,
 	issue_id: Union[int, None] = None,
-	filepath_filter: Union[List[str], None] = None
+	filepath_filter: Union[List[str], None] = None,
+	update_websocket: bool = False
 ) -> None:
 	"""Convert files for a volume or issue.
 
@@ -164,9 +175,13 @@ def mass_convert(
 		issue_id (Union[int, None], optional): The ID of the issue to convert for.
 			Defaults to None.
 
-		files (Union[List[str], None], optional): Only convert files mentioned
-		in this list.
+		filepath_filter (Union[List[str], None], optional): Only convert files
+		mentioned in this list.
 			Defaults to None.
+
+		update_websocket (bool, optional): Send task progress updates over
+		the websocket.
+			Defaults to False.
 	"""
 	# We're checking a lot if strings are in this list,
 	# so making it a set will increase performance (due to hashing).
@@ -228,11 +243,26 @@ def mass_convert(
 
 	else:
 		with Pool(processes=processes) as pool:
-			pool.starmap(
-				convert_file,
-				planned_conversions,
-				chunksize=10
-			)
+			if update_websocket:
+				ws = WebSocket()
+				completed = 0
+				total = len(planned_conversions)
+				ws.update_task_status(
+					message=f'Converted {completed}/{total}'
+				)
+				for result in pool.imap_unordered(
+					map_convert_file,
+					planned_conversions
+				):
+					completed += 1
+					ws.update_task_status(
+						message=f'Converted {completed}/{total}'
+					)
+			else:
+				pool.starmap(
+					convert_file,
+					planned_conversions
+				)
 
 	scan_files(volume_id)
 

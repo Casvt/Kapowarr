@@ -147,7 +147,8 @@ class MassRenameIssue(Task):
 		mass_rename(
 			self.volume_id,
 			self.issue_id,
-			filepath_filter=self.filepath_filter
+			filepath_filter=self.filepath_filter,
+			update_websocket=True
 		)
 
 		return
@@ -193,7 +194,8 @@ class MassConvertIssue(Task):
 		mass_convert(
 			self.volume_id,
 			self.issue_id,
-			filepath_filter=self.filepath_filter
+			filepath_filter=self.filepath_filter,
+			update_websocket=True
 		)
 
 		return
@@ -296,7 +298,8 @@ class MassRenameVolume(Task):
 
 		mass_rename(
 			self.volume_id,
-			filepath_filter=self.filepath_filter
+			filepath_filter=self.filepath_filter,
+			update_websocket=True
 		)
 
 		return
@@ -336,7 +339,8 @@ class MassConvertVolume(Task):
 
 		mass_convert(
 			self.volume_id,
-			filepath_filter=self.filepath_filter
+			filepath_filter=self.filepath_filter,
+			update_websocket=True
 		)
 
 		return
@@ -360,7 +364,7 @@ class UpdateAll(Task):
 		WebSocket().update_task_status(self)
 
 		try:
-			refresh_and_scan()
+			refresh_and_scan(update_websocket=True)
 		except InvalidComicVineApiKey:
 			pass
 

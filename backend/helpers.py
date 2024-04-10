@@ -401,18 +401,38 @@ class WebSocket(SocketIO, metaclass=Singleton):
 		)
 		return
 
-	def update_task_status(self, task: Task) -> None:
-		"""Send a message with the new task queue status.
+	def update_task_status(
+		self,
+		task: Union[Task, None] = None,
+		message: Union[str, None] = None
+	) -> None:
+		"""Send a message with the new task queue status. Supply either
+		the task or the message.
 
 		Args:
-			task (Task): The task instance to send the status of.
+			task (Union[Task, None], optional): The task instance to send
+			the status of.
+				Defaults to None.
+
+			message (Union[str, None], optional): The message to send.
+				Defaults to None.
 		"""
-		self.emit(
-			SocketEvent.TASK_STATUS.value,
-			{
-				'message': task.message
-			}
-		)
+		if task is not None:
+			self.emit(
+				SocketEvent.TASK_STATUS.value,
+				{
+					'message': task.message
+				}
+			)
+
+		elif message is not None:
+			self.emit(
+				SocketEvent.TASK_STATUS.value,
+				{
+					'message': message
+				}
+			)
+
 		return
 
 	def send_queue_added(self, download: Download) -> None:
