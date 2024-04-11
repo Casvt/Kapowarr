@@ -2,6 +2,7 @@
 
 from os.path import isdir
 from os.path import sep as path_sep
+from shutil import disk_usage
 from sqlite3 import IntegrityError
 from typing import List
 
@@ -30,7 +31,16 @@ class RootFolders:
 			root_folders = get_db(dict).execute(
 				"SELECT id, folder FROM root_folders;"
 			)
-			self.cache = {r['id']: dict(r) for r in root_folders}
+			self.cache = {
+				r['id']: {
+					**dict(r),
+					'size': dict(zip(
+						('total', 'used', 'free'),
+						disk_usage('/home/cas/plex-media')
+					))
+				}
+				for r in root_folders
+			}
 		return list(self.cache.values())
 
 	def get_one(self, root_folder_id: int, use_cache: bool=True) -> dict:

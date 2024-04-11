@@ -99,7 +99,7 @@
 }
 
 #root-folder-table {
-	min-width: 27rem;
+	min-width: 34rem;
 }
 
 #root-folder-table th {
@@ -109,6 +109,10 @@
 
 #root-folder-list tr > * {
 	border-top: 1px solid var(--border-color);
+}
+
+.number-column {
+	width: 6.5rem;
 }
 
 .action-column {

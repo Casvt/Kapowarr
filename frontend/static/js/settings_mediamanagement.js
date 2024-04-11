@@ -191,6 +191,16 @@ function fillRootFolder(api_key) {
 			path.innerText = root_folder.folder;
 			entry.appendChild(path);
 
+			const free_space = document.createElement('td');
+			free_space.classList.add('number-column');
+			free_space.innerText = convertSize(root_folder.size.free);
+			entry.appendChild(free_space);
+			
+			const total_space = document.createElement('td');
+			total_space.classList.add('number-column');
+			total_space.innerText = convertSize(root_folder.size.total);
+			entry.appendChild(total_space);
+
 			const delete_root_folder_container = document.createElement('td');
 			delete_root_folder_container.classList.add('action-column');
 			const delete_root_folder = document.createElement('button');

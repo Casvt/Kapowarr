@@ -261,7 +261,7 @@ function convertSize(size) {
 				Math.round(
 					(size / division_size * 100)
 				) / 100
-			) + term;
+			) + ' ' + term;
 			return size;
 		};
 	};
@@ -270,7 +270,7 @@ function convertSize(size) {
 		Math.round(
 			(size / sizes.TB * 100)
 		) / 100
-	).toString() + 'TB';
+	).toString() + ' TB';
 
 	return size;
 };
