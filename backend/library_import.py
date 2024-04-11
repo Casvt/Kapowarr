@@ -230,7 +230,7 @@ def import_library(
 
 		# Find root folder that media is in
 		for root_folder in root_folders:
-			if files[0].startswith(root_folder['folder']):
+			if folder_is_inside_folder(root_folder['folder'], files[0]):
 				root_folder_id = root_folder['id']
 				break
 		else:
