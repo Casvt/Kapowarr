@@ -36,7 +36,7 @@ class RootFolders:
 					**dict(r),
 					'size': dict(zip(
 						('total', 'used', 'free'),
-						disk_usage('/home/cas/plex-media')
+						disk_usage(r['folder'])
 					))
 				}
 				for r in root_folders
