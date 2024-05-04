@@ -10,7 +10,7 @@ from typing import Callable, Dict, List, Tuple, Union
 
 from bencoding import bencode
 from bs4 import BeautifulSoup, Tag
-from requests import get
+from requests import get, post
 from requests.exceptions import ConnectionError as requests_ConnectionError
 
 from backend.blocklist import add_to_blocklist, blocklist_contains
@@ -33,6 +33,7 @@ from backend.volumes import Volume
 check_year = compile(r'\b\d{4}\b')
 mega_regex = compile(r'https?://mega\.(nz|io)/(#(F\!|\!)|folder/|file/)', IGNORECASE)
 mediafire_regex = compile(r'https?://www\.mediafire\.com/', IGNORECASE)
+wetransfer_regex = compile(r'(?:https?://we.tl/|wetransfer.com/downloads/)', IGNORECASE)
 extract_mediafire_regex = compile(
 	r'window.location.href\s?=\s?\'https://download\d+\.mediafire.com/.*?(?=\')',
 	IGNORECASE
@@ -149,6 +150,34 @@ def _purify_link(link: str) -> dict:
 			# Link is not broken and not a folder
 			# but we still can't find the download button...
 			raise LinkBroken(BlocklistReason.LINK_BROKEN)
+
+		elif wetransfer_regex.search(url):
+			# Link is wetransfer
+			transfer_id, security_hash = url.split("/")[-2:]
+			r = post(
+				f"https://wetransfer.com/api/v4/transfers/{transfer_id}/download",
+				json={
+					"intent": "entire_transfer",
+					"security_hash": security_hash
+				},
+				headers={
+					"User-Agent": "Kapowarr",
+					"x-requested-with": "XMLHttpRequest"
+				}
+			)
+			if not r.ok:
+				raise LinkBroken(BlocklistReason.LINK_BROKEN)
+
+			direct_link = r.json().get("direct_link")
+
+			if not direct_link:
+				raise LinkBroken(BlocklistReason.LINK_BROKEN)
+
+			return {
+				'link': direct_link,
+				'target': DirectDownload,
+				'source': 'wetransfer'
+			}
 
 		elif r.headers.get('Content-Type','') == 'application/x-bittorrent':
 			# Link is torrent file

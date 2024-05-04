@@ -103,7 +103,7 @@ class DirectDownload(BaseDownload):
 			self.title = filename_body.rstrip('.')
 		else:
 			self.title = splitext(unquote_plus(
-				self.download_link.split('/')[-1]
+				self.download_link.split('/')[-1].split("?")[0]
 			))[0]
 
 		self.file = self.__build_filename(r)

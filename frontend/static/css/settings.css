@@ -236,6 +236,10 @@
 	display: block;
 }
 
+#builtin-window[data-tag="wt"] :where(#wt-title, #wt-desc) {
+	display: block;
+}
+
 #builtin-window[data-tag="gc"] :where(#gc-title, #gc-desc) {
 	display: block;
 }
