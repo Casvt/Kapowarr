@@ -7,7 +7,7 @@ Clients for downloading a torrent using a torrent client
 from os.path import join
 from typing import TYPE_CHECKING, Dict, List, Type, Union
 
-from requests import post
+from requests import RequestException, post
 
 from backend.custom_exceptions import (InvalidKeyValue, LinkBroken,
                                        TorrentClientNotFound,
@@ -252,11 +252,15 @@ class TorrentDownload(BaseDownload):
 			self.title = filename_body.rstrip('.')
 
 		# Find name of torrent as it is folder that it's downloaded in
-		r = post(
-			'https://magnet2torrent.com/upload/',
-			data={'magnet': link},
-			headers={'User-Agent': 'Kapowarr'}
-		)
+		try:
+			r = post(
+				'https://magnet2torrent.com/upload/',
+				data={'magnet': link},
+				headers={'User-Agent': 'Kapowarr'}
+			)
+		except RequestException:
+			raise LinkBroken(BlocklistReason.LINK_BROKEN)
+
 		if r.headers.get('content-type') != 'application/x-bittorrent':
 			raise LinkBroken(BlocklistReason.LINK_BROKEN)
 

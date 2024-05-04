@@ -10,7 +10,7 @@ from re import IGNORECASE, compile
 from time import perf_counter
 from urllib.parse import unquote_plus
 
-from requests import get
+from requests import RequestException, get
 from requests.exceptions import ChunkedEncodingError
 
 from backend.credentials import Credentials
@@ -93,7 +93,11 @@ class DirectDownload(BaseDownload):
 		self.source = source
 		self._filename_body = filename_body
 
-		r = get(self.download_link, stream=True)
+		try:
+			r = get(self.download_link, stream=True)
+		except RequestException:
+			raise LinkBroken(BlocklistReason.LINK_BROKEN)
+
 		r.close()
 		if not r.ok:
 			raise LinkBroken(BlocklistReason.LINK_BROKEN)
