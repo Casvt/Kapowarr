@@ -3,7 +3,7 @@
 import logging
 import logging.config
 from os.path import exists
-from typing import Any
+from typing import Any, Union
 
 
 class UpToInfoFilter(logging.Filter):
@@ -105,18 +105,21 @@ def get_debug_log_filepath() -> str:
 	return folder_path(LOGGER_DEBUG_FILENAME)
 
 def set_log_level(
-	level: int,
+	level: Union[int, str],
 	clear_file: bool = True
 ) -> None:
 	"""Change the logging level.
 
 	Args:
-		level (int): The level to set the logging to.
-			Should be a logging level, like `logging.INFO` or `logging.DEBUG`.
+		level (Union[int, str]): The level to set the logging to.
+			Should be a logging level, like `logging.INFO` or `"DEBUG"`.
 
 		clear_file (bool, optional): Empty the debug logging file.
 			Defaults to True.
 	"""
+	if isinstance(level, str):
+		level = logging._nameToLevel[level.upper()]
+
 	root_logger = logging.getLogger()
 	if root_logger.level == level:
 		return
