@@ -841,7 +841,7 @@ class Volume(_VolumeBackend):
 		if delete_folder:
 			for f in self.get_files():
 				remove(f)
-				delete_empty_folders(dirname(f))
+				delete_empty_folders(dirname(f), self['folder'])
 
 			delete_empty_folders(
 				self['folder'],
