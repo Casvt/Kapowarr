@@ -331,6 +331,9 @@ class ComicVine:
 				y = (y
 					.replace('-', '0')
 					.replace('?', '')
+					.replace('>', '')
+					.replace('<', '')
+					.replace('+', '')
 				)
 
 			if y and y.isdigit():
