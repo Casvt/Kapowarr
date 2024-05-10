@@ -1192,21 +1192,18 @@ def refresh_and_scan(
 	if volume_id:
 		scan_files(volume_id)
 	else:
-		cursor2 = get_db(temp=True)
+		v_ids: List[int] = [ids[v['comicvine_id']] for v in volume_datas]
 		if update_websocket:
 			ws = WebSocket()
-			total_count = cursor2.execute(
-				"SELECT COUNT(id) FROM volumes;"
-			).fetchone()[0]
-		cursor2.execute("SELECT id FROM volumes;")
-		for idx, (volume,) in enumerate(cursor2):
+			total_count = len(v_ids)
+
+		for idx, volume in enumerate(v_ids):
 			if update_websocket:
 				ws.update_task_status(
 					message=f'Scanning files for volume {idx+1}/{total_count}'
 				)
 			scan_files(volume)
 			cursor.connection.commit()
-		cursor2.connection.close()
 
 	return
 
