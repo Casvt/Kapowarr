@@ -1186,6 +1186,7 @@ def refresh_and_scan(
 		""",
 		sv_updates
 	)
+	cursor.connection.commit()
 
 	# Scan for files
 	if volume_id:
@@ -1204,6 +1205,7 @@ def refresh_and_scan(
 					message=f'Scanning files for volume {idx+1}/{total_count}'
 				)
 			scan_files(volume)
+			cursor.connection.commit()
 		cursor2.connection.close()
 
 	return
