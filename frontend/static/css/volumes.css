@@ -65,6 +65,10 @@ main:not(
 	padding: 1.5rem;
 }
 
+main:has(#massedit-toggle:checked) #library-container {
+	overflow-y: hidden;
+}
+
 /*  */
 /* Library List */
 /*  */
@@ -159,6 +163,10 @@ main:not(
 	color: var(--text-color);
 }
 
+main:has(#massedit-toggle:checked) #table-container {
+	height: 100%;
+}
+
 #table-container > table {
 	width: max(100%, 25rem);
 	border-collapse: collapse;
@@ -228,6 +236,9 @@ main:not(:has(#massedit-toggle:checked)) #table-container :where(td, th):first-c
 
 .action-bar {
 	margin-bottom: 1rem;
+	position: sticky;
+	top: 0px;
+	z-index: 2;
 
 	display: none;
 	flex-wrap: wrap;
@@ -285,6 +296,10 @@ main:has(#massedit-toggle:checked) .action-bar {
 #cancel-massedit {
 	background-color: var(--error-color);
 	border-color: var(--error-color);
+}
+
+main:has(#massedit-toggle:checked) #lib-stats {
+	display: none;
 }
 
 @media (max-width: 850px) {
