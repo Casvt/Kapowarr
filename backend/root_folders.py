@@ -1,6 +1,6 @@
 #-*- coding: utf-8 -*-
 
-from os.path import isdir
+from os.path import abspath, isdir
 from os.path import sep as path_sep
 from shutil import disk_usage
 from sqlite3 import IntegrityError
@@ -10,6 +10,7 @@ from backend.custom_exceptions import (FolderNotFound, RootFolderInUse,
                                        RootFolderInvalid, RootFolderNotFound)
 from backend.db import get_db
 from backend.files import folder_is_inside_folder
+from backend.file_extraction import alphabet
 from backend.logging import LOGGER
 
 
@@ -86,8 +87,10 @@ class RootFolders:
 		LOGGER.info(f'Adding rootfolder from {folder}')
 		if not isdir(folder):
 			raise FolderNotFound
-		if not folder.endswith(path_sep):
-			folder += path_sep
+		folder = abspath(folder) + path_sep
+		
+		if len(folder) >= 4 and folder[1:3] == ":\\" and folder[0].lower() in alphabet:
+			folder = folder[0].upper() + folder[1:]
 
 		for current_rf in self.get_all():
 			if (
