@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from asyncio import run
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from io import BytesIO
 from os import remove
 from os.path import abspath, basename, dirname, isdir, join, relpath
@@ -28,6 +29,7 @@ from backend.logging import LOGGER
 from backend.matching import file_importing_filter
 from backend.root_folders import RootFolders
 
+THIRTY_DAYS = timedelta(days=30)
 split_regex = compile(r'(?<!vs)(?<!r\.i\.p)\.(?:\s|</p>(?!$))', IGNORECASE)
 os_regex = compile(r'(?<!preceding\s)(?<!>)\bone[\- ]?shot\b(?!<)', IGNORECASE)
 hc_regex = compile(r'(?<!preceding\s)(?<!>)\bhard[\- ]?cover\b(?!<)', IGNORECASE)
@@ -35,6 +37,7 @@ vol_regex = compile(r'^volume\.?\s\d+$', IGNORECASE)
 def determine_special_version(
 	volume_title: str,
 	volume_description: str,
+	first_issue_date: Union[str, None],
 	issue_titles: Sequence[str]
 ) -> SpecialVersion:
 	"""Determine if a volume is a special version.
@@ -42,6 +45,8 @@ def determine_special_version(
 	Args:
 		volume_title (str): The title of the volume.
 		volume_description (str): The description of the volume.
+		first_issue_date (Union[str, None]): The release date of the first issue,
+		if the volume has an issue.
 		issue_titles (Sequence[str]): The titles of all issues in the volume.
 
 	Returns:
@@ -80,7 +85,14 @@ def determine_special_version(
 		if hc_regex.search(volume_description):
 			return SpecialVersion.HARD_COVER
 
-	if issue_count == 1:
+	thirty_plus_days_ago = None
+	if first_issue_date:
+		thirty_plus_days_ago = (
+			datetime.now() - datetime.strptime(first_issue_date, "%Y-%m-%d")
+				> THIRTY_DAYS
+		)
+
+	if issue_count == 1 and thirty_plus_days_ago:
 		return SpecialVersion.TPB
 	else:
 		return SpecialVersion.NORMAL
@@ -1165,19 +1177,27 @@ def refresh_and_scan(
 	cursor.connection.commit()
 
 	# Check special version
-	sv_updates = list((
+	sv_updates = []
+	for volume_data in volume_datas:
+		first_issue_date = (cursor.execute(
+			"SELECT date FROM issues WHERE volume_id = ? ORDER BY date LIMIT 1;",
+			(ids[volume_data['comicvine_id']],)
+		).fetchone() or (None,))[0]
+
+		issue_titles = first_of_column(cursor.execute(
+			"SELECT title FROM issues WHERE volume_id = ?;",
+			(ids[volume_data['comicvine_id']],)
+		))
+
+		sv_updates.append((
 			determine_special_version(
 				volume_data['title'],
 				volume_data['description'],
-				first_of_column(cursor.execute(
-					"SELECT title FROM issues WHERE volume_id = ?;",
-					(ids[volume_data['comicvine_id']],)
-				))
+				first_issue_date,
+				issue_titles
 			).value,
 			ids[volume_data['comicvine_id']]
-		)
-		for volume_data in volume_datas
-	)
+		))
 
 	cursor.executemany("""
 		UPDATE volumes
@@ -1402,6 +1422,7 @@ class Library:
 		special_version = determine_special_version(
 			volume_data['title'],
 			volume_data['description'],
+			(volume_data["issues"] or [{}])[0].get("date"),
 			tuple(i['title'] for i in volume_data['issues'])
 		).value
 
