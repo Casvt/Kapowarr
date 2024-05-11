@@ -170,6 +170,10 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 			if not value in client_types:
 				raise InvalidKeyValue(key, value)
 
+		elif key == 'query':
+			if not value:
+				raise InvalidKeyValue(key, value)
+
 	else:
 		# Default value
 		if key == 'sort':
