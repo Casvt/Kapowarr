@@ -17,6 +17,7 @@ from backend.blocklist import add_to_blocklist, blocklist_contains
 from backend.custom_exceptions import DownloadLimitReached, LinkBroken
 from backend.db import get_db
 from backend.download_direct_clients import (DirectDownload, Download,
+                                             MediaFireFolderDownload,
                                              MegaDownload)
 from backend.download_torrent_clients import TorrentDownload
 from backend.enums import BlocklistReason, FailReason, SpecialVersion
@@ -127,8 +128,13 @@ def _purify_link(link: str) -> dict:
 				raise LinkBroken(BlocklistReason.LINK_BROKEN)
 
 			elif '/folder/' in url:
-				# Link is not supported
-				raise LinkBroken(BlocklistReason.SOURCE_NOT_SUPPORTED)
+				# Folder download
+				folder_id = url.split("/folder/")[1].split("/")[0]
+				return {
+					'link': folder_id,
+					'target': MediaFireFolderDownload,
+					'source': 'mediafire'
+				}
 
 			result = extract_mediafire_regex.search(r.text)
 			if result:

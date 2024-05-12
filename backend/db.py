@@ -17,7 +17,7 @@ from backend.helpers import CommaList, DB_ThreadSafeSingleton
 from backend.logging import LOGGER, set_log_level
 
 __DATABASE_FILEPATH__ = 'db', 'Kapowarr.db'
-__DATABASE_VERSION__ = 20
+__DATABASE_VERSION__ = 21
 __DATABASE_TIMEOUT__ = 10.0
 
 class NoNoneCursor(Cursor):
@@ -643,10 +643,22 @@ def migrate_db(current_db_version: int) -> None:
 
 	if current_db_version == 19:
 		# V19 -> V20
-		
+
 		service_preference: CommaList = s["service_preference"]
 		service_preference.append("wetransfer")
 		s["service_preference"] = service_preference
+
+		current_db_version = s['database_version'] = current_db_version + 1
+		s._save_to_database()
+
+	if current_db_version == 20:
+		# V20 -> V21
+
+		from backend.enums import BlocklistReasonID
+		cursor.execute(
+			"DELETE FROM blocklist WHERE reason = ?;",
+			(BlocklistReasonID.SOURCE_NOT_SUPPORTED.value,)
+		)
 
 		current_db_version = s['database_version'] = current_db_version + 1
 		s._save_to_database()

@@ -10,7 +10,7 @@ from re import IGNORECASE, compile
 from time import perf_counter
 from urllib.parse import unquote_plus
 
-from requests import RequestException, get
+from requests import RequestException, get, post
 from requests.exceptions import ChunkedEncodingError
 
 from backend.credentials import Credentials
@@ -26,6 +26,7 @@ from .lib.mega import Mega, RequestError, sids
 file_extension_regex = compile(r'(?<=\.|\/)[\w\d]{2,4}(?=$|;|\s|\")', IGNORECASE)
 credentials = Credentials(sids)
 download_chunk_size = 4194304 # 4MB Chunks
+MEDIAFIRE_FOLDER_LINK = "https://www.mediafire.com/api/1.5/file/zip.php"
 
 class BaseDownload(Download):
 	def __init__(self):
@@ -110,7 +111,7 @@ class DirectDownload(BaseDownload):
 				self.download_link.split('/')[-1].split("?")[0]
 			))[0]
 
-		self.file = self.__build_filename(r)
+		self.file = self._build_filename(r)
 		return
 
 	def __extract_extension(self,
@@ -141,7 +142,7 @@ class DirectDownload(BaseDownload):
 
 		return extension
 
-	def __build_filename(self, r) -> str:
+	def _build_filename(self, r) -> str:
 		"""Build the filename from the download folder, filename body and extension
 
 		Args:
@@ -205,6 +206,125 @@ class DirectDownload(BaseDownload):
 	) -> None:
 		self.state = state
 		return
+
+
+class MediaFireFolderDownload(DirectDownload, BaseDownload):
+	"For download a MediaFire folder (for MF file, use DirectDownload)"
+
+	type = 'mf_folder'
+
+	def __init__(self,
+		link: str,
+		filename_body: str,
+		source: str,
+		custom_name: bool=True
+	):
+		"""Setup the MF folder download
+
+		Args:
+			link (str): The folder ID.
+			filename_body (str): The body of the filename to write to.
+			source (str): The name of the source of the link.
+			custom_name (bool, optional): If the name supplied should be used
+			or the default filename.
+				Defaults to True.
+
+		Raises:
+			LinkBroken: The link doesn't work
+		"""
+		LOGGER.debug(f'Creating download: MediaFire folder {link}, {filename_body}')
+
+		self.id = None # type: ignore
+		self.state: DownloadState = DownloadState.QUEUED_STATE
+
+		self.progress: float = 0.0
+		self.speed: float = 0.0
+		self.size: int = 0
+		self.download_link = link
+		self.source = source
+		self._filename_body = filename_body
+
+		try:
+			r = post(
+				MEDIAFIRE_FOLDER_LINK,
+				files={
+					"keys": (None, self.download_link),
+					"meta_only": (None, "no"),
+					"allow_large_download": (None, "yes"),
+					"response_format": (None, "json")
+				},
+				stream=True
+			)
+
+		except RequestException:
+			raise LinkBroken(BlocklistReason.LINK_BROKEN)
+
+		r.close()
+		if not r.ok:
+			raise LinkBroken(BlocklistReason.LINK_BROKEN)
+		self.size = int(r.headers.get('content-length', -1))
+
+		if custom_name:
+			self.title = filename_body.rstrip('.')
+		else:
+			self.title = splitext(unquote_plus(
+				r.headers["Content-Disposition"].split("filename*=UTF-8''")[-1]
+			))[0]
+
+		self.file = self._build_filename(r)
+		return
+
+	def run(self) -> None:
+		self.state = DownloadState.DOWNLOADING_STATE
+		size_downloaded = 0
+		ws = WebSocket()
+		ws.update_queue_status(self)
+
+		with post(
+				MEDIAFIRE_FOLDER_LINK,
+				files={
+					"keys": (None, self.download_link),
+					"meta_only": (None, "no"),
+					"allow_large_download": (None, "yes"),
+					"response_format": (None, "json")
+				},
+				stream=True
+		) as r, \
+		open(self.file, 'wb') as f:
+
+			start_time = perf_counter()
+			try:
+				for chunk in r.iter_content(chunk_size=download_chunk_size):
+					if self.state in (DownloadState.CANCELED_STATE,
+									DownloadState.SHUTDOWN_STATE):
+						break
+
+					f.write(chunk)
+
+					# Update progress
+					chunk_size = len(chunk)
+					size_downloaded += chunk_size
+					self.speed = round(
+						chunk_size / (perf_counter() - start_time),
+						2
+					)
+					if self.size == -1:
+						# No file size so progress is amount downloaded
+						self.progress = size_downloaded
+					else:
+						self.progress = round(
+							size_downloaded / self.size * 100,
+							2
+						)
+					start_time = perf_counter()
+
+					ws.update_queue_status(self)
+
+			except ChunkedEncodingError:
+				self.state = DownloadState.FAILED_STATE
+
+		return
+
 
 class MegaDownload(BaseDownload):
 	"""For downloading a file via Mega
