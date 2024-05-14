@@ -6,8 +6,9 @@ Setting up, running and shutting down the API and web-ui
 
 from __future__ import annotations
 
-from os import execv, urandom
+from os import execl, urandom
 from sys import argv
+from sys import executable as python_executable
 from threading import Timer, current_thread
 from typing import TYPE_CHECKING, NoReturn
 
@@ -201,6 +202,6 @@ class Server(metaclass=Singleton):
 		"""
 		LOGGER.info('Restarting Kapowarr')
 		from Kapowarr import __file__ as k_file
-		execv(folder_path(k_file), [argv[0]])
+		execl(python_executable, folder_path(k_file), *argv)
 
 SERVER = Server()
