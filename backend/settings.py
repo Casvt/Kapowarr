@@ -19,6 +19,7 @@ from backend.logging import LOGGER, set_log_level
 supported_source_strings = (('mega',),
 							('mediafire',),
 							('wetransfer', 'we transfer'),
+							('pixeldrain', 'pixel drain'),
 							('getcomics', 'download now', 'main download', 'main server', 'main link', 'mirror download', 'mirror server', 'mirror link', 'link 1', 'link 2'),
 							('getcomics (torrent)', 'torrent'))
 

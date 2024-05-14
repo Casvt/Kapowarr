@@ -657,7 +657,7 @@ def api_volume_download(id: int):
 	result = download_handler.add(link, id)
 	return return_api(
 		{
-			'result': result[0],
+			'result': (result or (None,))[0],
 			'fail_reason': result[1].value if result[1] else result[1]
 		},
 		code=201

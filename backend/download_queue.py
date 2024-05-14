@@ -334,6 +334,10 @@ class DownloadHandler:
 				except LinkBroken as lb:
 					# Link is broken
 					add_to_blocklist(download['link'], lb.reason)
+					cursor.execute(
+						"DELETE FROM download_queue WHERE id = ?;",
+						(download['id'],)
+					)
 					# Link is broken, which triggers a write to the database
 					# To avoid the database being locked for a long time while
 					# importing, we commit in-between.
@@ -383,7 +387,7 @@ class DownloadHandler:
 		# Check if link isn't already in queue
 		if any(d for d in self.queue if link in (d.page_link, d.download_link)):
 			LOGGER.info('Download already in queue')
-			return []
+			return [], None
 
 		is_gc_link = link.startswith(private_settings['getcomics_url'])
 

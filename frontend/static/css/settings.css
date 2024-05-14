@@ -240,6 +240,10 @@
 	display: block;
 }
 
+#builtin-window[data-tag="pd"] :where(#pd-title, #pd-desc) {
+	display: block;
+}
+
 #builtin-window[data-tag="gc"] :where(#gc-title, #gc-desc) {
 	display: block;
 }

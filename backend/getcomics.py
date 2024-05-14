@@ -35,6 +35,7 @@ check_year = compile(r'\b\d{4}\b')
 mega_regex = compile(r'https?://mega\.(nz|io)/(#(F\!|\!)|folder/|file/)', IGNORECASE)
 mediafire_regex = compile(r'https?://www\.mediafire\.com/', IGNORECASE)
 wetransfer_regex = compile(r'(?:https?://we.tl/|wetransfer.com/downloads/)', IGNORECASE)
+pixeldrain_regex = compile(r'https?://pixeldrain\.com/u/\w+', IGNORECASE)
 extract_mediafire_regex = compile(
 	r'window.location.href\s?=\s?\'https://download\d+\.mediafire.com/.*?(?=\')',
 	IGNORECASE
@@ -183,6 +184,16 @@ def _purify_link(link: str) -> dict:
 				'link': direct_link,
 				'target': DirectDownload,
 				'source': 'wetransfer'
+			}
+
+		elif pixeldrain_regex.search(url):
+			# Link is pixeldrain
+			download_id = url.rstrip("/").split("/")[-1]
+
+			return {
+				'link': f"https://pixeldrain.com/api/file/{download_id}",
+				'target': DirectDownload,
+				'source': 'pixeldrain'
 			}
 
 		elif r.headers.get('Content-Type','') == 'application/x-bittorrent':

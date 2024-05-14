@@ -17,7 +17,7 @@ from backend.helpers import CommaList, DB_ThreadSafeSingleton
 from backend.logging import LOGGER, set_log_level
 
 __DATABASE_FILEPATH__ = 'db', 'Kapowarr.db'
-__DATABASE_VERSION__ = 21
+__DATABASE_VERSION__ = 22
 __DATABASE_TIMEOUT__ = 10.0
 
 class NoNoneCursor(Cursor):
@@ -659,6 +659,16 @@ def migrate_db(current_db_version: int) -> None:
 			"DELETE FROM blocklist WHERE reason = ?;",
 			(BlocklistReasonID.SOURCE_NOT_SUPPORTED.value,)
 		)
+
+		current_db_version = s['database_version'] = current_db_version + 1
+		s._save_to_database()
+
+	if current_db_version == 21:
+		# V21 -> V22
+
+		service_preference: CommaList = s["service_preference"]
+		service_preference.append("pixeldrain")
+		s["service_preference"] = service_preference
 
 		current_db_version = s['database_version'] = current_db_version + 1
 		s._save_to_database()
