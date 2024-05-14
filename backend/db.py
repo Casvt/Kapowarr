@@ -823,7 +823,7 @@ def setup_db() -> None:
 
 	settings = Settings()
 
-	set_log_level(settings['log_level'], clear_file=False)
+	set_log_level(settings['log_level'])
 
 	# Migrate database if needed
 	current_db_version = settings['database_version']

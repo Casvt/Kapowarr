@@ -2,18 +2,12 @@
 
 import logging
 import logging.config
-from os.path import exists
 from typing import Any, Union
 
 
 class UpToInfoFilter(logging.Filter):
 	def filter(self, record: logging.LogRecord) -> bool:
 		return record.levelno <= logging.INFO
-
-
-class DebuggingOnlyFilter(logging.Filter):
-	def filter(self, record: logging.LogRecord) -> bool:
-		return LOGGER.level == logging.DEBUG
 
 
 class ErrorColorFormatter(logging.Formatter):
@@ -23,7 +17,7 @@ class ErrorColorFormatter(logging.Formatter):
 
 
 LOGGER_NAME = "Kapowarr"
-LOGGER_DEBUG_FILENAME = "Kapowarr_debug.log"
+LOGGER_DEBUG_FILENAME = "Kapowarr.log"
 LOGGER = logging.getLogger(LOGGER_NAME)
 LOGGING_CONFIG = {
 	"version": 1,
@@ -46,9 +40,6 @@ LOGGING_CONFIG = {
 	"filters": {
 		"up_to_info": {
 			"()": UpToInfoFilter
-		},
-		"only_if_debugging": {
-			"()": DebuggingOnlyFilter
 		}
 	},
 	"handlers": {
@@ -65,12 +56,13 @@ LOGGING_CONFIG = {
 			"filters": ["up_to_info"],
 			"stream": "ext://sys.stdout"
 		},
-		"debug_file": {
-			"class": "logging.StreamHandler",
+		"file": {
+			"class": "logging.handlers.RotatingFileHandler",
 			"level": "DEBUG",
 			"formatter": "detailed",
-			"filters": ["only_if_debugging"],
-			"stream": ""
+			"filename": "",
+			"maxBytes": 1_000_000,
+			"backupCount": 1
 		}
 	},
 	"loggers": {
@@ -81,19 +73,15 @@ LOGGING_CONFIG = {
 		"handlers": [
 			"console",
 			"console_error",
-			"debug_file"
+			"file"
 		]
 	}
 }
 
 def setup_logging() -> None:
 	"Setup the basic config of the logging module"
+	LOGGING_CONFIG["handlers"]["file"]["filename"] = get_debug_log_filepath()
 	logging.config.dictConfig(LOGGING_CONFIG)
-	logging.getLogger().handlers[
-		LOGGING_CONFIG["root"]["handlers"].index("debug_file")
-	].setStream(
-		open(get_debug_log_filepath(), 'a')
-	)
 	return
 
 def get_debug_log_filepath() -> str:
@@ -105,17 +93,13 @@ def get_debug_log_filepath() -> str:
 	return folder_path(LOGGER_DEBUG_FILENAME)
 
 def set_log_level(
-	level: Union[int, str],
-	clear_file: bool = True
+	level: Union[int, str]
 ) -> None:
 	"""Change the logging level.
 
 	Args:
 		level (Union[int, str]): The level to set the logging to.
 			Should be a logging level, like `logging.INFO` or `"DEBUG"`.
-
-		clear_file (bool, optional): Empty the debug logging file.
-			Defaults to True.
 	"""
 	if isinstance(level, str):
 		level = logging._nameToLevel[level.upper()]
@@ -126,9 +110,5 @@ def set_log_level(
 
 	LOGGER.debug(f'Setting logging level: {level}')
 	root_logger.setLevel(level)
-
-	if level == logging.DEBUG and clear_file:
-		file = get_debug_log_filepath()
-		open(file, "w").close()
 
 	return
