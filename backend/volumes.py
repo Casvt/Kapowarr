@@ -1061,7 +1061,8 @@ def scan_files(volume_id: int) -> None:
 
 def refresh_and_scan(
 	volume_id: Union[int, None] = None,
-	update_websocket: bool = False
+	update_websocket: bool = False,
+	allow_skipping: bool = False
 ) -> None:
 	"""Refresh and scan one or more volumes
 
@@ -1074,6 +1075,10 @@ def refresh_and_scan(
 		update_websocket (bool, optional): Send task progress updates over
 		the websocket.
 			Defaults to False.
+
+		allow_skipping (bool, optional): Skip volumes that have been updated in
+		the last 24 hours.
+			Defaults to False.
 	"""
 	cursor = get_db()
 	cv = ComicVine()
@@ -1084,6 +1089,15 @@ def refresh_and_scan(
 			"SELECT comicvine_id, id FROM volumes WHERE id = ? LIMIT 1;",
 			(volume_id,)
 		))
+
+	elif not allow_skipping:
+		ids = dict(cursor.execute("""
+			SELECT comicvine_id, id
+			FROM volumes
+			ORDER BY last_cv_fetch ASC;
+			"""
+		))
+
 	else:
 		ids = dict(cursor.execute("""
 			SELECT comicvine_id, id

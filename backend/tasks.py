@@ -7,7 +7,7 @@ Background tasks and their handling
 from abc import ABC, abstractmethod
 from threading import Thread, Timer
 from time import sleep, time
-from typing import Dict, List, Union
+from typing import Dict, List, Type, Union
 
 from backend.conversion import mass_convert
 from backend.custom_exceptions import (InvalidComicVineApiKey,
@@ -359,12 +359,25 @@ class UpdateAll(Task):
 	volume_id = None
 	issue_id = None
 
+	def __init__(self, allow_skipping: bool = False):
+		"""Create the task
+
+		Args:
+			allow_skipping (bool, optional): Skip volumes that have been updated in the last 24 hours.
+				Defaults to False.
+		"""
+		self.allow_skipping = allow_skipping
+		return
+
 	def run(self) -> None:
 		self.message = f'Updating info on all volumes'
 		WebSocket().update_task_status(self)
 
 		try:
-			refresh_and_scan(update_websocket=True)
+			refresh_and_scan(
+				update_websocket=True,
+				allow_skipping=self.allow_skipping
+			)
 		except InvalidComicVineApiKey:
 			pass
 
@@ -404,7 +417,7 @@ class SearchAll(Task):
 #=====================
 # Maps action attr to class for all tasks
 # Only works for classes that directly inherit from Task
-task_library: Dict[str, Task] = {c.action: c for c in Task.__subclasses__()}
+task_library: Dict[str, Type[Task]] = {c.action: c for c in Task.__subclasses__()}
 
 class TaskHandler(metaclass=Singleton):
 	"Note: Singleton"
@@ -541,7 +554,11 @@ class TaskHandler(metaclass=Singleton):
 				if task['next_run'] <= current_time:
 					# Add task to queue
 					task_class = task_library[task['task_name']]
-					self.add(task_class())
+					if task_class is UpdateAll:
+						inst = task_class(allow_skipping=True)
+					else:
+						inst = task_class()
+					self.add(inst)
 
 					# Update next_run
 					next_run = round(current_time + task['interval'])
