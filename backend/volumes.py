@@ -1081,7 +1081,6 @@ def refresh_and_scan(
 			Defaults to False.
 	"""
 	cursor = get_db()
-	cv = ComicVine()
 
 	one_day_ago = round(time()) - 86400
 	if volume_id:
@@ -1108,6 +1107,11 @@ def refresh_and_scan(
 			(one_day_ago,)
 		))
 	str_ids = [str(i) for i in ids]
+
+	if not str_ids:
+		return
+
+	cv = ComicVine()
 
 	# Update volumes
 	volume_datas = run(cv.fetch_volumes_async(str_ids))
