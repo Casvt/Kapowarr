@@ -92,7 +92,6 @@ class DirectDownload(BaseDownload):
 		self.size: int = 0
 		self.download_link = link
 		self.source = source
-		self._filename_body = filename_body
 
 		try:
 			r = get(self.download_link, stream=True)
@@ -102,15 +101,15 @@ class DirectDownload(BaseDownload):
 		r.close()
 		if not r.ok:
 			raise LinkBroken(BlocklistReason.LINK_BROKEN)
-		self.size = int(r.headers.get('content-length', -1))
+		self.size = int(r.headers.get('Content-Length', -1))
 
-		if custom_name:
-			self.title = filename_body.rstrip('.')
-		else:
-			self.title = splitext(unquote_plus(
+		self._filename_body = filename_body
+		if not custom_name:
+			self._filename_body = splitext(unquote_plus(
 				self.download_link.split('/')[-1].split("?")[0]
 			))[0]
 
+		self.title = basename(self._filename_body)
 		self.file = self._build_filename(r)
 		return
 
@@ -157,7 +156,10 @@ class DirectDownload(BaseDownload):
 			r.headers.get('Content-Disposition', ''),
 			r.url
 		)
-		return join(folder, '_'.join(self.title.split(sep)) + extension)
+		return join(
+			folder,
+			'_'.join(self._filename_body.split(sep)) + extension
+		)
 
 	def run(self) -> None:
 		self.state = DownloadState.DOWNLOADING_STATE
@@ -382,8 +384,8 @@ class MegaDownload(BaseDownload):
 		if not custom_name:
 			self._filename_body = splitext(self._mega.mega_filename)[0]
 
+		self.title = basename(self._filename_body)
 		self.file = self.__build_filename()
-		self.title = splitext(basename(self.file))[0]
 		return
 
 	def __extract_extension(self) -> str:
@@ -403,7 +405,10 @@ class MegaDownload(BaseDownload):
 		"""
 		folder = Settings()['download_folder']
 		extension = self.__extract_extension()
-		return join(folder, join(folder, '_'.join(self.title.split(sep)) + extension))
+		return join(
+			folder,
+			'_'.join(self._filename_body.split(sep)) + extension
+		)
 
 	def run(self) -> None:
 		"""
