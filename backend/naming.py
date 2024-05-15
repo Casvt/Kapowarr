@@ -440,7 +440,7 @@ def preview_mass_rename(
 	volume_id: int,
 	issue_id: Union[int, None] = None,
 	filepath_filter: Union[List[str], None] = None
-) -> List[Dict[str, str]]:
+) -> Tuple[List[Dict[str, str]], Union[str, None]]:
 	"""Preview what naming.mass_rename() will do.
 
 	Args:
@@ -455,23 +455,28 @@ def preview_mass_rename(
 			Defaults to None.
 
 	Returns:
-		List[Dict[str, str]]: The renaming proposals.
+		Tuple[List[Dict[str, str]], Union[str, None]]: The renaming proposals,
+		and the new volume folder if it is not the same as the current folder.
+		Otherwise, it's `None`.
 	"""
 	result = []
 	volume = Volume(volume_id)
 	cursor = get_db(dict)
 	# Fetch all files linked to the volume or issue
+	new_vf = None
 	if not issue_id:
 		file_infos = sorted(volume.get_files())
 		if not volume['custom_folder']:
 			root_folder = RootFolders()[volume['root_folder']]
 			folder = join(root_folder, generate_volume_folder_name(volume_id))
+			if folder != volume['folder']:
+				new_vf = folder
 		else:
 			folder = volume['folder']
 	else:
 		file_infos = volume.get_files(issue_id)
 		if not file_infos:
-			return result
+			return result, new_vf
 		folder = volume['folder']
 
 	if filepath_filter is not None:
@@ -609,7 +614,7 @@ def preview_mass_rename(
 				'after': new
 			})
 
-	return result
+	return result, new_vf
 
 def mass_rename(
 	volume_id: int,
@@ -638,19 +643,16 @@ def mass_rename(
 		List[str]: The new files.
 	"""
 	cursor = get_db()
-	renames = preview_mass_rename(volume_id, issue_id, filepath_filter)
+	renames, new_folder = preview_mass_rename(
+		volume_id, issue_id,
+		filepath_filter
+	)
 
 	volume = Volume(volume_id)
 	root_folder = RootFolders()[volume['root_folder']]
-	vf_format: str = Settings()['volume_folder_naming']
 
-	if not issue_id and renames:
-		# Update volume folder in case it gets renamed
-		volume['folder'] = sep.join(
-			renames[0]['after'].split(sep)[
-				:len(join(root_folder, vf_format).split(sep))
-			]
-		)
+	if new_folder:
+		volume['folder'] = new_folder
 
 	if update_websocket:
 		ws = WebSocket()

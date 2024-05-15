@@ -613,7 +613,7 @@ def api_issues(id: int):
 @auth
 def api_rename(id: int):
 	library.get_volume(id)
-	result = preview_mass_rename(id)
+	result = preview_mass_rename(id)[0]
 	return return_api(result)
 
 @api.route('/issues/<int:id>/rename', methods=['GET'])
@@ -621,7 +621,7 @@ def api_rename(id: int):
 @auth
 def api_rename_issue(id: int):
 	volume_id = library.get_issue(id)['volume_id']
-	result = preview_mass_rename(volume_id, id)
+	result = preview_mass_rename(volume_id, id)[0]
 	return return_api(result)
 
 #=====================
