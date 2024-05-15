@@ -21,7 +21,7 @@ from backend.logging import LOGGER
 if TYPE_CHECKING:
 	from backend.volumes import VolumeData
 
-clean_title_regex = compile(r'((?<=annual)s|/|\-|\+|,|\!|:|\bthe\s|\band\b|&|’|\'|\"|\bone-shot\b|\btpb\b)')
+clean_title_regex = compile(r'((?<=annual)s|/|\-|–|\+|,|\!|:|\bthe\s|\band\b|&|’|\'|\"|\bone-shot\b|\btpb\b)')
 clean_title_regex_2 = compile(r'\s')
 
 def _match_title(title1: str, title2: str) -> bool:
