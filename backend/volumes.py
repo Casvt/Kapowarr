@@ -6,6 +6,7 @@ from asyncio import run
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from io import BytesIO
+from multiprocessing.pool import Pool
 from os import remove
 from os.path import abspath, basename, dirname, isdir, join, relpath
 from re import IGNORECASE, compile
@@ -1055,6 +1056,8 @@ def scan_files(volume_id: int) -> None:
 		DELETE FROM files
 		WHERE id NOT IN ids;
 	""")
+	
+	cursor.connection.commit()
 
 	return
 
@@ -1240,13 +1243,12 @@ def refresh_and_scan(
 			ws = WebSocket()
 			total_count = len(v_ids)
 
-		for idx, volume in enumerate(v_ids):
-			if update_websocket:
-				ws.update_task_status(
-					message=f'Scanning files for volume {idx+1}/{total_count}'
-				)
-			scan_files(volume)
-			cursor.connection.commit()
+		with Pool() as pool:
+			for idx, _ in enumerate(pool.imap_unordered(scan_files, v_ids, 10)):
+				if update_websocket:
+					ws.update_task_status(
+						message=f'Scanned files for volume {idx+1}/{total_count}'
+					)
 
 	return
 
