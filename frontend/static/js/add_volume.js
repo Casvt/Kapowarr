@@ -338,9 +338,10 @@ function addVolume() {
 			closeWindow();
 		})
 		.catch(e => {
-			if (e.status === 509)
+			if (e.status === 509) {
 				SearchEls.window.submit.innerText = 'ComicVine API rate limit reached';
-			else
+				showWindow("add-window");
+			} else
 				console.log(e);
 		});
 	});
