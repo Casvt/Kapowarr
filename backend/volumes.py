@@ -1544,10 +1544,11 @@ class Library:
 				issues,
 				downloaded_issues,
 				COUNT(files.id) AS files,
-				SUM(files.size) AS total_file_size
+				IFNULL(SUM(files.size), 0) AS total_file_size
 			FROM
 				v_stats,
-				i_stats,
+				i_stats
+			LEFT JOIN
 				files;
 		""")
 		return dict(cursor.fetchone())

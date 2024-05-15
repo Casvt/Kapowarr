@@ -209,7 +209,10 @@ function fetchStats(api_key) {
 		library_els.stats.issue_count.innerText = json.result.issues;
 		library_els.stats.issue_download_count.innerText = json.result.downloaded_issues;
 		library_els.stats.file_count.innerText = json.result.files;
-		library_els.stats.total_file_size.innerText = convertSize(json.result.total_file_size);
+		library_els.stats.total_file_size.innerText =
+			json.result.total_file_size > 0
+			? convertSize(json.result.total_file_size)
+			: '0 MB';
 	});
 };
 
