@@ -10,6 +10,7 @@ from multiprocessing.pool import Pool
 from os import remove
 from os.path import abspath, basename, dirname, isdir, join, relpath
 from re import IGNORECASE, compile
+from sys import platform
 from time import time
 from typing import Any, Dict, Iterable, List, Sequence, Tuple, Union
 
@@ -1056,7 +1057,7 @@ def scan_files(volume_id: int) -> None:
 		DELETE FROM files
 		WHERE id NOT IN ids;
 	""")
-	
+
 	cursor.connection.commit()
 
 	return
@@ -1243,8 +1244,17 @@ def refresh_and_scan(
 			ws = WebSocket()
 			total_count = len(v_ids)
 
-		with Pool() as pool:
-			for idx, _ in enumerate(pool.imap_unordered(scan_files, v_ids)):
+		if platform.startswith("linux"):
+			with Pool() as pool:
+				for idx, _ in enumerate(pool.imap_unordered(scan_files, v_ids)):
+					if update_websocket:
+						ws.update_task_status(
+							message=f'Scanned files for volume {idx+1}/{total_count}'
+						)
+
+		else:
+			for idx, volume in enumerate(v_ids):
+				scan_files(volume)
 				if update_websocket:
 					ws.update_task_status(
 						message=f'Scanned files for volume {idx+1}/{total_count}'
