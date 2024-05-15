@@ -34,6 +34,7 @@ from backend.volumes import Volume
 check_year = compile(r'\b\d{4}\b')
 mega_regex = compile(r'https?://mega\.(nz|io)/(#(F\!|\!)|folder/|file/)', IGNORECASE)
 mediafire_regex = compile(r'https?://www\.mediafire\.com/', IGNORECASE)
+mediafire_dd_regex = compile(r'https?://download\d+\.mediafire\.com/', IGNORECASE)
 wetransfer_regex = compile(r'(?:https?://we.tl/|wetransfer.com/downloads/)', IGNORECASE)
 pixeldrain_regex = compile(r'https?://pixeldrain\.com/u/\w+', IGNORECASE)
 extract_mediafire_regex = compile(
@@ -157,6 +158,17 @@ def _purify_link(link: str) -> dict:
 			# Link is not broken and not a folder
 			# but we still can't find the download button...
 			raise LinkBroken(BlocklistReason.LINK_BROKEN)
+
+		elif mediafire_dd_regex.search(url):
+			# Link is mediafire, but not to the page but instead the direct link
+			if not r.ok:
+				raise LinkBroken(BlocklistReason.LINK_BROKEN)
+
+			return {
+				'link': url,
+				'target': DirectDownload,
+				'source': 'mediafire'
+			}
 
 		elif wetransfer_regex.search(url):
 			# Link is wetransfer
