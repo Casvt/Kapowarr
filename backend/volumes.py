@@ -1229,8 +1229,13 @@ def refresh_and_scan(
 	# Scan for files
 	if volume_id:
 		scan_files(volume_id)
+
 	else:
-		v_ids: List[int] = [ids[v['comicvine_id']] for v in volume_datas]
+		if allow_skipping:
+			v_ids: Iterable[int] = [ids[v['comicvine_id']] for v in volume_datas]
+		else:
+			v_ids: Iterable[int] = ids.values()
+
 		if update_websocket:
 			ws = WebSocket()
 			total_count = len(v_ids)
