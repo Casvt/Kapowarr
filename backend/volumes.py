@@ -1244,7 +1244,7 @@ def refresh_and_scan(
 			total_count = len(v_ids)
 
 		with Pool() as pool:
-			for idx, _ in enumerate(pool.imap_unordered(scan_files, v_ids, 10)):
+			for idx, _ in enumerate(pool.imap_unordered(scan_files, v_ids)):
 				if update_websocket:
 					ws.update_task_status(
 						message=f'Scanned files for volume {idx+1}/{total_count}'
