@@ -1,8 +1,8 @@
 #-*- coding: utf-8 -*-
 
 from asyncio import create_task, gather, run
-from os.path import basename, dirname, isfile, join, splitext
-from typing import Dict, Iterator, List, Sequence
+from os.path import abspath, basename, dirname, isfile, join, splitext
+from typing import Dict, Iterator, List, Sequence, Set
 
 from aiohttp import ClientSession
 
@@ -111,10 +111,13 @@ def propose_library_import(
 	LOGGER.info('Loading library import')
 
 	# Get all files in all root folders
-	root_folders = RootFolders().get_all()
+	root_folders: Set[str] = set(
+		abspath(r['folder'])
+		for r in RootFolders().get_all()
+	)
 	all_files: List[str] = []
 	for f in root_folders:
-		all_files += list_files(f['folder'], supported_extensions)
+		all_files += list_files(f, supported_extensions)
 
 	# Get imported files
 	cursor = get_db()
@@ -132,16 +135,21 @@ def propose_library_import(
 		if f in imported_files:
 			continue
 
+		d = abspath(dirname(f))
+		if d in root_folders:
+			# File directly in root folder not allowed
+			continue
+
 		if f.endswith(image_extensions):
-			f = dirname(f)
-			if f in image_folders:
+			if d in image_folders:
 				continue
-			image_folders.add(f)
+			image_folders.add(d)
+			d, f = dirname(d), d
 
 		if limit_parent_folder:
-			folders.add(dirname(dirname(f)))
+			folders.add(dirname(d))
 		else:
-			folders.add(dirname(f))
+			folders.add(d)
 
 		if len(folders) > limit:
 			break
