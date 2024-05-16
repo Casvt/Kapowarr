@@ -35,6 +35,7 @@ function fillSettings(api_key) {
 };
 
 function saveSettings(api_key) {
+	inputs.volume_folder_naming_input.classList.remove('error-input');
 	inputs.file_naming_input.classList.remove('error-input');
 	inputs.file_naming_sv_input.classList.remove('error-input');
 	inputs.file_naming_empty_input.classList.remove('error-input');
@@ -58,15 +59,19 @@ function saveSettings(api_key) {
 		if (json.error !== null) return Promise.reject(json);
 	})
 	.catch(e => {
-		if (e.error === 'InvalidSettingValue') {
-			if (e.result.key === 'file_naming')
-				inputs.file_naming_input.classList.add('error-input');
-			else if (e.result.key === 'file_naming_special_version')
-				inputs.file_naming_sv_input.classList.add('error-input');
-			else if (e.result.key === 'file_naming_empty')
-				inputs.file_naming_empty_input.classList.add('error-input');
-		} else
-			console.log(e.error);
+		e.json().then(e => {
+			if (e.error === 'InvalidSettingValue') {
+				if (e.result.key === 'volume_folder_naming')
+					inputs.volume_folder_naming_input.classList.add('error-input');
+				else if (e.result.key === 'file_naming')
+					inputs.file_naming_input.classList.add('error-input');
+				else if (e.result.key === 'file_naming_special_version')
+					inputs.file_naming_sv_input.classList.add('error-input');
+				else if (e.result.key === 'file_naming_empty')
+					inputs.file_naming_empty_input.classList.add('error-input');
+			} else
+				console.log(e.error);
+		});
 	});
 };
 
@@ -195,7 +200,7 @@ function fillRootFolder(api_key) {
 			free_space.classList.add('number-column');
 			free_space.innerText = convertSize(root_folder.size.free);
 			entry.appendChild(free_space);
-			
+
 			const total_space = document.createElement('td');
 			total_space.classList.add('number-column');
 			total_space.innerText = convertSize(root_folder.size.total);

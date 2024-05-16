@@ -6,9 +6,10 @@ The (re)naming of folders and media
 
 from dataclasses import asdict
 from os import listdir
-from os.path import basename, dirname, isdir, isfile, join, sep, splitext
+from os.path import basename, dirname, isdir, isfile, join, splitext
 from re import compile, escape, match
 from string import Formatter
+from sys import platform
 from typing import Any, Dict, List, Tuple, Union
 
 from backend.custom_exceptions import InvalidSettingValue
@@ -366,6 +367,14 @@ def check_format(format: str, type: str) -> None:
 	Raises:
 		InvalidSettingValue: Something in the string is invalid
 	"""
+	if platform.startswith('win32'):
+		disallowed_sep = '/'
+	else:
+		disallowed_sep = '\\'
+
+	if disallowed_sep in format:
+		raise InvalidSettingValue(type, format)
+
 	keys = [fn for _, fn, _, _ in Formatter().parse(format) if fn is not None]
 
 	if type == 'folder_naming':
