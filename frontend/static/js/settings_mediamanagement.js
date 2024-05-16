@@ -223,7 +223,10 @@ function fillRootFolder(api_key) {
 }
 
 function toggleAddRootFolder(e) {
-	hide([document.querySelector('#folder-error')]);
+	hide([
+		document.querySelector('#folder-error'),
+		document.querySelector('#folder-in-folder-error')
+	]);
 	document.querySelector('#folder-input').value = '';
 	document.querySelector('#add-row').classList.toggle('hidden');
 };
@@ -240,7 +243,15 @@ function addRootFolder(api_key) {
 	})
 	.catch(e => {
 		if (e.status === 404)
-			hide([], [document.querySelector('#folder-error')]);
+			hide(
+				[document.querySelector('#folder-in-folder-error')],
+				[document.querySelector('#folder-error')]
+			);
+		else if (e.status === 400)
+			hide(
+				[document.querySelector('#folder-error')],
+				[document.querySelector('#folder-in-folder-error')]
+			);
 	});
 };
 
