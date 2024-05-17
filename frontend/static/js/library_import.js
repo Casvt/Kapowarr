@@ -30,13 +30,20 @@ const LIEls = {
 const rowid_to_filepath = {};
 
 function loadProposal(api_key) {
-	hide([LIEls.views.start], [LIEls.views.loading]);
-
 	const params = {
 		limit: parseInt(document.querySelector('#limit-input').value),
 		limit_parent_folder: document.querySelector('#folder-input').value,
 		only_english: document.querySelector('#lang-input').value
 	};
+	const ffi = document.querySelector('#folder-filter-input');
+	if (ffi.offsetParent !== null && (ffi.value || null) !== null)
+		params.folder_filter = encodeURIComponent(ffi.value);
+
+	hide(
+		[LIEls.views.start, document.querySelector('#folder-filter-error')],
+		[LIEls.views.loading]
+	);
+
 	LIEls.proposal_list.innerHTML = '';
 	LIEls.select_all.checked = true;
 
@@ -72,10 +79,17 @@ function loadProposal(api_key) {
 			hide([LIEls.views.loading], [LIEls.views.no_result]);
 	})
 	.catch(e => {
-		if (e.status === 400)
-			hide([LIEls.views.loading], [LIEls.views.no_cv]);
-		else
-			console.log(e);
+		e.json().then(j => {
+			if (j.error === 'InvalidComicVineApiKey')
+				hide([LIEls.views.loading], [LIEls.views.no_cv]);
+			else if (j.error === 'InvalidKeyValue')
+				hide(
+					[LIEls.views.loading],
+					[LIEls.views.start, document.querySelector('#folder-filter-error')]
+				);
+			else
+				console.log(j);
+		});
 	});
 };
 

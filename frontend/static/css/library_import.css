@@ -40,8 +40,9 @@ main {
 	text-align: right;
 }
 
-#start-window table select {
+#start-window table :where(select, input) {
 	min-width: 4rem;
+	height: 2rem;
 
 	border-radius: 4px;
 	border: 2px solid var(--border-color);
@@ -54,8 +55,22 @@ main {
 	transition: background-color 100ms linear;
 }
 
-#start-window table select:hover {
+#start-window table :where(select, input):hover {
 	background-color: var(--hover-color);
+}
+
+#folder-filter-input {
+	width: 100%;
+
+	display: none;
+}
+
+#start-window table:has(#target-input option[value="false"]:checked) #folder-filter-input {
+	display: block;
+}
+
+#folder-filter-error {
+	margin-bottom: 1rem;
 }
 
 #run-import-button,

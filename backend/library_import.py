@@ -1,13 +1,14 @@
 #-*- coding: utf-8 -*-
 
 from asyncio import create_task, gather, run
+from glob import glob
 from os.path import abspath, basename, dirname, isfile, join, splitext
-from typing import Dict, Iterator, List, Sequence, Set
+from typing import Dict, Iterator, List, Sequence, Set, Union
 
 from aiohttp import ClientSession
 
 from backend.comicvine import ComicVine
-from backend.custom_exceptions import VolumeAlreadyAdded
+from backend.custom_exceptions import InvalidKeyValue, VolumeAlreadyAdded
 from backend.db import get_db
 from backend.file_extraction import (extract_filename_data, image_extensions,
                                      supported_extensions)
@@ -87,6 +88,7 @@ async def __search_matches(
 		return results
 
 def propose_library_import(
+	folder_filter: Union[str, None] = None,
 	limit: int = 20,
 	limit_parent_folder: bool = False,
 	only_english: bool = True
@@ -95,6 +97,10 @@ def propose_library_import(
 	and their suggestion for a matching volume on CV.
 
 	Args:
+		folder_filter (Union[str, None], optional): Only scan the folders that
+		match the given value. Can either be a folder or a glob pattern.
+			Defaults to None.
+
 		limit (int, optional): The max amount of folders to scan.
 			Defaults to 20.
 
@@ -104,6 +110,10 @@ def propose_library_import(
 
 		only_english (bool, optional): Only match with english releases.
 			Defaults to True.
+
+	Raises:
+		InvalidKeyValue: The file filter matches to folders outside
+		the root folders.
 
 	Returns:
 		List[dict]: The list of files and their matches.
@@ -115,9 +125,22 @@ def propose_library_import(
 		abspath(r['folder'])
 		for r in RootFolders().get_all()
 	)
+
+	if folder_filter:
+		scan_folders = set(glob(folder_filter, recursive=True))
+		for f in scan_folders:
+			if not any(folder_is_inside_folder(r, f) for r in root_folders):
+				raise InvalidKeyValue('folder_filter', folder_filter)
+	else:
+		scan_folders = root_folders
+
 	all_files: List[str] = []
-	for f in root_folders:
-		all_files += list_files(f, supported_extensions)
+
+	try:
+		for f in scan_folders:
+			all_files += list_files(f, supported_extensions)
+	except NotADirectoryError:
+		raise InvalidKeyValue('folder_filter', folder_filter)
 
 	# Get imported files
 	cursor = get_db()

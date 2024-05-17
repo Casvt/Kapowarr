@@ -170,7 +170,7 @@ def extract_key(request, key: str, check_existence: bool=True) -> Any:
 			if not value in client_types:
 				raise InvalidKeyValue(key, value)
 
-		elif key == 'query':
+		elif key in ('query', 'folder_filter'):
 			if not value:
 				raise InvalidKeyValue(key, value)
 
@@ -455,6 +455,11 @@ def api_rootfolder_id(id: int):
 @auth
 def api_library_import():
 	if request.method == 'GET':
+		folder_filter = extract_key(
+			request,
+			'folder_filter',
+			check_existence=False
+		)
 		limit = extract_key(
 			request,
 			'limit',
@@ -471,6 +476,7 @@ def api_library_import():
 			check_existence=False
 		)
 		result = propose_library_import(
+			folder_filter,
 			limit,
 			limit_parent_folder,
 			only_english
