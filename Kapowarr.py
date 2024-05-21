@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 #-*- coding: utf-8 -*-
 
-from backend.db import __DATABASE_FILEPATH__, set_db_location, setup_db
-from backend.files import folder_path
+from backend.db import set_db_location, setup_db
 from backend.helpers import check_python_version
 from backend.logging import LOGGER, setup_logging
 from backend.server import SERVER
@@ -18,7 +17,7 @@ def Kapowarr() -> None:
 	if not check_python_version():
 		exit(1)
 
-	set_db_location(folder_path(*__DATABASE_FILEPATH__))
+	set_db_location()
 
 	SERVER.create_app()
 

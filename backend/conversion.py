@@ -6,15 +6,15 @@ Converting files to a different format
 
 from itertools import chain
 from multiprocessing import cpu_count
-from multiprocessing.pool import Pool
 from os.path import splitext
 from sys import platform
-from typing import Callable, Dict, Iterable, List, Set, Tuple, Type, Union
+from typing import Dict, Iterable, List, Set, Tuple, Type, Union
 
 from backend.converters import FileConverter, rar_executables
 from backend.enums import SpecialVersion
 from backend.file_extraction import extract_filename_data
-from backend.helpers import WebSocket
+from backend.helpers import PortablePool
+from backend.server import WebSocket
 from backend.settings import Settings
 from backend.volumes import Volume, scan_files
 
@@ -242,7 +242,7 @@ def mass_convert(
 		)
 
 	else:
-		with Pool(processes=processes) as pool:
+		with PortablePool(processes=processes) as pool:
 			if update_websocket:
 				ws = WebSocket()
 				completed = 0

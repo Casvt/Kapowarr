@@ -6,21 +6,17 @@ General "helper" functions and classes
 
 from __future__ import annotations
 
+from multiprocessing import get_start_method
+from multiprocessing.pool import Pool
 from sys import version_info
 from threading import current_thread
-from typing import (TYPE_CHECKING, Any, Dict, Generator, Iterable, Iterator,
-                    List, Mapping, Sequence, Tuple, TypedDict, TypeVar, Union)
+from typing import (Any, Dict, Generator, Iterable, Iterator, List, Mapping,
+                    Sequence, Tuple, TypedDict, TypeVar, Union)
 from urllib.parse import unquote
 
 from bencoding import bdecode
-from flask_socketio import SocketIO
 
-from backend.enums import SocketEvent
 from backend.logging import LOGGER
-
-if TYPE_CHECKING:
-	from backend.download_general import Download
-	from backend.tasks import Task
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -364,128 +360,108 @@ class DictKeyedDict(dict):
 		return zip(self.keys(), self.values())
 
 
-# It's more logical to have this class in the server.py file,
-# but then we have an import loop so this is the second-best file...
-class WebSocket(SocketIO, metaclass=Singleton):
-	def send_task_added(self, task: Task) -> None:
-		"""Send a message stating a task that has been added
-		to the queue.
-
-		Args:
-			task (Task): The task that has been added.
-		"""
-		self.emit(
-			SocketEvent.TASK_ADDED.value,
-			{
-				'action': task.action,
-				'volume_id': task.volume_id,
-				'issue_id': task.issue_id
-			}
-		)
+class _ContextKeeper(metaclass=Singleton):
+	def __init__(self, log_level: int) -> None:
+		from backend.server import setup_process
+		self.ctx = setup_process(log_level)
 		return
 
-	def send_task_ended(self, task: Task) -> None:
-		"""Send a message stating a task that has been removed
-		from the queue. Either because it's finished or canceled.
 
-		Args:
-			task (Task): The task that has been removed.
-		"""
-		self.emit(
-			SocketEvent.TASK_ENDED.value,
-			{
-				'action': task.action,
-				'volume_id': task.volume_id,
-				'issue_id': task.issue_id
-			}
-		)
+def pool_apply_func(args=(), kwds={}):
+	func, value = args
+	with _ContextKeeper().ctx():
+		return func(*value, **kwds)
+
+
+def pool_map_func(func_value):
+	func, value = func_value
+	with _ContextKeeper().ctx():
+		return func(value)
+
+
+def pool_starmap_func(func, *args):
+	with _ContextKeeper().ctx():
+		return func(*args)
+
+
+class PortablePool(Pool):
+	def __init__(self, processes = None) -> None:
+		self.can_fork = get_start_method(allow_none=False) == 'fork'
+
+		if self.can_fork:
+			super().__init__(processes)
+		else:
+			super().__init__(processes, _ContextKeeper, (LOGGER.level,))
 		return
 
-	def update_task_status(
-		self,
-		task: Union[Task, None] = None,
-		message: Union[str, None] = None
-	) -> None:
-		"""Send a message with the new task queue status. Supply either
-		the task or the message.
+	def apply(self, func, args=(), kwds={}):
+		if not self.can_fork:
+			args = (func, args)
+			new_func = pool_apply_func
+		else:
+			new_func = func
 
-		Args:
-			task (Union[Task, None], optional): The task instance to send
-			the status of.
-				Defaults to None.
+		return super().apply(new_func, args, kwds)
 
-			message (Union[str, None], optional): The message to send.
-				Defaults to None.
-		"""
-		if task is not None:
-			self.emit(
-				SocketEvent.TASK_STATUS.value,
-				{
-					'message': task.message
-				}
-			)
+	def apply_async(self, func, args = (), kwds = {}, callback = None, error_callback = None):
+		if not self.can_fork:
+			args = (func, args)
+			new_func = pool_apply_func
+		else:
+			new_func = func
 
-		elif message is not None:
-			self.emit(
-				SocketEvent.TASK_STATUS.value,
-				{
-					'message': message
-				}
-			)
+		return super().apply_async(new_func, args, kwds, callback, error_callback)
 
-		return
+	def map(self, func, iterable, chunksize=None):
+		if not self.can_fork:
+			iterable = ((func, i) for i in iterable)
+			new_func = pool_map_func
+		else:
+			new_func = func
 
-	def send_queue_added(self, download: Download) -> None:
-		"""Send a message stating a download that has been added
-		to the queue.
+		return super().map(new_func, iterable, chunksize)
 
-		Args:
-			download (Download): The download that has been added.
-		"""
-		self.emit(
-			SocketEvent.QUEUE_ADDED.value,
-			{
-				'id': download.id,
-				'status': download.state.value,
-				'title': download.title,
-				'page_link': download.page_link,
-				'source': download.source,
-				'size': download.size,
-				'speed': download.speed,
-				'progress': download.progress
-			}
-		)
-		return
+	def imap(self, func, iterable, chunksize = 1):
+		if not self.can_fork:
+			iterable = ((func, i) for i in iterable)
+			new_func = pool_map_func
+		else:
+			new_func = func
 
-	def send_queue_ended(self, download: Download) -> None:
-		"""Send a message stating a download that has been removed
-		from the queue. Either because it's finished or canceled.
+		return super().imap(new_func, iterable, chunksize)
 
-		Args:
-			download (Download): The download that has been removed.
-		"""
-		self.emit(
-			SocketEvent.QUEUE_ENDED.value,
-			{
-				'id': download.id
-			}
-		)
-		return
+	def imap_unordered(self, func, iterable, chunksize = 1):
+		if not self.can_fork:
+			iterable = ((func, i) for i in iterable)
+			new_func = pool_map_func
+		else:
+			new_func = func
 
-	def update_queue_status(self, download: Download) -> None:
-		"""Send a message with the new download queue status.
+		return super().imap_unordered(new_func, iterable, chunksize)
 
-		Args:
-			download (Download): The download instance to send the status of.
-		"""
-		self.emit(
-			SocketEvent.QUEUE_STATUS.value,
-			{
-				'id': download.id,
-				'status': download.state.value,
-				'size': download.size,
-				'speed': download.speed,
-				'progress': download.progress
-			}
-		)
-		return
+	def map_async(self, func, iterable, chunksize = None, callback = None, error_callback = None):
+		if not self.can_fork:
+			iterable = ((func, i) for i in iterable)
+			new_func = pool_map_func
+		else:
+			new_func = func
+
+		return super().map_async(new_func, iterable, chunksize, callback, error_callback)
+
+	def starmap(self, func, iterable, chunksize=None):
+		if not self.can_fork:
+			iterable = ((func, i) for i in iterable)
+			new_func = pool_starmap_func
+		else:
+			new_func = func
+
+		return super().starmap(new_func, iterable, chunksize)
+
+	def starmap_async(self, func, iterable, chunksize = None, callback = None, error_callback = None):
+		if not self.can_fork:
+			iterable = ((func, i) for i in iterable)
+			new_func = pool_starmap_func
+		else:
+			new_func = func
+
+		return super().starmap_async(new_func, iterable, chunksize, callback, error_callback)

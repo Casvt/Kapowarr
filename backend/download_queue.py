@@ -23,11 +23,12 @@ from backend.enums import (BlocklistReason, DownloadState, FailReason,
                            SeedingHandling)
 from backend.files import create_folder, delete_file_folder
 from backend.getcomics import extract_GC_download_links
-from backend.helpers import WebSocket, first_of_column
+from backend.helpers import first_of_column
 from backend.logging import LOGGER
 from backend.post_processing import (PostProcesser,
                                      PostProcesserTorrentsComplete,
                                      PostProcesserTorrentsCopy)
+from backend.server import WebSocket
 from backend.settings import Settings, private_settings
 
 if TYPE_CHECKING:

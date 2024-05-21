@@ -18,9 +18,10 @@ from backend.enums import SpecialVersion
 from backend.file_extraction import cover_regex, image_extensions
 from backend.files import (delete_empty_folders, propose_basefolder_change,
                            rename_file)
-from backend.helpers import WebSocket, first_of_column
+from backend.helpers import first_of_column
 from backend.logging import LOGGER
 from backend.root_folders import RootFolders
+from backend.server import WebSocket
 from backend.settings import Settings
 from backend.volumes import Issue, Volume
 

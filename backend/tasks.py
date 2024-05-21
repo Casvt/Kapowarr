@@ -14,10 +14,11 @@ from backend.custom_exceptions import (InvalidComicVineApiKey,
                                        TaskNotDeletable, TaskNotFound)
 from backend.db import get_db
 from backend.download_queue import DownloadHandler
-from backend.helpers import Singleton, WebSocket
+from backend.helpers import Singleton
 from backend.logging import LOGGER
 from backend.naming import mass_rename
 from backend.search import auto_search
+from backend.server import WebSocket
 from backend.volumes import Issue, Volume, refresh_and_scan
 
 

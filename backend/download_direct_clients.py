@@ -17,8 +17,8 @@ from backend.credentials import Credentials
 from backend.custom_exceptions import LinkBroken
 from backend.download_general import Download
 from backend.enums import BlocklistReason, DownloadState
-from backend.helpers import WebSocket
 from backend.logging import LOGGER
+from backend.server import WebSocket
 from backend.settings import Settings
 
 from .lib.mega import Mega, RequestError, sids

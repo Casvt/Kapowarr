@@ -104,14 +104,15 @@ class TempDBConnection(Connection):
 	def __repr__(self) -> str:
 		return f'<{self.__class__.__name__}; {current_thread().name}; {id(self)}>'
 
-def set_db_location(db_file_location: str) -> None:
-	"""Setup database location. Create folder for database
-	and set location for db.DBConnection
-
-	Args:
-		db_file_location (str): The absolute path to the database file
+def set_db_location() -> None:
 	"""
-	from backend.files import create_folder
+	Setup database location. Create folder for database and set location for
+	`db.DBConnection` and `db.TempDBConnection`.
+	"""
+	from backend.files import create_folder, folder_path
+
+	db_file_location = folder_path(*__DATABASE_FILEPATH__)
+
 	LOGGER.debug(f'Setting database location: {db_file_location}')
 
 	create_folder(dirname(db_file_location))

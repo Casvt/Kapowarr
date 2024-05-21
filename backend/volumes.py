@@ -6,11 +6,9 @@ from asyncio import run
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from io import BytesIO
-from multiprocessing.pool import Pool
 from os import remove
 from os.path import abspath, basename, dirname, isdir, join, relpath
 from re import IGNORECASE, compile
-from sys import platform
 from time import time
 from typing import Any, Dict, Iterable, List, Sequence, Tuple, Union
 
@@ -26,10 +24,11 @@ from backend.file_extraction import (extract_filename_data, md_extensions,
 from backend.files import (create_volume_folder, delete_empty_folders,
                            folder_is_inside_folder, get_file_id, list_files,
                            propose_basefolder_change, rename_file)
-from backend.helpers import WebSocket, first_of_column, reversed_tuples
+from backend.helpers import PortablePool, first_of_column, reversed_tuples
 from backend.logging import LOGGER
 from backend.matching import file_importing_filter
 from backend.root_folders import RootFolders
+from backend.server import WebSocket
 
 THIRTY_DAYS = timedelta(days=30)
 split_regex = compile(r'(?<!vs)(?<!r\.i\.p)\.(?:\s|</p>(?!$))', IGNORECASE)
@@ -1244,17 +1243,8 @@ def refresh_and_scan(
 			ws = WebSocket()
 			total_count = len(v_ids)
 
-		if platform.startswith("linux"):
-			with Pool() as pool:
-				for idx, _ in enumerate(pool.imap_unordered(scan_files, v_ids)):
-					if update_websocket:
-						ws.update_task_status(
-							message=f'Scanned files for volume {idx+1}/{total_count}'
-						)
-
-		else:
-			for idx, volume in enumerate(v_ids):
-				scan_files(volume)
+		with PortablePool() as pool:
+			for idx, _ in enumerate(pool.imap_unordered(scan_files, v_ids)):
 				if update_websocket:
 					ws.update_task_status(
 						message=f'Scanned files for volume {idx+1}/{total_count}'

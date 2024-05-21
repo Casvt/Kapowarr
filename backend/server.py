@@ -10,21 +10,27 @@ from os import execl, urandom
 from sys import argv
 from sys import executable as python_executable
 from threading import Timer, current_thread
-from typing import TYPE_CHECKING, NoReturn
+from typing import TYPE_CHECKING, Callable, NoReturn, Union
 
 from flask import Flask, render_template, request
+from flask_socketio import SocketIO
 from waitress import create_server
 from waitress.task import ThreadedTaskDispatcher as TTD
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
-from backend.db import DBConnection, close_db
+from backend.db import DBConnection, close_db, set_db_location
+from backend.enums import SocketEvent
 from backend.files import folder_path
-from backend.helpers import DB_ThreadSafeSingleton, Singleton, WebSocket
-from backend.logging import LOGGER
+from backend.helpers import DB_ThreadSafeSingleton, Singleton
+from backend.logging import LOGGER, set_log_level, setup_logging
 from backend.settings import private_settings
 
 if TYPE_CHECKING:
+	from flask.ctx import AppContext
 	from waitress.server import TcpWSGIServer
+
+	from backend.download_general import Download
+	from backend.tasks import Task
 
 
 class ThreadedTaskDispatcher(TTD):
@@ -203,5 +209,141 @@ class Server(metaclass=Singleton):
 		LOGGER.info('Restarting Kapowarr')
 		from Kapowarr import __file__ as k_file
 		execl(python_executable, folder_path(k_file), *argv)
+
+
+class WebSocket(SocketIO, metaclass=Singleton):
+	def send_task_added(self, task: Task) -> None:
+		"""Send a message stating a task that has been added
+		to the queue.
+
+		Args:
+			task (Task): The task that has been added.
+		"""
+		self.emit(
+			SocketEvent.TASK_ADDED.value,
+			{
+				'action': task.action,
+				'volume_id': task.volume_id,
+				'issue_id': task.issue_id
+			}
+		)
+		return
+
+	def send_task_ended(self, task: Task) -> None:
+		"""Send a message stating a task that has been removed
+		from the queue. Either because it's finished or canceled.
+
+		Args:
+			task (Task): The task that has been removed.
+		"""
+		self.emit(
+			SocketEvent.TASK_ENDED.value,
+			{
+				'action': task.action,
+				'volume_id': task.volume_id,
+				'issue_id': task.issue_id
+			}
+		)
+		return
+
+	def update_task_status(
+		self,
+		task: Union[Task, None] = None,
+		message: Union[str, None] = None
+	) -> None:
+		"""Send a message with the new task queue status. Supply either
+		the task or the message.
+
+		Args:
+			task (Union[Task, None], optional): The task instance to send
+			the status of.
+				Defaults to None.
+
+			message (Union[str, None], optional): The message to send.
+				Defaults to None.
+		"""
+		if task is not None:
+			self.emit(
+				SocketEvent.TASK_STATUS.value,
+				{
+					'message': task.message
+				}
+			)
+
+		elif message is not None:
+			self.emit(
+				SocketEvent.TASK_STATUS.value,
+				{
+					'message': message
+				}
+			)
+
+		return
+
+	def send_queue_added(self, download: Download) -> None:
+		"""Send a message stating a download that has been added
+		to the queue.
+
+		Args:
+			download (Download): The download that has been added.
+		"""
+		self.emit(
+			SocketEvent.QUEUE_ADDED.value,
+			{
+				'id': download.id,
+				'status': download.state.value,
+				'title': download.title,
+				'page_link': download.page_link,
+				'source': download.source,
+				'size': download.size,
+				'speed': download.speed,
+				'progress': download.progress
+			}
+		)
+		return
+
+	def send_queue_ended(self, download: Download) -> None:
+		"""Send a message stating a download that has been removed
+		from the queue. Either because it's finished or canceled.
+
+		Args:
+			download (Download): The download that has been removed.
+		"""
+		self.emit(
+			SocketEvent.QUEUE_ENDED.value,
+			{
+				'id': download.id
+			}
+		)
+		return
+
+	def update_queue_status(self, download: Download) -> None:
+		"""Send a message with the new download queue status.
+
+		Args:
+			download (Download): The download instance to send the status of.
+		"""
+		self.emit(
+			SocketEvent.QUEUE_STATUS.value,
+			{
+				'id': download.id,
+				'status': download.state.value,
+				'size': download.size,
+				'speed': download.speed,
+				'progress': download.progress
+			}
+		)
+		return
+
+
+def setup_process(log_level: int) -> Callable[[], AppContext]:
+	set_db_location()
+	setup_logging()
+	set_log_level(log_level)
+
+	app = Flask(__name__)
+	app.teardown_appcontext(close_db)
+	return app.app_context
+
 
 SERVER = Server()

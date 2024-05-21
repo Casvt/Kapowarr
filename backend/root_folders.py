@@ -88,7 +88,7 @@ class RootFolders:
 		if not isdir(folder):
 			raise FolderNotFound
 		folder = abspath(folder) + path_sep
-		
+
 		if len(folder) >= 4 and folder[1:3] == ":\\" and folder[0].lower() in alphabet:
 			folder = folder[0].upper() + folder[1:]
 
