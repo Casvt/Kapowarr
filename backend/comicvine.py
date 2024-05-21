@@ -450,8 +450,6 @@ class ComicVine:
 				]
 				responses = await gather(*tasks)
 
-				# cover_tasks = []
-				# cover_ids = []
 				cover_map = {}
 				for batch in responses:
 					for result in batch['results']:
@@ -469,6 +467,8 @@ class ComicVine:
 					await gather(*cover_map.values())
 				))
 				for vi in volume_infos:
+					if not vi['comicvine_id'] in cover_responses:
+						continue
 					vi['cover'] = cover_responses.get(vi['comicvine_id'])
 
 			return volume_infos
