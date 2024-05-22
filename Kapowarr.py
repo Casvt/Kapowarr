@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 #-*- coding: utf-8 -*-
 
+from multiprocessing import set_start_method
+
 from backend.db import set_db_location, setup_db
 from backend.helpers import check_python_version
 from backend.logging import LOGGER, setup_logging
@@ -11,6 +13,7 @@ from frontend.api import Settings, download_handler, task_handler
 def Kapowarr() -> None:
 	"""The main function of Kapowarr
 	"""
+	set_start_method('spawn')
 	setup_logging()
 	LOGGER.info('Starting up Kapowarr')
 

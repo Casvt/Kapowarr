@@ -2,6 +2,7 @@
 
 import logging
 import logging.config
+from logging.handlers import RotatingFileHandler
 from typing import Any, Union
 
 
@@ -14,6 +15,25 @@ class ErrorColorFormatter(logging.Formatter):
 	def format(self, record: logging.LogRecord) -> Any:
 		result = super().format(record)
 		return f'\033[1;31:40m{result}\033[0m'
+
+
+class MPRotatingFileHandler(RotatingFileHandler):
+	def __init__(self,
+		filename,
+		mode = "a",
+		maxBytes = 0,
+		backupCount = 0,
+		encoding = None,
+		delay = False,
+		do_rollover = True
+	) -> None:
+		self.do_rollover = do_rollover
+		return super().__init__(filename, mode, maxBytes, backupCount, encoding, delay)
+
+	def shouldRollover(self, record: logging.LogRecord) -> int:
+		if not self.do_rollover:
+			return 0
+		return super().shouldRollover(record)
 
 
 LOGGER_NAME = "Kapowarr"
@@ -57,12 +77,13 @@ LOGGING_CONFIG = {
 			"stream": "ext://sys.stdout"
 		},
 		"file": {
-			"class": "logging.handlers.RotatingFileHandler",
+			"()": MPRotatingFileHandler,
 			"level": "DEBUG",
 			"formatter": "detailed",
 			"filename": "",
 			"maxBytes": 1_000_000,
-			"backupCount": 1
+			"backupCount": 1,
+			"do_rollover": True
 		}
 	},
 	"loggers": {
@@ -78,11 +99,16 @@ LOGGING_CONFIG = {
 	}
 }
 
-def setup_logging() -> None:
+
+def setup_logging(do_rollover: bool = True) -> None:
 	"Setup the basic config of the logging module"
+
 	LOGGING_CONFIG["handlers"]["file"]["filename"] = get_debug_log_filepath()
+	LOGGING_CONFIG["handlers"]["file"]["do_rollover"] = do_rollover
+
 	logging.config.dictConfig(LOGGING_CONFIG)
 	return
+
 
 def get_debug_log_filepath() -> str:
 	"""
@@ -91,6 +117,7 @@ def get_debug_log_filepath() -> str:
 	"""
 	from backend.files import folder_path
 	return folder_path(LOGGER_DEBUG_FILENAME)
+
 
 def set_log_level(
 	level: Union[int, str]

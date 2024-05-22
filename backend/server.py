@@ -338,7 +338,7 @@ class WebSocket(SocketIO, metaclass=Singleton):
 
 def setup_process(log_level: int) -> Callable[[], AppContext]:
 	set_db_location()
-	setup_logging()
+	setup_logging(do_rollover=False)
 	set_log_level(log_level)
 
 	app = Flask(__name__)

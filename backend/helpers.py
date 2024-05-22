@@ -4,9 +4,6 @@
 General "helper" functions and classes
 """
 
-from __future__ import annotations
-
-from multiprocessing import get_start_method
 from multiprocessing.pool import Pool
 from sys import version_info
 from threading import current_thread
@@ -154,8 +151,8 @@ def extract_year_from_date(
 
 
 def check_overlapping_issues(
-		issues_1: Union[float, Tuple[float, float]],
-		issues_2: Union[float, Tuple[float, float]]
+	issues_1: Union[float, Tuple[float, float]],
+	issues_2: Union[float, Tuple[float, float]]
 ) -> bool:
 	"""Check if two issues overlap. Both can be single issues or ranges.
 
@@ -386,82 +383,50 @@ def pool_starmap_func(func, *args):
 
 class PortablePool(Pool):
 	def __init__(self, processes = None) -> None:
-		self.can_fork = get_start_method(allow_none=False) == 'fork'
-
-		if self.can_fork:
-			super().__init__(processes)
-		else:
-			super().__init__(processes, _ContextKeeper, (LOGGER.level,))
+		super().__init__(
+			processes=processes,
+			initializer=_ContextKeeper,
+			initargs=(LOGGER.root.level,)
+		)
 		return
 
 	def apply(self, func, args=(), kwds={}):
-		if not self.can_fork:
-			args = (func, args)
-			new_func = pool_apply_func
-		else:
-			new_func = func
-
-		return super().apply(new_func, args, kwds)
+		new_args = (func, args)
+		new_func = pool_apply_func
+		return super().apply(new_func, new_args, kwds)
 
 	def apply_async(self, func, args = (), kwds = {}, callback = None, error_callback = None):
-		if not self.can_fork:
-			args = (func, args)
-			new_func = pool_apply_func
-		else:
-			new_func = func
-
-		return super().apply_async(new_func, args, kwds, callback, error_callback)
+		new_args = (func, args)
+		new_func = pool_apply_func
+		return super().apply_async(new_func, new_args, kwds, callback, error_callback)
 
 	def map(self, func, iterable, chunksize=None):
-		if not self.can_fork:
-			iterable = ((func, i) for i in iterable)
-			new_func = pool_map_func
-		else:
-			new_func = func
+		new_iterable = ((func, i) for i in iterable)
+		new_func = pool_map_func
 
-		return super().map(new_func, iterable, chunksize)
+		return super().map(new_func, new_iterable, chunksize)
 
 	def imap(self, func, iterable, chunksize = 1):
-		if not self.can_fork:
-			iterable = ((func, i) for i in iterable)
-			new_func = pool_map_func
-		else:
-			new_func = func
-
-		return super().imap(new_func, iterable, chunksize)
+		new_iterable = ((func, i) for i in iterable)
+		new_func = pool_map_func
+		return super().imap(new_func, new_iterable, chunksize)
 
 	def imap_unordered(self, func, iterable, chunksize = 1):
-		if not self.can_fork:
-			iterable = ((func, i) for i in iterable)
-			new_func = pool_map_func
-		else:
-			new_func = func
-
-		return super().imap_unordered(new_func, iterable, chunksize)
+		new_iterable = ((func, i) for i in iterable)
+		new_func = pool_map_func
+		return super().imap_unordered(new_func, new_iterable, chunksize)
 
 	def map_async(self, func, iterable, chunksize = None, callback = None, error_callback = None):
-		if not self.can_fork:
-			iterable = ((func, i) for i in iterable)
-			new_func = pool_map_func
-		else:
-			new_func = func
-
-		return super().map_async(new_func, iterable, chunksize, callback, error_callback)
+		new_iterable = ((func, i) for i in iterable)
+		new_func = pool_map_func
+		return super().map_async(new_func, new_iterable, chunksize, callback, error_callback)
 
 	def starmap(self, func, iterable, chunksize=None):
-		if not self.can_fork:
-			iterable = ((func, i) for i in iterable)
-			new_func = pool_starmap_func
-		else:
-			new_func = func
-
-		return super().starmap(new_func, iterable, chunksize)
+		new_iterable = ((func, i) for i in iterable)
+		new_func = pool_starmap_func
+		return super().starmap(new_func, new_iterable, chunksize)
 
 	def starmap_async(self, func, iterable, chunksize = None, callback = None, error_callback = None):
-		if not self.can_fork:
-			iterable = ((func, i) for i in iterable)
-			new_func = pool_starmap_func
-		else:
-			new_func = func
-
-		return super().starmap_async(new_func, iterable, chunksize, callback, error_callback)
+		new_iterable = ((func, i) for i in iterable)
+		new_func = pool_starmap_func
+		return super().starmap_async(new_func, new_iterable, chunksize, callback, error_callback)
