@@ -180,10 +180,12 @@ def close_db(e: Union[str, None] = None):
 def close_all_db() -> None:
 	"Close all non-temporary database connections that are still open"
 	LOGGER.debug('Closing any open database connections')
-	for i in DB_ThreadSafeSingleton._instances:
+	for i in DB_ThreadSafeSingleton._instances.values():
 		if not i.closed:
 			i.close()
-	DBConnection(timeout=20.0).close()
+	c = DBConnection(timeout=20.0)
+	c.commit()
+	c.close()
 	return
 
 def migrate_db(current_db_version: int) -> None:
