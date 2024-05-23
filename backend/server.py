@@ -200,16 +200,6 @@ class Server(metaclass=Singleton):
 		self.shutdown()
 		return
 
-	def handle_restart(self) -> NoReturn:
-		"""Restart the interpreter.
-
-		Returns:
-			NoReturn: No return because it replaces the interpreter.
-		"""
-		LOGGER.info('Restarting Kapowarr')
-		from Kapowarr import __file__ as k_file
-		execl(python_executable, folder_path(k_file), *argv)
-
 
 class WebSocket(SocketIO, metaclass=Singleton):
 	def send_task_added(self, task: Task) -> None:

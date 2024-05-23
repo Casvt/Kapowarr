@@ -1,17 +1,27 @@
 #!/usr/bin/env python3
 #-*- coding: utf-8 -*-
 
+from atexit import register
 from multiprocessing import set_start_method
+from os import environ, name
+from signal import SIGINT, SIGTERM, signal
+from subprocess import Popen
+from sys import argv
+from typing import NoReturn
 
 from backend.db import set_db_location, setup_db
-from backend.helpers import check_python_version
+from backend.helpers import check_python_version, get_python_exe
 from backend.logging import LOGGER, setup_logging
 from backend.server import SERVER
 from frontend.api import Settings, download_handler, task_handler
 
 
-def Kapowarr() -> None:
-	"""The main function of Kapowarr
+def _main() -> NoReturn:
+	"""The main function of the Kapowarr sub-process
+
+	Returns:
+		NoReturn: Exit code 0 means to shutdown.
+		Exit code 131 means to restart.
 	"""
 	set_start_method('spawn')
 	setup_logging()
@@ -46,9 +56,69 @@ def Kapowarr() -> None:
 	task_handler.stop_handle()
 
 	if SERVER.do_restart:
-		SERVER.handle_restart()
+		LOGGER.info('Restarting Kapowarr')
+		exit(131)
 
+	exit(0)
+
+
+def _stop_sub_process(proc: Popen) -> None:
+	"""Gracefully stop the sub-process unless that fails. Then terminate it.
+
+	Args:
+		proc (Popen): The sub-process to stop.
+	"""
+	try:
+		if name != 'nt':
+			try:
+				proc.send_signal(SIGINT)
+			except ProcessLookupError:
+				pass
+		else:
+			import win32api  # type: ignore
+			import win32con  # type: ignore
+			try:
+				win32api.GenerateConsoleCtrlEvent(win32con.CTRL_C_EVENT, proc.pid)
+			except KeyboardInterrupt:
+				pass
+	except:
+		proc.terminate()
+
+
+def _run_sub_process() -> int:
+	"""Start the sub-process that Kapowarr will be run in.
+
+	Returns:
+		int: The return code from the sub-process.
+	"""
+	comm = [get_python_exe(), "-u", __file__] + argv[1:]
+	proc = Popen(
+		comm,
+		env={
+			**environ,
+			"KAPOWARR_RUN_MAIN": "1"
+		}
+	)
+	register(_stop_sub_process, proc=proc)
+	signal(SIGTERM, lambda signal_no, frame: _stop_sub_process(proc))
+
+	try:
+		return proc.wait()
+	except (KeyboardInterrupt, SystemExit, ChildProcessError):
+		_stop_sub_process(proc)
+		return 0
+
+
+def Kapowarr() -> None:
+	"The main function of Kapowarr"
+	rc = 131
+	while rc == 131:
+		rc = _run_sub_process()
 	return
 
+
 if __name__ == "__main__":
-	Kapowarr()
+	if environ.get("KAPOWARR_RUN_MAIN") == "1":
+		_main()
+	else:
+		Kapowarr()

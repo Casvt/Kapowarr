@@ -5,7 +5,9 @@ General "helper" functions and classes
 """
 
 from multiprocessing.pool import Pool
-from sys import version_info
+from os import symlink
+from os.path import exists, join
+from sys import base_exec_prefix, executable, platform, version_info
 from threading import current_thread
 from typing import (Any, Dict, Generator, Iterable, Iterator, List, Mapping,
                     Sequence, Tuple, TypedDict, TypeVar, Union)
@@ -43,6 +45,24 @@ def check_python_version() -> bool:
 		)
 		return False
 	return True
+
+
+def get_python_exe() -> str:
+	"""Get the path to the python executable.
+
+	Returns:
+		str: The python executable path.
+	"""
+	if platform.startswith('darwin'):
+		bundle_path = join(base_exec_prefix, "Resources", "Python.app", "Contents", "MacOS", "Python")
+		if exists(bundle_path):
+			from tempfile import mkdtemp
+			python_path = join(mkdtemp(), "python")
+			symlink(bundle_path, python_path)
+
+			return python_path
+
+	return executable
 
 
 def batched(l: Sequence[T], n: int) -> Generator[Sequence[T], Any, Any]:
