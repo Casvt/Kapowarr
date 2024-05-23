@@ -1,5 +1,7 @@
 #-*- coding: utf-8 -*-
 
+from datetime import datetime
+from io import BytesIO, StringIO
 from os.path import exists
 from typing import Any, Dict, List, Tuple, Type, Union
 
@@ -8,8 +10,7 @@ from flask import Blueprint, Flask, request, send_file
 from backend.blocklist import (add_to_blocklist, delete_blocklist,
                                delete_blocklist_entry, get_blocklist,
                                get_blocklist_entry)
-from backend.conversion import (get_available_formats, mass_convert,
-                                preview_mass_convert)
+from backend.conversion import get_available_formats, preview_mass_convert
 from backend.custom_exceptions import (BlocklistEntryNotFound,
                                        CredentialAlreadyAdded,
                                        CredentialInvalid, CredentialNotFound,
@@ -37,8 +38,7 @@ from backend.enums import BlocklistReason, BlocklistReasonID
 from backend.library_import import import_library, propose_library_import
 from backend.logging import LOGGER, get_debug_log_filepath
 from backend.mass_edit import MassEditorVariables, action_to_func
-from backend.naming import (generate_volume_folder_name, mass_rename,
-                            preview_mass_rename)
+from backend.naming import generate_volume_folder_name, preview_mass_rename
 from backend.root_folders import RootFolders
 from backend.search import manual_search
 from backend.server import SERVER
@@ -273,7 +273,19 @@ def api_logs():
 	if not exists(file):
 		raise LogFileNotFound
 
-	return send_file(file), 200
+	sio = StringIO()
+	for ext in ('.1', ''):
+		lf = file + ext
+		if not exists(lf):
+			continue
+		with open(lf, 'r') as f:
+			sio.writelines(f)
+
+	return send_file(
+		BytesIO(sio.getvalue().encode('utf-8')),
+		mimetype="application/octet-stream",
+		download_name=f'Kapowarr_log_{datetime.now().strftime("%Y_%m_%d_%H_%M")}.txt'
+	), 200
 
 @api.route('/system/tasks', methods=['GET','POST'])
 @error_handler

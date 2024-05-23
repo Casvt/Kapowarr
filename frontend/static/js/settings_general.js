@@ -51,8 +51,8 @@ usingApiKey()
 	fillSettings(api_key);
 	document.querySelector('#save-button').onclick = e => saveSettings(api_key);
 	document.querySelector('#generate-api').onclick = e => generateApiKey(api_key);
-	document.querySelector('#download-logs-button').onclick = e =>
-		window.location.href = `${url_base}/api/system/logs?api_key=${api_key}`;
+	document.querySelector('#download-logs-button').href =
+		`${url_base}/api/system/logs?api_key=${api_key}`;
 });
 
 document.querySelector('#theme-input').onchange = e => {
