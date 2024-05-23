@@ -6,7 +6,7 @@ from asyncio import run
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from io import BytesIO
-from os import remove
+from os import cpu_count, remove
 from os.path import abspath, basename, dirname, isdir, join, relpath
 from re import IGNORECASE, compile
 from time import time
@@ -1243,7 +1243,7 @@ def refresh_and_scan(
 			ws = WebSocket()
 			total_count = len(v_ids)
 
-		with PortablePool() as pool:
+		with PortablePool(processes=min(cpu_count(), 16)) as pool:
 			for idx, _ in enumerate(pool.imap_unordered(scan_files, v_ids)):
 				if update_websocket:
 					ws.update_task_status(
