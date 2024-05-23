@@ -177,6 +177,15 @@ def close_db(e: Union[str, None] = None):
 
 	return
 
+def close_all_db() -> None:
+	"Close all non-temporary database connections that are still open"
+	LOGGER.debug('Closing any open database connections')
+	for i in DB_ThreadSafeSingleton._instances:
+		if not i.closed:
+			i.close()
+	DBConnection(timeout=20.0).close()
+	return
+
 def migrate_db(current_db_version: int) -> None:
 	"""
 	Migrate a Kapowarr database from it's current version

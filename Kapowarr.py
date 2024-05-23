@@ -9,7 +9,7 @@ from subprocess import Popen
 from sys import argv
 from typing import NoReturn
 
-from backend.db import set_db_location, setup_db
+from backend.db import close_all_db, set_db_location, setup_db
 from backend.helpers import check_python_version, get_python_exe
 from backend.logging import LOGGER, setup_logging
 from backend.server import SERVER
@@ -54,6 +54,7 @@ def _main() -> NoReturn:
 
 	download_handler.stop_handle()
 	task_handler.stop_handle()
+	close_all_db()
 
 	if SERVER.do_restart:
 		LOGGER.info('Restarting Kapowarr')

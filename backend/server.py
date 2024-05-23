@@ -6,11 +6,9 @@ Setting up, running and shutting down the API and web-ui
 
 from __future__ import annotations
 
-from os import execl, urandom
-from sys import argv
-from sys import executable as python_executable
+from os import urandom
 from threading import Timer, current_thread
-from typing import TYPE_CHECKING, Callable, NoReturn, Union
+from typing import TYPE_CHECKING, Callable, Union
 
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO
@@ -60,7 +58,6 @@ class ThreadedTaskDispatcher(TTD):
 				ws.server.disconnect(sid)
 
 		result = super().shutdown(cancel_pending, timeout)
-		DBConnection(20.0).close()
 		return result
 
 
