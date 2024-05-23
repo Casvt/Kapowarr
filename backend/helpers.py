@@ -442,11 +442,11 @@ class PortablePool(Pool):
 		return super().map_async(new_func, new_iterable, chunksize, callback, error_callback)
 
 	def starmap(self, func, iterable, chunksize=None):
-		new_iterable = ((func, i) for i in iterable)
+		new_iterable = ((func, *i) for i in iterable)
 		new_func = pool_starmap_func
 		return super().starmap(new_func, new_iterable, chunksize)
 
 	def starmap_async(self, func, iterable, chunksize = None, callback = None, error_callback = None):
-		new_iterable = ((func, i) for i in iterable)
+		new_iterable = ((func, *i) for i in iterable)
 		new_func = pool_starmap_func
 		return super().starmap_async(new_func, new_iterable, chunksize, callback, error_callback)
