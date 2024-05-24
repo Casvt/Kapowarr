@@ -275,6 +275,8 @@ def _extract_button_links(
 			):
 				group_link: Tag = e.find('a') # type: ignore
 				link_title = group_link.text.strip().lower()
+				if group_link.get('href') is None:
+					continue
 				match = _check_download_link(
 					link_title,
 					group_link['href'], # type: ignore
@@ -318,6 +320,8 @@ def _extract_list_links(
 
 		for group_link in result.find_all('a'):
 			group_link: Tag
+			if group_link.get('href') is None:
+				continue
 			link_title = group_link.text.strip().lower()
 			match = _check_download_link(
 				link_title,
