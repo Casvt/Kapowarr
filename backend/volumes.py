@@ -6,7 +6,7 @@ from asyncio import run
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from io import BytesIO
-from os import cpu_count, remove
+from os import remove
 from os.path import abspath, basename, dirname, isdir, join, relpath
 from re import IGNORECASE, compile
 from time import time
@@ -888,11 +888,32 @@ class Volume(_VolumeBackend):
 #=====================
 # region Scanning and updating
 #=====================
-def scan_files(volume_id: int) -> None:
+def _del_unmatched_files() -> None:
+	"""
+	Delete all file entries in the DB that aren't binded.
+	So files that were present last scan but this scan not anymore.
+	"""
+	get_db().execute("""
+		WITH ids AS (
+			SELECT file_id
+			FROM issues_files
+			UNION
+			SELECT file_id
+			FROM volume_files
+		)
+		DELETE FROM files
+		WHERE id NOT IN ids;
+	""")
+	return
+
+def scan_files(volume_id: int, del_unmatched_files: bool = True) -> None:
 	"""Scan inside the volume folder for files and map them to issues
 
 	Args:
 		volume_id (int): The ID of the volume to scan for.
+		del_unmatched_files (bool, optional): Delete file entries in the DB
+		that aren't linked to anything anymore.
+			Defaults to True.
 	"""
 	LOGGER.debug(f'Scanning for files for {volume_id}')
 
@@ -907,10 +928,10 @@ def scan_files(volume_id: int) -> None:
 	# so convert to set for speed improvement.
 	volume_files = set(volume.get_files())
 	_general_files = volume.get_general_files(include_id=True)
-	general_files = set(
-		f['filepath']
+	general_files: Dict[str, int] = {
+		f['filepath']: f['file_id']
 		for f in _general_files
-	)
+	}
 
 	if not isdir(volume_data.folder):
 		root_folder = RootFolders()[volume_data.root_folder]
@@ -926,10 +947,12 @@ def scan_files(volume_id: int) -> None:
 	for file in folder_contents:
 		if basename(file).lower() in md_files:
 			# Volume metadata file
-			file_id = get_file_id(
-				file,
-				add_file = not file in general_files
-			)
+			file_id = general_files.get(file)
+			if file_id is None:
+				file_id = get_file_id(
+					file,
+					add_file=True
+				)
 			general_bindings.append((file_id, GeneralFileType.METADATA))
 			continue
 
@@ -941,10 +964,12 @@ def scan_files(volume_id: int) -> None:
 			and	file_data['issue_number'] is None
 		):
 			# Volume cover file
-			file_id = get_file_id(
-				file,
-				add_file = not file in general_files
-			)
+			file_id = general_files.get(file)
+			if file_id is None:
+				file_id = get_file_id(
+					file,
+					add_file=True
+				)
 			general_bindings.append((file_id, GeneralFileType.COVER))
 			continue
 
@@ -995,6 +1020,9 @@ def scan_files(volume_id: int) -> None:
 				for issue_id in matching_issues:
 					bindings.append((file_id, issue_id))
 
+	# Commit files added to DB
+	cursor.connection.commit()
+
 	# Get current bindings
 	current_bindings = cursor.execute("""
 		SELECT if.file_id, if.issue_id
@@ -1032,7 +1060,7 @@ def scan_files(volume_id: int) -> None:
 	)
 
 	# Add bindings for general files that aren't in current bindings
-	general_ids = set((b['file_id'] for b in _general_files))
+	general_ids = set(general_files.values())
 	new_general_bindings = (
 		(b[0], b[1].value, volume_id)
 		for b in general_bindings
@@ -1043,24 +1071,15 @@ def scan_files(volume_id: int) -> None:
 		new_general_bindings
 	)
 
-	# Delete all file entries that aren't binded
-	# AKA files that were present last scan but this scan not anymore
-	cursor.execute("""
-		WITH ids AS (
-			SELECT file_id
-			FROM issues_files
-			UNION
-			SELECT file_id
-			FROM volume_files
-		)
-		DELETE FROM files
-		WHERE id NOT IN ids;
-	""")
+	if del_unmatched_files:
+		_del_unmatched_files()
 
 	cursor.connection.commit()
 
 	return
 
+def map_scan_files(a: Tuple[int, bool]) -> None:
+	return scan_files(*a)
 
 def refresh_and_scan(
 	volume_id: Union[int, None] = None,
@@ -1235,20 +1254,21 @@ def refresh_and_scan(
 
 	else:
 		if allow_skipping:
-			v_ids: Iterable[int] = [ids[v['comicvine_id']] for v in volume_datas]
+			v_ids: Iterable[int] = [(ids[v['comicvine_id']], False) for v in volume_datas]
 		else:
-			v_ids: Iterable[int] = ids.values()
+			v_ids: Iterable[int] = [(v, False) for v in ids.values()]
 
 		if update_websocket:
 			ws = WebSocket()
 			total_count = len(v_ids)
 
-		with PortablePool(processes=min(cpu_count(), 16)) as pool:
-			for idx, _ in enumerate(pool.imap_unordered(scan_files, v_ids)):
+		with PortablePool() as pool:
+			for idx, _ in enumerate(pool.imap_unordered(map_scan_files, v_ids)):
 				if update_websocket:
 					ws.update_task_status(
 						message=f'Scanned files for volume {idx+1}/{total_count}'
 					)
+		_del_unmatched_files()
 
 	return
 

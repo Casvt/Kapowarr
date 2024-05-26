@@ -7,7 +7,7 @@ Background tasks and their handling
 from abc import ABC, abstractmethod
 from threading import Thread, Timer
 from time import sleep, time
-from typing import Dict, List, Type, Union
+from typing import Dict, List, Tuple, Type, Union
 
 from backend.conversion import mass_convert
 from backend.custom_exceptions import (InvalidComicVineApiKey,
@@ -396,13 +396,13 @@ class SearchAll(Task):
 	issue_id = None
 
 	def run(self) -> List[tuple]:
-		cursor = get_db(temp=True)
-		cursor.execute(
+		cursor = get_db()
+		volumes: List[Tuple[int, str]] = cursor.execute(
 			"SELECT id, title FROM volumes WHERE monitored = 1;"
-		)
+		).fetchall()
 		downloads = []
 		ws = WebSocket()
-		for volume_id, volume_title in cursor:
+		for volume_id, volume_title in volumes:
 			if self.stop: break
 			self.message = f'Searching for {volume_title}'
 			ws.update_task_status(self)
@@ -410,7 +410,6 @@ class SearchAll(Task):
 			results = auto_search(volume_id)
 			if results:
 				downloads += [(result['link'], volume_id) for result in results]
-		cursor.connection.close()
 		return downloads
 
 #=====================
@@ -459,6 +458,7 @@ class TaskHandler(metaclass=Singleton):
 
 				if not task.stop:
 					if task.category == 'download':
+						cursor.connection.commit()
 						for download in result:
 							self.download_handler.add(*download)
 							# add() does a write to db so commit in-between

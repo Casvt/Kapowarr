@@ -46,7 +46,6 @@ class DBConnection(Connection, metaclass=DB_ThreadSafeSingleton):
 		super().__init__(
 			self.file,
 			timeout=timeout,
-			isolation_level='EXCLUSIVE',
 			detect_types=PARSE_DECLTYPES
 		)
 		super().cursor().execute("PRAGMA foreign_keys = ON;")
@@ -83,7 +82,6 @@ class TempDBConnection(Connection):
 		super().__init__(
 			self.file,
 			timeout=timeout,
-			isolation_level='EXCLUSIVE',
 			detect_types=PARSE_DECLTYPES
 		)
 		super().cursor().execute("PRAGMA foreign_keys = ON;")
