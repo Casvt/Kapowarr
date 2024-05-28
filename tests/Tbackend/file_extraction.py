@@ -104,7 +104,13 @@ class extract_filename_data(unittest.TestCase):
 				{'series': 'The Wicked The Divine', 'year': 2014, 'volume_number': 1, 'special_version': None, 'issue_number': 35.0, 'annual': False},
 
 			'Avengers Classic #1 – 12 (2007-2008)':
-				{'series': 'Avengers Classic', 'year': 2007, 'volume_number': 1, 'special_version': None, 'issue_number': (1.0, 12.0), 'annual': False}
+				{'series': 'Avengers Classic', 'year': 2007, 'volume_number': 1, 'special_version': None, 'issue_number': (1.0, 12.0), 'annual': False},
+
+			'Spider-Man Chapter One 002(1999).cbr':
+				{'series': 'Spider Man Chapter One', 'year': 1999, 'volume_number': 1, 'special_version': None, 'issue_number': 2.0, 'annual': False},
+
+			'Spider-Man Chapter One 002-004(1999).cbr':
+				{'series': 'Spider Man Chapter One', 'year': 1999, 'volume_number': 1, 'special_version': None, 'issue_number': (2.0, 4.0), 'annual': False},
 		}
 		self.run_cases(cases)
 
