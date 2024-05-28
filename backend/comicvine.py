@@ -4,8 +4,7 @@
 Search for volumes/issues and fetch metadata for them on ComicVine
 """
 
-from backend.logging import LOGGER
-from asyncio import create_task, gather
+from asyncio import create_task, gather, sleep
 from re import IGNORECASE, compile
 from typing import Any, Dict, List, Union
 
@@ -23,6 +22,7 @@ from backend.db import get_db
 from backend.file_extraction import (convert_volume_number_to_int,
                                      process_issue_number, volume_regex)
 from backend.helpers import T, batched, normalize_string
+from backend.logging import LOGGER
 from backend.settings import Settings, private_settings
 
 translation_regex = compile(
@@ -438,6 +438,12 @@ class ComicVine:
 		async with ClientSession() as session:
 			# 10 requests of 100 vol per round
 			for request_batch in batched(ids, 1000):
+
+				if request_batch[0] != ids[0]:
+					# From second round on
+					LOGGER.debug(f"Waiting {private_settings['cv_brake_time']}s to keep the CV rate limit happy")
+					await sleep(private_settings['cv_brake_time'])
+
 				tasks = [
 					create_task(self.__call_api_async(
 						session,
@@ -504,10 +510,17 @@ class ComicVine:
 				]
 
 				if results['number_of_total_results'] > 100:
+
 					for offset_batch in batched(
 						range(100, results['number_of_total_results'], 100),
 						10
 					):
+
+						if offset_batch[0] != 100:
+							# From second round on
+							LOGGER.debug(f"Waiting {private_settings['cv_brake_time']}s to keep the CV rate limit happy")
+							await sleep(private_settings['cv_brake_time'])
+
 						tasks = [
 							create_task(self.__call_api_async(
 								session,
@@ -526,6 +539,7 @@ class ComicVine:
 								self.__format_issue_output(r)
 								for r in batch['results']
 							]
+
 			return issue_infos
 
 	def __process_search_results(self,

@@ -63,7 +63,8 @@ private_settings = {
 	'version': 'alpha-24',
 	'python_version': get_python_version(),
 	'torrent_update_interval': 5, # Seconds
-	'torrent_tag': 'kapowarr'
+	'torrent_tag': 'kapowarr',
+	'cv_brake_time': 10.0, # Seconds
 }
 
 about_data = {
