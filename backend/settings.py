@@ -16,12 +16,12 @@ from backend.helpers import (CommaList, Singleton, first_of_column,
                              get_python_version)
 from backend.logging import LOGGER, set_log_level
 
-supported_source_strings = (('mega',),
-							('mediafire',),
-							('wetransfer', 'we transfer'),
-							('pixeldrain', 'pixel drain'),
+supported_source_strings = (('mega', 'mega link'),
+							('mediafire', 'mediafire link'),
+							('wetransfer', 'we transfer', 'wetransfer link', 'we transfer link'),
+							('pixeldrain', 'pixel drain', 'pixeldrain link', 'pixel drain link'),
 							('getcomics', 'download now', 'main download', 'main server', 'main link', 'mirror download', 'mirror server', 'mirror link', 'link 1', 'link 2'),
-							('getcomics (torrent)', 'torrent'))
+							('getcomics (torrent)', 'torrent', 'torrent link', 'magnet', 'magnet link'))
 
 default_settings = {
 	'database_version': __DATABASE_VERSION__,
