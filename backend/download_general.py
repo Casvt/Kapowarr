@@ -5,11 +5,11 @@ General classes (ABC's, base classes) regarding downloading
 """
 
 from abc import ABC, abstractmethod
-from typing import Sequence, Tuple, Union
+from threading import Thread
+from typing import List, Sequence, Tuple, Union
 
-from backend.custom_exceptions import (InvalidKeyValue, KeyNotFound,
-                                       TorrentClientDownloading,
-                                       TorrentClientNotWorking)
+from backend.custom_exceptions import (ClientDownloading, InvalidKeyValue,
+                                       KeyNotFound, TorrentClientNotWorking)
 from backend.db import get_db
 from backend.enums import DownloadState
 
@@ -20,17 +20,25 @@ class Download(ABC):
 	id: int
 	volume_id: int
 	issue_id: Union[int, None]
-	page_link: Union[str, None]
+	web_link: Union[str, None]
+	"Link to webpage for download"
+	web_title: Union[str, None]
+	"Title of webpage (or release) for download"
+	web_sub_title: Union[str, None]
+	"Title of sub-section that download falls under (e.g. GC group name)"
 
-	_filename_body: str
-	source: str
 	download_link: str
+	"The link to the download or service page (e.g. link to MF page)"
+	pure_link: str
+	"The pure link to download from (e.g. pixeldrain API link or MF folder ID)"
+	source: str
 	type: str
 
+	_filename_body: str
 	file: str
 	title: str
-	size: int
 
+	size: int
 	state: DownloadState
 	progress: float
 	speed: float
@@ -38,7 +46,7 @@ class Download(ABC):
 	@abstractmethod
 	def __init__(
 		self,
-		link: str,
+		download_link: str,
 		filename_body: str,
 		source: str,
 		custom_name: bool=True
@@ -46,7 +54,7 @@ class Download(ABC):
 		"""Create the download instance
 
 		Args:
-			link (str): The link to the download
+			download_link (str): The link to the download
 				(could be direct download link, mega link or magnet link)
 
 			filename_body (str): The body of the file to download to
@@ -55,6 +63,9 @@ class Download(ABC):
 
 			custom_name (bool, optional): Whether or not to use the filename body
 			or to use the default name of the download. Defaults to True.
+
+		Raises:
+			LinkBroken: The link doesn't work
 		"""
 		return
 
@@ -86,7 +97,10 @@ class Download(ABC):
 		"""
 		return
 
-class TorrentClient(ABC):
+
+class DownloadClient(ABC):
+	"A torrent/usenet client"
+
 	id: int
 	type: str
 	title: str
@@ -101,88 +115,86 @@ class TorrentClient(ABC):
 
 	@abstractmethod
 	def __init__(self, id: int) -> None:
-		"""Create a connection with a torrent client
+		"""Create a connection with a client.
 
 		Args:
-			id (int): The id of the torrent client
+			id (int): The id of the client.
 		"""
 		return
 
 	@abstractmethod
 	def todict(self) -> dict:
-		"""Get info about torrent client in a dict
+		"""Get info about client in a dict.
 
 		Returns:
-			dict: The info about the torrent client
+			dict: The info about the client.
 		"""
 		return
 
 	@abstractmethod
 	def edit(self, edits: dict) -> dict:
-		"""Edit the torrent client
+		"""Edit the client.
 
 		Args:
 			edits (dict): The keys and their new values for
-			the torrent client settings
+			the client settings.
 
 		Raises:
-			TorrentClientDownloading: The is a download in the queue
-			using the client
+			ClientDownloading: The is a download in the queue using the client.
 
 		Returns:
-			dict: The new info of the torrent client
+			dict: The new info of the client.
 		"""
 		return
 
 	@abstractmethod
 	def delete(self) -> None:
-		"""Delete the torrent client
+		"""Delete the client.
 
 		Raises:
-			TorrentClientDownloading: There is a download in the queue
-			using the client
+			ClientDownloading: There is a download in the queue using the client.
 		"""
 		return
 
 	@abstractmethod
-	def add_torrent(self,
+	def add_download(self,
 		magnet_link: str,
 		target_folder: str,
-		torrent_name: Union[str, None]
+		download_name: Union[str, None]
 	) -> str:
-		"""Add a torrent to the client for downloading
+		"""Add a download to the client.
 
 		Args:
-			magnet_link (str): The magnet link of the torrent to download
-			target_folder (str): The folder to download in
-			torrent_name (Union[str, None]): The name of the torrent in the client
+			magnet_link (str): The magnet link of the torrent to download.
+			target_folder (str): The folder to download in.
+			download_name (Union[str, None]): The name of the download in the client
 			Set to `None` to keep original name.
 
 		Returns:
-			str: The id/hash of the entry in the download client
+			str: The id/hash of the entry in the download client.
 		"""
 		return
 
 	@abstractmethod
-	def get_torrent_status(self, torrent_id: str) -> Union[dict, None]:
-		"""Get the status of the torrent in a dict
+	def get_download_status(self, download_id: str) -> Union[dict, None]:
+		"""Get the status of the download in a dict
 
 		Args:
-			torrent_id (str): The id/hash of the torrent to get status of.
+			download_id (str): The id/hash of the download to get status of.
 
 		Returns:
-			Union[dict, None]: The status of the torrent,
-			empty dict if torrent is not found
-			and `None` if client deleted torrent.
+			Union[dict, None]: The status of the download,
+			empty dict if download is not found
+			and `None` if client deleted the download.
 		"""
 		return
 
 	@abstractmethod
-	def delete_torrent(self, torrent_id: str, delete_files: bool) -> None:
-		"""Remove the torrent from the client.
+	def delete_download(self, download_id: str, delete_files: bool) -> None:
+		"""Remove the download from the client.
 
 		Args:
-			torrent_id (str): The id/hash of the torrent to delete.
+			download_id (str): The id/hash of the download to delete.
 			delete_files (bool): Delete the downloaded files.
 		"""
 		return
@@ -195,7 +207,7 @@ class TorrentClient(ABC):
 		password: Union[str, None],
 		api_token: Union[str, None]
 	) -> Tuple[bool, str]:
-		"""Check if a torrent client is working
+		"""Check if a download client is working
 
 		Args:
 			base_url (str): The base url on which the client is running.
@@ -209,7 +221,33 @@ class TorrentClient(ABC):
 		"""
 		return
 
-class BaseTorrentClient(TorrentClient):
+
+class ExternalDownload(Download):
+	client: DownloadClient
+	external_id: Union[str, int, None]
+	_download_thread: Union[Thread, None]
+	_download_folder: str
+	_resulting_files: List[str]
+	_original_file: str
+
+	@abstractmethod
+	def update_status(self) -> None:
+		"""
+		Update the various variables about the state/progress
+		of the torrent download
+		"""
+		return
+
+	@abstractmethod
+	def remove_from_client(self, delete_files: bool) -> None:
+		"""Remove the download from the client
+
+		Args:
+			delete_files (bool): Delete downloaded files
+		"""
+		return
+
+class BaseTorrentClient(DownloadClient):
 	def __init__(self, id: int) -> None:
 		self.id = id
 		data = get_db(dict).execute("""
@@ -249,7 +287,7 @@ class BaseTorrentClient(TorrentClient):
 			"SELECT 1 FROM download_queue WHERE torrent_client_id = ? LIMIT 1;",
 			(self.id,)
 		).fetchone() is not None:
-			raise TorrentClientDownloading(self.id)
+			raise ClientDownloading(self.id)
 
 		from backend.download_torrent_clients import client_types
 		data = {}
@@ -298,7 +336,7 @@ class BaseTorrentClient(TorrentClient):
 			"SELECT 1 FROM download_queue WHERE torrent_client_id = ? LIMIT 1;",
 			(self.id,)
 		).fetchone() is not None:
-			raise TorrentClientDownloading(self.id)
+			raise ClientDownloading(self.id)
 
 		cursor.execute(
 			"DELETE FROM torrent_clients WHERE id = ?;",

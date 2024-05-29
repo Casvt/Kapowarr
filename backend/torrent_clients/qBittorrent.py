@@ -37,7 +37,7 @@ class qBittorrent(BaseTorrentClient):
 
 		return
 
-	def add_torrent(self,
+	def add_download(self,
 		magnet_link: str,
 		target_folder: str,
 		torrent_name: Union[str, None]
@@ -58,7 +58,7 @@ class qBittorrent(BaseTorrentClient):
 
 		return magnet_link.split('urn:btih:')[1].split('&')[0]
 
-	def get_torrent_status(self, torrent_id: str) -> Union[dict, None]:
+	def get_download_status(self, torrent_id: str) -> Union[dict, None]:
 		r = self.ssn.get(
 			f'{self.base_url}/api/v2/torrents/properties',
 			params={'hash': torrent_id}
@@ -94,7 +94,7 @@ class qBittorrent(BaseTorrentClient):
 			'state': state
 		}
 
-	def delete_torrent(self, torrent_id: str, delete_files: bool) -> None:
+	def delete_download(self, torrent_id: str, delete_files: bool) -> None:
 		self.ssn.post(
 			f'{self.base_url}/api/v2/torrents/delete',
 			data={

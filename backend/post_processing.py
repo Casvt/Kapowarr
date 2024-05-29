@@ -41,7 +41,7 @@ class PostProcessingActions:
 			INSERT INTO download_history(original_link, title, downloaded_at)
 			VALUES (?,?,?);
 			""",
-			(download.page_link, download.title, round(time()))
+			(download.web_link, download.title, round(time()))
 		)
 		return
 

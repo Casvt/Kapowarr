@@ -267,25 +267,25 @@ class TorrentClientNotFound(CustomException):
 	"""Torrent client with given ID not found"""
 	api_response = {'error': 'TorrentClientNotFound', 'result': {}, 'code': 404}
 
-class TorrentClientDownloading(Exception):
+class ClientDownloading(Exception):
 	"""
-	The torrent client is desired to be deleted
-	but there is a torrent downloading with it
+	The external client is desired to be deleted
+	but there is a download using it
 	"""
-	def __init__(self, torrent_client_id: int):
-		self.torrent_client_id = torrent_client_id
-		super().__init__(self.torrent_client_id)
+	def __init__(self, client_id: int):
+		self.client_id = client_id
+		super().__init__(self.client_id)
 		LOGGER.warning(
-			f'Deleting torrent client failed because there is '
-			+ f'a torrent downloading with it: {self.torrent_client_id}'
+			f'Deleting external client failed because there is '
+			+ f'a download using it: {self.client_id}'
 		)
 		return
 
 	@property
 	def api_response(self):
 		return {
-			'error': 'TorrentClientDownloading',
-			'result': {'torrent_client_id': self.torrent_client_id},
+			'error': 'ClientDownloading',
+			'result': {'client_id': self.client_id},
 			'code': 400
 		}
 

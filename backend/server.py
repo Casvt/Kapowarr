@@ -276,16 +276,7 @@ class WebSocket(SocketIO, metaclass=Singleton):
 		"""
 		self.emit(
 			SocketEvent.QUEUE_ADDED.value,
-			{
-				'id': download.id,
-				'status': download.state.value,
-				'title': download.title,
-				'page_link': download.page_link,
-				'source': download.source,
-				'size': download.size,
-				'speed': download.speed,
-				'progress': download.progress
-			}
+			download.todict()
 		)
 		return
 

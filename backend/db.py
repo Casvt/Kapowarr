@@ -17,7 +17,7 @@ from backend.helpers import CommaList, DB_ThreadSafeSingleton
 from backend.logging import LOGGER, set_log_level
 
 __DATABASE_FILEPATH__ = 'db', 'Kapowarr.db'
-__DATABASE_VERSION__ = 22
+__DATABASE_VERSION__ = 23
 __DATABASE_TIMEOUT__ = 10.0
 
 class NoNoneCursor(Cursor):
@@ -683,6 +683,35 @@ def migrate_db(current_db_version: int) -> None:
 		current_db_version = s['database_version'] = current_db_version + 1
 		s._save_to_database()
 
+	if current_db_version == 22:
+		# V22 -> V23
+
+		cursor.executescript("""
+			DROP TABLE download_queue;
+			CREATE TABLE download_queue(
+				id INTEGER PRIMARY KEY,
+				client_type VARCHAR(255) NOT NULL,
+				torrent_client_id INTEGER,
+
+				download_link TEXT NOT NULL,
+				filename_body TEXT NOT NULL,
+				source VARCHAR(25) NOT NULL,
+
+				volume_id INTEGER NOT NULL,
+				issue_id INTEGER,
+				web_link TEXT,
+				web_title TEXT,
+				web_sub_title TEXT,
+
+				FOREIGN KEY (torrent_client_id) REFERENCES torrent_clients(id),
+				FOREIGN KEY (volume_id) REFERENCES volumes(id),
+				FOREIGN KEY (issue_id) REFERENCES issues(id)
+			);
+		""")
+
+		current_db_version = s['database_version'] = current_db_version + 1
+		s._save_to_database()
+
 	return
 
 def setup_db() -> None:
@@ -782,13 +811,15 @@ def setup_db() -> None:
 			client_type VARCHAR(255) NOT NULL,
 			torrent_client_id INTEGER,
 
-			link TEXT NOT NULL,
+			download_link TEXT NOT NULL,
 			filename_body TEXT NOT NULL,
 			source VARCHAR(25) NOT NULL,
 
 			volume_id INTEGER NOT NULL,
 			issue_id INTEGER,
-			page_link TEXT,
+			web_link TEXT,
+			web_title TEXT,
+			web_sub_title TEXT,
 
 			FOREIGN KEY (torrent_client_id) REFERENCES torrent_clients(id),
 			FOREIGN KEY (volume_id) REFERENCES volumes(id),

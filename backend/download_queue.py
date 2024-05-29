@@ -16,8 +16,9 @@ from backend.blocklist import add_to_blocklist
 from backend.custom_exceptions import (DownloadLimitReached, DownloadNotFound,
                                        LinkBroken)
 from backend.db import get_db
-from backend.download_direct_clients import (DirectDownload, Download,
+from backend.download_direct_clients import (BaseDirectDownload, Download,
                                              MegaDownload)
+from backend.download_general import ExternalDownload
 from backend.download_torrent_clients import TorrentClients, TorrentDownload
 from backend.enums import (BlocklistReason, DownloadState, FailReason,
                            SeedingHandling)
@@ -39,7 +40,10 @@ if TYPE_CHECKING:
 #=====================
 download_type_to_class: Dict[str, Type[Download]] = {
 	c.type: c
-	for c in Download.__subclasses__()[0].__subclasses__()
+	for c in (
+		*BaseDirectDownload.__subclasses__(),
+		*ExternalDownload.__subclasses__()
+	)
 }
 
 class DownloadHandler:
@@ -167,8 +171,6 @@ class DownloadHandler:
 					break
 
 				elif download.state == DownloadState.SHUTDOWN_STATE:
-					download.remove_from_client(delete_files=True)
-					post_processer.shutdown(download)
 					break
 
 				elif (
@@ -208,7 +210,7 @@ class DownloadHandler:
 			(
 				e
 				for e in self.queue
-				if isinstance(e, (DirectDownload, MegaDownload))
+				if isinstance(e, BaseDirectDownload)
 			),
 			None
 		)
@@ -254,26 +256,28 @@ class DownloadHandler:
 		for download in downloads:
 			download.volume_id = volume_id
 			download.issue_id = issue_id
-			download.page_link = page_link
+			download.web_link = page_link
 
 			if download.id is None:
 				download.id = cursor.execute("""
 					INSERT INTO download_queue(
 						client_type, torrent_client_id,
-						link, filename_body, source,
-						volume_id, issue_id, page_link
+						download_link, filename_body, source,
+						volume_id, issue_id,
+						web_link, web_title, web_sub_title
 					)
-					VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+					VALUES (
+						?, ?,
+						?, ?, ?,
+						?, ?,
+						?, ?, ?
+					);
 					""",
 					(
-						download.type,
-						None,
-						download.download_link,
-						download._filename_body,
-						download.source,
-						download.volume_id,
-						download.issue_id,
-						download.page_link
+						download.type, None,
+						download.download_link, download._filename_body, download.source,
+						download.volume_id, download.issue_id,
+						download.web_link, download.web_title, download.web_sub_title
 					)
 				).lastrowid
 
@@ -309,8 +313,9 @@ class DownloadHandler:
 			downloads = cursor.execute("""
 				SELECT
 					id, client_type, torrent_client_id,
-					link, filename_body, source,
-					volume_id, issue_id, page_link
+					download_link, filename_body, source,
+					volume_id, issue_id,
+					web_link, web_title, web_sub_title
 				FROM download_queue;
 			""").fetchall()
 
@@ -321,12 +326,14 @@ class DownloadHandler:
 				LOGGER.debug(f'Download from database: {dict(download)}')
 				try:
 					dl_instance = download_type_to_class[download['client_type']](
-						link=download['link'],
+						download_link=download['download_link'],
 						filename_body=download['filename_body'],
 						source=download['source'],
 						custom_name=True
 					)
 					dl_instance.id = download['id']
+					dl_instance.web_title = download['web_title']
+					dl_instance.web_sub_title = download['web_sub_title']
 					if isinstance(dl_instance, TorrentDownload):
 						dl_instance.client = TorrentClients.get_client(
 							download['torrent_client_id']
@@ -334,7 +341,7 @@ class DownloadHandler:
 
 				except LinkBroken as lb:
 					# Link is broken
-					add_to_blocklist(download['link'], lb.reason)
+					add_to_blocklist(download['donwload_link'], lb.reason)
 					cursor.execute(
 						"DELETE FROM download_queue WHERE id = ?;",
 						(download['id'],)
@@ -352,7 +359,7 @@ class DownloadHandler:
 					[dl_instance],
 					download['volume_id'],
 					download['issue_id'],
-					download['page_link']
+					download['web_link']
 				)
 				# self.__prepare_downloads_for_queue() has a write to the db
 				# To avoid locking the db, commit in-between.
@@ -386,7 +393,7 @@ class DownloadHandler:
 		)
 
 		# Check if link isn't already in queue
-		if any(d for d in self.queue if link in (d.page_link, d.download_link)):
+		if any(d for d in self.queue if link in (d.web_link, d.download_link)):
 			LOGGER.info('Download already in queue')
 			return [], None
 
@@ -439,6 +446,11 @@ class DownloadHandler:
 
 		if self.downloading_item:
 			self.downloading_item.join()
+
+		for e in self.queue:
+			if not isinstance(e, ExternalDownload):
+				continue
+			e._download_thread.join()
 
 		return
 

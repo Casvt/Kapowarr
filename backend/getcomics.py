@@ -10,15 +10,17 @@ from typing import Callable, Dict, List, Tuple, Union
 
 from bencoding import bencode
 from bs4 import BeautifulSoup, Tag
-from requests import get, post
+from requests import get
 from requests.exceptions import ConnectionError as requests_ConnectionError
 
 from backend.blocklist import add_to_blocklist, blocklist_contains
 from backend.custom_exceptions import DownloadLimitReached, LinkBroken
 from backend.db import get_db
 from backend.download_direct_clients import (DirectDownload, Download,
+                                             MediaFireDownload,
                                              MediaFireFolderDownload,
-                                             MegaDownload)
+                                             MegaDownload, PixelDrainDownload,
+                                             WeTransferDownload)
 from backend.download_torrent_clients import TorrentDownload
 from backend.enums import BlocklistReason, FailReason, SpecialVersion
 from backend.file_extraction import extract_filename_data
@@ -94,7 +96,7 @@ def _purify_link(link: str) -> dict:
 
 	Returns:
 		dict: The pure link,
-		a download instance for the correct service (child of `download_general.Download`)
+		a download class for the correct service (child of `download_general.Download`)
 		and the source title.
 	"""
 	LOGGER.debug(f'Purifying link: {link}')
@@ -102,7 +104,7 @@ def _purify_link(link: str) -> dict:
 	if link.startswith('magnet:?'):
 		# Link is already magnet link
 		return {
-			'link': link,
+			'download_link': link,
 			'target': TorrentDownload,
 			'source': 'getcomics (torrent)'
 		}
@@ -121,7 +123,7 @@ def _purify_link(link: str) -> dict:
 				# Link is not supported (folder)
 				raise LinkBroken(BlocklistReason.SOURCE_NOT_SUPPORTED)
 
-			return {'link': url, 'target': MegaDownload, 'source': 'mega'}
+			return {'download_link': url, 'target': MegaDownload, 'source': 'mega'}
 
 		elif mediafire_regex.search(url):
 			# Link is mediafire
@@ -131,33 +133,19 @@ def _purify_link(link: str) -> dict:
 
 			elif '/folder/' in url:
 				# Folder download
-				folder_id = url.split("/folder/")[1].split("/")[0]
 				return {
-					'link': folder_id,
+					'download_link': url,
 					'target': MediaFireFolderDownload,
 					'source': 'mediafire'
 				}
 
-			result = extract_mediafire_regex.search(r.text)
-			if result:
+			else:
+				# File download
 				return {
-					'link': result.group(0).split("'")[-1],
-					'target': DirectDownload,
+					'download_link': url,
+					'target': MediaFireDownload,
 					'source': 'mediafire'
 				}
-
-			soup = BeautifulSoup(r.text, 'html.parser')
-			button = soup.find('a', {'id': 'downloadButton'})
-			if isinstance(button, Tag):
-				return {
-					'link': button['href'],
-					'target': DirectDownload,
-					'source': 'mediafire'
-				}
-
-			# Link is not broken and not a folder
-			# but we still can't find the download button...
-			raise LinkBroken(BlocklistReason.LINK_BROKEN)
 
 		elif mediafire_dd_regex.search(url):
 			# Link is mediafire, but not to the page but instead the direct link
@@ -165,46 +153,24 @@ def _purify_link(link: str) -> dict:
 				raise LinkBroken(BlocklistReason.LINK_BROKEN)
 
 			return {
-				'link': url,
+				'download_link': url,
 				'target': DirectDownload,
 				'source': 'mediafire'
 			}
 
 		elif wetransfer_regex.search(url):
 			# Link is wetransfer
-			transfer_id, security_hash = url.split("/")[-2:]
-			r = post(
-				f"https://wetransfer.com/api/v4/transfers/{transfer_id}/download",
-				json={
-					"intent": "entire_transfer",
-					"security_hash": security_hash
-				},
-				headers={
-					"User-Agent": "Kapowarr",
-					"x-requested-with": "XMLHttpRequest"
-				}
-			)
-			if not r.ok:
-				raise LinkBroken(BlocklistReason.LINK_BROKEN)
-
-			direct_link = r.json().get("direct_link")
-
-			if not direct_link:
-				raise LinkBroken(BlocklistReason.LINK_BROKEN)
-
 			return {
-				'link': direct_link,
-				'target': DirectDownload,
+				'download_link': url,
+				'target': WeTransferDownload,
 				'source': 'wetransfer'
 			}
 
 		elif pixeldrain_regex.search(url):
 			# Link is pixeldrain
-			download_id = url.rstrip("/").split("/")[-1]
-
 			return {
-				'link': f"https://pixeldrain.com/api/file/{download_id}",
-				'target': DirectDownload,
+				'download_link': url,
+				'target': PixelDrainDownload,
 				'source': 'pixeldrain'
 			}
 
@@ -212,14 +178,14 @@ def _purify_link(link: str) -> dict:
 			# Link is torrent file
 			hash = sha1(bencode(get_torrent_info(r.content))).hexdigest()
 			return {
-				'link': "magnet:?xt=urn:btih:" + hash + "&tr=udp://tracker.cyberia.is:6969/announce&tr=udp://tracker.port443.xyz:6969/announce&tr=http://tracker3.itzmx.com:6961/announce&tr=udp://tracker.moeking.me:6969/announce&tr=http://vps02.net.orel.ru:80/announce&tr=http://tracker.openzim.org:80/announce&tr=udp://tracker.skynetcloud.tk:6969/announce&tr=https://1.tracker.eu.org:443/announce&tr=https://3.tracker.eu.org:443/announce&tr=http://re-tracker.uz:80/announce&tr=https://tracker.parrotsec.org:443/announce&tr=udp://explodie.org:6969/announce&tr=udp://tracker.filemail.com:6969/announce&tr=udp://tracker.nyaa.uk:6969/announce&tr=udp://retracker.netbynet.ru:2710/announce&tr=http://tracker.gbitt.info:80/announce&tr=http://tracker2.dler.org:80/announce",
+				'download_link': "magnet:?xt=urn:btih:" + hash + "&tr=udp://tracker.cyberia.is:6969/announce&tr=udp://tracker.port443.xyz:6969/announce&tr=http://tracker3.itzmx.com:6961/announce&tr=udp://tracker.moeking.me:6969/announce&tr=http://vps02.net.orel.ru:80/announce&tr=http://tracker.openzim.org:80/announce&tr=udp://tracker.skynetcloud.tk:6969/announce&tr=https://1.tracker.eu.org:443/announce&tr=https://3.tracker.eu.org:443/announce&tr=http://re-tracker.uz:80/announce&tr=https://tracker.parrotsec.org:443/announce&tr=udp://explodie.org:6969/announce&tr=udp://tracker.filemail.com:6969/announce&tr=udp://tracker.nyaa.uk:6969/announce&tr=udp://retracker.netbynet.ru:2710/announce&tr=http://tracker.gbitt.info:80/announce&tr=http://tracker2.dler.org:80/announce",
 				'target': TorrentDownload,
 				'source': 'getcomics (torrent)'
 			}
 
 		# Link is direct download from getcomics
 		# ('Main Server', 'Mirror Server', 'Link 1', 'Link 2', etc.)
-		return {'link': url, 'target': DirectDownload, 'source': 'getcomics'}
+		return {'download_link': url, 'target': DirectDownload, 'source': 'getcomics'}
 
 	else:
 		raise LinkBroken(BlocklistReason.SOURCE_NOT_SUPPORTED)
@@ -426,8 +392,9 @@ def _create_link_paths(
 
 	Returns:
 		List[List[DownloadGroup]]: The list contains all paths. Each path is
-		a list of download groups. The `info` key has as it's value the output
-		of `file_extraction.extract_filename_data()` for the title of the group.
+		a list of download groups. The `web_sub_title` has the group name.
+		The `info` key has as it's value the output of
+		`file_extraction.extract_filename_data()` for the title of the group.
 		The `links` key contains the download links grouped together with
 		their service.
 	"""
@@ -464,6 +431,11 @@ def _create_link_paths(
 					key=lambda k: service_preference.index(k)
 				)
 			}
+			path_entry = {
+				'web_sub_title': desc,
+				'info': processed_desc,
+				'links': sources
+			}
 			if (volume_data.special_version == SpecialVersion.VOLUME_AS_ISSUE
 			and (
 				processed_desc['special_version'] == SpecialVersion.TPB
@@ -481,7 +453,7 @@ def _create_link_paths(
 				):
 					processed_desc['special_version'] = volume_data.special_version.value
 
-				link_paths.append([{'info': processed_desc, 'links': sources}])
+				link_paths.append([path_entry])
 
 			else:
 				# Find path with ranges and single issues that doesn't have
@@ -503,11 +475,11 @@ def _create_link_paths(
 
 					else:
 						# No conflicts found so add to path
-						path.append({'info': processed_desc, 'links': sources})
+						path.append(path_entry)
 						break
 				else:
 					# Conflict in all paths found so start a new one
-					link_paths.append([{'info': processed_desc, 'links': sources}])
+					link_paths.append([path_entry])
 
 	link_paths.sort(key=_sort_link_paths)
 
@@ -579,7 +551,7 @@ def _test_paths(
 
 	Returns:
 		Tuple[List[Download], Union[FailReason, None]]:
-			A list of downloads and the reason the list is empty is so.
+			A list of downloads and the reason the list if empty is so.
 	"""
 	LOGGER.debug('Testing paths')
 	cursor = get_db()
@@ -606,12 +578,13 @@ def _test_paths(
 					try:
 						## Maybe make purify link async so that all links can be purified 'at the same time'?
 						pure_link = _purify_link(link)
-						dl_instance = pure_link['target'](
-							link=pure_link['link'],
+						dl_instance: Download = pure_link['target'](
+							download_link=pure_link['download_link'],
 							filename_body=name,
 							source=pure_link['source'],
 							custom_name=rename_downloaded_files
 						)
+						dl_instance.web_sub_title = download['web_sub_title']
 
 					except LinkBroken as lb:
 						# Link is broken
@@ -660,7 +633,7 @@ def extract_GC_download_links(
 
 	Returns:
 		Tuple[List[Download], Union[FailReason, None]]:
-			A list of downloads and the reason the list is empty is so.
+			A list of downloads and the reason the list is empty if so.
 	"""
 	LOGGER.debug(f'Extracting download links from {link} for volume {volume_id} and issue {issue_id}')
 
@@ -673,8 +646,8 @@ def extract_GC_download_links(
 		# Link broken
 		return [], FailReason.BROKEN
 
-	# Link is to a getcomics page
 	soup = BeautifulSoup(r.text, 'html.parser')
+	web_title = soup.find('h1').text
 
 	# Extract the download groups and filter invalid links
 	download_groups = _extract_get_comics_links(soup)
@@ -690,6 +663,11 @@ def extract_GC_download_links(
 
 	# Decide which path to take by testing the links
 	result = _test_paths(link_paths, volume_id)
+
+	for d in result[0]:
+		d.web_link = link
+		d.web_title = web_title
+
 	if result[0]:
 		return result
 	else:

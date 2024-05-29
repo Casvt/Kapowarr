@@ -12,6 +12,7 @@ from backend.blocklist import (add_to_blocklist, delete_blocklist,
                                get_blocklist_entry)
 from backend.conversion import get_available_formats, preview_mass_convert
 from backend.custom_exceptions import (BlocklistEntryNotFound,
+                                       ClientDownloading,
                                        CredentialAlreadyAdded,
                                        CredentialInvalid, CredentialNotFound,
                                        CredentialSourceNotFound,
@@ -24,8 +25,7 @@ from backend.custom_exceptions import (BlocklistEntryNotFound,
                                        RootFolderInUse, RootFolderInvalid,
                                        RootFolderNotFound,
                                        TaskForVolumeRunning, TaskNotDeletable,
-                                       TaskNotFound, TorrentClientDownloading,
-                                       TorrentClientNotFound,
+                                       TaskNotFound, TorrentClientNotFound,
                                        TorrentClientNotWorking,
                                        VolumeAlreadyAdded, VolumeDownloadedFor,
                                        VolumeNotFound)
@@ -70,6 +70,7 @@ def error_handler(method):
 
 		except (
 			BlocklistEntryNotFound,
+			ClientDownloading,
 			CredentialAlreadyAdded,
 			CredentialInvalid, CredentialNotFound,
 			CredentialSourceNotFound,
@@ -82,8 +83,7 @@ def error_handler(method):
 			RootFolderInUse, RootFolderInvalid,
 			RootFolderNotFound,
 			TaskForVolumeRunning, TaskNotDeletable,
-			TaskNotFound, TorrentClientDownloading,
-			TorrentClientNotFound,
+			TaskNotFound, TorrentClientNotFound,
 			TorrentClientNotWorking,
 			VolumeAlreadyAdded, VolumeDownloadedFor,
 			VolumeNotFound

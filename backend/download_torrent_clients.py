@@ -5,7 +5,7 @@ Clients for downloading a torrent using a torrent client
 """
 
 from os.path import join
-from typing import TYPE_CHECKING, Dict, List, Type, Union
+from typing import Dict, List, Type, Union
 
 from requests import RequestException, post
 
@@ -13,23 +13,18 @@ from backend.custom_exceptions import (InvalidKeyValue, LinkBroken,
                                        TorrentClientNotFound,
                                        TorrentClientNotWorking)
 from backend.db import get_db
-from backend.download_direct_clients import BaseDownload
-from backend.download_general import TorrentClient
+from backend.download_general import BaseTorrentClient, ExternalDownload
 from backend.enums import BlocklistReason, DownloadState
 from backend.helpers import ClientTestResult, get_torrent_info
 from backend.logging import LOGGER
 from backend.settings import Settings
 from backend.torrent_clients import qBittorrent
 
-if TYPE_CHECKING:
-	from threading import Thread
-
-
 #=====================
 # Managing clients
 #=====================
 
-client_types: Dict[str, Type[TorrentClient]] = {
+client_types: Dict[str, Type[BaseTorrentClient]] = {
 	'qBittorrent': qBittorrent.qBittorrent
 }
 
@@ -91,7 +86,7 @@ class TorrentClients:
 		username: Union[str, None],
 		password: Union[str, None],
 		api_token: Union[str, None]
-	) -> TorrentClient:
+	) -> BaseTorrentClient:
 		"""Add a torrent client
 
 		Args:
@@ -117,7 +112,7 @@ class TorrentClients:
 				The function `download_torrent_clients.TorrentClients.test` returned `False`.
 
 		Returns:
-			TorrentClient: An instance of `download_general.TorrentClient`
+			BaseTorrentClient: An instance of `download_general.TorrentClient`
 			representing the newly added client
 		"""
 		if not type in client_types:
@@ -194,7 +189,7 @@ class TorrentClients:
 		return result
 
 	@staticmethod
-	def get_client(id: int) -> TorrentClient:
+	def get_client(id: int) -> BaseTorrentClient:
 		"""Get a torrent client based on it's ID.
 
 		Args:
@@ -204,7 +199,7 @@ class TorrentClients:
 			TorrentClientNotFound: The ID does not link to any client
 
 		Returns:
-			TorrentClient: An instance of `download_general.TorrentClient`
+			BaseTorrentClient: An instance of `download_general.BaseTorrentClient`
 			representing the client with the given ID.
 		"""
 		client_type = get_db().execute(
@@ -221,33 +216,37 @@ class TorrentClients:
 # Downloading torrents
 #=====================
 
-class TorrentDownload(BaseDownload):
+class TorrentDownload(ExternalDownload):
 	"For downloading a torrent using a torrent client"
 
 	type = 'torrent'
 
 	def __init__(
 		self,
-		link: str,
+		download_link: str,
 		filename_body: str,
 		source: str,
 		custom_name: bool = True
 	) -> None:
-		LOGGER.debug(f'Creating torrent download: {link}, {filename_body}')
-		super().__init__()
-		self.client: TorrentClient = None # type: ignore
-		self.source = source
-		self.download_link = link
-		self._filename_body = filename_body
-		self.size: int = 0
+		LOGGER.debug(f'Creating torrent download: {download_link}, {filename_body}')
+		self.id = None # type: ignore
+		self.state: DownloadState = DownloadState.QUEUED_STATE
 		self.progress: float = 0.0
 		self.speed: float = 0.0
-		self.resulting_files: List[str] = []
-		self.original_file: str = ''
-		self._torrent_id = None
-		self._download_thread: Union[None, Thread] = None
+		self.size: int = 0
+		self.download_link = download_link
+		self.source = source
+
+		self.client = None # type: ignore
+		self.external_id = None
+		self._download_thread = None
 		self._download_folder = Settings()['download_folder']
 
+		self._filename_body = filename_body
+		self._resulting_files = []
+		self._original_file = ''
+
+		self.title = ''
 		if custom_name:
 			self.title = filename_body.rstrip('.')
 
@@ -255,7 +254,7 @@ class TorrentDownload(BaseDownload):
 		try:
 			r = post(
 				'https://magnet2torrent.com/upload/',
-				data={'magnet': link},
+				data={'magnet': download_link},
 				headers={'User-Agent': 'Kapowarr'}
 			)
 		except RequestException:
@@ -265,13 +264,15 @@ class TorrentDownload(BaseDownload):
 			raise LinkBroken(BlocklistReason.LINK_BROKEN)
 
 		name = get_torrent_info(r.content)[b'name'].decode()
-		self.title = self.title or name
+		self.title = self._filename_body
+		if not custom_name:
+			self.title = name
 		self.file = join(self._download_folder, name)
 
 		return
 
 	def run(self) -> None:
-		self._torrent_id = self.client.add_torrent(
+		self.external_id = self.client.add_download(
 			self.download_link,
 			self._download_folder,
 			self.title
@@ -279,14 +280,10 @@ class TorrentDownload(BaseDownload):
 		return
 
 	def update_status(self) -> None:
-		"""
-		Update the various variables about the state/progress
-		of the torrent download
-		"""
-		if not self._torrent_id:
+		if not self.external_id:
 			return
 
-		torrent_status = self.client.get_torrent_status(self._torrent_id)
+		torrent_status = self.client.get_download_status(self.external_id)
 		if not torrent_status:
 			if torrent_status is None:
 				self.state = DownloadState.CANCELED_STATE
@@ -295,8 +292,15 @@ class TorrentDownload(BaseDownload):
 		self.progress = torrent_status['progress']
 		self.speed = torrent_status['speed']
 		self.size = torrent_status['size']
-		if not self.state == DownloadState.CANCELED_STATE:
+		if not self.state in (DownloadState.CANCELED_STATE, DownloadState.SHUTDOWN_STATE):
 			self.state = torrent_status['state']
+		return
+
+	def remove_from_client(self, delete_files: bool) -> None:
+		if not self.external_id:
+			return
+
+		self.client.delete_download(self.external_id, delete_files)
 		return
 
 	def stop(self,
@@ -305,20 +309,31 @@ class TorrentDownload(BaseDownload):
 		self.state = state
 		return
 
-	def remove_from_client(self, delete_files: bool) -> None:
-		"""Remove the download from the torrent client
-
-		Args:
-			delete_files (bool): Delete downloaded files
-		"""
-		if not self._torrent_id:
-			return
-
-		self.client.delete_torrent(self._torrent_id, delete_files)
-		return
-
 	def todict(self) -> dict:
 		return {
-			**super().todict(),
+			'id': self.id,
+			'volume_id': self.volume_id,
+			'issue_id': self.issue_id,
+
+			'web_link': self.web_link,
+			'web_title': self.web_title,
+			'web_sub_title': self.web_sub_title,
+			'download_link': self.download_link,
+			'pure_link': self.download_link,
+
+			'source': self.source,
+			'type': self.type,
+
+			'file': self.file,
+			'title': self.title,
+
+			'size': self.size,
+			'status': self.state.value,
+			'progress': self.progress,
+			'speed': self.speed,
+
 			'client': self.client.id if self.client else None
 		}
+
+	def __repr__(self) -> str:
+		return f'<{self.__class__.__name__}, {self.download_link}, {self.file}>'

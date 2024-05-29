@@ -15,6 +15,7 @@ from backend.logging import LOGGER, setup_logging
 from backend.server import SERVER
 from frontend.api import Settings, download_handler, task_handler
 
+SUB_PROCESS_TIMEOUT = 20
 
 def _main() -> NoReturn:
 	"""The main function of the Kapowarr sub-process
@@ -69,6 +70,9 @@ def _stop_sub_process(proc: Popen) -> None:
 	Args:
 		proc (Popen): The sub-process to stop.
 	"""
+	if proc.returncode is not None:
+		return
+
 	try:
 		if name != 'nt':
 			try:
@@ -100,13 +104,13 @@ def _run_sub_process() -> int:
 			"KAPOWARR_RUN_MAIN": "1"
 		}
 	)
+	proc._sigint_wait_secs = SUB_PROCESS_TIMEOUT
 	register(_stop_sub_process, proc=proc)
 	signal(SIGTERM, lambda signal_no, frame: _stop_sub_process(proc))
 
 	try:
 		return proc.wait()
 	except (KeyboardInterrupt, SystemExit, ChildProcessError):
-		_stop_sub_process(proc)
 		return 0
 
 

@@ -276,6 +276,7 @@ class CVFileMapping(TypedDict):
 
 
 class DownloadGroup(TypedDict):
+	web_sub_title: str
 	info: FilenameData
 	links: Dict[str, List[str]]
 
