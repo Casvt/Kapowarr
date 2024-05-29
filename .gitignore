@@ -136,7 +136,7 @@ dmypy.json
 # vs-code
 *.code-workspace
 
-# downloads
+# Downloads
 temp_downloads/*
 
 # Project management files

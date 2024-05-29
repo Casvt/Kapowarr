@@ -152,6 +152,9 @@ LICENSE
 # Tests
 tests/
 
+# Downloads
+temp_downloads/*
+
 # Project management files
 docs/
 project_management/
