@@ -78,7 +78,7 @@ class BaseDirectDownload(Download):
 			self._filename_body = self._extract_default_filename_body(r)
 
 		self.title = basename(self._filename_body)
-		self.file = self.__build_filename(r)
+		self.file = self._build_filename(r)
 		return
 
 	def _convert_to_pure_link(self) -> str:
@@ -92,7 +92,7 @@ class BaseDirectDownload(Download):
 			self.pure_link.split('/')[-1].split("?")[0]
 		))[0]
 
-	def __build_filename(self, r: Response) -> str:
+	def _build_filename(self, r: Response) -> str:
 		folder = Settings()['download_folder']
 		extension = self._extract_extension(r)
 		return join(
@@ -324,7 +324,7 @@ class MegaDownload(BaseDirectDownload):
 			self._filename_body = splitext(self._mega.mega_filename)[0]
 
 		self.title = basename(self._filename_body)
-		self.file = self.__build_filename()
+		self.file = self._build_filename(None) # type: ignore
 		return
 
 	def _extract_extension(self, r: Response) -> str:
