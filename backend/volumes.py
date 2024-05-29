@@ -10,7 +10,7 @@ from os import remove
 from os.path import abspath, basename, dirname, isdir, join, relpath
 from re import IGNORECASE, compile
 from time import time
-from typing import Any, Dict, Iterable, List, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Sequence, Tuple, Union
 
 from backend.comicvine import ComicVine
 from backend.custom_exceptions import (InvalidKeyValue, IssueNotFound,
@@ -26,7 +26,8 @@ from backend.files import (create_volume_folder, delete_empty_folders,
                            propose_basefolder_change, rename_file)
 from backend.helpers import PortablePool, first_of_column, reversed_tuples
 from backend.logging import LOGGER
-from backend.matching import file_importing_filter
+from backend.matching import (clean_title_regex, clean_title_regex_2,
+                              file_importing_filter)
 from backend.root_folders import RootFolders
 from backend.server import WebSocket
 
@@ -1371,10 +1372,26 @@ class Library:
 		Returns:
 			List[dict]: The resulting list of matching volumes in the library
 		"""
+		clean_query = clean_title_regex_2.sub(
+			'',
+			clean_title_regex.sub(
+				'',
+				query.lower()
+			)
+		)
+
+		clean_title: Callable[[str], str] = lambda t: clean_title_regex_2.sub(
+			'',
+			clean_title_regex.sub(
+				'',
+				t.lower()
+			)
+		)
+
 		volumes = [
 			v
 			for v in self.get_volumes(sort, filter)
-			if query.lower() in v['title'].lower()
+			if clean_query in clean_title(v['title'])
 		]
 
 		return volumes
