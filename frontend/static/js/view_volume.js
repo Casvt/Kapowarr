@@ -188,7 +188,7 @@ function fillPage(data, api_key) {
 	// fill issue lists
 	fillTable(data.issues, api_key);
 
-	mapButtons(id);
+	mapButtons(volume_id);
 
 	hide([ViewEls.views.loading], [ViewEls.views.main]);
 
@@ -214,7 +214,7 @@ function fillPage(data, api_key) {
 //
 function toggleMonitored(api_key) {
 	const monitored = ViewEls.vol_data.monitor.dataset.monitored !== 'true';
-	sendAPI('PUT', `/volumes/${id}`, api_key, {}, {
+	sendAPI('PUT', `/volumes/${volume_id}`, api_key, {}, {
 		monitored: monitored
 	})
 	.then(response => {
@@ -238,38 +238,38 @@ function toggleMonitored(api_key) {
 // Tasks
 //
 function refreshVolume(api_key) {
-	const button_info = task_to_button[`refresh_and_scan#${id}`];
+	const button_info = task_to_button[`refresh_and_scan#${volume_id}`];
 	const icon = button_info.button.querySelector('img');
 	icon.src = button_info.loading_icon;
 	icon.classList.add('spinning');
 
 	sendAPI('POST', '/system/tasks', api_key, {}, {
 		cmd: 'refresh_and_scan',
-		volume_id: id
+		volume_id: volume_id
 	});
 };
 
 function autosearchVolume(api_key) {
-	const button_info = task_to_button[`auto_search#${id}`];
+	const button_info = task_to_button[`auto_search#${volume_id}`];
 	const icon = button_info.button.querySelector('img');
 	icon.src = button_info.loading_icon;
 	icon.classList.add('spinning');
 
 	sendAPI('POST', '/system/tasks', api_key, {}, {
 		cmd: 'auto_search',
-		volume_id: id
+		volume_id: volume_id
 	});
 };
 
 function autosearchIssue(issue_id, api_key) {
-	const button_info = task_to_button[`auto_search_issue#${id}#${issue_id}`];
+	const button_info = task_to_button[`auto_search_issue#${volume_id}#${issue_id}`];
 	const icon = button_info.button.querySelector('img');
 	icon.src = button_info.loading_icon;
 	icon.classList.add('spinning');
 
 	sendAPI('POST', '/system/tasks', api_key, {}, {
 		cmd: 'auto_search_issue',
-		volume_id: id,
+		volume_id: volume_id,
 		issue_id: issue_id
 	});
 };
@@ -292,7 +292,7 @@ function showManualSearch(api_key, issue_id=null) {
 	tbody.innerHTML = '';
 	const url = issue_id
 			? `/issues/${issue_id}/manualsearch`
-			: `/volumes/${id}/manualsearch`;
+			: `/volumes/${volume_id}/manualsearch`;
 
 	fetchAPI(url, api_key)
 	.then(json => {
@@ -353,7 +353,7 @@ function addManualSearch(link, button, api_key, issue_id=null) {
 
 	const url = issue_id
 		? `/issues/${issue_id}/download`
-		: `/volumes/${id}/download`;
+		: `/volumes/${volume_id}/download`;
 
 	sendAPI('POST', url, api_key, {link: link})
 	.then(response => response.json())
@@ -391,7 +391,7 @@ function showRename(api_key, issue_id=null) {
 	let url;
 	if (issue_id === null) {
 		// Preview volume rename
-		url = `/volumes/${id}/rename`;
+		url = `/volumes/${volume_id}/rename`;
 		rename_button.dataset.issue_id = '';
 	} else {
 		// Preview issue rename
@@ -442,7 +442,7 @@ function renameVolume(api_key, issue_id=null) {
 
 	const data = {
 		cmd: 'mass_rename',
-		volume_id: id,
+		volume_id: volume_id,
 		filepath_filter:
 			checkboxes
 				.filter(e => e.checked)
@@ -490,7 +490,7 @@ function showConvert(api_key, issue_id=null) {
 	let url;
 	if (issue_id === null) {
 		// Preview issue conversion
-		url = `/volumes/${id}/convert`;
+		url = `/volumes/${volume_id}/convert`;
 		convert_button.dataset.issue_id = '';
 	} else {
 		// Preview issue conversion
@@ -543,7 +543,7 @@ function convertVolume(api_key, issue_id=null) {
 
 	const data = {
 		cmd: 'mass_convert',
-		volume_id: id,
+		volume_id: volume_id,
 		filepath_filter:
 			checkboxes
 				.filter(e => e.checked)
@@ -605,7 +605,7 @@ function editVolume() {
 
 	usingApiKey()
 	.then(api_key => {
-		sendAPI('PUT', `/volumes/${id}`, api_key, {}, data)
+		sendAPI('PUT', `/volumes/${volume_id}`, api_key, {}, data)
 		.then(response => window.location.reload());
 	});
 };
@@ -621,7 +621,7 @@ function deleteVolume() {
 	hide([downloading_error, tasking_error]);
 	usingApiKey()
 	.then(api_key => {
-		sendAPI('DELETE', `/volumes/${id}`, api_key, {delete_folder: delete_folder})
+		sendAPI('DELETE', `/volumes/${volume_id}`, api_key, {delete_folder: delete_folder})
 		.then(response => {
 			window.location.href = `${url_base}/`;
 		})
@@ -639,9 +639,9 @@ function deleteVolume() {
 //
 // Issue info
 //
-function showIssueInfo(id, api_key) {
-	document.querySelector('#issue-rename-selector').dataset.issue_id = id;
-	fetchAPI(`/issues/${id}`, api_key)
+function showIssueInfo(issue_id, api_key) {
+	document.querySelector('#issue-rename-selector').dataset.issue_id = issue_id;
+	fetchAPI(`/issues/${issue_id}`, api_key)
 	.then(json => {
 		document.querySelector('#issue-info-title').innerText =
 			`${json.result.title} - #${json.result.issue_number} - ${json.result.date}`;
@@ -667,11 +667,10 @@ function showInfoWindow(window) {
 };
 
 // code run on load
-const id = parseInt(window.location.pathname.split('/').at(-1));
 
 usingApiKey()
 .then(api_key => {
-	fetchAPI(`/volumes/${id}`, api_key)
+	fetchAPI(`/volumes/${volume_id}`, api_key)
 	.then(json => fillPage(json.result, api_key))
 	.catch(e => {
 		if (e.status === 404)
