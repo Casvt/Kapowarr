@@ -614,21 +614,25 @@ function editVolume() {
 // Deleting
 //
 function deleteVolume() {
-	const delete_error = document.querySelector('#volume-downloading-error');
-	hide([delete_error]);
-	const delete_folder = document.querySelector('#delete-folder-input').value;
+	const downloading_error = document.querySelector('#volume-downloading-error'),
+		tasking_error = document.querySelector('#volume-tasking-error'),
+		delete_folder = document.querySelector('#delete-folder-input').value;
+		
+	hide([downloading_error, tasking_error]);
 	usingApiKey()
 	.then(api_key => {
 		sendAPI('DELETE', `/volumes/${id}`, api_key, {delete_folder: delete_folder})
 		.then(response => {
 			window.location.href = `${url_base}/`;
 		})
-		.catch(e => {
-			if (e.status === 400)
-				hide([], [delete_error]);
+		.catch(e => e.json().then(j => {
+			if (j.error === "TaskForVolumeRunning")
+				hide([downloading_error], [tasking_error]);
+			else if (j.error === "VolumeDownloadedFor")
+				hide([tasking_error], [downloading_error]);
 			else
-				console.log(e);
-		});
+				console.log(j);			
+		}));
 	});
 };
 
