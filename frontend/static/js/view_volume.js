@@ -667,7 +667,7 @@ function showInfoWindow(window) {
 };
 
 // code run on load
-const id = window.location.pathname.split('/').at(-1);
+const id = parseInt(window.location.pathname.split('/').at(-1));
 
 usingApiKey()
 .then(api_key => {

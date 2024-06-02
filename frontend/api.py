@@ -312,7 +312,7 @@ def api_tasks():
 			'mass_convert', 'mass_convert_issue'
 		):
 			volume_id = data.get('volume_id')
-			if not volume_id:
+			if not volume_id or not isinstance(volume_id, int):
 				raise InvalidKeyValue('volume_id', volume_id)
 			kwargs['volume_id'] = volume_id
 
@@ -322,7 +322,7 @@ def api_tasks():
 			'mass_convert_issue'
 		):
 			issue_id = data.get('issue_id')
-			if not issue_id:
+			if not issue_id or not isinstance(issue_id, int):
 				raise InvalidKeyValue('issue_id', issue_id)
 			kwargs['issue_id'] = issue_id
 
