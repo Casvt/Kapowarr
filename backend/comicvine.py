@@ -408,10 +408,6 @@ class ComicVine:
 			)
 
 			volume_info = self.__format_volume_output(result['results'])
-			volume_info['cover'] = await self.__call_request_async(
-				session,
-				volume_info['cover']
-			)
 
 			LOGGER.debug(f'Fetching issue data for volume {id}')
 			volume_info['issues'] = await self.fetch_issues_async([
@@ -419,6 +415,11 @@ class ComicVine:
 			])
 
 			LOGGER.debug(f'Fetching volume data result: {volume_info}')
+
+			volume_info['cover'] = await self.__call_request_async(
+				session,
+				volume_info['cover']
+			)
 			return volume_info
 
 	async def fetch_volumes_async(self, ids: List[str]) -> List[dict]:
