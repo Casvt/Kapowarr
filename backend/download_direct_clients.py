@@ -14,13 +14,13 @@ from typing import TYPE_CHECKING
 from urllib.parse import unquote_plus
 
 from bs4 import BeautifulSoup, Tag
-from requests import RequestException, get, post
-from requests.exceptions import ChunkedEncodingError
+from requests import RequestException
 
 from backend.credentials import Credentials
 from backend.custom_exceptions import LinkBroken
 from backend.download_general import Download
 from backend.enums import BlocklistReason, DownloadState
+from backend.helpers import Session
 from backend.logging import LOGGER
 from backend.server import WebSocket
 from backend.settings import Settings
@@ -50,6 +50,7 @@ class BaseDirectDownload(Download):
 		custom_name: bool=True
 	):
 		LOGGER.debug(f'Creating download: {download_link}, {filename_body}')
+		self._ssn = Session()
 		self.id = None # type: ignore
 		self.state: DownloadState = DownloadState.QUEUED_STATE
 		self.progress: float = 0.0
@@ -85,7 +86,7 @@ class BaseDirectDownload(Download):
 		return self.download_link
 
 	def _fetch_pure_link(self) -> Response:
-		return get(self.pure_link, stream=True)
+		return self._ssn.get(self.pure_link, stream=True)
 
 	def _extract_default_filename_body(self, r: Response) -> str:
 		return splitext(unquote_plus(
@@ -151,7 +152,7 @@ class BaseDirectDownload(Download):
 
 					ws.update_queue_status(self)
 
-			except ChunkedEncodingError:
+			except RequestException:
 				self.state = DownloadState.FAILED_STATE
 
 		return
@@ -202,7 +203,10 @@ class MediaFireDownload(BaseDirectDownload):
 	type = 'mf'
 
 	def _convert_to_pure_link(self) -> str:
-		r = get(self.download_link, headers={'User-Agent': 'Kapowarr'}, stream=True)
+		r = self._ssn.get(
+			self.download_link,
+			stream=True
+		)
 		result = extract_mediafire_regex.search(r.text)
 		if result:
 			return result.group(0).split("'")[-1]
@@ -226,7 +230,7 @@ class MediaFireFolderDownload(BaseDirectDownload):
 		return self.download_link.split("/folder/")[1].split("/")[0]
 
 	def _fetch_pure_link(self) -> Response:
-		return post(
+		return self._ssn.post(
 			MEDIAFIRE_FOLDER_LINK,
 			files={
 				"keys": (None, self.pure_link),
@@ -250,16 +254,13 @@ class WeTransferDownload(BaseDirectDownload):
 
 	def _convert_to_pure_link(self) -> str:
 		transfer_id, security_hash = self.download_link.split("/")[-2:]
-		r = post(
+		r = self._ssn.post(
 			WETRANSFER_API_LINK.format(transfer_id=transfer_id),
 			json={
 				"intent": "entire_transfer",
 				"security_hash": security_hash
 			},
-			headers={
-				"User-Agent": "Kapowarr",
-				"x-requested-with": "XMLHttpRequest"
-			}
+			headers={"x-requested-with": "XMLHttpRequest"}
 		)
 		if not r.ok:
 			raise LinkBroken(BlocklistReason.LINK_BROKEN)

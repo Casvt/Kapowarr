@@ -8,10 +8,8 @@ from asyncio import create_task, gather, sleep
 from re import IGNORECASE, compile
 from typing import Any, Dict, List, Union
 
-from aiohttp import ClientSession
-from aiohttp.client_exceptions import ContentTypeError
+from aiohttp.client_exceptions import ClientError
 from bs4 import BeautifulSoup, Tag
-from requests import Session
 from requests.exceptions import ConnectionError as requests_ConnectionError
 from simplejson import JSONDecodeError
 
@@ -21,7 +19,7 @@ from backend.custom_exceptions import (CVRateLimitReached,
 from backend.db import get_db
 from backend.file_extraction import (convert_volume_number_to_int,
                                      process_issue_number, volume_regex)
-from backend.helpers import T, batched, normalize_string
+from backend.helpers import AsyncSession, Session, T, batched, normalize_string
 from backend.logging import LOGGER
 from backend.settings import Settings, private_settings
 
@@ -132,9 +130,7 @@ class ComicVine:
 
 		self.ssn = Session()
 		self._params = {'format': 'json', 'api_key': api_key}
-		self._headers = {'user-agent': 'Kapowarr'}
 		self.ssn.params.update(self._params) # type: ignore
-		self.ssn.headers.update(self._headers)
 		return
 
 	def __normalize_cv_id(self, cv_id: str) -> str:
@@ -161,13 +157,13 @@ class ComicVine:
 		raise VolumeNotMatched
 
 	async def __call_request_async(self,
-		session: ClientSession,
+		session: AsyncSession,
 		url: str
 	) -> Union[bytes, None]:
 		"""Fetch a URL and get it's content async (with error handling).
 
 		Args:
-			session (ClientSession): The aiohttp session to make the request with.
+			session (AsyncSession): The aiohttp session to make the request with.
 			url (str): The URL to make the request to.
 
 		Returns:
@@ -178,7 +174,7 @@ class ComicVine:
 			async with session.get(url) as response:
 				return await response.content.read()
 
-		except (ContentTypeError, requests_ConnectionError):
+		except ClientError:
 			return None
 
 	def __call_api(self,
@@ -224,7 +220,7 @@ class ComicVine:
 		return result
 
 	async def __call_api_async(self,
-		session: ClientSession,
+		session: AsyncSession,
 		url_path: str,
 		params: dict,
 		default: Union[T, None] = None
@@ -232,7 +228,7 @@ class ComicVine:
 		"""Make an CV API call asynchronously (with error handling).
 
 		Args:
-			session (ClientSession): The aiohttp session to make the request with.
+			session (AsyncSession): The aiohttp session to make the request with.
 
 			url_path (str): The path of the url to make the call to (e.g. '/volumes').
 				Beginning '/' required.
@@ -257,12 +253,11 @@ class ComicVine:
 		try:
 			async with session.get(
 				f'{self.api_url}{url_path}',
-				params={**self._params, **params},
-				headers=self._headers
+				params={**self._params, **params}
 			) as response:
 				result: Dict[str, Any] = await response.json()
 
-		except (ContentTypeError, requests_ConnectionError):
+		except ClientError:
 			if default is not None:
 				return default
 			raise CVRateLimitReached
@@ -286,8 +281,7 @@ class ComicVine:
 				{'field_list': 'id'}
 			)
 
-		except (CVRateLimitReached,
-		  		InvalidComicVineApiKey):
+		except (CVRateLimitReached, InvalidComicVineApiKey):
 			return False
 
 		return True
@@ -400,7 +394,7 @@ class ComicVine:
 		id = self.__normalize_cv_id(id)
 		LOGGER.debug(f'Fetching volume data for {id}')
 
-		async with ClientSession() as session:
+		async with AsyncSession() as session:
 			result = await self.__call_api_async(
 				session,
 				f'/volume/{id}',
@@ -436,7 +430,7 @@ class ComicVine:
 		LOGGER.debug(f'Fetching volume data for {ids}')
 
 		volume_infos = []
-		async with ClientSession() as session:
+		async with AsyncSession() as session:
 			# 10 requests of 100 vol per round
 			for request_batch in batched(ids, 1000):
 
@@ -494,7 +488,7 @@ class ComicVine:
 		LOGGER.debug(f'Fetching issue data for volumes {ids}')
 
 		issue_infos = []
-		async with ClientSession() as session:
+		async with AsyncSession() as session:
 			for id_batch in batched(ids, 50):
 				try:
 					results = self.__call_api(
@@ -624,13 +618,13 @@ class ComicVine:
 		return self.__process_search_results(query, results)
 
 	async def search_volumes_async(self,
-		session: ClientSession,
+		session: AsyncSession,
 		query: str
 	) -> List[dict]:
 		"""Search for volumes in the ComicVine database asynchronously
 
 		Args:
-			session (ClientSession): An aiohttp client session for the requests
+			session (AsyncSession): An aiohttp client session for the requests
 			query (str): The query to use when searching
 
 		Returns:

@@ -5,8 +5,6 @@ from glob import glob
 from os.path import abspath, basename, dirname, isfile, join, splitext
 from typing import Dict, Iterator, List, Sequence, Set, Union
 
-from aiohttp import ClientSession
-
 from backend.comicvine import ComicVine
 from backend.custom_exceptions import InvalidKeyValue, VolumeAlreadyAdded
 from backend.db import get_db
@@ -14,8 +12,8 @@ from backend.file_extraction import (extract_filename_data, image_extensions,
                                      supported_extensions)
 from backend.files import (delete_empty_folders, find_lowest_common_folder,
                            folder_is_inside_folder, list_files, rename_file)
-from backend.helpers import (CVFileMapping, DictKeyedDict, FilenameData,
-                             batched, create_range)
+from backend.helpers import (AsyncSession, CVFileMapping, DictKeyedDict,
+                             FilenameData, batched, create_range)
 from backend.logging import LOGGER
 from backend.matching import _match_title, _match_year
 from backend.naming import mass_rename
@@ -30,7 +28,7 @@ async def __search_matches(
 
 	comicvine = ComicVine()
 	results = DictKeyedDict()
-	async with ClientSession() as session:
+	async with AsyncSession() as session:
 		data_titles = {d['series'].lower() for d in datas}
 		tasks = [
 			create_task(comicvine.search_volumes_async(session, series))

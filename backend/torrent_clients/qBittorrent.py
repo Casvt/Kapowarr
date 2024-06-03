@@ -3,11 +3,11 @@
 from re import IGNORECASE, compile
 from typing import Tuple, Union
 
-from requests import Session, post
 from requests.exceptions import RequestException
 
 from backend.download_general import BaseTorrentClient
 from backend.enums import DownloadState
+from backend.helpers import Session
 from backend.settings import private_settings
 
 filename_magnet_link = compile(r'(?<=&dn=).*?(?=&)', IGNORECASE)
@@ -120,7 +120,7 @@ class qBittorrent(BaseTorrentClient):
 			else:
 				params = {}
 
-			auth_request = post(
+			auth_request = Session().post(
 				f'{base_url}/api/v2/auth/login',
 				data=params
 			)

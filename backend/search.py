@@ -7,14 +7,13 @@ Searching online sources (GC) for downloads
 from asyncio import create_task, gather, run
 from typing import Dict, List, Union
 
-from aiohttp import ClientSession
 from bs4 import BeautifulSoup
-from requests import get
 
 from backend.db import get_db
 from backend.enums import SpecialVersion
 from backend.file_extraction import extract_filename_data
-from backend.helpers import (MatchedSearchResultData, SearchResultData,
+from backend.helpers import (AsyncSession, MatchedSearchResultData,
+                             SearchResultData, Session,
                              check_overlapping_issues, create_range,
                              extract_year_from_date, first_of_column)
 from backend.logging import LOGGER
@@ -137,22 +136,21 @@ class SearchSources:
 
 	async def __fetch_one(
 		self,
-		session: ClientSession,
+		session: AsyncSession,
 		url: str,
-		params: dict,
-		headers: dict
+		params: dict = {},
+		headers: dict = {}
 	):
 		async with session.get(url, params=params, headers=headers) as response:
 			return await response.text()
 
 	async def __fetch_GC_pages(self, pages: range):
-		async with ClientSession() as session:
+		async with AsyncSession() as session:
 			tasks = [
 				create_task(self.__fetch_one(
 					session,
 					f'{private_settings["getcomics_url"]}/page/{p}',
-					{'s': self.query},
-					{'user-agent': 'Kapowarr'}
+					{'s': self.query}
 				)) for p in pages
 			]
 			responses = await gather(*tasks)
@@ -164,11 +162,9 @@ class SearchSources:
 		Returns:
 			List[SearchResultData]: The search results
 		"""
-		search_results = get(
+		search_results = Session().get(
 			private_settings["getcomics_url"],
-			params={'s': self.query},
-			headers={'user-agent': 'Kapowarr'},
-			timeout=30
+			params={'s': self.query}
 		).text
 		soup = BeautifulSoup(search_results, 'html.parser')
 		pages = soup.find_all(['a','span'], {"class": 'page-numbers'})

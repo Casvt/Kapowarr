@@ -10,8 +10,7 @@ from typing import Callable, Dict, List, Tuple, Union
 
 from bencoding import bencode
 from bs4 import BeautifulSoup, Tag
-from requests import get
-from requests.exceptions import ConnectionError as requests_ConnectionError
+from requests.exceptions import RequestException
 
 from backend.blocklist import add_to_blocklist, blocklist_contains
 from backend.custom_exceptions import DownloadLimitReached, LinkBroken
@@ -24,7 +23,7 @@ from backend.download_direct_clients import (DirectDownload, Download,
 from backend.download_torrent_clients import TorrentDownload
 from backend.enums import BlocklistReason, FailReason, SpecialVersion
 from backend.file_extraction import extract_filename_data
-from backend.helpers import (DownloadGroup, FilenameData,
+from backend.helpers import (DownloadGroup, FilenameData, Session,
                              check_overlapping_issues, get_torrent_info)
 from backend.logging import LOGGER
 from backend.matching import GC_group_filter
@@ -110,7 +109,7 @@ def _purify_link(link: str) -> dict:
 		}
 
 	elif link.startswith('http'):
-		r = get(link, headers={'User-Agent': 'Kapowarr'}, stream=True)
+		r = Session().get(link, stream=True)
 		url = r.url
 
 		if mega_regex.search(url):
@@ -638,11 +637,11 @@ def extract_GC_download_links(
 	LOGGER.debug(f'Extracting download links from {link} for volume {volume_id} and issue {issue_id}')
 
 	try:
-		r = get(link, headers={'user-agent': 'Kapowarr'}, stream=True)
+		r = Session().get(link, stream=True)
 		if not r.ok:
-			raise requests_ConnectionError
+			raise RequestException
 
-	except requests_ConnectionError:
+	except RequestException:
 		# Link broken
 		return [], FailReason.BROKEN
 

@@ -7,7 +7,7 @@ Clients for downloading a torrent using a torrent client
 from os.path import join
 from typing import Dict, List, Type, Union
 
-from requests import RequestException, post
+from requests import RequestException
 
 from backend.custom_exceptions import (InvalidKeyValue, LinkBroken,
                                        TorrentClientNotFound,
@@ -15,7 +15,7 @@ from backend.custom_exceptions import (InvalidKeyValue, LinkBroken,
 from backend.db import get_db
 from backend.download_general import BaseTorrentClient, ExternalDownload
 from backend.enums import BlocklistReason, DownloadState
-from backend.helpers import ClientTestResult, get_torrent_info
+from backend.helpers import ClientTestResult, Session, get_torrent_info
 from backend.logging import LOGGER
 from backend.settings import Settings
 from backend.torrent_clients import qBittorrent
@@ -252,10 +252,9 @@ class TorrentDownload(ExternalDownload):
 
 		# Find name of torrent as it is folder that it's downloaded in
 		try:
-			r = post(
+			r = Session().post(
 				'https://magnet2torrent.com/upload/',
-				data={'magnet': download_link},
-				headers={'User-Agent': 'Kapowarr'}
+				data={'magnet': download_link}
 			)
 		except RequestException:
 			raise LinkBroken(BlocklistReason.LINK_BROKEN)
