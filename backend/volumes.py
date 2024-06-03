@@ -6,7 +6,7 @@ from asyncio import run
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from io import BytesIO
-from os import remove
+from os import cpu_count, remove
 from os.path import abspath, basename, dirname, isdir, join, relpath
 from re import IGNORECASE, compile
 from time import time
@@ -1129,6 +1129,7 @@ def refresh_and_scan(
 			""",
 			(one_day_ago,)
 		))
+	ids: Dict[int, int]
 	str_ids = [str(i) for i in ids]
 
 	if not str_ids:
@@ -1255,21 +1256,26 @@ def refresh_and_scan(
 
 	else:
 		if allow_skipping:
-			v_ids: Iterable[int] = [(ids[v['comicvine_id']], False) for v in volume_datas]
+			v_ids = [(ids[v['comicvine_id']], False) for v in volume_datas]
 		else:
-			v_ids: Iterable[int] = [(v, False) for v in ids.values()]
+			v_ids = [(v, False) for v in ids.values()]
 
+		total_count = len(v_ids)
 		if update_websocket:
 			ws = WebSocket()
-			total_count = len(v_ids)
 
-		with PortablePool() as pool:
-			for idx, _ in enumerate(pool.imap_unordered(map_scan_files, v_ids)):
-				if update_websocket:
-					ws.update_task_status(
-						message=f'Scanned files for volume {idx+1}/{total_count}'
-					)
-		_del_unmatched_files()
+		# Don't start more processes than files, but also not
+		# more than that is supported by the CPU
+		processes = min(total_count, cpu_count())
+
+		if processes:
+			with PortablePool(processes=processes) as pool:
+				for idx, _ in enumerate(pool.imap_unordered(map_scan_files, v_ids)):
+					if update_websocket:
+						ws.update_task_status(
+							message=f'Scanned files for volume {idx+1}/{total_count}'
+						)
+			_del_unmatched_files()
 
 	return
 
