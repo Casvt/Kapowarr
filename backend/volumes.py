@@ -907,16 +907,29 @@ def _del_unmatched_files() -> None:
 	""")
 	return
 
-def scan_files(volume_id: int, del_unmatched_files: bool = True) -> None:
+def scan_files(
+	volume_id: int,
+	filepath_filter: List[str] = [],
+	del_unmatched_files: bool = True
+) -> None:
 	"""Scan inside the volume folder for files and map them to issues
 
 	Args:
 		volume_id (int): The ID of the volume to scan for.
+
+		filepath_filter (List[str], optional): Only scan specific files.
+		Intended for adding files to a volume only.
+			Defaults to [].
+
 		del_unmatched_files (bool, optional): Delete file entries in the DB
 		that aren't linked to anything anymore.
 			Defaults to True.
 	"""
 	LOGGER.debug(f'Scanning for files for {volume_id}')
+
+	# We're checking a lot if strings are in this list,
+	# so making it a set will increase performance (due to hashing).
+	hashed_files = set(filepath_filter)
 
 	volume = Volume(volume_id, check_existence=False)
 	volume_data = volume.get_keys((
@@ -946,6 +959,9 @@ def scan_files(volume_id: int, del_unmatched_files: bool = True) -> None:
 		ext=(*supported_extensions, *md_extensions)
 	)
 	for file in folder_contents:
+		if hashed_files and not file in hashed_files:
+			continue
+
 		if basename(file).lower() in md_files:
 			# Volume metadata file
 			file_id = general_files.get(file)
@@ -1036,11 +1052,12 @@ def scan_files(volume_id: int, del_unmatched_files: bool = True) -> None:
 	).fetchall()
 
 	# Delete bindings that aren't in new bindings
-	delete_bindings = (b for b in current_bindings if b not in bindings)
-	cursor.executemany(
-		"DELETE FROM issues_files WHERE file_id = ? AND issue_id = ?;",
-		delete_bindings
-	)
+	if not hashed_files:
+		delete_bindings = (b for b in current_bindings if b not in bindings)
+		cursor.executemany(
+			"DELETE FROM issues_files WHERE file_id = ? AND issue_id = ?;",
+			delete_bindings
+		)
 
 	# Add bindings that aren't in current bindings
 	new_bindings = (b for b in bindings if b not in current_bindings)
@@ -1050,15 +1067,16 @@ def scan_files(volume_id: int, del_unmatched_files: bool = True) -> None:
 	)
 
 	# Delete bindings for general files that aren't in new bindings
-	delete_general_bindings = (
-		(b['file_id'],)
-		for b in _general_files
-		if not (b['file_id'], b['file_type']) in general_bindings
-	)
-	cursor.executemany(
-		"DELETE FROM volume_files WHERE file_id = ?;",
-		delete_general_bindings
-	)
+	if not hashed_files:
+		delete_general_bindings = (
+			(b['file_id'],)
+			for b in _general_files
+			if not (b['file_id'], b['file_type']) in general_bindings
+		)
+		cursor.executemany(
+			"DELETE FROM volume_files WHERE file_id = ?;",
+			delete_general_bindings
+		)
 
 	# Add bindings for general files that aren't in current bindings
 	general_ids = set(general_files.values())
@@ -1079,7 +1097,7 @@ def scan_files(volume_id: int, del_unmatched_files: bool = True) -> None:
 
 	return
 
-def map_scan_files(a: Tuple[int, bool]) -> None:
+def map_scan_files(a: Tuple[int, List[str], bool]) -> None:
 	return scan_files(*a)
 
 def refresh_and_scan(
@@ -1256,9 +1274,9 @@ def refresh_and_scan(
 
 	else:
 		if allow_skipping:
-			v_ids = [(ids[v['comicvine_id']], False) for v in volume_datas]
+			v_ids = [(ids[v['comicvine_id']], [], False) for v in volume_datas]
 		else:
-			v_ids = [(v, False) for v in ids.values()]
+			v_ids = [(v, [], False) for v in ids.values()]
 
 		total_count = len(v_ids)
 		if update_websocket:

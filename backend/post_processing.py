@@ -80,7 +80,7 @@ class PostProcessingActions:
 	@staticmethod
 	def add_file_to_database(download: Download) -> None:
 		"Register file in database and match to a volume/issue"
-		scan_files(download.volume_id)
+		scan_files(download.volume_id, filepath_filter=[download.file])
 		return
 
 	@staticmethod
@@ -112,19 +112,19 @@ class PostProcessingActions:
 
 		PPA.move_file(download)
 
-		download.resulting_files = extract_files_from_folder(
+		download._resulting_files = extract_files_from_folder(
 			download.file,
 			download.volume_id
 		)
 
-		scan_files(download.volume_id)
+		scan_files(download.volume_id, download._resulting_files)
 
 		rename_files = Settings()['rename_downloaded_files']
 
-		if rename_files and download.resulting_files:
+		if rename_files and download._resulting_files:
 			mass_rename(
 				download.volume_id,
-				filepath_filter=download.resulting_files
+				filepath_filter=download._resulting_files
 			)
 
 		return
@@ -151,19 +151,19 @@ class PostProcessingActions:
 			copy_directory(download.file, file_dest)
 			download.file = file_dest
 
-			download.resulting_files = extract_files_from_folder(
+			download._resulting_files = extract_files_from_folder(
 				download.file,
 				download.volume_id
 			)
 
-			scan_files(download.volume_id)
+			scan_files(download.volume_id, download._resulting_files)
 
 			rename_files = Settings()['rename_downloaded_files']
 
-			if rename_files and download.resulting_files:
+			if rename_files and download._resulting_files:
 				mass_rename(
 					download.volume_id,
-					filepath_filter=download.resulting_files
+					filepath_filter=download._resulting_files
 				)
 		return
 

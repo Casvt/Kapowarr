@@ -299,12 +299,12 @@ def import_library(
 				new_files.append(target_f)
 				delete_empty_folders(dirname(f), root_folder['folder'])
 
-			scan_files(volume_id)
+			scan_files(volume_id, filepath_filter=new_files)
 
 			# Trigger rename
 			mass_rename(volume_id, filepath_filter=new_files)
 
 		else:
-			scan_files(volume_id)
+			scan_files(volume_id, filepath_filter=new_files)
 
 	return
