@@ -9,7 +9,7 @@ from sqlite3 import (PARSE_DECLTYPES, Connection, Cursor, ProgrammingError,
                      Row, register_adapter, register_converter)
 from threading import current_thread
 from time import time
-from typing import Any, Dict, List, Tuple, Type, Union
+from typing import Any, Dict, List, Tuple, Type, Union, no_type_check
 
 from flask import g
 
@@ -32,8 +32,8 @@ class NoNoneCursor(Cursor):
 	def lastrowid(self) -> int:
 		return super().lastrowid or 1
 
-class DBConnection(Connection, metaclass=DB_ThreadSafeSingleton):
-	"For creating a connection with a database"
+
+class BaseConnection(Connection):
 	file = ''
 
 	def __init__(self, timeout: float) -> None:
@@ -42,7 +42,6 @@ class DBConnection(Connection, metaclass=DB_ThreadSafeSingleton):
 		Args:
 			timeout (float): How long to wait before giving up on a command
 		"""
-		LOGGER.debug(f'Creating connection {self}')
 		super().__init__(
 			self.file,
 			timeout=timeout,
@@ -52,13 +51,11 @@ class DBConnection(Connection, metaclass=DB_ThreadSafeSingleton):
 		self.closed = False
 		return
 
-	def cursor(self) -> NoNoneCursor:
+	def cursor(self) -> NoNoneCursor: # type: ignore
 		return super().cursor() # type: ignore
 
 	def close(self) -> None:
-		"""Close the connection
-		"""
-		LOGGER.debug(f'Closing connection {self}')
+		"""Close the database connection"""
 		self.closed = True
 		super().close()
 		return
@@ -66,11 +63,27 @@ class DBConnection(Connection, metaclass=DB_ThreadSafeSingleton):
 	def __repr__(self) -> str:
 		return f'<{self.__class__.__name__}; {current_thread().name}; {id(self)}>'
 
-class TempDBConnection(Connection):
+
+class DBConnection(BaseConnection, metaclass=DB_ThreadSafeSingleton):
+	"For creating a connection with a database"
+
+	def __init__(self, timeout: float) -> None:
+		LOGGER.debug(f'Creating connection {self}')
+		super().__init__(timeout)
+		return
+
+	def close(self) -> None:
+		"""Close the connection
+		"""
+		LOGGER.debug(f'Closing connection {self}')
+		super().close()
+		return
+
+
+class TempDBConnection(BaseConnection):
 	"""For creating a temporary connection with a database.
 	The user needs to manually commit and close.
 	"""
-	file = ''
 
 	def __init__(self, timeout: float) -> None:
 		"""Create a temporary connection with a database
@@ -79,28 +92,16 @@ class TempDBConnection(Connection):
 			timeout (float): How long to wait before giving up on a command
 		"""
 		LOGGER.debug(f'Creating temporary connection {self}')
-		super().__init__(
-			self.file,
-			timeout=timeout,
-			detect_types=PARSE_DECLTYPES
-		)
-		super().cursor().execute("PRAGMA foreign_keys = ON;")
-		self.closed = False
+		super().__init__(timeout)
 		return
-
-	def cursor(self) -> NoNoneCursor:
-		return super().cursor() # type: ignore
 
 	def close(self) -> None:
 		"""Close the temporary connection
 		"""
 		LOGGER.debug(f'Closing temporary connection {self}')
-		self.closed = True
 		super().close()
 		return
 
-	def __repr__(self) -> str:
-		return f'<{self.__class__.__name__}; {current_thread().name}; {id(self)}>'
 
 def set_db_location() -> None:
 	"""
@@ -115,10 +116,10 @@ def set_db_location() -> None:
 
 	create_folder(dirname(db_file_location))
 
-	DBConnection.file = db_file_location
-	TempDBConnection.file = db_file_location
+	BaseConnection.file = db_file_location
 
 	return
+
 
 db_output_mapping: Dict[type, Any] = {
 	dict: Row,
@@ -156,11 +157,12 @@ def get_db(
 
 	return cursor
 
-def close_db(e: Union[str, None] = None):
+
+def close_db(e: Union[None, BaseException] = None):
 	"""Close database cursor, commit database and close database.
 
 	Args:
-		e (Union[str, None], optional): Error. Defaults to None.
+		e (Union[None, BaseException], optional): Error. Defaults to None.
 	"""
 	try:
 		cursor = g.cursor
@@ -175,6 +177,7 @@ def close_db(e: Union[str, None] = None):
 
 	return
 
+
 def close_all_db() -> None:
 	"Close all non-temporary database connections that are still open"
 	LOGGER.debug('Closing any open database connections')
@@ -186,6 +189,8 @@ def close_all_db() -> None:
 	c.close()
 	return
 
+
+@no_type_check
 def migrate_db(current_db_version: int) -> None:
 	"""
 	Migrate a Kapowarr database from it's current version
@@ -713,6 +718,7 @@ def migrate_db(current_db_version: int) -> None:
 		s._save_to_database()
 
 	return
+
 
 def setup_db() -> None:
 	"""

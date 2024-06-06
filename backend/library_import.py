@@ -305,6 +305,6 @@ def import_library(
 			mass_rename(volume_id, filepath_filter=new_files)
 
 		else:
-			scan_files(volume_id, filepath_filter=new_files)
+			scan_files(volume_id, filepath_filter=files)
 
 	return

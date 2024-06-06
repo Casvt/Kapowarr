@@ -6,7 +6,8 @@ from asyncio import run
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from io import BytesIO
-from os import cpu_count, remove
+from multiprocessing import cpu_count
+from os import remove
 from os.path import abspath, basename, dirname, isdir, join, relpath
 from re import IGNORECASE, compile
 from time import time
@@ -516,8 +517,8 @@ class _VolumeBackend:
 
 		file_changes = propose_basefolder_change(
 			(
-				*self.get_files(),
-				*(f['filepath'] for f in self.get_general_files())
+				*self.get_files(), # type: ignore
+				*(f['filepath'] for f in self.get_general_files()) # type: ignore
 			),
 			current_root_folder[1],
 			desired_root_folder[1]
@@ -583,8 +584,8 @@ class _VolumeBackend:
 
 		file_changes = propose_basefolder_change(
 			(
-				*self.get_files(),
-				*(f['filepath'] for f in self.get_general_files())
+				*self.get_files(), # type: ignore
+				*(f['filepath'] for f in self.get_general_files()) # type: ignore
 			),
 			current_volume_folder,
 			new_volume_folder
@@ -1279,21 +1280,26 @@ def refresh_and_scan(
 			v_ids = [(v, [], False) for v in ids.values()]
 
 		total_count = len(v_ids)
-		if update_websocket:
-			ws = WebSocket()
 
 		# Don't start more processes than files, but also not
 		# more than that is supported by the CPU
 		processes = min(total_count, cpu_count())
 
-		if processes:
-			with PortablePool(processes=processes) as pool:
+		if not processes:
+			return
+
+		with PortablePool(processes=processes) as pool:
+			if update_websocket:
+				ws = WebSocket()
 				for idx, _ in enumerate(pool.imap_unordered(map_scan_files, v_ids)):
-					if update_websocket:
-						ws.update_task_status(
-							message=f'Scanned files for volume {idx+1}/{total_count}'
-						)
-			_del_unmatched_files()
+					ws.update_task_status(
+						message=f'Scanned files for volume {idx+1}/{total_count}'
+					)
+
+			else:
+				pool.map(map_scan_files, v_ids)
+
+		_del_unmatched_files()
 
 	return
 
@@ -1584,7 +1590,7 @@ class Library:
 			from backend.tasks import AutoSearchVolume, TaskHandler
 			task = AutoSearchVolume(volume_id)
 			cursor.connection.commit()
-			TaskHandler().add(task)
+			TaskHandler().add(task) # type: ignore
 
 		LOGGER.info(f'Added volume with comicvine id {comicvine_id} and id {volume_id}')
 		return volume_id

@@ -9,8 +9,8 @@ from typing import List
 from backend.custom_exceptions import (FolderNotFound, RootFolderInUse,
                                        RootFolderInvalid, RootFolderNotFound)
 from backend.db import get_db
-from backend.files import folder_is_inside_folder
 from backend.file_extraction import alphabet
+from backend.files import folder_is_inside_folder
 from backend.logging import LOGGER
 
 

@@ -318,7 +318,7 @@ class ComicVine:
 			if '/' in y:
 				y = next(
 					(e for e in y.split('/') if len(e) == 4),
-					None
+					''
 				)
 
 			if y:

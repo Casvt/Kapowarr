@@ -93,7 +93,7 @@ class PostProcessingActions:
 			mass_convert(
 				download.volume_id,
 				download.issue_id,
-				filepath_filter=download.resulting_files
+				filepath_filter=download._resulting_files
 			)
 		else:
 			mass_convert(
@@ -134,7 +134,7 @@ class PostProcessingActions:
 		"""Copy downloaded files to dest. Change download.file to copy.
 		Change back using `PPA.reset_file_link()`.
 		"""
-		download.original_file = download.file
+		download._original_file = download.file
 		if exists(download.file):
 			folder = Volume(download.volume_id)['folder']
 			file_dest = join(folder, basename(download.file))
@@ -170,7 +170,7 @@ class PostProcessingActions:
 	@staticmethod
 	def reset_file_link(download: TorrentDownload) -> None:
 		"Set download.file back to original folder from the copied folder"
-		download.file = download.original_file
+		download.file = download._original_file
 		return
 
 PPA = PostProcessingActions

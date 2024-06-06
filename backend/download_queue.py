@@ -448,7 +448,7 @@ class DownloadHandler:
 			self.downloading_item.join()
 
 		for e in self.queue:
-			if not isinstance(e, ExternalDownload):
+			if not isinstance(e, ExternalDownload) or not e._download_thread:
 				continue
 			e._download_thread.join()
 

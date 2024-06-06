@@ -20,7 +20,7 @@ from backend.credentials import Credentials
 from backend.custom_exceptions import LinkBroken
 from backend.download_general import Download
 from backend.enums import BlocklistReason, DownloadState
-from backend.helpers import Session
+from backend.helpers import Session, get_first_of_range
 from backend.logging import LOGGER
 from backend.server import WebSocket
 from backend.settings import Settings
@@ -48,7 +48,7 @@ class BaseDirectDownload(Download):
 		filename_body: str,
 		source: str,
 		custom_name: bool=True
-	):
+	) -> None:
 		LOGGER.debug(f'Creating download: {download_link}, {filename_body}')
 		self._ssn = Session()
 		self.id = None # type: ignore
@@ -214,7 +214,7 @@ class MediaFireDownload(BaseDirectDownload):
 		soup = BeautifulSoup(r.text, 'html.parser')
 		button = soup.find('a', {'id': 'downloadButton'})
 		if isinstance(button, Tag):
-			return button['href']
+			return get_first_of_range(button['href'])
 
 		# Link is not broken and not a folder
 		# but we still can't find the download button...
@@ -290,15 +290,15 @@ class MegaDownload(BaseDirectDownload):
 	type = 'mega'
 
 	@property
-	def progress(self) -> float:
+	def progress(self) -> float: # type: ignore
 		return self._mega.progress
 
 	@property
-	def speed(self) -> float:
+	def speed(self) -> float: # type: ignore
 		return self._mega.speed
 
 	@property
-	def size(self) -> int:
+	def size(self) -> int: # type: ignore
 		return self._mega.size
 
 	def __init__(self,

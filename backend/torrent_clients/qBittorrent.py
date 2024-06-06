@@ -40,10 +40,10 @@ class qBittorrent(BaseTorrentClient):
 	def add_download(self,
 		magnet_link: str,
 		target_folder: str,
-		torrent_name: Union[str, None]
+		download_name: Union[str, None]
 	) -> str:
-		if torrent_name is not None:
-			magnet_link = filename_magnet_link.sub(torrent_name, magnet_link)
+		if download_name is not None:
+			magnet_link = filename_magnet_link.sub(download_name, magnet_link)
 
 		files = {
 			'urls': (None, magnet_link),
@@ -58,10 +58,10 @@ class qBittorrent(BaseTorrentClient):
 
 		return magnet_link.split('urn:btih:')[1].split('&')[0]
 
-	def get_download_status(self, torrent_id: str) -> Union[dict, None]:
+	def get_download_status(self, download_id: str) -> Union[dict, None]:
 		r = self.ssn.get(
 			f'{self.base_url}/api/v2/torrents/properties',
-			params={'hash': torrent_id}
+			params={'hash': download_id}
 		)
 		if r.status_code == 404:
 			return None if self.torrent_found else {}
@@ -94,11 +94,11 @@ class qBittorrent(BaseTorrentClient):
 			'state': state
 		}
 
-	def delete_download(self, torrent_id: str, delete_files: bool) -> None:
+	def delete_download(self, download_id: str, delete_files: bool) -> None:
 		self.ssn.post(
 			f'{self.base_url}/api/v2/torrents/delete',
 			data={
-				'hashes': torrent_id,
+				'hashes': download_id,
 				'deleteFiles': delete_files
 			}
 		)
@@ -110,7 +110,7 @@ class qBittorrent(BaseTorrentClient):
 		username: Union[str, None] = None,
 		password: Union[str, None] = None,
 		api_token: Union[str, None] = None
-	) -> Tuple[bool, str]:
+	) -> Tuple[bool, Union[str, None]]:
 		try:
 			if username and password:
 				params = {

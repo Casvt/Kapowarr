@@ -46,12 +46,12 @@ issue_formatting_keys = formatting_keys + (
 	'issue_release_year'
 )
 
-short_sv_mapping: Dict[str, str] = dict((
+short_sv_mapping: Dict[SpecialVersion, str] = dict((
 	(SpecialVersion.HARD_COVER, 'HC'),
 	(SpecialVersion.ONE_SHOT, 'OS'),
 	(SpecialVersion.TPB, 'TPB')
 ))
-full_sv_mapping: Dict[str, str] = dict((
+full_sv_mapping: Dict[SpecialVersion, str] = dict((
 	(SpecialVersion.HARD_COVER, 'Hard-Cover'),
 	(SpecialVersion.ONE_SHOT, 'One-Shot'),
 	(SpecialVersion.TPB, 'TPB')
@@ -160,7 +160,7 @@ def _get_formatting_data(
 		'comicvine_id': volume_data.get('comicvine_id') or 'Unknown',
 		'year': volume_data.get('year') or 'Unknown',
 		'publisher': volume_data.get('publisher') or 'Unknown',
-		'special_version': sv_mapping.get(volume_data.get('special_version'))
+		'special_version': sv_mapping.get(volume_data['special_version'])
 	}
 
 	if issue_id:
@@ -667,13 +667,15 @@ def mass_rename(
 	if update_websocket:
 		ws = WebSocket()
 		total_renames = len(renames)
-
-	for idx, r in enumerate(renames):
-		if update_websocket:
+		for idx, r in enumerate(renames):
 			ws.update_task_status(
 				message=f'Renaming file {idx+1}/{total_renames}'
 			)
-		rename_file(r['before'], r['after'], True)
+			rename_file(r['before'], r['after'], True)
+
+	else:
+		for idx, r in enumerate(renames):
+			rename_file(r['before'], r['after'], True)
 
 	cursor.executemany(
 		"UPDATE files SET filepath = ? WHERE filepath = ?;",

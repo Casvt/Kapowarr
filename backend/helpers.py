@@ -367,18 +367,21 @@ class DictKeyedDict(dict):
 
 		return self[key]
 
-	def __contains__(self, key: Mapping) -> bool:
+	def __contains__(self, key: object) -> bool:
+		if not isinstance(key, Mapping):
+			return False
+
 		return super().__contains__(
 			self.__convert_dict(key)
 		)
 
-	def keys(self) -> Iterator[Any]:
+	def keys(self) -> Iterator[Any]: # type: ignore
 		return (v[0] for v in super().values())
 
-	def values(self) -> Iterator[Any]:
+	def values(self) -> Iterator[Any]: # type: ignore
 		return (v[1] for v in super().values())
 
-	def items(self) -> Iterator[Tuple[Any, Any]]:
+	def items(self) -> Iterator[Tuple[Any, Any]]: # type: ignore
 		return zip(self.keys(), self.values())
 
 
@@ -395,7 +398,7 @@ class Session(RSession):
 
 		retries = Retry(
 			total=TOTAL_RETRIES,
-			backoff_factor=BACKOFF_FACTOR_RETRIES,
+			backoff_factor=BACKOFF_FACTOR_RETRIES, # type: ignore # floats work just fine
 			status_forcelist=STATUS_FORCELIST_RETRIES
 		)
 		self.mount('http://', HTTPAdapter(max_retries=retries))
@@ -436,10 +439,17 @@ class AsyncSession(ClientSession):
 
 			else:
 				return response
+		raise ClientError
+
+	async def __aenter__(self) -> "AsyncSession":
+		return self
 
 
 class _ContextKeeper(metaclass=Singleton):
-	def __init__(self, log_level: int) -> None:
+	def __init__(self, log_level: Union[int, None] = None) -> None:
+		if not log_level:
+			return
+
 		from backend.server import setup_process
 		self.ctx = setup_process(log_level)
 		return

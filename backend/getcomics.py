@@ -24,7 +24,8 @@ from backend.download_torrent_clients import TorrentDownload
 from backend.enums import BlocklistReason, FailReason, SpecialVersion
 from backend.file_extraction import extract_filename_data
 from backend.helpers import (DownloadGroup, FilenameData, Session,
-                             check_overlapping_issues, get_torrent_info)
+                             check_overlapping_issues, create_range,
+                             get_torrent_info)
 from backend.logging import LOGGER
 from backend.matching import GC_group_filter
 from backend.naming import (generate_empty_name, generate_issue_name,
@@ -229,6 +230,8 @@ def _extract_button_links(
 			)
 			title += ' --' + year + '--'
 
+		if not result.next_sibling:
+			continue
 		for e in result.next_sibling.next_elements: # type: ignore
 			e: Tag
 			if e.name == 'hr':
@@ -238,20 +241,25 @@ def _extract_button_links(
 				e.name == 'div'
 				and 'aio-button-center' in (e.attrs.get('class', []))
 			):
-				group_link: Tag = e.find('a') # type: ignore
+				group_link: Union[Tag, None] = e.find('a') # type: ignore
+				if not group_link:
+					continue
 				link_title = group_link.text.strip().lower()
 				if group_link.get('href') is None:
 					continue
+				href = create_range(group_link.get('href', ''))[0]
+				if not href:
+					continue
 				match = _check_download_link(
 					link_title,
-					group_link['href'], # type: ignore
+					href,
 					torrent_client_available
 				)
 				if match:
 					(download_groups
 						.setdefault(title, {})
 						.setdefault(match, [])
-						.append(group_link['href']) # type: ignore
+						.append(href)
 					)
 
 	return download_groups
@@ -288,16 +296,19 @@ def _extract_list_links(
 			if group_link.get('href') is None:
 				continue
 			link_title = group_link.text.strip().lower()
+			href = create_range(group_link.get('href', ''))[0]
+			if not href:
+				continue
 			match = _check_download_link(
 				link_title,
-				group_link['href'], # type: ignore
+				href,
 				torrent_client_available
 			)
 			if match:
 				(download_groups
 					.setdefault(title, {})
 					.setdefault(match, [])
-					.append(group_link['href']) # type: ignore
+					.append(href)
 				)
 
 	return download_groups
@@ -334,10 +345,9 @@ def _extract_get_comics_links(
 		"SELECT 1 FROM torrent_clients"
 	).fetchone() is not None
 
-	body = soup.find('section', {'class': 'post-contents'}) # type: ignore
+	body: Union[Tag, None] = soup.find('section', {'class': 'post-contents'}) # type: ignore
 	if not body:
 		return {}
-	body: Tag
 	download_groups = {
 		**_extract_button_links(body, torrent_client_available),
 		**_extract_list_links(body, torrent_client_available)
@@ -430,7 +440,7 @@ def _create_link_paths(
 					key=lambda k: service_preference.index(k)
 				)
 			}
-			path_entry = {
+			path_entry: DownloadGroup = {
 				'web_sub_title': desc,
 				'info': processed_desc,
 				'links': sources
@@ -646,7 +656,8 @@ def extract_GC_download_links(
 		return [], FailReason.BROKEN
 
 	soup = BeautifulSoup(r.text, 'html.parser')
-	web_title = soup.find('h1').text
+	title_el = soup.find('h1')
+	web_title = None if not title_el else title_el.text
 
 	# Extract the download groups and filter invalid links
 	download_groups = _extract_get_comics_links(soup)

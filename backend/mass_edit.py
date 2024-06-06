@@ -19,7 +19,7 @@ class MassEditorVariables:
 	"""
 	To avoid import loops, this class is imported to the places where
 	it needs a value by seting it as a class variable. That
-	way, the value 'sent back' to here where the value can be used.
+	way, the value is 'sent back' to here where it can be used.
 	"""
 	download_handler: DownloadHandler = None # type: ignore
 

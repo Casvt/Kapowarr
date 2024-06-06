@@ -58,10 +58,10 @@ download_handler = DownloadHandler(handler_context)
 task_handler = TaskHandler(handler_context, download_handler)
 MassEditorVariables.download_handler = download_handler
 
-def return_api(result: Any, error: Union[str, None] = None, code: int = 200) -> Tuple[dict, int]:
+def return_api(result: Any, error: Union[str, None] = None, code: int = 200) -> Tuple[Dict[str, Any], int]:
 	return {'error': error, 'result': result}, code
 
-def error_handler(method):
+def error_handler(method) -> Any:
 	"""Used as decodator. Catches the errors that can occur in the endpoint and returns the correct api error
 	"""
 	def wrapper(*args, **kwargs):
@@ -300,7 +300,7 @@ def api_tasks():
 		if not isinstance(data, dict):
 			raise InvalidKeyValue(value=data)
 
-		task: Type[Task] = task_library.get(data.get('cmd'))
+		task: Union[Type[Task], None] = task_library.get(data.get('cmd', ''))
 		if not task:
 			raise TaskNotFound
 

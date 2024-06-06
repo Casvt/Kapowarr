@@ -206,7 +206,7 @@ class DownloadClient(ABC):
 		username: Union[str, None],
 		password: Union[str, None],
 		api_token: Union[str, None]
-	) -> Tuple[bool, str]:
+	) -> Tuple[bool, Union[str, None]]:
 		"""Check if a download client is working
 
 		Args:
@@ -216,15 +216,15 @@ class DownloadClient(ABC):
 			api_token (Union[str, None]): The api token to access the client, if set.
 
 		Returns:
-			Tuple[bool, str]: Whether or not the test succeeded and the reason
-			for failing if so.
+			Tuple[bool, Union[str, None]]: Whether or not the test succeeded and
+			the reason for failing if so.
 		"""
 		return
 
 
 class ExternalDownload(Download):
 	client: DownloadClient
-	external_id: Union[str, int, None]
+	external_id: Union[str, None]
 	_download_thread: Union[Thread, None]
 	_download_folder: str
 	_resulting_files: List[str]

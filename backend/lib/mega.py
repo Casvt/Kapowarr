@@ -422,7 +422,7 @@ class Mega:
 
 			encrypted_sid = mpi_to_int(base64_url_decode(resp['csid']))
 
-			sid = '%x' % rsa_decrypter._decrypt(encrypted_sid)
+			sid = '%x' % rsa_decrypter._decrypt(encrypted_sid) # type: ignore
 			sid = unhexlify('0' + sid if len(sid) % 2 else sid)
 			self.sid = base64_url_encode(sid[:43])
 
@@ -461,7 +461,7 @@ class Mega:
 				msg = 'Request failed, retrying'
 				raise RuntimeError(msg)
 			raise RequestError(int_resp)
-		return json_resp[0]
+		return json_resp[0] if isinstance(json_resp, list) else json_resp
 
 	def _parse_url(self, url):
 		"""Parse file id and key from url."""

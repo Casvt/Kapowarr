@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Callable, Union
 
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO
-from waitress import create_server
+from waitress.server import create_server
 from waitress.task import ThreadedTaskDispatcher as TTD
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
@@ -25,7 +25,7 @@ from backend.settings import private_settings
 
 if TYPE_CHECKING:
 	from flask.ctx import AppContext
-	from waitress.server import TcpWSGIServer
+	from waitress.server import BaseWSGIServer, MultiSocketServer
 
 	from backend.download_general import Download
 	from backend.tasks import Task
@@ -53,9 +53,9 @@ class ThreadedTaskDispatcher(TTD):
 		LOGGER.info('Shutting down Kapowarr...')
 
 		ws = WebSocket()
-		if '/' in ws.server.manager.rooms:
-			for sid in tuple(ws.server.manager.rooms['/'][None]):
-				ws.server.disconnect(sid)
+		if '/' in ws.server.manager.rooms: # type: ignore
+			for sid in tuple(ws.server.manager.rooms['/'][None]): # type: ignore
+				ws.server.disconnect(sid) # type: ignore
 
 		result = super().shutdown(cancel_pending, timeout)
 		return result
@@ -137,7 +137,11 @@ class Server(metaclass=Singleton):
 		self.url_base = url_base
 		return
 
-	def __create_waitress_server(self, host: str, port: int) -> TcpWSGIServer:
+	def __create_waitress_server(
+		self,
+		host: str,
+		port: int
+	) -> Union[MultiSocketServer, BaseWSGIServer]:
 		"""From the `Flask` instance created in `self.create_app()`, create
 		a waitress server instance.
 
@@ -146,7 +150,7 @@ class Server(metaclass=Singleton):
 			port (int): The port to host the server on (e.g. `5656`).
 
 		Returns:
-			TcpWSGIServer: The waitress server instance.
+			Union[MultiSocketServer, BaseWSGIServer]: The waitress server instance.
 		"""
 		dispatcher = ThreadedTaskDispatcher()
 		dispatcher.set_thread_count(private_settings['hosting_threads'])
@@ -178,7 +182,7 @@ class Server(metaclass=Singleton):
 		"""
 		self.server.task_dispatcher.shutdown()
 		self.server.close()
-		self.server._map.clear()
+		self.server._map.clear() # type: ignore
 		return
 
 	def shutdown(self) -> None:
