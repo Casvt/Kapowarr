@@ -8,5 +8,5 @@
 	"python.testing.pytestEnabled": false,
 	"python.testing.unittestEnabled": true,
 	"python.analysis.typeCheckingMode": "standard",
-	"python.analysis.autoImportCompletions": true
+	"python.analysis.diagnosticMode": "workspace"
 }
