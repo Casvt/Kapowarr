@@ -10,6 +10,6 @@
 	"python.analysis.typeCheckingMode": "standard",
 	"python.analysis.diagnosticMode": "workspace",
 	"mypy-type-checker.reportingScope": "workspace",
-	"mypy-type-checker.preferDaemon": true,
+	"mypy-type-checker.preferDaemon": false,
 	"mypy-type-checker.args": ["--explicit-package-bases", "--config-file", "mypy.ini"]
 }

@@ -130,7 +130,7 @@ class Server(metaclass=Singleton):
 			url_base (str): The desired URL base to set it to.
 		"""
 		self.app.config['APPLICATION_ROOT'] = url_base
-		self.app.wsgi_app = DispatcherMiddleware(
+		self.app.wsgi_app = DispatcherMiddleware( # type: ignore[method-assign]
 			Flask(__name__),
 			{url_base: self.app.wsgi_app}
 		)

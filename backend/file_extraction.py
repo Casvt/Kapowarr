@@ -18,8 +18,11 @@ from backend.helpers import fix_year as fix_broken_year
 from backend.helpers import normalize_string
 from backend.logging import LOGGER
 
-alphabet = 'abcdefghijklmnopqrstuvwxyz'
-alphabet = {letter: str(alphabet.index(letter) + 1).zfill(2) for letter in alphabet}
+alphabet_letters = 'abcdefghijklmnopqrstuvwxyz'
+alphabet = {
+	letter: str(alphabet_letters.index(letter) + 1).zfill(2)
+	for letter in alphabet_letters
+}
 digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 image_extensions = ('.png','.jpeg','.jpg','.webp','.gif',
 					'.PNG','.JPEG','.JPG','.WEBP','.GIF')

@@ -586,8 +586,8 @@ def api_volume(id: int):
 
 	elif request.method == 'PUT':
 		edit_info = request.get_json()
-		result = volume.update(edit_info)
-		return return_api(result)
+		volume.update(edit_info)
+		return return_api(None)
 
 	elif request.method == 'DELETE':
 		delete_folder = extract_key(request, 'delete_folder')
@@ -916,7 +916,7 @@ def api_mass_editor():
 		raise KeyNotFound('action')
 
 	action: str = data['action']
-	volume_ids: List[int] = data['volume_ids']
+	volume_ids: Union[List[int], Any] = data['volume_ids']
 	args: Dict[str, Any] = data.get('args', {})
 
 	if not (
