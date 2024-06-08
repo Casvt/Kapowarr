@@ -8,8 +8,8 @@ from typing import Dict, Iterator, List, Sequence, Set, Union
 from backend.comicvine import ComicVine
 from backend.custom_exceptions import InvalidKeyValue, VolumeAlreadyAdded
 from backend.db import get_db
-from backend.file_extraction import (extract_filename_data, image_extensions,
-                                     supported_extensions)
+from backend.file_extraction import (extract_filename_data,
+                                     image_extensions, supported_extensions)
 from backend.files import (delete_empty_folders, find_lowest_common_folder,
                            folder_is_inside_folder, list_files, rename_file)
 from backend.helpers import (AsyncSession, CVFileMapping, DictKeyedDict,

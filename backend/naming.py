@@ -16,8 +16,8 @@ from backend.custom_exceptions import InvalidSettingValue
 from backend.db import get_db
 from backend.enums import SpecialVersion
 from backend.file_extraction import cover_regex, image_extensions
-from backend.files import (delete_empty_folders, propose_basefolder_change,
-                           rename_file)
+from backend.files import (delete_empty_folders,
+                           propose_basefolder_change, rename_file)
 from backend.helpers import first_of_column
 from backend.logging import LOGGER
 from backend.root_folders import RootFolders

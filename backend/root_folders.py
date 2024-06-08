@@ -1,7 +1,6 @@
 #-*- coding: utf-8 -*-
 
-from os.path import abspath, isdir
-from os.path import sep as path_sep
+from os.path import abspath, isdir, sep as path_sep
 from shutil import disk_usage
 from sqlite3 import IntegrityError
 from typing import List

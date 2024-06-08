@@ -23,9 +23,9 @@ from backend.download_direct_clients import (DirectDownload, Download,
 from backend.download_torrent_clients import TorrentDownload
 from backend.enums import BlocklistReason, FailReason, SpecialVersion
 from backend.file_extraction import extract_filename_data
-from backend.helpers import (DownloadGroup, FilenameData, Session,
-                             check_overlapping_issues, create_range,
-                             get_torrent_info)
+from backend.helpers import (DownloadGroup, FilenameData,
+                             Session, check_overlapping_issues,
+                             create_range, get_torrent_info)
 from backend.logging import LOGGER
 from backend.matching import GC_group_filter
 from backend.naming import (generate_empty_name, generate_issue_name,

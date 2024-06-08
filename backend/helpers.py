@@ -10,8 +10,8 @@ from os import symlink
 from os.path import exists, join
 from sys import base_exec_prefix, executable, platform, version_info
 from threading import current_thread
-from typing import (Any, Dict, Generator, Iterable, Iterator, List, Mapping,
-                    Sequence, Tuple, TypedDict, TypeVar, Union)
+from typing import (Any, Dict, Generator, Iterable, Iterator, List,
+                    Mapping, Sequence, Tuple, TypedDict, TypeVar, Union)
 from urllib.parse import unquote
 
 from aiohttp import ClientError, ClientSession

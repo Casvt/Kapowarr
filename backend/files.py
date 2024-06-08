@@ -5,8 +5,8 @@ Handling folders, files and filenames.
 """
 
 from os import listdir, makedirs, remove, scandir, sep, stat
-from os.path import (abspath, basename, commonpath, dirname, isdir, isfile,
-                     join, relpath, samefile, splitext)
+from os.path import (abspath, basename, commonpath, dirname, isdir,
+                     isfile, join, relpath, samefile, splitext)
 from shutil import copytree, move, rmtree
 from typing import Iterable, List, Tuple, Union
 

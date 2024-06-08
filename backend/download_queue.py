@@ -13,15 +13,15 @@ from time import sleep
 from typing import TYPE_CHECKING, Dict, List, Tuple, Type, Union
 
 from backend.blocklist import add_to_blocklist
-from backend.custom_exceptions import (DownloadLimitReached, DownloadNotFound,
-                                       LinkBroken)
+from backend.custom_exceptions import (DownloadLimitReached,
+                                       DownloadNotFound, LinkBroken)
 from backend.db import get_db
-from backend.download_direct_clients import (BaseDirectDownload, Download,
-                                             MegaDownload)
+from backend.download_direct_clients import (BaseDirectDownload,
+                                             Download, MegaDownload)
 from backend.download_general import ExternalDownload
 from backend.download_torrent_clients import TorrentClients, TorrentDownload
-from backend.enums import (BlocklistReason, DownloadState, FailReason,
-                           SeedingHandling)
+from backend.enums import (BlocklistReason, DownloadState,
+                           FailReason, SeedingHandling)
 from backend.files import create_folder, delete_file_folder
 from backend.getcomics import extract_GC_download_links
 from backend.helpers import first_of_column

@@ -1,15 +1,32 @@
 {
-	"python.testing.unittestArgs": [
-		"-s",
-		"./tests",
-		"-p",
-		"*.py"
+	"[python]": {
+		"editor.codeActionsOnSave": {
+			"source.organizeImports": "always"
+		}
+	},
+	"isort.check": true,
+	"isort.severity": {
+		"W": "Warning",
+		"E": "Warning"
+	},
+	"isort.args": [
+		"--settings-path", ".isort.cfg",
+		"--jobs", "-1"
 	],
-	"python.testing.pytestEnabled": false,
+
 	"python.testing.unittestEnabled": true,
+	"python.testing.unittestArgs": [
+		"-s", "./tests",
+		"-p", "*.py"
+	],
+
 	"python.analysis.typeCheckingMode": "standard",
 	"python.analysis.diagnosticMode": "workspace",
+
 	"mypy-type-checker.reportingScope": "workspace",
 	"mypy-type-checker.preferDaemon": false,
-	"mypy-type-checker.args": ["--explicit-package-bases", "--config-file", "mypy.ini"]
+	"mypy-type-checker.args": [
+		"--explicit-package-bases",
+		"--config-file", "mypy.ini"
+	]
 }

@@ -12,8 +12,8 @@ from backend.custom_exceptions import (FolderNotFound, InvalidSettingKey,
 from backend.db import __DATABASE_FILEPATH__, __DATABASE_VERSION__, get_db
 from backend.enums import SeedingHandling
 from backend.files import folder_path
-from backend.helpers import (CommaList, Singleton, first_of_column,
-                             get_python_version)
+from backend.helpers import (CommaList, Singleton,
+                             first_of_column, get_python_version)
 from backend.logging import LOGGER, set_log_level
 
 supported_source_strings = (('mega', 'mega link'),
