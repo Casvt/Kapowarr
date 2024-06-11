@@ -589,7 +589,10 @@ def preview_mass_rename(
                 )
                 if page_result:
                     page_number = next(
-                        r for r in page_result.groups() if r is not None)
+                        r
+                        for r in page_result.groups()
+                        if r is not None
+                    )
                 else:
                     page_result = None
                     r = page_regex_2.finditer(basename(file))

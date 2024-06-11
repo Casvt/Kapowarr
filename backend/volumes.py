@@ -33,12 +33,12 @@ from backend.root_folders import RootFolders
 from backend.server import WebSocket
 
 THIRTY_DAYS = timedelta(days=30)
+# autopep8: off
 split_regex = compile(r'(?<!vs)(?<!r\.i\.p)\.(?:\s|</p>(?!$))', IGNORECASE)
 os_regex = compile(r'(?<!preceding\s)(?<!>)\bone[\- ]?shot\b(?!<)', IGNORECASE)
-hc_regex = compile(
-    r'(?<!preceding\s)(?<!>)\bhard[\- ]?cover\b(?!<)',
-    IGNORECASE)
+hc_regex = compile(r'(?<!preceding\s)(?<!>)\bhard[\- ]?cover\b(?!<)', IGNORECASE)
 vol_regex = compile(r'^volume\.?\s\d+$', IGNORECASE)
+# autopep8: on
 
 
 def determine_special_version(
@@ -75,10 +75,13 @@ def determine_special_version(
             return SpecialVersion.HARD_COVER
 
         if (issue_titles[0] or '').lower() in (
-            'hc', 'hard-cover', 'hard cover'):
+            'hc', 'hard-cover', 'hard cover'
+        ):
             return SpecialVersion.HARD_COVER
 
-        if (issue_titles[0] or '').lower() in ('os', 'one-shot', 'one shot'):
+        if (issue_titles[0] or '').lower() in (
+            'os', 'one-shot', 'one shot'
+        ):
             return SpecialVersion.ONE_SHOT
 
     if volume_description and len(split_regex.split(volume_description)) == 1:
@@ -401,7 +404,8 @@ class _VolumeBackend:
 
         if 'special_version' in result:
             result['special_version'] = SpecialVersion(
-                result['special_version'])
+                result['special_version']
+            )
 
         return result
 
@@ -526,7 +530,9 @@ class _VolumeBackend:
         desired_root_folder = root_folders[current_index - 1]
 
         LOGGER.info(
-            f'Changing root folder of volume {self.id} from {current_root_folder[1]} to {desired_root_folder[1]}')
+            f'Changing root folder of volume {self.id} '
+            f'from {current_root_folder[1]} to {desired_root_folder[1]}'
+        )
 
         file_changes = propose_basefolder_change(
             (
@@ -592,7 +598,9 @@ class _VolumeBackend:
             return
 
         LOGGER.info(
-            f'Moving volume folder from {current_volume_folder} to {new_volume_folder}')
+            'Moving volume folder from '
+            f'{current_volume_folder} to {new_volume_folder}'
+        )
 
         self['custom_folder'] = custom_folder
         self['folder'] = new_volume_folder
@@ -851,7 +859,9 @@ class Volume(_VolumeBackend):
         from backend.tasks import TaskHandler
 
         LOGGER.info(
-            f'Deleting volume {self.id} with delete_folder set to {delete_folder}')
+            f'Deleting volume {self.id}'
+            f' with delete_folder set to {delete_folder}'
+        )
         cursor = get_db()
 
         # Check if there is no task running for the volume
@@ -1211,23 +1221,31 @@ def refresh_and_scan(
     cursor.connection.commit()
 
     # Update issues
-    issue_datas = run(cv.fetch_issues_async(
-        [str(v['comicvine_id']) for v in volume_datas]))
+    issue_datas = run(cv.fetch_issues_async([
+        str(v['comicvine_id'])
+        for v in volume_datas
+    ]))
     issue_updates = (
-        (ids[issue_data['volume_id']],
-         issue_data['comicvine_id'],
-         issue_data['issue_number'],
-         (issue_data['calculated_issue_number']
-          if not isinstance(issue_data['calculated_issue_number'],
-                            tuple) else 0.0),
-         issue_data['title'],
-         issue_data['date'],
-         issue_data['description'],
-         True, issue_data['issue_number'],
-         issue_data['calculated_issue_number'],
-         issue_data['title'],
-         issue_data['date'],
-         issue_data['description']) for issue_data in issue_datas)
+        (
+            ids[issue_data['volume_id']],
+            issue_data['comicvine_id'],
+            issue_data['issue_number'],
+            (
+                issue_data['calculated_issue_number']
+                if not isinstance(issue_data['calculated_issue_number'], tuple)
+                else 0.0
+            ),
+            issue_data['title'],
+            issue_data['date'],
+            issue_data['description'],
+            True, issue_data['issue_number'],
+            issue_data['calculated_issue_number'],
+            issue_data['title'],
+            issue_data['date'],
+            issue_data['description']
+        )
+        for issue_data in issue_datas
+    )
 
     cursor.executemany("""
         INSERT INTO issues(
@@ -1308,8 +1326,8 @@ def refresh_and_scan(
             if update_websocket:
                 ws = WebSocket()
                 for idx, _ in enumerate(
-                    pool.imap_unordered(
-                        map_scan_files, v_ids)):
+                    pool.imap_unordered(map_scan_files, v_ids)
+                ):
                     ws.update_task_status(
                         message=f'Scanned files for volume {idx+1}/{total_count}')
 
@@ -1612,7 +1630,8 @@ class Library:
             TaskHandler().add(task) # type: ignore
 
         LOGGER.info(
-            f'Added volume with comicvine id {comicvine_id} and id {volume_id}')
+            f'Added volume with comicvine id {comicvine_id} and id {volume_id}'
+        )
         return volume_id
 
     def get_stats(self) -> Dict[str, int]:

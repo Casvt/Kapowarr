@@ -275,16 +275,19 @@ class DownloadHandler:
                         ?, ?, ?
                     );
                     """,
-                    (download.type,
-    None,
-    download.download_link,
-    download._filename_body,
-    download.source,
-    download.volume_id,
-    download.issue_id,
-    download.web_link,
-    download.web_title,
-     download.web_sub_title)).lastrowid
+                    (
+                        download.type,
+                        None,
+                        download.download_link,
+                        download._filename_body,
+                        download.source,
+                        download.volume_id,
+                        download.issue_id,
+                        download.web_link,
+                        download.web_title,
+                        download.web_sub_title
+                    )
+                ).lastrowid
 
             if isinstance(download, TorrentDownload):
                 if download.client is None:

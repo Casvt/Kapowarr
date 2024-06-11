@@ -44,9 +44,11 @@ def check_python_version() -> bool:
     """
     if not (version_info.major == 3 and version_info.minor >= 8):
         LOGGER.critical(
-            'The minimum python version required is python3.8 ' + '(currently ' +
-            str(version_info.major) + '.' + str(version_info.minor) + '.' +
-            str(version_info.micro) + ').')
+            'The minimum python version required is python3.8 '
+            '(currently '
+            + str(version_info.major) + '.' + str(version_info.minor) + '.' + str(version_info.micro) + # noqa
+            ').'
+        ) # noqa
         return False
     return True
 
@@ -90,8 +92,9 @@ def batched(l: Sequence[T], n: int) -> Generator[Sequence[T], Any, Any]:
         yield l[ndx: ndx + n]
 
 
-def reversed_tuples(i: Iterable[Tuple[T, U]]
-                    ) -> Generator[Tuple[U, T], Any, Any]:
+def reversed_tuples(
+    i: Iterable[Tuple[T, U]]
+) -> Generator[Tuple[U, T], Any, Any]:
     """Yield sub-tuples in reversed order.
 
     Args:

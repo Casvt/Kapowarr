@@ -67,8 +67,10 @@ async def __search_matches(
             matching_result = next(
                 iter(
                     matching_results['year'] or
-                    matching_results['volume_number']),
-                {})
+                    matching_results['volume_number']
+                ),
+                {}
+            )
 
             if matching_result:
                 title = f"{matching_result['title']} ({matching_result['year']})"

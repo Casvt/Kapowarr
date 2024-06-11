@@ -25,17 +25,10 @@ alphabet = {
 digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 image_extensions = ('.png', '.jpeg', '.jpg', '.webp', '.gif',
                     '.PNG', '.JPEG', '.JPG', '.WEBP', '.GIF')
-supported_extensions = image_extensions + ('.cbz',
-    '.zip',
-    '.rar',
-    '.cbr',
-    '.tar.gz',
-    '.7zip',
-    '.7z',
-    '.cb7',
-    '.cbt',
-    '.epub',
-     '.pdf')
+supported_extensions = image_extensions + (
+    '.cbz', '.zip', '.rar', '.cbr', '.tar.gz',
+    '.7zip', '.7z', '.cb7', '.cbt', '.epub', '.pdf'
+)
 md_extensions = {'.xml', '.XML', '.json', '.JSON'}
 md_files = {'cvinfo.xml', 'comicinfo.xml', 'series.json', 'comicinfo.xml'}
 file_extensions = r'\.(' + '|'.join(e[1:] for e in supported_extensions) + r')$'
@@ -55,57 +48,22 @@ korean_volume_regex = compile(r'제?(\d+)권', IGNORECASE)
 japanese_volume_regex = compile(r'(\d+)巻', IGNORECASE)
 
 # Extract data from (stripped)filename
-special_version_regex = compile(
-    r'(?:(?<!\s{3})\b|\()(?:(?P<tpb>tpb|trade paper back)|(?P<one_shot>os|one[ \-_]?shot)|(?P<hard_cover>hc|hard[ \-_]?cover))(?:\b|\))',
-    IGNORECASE)
+# autopep8: off
+special_version_regex = compile(r'(?:(?<!\s{3})\b|\()(?:(?P<tpb>tpb|trade paper back)|(?P<one_shot>os|one[ \-_]?shot)|(?P<hard_cover>hc|hard[ \-_]?cover))(?:\b|\))', IGNORECASE)
 volume_regex = compile(volume_regex_snippet, IGNORECASE)
 volume_folder_regex = compile(volume_regex_snippet + r'|^(\d+)$', IGNORECASE)
 issue_regex = compile(r'\(_(\-?' + issue_regex_snippet + r')\)', IGNORECASE)
-issue_regex_2 = compile(
-    r'(?<!\()(?:(?<![a-z])c|issues?)(?:[\s\-\._]?|\s\-\s)(?:#\s*)?(\-?' +
-    issue_regex_snippet +
-    r'(?:[\s\.]?\-[\s\.]?\-?' +
-    issue_regex_snippet +
-    r')?)\b(?!\))',
-    IGNORECASE)
-issue_regex_3 = compile(
-    r'(' +
-    issue_regex_snippet +
-    r')[\s\-\._]?\(?[\s\-\._]?of[\s\-\._]?' +
-    issue_regex_snippet +
-    r'\)?',
-    IGNORECASE)
-issue_regex_4 = compile(
-    r'(?<!--)(?:#\s*)?(\-?' +
-    issue_regex_snippet +
-    r'[\s\.]?-[\s\.]?' +
-    issue_regex_snippet +
-    r')(?:\s|\.|_|(?=\()|$)',
-    IGNORECASE)
-issue_regex_5 = compile(
-    r'#\s*(\-?' +
-    issue_regex_snippet +
-    r')\b(?![\s\.]?\-[\s\.]?' +
-    issue_regex_snippet +
-    r')',
-    IGNORECASE)
-issue_regex_6 = compile(
-    r'(?:(?P<i_start>^)|(?<=(?<!part)[\s\._]))(?P<n_c>n)?(\-?' +
-    issue_regex_snippet +
-    r')(?=(?(n_c)c\d+|(?(i_start)\s\-|))(?:\s|\.|_|(?=\()|$))',
-    IGNORECASE)
+issue_regex_2 = compile(r'(?<!\()(?:(?<![a-z])c|issues?)(?:[\s\-\._]?|\s\-\s)(?:#\s*)?(\-?' + issue_regex_snippet + r'(?:[\s\.]?\-[\s\.]?\-?' + issue_regex_snippet + r')?)\b(?!\))', IGNORECASE)
+issue_regex_3 = compile(r'(' + issue_regex_snippet + r')[\s\-\._]?\(?[\s\-\._]?of[\s\-\._]?' + issue_regex_snippet + r'\)?', IGNORECASE)
+issue_regex_4 = compile(r'(?<!--)(?:#\s*)?(\-?' + issue_regex_snippet + r'[\s\.]?-[\s\.]?' + issue_regex_snippet + r')(?:\s|\.|_|(?=\()|$)', IGNORECASE)
+issue_regex_5 = compile(r'#\s*(\-?' + issue_regex_snippet + r')\b(?![\s\.]?\-[\s\.]?' + issue_regex_snippet + r')', IGNORECASE)
+issue_regex_6 = compile(r'(?:(?P<i_start>^)|(?<=(?<!part)[\s\._]))(?P<n_c>n)?(\-?' + issue_regex_snippet + r')(?=(?(n_c)c\d+|(?(i_start)\s\-|))(?:\s|\.|_|(?=\()|$))', IGNORECASE)
 issue_regex_7 = compile(r'^(\-?' + issue_regex_snippet + r')$', IGNORECASE)
-year_regex = compile(
-    r'\((?:[a-z]+\.?\s)?' + year_regex_snippet + r'\)|--' + year_regex_snippet +
-    r'--|__' + year_regex_snippet + r'__|, ' + year_regex_snippet +
-    r'\s{3}|\b(?:(?:\d{2}-){1,2}(\d{4})|(\d{4})(?:-\d{2}){1,2})\b', IGNORECASE)
+year_regex = compile(r'\((?:[a-z]+\.?\s)?' + year_regex_snippet + r'\)|--' + year_regex_snippet + r'--|__' + year_regex_snippet + r'__|, ' + year_regex_snippet + r'\s{3}|\b(?:(?:\d{2}-){1,2}(\d{4})|(\d{4})(?:-\d{2}){1,2})\b', IGNORECASE)
 series_regex = compile(r'(^(\d+\.)?\s+|^\d+\s{3}|\s(?=\s)|[\s,]+$)')
-annual_regex = compile(
-    r'\+[\s\._]?annuals?|annuals?[\s\._]?\+|^((?!annuals?).)*$',
-    IGNORECASE)
-cover_regex = compile(
-    r'\b(?<!no[ \-_])(?<!hard[ \-_])(?<!\d[ \-_]covers)cover\b|n\d+c(\d+)|(?:\b|\d)i?fc\b',
-    IGNORECASE)
+annual_regex = compile(r'\+[\s\._]?annuals?|annuals?[\s\._]?\+|^((?!annuals?).)*$', IGNORECASE)
+cover_regex = compile(r'\b(?<!no[ \-_])(?<!hard[ \-_])(?<!\d[ \-_]covers)cover\b|n\d+c(\d+)|(?:\b|\d)i?fc\b', IGNORECASE)
+# autopep8: on
 
 
 def _calc_float_issue_number(issue_number: str) -> Union[float, None]:

@@ -504,8 +504,9 @@ class Mega:
         with open(filename, 'wb') as f:
             k_str = a32_to_str(self.k)
             counter = Counter.new(
-                128, initial_value=(
-                    (self.iv[0] << 32) + self.iv[1]) << 64)
+                128,
+                initial_value=((self.iv[0] << 32) + self.iv[1]) << 64
+            )
             aes = AES.new(k_str, AES.MODE_CTR, counter=counter)
 
             mac_bytes = EMPTY_IV
@@ -515,7 +516,8 @@ class Mega:
                 [self.iv[0],
                  self.iv[1],
                  self.iv[0],
-                 self.iv[1]])
+                 self.iv[1]]
+            )
 
             start_time = perf_counter()
             for chunk_size in get_chunks(self.size):
@@ -548,7 +550,9 @@ class Mega:
 
                 size_downloaded += chunk_length
                 self.speed = round(
-                    chunk_length / (perf_counter() - start_time), 2)
+                    chunk_length / (perf_counter() - start_time),
+                    2
+                )
                 self.progress = round(size_downloaded / self.size * 100, 2)
                 start_time = perf_counter()
                 websocket_update_function()

@@ -252,8 +252,10 @@ class AutoSearchVolume(Task):
         # Get search results and download them
         results = auto_search(self._volume_id)
         if results:
-            return [(result['link'], self._volume_id, None)
-                    for result in results]
+            return [
+                (result['link'], self._volume_id, None)
+                for result in results
+            ]
         return []
 
 
@@ -470,8 +472,10 @@ class SearchAll(Task):
             # Get search results and download them
             results = auto_search(volume_id)
             if results:
-                downloads += [(result['link'], volume_id, None)
-                              for result in results]
+                downloads += [
+                    (result['link'], volume_id, None)
+                    for result in results
+                ]
         return downloads
 
 
@@ -481,7 +485,9 @@ class SearchAll(Task):
 # Maps action attr to class for all tasks
 # Only works for classes that directly inherit from Task
 task_library: Dict[str, Type[Task]] = {
-    c.action: c for c in Task.__subclasses__()}
+    c.action: c
+    for c in Task.__subclasses__()
+}
 
 
 class TaskHandler(metaclass=Singleton):

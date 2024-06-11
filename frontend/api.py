@@ -59,12 +59,11 @@ task_handler = TaskHandler(handler_context, download_handler)
 MassEditorVariables.download_handler = download_handler
 
 
-def return_api(result: Any,
-    error: Union[str,
-    None] = None,
-    code: int = 200) -> Tuple[Dict[str,
-    Any],
-     int]:
+def return_api(
+    result: Any,
+    error: Union[str, None] = None,
+    code: int = 200
+) -> Tuple[Dict[str, Any], int]:
     return {'error': error, 'result': result}, code
 
 
@@ -559,12 +558,12 @@ def api_volumes_search():
         data = request.get_json()
         for key in (
             'comicvine_id',
-            'title',
-            'year',
-            'volume_number',
-                'publisher'):
+            'title', 'year', 'volume_number',
+            'publisher'
+        ):
             if key not in data:
                 raise KeyNotFound(key)
+
         folder = generate_volume_folder_name(-1, data)
         return return_api({'folder': folder})
 

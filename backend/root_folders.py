@@ -88,8 +88,11 @@ class RootFolders:
             raise FolderNotFound
         folder = abspath(folder) + path_sep
 
-        if len(
-            folder) >= 4 and folder[1:3] == ":\\" and folder[0].lower() in alphabet:
+        if (
+            len(folder) >= 4
+            and folder[1:3] == ":\\"
+            and folder[0].lower() in alphabet
+        ):
             folder = folder[0].upper() + folder[1:]
 
         for current_rf in self.get_all():

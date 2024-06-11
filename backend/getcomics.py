@@ -33,21 +33,15 @@ from backend.naming import (generate_empty_name, generate_issue_name,
 from backend.settings import Settings, supported_source_strings
 from backend.volumes import Volume
 
+# autopep8: off
 check_year = compile(r'\b\d{4}\b')
-mega_regex = compile(
-    r'https?://mega\.(nz|io)/(#(F\!|\!)|folder/|file/)',
-    IGNORECASE)
+mega_regex = compile(r'https?://mega\.(nz|io)/(#(F\!|\!)|folder/|file/)', IGNORECASE)
 mediafire_regex = compile(r'https?://www\.mediafire\.com/', IGNORECASE)
-mediafire_dd_regex = compile(
-    r'https?://download\d+\.mediafire\.com/',
-    IGNORECASE)
-wetransfer_regex = compile(
-    r'(?:https?://we.tl/|wetransfer.com/downloads/)',
-    IGNORECASE)
+mediafire_dd_regex = compile(r'https?://download\d+\.mediafire\.com/', IGNORECASE)
+wetransfer_regex = compile(r'(?:https?://we.tl/|wetransfer.com/downloads/)', IGNORECASE)
 pixeldrain_regex = compile(r'https?://pixeldrain\.com/u/\w+', IGNORECASE)
-extract_mediafire_regex = compile(
-    r'window.location.href\s?=\s?\'https://download\d+\.mediafire.com/.*?(?=\')',
-    IGNORECASE)
+extract_mediafire_regex = compile(r'window.location.href\s?=\s?\'https://download\d+\.mediafire.com/.*?(?=\')', IGNORECASE)
+# autopep8: on
 
 
 def _check_download_link(
@@ -135,7 +129,8 @@ def _purify_link(link: str) -> dict:
             return {
                 'download_link': url,
                 'target': MegaDownload,
-                'source': 'mega'}
+                'source': 'mega'
+            }
 
         elif mediafire_regex.search(url):
             # Link is mediafire
@@ -200,7 +195,8 @@ def _purify_link(link: str) -> dict:
         return {
             'download_link': url,
             'target': DirectDownload,
-            'source': 'getcomics'}
+            'source': 'getcomics'
+        }
 
     else:
         raise LinkBroken(BlocklistReason.SOURCE_NOT_SUPPORTED)
