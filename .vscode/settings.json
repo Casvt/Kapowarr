@@ -15,7 +15,6 @@
 		"E": "Warning"
 	},
 	"isort.args": [
-		"--settings-path", ".isort.cfg",
 		"--jobs", "-1"
 	],
 
@@ -31,7 +30,6 @@
 	"mypy-type-checker.reportingScope": "workspace",
 	"mypy-type-checker.preferDaemon": false,
 	"mypy-type-checker.args": [
-		"--explicit-package-bases",
-		"--config-file", "mypy.ini"
+		"--explicit-package-bases"
 	]
 }

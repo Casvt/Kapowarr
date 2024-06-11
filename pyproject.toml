@@ -1,0 +1,22 @@
+[tool.mypy]
+warn_unused_configs = true
+sqlite_cache = true
+cache_fine_grained = true
+
+ignore_missing_imports = true
+disable_error_code = ["abstract", "annotation-unchecked", "arg-type", "assert-type", "assignment", "attr-defined", "await-not-async", "call-arg", "call-overload", "dict-item", "empty-body", "exit-return", "func-returns-value", "has-type", "import", "import-not-found", "import-untyped", "index", "list-item", "literal-required", "method-assign", "misc", "name-defined", "name-match", "no-overload-impl", "no-redef", "operator", "override", "return", "return-value", "safe-super", "str-bytes-safe", "str-format", "syntax", "top-level-await", "truthy-function", "type-abstract", "type-var", "typeddict-item", "typeddict-unknown-key", "union-attr", "unused-coroutine", "used-before-def", "valid-newtype", "valid-type", "var-annotated"]
+enable_error_code = ["method-assign", "func-returns-value", "name-match", "no-overload-impl", "unused-coroutine", "top-level-await", "await-not-async", "str-format", "redundant-expr", "unused-awaitable"]
+
+[tool.isort]
+balanced_wrapping = true
+combine_as_imports = true
+combine_star = true
+honor_noqa = true
+remove_redundant_aliases = true
+
+[tool.autopep8]
+aggressive = 3
+experimental = true
+max_line_length = 80
+ignore = ["E124", "E125", "E126", "E128", "E261"]
+

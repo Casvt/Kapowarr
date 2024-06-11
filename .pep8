@@ -1,5 +1,0 @@
-[pep8]
-aggressive = 3
-experimental = True
-max_line_length = 80
-ignore = E124,E125,E126,E128,E261
