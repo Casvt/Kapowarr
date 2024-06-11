@@ -1,81 +1,89 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 from enum import Enum
 
 
 class BaseEnum(Enum):
-	def __eq__(self, other: object) -> bool:
-		return self.value == other
+    def __eq__(self, other: object) -> bool:
+        return self.value == other
 
-	def __hash__(self) -> int:
-		return id(self.value)
+    def __hash__(self) -> int:
+        return id(self.value)
+
 
 class SeedingHandling(BaseEnum):
-	COMPLETE = 'complete'
-	"Let torrent complete (finish seeding) and then move all files"
+    COMPLETE = 'complete'
+    "Let torrent complete (finish seeding) and then move all files"
 
-	COPY = 'copy'
-	"Copy the files while the torrent is seeding, then delete original files"
+    COPY = 'copy'
+    "Copy the files while the torrent is seeding, then delete original files"
+
 
 class BlocklistReasonID(BaseEnum):
-	LINK_BROKEN = 1
-	SOURCE_NOT_SUPPORTED = 2
-	NO_WORKING_LINKS = 3
-	ADDED_BY_USER = 4
+    LINK_BROKEN = 1
+    SOURCE_NOT_SUPPORTED = 2
+    NO_WORKING_LINKS = 3
+    ADDED_BY_USER = 4
+
 
 class BlocklistReason(BaseEnum):
-	LINK_BROKEN = 'Link broken'
+    LINK_BROKEN = 'Link broken'
 
-	SOURCE_NOT_SUPPORTED = 'Source not supported'
+    SOURCE_NOT_SUPPORTED = 'Source not supported'
 
-	NO_WORKING_LINKS = 'No supported or working links'
+    NO_WORKING_LINKS = 'No supported or working links'
 
-	ADDED_BY_USER = 'Added by user'
+    ADDED_BY_USER = 'Added by user'
+
 
 class SpecialVersion(BaseEnum):
-	TPB = 'tpb'
+    TPB = 'tpb'
 
-	ONE_SHOT = 'one-shot'
+    ONE_SHOT = 'one-shot'
 
-	HARD_COVER = 'hard-cover'
+    HARD_COVER = 'hard-cover'
 
-	VOLUME_AS_ISSUE = 'volume-as-issue'
-	"Volume where each issue is named `Volume N`"
+    VOLUME_AS_ISSUE = 'volume-as-issue'
+    "Volume where each issue is named `Volume N`"
 
-	COVER = 'cover'
-	"Image file is cover of either issue or volume. Overrules over SV's."
+    COVER = 'cover'
+    "Image file is cover of either issue or volume. Overrules over SV's."
 
-	NORMAL = None
-	"Normal volume, so not a special version"
+    NORMAL = None
+    "Normal volume, so not a special version"
+
 
 class DownloadState(BaseEnum):
-	QUEUED_STATE = 'queued'
-	DOWNLOADING_STATE = 'downloading'
-	SEEDING_STATE = 'seeding'
-	IMPORTING_STATE = 'importing'
+    QUEUED_STATE = 'queued'
+    DOWNLOADING_STATE = 'downloading'
+    SEEDING_STATE = 'seeding'
+    IMPORTING_STATE = 'importing'
 
-	FAILED_STATE = 'failed'
-	"Download was unsuccessful"
-	CANCELED_STATE = 'canceled'
-	"Download was removed from queue"
-	SHUTDOWN_STATE = 'shutting down'
-	"Download was stopped because Kapowarr is shutting down"
+    FAILED_STATE = 'failed'
+    "Download was unsuccessful"
+    CANCELED_STATE = 'canceled'
+    "Download was removed from queue"
+    SHUTDOWN_STATE = 'shutting down'
+    "Download was stopped because Kapowarr is shutting down"
+
 
 class SocketEvent(BaseEnum):
-	TASK_ADDED = 'task_added'
-	TASK_STATUS = 'task_status'
-	TASK_ENDED = 'task_ended'
+    TASK_ADDED = 'task_added'
+    TASK_STATUS = 'task_status'
+    TASK_ENDED = 'task_ended'
 
-	QUEUE_ADDED = 'queue_added'
-	QUEUE_STATUS = 'queue_status'
-	QUEUE_ENDED = 'queue_ended'
+    QUEUE_ADDED = 'queue_added'
+    QUEUE_STATUS = 'queue_status'
+    QUEUE_ENDED = 'queue_ended'
+
 
 class FailReason(BaseEnum):
-	BROKEN = 'GetComics page unavailable'
-	NO_WORKING_LINKS = 'No working download links on page'
-	LIMIT_REACHED = 'Download limit reached for service'
-	NO_MATCHES = 'No links found that match to volume and are not blocklisted'
+    BROKEN = 'GetComics page unavailable'
+    NO_WORKING_LINKS = 'No working download links on page'
+    LIMIT_REACHED = 'Download limit reached for service'
+    NO_MATCHES = 'No links found that match to volume and are not blocklisted'
+
 
 class GeneralFileType(BaseEnum):
-	METADATA = 'metadata'
-	COVER = 'cover'
+    METADATA = 'metadata'
+    COVER = 'cover'

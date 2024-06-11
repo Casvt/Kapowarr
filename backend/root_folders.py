@@ -1,4 +1,4 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 from os.path import abspath, isdir, sep as path_sep
 from shutil import disk_usage
@@ -14,122 +14,123 @@ from backend.logging import LOGGER
 
 
 class RootFolders:
-	cache = {}
+    cache = {}
 
-	def get_all(self, use_cache: bool=True) -> List[dict]:
-		"""Get all rootfolders
+    def get_all(self, use_cache: bool = True) -> List[dict]:
+        """Get all rootfolders
 
-		Args:
-			use_cache (bool, optional): Wether or not to pull data from
-			cache instead of going to the database.
-				Defaults to True.
+        Args:
+            use_cache (bool, optional): Wether or not to pull data from
+            cache instead of going to the database.
+                Defaults to True.
 
-		Returns:
-			List[dict]: The list of rootfolders
-		"""
-		if not use_cache or not self.cache:
-			root_folders = get_db(dict).execute(
-				"SELECT id, folder FROM root_folders;"
-			)
-			self.cache = {
-				r['id']: {
-					**dict(r),
-					'size': dict(zip(
-						('total', 'used', 'free'),
-						disk_usage(r['folder'])
-					))
-				}
-				for r in root_folders
-			}
-		return list(self.cache.values())
+        Returns:
+            List[dict]: The list of rootfolders
+        """
+        if not use_cache or not self.cache:
+            root_folders = get_db(dict).execute(
+                "SELECT id, folder FROM root_folders;"
+            )
+            self.cache = {
+                r['id']: {
+                    **dict(r),
+                    'size': dict(zip(
+                        ('total', 'used', 'free'),
+                        disk_usage(r['folder'])
+                    ))
+                }
+                for r in root_folders
+            }
+        return list(self.cache.values())
 
-	def get_one(self, root_folder_id: int, use_cache: bool=True) -> dict:
-		"""Get a rootfolder based on it's id.
+    def get_one(self, root_folder_id: int, use_cache: bool = True) -> dict:
+        """Get a rootfolder based on it's id.
 
-		Args:
-			root_folder_id (int): The id of the rootfolder to get.
+        Args:
+            root_folder_id (int): The id of the rootfolder to get.
 
-			use_cache (bool, optional): Wether or not to pull data from
-			cache instead of going to the database.
-				Defaults to True.
+            use_cache (bool, optional): Wether or not to pull data from
+            cache instead of going to the database.
+                Defaults to True.
 
-		Raises:
-			RootFolderNotFound: The id doesn't map to any rootfolder.
-				Could also be because of cache being behind database.
+        Raises:
+            RootFolderNotFound: The id doesn't map to any rootfolder.
+                Could also be because of cache being behind database.
 
-		Returns:
-			dict: The rootfolder info
-		"""
-		if not use_cache or not self.cache:
-			self.get_all(use_cache=False)
-		root_folder = self.cache.get(root_folder_id)
-		if not root_folder:
-			raise RootFolderNotFound
-		return root_folder
+        Returns:
+            dict: The rootfolder info
+        """
+        if not use_cache or not self.cache:
+            self.get_all(use_cache=False)
+        root_folder = self.cache.get(root_folder_id)
+        if not root_folder:
+            raise RootFolderNotFound
+        return root_folder
 
-	def __getitem__(self, root_folder_id: int) -> str:
-		return self.get_one(root_folder_id)['folder']
+    def __getitem__(self, root_folder_id: int) -> str:
+        return self.get_one(root_folder_id)['folder']
 
-	def add(self, folder: str) -> dict:
-		"""Add a rootfolder
+    def add(self, folder: str) -> dict:
+        """Add a rootfolder
 
-		Args:
-			folder (str): The folder to add
+        Args:
+            folder (str): The folder to add
 
-		Raises:
-			FolderNotFound: The folder doesn't exist
+        Raises:
+            FolderNotFound: The folder doesn't exist
 
-		Returns:
-			dict: The rootfolder info
-		"""
-		# Format folder and check if it exists
-		LOGGER.info(f'Adding rootfolder from {folder}')
-		if not isdir(folder):
-			raise FolderNotFound
-		folder = abspath(folder) + path_sep
+        Returns:
+            dict: The rootfolder info
+        """
+        # Format folder and check if it exists
+        LOGGER.info(f'Adding rootfolder from {folder}')
+        if not isdir(folder):
+            raise FolderNotFound
+        folder = abspath(folder) + path_sep
 
-		if len(folder) >= 4 and folder[1:3] == ":\\" and folder[0].lower() in alphabet:
-			folder = folder[0].upper() + folder[1:]
+        if len(
+            folder) >= 4 and folder[1:3] == ":\\" and folder[0].lower() in alphabet:
+            folder = folder[0].upper() + folder[1:]
 
-		for current_rf in self.get_all():
-			if (
-				folder_is_inside_folder(current_rf['folder'], folder)
-				or folder_is_inside_folder(folder, current_rf['folder'])
-			):
-				raise RootFolderInvalid
+        for current_rf in self.get_all():
+            if (
+                folder_is_inside_folder(current_rf['folder'], folder)
+                or folder_is_inside_folder(folder, current_rf['folder'])
+            ):
+                raise RootFolderInvalid
 
-		# Insert into database
-		root_folder_id = get_db(dict).execute(
-			"INSERT INTO root_folders(folder) VALUES (?)",
-			(folder,)
-		).lastrowid
+        # Insert into database
+        root_folder_id = get_db(dict).execute(
+            "INSERT INTO root_folders(folder) VALUES (?)",
+            (folder,)
+        ).lastrowid
 
-		root_folder = self.get_one(root_folder_id, use_cache=False)
+        root_folder = self.get_one(root_folder_id, use_cache=False)
 
-		LOGGER.debug(f'Adding rootfolder result: {root_folder_id}')
-		return root_folder
+        LOGGER.debug(f'Adding rootfolder result: {root_folder_id}')
+        return root_folder
 
-	def delete(self, id: int) -> None:
-		"""Delete a rootfolder
+    def delete(self, id: int) -> None:
+        """Delete a rootfolder
 
-		Args:
-			id (int): The id of the rootfolder to delete
+        Args:
+            id (int): The id of the rootfolder to delete
 
-		Raises:
-			RootFolderNotFound: The id doesn't map to any rootfolder
-			RootFolderInUse: The rootfolder is still in use by a volume
-		"""
-		LOGGER.info(f'Deleting rootfolder {id}')
-		cursor = get_db()
+        Raises:
+            RootFolderNotFound: The id doesn't map to any rootfolder
+            RootFolderInUse: The rootfolder is still in use by a volume
+        """
+        LOGGER.info(f'Deleting rootfolder {id}')
+        cursor = get_db()
 
-		# Remove from database
-		try:
-			if not cursor.execute(
-				"DELETE FROM root_folders WHERE id = ?", (id,)
-			).rowcount:
-				raise RootFolderNotFound
-		except IntegrityError:
-			raise RootFolderInUse
+        # Remove from database
+        try:
+            if not cursor.execute(
+                "DELETE FROM root_folders WHERE id = ?", (id,)
+            ).rowcount:
+                raise RootFolderNotFound
+        except IntegrityError:
+            raise RootFolderInUse
 
-		self.get_all(use_cache=False)
-		return
+        self.get_all(use_cache=False)
+        return

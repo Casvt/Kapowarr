@@ -1,8 +1,13 @@
 {
+	"editor.insertSpaces": true,
+    "editor.tabSize": 4,
+	
 	"[python]": {
 		"editor.codeActionsOnSave": {
-			"source.organizeImports": "always"
-		}
+			"source.organizeImports": "always",
+		},
+		"editor.formatOnSave": true,
+		"editor.defaultFormatter": "ms-python.autopep8"
 	},
 	"isort.check": true,
 	"isort.severity": {
