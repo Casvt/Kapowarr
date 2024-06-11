@@ -158,3 +158,4 @@ temp_downloads/*
 # Project management files
 docs/
 project_management/
+requirements-dev.txt
