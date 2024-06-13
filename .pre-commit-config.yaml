@@ -1,0 +1,59 @@
+repos:
+-   repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+    -   id: isort
+        name: isort
+        additional_dependencies: [
+          requests ~= 2.31,
+          bs4 ~= 0.0.2,
+          flask ~= 3.0,
+          waitress ~= 3.0,
+          pycryptodome ~= 3.20,
+          tenacity ~= 8.2,
+          bencoding ~= 0.2,
+          simplejson ~= 3.19,
+          aiohttp ~= 3.9,
+          flask-socketio ~= 5.3
+        ]
+
+-   repo: local
+    hooks:
+    -   id: mypy
+        name: mypy
+        language: python
+        pass_filenames: false
+        additional_dependencies: [
+          mypy~=1.10,
+
+          requests ~= 2.31,
+          bs4 ~= 0.0.2,
+          flask ~= 3.0,
+          waitress ~= 3.0,
+          pycryptodome ~= 3.20,
+          tenacity ~= 8.2,
+          bencoding ~= 0.2,
+          simplejson ~= 3.19,
+          aiohttp ~= 3.9,
+          flask-socketio ~= 5.3
+        ]
+        entry: python -m mypy --explicit-package-bases .
+
+-   repo: https://github.com/hhatto/autopep8
+    rev: v2.2.0
+    hooks:
+    -   id: autopep8
+        name: autopep8
+        additional_dependencies: [
+          requests ~= 2.31,
+          bs4 ~= 0.0.2,
+          flask ~= 3.0,
+          waitress ~= 3.0,
+          pycryptodome ~= 3.20,
+          tenacity ~= 8.2,
+          bencoding ~= 0.2,
+          simplejson ~= 3.19,
+          aiohttp ~= 3.9,
+          flask-socketio ~= 5.3
+        ]
+        
