@@ -1,0 +1,18 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Format All",
+            "type": "shell",
+            "command": "python3 -m isort .; python3 -m autopep8 --in-place -r .",
+            "windows": {
+                "command": "python -m isort .; python -m autopep8 --in-place -r ."
+            },
+            "group": "build",
+            "presentation": {
+                "reveal": "silent",
+                "clear": true
+            }
+        }
+    ]
+}
