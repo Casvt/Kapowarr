@@ -261,7 +261,7 @@ def _extract_button_links(
                 link_title = group_link.text.strip().lower()
                 if group_link.get('href') is None:
                     continue
-                href = create_range(group_link.get('href', ''))[0]
+                href = create_range(group_link.get('href') or '')[0]
                 if not href:
                     continue
                 match = _check_download_link(
@@ -313,7 +313,7 @@ def _extract_list_links(
             if group_link.get('href') is None:
                 continue
             link_title = group_link.text.strip().lower()
-            href = create_range(group_link.get('href', ''))[0]
+            href = create_range(group_link.get('href') or '')[0]
             if not href:
                 continue
             match = _check_download_link(

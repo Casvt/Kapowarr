@@ -442,7 +442,8 @@ def check_search_result_match(
 
     if special_version in (
         SpecialVersion.NORMAL,
-        SpecialVersion.VOLUME_AS_ISSUE):
+        SpecialVersion.VOLUME_AS_ISSUE
+    ):
         if result['issue_number'] is not None:
             issue_key = 'issue_number'
         else:

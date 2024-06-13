@@ -127,17 +127,17 @@ def get_first_of_range(
 
 
 def create_range(
-    n: Union[T, Sequence[T]]
+    n: Union[T, Tuple[T, ...], List[T]]
 ) -> Sequence[T]:
     """Create range if input isn't already.
 
     Args:
-        n (Union[T, Sequence[T]]): The value or range.
+        n (Union[T, Tuple[T, ...], List[T]]): The value or range.
 
     Returns:
         Sequence[T]: The range.
     """
-    if isinstance(n, Sequence):
+    if isinstance(n, (Tuple, List)):
         return n
     else:
         return (n, n)
