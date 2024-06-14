@@ -11,12 +11,17 @@ function addQueueEntry(api_key, obj) {
 	entry.dataset.id = obj.id;
 	QEls.queue.appendChild(entry);
 
-	const title = entry.querySelector('a');
+	const title = entry.querySelector('a:first-of-type');
 	title.innerText = obj.title;
-	title.href = obj.web_link;
+	title.href = `/volumes/${obj.volume_id}`;
 
-	entry.querySelector('td:nth-child(3)').innerText =
+	const source = entry.querySelector('td:nth-child(3) a')
+    source.innerText =
 		obj.source.charAt(0).toUpperCase() + obj.source.slice(1);
+    source.href = obj.web_link;
+    source.title = `Page Title:\n${obj.web_title}`;
+    if (obj.web_sub_title !== null)
+        source.title += `\n\nSub Section:\n${obj.web_sub_title}`;
 
 	entry.querySelector('button').onclick = e => deleteEntry(obj.id, api_key);
 
