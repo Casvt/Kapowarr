@@ -174,7 +174,11 @@ noscript {
 }
 
 .error img {
-	filter: invert(38%) sepia(86%) saturate(1816%) hue-rotate(328deg) brightness(97%) contrast(76%) !important;
+	filter: invert(38%) sepia(86%) saturate(1816%) hue-rotate(328deg) brightness(85%) contrast(76%) !important;
+}
+
+.success img {
+    filter: invert(74%) sepia(38%) saturate(671%) hue-rotate(74deg) brightness(75%) contrast(98%) !important;
 }
 
 /*  */

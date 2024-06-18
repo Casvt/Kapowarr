@@ -87,9 +87,13 @@ class IssueEntry {
 		if (downloaded) {
 			// Downloaded
 			setImage(this.status, images.check, 'Issue is downloaded');
+            this.status.classList.remove('error');
+            this.status.classList.add('success');
 		} else {
 			// Not downloaded
 			setImage(this.status, images.cancel, 'Issue is not downloaded');
+            this.status.classList.remove('success');
+            this.status.classList.add('error');
 		};
 	};
 };
