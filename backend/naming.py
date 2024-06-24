@@ -4,13 +4,14 @@
 The (re)naming of folders and media
 """
 
-from dataclasses import asdict
+from __future__ import annotations
+
 from os import listdir
 from os.path import basename, dirname, isdir, isfile, join, splitext
 from re import compile, escape, match
 from string import Formatter
 from sys import platform
-from typing import Any, Dict, List, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
 
 from backend.custom_exceptions import InvalidSettingValue
 from backend.db import get_db
@@ -24,6 +25,9 @@ from backend.root_folders import RootFolders
 from backend.server import WebSocket
 from backend.settings import Settings
 from backend.volumes import Issue, Volume
+
+if TYPE_CHECKING:
+    from backend.volumes import VolumeData
 
 formatting_keys = (
     'series_name',
@@ -87,19 +91,19 @@ def make_filename_safe(unsafe_filename: str) -> str:
 def _get_formatting_data(
     volume_id: int,
     issue_id: Union[int, None] = None,
-    _volume_data: Union[Dict[str, Any], None] = None,
+    _volume_data: Union[VolumeData, None] = None,
     _volume_number: Union[int, Tuple[int, int], None] = None
-) -> dict:
-    """Get the values of the formatting keys for a volume or issue
+) -> Dict[str, Any]:
+    """Get the values of the formatting keys for a volume or issue.
 
     Args:
-        volume_id (int): The id of the volume
+        volume_id (int): The id of the volume.
 
         issue_id (Union[int, None], optional): The id of the issue.
             Defaults to None.
 
-        _volume_data (Union[dict, None], optional): Instead of fetching data
-        based on the volume id, work with the data given in this variable.
+        _volume_data (Union[VolumeData, None], optional): Instead of fetching
+        data based on the volume id, work with the data given in this variable.
             Defaults to None.
 
         _volume_number (Union[int, Tuple[int, int], None], optional):
@@ -107,21 +111,28 @@ def _get_formatting_data(
             Defaults to None.
 
     Raises:
-        VolumeNotFound: The volume id doesn't map to any volume in the library
-        IssueNotFound: The issue id doesn't map to any issue in the volume
+        VolumeNotFound: The volume id doesn't map to any volume in the library.
+        IssueNotFound: The issue id doesn't map to any issue in the volume.
 
     Returns:
-        dict: The formatting keys and their values for the item
+        Dict[str, Any]: The formatting keys and their values for the item.
     """
-    volume_data = _volume_data or asdict(
-        Volume(volume_id, check_existence=True).get_keys(
-            ('comicvine_id',
+    if _volume_data is not None:
+        volume_data = _volume_data
+    else:
+        volume_data = Volume(volume_id, check_existence=True).get_keys((
+            'comicvine_id',
             'title', 'year', 'volume_number',
-            'publisher', 'special_version')
-        )
-    )
-    if _volume_number is not None:
-        volume_data['volume_number'] = _volume_number
+            'publisher', 'special_version'
+        ))
+
+    if _volume_number:
+        _vn = _volume_number
+    else:
+        _vn = volume_data.volume_number
+
+    if not isinstance(_vn, tuple):
+        _vn = (_vn,)
 
     settings = Settings()
     long_special_version = settings['long_special_version']
@@ -129,22 +140,17 @@ def _get_formatting_data(
     issue_padding = settings['issue_padding']
 
     # Build formatted data
-    if volume_data['title'].startswith('The '):
-        clean_title = volume_data['title'] + ', The'
-    elif volume_data['title'].startswith('A '):
-        clean_title = volume_data['title'] + ', A'
+    if volume_data.title.startswith('The '):
+        clean_title = volume_data.title + ', The'
+    elif volume_data.title.startswith('A '):
+        clean_title = volume_data.title + ', A'
     else:
-        clean_title = volume_data['title'] or 'Unknown'
+        clean_title = volume_data.title or 'Unknown'
 
-    if not isinstance(volume_data['volume_number'], tuple):
-        volume_number = (str(volume_data['volume_number'])
-            .zfill(volume_padding))
-
-    else:
-        volume_number = ' - '.join((
-            str(n).zfill(volume_padding)
-            for n in volume_data['volume_number']
-        ))
+    volume_number = ' - '.join((
+        str(n).zfill(volume_padding)
+        for n in _vn
+    ))
 
     if long_special_version:
         sv_mapping = full_sv_mapping
@@ -152,7 +158,7 @@ def _get_formatting_data(
         sv_mapping = short_sv_mapping
 
     formatting_data = {
-        'series_name': ((volume_data.get('title') or 'Unknown')
+        'series_name': ((volume_data.title or 'Unknown')
             .replace('/', '')
             .replace(r'\\', '')
         ),
@@ -161,17 +167,16 @@ def _get_formatting_data(
             .replace(r'\\', '')
         ),
         'volume_number': volume_number,
-        'comicvine_id': volume_data.get('comicvine_id') or 'Unknown',
-        'year': volume_data.get('year') or 'Unknown',
-        'publisher': volume_data.get('publisher') or 'Unknown',
-        'special_version': sv_mapping.get(volume_data['special_version'])
+        'comicvine_id': volume_data.comicvine_id or 'Unknown',
+        'year': volume_data.year or 'Unknown',
+        'publisher': volume_data.publisher or 'Unknown',
+        'special_version': sv_mapping.get(volume_data.special_version)
     }
 
     if issue_id:
         # Add issue data if issue is found
-        issue_data = Issue(issue_id, check_existence=True).get_keys(
-            ('comicvine_id', 'issue_number', 'title', 'date')
-        )
+        issue_data: Dict[str, Any] = Issue(issue_id, check_existence=True).get_keys(
+            ('comicvine_id', 'issue_number', 'title', 'date'))
 
         formatting_data.update({
             'issue_comicvine_id': issue_data.get('comicvine_id') or 'Unknown',
@@ -196,19 +201,19 @@ def _get_formatting_data(
 
 def generate_volume_folder_name(
     volume_id: int,
-    _volume_data: Union[Dict[str, Any], None] = None
+    _volume_data: Union[VolumeData, None] = None
 ) -> str:
     """Generate a volume folder name based on the format string
 
     Args:
         volume_id (int): The id of the volume for which to generate the string
 
-        _volume_data (Union[Dict[str, Any], None], optional): Instead of fetching data based on
-        the volume id, work with the data given in this variable.
+        _volume_data (Union[VolumeData, None], optional): Instead of fetching
+        data based on the volume id, work with the data given in this variable.
             Defaults to None.
 
     Returns:
-        str: The volume folder name
+        str: The volume folder name.
     """
     formatting_data = _get_formatting_data(volume_id, None, _volume_data)
     format: str = Settings()['volume_folder_naming']

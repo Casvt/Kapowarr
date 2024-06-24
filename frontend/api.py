@@ -34,7 +34,7 @@ from backend.download_direct_clients import credentials
 from backend.download_queue import (DownloadHandler, delete_download_history,
                                     get_download_history)
 from backend.download_torrent_clients import TorrentClients, client_types
-from backend.enums import BlocklistReason, BlocklistReasonID
+from backend.enums import BlocklistReason, BlocklistReasonID, SpecialVersion
 from backend.library_import import import_library, propose_library_import
 from backend.logging import LOGGER, get_debug_log_filepath
 from backend.mass_edit import MassEditorVariables, action_to_func
@@ -45,7 +45,7 @@ from backend.server import SERVER
 from backend.settings import Settings, about_data
 from backend.tasks import (Task, TaskHandler, delete_task_history,
                            get_task_history, get_task_planning, task_library)
-from backend.volumes import Library, search_volumes
+from backend.volumes import Library, VolumeData, search_volumes
 
 api = Blueprint('api', __name__)
 root_folders = RootFolders()
@@ -555,7 +555,7 @@ def api_volumes_search():
         return return_api(search_results)
 
     elif request.method == 'POST':
-        data = request.get_json()
+        data: Dict[str, Any] = request.get_json()
         for key in (
             'comicvine_id',
             'title', 'year', 'volume_number',
@@ -564,7 +564,16 @@ def api_volumes_search():
             if key not in data:
                 raise KeyNotFound(key)
 
-        folder = generate_volume_folder_name(-1, data)
+        vd = VolumeData(
+            comicvine_id=data['comicvine_id'],
+            title=data['title'],
+            year=data['year'],
+            volume_number=data['volume_number'],
+            publisher=data['publisher'],
+            special_version=SpecialVersion(data.get('special_version'))
+        )
+
+        folder = generate_volume_folder_name(-1, vd)
         return return_api({'folder': folder})
 
 
