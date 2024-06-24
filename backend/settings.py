@@ -71,7 +71,7 @@ private_settings = {
     'comicvine_api_url': 'https://comicvine.gamespot.com/api',
     'getcomics_url': 'https://getcomics.org',
     'hosting_threads': 10,
-    'version': 'alpha-27',
+    'version': 'alpha-28',
     'python_version': get_python_version(),
     'torrent_update_interval': 5, # Seconds
     'torrent_tag': 'kapowarr',
