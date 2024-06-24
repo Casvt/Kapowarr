@@ -53,7 +53,7 @@ LOGGING_CONFIG = {
             "datefmt": "%H:%M:%S"
         },
         "detailed": {
-            "format": "%(asctime)s | %(threadName)s | %(filename)sL%(lineno)s | %(levelname)s | %(message)s",
+            "format": "%(asctime)s | %(processName)s | %(threadName)s | %(filename)sL%(lineno)s | %(levelname)s | %(message)s",
             "datefmt": "%Y-%m-%dT%H:%M:%S%z",
         }
     },
