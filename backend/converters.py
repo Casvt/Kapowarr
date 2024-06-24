@@ -205,7 +205,7 @@ class ZIPtoFOLDER(FileConverter):
         zip_folder = join(
             volume_folder,
             archive_extract_folder,
-            splitext('_'.join(file.split(sep)))[0]
+            splitext('_'.join(file.split(sep)[-3:]))[0]
         )
 
         with ZipFile(file, 'r') as zip:
@@ -356,7 +356,7 @@ class RARtoFOLDER(FileConverter):
         rar_folder = join(
             volume_folder,
             archive_extract_folder,
-            splitext(basename(file))[0]
+            splitext('_'.join(file.split(sep)[-3:]))[0]
         )
 
         mkdir(rar_folder)
