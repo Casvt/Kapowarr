@@ -438,6 +438,72 @@ class _VolumeBackend:
 
         return last_issue_date
 
+    def _get_files(self, issue_id: Union[int, None] = None) -> List[str]:
+        """Get the files matched to the volume.
+
+        Args:
+            issue_id (Union[int, None], optional): The specific issue to get
+            the files of.
+                Based on ID of issue.
+
+                Defaults to None.
+
+        Returns:
+            List[str]: List of filepaths.
+        """
+        if not issue_id:
+            files = first_of_column(get_db().execute(f"""
+                SELECT DISTINCT filepath
+                FROM files f
+                INNER JOIN issues_files if
+                INNER JOIN issues i
+                ON
+                    f.id = if.file_id
+                    AND if.issue_id = i.id
+                WHERE volume_id = ?;
+                """,
+                (self.id,)
+            ))
+
+        else:
+            files = first_of_column(get_db().execute(f"""
+                SELECT DISTINCT filepath
+                FROM files f
+                INNER JOIN issues_files if
+                ON f.id = if.file_id
+                WHERE if.issue_id = ?;
+                """,
+                (issue_id,)
+            ))
+
+        return files
+
+    def _get_general_files(self, include_id: bool = False) -> List[dict]:
+        """Get the general files linked to the volume.
+
+        Args:
+            include_id (bool, optional): Also fetch the file ids.
+                Defaults to False.
+
+        Returns:
+            List[dict]: The general files. The 'filepath' key gives the
+            filepath. The 'file_type' key gives the type of the general file
+            (e.g. 'metadata').
+        """
+        file_ids = ', file_id' if include_id else ''
+        return [
+            dict(r)
+            for r in get_db(dict).execute(f"""
+                SELECT filepath, file_type{file_ids}
+                FROM files f
+                INNER JOIN volume_files vf
+                ON f.id = vf.file_id
+                WHERE volume_id = ?;
+                """,
+                (self.id,)
+            )
+        ]
+
     def __getitem__(self, key: str) -> Any:
         if key == 'cover':
             return self._get_cover()
@@ -536,8 +602,8 @@ class _VolumeBackend:
 
         file_changes = propose_basefolder_change(
             (
-                *self.get_files(), # type: ignore
-                *(f['filepath'] for f in self.get_general_files()) # type: ignore
+                *self._get_files(),
+                *(f['filepath'] for f in self._get_general_files())
             ),
             current_root_folder[1],
             desired_root_folder[1]
@@ -607,8 +673,8 @@ class _VolumeBackend:
 
         file_changes = propose_basefolder_change(
             (
-                *self.get_files(), # type: ignore
-                *(f['filepath'] for f in self.get_general_files()) # type: ignore
+                *self._get_files(),
+                *(f['filepath'] for f in self._get_general_files())
             ),
             current_volume_folder,
             new_volume_folder
@@ -749,32 +815,7 @@ class Volume(_VolumeBackend):
         Returns:
             List[str]: List of filepaths.
         """
-        if not issue_id:
-            files = first_of_column(get_db().execute(f"""
-                SELECT DISTINCT filepath
-                FROM files f
-                INNER JOIN issues_files if
-                INNER JOIN issues i
-                ON
-                    f.id = if.file_id
-                    AND if.issue_id = i.id
-                WHERE volume_id = ?;
-                """,
-                (self.id,)
-            ))
-
-        else:
-            files = first_of_column(get_db().execute(f"""
-                SELECT DISTINCT filepath
-                FROM files f
-                INNER JOIN issues_files if
-                ON f.id = if.file_id
-                WHERE if.issue_id = ?;
-                """,
-                (issue_id,)
-            ))
-
-        return files
+        return self._get_files(issue_id=issue_id)
 
     def get_general_files(self, include_id: bool = False) -> List[dict]:
         """Get the general files linked to the volume.
@@ -788,19 +829,7 @@ class Volume(_VolumeBackend):
             filepath. The 'file_type' key gives the type of the general file
             (e.g. 'metadata').
         """
-        file_ids = ', file_id' if include_id else ''
-        return [
-            dict(r)
-            for r in get_db(dict).execute(f"""
-                SELECT filepath, file_type{file_ids}
-                FROM files f
-                INNER JOIN volume_files vf
-                ON f.id = vf.file_id
-                WHERE volume_id = ?;
-                """,
-                (self.id,)
-            )
-        ]
+        return self._get_general_files(include_id=include_id)
 
     def get_issues(self) -> List[dict]:
         """Get list of issues that are in the volume.
