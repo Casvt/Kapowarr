@@ -20,8 +20,8 @@ from backend.download_direct_clients import (BaseDirectDownload,
                                              Download, MegaDownload)
 from backend.download_general import ExternalDownload
 from backend.download_torrent_clients import TorrentClients, TorrentDownload
-from backend.enums import (BlocklistReason, DownloadState,
-                           FailReason, SeedingHandling)
+from backend.enums import (BlocklistReason, DownloadSource,
+                           DownloadState, FailReason, SeedingHandling)
 from backend.files import create_folder, delete_file_folder
 from backend.getcomics import extract_GC_download_links
 from backend.helpers import first_of_column
@@ -280,7 +280,7 @@ class DownloadHandler:
                         None,
                         download.download_link,
                         download._filename_body,
-                        download.source,
+                        download.source.value,
                         download.volume_id,
                         download.issue_id,
                         download.web_link,
@@ -336,7 +336,7 @@ class DownloadHandler:
                     dl_instance = download_type_to_class[download['client_type']](
                         download_link=download['download_link'],
                         filename_body=download['filename_body'],
-                        source=download['source'],
+                        source=DownloadSource(download['source']),
                         custom_name=True
                     )
                     dl_instance.id = download['id']

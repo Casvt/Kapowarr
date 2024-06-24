@@ -17,7 +17,7 @@ from backend.helpers import CommaList, DB_ThreadSafeSingleton
 from backend.logging import LOGGER, set_log_level
 
 __DATABASE_FILEPATH__ = 'db', 'Kapowarr.db'
-__DATABASE_VERSION__ = 23
+__DATABASE_VERSION__ = 24
 __DATABASE_TIMEOUT__ = 10.0
 
 
@@ -715,6 +715,29 @@ def migrate_db(current_db_version: int) -> None:
                 FOREIGN KEY (issue_id) REFERENCES issues(id)
             );
         """)
+
+        current_db_version = s['database_version'] = current_db_version + 1
+        s._save_to_database()
+
+    if current_db_version == 23:
+        # V23 -> V24
+
+        from backend.enums import GCDownloadSource
+        source_string_to_enum = {
+            'mega': GCDownloadSource.MEGA.value,
+            'mediafire': GCDownloadSource.MEDIAFIRE.value,
+            'wetransfer': GCDownloadSource.WETRANSFER.value,
+            'pixeldrain': GCDownloadSource.PIXELDRAIN.value,
+            'getcomics': GCDownloadSource.GETCOMICS.value,
+            'getcomics (torrent)': GCDownloadSource.GETCOMICS_TORRENT.value
+        }
+
+        new_service_preference = CommaList((
+            source_string_to_enum[service]
+            for service in s['service_preference']
+        ))
+
+        s['service_preference'] = new_service_preference
 
         current_db_version = s['database_version'] = current_db_version + 1
         s._save_to_database()

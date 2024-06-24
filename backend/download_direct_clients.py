@@ -19,7 +19,7 @@ from requests import RequestException
 from backend.credentials import Credentials
 from backend.custom_exceptions import LinkBroken
 from backend.download_general import Download
-from backend.enums import BlocklistReason, DownloadState
+from backend.enums import BlocklistReason, DownloadSource, DownloadState
 from backend.helpers import Session, get_first_of_range
 from backend.logging import LOGGER
 from backend.server import WebSocket
@@ -47,7 +47,7 @@ class BaseDirectDownload(Download):
     def __init__(self,
         download_link: str,
         filename_body: str,
-        source: str,
+        source: DownloadSource,
         custom_name: bool = True
     ) -> None:
         LOGGER.debug(f'Creating download: {download_link}, {filename_body}')
@@ -176,7 +176,7 @@ class BaseDirectDownload(Download):
             'download_link': self.download_link,
             'pure_link': self.pure_link,
 
-            'source': self.source,
+            'source': self.source.value,
             'type': self.type,
 
             'file': self.file,
@@ -305,7 +305,7 @@ class MegaDownload(BaseDirectDownload):
     def __init__(self,
         download_link: str,
         filename_body: str,
-        source: str = "mega",
+        source: DownloadSource = DownloadSource.MEGA,
         custom_name: bool = True
     ):
         LOGGER.debug(

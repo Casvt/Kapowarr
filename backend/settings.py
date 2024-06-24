@@ -4,26 +4,35 @@ from json import dump, load
 from logging import INFO
 from os import urandom
 from os.path import isdir, join, sep
-from typing import Any
+from typing import Any, Dict, Tuple
 
 from backend.custom_exceptions import (FolderNotFound, InvalidSettingKey,
                                        InvalidSettingModification,
                                        InvalidSettingValue)
 from backend.db import __DATABASE_FILEPATH__, __DATABASE_VERSION__, get_db
-from backend.enums import SeedingHandling
+from backend.enums import GCDownloadSource, SeedingHandling
 from backend.files import folder_path
-from backend.helpers import (CommaList, Singleton,
-                             first_of_column, get_python_version)
+from backend.helpers import CommaList, Singleton, get_python_version
 from backend.logging import LOGGER, set_log_level
 
-supported_source_strings = (
-    ('mega', 'mega link'),
-    ('mediafire', 'mediafire link'),
-    ('wetransfer', 'we transfer', 'wetransfer link', 'we transfer link'),
-    ('pixeldrain', 'pixel drain', 'pixeldrain link', 'pixel drain link'),
-    ('getcomics', 'download now', 'main download', 'main server', 'main link',
-     'mirror download', 'mirror server', 'mirror link', 'link 1', 'link 2'),
-    ('getcomics (torrent)', 'torrent', 'torrent link', 'magnet', 'magnet link'))
+download_source_versions: Dict[GCDownloadSource, Tuple[str, ...]] = dict((
+    (GCDownloadSource.MEGA, ('mega', 'mega link')),
+    (GCDownloadSource.MEDIAFIRE, ('mediafire', 'mediafire link')),
+    (GCDownloadSource.WETRANSFER,
+        ('wetransfer', 'we transfer', 'wetransfer link', 'we transfer link')),
+    (GCDownloadSource.PIXELDRAIN,
+        ('pixeldrain', 'pixel drain', 'pixeldrain link', 'pixel drain link')),
+    (GCDownloadSource.GETCOMICS,
+        ('getcomics', 'download now', 'main download', 'main server', 'main link',
+       'mirror download', 'mirror server', 'mirror link', 'link 1', 'link 2')),
+    (GCDownloadSource.GETCOMICS_TORRENT,
+        ('getcomics (torrent)', 'torrent', 'torrent link', 'magnet',
+        'magnet link')),
+))
+"""
+GCDownloadSource to strings that can be found in the button text for the
+service on the GC page.
+"""
 
 default_settings = {
     'database_version': __DATABASE_VERSION__,
@@ -46,7 +55,7 @@ default_settings = {
     'issue_padding': 3,
 
     'service_preference': str(CommaList(
-        first_of_column(supported_source_strings)
+        (s.value for s in GCDownloadSource._member_map_.values())
     )),
     'download_folder': folder_path('temp_downloads'),
     'seeding_handling': SeedingHandling.COPY.value,
@@ -208,7 +217,10 @@ class Settings(metaclass=Singleton):
                 from backend.conversion import get_available_formats
                 available = get_available_formats()
             elif key == 'service_preference':
-                available = first_of_column(supported_source_strings)
+                available = [
+                    s.value
+                    for s in GCDownloadSource._member_map_.values()
+                ]
 
             if not isinstance(value, list):
                 raise InvalidSettingValue(key, value)

@@ -4,14 +4,16 @@
 General "helper" functions and classes
 """
 
+from __future__ import annotations
+
 from asyncio import sleep
 from multiprocessing.pool import Pool
 from os import symlink
 from os.path import exists, join
 from sys import base_exec_prefix, executable, platform, version_info
 from threading import current_thread
-from typing import (Any, Dict, Generator, Iterable, Iterator, List,
-                    Mapping, Sequence, Tuple, TypedDict, TypeVar, Union)
+from typing import (TYPE_CHECKING, Any, Dict, Generator, Iterable, Iterator,
+                    List, Mapping, Sequence, Tuple, TypedDict, TypeVar, Union)
 from urllib.parse import unquote
 
 from aiohttp import ClientError, ClientSession
@@ -20,6 +22,9 @@ from requests import Session as RSession
 from requests.adapters import HTTPAdapter, Retry
 
 from backend.logging import LOGGER
+
+if TYPE_CHECKING:
+    from backend.enums import GCDownloadSource
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -293,7 +298,7 @@ class CVFileMapping(TypedDict):
 class DownloadGroup(TypedDict):
     web_sub_title: str
     info: FilenameData
-    links: Dict[str, List[str]]
+    links: Dict[GCDownloadSource, List[str]]
 
 
 class ClientTestResult(TypedDict):

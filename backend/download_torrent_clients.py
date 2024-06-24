@@ -14,7 +14,7 @@ from backend.custom_exceptions import (InvalidKeyValue, LinkBroken,
                                        TorrentClientNotWorking)
 from backend.db import get_db
 from backend.download_general import BaseTorrentClient, ExternalDownload
-from backend.enums import BlocklistReason, DownloadState
+from backend.enums import BlocklistReason, DownloadSource, DownloadState
 from backend.helpers import ClientTestResult, Session, get_torrent_info
 from backend.logging import LOGGER
 from backend.settings import Settings
@@ -227,7 +227,7 @@ class TorrentDownload(ExternalDownload):
         self,
         download_link: str,
         filename_body: str,
-        source: str,
+        source: DownloadSource,
         custom_name: bool = True
     ) -> None:
         LOGGER.debug(
@@ -325,7 +325,7 @@ class TorrentDownload(ExternalDownload):
             'download_link': self.download_link,
             'pure_link': self.download_link,
 
-            'source': self.source,
+            'source': self.source.value,
             'type': self.type,
 
             'file': self.file,

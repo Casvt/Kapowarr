@@ -21,7 +21,8 @@ from backend.download_direct_clients import (DirectDownload, Download,
                                              MegaDownload, PixelDrainDownload,
                                              WeTransferDownload)
 from backend.download_torrent_clients import TorrentDownload
-from backend.enums import BlocklistReason, FailReason, SpecialVersion
+from backend.enums import (BlocklistReason, DownloadSource, FailReason,
+                           GCDownloadSource, SpecialVersion)
 from backend.file_extraction import extract_filename_data
 from backend.helpers import (DownloadGroup, FilenameData,
                              Session, check_overlapping_issues,
@@ -30,7 +31,7 @@ from backend.logging import LOGGER
 from backend.matching import GC_group_filter
 from backend.naming import (generate_empty_name, generate_issue_name,
                             generate_issue_range_name, generate_sv_name)
-from backend.settings import Settings, supported_source_strings
+from backend.settings import Settings, download_source_versions
 from backend.volumes import Volume
 
 # autopep8: off
@@ -48,7 +49,7 @@ def _check_download_link(
     link_text: str,
     link: str,
     torrent_client_available: bool
-) -> Union[str, None]:
+) -> Union[GCDownloadSource, None]:
     """Check if download link is supported and allowed.
 
     Args:
@@ -57,8 +58,8 @@ def _check_download_link(
         torrent_client_available (bool): Whether or not a torrent client is available.
 
     Returns:
-        Union[str, None]: Either the name of the service (e.g. `mega`)
-        or `None` if it's not allowed.
+        Union[GCDownloadSource, None]: Either the GC service that the button
+        is for or `None` if it's not allowed/unknown.
     """
     LOGGER.debug(f'Checking download link: {link}, {link_text}')
     if not link:
@@ -73,15 +74,16 @@ def _check_download_link(
         return
 
     # Check if link is from supported source
-    for source in supported_source_strings:
-        if any(s in link_text for s in source):
+    for source, versions in download_source_versions.items():
+        if any(s in link_text for s in versions):
             LOGGER.debug(
-                f'Checking download link: {link_text} maps to {source[0]}')
+                f'Checking download link: {link_text} maps to {source.value}'
+            )
 
-            if 'torrent' in source[0] and not torrent_client_available:
+            if 'torrent' in source.value and not torrent_client_available:
                 return
 
-            return source[0]
+            return source
 
     return
 
@@ -109,7 +111,7 @@ def _purify_link(link: str) -> dict:
         return {
             'download_link': link,
             'target': TorrentDownload,
-            'source': 'getcomics (torrent)'
+            'source': DownloadSource.GETCOMICS_TORRENT
         }
 
     elif link.startswith('http'):
@@ -129,7 +131,7 @@ def _purify_link(link: str) -> dict:
             return {
                 'download_link': url,
                 'target': MegaDownload,
-                'source': 'mega'
+                'source': DownloadSource.MEGA
             }
 
         elif mediafire_regex.search(url):
@@ -143,7 +145,7 @@ def _purify_link(link: str) -> dict:
                 return {
                     'download_link': url,
                     'target': MediaFireFolderDownload,
-                    'source': 'mediafire'
+                    'source': DownloadSource.MEDIAFIRE
                 }
 
             else:
@@ -151,7 +153,7 @@ def _purify_link(link: str) -> dict:
                 return {
                     'download_link': url,
                     'target': MediaFireDownload,
-                    'source': 'mediafire'
+                    'source': DownloadSource.MEDIAFIRE
                 }
 
         elif mediafire_dd_regex.search(url):
@@ -162,7 +164,7 @@ def _purify_link(link: str) -> dict:
             return {
                 'download_link': url,
                 'target': DirectDownload,
-                'source': 'mediafire'
+                'source': DownloadSource.MEDIAFIRE
             }
 
         elif wetransfer_regex.search(url):
@@ -170,7 +172,7 @@ def _purify_link(link: str) -> dict:
             return {
                 'download_link': url,
                 'target': WeTransferDownload,
-                'source': 'wetransfer'
+                'source': DownloadSource.WETRANSFER
             }
 
         elif pixeldrain_regex.search(url):
@@ -178,7 +180,7 @@ def _purify_link(link: str) -> dict:
             return {
                 'download_link': url,
                 'target': PixelDrainDownload,
-                'source': 'pixeldrain'
+                'source': DownloadSource.PIXELDRAIN
             }
 
         elif r.headers.get('Content-Type', '') == 'application/x-bittorrent':
@@ -187,7 +189,7 @@ def _purify_link(link: str) -> dict:
             return {
                 'download_link': "magnet:?xt=urn:btih:" + hash + "&tr=udp://tracker.cyberia.is:6969/announce&tr=udp://tracker.port443.xyz:6969/announce&tr=http://tracker3.itzmx.com:6961/announce&tr=udp://tracker.moeking.me:6969/announce&tr=http://vps02.net.orel.ru:80/announce&tr=http://tracker.openzim.org:80/announce&tr=udp://tracker.skynetcloud.tk:6969/announce&tr=https://1.tracker.eu.org:443/announce&tr=https://3.tracker.eu.org:443/announce&tr=http://re-tracker.uz:80/announce&tr=https://tracker.parrotsec.org:443/announce&tr=udp://explodie.org:6969/announce&tr=udp://tracker.filemail.com:6969/announce&tr=udp://tracker.nyaa.uk:6969/announce&tr=udp://retracker.netbynet.ru:2710/announce&tr=http://tracker.gbitt.info:80/announce&tr=http://tracker2.dler.org:80/announce",
                 'target': TorrentDownload,
-                'source': 'getcomics (torrent)'
+                'source': DownloadSource.GETCOMICS_TORRENT
             }
 
         # Link is direct download from getcomics
@@ -195,7 +197,7 @@ def _purify_link(link: str) -> dict:
         return {
             'download_link': url,
             'target': DirectDownload,
-            'source': 'getcomics'
+            'source': DownloadSource.GETCOMICS
         }
 
     else:
@@ -212,7 +214,7 @@ link_filter_1: Callable[[Tag], bool] = lambda e: (
 def _extract_button_links(
     body: Tag,
     torrent_client_available: bool
-) -> dict:
+) -> Dict[str, Dict[GCDownloadSource, List[str]]]:
     """Extract download groups that are a list of big buttons.
 
     Args:
@@ -220,10 +222,10 @@ def _extract_button_links(
         torrent_client_available (bool): Whether or not a client is available.
 
     Returns:
-        dict: The download groups.
+        Dict[str, Dict[GCDownloadSource, List[str]]]: The download groups.
         Follows format described in `_extract_get_comics_links()`.
     """
-    download_groups: Dict[str, Dict[str, List[str]]] = {}
+    download_groups: Dict[str, Dict[GCDownloadSource, List[str]]] = {}
     for result in body.find_all(link_filter_1):
         result: Tag
         extracted_title = result.get_text('\x00')
@@ -290,7 +292,7 @@ link_filter_2: Callable[[Tag], bool] = lambda e: (
 def _extract_list_links(
     body: Tag,
     torrent_client_available: bool
-) -> dict:
+) -> Dict[str, Dict[GCDownloadSource, List[str]]]:
     """Extract download groups that are in a unsorted list.
 
     Args:
@@ -298,10 +300,10 @@ def _extract_list_links(
         torrent_client_available (bool): Whether or not a client is available.
 
     Returns:
-        dict: The download groups.
+        Dict[str, Dict[GCDownloadSource, List[str]]]: The download groups.
         Follows format described in `_extract_get_comics_links()`.
     """
-    download_groups: Dict[str, Dict[str, List[str]]] = {}
+    download_groups: Dict[str, Dict[GCDownloadSource, List[str]]] = {}
     for result in body.find_all(link_filter_2):
         title: str = result.get_text('\x00').partition('\x00')[0]
 
@@ -333,7 +335,7 @@ def _extract_list_links(
 
 def _extract_get_comics_links(
     soup: BeautifulSoup
-) -> Dict[str, Dict[str, List[str]]]:
+) -> Dict[str, Dict[GCDownloadSource, List[str]]]:
     """Go through the getcomics page and extract all download links.
     The links are grouped. All links in a group lead to the same download,
     only via different services (mega, direct download, mirror download, etc.).
@@ -342,14 +344,14 @@ def _extract_get_comics_links(
         soup (BeautifulSoup): The soup of the getcomics page.
 
     Returns:
-        Dict[str, Dict[str, List[str]]]: The outer dict maps the group name to the group.
-        The group is a dict that maps each service in the group to a list of links
-        for that service.
+        Dict[str, Dict[GCDownloadSource, List[str]]]: The outer dict maps the
+        group name to the group. The group is a dict that maps each service in\
+        the group to a list of links for that service.
         Example:
             {
                 'Amazing Spider-Man V1 Issue 1-10': {
-                    'mega': ['https://mega.io/abc'],
-                    'direct': [
+                    GCDownloadSource.MEGA: ['https://mega.io/abc'],
+                    GCDownloadSource.GetComics: [
                         'https://main.server.com/abc',
                         'https://mirror.server.com/abc'
                     ]
@@ -403,7 +405,7 @@ def _sort_link_paths(p: List[DownloadGroup]) -> Tuple[float, int]:
 
 
 def _create_link_paths(
-    download_groups: Dict[str, Dict[str, List[str]]],
+    download_groups: Dict[str, Dict[GCDownloadSource, List[str]]],
     volume_id: int
 ) -> List[List[DownloadGroup]]:
     """Based on the download groups, find different "paths" to download
@@ -416,8 +418,8 @@ def _create_link_paths(
     if path 1 doesn't work, to still get the most content out of the page.
 
     Args:
-        download_groups (Dict[str, Dict[str, List[str]]]): The download groups.
-        Output of `download._extract_get_comics_links()`.
+        download_groups (Dict[str, Dict[GCDownloadSource, List[str]]]):
+        The download groups. Output of `download._extract_get_comics_links()`.
         volume_id (int): The id of the volume.
 
     Returns:
@@ -458,7 +460,7 @@ def _create_link_paths(
                 s: sources[s]
                 for s in sorted(
                     sources,
-                    key=lambda k: service_preference.index(k)
+                    key=lambda k: service_preference.index(k.value)
                 )
             }
             path_entry: DownloadGroup = {

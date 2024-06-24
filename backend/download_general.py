@@ -11,7 +11,7 @@ from typing import List, Sequence, Tuple, Union
 from backend.custom_exceptions import (ClientDownloading, InvalidKeyValue,
                                        KeyNotFound, TorrentClientNotWorking)
 from backend.db import get_db
-from backend.enums import DownloadState
+from backend.enums import DownloadSource, DownloadState
 
 
 class Download(ABC):
@@ -31,7 +31,7 @@ class Download(ABC):
     "The link to the download or service page (e.g. link to MF page)"
     pure_link: str
     "The pure link to download from (e.g. pixeldrain API link or MF folder ID)"
-    source: str
+    source: DownloadSource
     type: str
 
     _filename_body: str
@@ -48,7 +48,7 @@ class Download(ABC):
         self,
         download_link: str,
         filename_body: str,
-        source: str,
+        source: DownloadSource,
         custom_name: bool = True
     ) -> None:
         """Create the download instance
@@ -59,7 +59,7 @@ class Download(ABC):
 
             filename_body (str): The body of the file to download to
 
-            source (str): The source of the download
+            source (DownloadSource): The source of the download
 
             custom_name (bool, optional): Whether or not to use the filename body
             or to use the default name of the download. Defaults to True.

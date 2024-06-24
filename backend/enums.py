@@ -87,3 +87,26 @@ class FailReason(BaseEnum):
 class GeneralFileType(BaseEnum):
     METADATA = 'metadata'
     COVER = 'cover'
+
+
+class GCDownloadSource(BaseEnum):
+    MEGA = 'Mega'
+    MEDIAFIRE = 'MediaFire'
+    WETRANSFER = 'WeTransfer'
+    PIXELDRAIN = 'Pixeldrain'
+    GETCOMICS = 'GetComics'
+    GETCOMICS_TORRENT = 'GetComics (torrent)'
+
+
+# Future proofing. In the future, there'll be sources like 'torrent' and
+# 'usenet'. In part of the code, we want access to all download sources,
+# and in the other part we only want the GC services. So in preparation
+# of the torrent and usenet sources coming, we're already making the
+# distinction here.
+class DownloadSource(BaseEnum):
+    MEGA = 'Mega'
+    MEDIAFIRE = 'MediaFire'
+    WETRANSFER = 'WeTransfer'
+    PIXELDRAIN = 'Pixeldrain'
+    GETCOMICS = 'GetComics'
+    GETCOMICS_TORRENT = 'GetComics (torrent)'
