@@ -11,6 +11,7 @@ from sys import platform
 from typing import Dict, Iterable, List, Set, Tuple, Type, Union
 
 from backend.converters import FileConverter, rar_executables
+from backend.db import get_db
 from backend.enums import SpecialVersion
 from backend.file_extraction import extract_filename_data
 from backend.helpers import PortablePool
@@ -246,6 +247,8 @@ def mass_convert(
         )
 
     else:
+        # Commit changes because new connections are opened in the processes
+        get_db().connection.commit()
         with PortablePool(processes=processes) as pool:
             if update_websocket:
                 ws = WebSocket()
@@ -254,7 +257,7 @@ def mass_convert(
                 ws.update_task_status(
                     message=f'Converted {completed}/{total}'
                 )
-                for result in pool.imap_unordered(
+                for _ in pool.imap_unordered(
                     map_convert_file,
                     planned_conversions
                 ):
