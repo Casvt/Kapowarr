@@ -1,6 +1,9 @@
 const QEls = {
 	queue: document.querySelector('#queue'),
-	queue_entry: document.querySelector('.pre-build-els .queue-entry')
+	queue_entry: document.querySelector('.pre-build-els .queue-entry'),
+    tool_bar: {
+        remove_all: document.querySelector('#removeall-button')
+    }
 };
 
 //
@@ -57,6 +60,10 @@ function fillQueue(api_key) {
 //
 // Actions
 //
+function deleteAll(api_key) {
+   sendAPI('DELETE', '/activity/queue', api_key); 
+};
+
 function deleteEntry(id, api_key) {
 	sendAPI('DELETE', `/activity/queue/${id}`, api_key);
 };
@@ -69,4 +76,5 @@ usingApiKey()
 	socket.on('queue_added', data => addQueueEntry(api_key, data));
 	socket.on('queue_status', updateQueueEntry);
 	socket.on('queue_ended', data => removeQueueEntry(data.id));
+    QEls.tool_bar.remove_all.onclick = e => deleteAll(api_key);
 });

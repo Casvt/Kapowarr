@@ -777,12 +777,17 @@ def api_issue_download(id: int):
     )
 
 
-@api.route('/activity/queue', methods=['GET'])
+@api.route('/activity/queue', methods=['GET', 'DELETE'])
 @error_handler
 @auth
 def api_downloads():
-    result = download_handler.get_all()
-    return return_api(result)
+    if request.method == 'GET':
+        result = download_handler.get_all()
+        return return_api(result)
+
+    elif request.method == 'DELETE':
+        download_handler.remove_all()
+        return return_api({})
 
 
 @api.route('/activity/queue/<int:download_id>', methods=['GET', 'DELETE'])

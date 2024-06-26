@@ -518,6 +518,14 @@ class DownloadHandler:
 
         return
 
+    def remove_all(self) -> None:
+        """
+        Remove all downloads from the queue
+        """
+        for download in self.queue[::-1]:
+            self.remove(download.id)
+        return
+
     def create_download_folder(self) -> None:
         """
         Create the download folder if it doesn't already.

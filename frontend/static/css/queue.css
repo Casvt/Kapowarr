@@ -1,10 +1,16 @@
 main {
-	overflow-x: hidden;
+    position: relative;
+}
+
+#empty-window {
+    position: absolute;
+    inset: 0 0 0 0;
+    background-color: var(--background-color);
 }
 
 main:has(#queue tr) #empty-window,
-main:not(:has(#queue tr)) #queue-window {
-	display: none;
+main:not(:has(#queue tr)) .tool-bar-container {
+    display: none;
 }
 
 table {
@@ -36,4 +42,10 @@ th, td {
 
 .option-column button img {
 	width: 20px;
+}
+
+@media (min-width: 720px) {
+    main {
+        width: calc(100vw - var(--nav-width));
+    }
 }

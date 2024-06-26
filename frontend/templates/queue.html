@@ -29,25 +29,35 @@
 {% endblock %}
 
 {% block main %}
-<main>
-	<section id="empty-window" class="loading-screen">
-		<p>Queue empty</p>
-	</section>
-	<section id="queue-window" class="main-window icon-text-color">
-		<table>
-			<thead>
-				<tr>
-					<th class="status-column">Status</th>
-					<th>Title</th>
-					<th class="status-column">Source</th>
-					<th class="number-column">Size</th>
-					<th class="number-column">Speed</th>
-					<th class="number-column">Progress</th>
-					<th class="option-column">Delete</th>
-				</tr>
-			</thead>
-			<tbody id="queue"></tbody>
-		</table>
-	</section>
+<main class="icon-text-color">
+    <section class="tool-bar-container" aria-label="Tool bar">
+        <div class="tool-bar">
+            {{ icon_button(
+                "removeall-button",
+                "Remove all downloads from the queue",
+                "delete.svg",
+                "Remove All"
+            ) }}
+        </div>
+    </section>
+    <div>
+        <table>
+            <thead>
+                <tr>
+                    <th class="status-column">Status</th>
+                    <th>Title</th>
+                    <th class="status-column">Source</th>
+                    <th class="number-column">Size</th>
+                    <th class="number-column">Speed</th>
+                    <th class="number-column">Progress</th>
+                    <th class="option-column">Delete</th>
+                </tr>
+            </thead>
+            <tbody id="queue"></tbody>
+        </table>
+    </div>
+    <section id="empty-window" class="loading-screen">
+        <p>Queue empty</p>
+    </section>
 </main>
 {% endblock main %}
