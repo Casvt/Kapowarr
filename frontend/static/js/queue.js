@@ -26,7 +26,14 @@ function addQueueEntry(api_key, obj) {
     if (obj.web_sub_title !== null)
         source.title += `\n\nSub Section:\n${obj.web_sub_title}`;
 
-	entry.querySelector('button').onclick = e => deleteEntry(obj.id, api_key);
+	entry.querySelector('.remove-dl').onclick = e => deleteEntry(
+        obj.id, api_key
+    );
+	entry.querySelector('.blocklist-dl').onclick = e => deleteEntry(
+        obj.id,
+        api_key,
+        blocklist=true
+    );
 
 	updateQueueEntry(obj);
 };
@@ -61,11 +68,13 @@ function fillQueue(api_key) {
 // Actions
 //
 function deleteAll(api_key) {
-   sendAPI('DELETE', '/activity/queue', api_key); 
+   sendAPI('DELETE', '/activity/queue', api_key);
 };
 
-function deleteEntry(id, api_key) {
-	sendAPI('DELETE', `/activity/queue/${id}`, api_key);
+function deleteEntry(id, api_key, blocklist=false) {
+	sendAPI('DELETE', `/activity/queue/${id}`, api_key, {}, {
+        blocklist: blocklist
+    });
 };
 
 // code run on load

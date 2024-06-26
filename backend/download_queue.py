@@ -486,16 +486,19 @@ class DownloadHandler:
                 return entry.todict()
         raise DownloadNotFound
 
-    def remove(self, download_id: int) -> None:
-        """Remove a download entry from the queue
+    def remove(self, download_id: int, blocklist: bool = False) -> None:
+        """Remove a download entry from the queue.
 
         Args:
-            download_id (int): The id of the download to remove from the queue
+            download_id (int): The id of the download to remove from the queue.
+
+            blocklist (bool, optional): Add the page link to the blocklist.
+                Defaults to False.
 
         Raises:
-            DownloadNotFound: The id doesn't map to any download in the queue
+            DownloadNotFound: The id doesn't map to any download in the queue.
         """
-        LOGGER.info(f'Removing download with id {download_id}')
+        LOGGER.info(f'Removing download with id {download_id} and {blocklist=}')
 
         for download in self.queue:
             if download.id == download_id:
@@ -511,6 +514,17 @@ class DownloadHandler:
                         self.queue.remove(download)
                         PostProcesser.canceled(download)
                     WebSocket().send_queue_ended(download)
+
+                if blocklist:
+                    if download.web_link is not None:
+                        bl_link = download.web_link
+                    else:
+                        bl_link = download.download_link
+
+                    add_to_blocklist(
+                        bl_link,
+                        BlocklistReason.ADDED_BY_USER
+                    )
 
                 break
         else:

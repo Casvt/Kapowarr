@@ -799,7 +799,12 @@ def api_delete_download(download_id: int):
         return return_api(result)
 
     elif request.method == 'DELETE':
-        download_handler.remove(download_id)
+        data: Dict[str, Any] = request.get_json(silent=True) or {}
+        blocklist = data.get('blocklist', False)
+        if not isinstance(blocklist, bool):
+            raise InvalidKeyValue('blocklist', blocklist)
+
+        download_handler.remove(download_id, blocklist)
         return return_api({})
 
 
