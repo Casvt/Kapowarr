@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from asyncio import create_task, gather, run
+from asyncio import run
 from glob import glob
 from os.path import abspath, basename, dirname, isfile, join, splitext
-from typing import Dict, Iterator, List, Sequence, Set, Union
+from typing import Dict, Iterator, List, Set, Union
 
 from backend.comicvine import ComicVine
 from backend.custom_exceptions import InvalidKeyValue, VolumeAlreadyAdded
@@ -12,79 +12,12 @@ from backend.file_extraction import (extract_filename_data,
                                      image_extensions, supported_extensions)
 from backend.files import (delete_empty_folders, find_lowest_common_folder,
                            folder_is_inside_folder, list_files, rename_file)
-from backend.helpers import (AsyncSession, CVFileMapping, DictKeyedDict,
+from backend.helpers import (CVFileMapping, DictKeyedDict,
                              FilenameData, batched, create_range)
 from backend.logging import LOGGER
-from backend.matching import _match_title, _match_year
 from backend.naming import mass_rename
 from backend.root_folders import RootFolders
 from backend.volumes import Library, Volume, scan_files
-
-
-async def __search_matches(
-    datas: Sequence[FilenameData],
-    only_english: bool
-) -> DictKeyedDict:
-
-    comicvine = ComicVine()
-    results = DictKeyedDict()
-    async with AsyncSession() as session:
-        data_titles = {d['series'].lower() for d in datas}
-        tasks = [
-            create_task(comicvine.search_volumes_async(session, series))
-            for series in data_titles
-        ]
-        responses = await gather(*tasks)
-        title_to_response = dict(zip(data_titles, responses))
-
-        for data in datas:
-            # Find all matches
-            matching_results: Dict[str, List[dict]] = {
-                'year': [],
-                'volume_number': []
-            }
-            for result in title_to_response[data['series'].lower()]:
-                if (_match_title(data['series'], result['title'])
-                and (
-                    (only_english and not result['translated'])
-                    or
-                    (not only_english)
-                )):
-                    if _match_year(data['year'], result['year']):
-                        matching_results['year'].append(result)
-
-                    elif (
-                        data['volume_number'] is not None
-                        and result['volume_number'] is not None
-                        and result['volume_number'] == data['volume_number']
-                    ):
-                        matching_results['volume_number'].append(result)
-
-            # Sort matches
-            matching_results['year'].sort(
-                key=lambda r: int(not data['year'] == r['year'])
-            )
-            matching_result = next(
-                iter(
-                    matching_results['year'] or
-                    matching_results['volume_number']
-                ),
-                {}
-            )
-
-            if matching_result:
-                title = f"{matching_result['title']} ({matching_result['year']})"
-            else:
-                title = None
-
-            results[data] = {
-                'id': matching_result.get('comicvine_id'),
-                'title': title,
-                'issue_count': matching_result.get('issue_count'),
-                'link': matching_result.get('comicvine_info')
-            }
-
-        return results
 
 
 def propose_library_import(
@@ -192,6 +125,7 @@ def propose_library_import(
     LOGGER.debug(f'File groupings: {unimported_files}')
 
     # Find a match for the files on CV
+    cv = ComicVine()
     result: List[dict] = []
     uf: Iterator[FilenameData] = unimported_files.keys()
     group_number = 1
@@ -203,7 +137,7 @@ def propose_library_import(
         )),
         10
     ):
-        group_to_cv = run(__search_matches(
+        group_to_cv = run(cv.filenames_to_cvs(
             uf_batch,
             only_english
         ))

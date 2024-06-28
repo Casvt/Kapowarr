@@ -6,7 +6,7 @@ Search for volumes/issues and fetch metadata for them on ComicVine
 
 from asyncio import create_task, gather, sleep
 from re import IGNORECASE, compile
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Sequence, Union
 
 from aiohttp.client_exceptions import ClientError
 from bs4 import BeautifulSoup, Tag
@@ -17,10 +17,13 @@ from backend.custom_exceptions import (CVRateLimitReached,
                                        InvalidComicVineApiKey,
                                        VolumeNotMatched)
 from backend.db import get_db
+from backend.enums import SpecialVersion
 from backend.file_extraction import (convert_volume_number_to_int,
                                      process_issue_number, volume_regex)
-from backend.helpers import AsyncSession, Session, T, batched, normalize_string
+from backend.helpers import (AsyncSession, DictKeyedDict, FilenameData,
+                             Session, T, batched, normalize_string)
 from backend.logging import LOGGER
+from backend.matching import _match_title, _match_year
 from backend.settings import Settings, private_settings
 
 translation_regex = compile(
@@ -110,6 +113,16 @@ class ComicVine:
     volume_field_list = ','.join(('deck', 'description', 'id', 'image', 'issues', 'name', 'publisher', 'start_year', 'count_of_issues')) # noqa
     issue_field_list = ','.join(('id', 'issue_number', 'name', 'cover_date', 'description', 'volume')) # noqa
     search_field_list = ','.join(('aliases', 'count_of_issues', 'deck', 'description', 'id', 'image', 'name', 'publisher', 'site_detail_url', 'start_year')) # noqa
+
+    one_issue_match = (
+        SpecialVersion.TPB,
+        SpecialVersion.ONE_SHOT,
+        SpecialVersion.HARD_COVER
+    )
+    """
+    If a volume is one of these types, it can only match to CV search results
+    with one issue.
+    """
 
     def __init__(self, comicvine_api_key: Union[str, None] = None) -> None:
         """Start interacting with ComicVine
@@ -287,15 +300,16 @@ class ComicVine:
 
         return True
 
-    def __format_volume_output(self, volume_data: dict) -> dict:
+    def __format_volume_output(
+        self, volume_data: Dict[str, Any]) -> Dict[str, Any]:
         """Format the ComicVine API output containing the info
         about the volume to the "Kapowarr format"
 
         Args:
-            volume_data (dict): The ComicVine API output
+            volume_data (Dict[str, Any]): The ComicVine API output
 
         Returns:
-            dict: The formatted version
+            Dict[str, Any]: The formatted version
         """
         result = {
             'comicvine_id': int(volume_data['id']),
@@ -351,15 +365,16 @@ class ComicVine:
 
         return result
 
-    def __format_issue_output(self, issue_data: dict) -> dict:
+    def __format_issue_output(
+        self, issue_data: Dict[str, Any]) -> Dict[str, Any]:
         """Format the ComicVine API output containing the info
         about the issue to the "Kapowarr format"
 
         Args:
-            issue_data (dict): The ComicVine API output
+            issue_data (Dict[str, Any]): The ComicVine API output
 
         Returns:
-            dict: The formatted version
+            Dict[str, Any]: The formatted version
         """
         result = {
             'comicvine_id': issue_data['id'],
@@ -476,7 +491,7 @@ class ComicVine:
 
             return volume_infos
 
-    async def fetch_issues_async(self, ids: List[str]) -> List[dict]:
+    async def fetch_issues_async(self, ids: List[str]) -> List[Dict[str, Any]]:
         """Get the metadata of the issues of volumes given from ComicVine async,
         formatted to the "Kapowarr format".
 
@@ -485,7 +500,7 @@ class ComicVine:
                 The `4050-` prefix should not be included.
 
         Returns:
-            List[dict]: The metadata of all the issues inside the volumes
+            List[Dict[str, Any]]: The metadata of all the issues inside the volumes
         """
         LOGGER.debug(f'Fetching issue data for volumes {ids}')
 
@@ -542,17 +557,17 @@ class ComicVine:
 
     def __process_search_results(self,
         query: str,
-        results: List[dict]
-    ) -> List[dict]:
+        results: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """Format the search results from `self.search_volumes()`
         or `self.search_volumes_async()`
 
         Args:
             query (str): The processed query that was used
-            results (List[dict]): The unformatted search results
+            results (List[Dict[str, Any]]): The unformatted search results
 
         Returns:
-            List[dict]: The formatted search results
+            List[Dict[str, Any]]: The formatted search results
         """
         cursor = get_db()
 
@@ -586,14 +601,14 @@ class ComicVine:
         LOGGER.debug(f'Searching for volumes with query result: {results}')
         return results
 
-    def search_volumes(self, query: str) -> List[dict]:
+    def search_volumes(self, query: str) -> List[Dict[str, Any]]:
         """Search for volumes in the ComicVine database
 
         Args:
             query (str): The query to use when searching
 
         Returns:
-            List[dict]: A list with search results
+            List[Dict[str, Any]]: A list with search results
         """
         LOGGER.debug(f'Searching for volumes with the query {query}')
 
@@ -602,14 +617,14 @@ class ComicVine:
             if not query:
                 return []
 
-            results: List[dict] = [self.__call_api(
+            results: List[Dict[str, Any]] = [self.__call_api(
                 f'/volume/{query}',
                 {'field_list': self.search_field_list}
             )['results']]
             if results == [[]]:
                 return []
         else:
-            results: List[dict] = self.__call_api(
+            results: List[Dict[str, Any]] = self.__call_api(
                 '/search',
                 {'query': query,
                 'resources': 'volume',
@@ -624,7 +639,7 @@ class ComicVine:
     async def search_volumes_async(self,
         session: AsyncSession,
         query: str
-    ) -> List[dict]:
+    ) -> List[Dict[str, Any]]:
         """Search for volumes in the ComicVine database asynchronously
 
         Args:
@@ -632,7 +647,7 @@ class ComicVine:
             query (str): The query to use when searching
 
         Returns:
-            List[dict]: A list with search results
+            List[Dict[str, Any]]: A list with search results
         """
         LOGGER.debug(f'Searching for volumes with the query {query}')
 
@@ -642,7 +657,7 @@ class ComicVine:
                 return []
 
             try:
-                results: List[dict] = [(await self.__call_api_async(
+                results: List[Dict[str, Any]] = [(await self.__call_api_async(
                     session,
                     f'/volume/{query}',
                     {'field_list': self.search_field_list}
@@ -656,7 +671,7 @@ class ComicVine:
 
         else:
             try:
-                results: List[dict] = (await self.__call_api_async(
+                results: List[Dict[str, Any]] = (await self.__call_api_async(
                     session,
                     '/search',
                     {'query': query,
@@ -672,3 +687,91 @@ class ComicVine:
                 return []
 
         return self.__process_search_results(query, results)
+
+    async def filenames_to_cvs(self,
+        file_datas: Sequence[FilenameData],
+        only_english: bool
+    ) -> DictKeyedDict:
+        """Match filenames to CV volumes.
+
+        Args:
+            file_datas (Sequence[FilenameData]): The filename data's to find CV
+            volumes for.
+            only_english (bool): Only match to english volumes.
+
+        Returns:
+            DictKeyedDict: A map of the filename to it's CV match.
+        """
+        results = DictKeyedDict()
+
+        # If multiple filenames have the same series title, avoid searching for
+        # it multiple times. Instead search for all unique titles and then later
+        # match the filename back to the title's search results. This makes it
+        # one search PER SERIES TITLE instead of one search PER FILENAME.
+        titles_to_files: Dict[str, List[FilenameData]] = {}
+        for file_data in file_datas:
+            (titles_to_files
+                .setdefault(file_data['series'].lower(), [])
+                .append(file_data)
+            )
+
+        # Titles to search results
+        async with AsyncSession() as session:
+            tasks = [
+                create_task(self.search_volumes_async(session, title))
+                for title in titles_to_files
+            ]
+            responses = await gather(*tasks)
+
+        # Filter for each title: title, only_english
+        titles_to_results: Dict[str, List[Dict[str, Any]]] = {}
+        for title, response in zip(titles_to_files, responses):
+            titles_to_results[title] = [
+                r for r in response
+                if _match_title(title, r['title'])
+                and (
+                    only_english and not r['translated']
+                    or
+                    not only_english
+                )
+            ]
+
+        for title, files in titles_to_files.items():
+            for file in files:
+                # Filter: SV - issue_count
+                filtered_results = [
+                    r for r in titles_to_results[title]
+                    if file['special_version'] not in self.one_issue_match
+                    or r['issue_count'] == 1
+                ]
+
+                if not filtered_results:
+                    results[file] = {
+                        'id': None,
+                        'title': None,
+                        'issue_count': None,
+                        'link': None
+                    }
+                    continue
+
+                # Pref: exact year (1 point, also matches fuzzy year),
+                #       fuzzy year (1 point),
+                #       volume number (2 points)
+                filtered_results.sort(key=lambda r:
+                    int(r['year'] == file['year'])
+                    + int(_match_year(r['year'], file['year']))
+                    + int(
+                        file['volume_number'] is not None
+                        and r['volume_number'] == file['volume_number']
+                    ) * 2,
+                    reverse=True
+                )
+
+                matched_result = filtered_results[0]
+                results[file] = {
+                    'id': matched_result['comicvine_id'],
+                    'title': f"{matched_result['title']} ({matched_result['year']})",
+                    'issue_count': matched_result['issue_count'],
+                    'link': matched_result['comicvine_info']}
+
+        return results
