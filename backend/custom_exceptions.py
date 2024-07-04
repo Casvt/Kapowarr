@@ -9,7 +9,7 @@ Note: Not all CE's inherit from CustomException.
 
 from typing import Any, Union
 
-from backend.enums import BlocklistReason, BlocklistReasonID
+from backend.enums import BlocklistReason, BlocklistReasonID, FailReason
 from backend.logging import LOGGER
 
 
@@ -155,6 +155,25 @@ class LinkBroken(Exception):
             'result': {
                 'reason_text': self.reason_text,
                 'reason_id': self.reason_id
+            },
+            'code': 400
+        }
+
+
+class FailedGCPage(Exception):
+    """Something failed processing the GC page"""
+
+    def __init__(self, reason: FailReason):
+        self.reason = reason
+        super().__init__(self.reason.value)
+        return
+
+    @property
+    def api_response(self):
+        return {
+            'error': 'FailedGCPage',
+            'result': {
+                'reason_text': self.reason.value
             },
             'code': 400
         }

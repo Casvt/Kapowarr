@@ -12,9 +12,11 @@ from threading import Thread
 from time import sleep
 from typing import TYPE_CHECKING, Dict, List, Tuple, Type, Union
 
+from regex import D
+
 from backend.blocklist import add_to_blocklist
-from backend.custom_exceptions import (DownloadLimitReached,
-                                       DownloadNotFound, LinkBroken)
+from backend.custom_exceptions import (DownloadLimitReached, DownloadNotFound,
+                                       FailedGCPage, LinkBroken)
 from backend.db import get_db
 from backend.download_direct_clients import (BaseDirectDownload,
                                              Download, MegaDownload)
@@ -23,7 +25,7 @@ from backend.download_torrent_clients import TorrentClients, TorrentDownload
 from backend.enums import (BlocklistReason, DownloadSource,
                            DownloadState, FailReason, SeedingHandling)
 from backend.files import create_folder, delete_file_folder
-from backend.getcomics import extract_GC_download_links
+from backend.getcomics import GetComicsPage
 from backend.helpers import first_of_column
 from backend.logging import LOGGER
 from backend.post_processing import (PostProcesser,
@@ -376,6 +378,18 @@ class DownloadHandler:
             self._process_queue()
         return
 
+    def __determine_link_type(self, link: str) -> Union[str, None]:
+        if link.startswith(private_settings['getcomics_url']):
+            return 'gc'
+        return None
+
+    def link_in_queue(self, link: str) -> bool:
+        return any(
+            d
+            for d in self.queue
+            if link in (d.web_link, d.download_link)
+        )
+
     def add(self,
         link: str,
         volume_id: int,
@@ -397,45 +411,36 @@ class DownloadHandler:
         """
         LOGGER.info(
             'Adding download for ' +
-            f'volume {volume_id}{f" issue {issue_id}" if issue_id else ""}: {link}')
+            f'volume {volume_id}{f" issue {issue_id}" if issue_id else ""}: ' +
+            f'{link}'
+        )
 
-        # Check if link isn't already in queue
-        if any(d for d in self.queue if link in (d.web_link, d.download_link)):
+        if self.link_in_queue(link):
             LOGGER.info('Download already in queue')
             return [], None
 
-        is_gc_link = link.startswith(private_settings['getcomics_url'])
-
+        link_type = self.__determine_link_type(link)
         downloads: List[Download] = []
-        if is_gc_link:
-            # Extract download links and convert into Download instances
-            GC_downloads, fail_reason = extract_GC_download_links(
-                link,
-                volume_id,
-                issue_id
-            )
-
-            if fail_reason:
-                if fail_reason == FailReason.BROKEN:
-                    # Can't even fetch the GC page
+        if link_type == 'gc':
+            try:
+                downloads = GetComicsPage(link).create_downloads(volume_id)
+            except FailedGCPage as e:
+                if e.reason == FailReason.BROKEN:
                     add_to_blocklist(link, BlocklistReason.LINK_BROKEN)
 
-                elif fail_reason == FailReason.NO_WORKING_LINKS:
-                    # Page has links that matched but all are broken
+                elif e.reason == FailReason.NO_WORKING_LINKS:
                     add_to_blocklist(link, BlocklistReason.NO_WORKING_LINKS)
 
                 LOGGER.warning(
-                    f'Unable to extract download links from source; fail_reason="{fail_reason.value}"'
+                    f'Unable to extract download links from source; fail_reason="{e.reason.value}"'
                 )
-                return [], fail_reason
-
-            downloads = GC_downloads
+                return [], e.reason
 
         result = self.__prepare_downloads_for_queue(
             downloads,
             volume_id,
             issue_id,
-            link if is_gc_link else None
+            link if link_type == 'gc' else None
         )
         self.queue += result
 

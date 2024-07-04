@@ -13,7 +13,8 @@ from bs4 import BeautifulSoup, Tag
 from requests.exceptions import RequestException
 
 from backend.blocklist import add_to_blocklist, blocklist_contains
-from backend.custom_exceptions import DownloadLimitReached, LinkBroken
+from backend.custom_exceptions import (DownloadLimitReached,
+                                       FailedGCPage, LinkBroken)
 from backend.db import get_db
 from backend.download_direct_clients import (DirectDownload, Download,
                                              MediaFireDownload,
@@ -86,122 +87,6 @@ def _check_download_link(
             return source
 
     return
-
-
-def _purify_link(link: str) -> dict:
-    """Extract the link that directly leads to the download from the link
-    on the getcomics page
-
-    Args:
-        link (str): The link on the getcomics page
-
-    Raises:
-        LinkBroken: Link is invalid, not supported or broken
-
-    Returns:
-        dict: The pure link,
-        a download class for the correct service (child of `download_general.Download`)
-        and the source title.
-    """
-    LOGGER.debug(f'Purifying link: {link}')
-    # Go through every link and get it all down to direct download or magnet
-    # links
-    if link.startswith('magnet:?'):
-        # Link is already magnet link
-        return {
-            'download_link': link,
-            'target': TorrentDownload,
-            'source': DownloadSource.GETCOMICS_TORRENT
-        }
-
-    elif link.startswith('http'):
-        r = Session().get(link, stream=True)
-        url = r.url
-
-        if mega_regex.search(url):
-            # Link is mega
-            if '#F!' in url:
-                # Link is not supported (folder)
-                raise LinkBroken(BlocklistReason.SOURCE_NOT_SUPPORTED)
-
-            if '/folder/' in url:
-                # Link is not supported (folder)
-                raise LinkBroken(BlocklistReason.SOURCE_NOT_SUPPORTED)
-
-            return {
-                'download_link': url,
-                'target': MegaDownload,
-                'source': DownloadSource.MEGA
-            }
-
-        elif mediafire_regex.search(url):
-            # Link is mediafire
-            if 'error.php' in url:
-                # Link is broken
-                raise LinkBroken(BlocklistReason.LINK_BROKEN)
-
-            elif '/folder/' in url:
-                # Folder download
-                return {
-                    'download_link': url,
-                    'target': MediaFireFolderDownload,
-                    'source': DownloadSource.MEDIAFIRE
-                }
-
-            else:
-                # File download
-                return {
-                    'download_link': url,
-                    'target': MediaFireDownload,
-                    'source': DownloadSource.MEDIAFIRE
-                }
-
-        elif mediafire_dd_regex.search(url):
-            # Link is mediafire, but not to the page but instead the direct link
-            if not r.ok:
-                raise LinkBroken(BlocklistReason.LINK_BROKEN)
-
-            return {
-                'download_link': url,
-                'target': DirectDownload,
-                'source': DownloadSource.MEDIAFIRE
-            }
-
-        elif wetransfer_regex.search(url):
-            # Link is wetransfer
-            return {
-                'download_link': url,
-                'target': WeTransferDownload,
-                'source': DownloadSource.WETRANSFER
-            }
-
-        elif pixeldrain_regex.search(url):
-            # Link is pixeldrain
-            return {
-                'download_link': url,
-                'target': PixelDrainDownload,
-                'source': DownloadSource.PIXELDRAIN
-            }
-
-        elif r.headers.get('Content-Type', '') == 'application/x-bittorrent':
-            # Link is torrent file
-            hash = sha1(bencode(get_torrent_info(r.content))).hexdigest()
-            return {
-                'download_link': "magnet:?xt=urn:btih:" + hash + "&tr=udp://tracker.cyberia.is:6969/announce&tr=udp://tracker.port443.xyz:6969/announce&tr=http://tracker3.itzmx.com:6961/announce&tr=udp://tracker.moeking.me:6969/announce&tr=http://vps02.net.orel.ru:80/announce&tr=http://tracker.openzim.org:80/announce&tr=udp://tracker.skynetcloud.tk:6969/announce&tr=https://1.tracker.eu.org:443/announce&tr=https://3.tracker.eu.org:443/announce&tr=http://re-tracker.uz:80/announce&tr=https://tracker.parrotsec.org:443/announce&tr=udp://explodie.org:6969/announce&tr=udp://tracker.filemail.com:6969/announce&tr=udp://tracker.nyaa.uk:6969/announce&tr=udp://retracker.netbynet.ru:2710/announce&tr=http://tracker.gbitt.info:80/announce&tr=http://tracker2.dler.org:80/announce",
-                'target': TorrentDownload,
-                'source': DownloadSource.GETCOMICS_TORRENT
-            }
-
-        # Link is direct download from getcomics
-        # ('Main Server', 'Mirror Server', 'Link 1', 'Link 2', etc.)
-        return {
-            'download_link': url,
-            'target': DirectDownload,
-            'source': DownloadSource.GETCOMICS
-        }
-
-    else:
-        raise LinkBroken(BlocklistReason.SOURCE_NOT_SUPPORTED)
 
 
 link_filter_1: Callable[[Tag], bool] = lambda e: (
@@ -330,51 +215,6 @@ def _extract_list_links(
                     .append(href)
                 )
 
-    return download_groups
-
-
-def _extract_get_comics_links(
-    soup: BeautifulSoup
-) -> Dict[str, Dict[GCDownloadSource, List[str]]]:
-    """Go through the getcomics page and extract all download links.
-    The links are grouped. All links in a group lead to the same download,
-    only via different services (mega, direct download, mirror download, etc.).
-
-    Args:
-        soup (BeautifulSoup): The soup of the getcomics page.
-
-    Returns:
-        Dict[str, Dict[GCDownloadSource, List[str]]]: The outer dict maps the
-        group name to the group. The group is a dict that maps each service in\
-        the group to a list of links for that service.
-        Example:
-            {
-                'Amazing Spider-Man V1 Issue 1-10': {
-                    GCDownloadSource.MEGA: ['https://mega.io/abc'],
-                    GCDownloadSource.GetComics: [
-                        'https://main.server.com/abc',
-                        'https://mirror.server.com/abc'
-                    ]
-                },
-                'Amazing Spider-Man V1 Issue 11-20': {...}
-            }
-    """
-    LOGGER.debug('Extracting download groups')
-
-    torrent_client_available = get_db().execute(
-        "SELECT 1 FROM torrent_clients"
-    ).fetchone() is not None
-
-    body: Union[Tag, None] = soup.find(
-        'section', {'class': 'post-contents'}) # type: ignore
-    if not body:
-        return {}
-    download_groups = {
-        **_extract_button_links(body, torrent_client_available),
-        **_extract_list_links(body, torrent_client_available)
-    }
-
-    LOGGER.debug(f'Download groups: {download_groups}')
     return download_groups
 
 
@@ -528,7 +368,7 @@ def _generate_name(
 
     Args:
         volume_id (int): The ID of the volume for which the file is.
-        download_info (FilenameData): Filename data    for download group title.
+        download_info (FilenameData): Filename data for download group title.
         name_volume_as_issue (bool): Whether or not to name the volume as an
         issue.
 
@@ -572,6 +412,120 @@ def _generate_name(
     )
 
 
+def purify_link(link: str) -> dict:
+    """Extract the link that directly leads to the download from the link
+    on the getcomics page
+
+    Args:
+        link (str): The link on the getcomics page
+
+    Raises:
+        LinkBroken: Link is invalid, not supported or broken
+
+    Returns:
+        dict: The pure link,
+        a download class for the correct service (child of `download_general.Download`)
+        and the source title.
+    """
+    LOGGER.debug(f'Purifying link: {link}')
+    if link.startswith('magnet:?'):
+        # Link is already magnet link
+        return {
+            'download_link': link,
+            'target': TorrentDownload,
+            'source': DownloadSource.GETCOMICS_TORRENT
+        }
+
+    elif link.startswith('http'):
+        r = Session().get(link, stream=True)
+        url = r.url
+
+        if mega_regex.search(url):
+            # Link is mega
+            if '#F!' in url:
+                # Link is not supported (folder)
+                raise LinkBroken(BlocklistReason.SOURCE_NOT_SUPPORTED)
+
+            if '/folder/' in url:
+                # Link is not supported (folder)
+                raise LinkBroken(BlocklistReason.SOURCE_NOT_SUPPORTED)
+
+            return {
+                'download_link': url,
+                'target': MegaDownload,
+                'source': DownloadSource.MEGA
+            }
+
+        elif mediafire_regex.search(url):
+            # Link is mediafire
+            if 'error.php' in url:
+                # Link is broken
+                raise LinkBroken(BlocklistReason.LINK_BROKEN)
+
+            elif '/folder/' in url:
+                # Folder download
+                return {
+                    'download_link': url,
+                    'target': MediaFireFolderDownload,
+                    'source': DownloadSource.MEDIAFIRE
+                }
+
+            else:
+                # File download
+                return {
+                    'download_link': url,
+                    'target': MediaFireDownload,
+                    'source': DownloadSource.MEDIAFIRE
+                }
+
+        elif mediafire_dd_regex.search(url):
+            # Link is mediafire, but not to the page but instead the direct link
+            if not r.ok:
+                raise LinkBroken(BlocklistReason.LINK_BROKEN)
+
+            return {
+                'download_link': url,
+                'target': DirectDownload,
+                'source': DownloadSource.MEDIAFIRE
+            }
+
+        elif wetransfer_regex.search(url):
+            # Link is wetransfer
+            return {
+                'download_link': url,
+                'target': WeTransferDownload,
+                'source': DownloadSource.WETRANSFER
+            }
+
+        elif pixeldrain_regex.search(url):
+            # Link is pixeldrain
+            return {
+                'download_link': url,
+                'target': PixelDrainDownload,
+                'source': DownloadSource.PIXELDRAIN
+            }
+
+        elif r.headers.get('Content-Type', '') == 'application/x-bittorrent':
+            # Link is torrent file
+            hash = sha1(bencode(get_torrent_info(r.content))).hexdigest()
+            return {
+                'download_link': "magnet:?xt=urn:btih:" + hash + "&tr=udp://tracker.cyberia.is:6969/announce&tr=udp://tracker.port443.xyz:6969/announce&tr=http://tracker3.itzmx.com:6961/announce&tr=udp://tracker.moeking.me:6969/announce&tr=http://vps02.net.orel.ru:80/announce&tr=http://tracker.openzim.org:80/announce&tr=udp://tracker.skynetcloud.tk:6969/announce&tr=https://1.tracker.eu.org:443/announce&tr=https://3.tracker.eu.org:443/announce&tr=http://re-tracker.uz:80/announce&tr=https://tracker.parrotsec.org:443/announce&tr=udp://explodie.org:6969/announce&tr=udp://tracker.filemail.com:6969/announce&tr=udp://tracker.nyaa.uk:6969/announce&tr=udp://retracker.netbynet.ru:2710/announce&tr=http://tracker.gbitt.info:80/announce&tr=http://tracker2.dler.org:80/announce",
+                'target': TorrentDownload,
+                'source': DownloadSource.GETCOMICS_TORRENT
+            }
+
+        # Link is direct download from getcomics
+        # ('Main Server', 'Mirror Server', 'Link 1', 'Link 2', etc.)
+        return {
+            'download_link': url,
+            'target': DirectDownload,
+            'source': DownloadSource.GETCOMICS
+        }
+
+    else:
+        raise LinkBroken(BlocklistReason.SOURCE_NOT_SUPPORTED)
+
+
 def _test_paths(
     link_paths: List[List[DownloadGroup]],
     volume_id: int
@@ -587,7 +541,6 @@ def _test_paths(
         Tuple[List[Download], Union[FailReason, None]]:
             A list of downloads and the reason the list if empty is so.
     """
-    LOGGER.debug('Testing paths')
     cursor = get_db()
     limit_reached = None
     downloads: List[Download] = []
@@ -612,7 +565,7 @@ def _test_paths(
                     try:
                         # Maybe make purify link async so that all links can be
                         # purified 'at the same time'?
-                        pure_link = _purify_link(link)
+                        pure_link = purify_link(link)
                         dl_instance: Download = pure_link['target'](
                             download_link=pure_link['download_link'],
                             filename_body=name,
@@ -655,61 +608,131 @@ def _test_paths(
     return downloads, limit_reached
 
 
-def extract_GC_download_links(
-    link: str,
-    volume_id: int,
-    issue_id: Union[int, None] = None
-) -> Tuple[List[Download], Union[FailReason, None]]:
-    """Filter, select and setup downloads from a getcomic page
+class GetComicsPage:
+    def __init__(self, link: str) -> None:
+        """Make an instance that represents the GC page.
 
-    Args:
-        link (str): Link to the getcomics page.
-        volume_id (int): The id of the volume for which the getcomics page is.
-        issue_id (Union[int, None], optional): The id of the issue for which the
-        getcomics page is.
-            Defaults to None.
+        Args:
+            link (str): The link to the GC release page.
 
-    Returns:
-        Tuple[List[Download], Union[FailReason, None]]:
-            A list of downloads and the reason the list is empty if so.
-    """
-    LOGGER.debug(
-        f'Extracting download links from {link} for volume {volume_id} and issue {issue_id}')
+        Raises:
+            FailedGCPage: The page is invalid. See the exceptions `reason` attr.
+        """
+        LOGGER.debug(f"Extracting download links from {link}")
+        self.link = link
 
-    try:
-        r = Session().get(link, stream=True)
+        try:
+            self.__make_soup()
+        except RequestException:
+            raise FailedGCPage(FailReason.BROKEN)
+
+        self.__extract_web_title()
+        self.__extract_download_groups()
+        return
+
+    def __make_soup(self) -> None:
+        """Fetch link and convert to a soup.
+
+        Raises:
+            RequestException: Failed to fetch link.
+        """
+        r = Session().get(self.link, stream=True)
         if not r.ok:
             raise RequestException
 
-    except RequestException:
-        # Link broken
-        return [], FailReason.BROKEN
+        self.soup = BeautifulSoup(r.text, "html.parser")
+        return
 
-    soup = BeautifulSoup(r.text, 'html.parser')
-    title_el = soup.find('h1')
-    web_title = None if not title_el else title_el.text
+    def __extract_web_title(self) -> None:
+        """Extract the release title from the GC soup.
+        """
+        title_el = self.soup.find("h1")
+        self.web_title = None if not title_el else title_el.text
+        return
 
-    # Extract the download groups and filter invalid links
-    download_groups = _extract_get_comics_links(soup)
+    def __extract_download_groups(self) -> None:
+        """Go through the getcomics page and extract all download links.
+        The links are grouped. All links in a group lead to the same download,
+        only via different services (mega, direct download, mirror download, etc.).
 
-    # Filter incorrect download groups and combine them (or not) to create
-    # download paths
-    link_paths = _create_link_paths(
-        download_groups,
-        volume_id
-    )
+        Args:
+            soup (BeautifulSoup): The soup of the getcomics page.
 
-    if not link_paths:
-        return [], FailReason.NO_MATCHES
+        Returns:
+            Dict[str, Dict[GCDownloadSource, List[str]]]: The outer dict maps the
+            group name to the group. The group is a dict that maps each service in\
+            the group to a list of links for that service.
+            Example:
+                {
+                    'Amazing Spider-Man V1 Issue 1-10': {
+                        GCDownloadSource.MEGA: ['https://mega.io/abc'],
+                        GCDownloadSource.GetComics: [
+                            'https://main.server.com/abc',
+                            'https://mirror.server.com/abc'
+                        ]
+                    },
+                    'Amazing Spider-Man V1 Issue 11-20': {...}
+                }
+        """
+        LOGGER.debug('Extracting download groups')
 
-    # Decide which path to take by testing the links
-    result = _test_paths(link_paths, volume_id)
+        torrent_client_available = get_db().execute(
+            "SELECT 1 FROM torrent_clients"
+        ).fetchone() is not None
 
-    for d in result[0]:
-        d.web_link = link
-        d.web_title = web_title
+        body: Union[Tag, None] = self.soup.find(
+            'section', {'class': 'post-contents'}) # type: ignore
+        if not body:
+            self.download_groups = {}
+            return
 
-    if result[0]:
+        download_groups = {
+            **_extract_button_links(body, torrent_client_available),
+            **_extract_list_links(body, torrent_client_available)
+        }
+
+        LOGGER.debug(f'Download groups: {download_groups}')
+        self.download_groups = download_groups
+        return
+
+    def create_downloads(self,
+        volume_id: int
+    ) -> List[Download]:
+        """Create downloads from the links on the page for a certain volume.
+
+        Args:
+            volume_id (int): The volume's ID for which to filter and create
+            the downloads.
+
+        Raises:
+            FailedGCPage: Something went wrong with creating the downloads.
+            See the `reason` attr of the exception.
+
+        Returns:
+            List[Download]: The list of downloads coming from the GC page, for
+            the volume.
+        """
+        link_paths = _create_link_paths(
+            self.download_groups,
+            volume_id
+        )
+
+        if not link_paths:
+            raise FailedGCPage(FailReason.NO_MATCHES)
+
+        result, limit_reached = _test_paths(link_paths, volume_id)
+
+        if not result:
+            if limit_reached:
+                raise FailedGCPage(FailReason.LIMIT_REACHED)
+            else:
+                raise FailedGCPage(FailReason.NO_WORKING_LINKS)
+
+        elif limit_reached:
+            LOGGER.warning('Limit of download service reached')
+
+        for d in result:
+            d.web_link = self.link
+            d.web_title = self.web_title
+
         return result
-    else:
-        return result[0], FailReason.NO_WORKING_LINKS
