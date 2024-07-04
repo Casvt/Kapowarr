@@ -30,6 +30,7 @@ const SearchEls = {
 		monitor_input: document.querySelector('#monitor-input'),
 		root_folder_input: document.querySelector('#rootfolder-input'),
 		volume_folder_input: document.querySelector('#volumefolder-input'),
+        special_state_input: document.querySelector('#specialoverride-input'),
 		auto_search_input: document.querySelector('#auto-search-input'),
 		submit: document.querySelector('#add-volume')
 	}
@@ -303,6 +304,7 @@ function showAddWindow(comicvine_id, api_key) {
 	SearchEls.window.title.innerText = volume_data.title;
 	SearchEls.window.cover.src = volume_data.cover;
 	SearchEls.window.cv_input.value = comicvine_id;
+    SearchEls.window.special_state_input.value = "auto";
 };
 
 function addVolume() {
@@ -314,6 +316,7 @@ function addVolume() {
 		'root_folder_id': parseInt(SearchEls.window.root_folder_input.value),
 		'monitor': SearchEls.window.monitor_input.value == 'true',
 		'volume_folder': '',
+        'special_version': SearchEls.window.special_state_input.value || null,
 		'auto_search': SearchEls.window.auto_search_input.checked
 	};
 	if (

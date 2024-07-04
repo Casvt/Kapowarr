@@ -1527,6 +1527,7 @@ class Library:
         root_folder_id: int,
         monitor: bool = True,
         volume_folder: Union[str, None] = None,
+        special_version: Union[SpecialVersion, None] = None,
         auto_search: bool = False
     ) -> int:
         """Add a volume to the library
@@ -1543,6 +1544,12 @@ class Library:
             volume_folder (Union[str, None], optional): Custom volume folder.
                 Defaults to None.
 
+            special_version (Union[SpecialVersion, None], optional): Give `None`
+            to let Kapowarr determine the special version ('auto'). Otherwise,
+            give a `SpecialVersion` to override and lock the special version
+            state.
+                Defaults to None.
+
             auto_search (bool, optional): Start an auto search for the volume after
             adding it.
                 Defaults to False.
@@ -1557,7 +1564,7 @@ class Library:
         """
         LOGGER.debug(
             'Adding a volume to the library: ' +
-            f'CV ID {comicvine_id}, RF ID {root_folder_id}, Monitor {monitor}, VF {volume_folder}'
+            f'CV ID {comicvine_id}, RF ID {root_folder_id}, Monitor {monitor}, VF {volume_folder}, SV {special_version}'
         )
         cursor = get_db()
 
@@ -1577,12 +1584,15 @@ class Library:
         volume_data['monitored'] = monitor
         volume_data['root_folder'] = root_folder_id
 
-        special_version = determine_special_version(
-            volume_data['title'],
-            volume_data['description'],
-            (volume_data["issues"] or [{}])[0].get("date"),
-            tuple(i['title'] for i in volume_data['issues'])
-        ).value
+        if special_version is None:
+            sv = determine_special_version(
+                volume_data['title'],
+                volume_data['description'],
+                (volume_data["issues"] or [{}])[0].get("date"),
+                tuple(i['title'] for i in volume_data['issues'])
+            ).value
+        else:
+            sv = special_version.value
 
         cursor.execute(
             """
@@ -1598,9 +1608,10 @@ class Library:
                 root_folder,
                 custom_folder,
                 last_cv_fetch,
-                special_version
+                special_version,
+                special_version_locked
             ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             );
             """,
             (
@@ -1615,7 +1626,8 @@ class Library:
                 volume_data['root_folder'],
                 int(volume_folder is not None),
                 round(time()),
-                special_version
+                sv,
+                special_version is not None
             )
         )
         volume_id = cursor.lastrowid

@@ -598,18 +598,30 @@ def api_volumes():
         comicvine_id = data.get('comicvine_id')
         if comicvine_id is None:
             raise KeyNotFound('comicvine_id')
+
         root_folder_id = data.get('root_folder_id')
         if root_folder_id is None:
             raise KeyNotFound('root_folder_id')
+
         monitor = data.get('monitor', True)
         volume_folder = data.get('volume_folder') or None
         auto_search = data.get('auto_search', False)
+
+        special_version = data.get('special_version') or None
+        if special_version == 'auto':
+            sv = None
+        else:
+            try:
+                sv = SpecialVersion(special_version)
+            except ValueError:
+                raise InvalidKeyValue('special_version', special_version)
 
         volume_id = library.add(
             comicvine_id,
             root_folder_id,
             monitor,
             volume_folder,
+            sv,
             auto_search
         )
         volume_info = library.get_volume(volume_id).get_public_keys()
