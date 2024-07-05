@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from os.path import abspath, isdir, sep as path_sep
+from os import mkdir
+from os.path import abspath, isdir, samefile, sep as path_sep
 from shutil import disk_usage
 from sqlite3 import IntegrityError
 from typing import List
@@ -10,6 +11,7 @@ from backend.custom_exceptions import (FolderNotFound, RootFolderInUse,
 from backend.db import get_db
 from backend.file_extraction import alphabet
 from backend.files import folder_is_inside_folder
+from backend.helpers import first_of_column
 from backend.logging import LOGGER
 
 
@@ -70,6 +72,10 @@ class RootFolders:
     def __getitem__(self, root_folder_id: int) -> str:
         return self.get_one(root_folder_id)['folder']
 
+    def __setitem__(self, root_folder_id: int, new_folder: str) -> None:
+        self.rename(root_folder_id, new_folder)
+        return
+
     def add(self, folder: str) -> dict:
         """Add a rootfolder
 
@@ -78,6 +84,7 @@ class RootFolders:
 
         Raises:
             FolderNotFound: The folder doesn't exist
+            RootFolderInvalid: The folder is not allowed
 
         Returns:
             dict: The rootfolder info
@@ -113,23 +120,70 @@ class RootFolders:
         LOGGER.debug(f'Adding rootfolder result: {root_folder_id}')
         return root_folder
 
-    def delete(self, id: int) -> None:
+    def rename(self, root_folder_id: int, new_folder: str) -> dict:
+        """Rename a root folder.
+
+        Args:
+            root_folder_id (int): The ID of the current root folder, to rename.
+            new_folder (str): The new folderpath for the root folder.
+
+        Raises:
+            RootFolderInvalid: The folder is not allowed.
+
+        Returns:
+            dict: The rootfolder info
+        """
+        from backend.volumes import Volume
+
+        if not isdir(new_folder):
+            mkdir(new_folder)
+
+        if samefile(self[root_folder_id], new_folder):
+            return self.get_one(root_folder_id)
+
+        LOGGER.info(
+            f'Renaming root folder {self[root_folder_id]} ({root_folder_id}) '
+            f'to {new_folder}'
+        )
+        new_id: int = self.add(new_folder)['id']
+
+        cursor = get_db()
+        volume_ids: List[int] = first_of_column(cursor.execute(
+            "SELECT id FROM volumes WHERE root_folder = ?;",
+            (root_folder_id,)
+        ))
+
+        for volume_id in volume_ids:
+            Volume(volume_id, check_existence=False)['root_folder'] = new_id
+
+        cursor.executescript(f"""
+            PRAGMA foreign_keys = OFF;
+
+            DELETE FROM root_folders WHERE id = {root_folder_id};
+            UPDATE root_folders SET id = {root_folder_id} WHERE id = {new_id};
+            UPDATE volumes SET root_folder = {root_folder_id} WHERE root_folder = {new_id};
+
+            PRAGMA foreign_keys = ON;
+        """)
+        return self.get_one(root_folder_id, use_cache=False)
+
+    def delete(self, root_folder_id: int) -> None:
         """Delete a rootfolder
 
         Args:
-            id (int): The id of the rootfolder to delete
+            root_folder_idd (int): The id of the rootfolder to delete
 
         Raises:
             RootFolderNotFound: The id doesn't map to any rootfolder
             RootFolderInUse: The rootfolder is still in use by a volume
         """
-        LOGGER.info(f'Deleting rootfolder {id}')
+        LOGGER.info(f'Deleting rootfolder {root_folder_id}')
         cursor = get_db()
 
         # Remove from database
         try:
             if not cursor.execute(
-                "DELETE FROM root_folders WHERE id = ?", (id,)
+                "DELETE FROM root_folders WHERE id = ?", (root_folder_id,)
             ).rowcount:
                 raise RootFolderNotFound
         except IntegrityError:

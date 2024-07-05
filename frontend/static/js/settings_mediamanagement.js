@@ -183,18 +183,48 @@ function updateConvertList() {
 //
 // Root folders
 //
+const root_folders = {};
 function fillRootFolder(api_key) {
 	fetchAPI('/rootfolder', api_key)
 	.then(json => {
 		const table = document.querySelector('#root-folder-list');
 		table.innerHTML = '';
 		json.result.forEach(root_folder => {
+            root_folders[root_folder.id] = root_folder.folder;
+
 			const entry = document.createElement('tr');
 			entry.dataset.id = root_folder.id
 
 			const path = document.createElement('td');
-			path.innerText = root_folder.folder;
-			entry.appendChild(path);
+
+            const path_input = document.createElement('input');
+            path_input.readOnly = true;
+            path_input.type = 'text';
+            path_input.value = root_folder.folder;
+            path_input.onkeydown = e => {
+                if (e.key !== 'Enter') return;
+                sendAPI('PUT', `/rootfolder/${root_folder.id}`, api_key, {}, {
+                    'folder': path_input.value
+                })
+                .then(response => fillRootFolder(api_key))
+                .catch(response => {
+                    if (response.status === 400)
+                        hide(
+                            [],
+                            [document.querySelector(`#root-folder-list tr[data-id="${root_folder.id}"] p`)]
+                        );
+                    else
+                        console.log(response.status);
+                });
+            };
+            path.appendChild(path_input);
+
+            const path_error = document.createElement('p');
+            path_error.classList.add('error', 'hidden');
+            path_error.innerText = '*Folder is in other root folder';
+            path.appendChild(path_error);
+
+            entry.appendChild(path);
 
 			const free_space = document.createElement('td');
 			free_space.classList.add('number-column');
@@ -206,21 +236,31 @@ function fillRootFolder(api_key) {
 			total_space.innerText = convertSize(root_folder.size.total);
 			entry.appendChild(total_space);
 
-			const delete_root_folder_container = document.createElement('td');
-			delete_root_folder_container.classList.add('action-column');
-			const delete_root_folder = document.createElement('button');
+			const root_folder_action_container = document.createElement('td');
+			root_folder_action_container.classList.add('action-column');
+
+            const edit_root_folder = document.createElement('button');
+            edit_root_folder.onclick = e => toggleEditRootFolder(root_folder.id);
+            edit_root_folder.type = 'button';
+            const edit_root_folder_icon = document.createElement('img');
+            edit_root_folder_icon.src = `${url_base}/static/img/edit.svg`;
+            edit_root_folder.appendChild(edit_root_folder_icon);
+            root_folder_action_container.appendChild(edit_root_folder);
+
+            const delete_root_folder = document.createElement('button');
 			delete_root_folder.onclick = e => deleteRootFolder(root_folder.id, api_key);
 			delete_root_folder.type = 'button';
 			const delete_root_folder_icon = document.createElement('img');
 			delete_root_folder_icon.src = `${url_base}/static/img/delete.svg`;
 			delete_root_folder.appendChild(delete_root_folder_icon);
-			delete_root_folder_container.appendChild(delete_root_folder);
-			entry.appendChild(delete_root_folder_container);
+            root_folder_action_container.appendChild(delete_root_folder);
+
+            entry.appendChild(root_folder_action_container);
 
 			table.appendChild(entry);
 		});
 	});
-}
+};
 
 function toggleAddRootFolder(e) {
 	hide([
@@ -253,6 +293,21 @@ function addRootFolder(api_key) {
 				[document.querySelector('#folder-in-folder-error')]
 			);
 	});
+};
+
+function toggleEditRootFolder(id) {
+    hide(
+        [document.querySelector(`#root-folder-list tr[data-id="${id}"] p`)],
+        []
+    );
+
+    const input = document.querySelector(`#root-folder-list tr[data-id="${id}"] input`);
+    if (input.readOnly) {
+        input.readOnly = false;
+    } else {
+        input.value = root_folders[id];
+        input.readOnly = true;
+    };
 };
 
 function deleteRootFolder(id, api_key) {

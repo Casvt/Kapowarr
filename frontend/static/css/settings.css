@@ -99,7 +99,7 @@
 }
 
 #root-folder-table {
-	min-width: 34rem;
+	min-width: 39rem;
 }
 
 #root-folder-table th {
@@ -116,11 +116,20 @@
 }
 
 .action-column {
-	width: 4.5rem;
+	width: 4.6rem;
+}
+
+.action-column button:first-of-type {
+    margin-right: .75rem;
 }
 
 .action-column img {
 	width: 1.4rem;
+}
+
+#root-folder-list input:read-only {
+    padding: 0;
+    border: none;
 }
 
 #toggle-root-folder,
@@ -141,7 +150,7 @@
 	padding-block: 0;
 }
 
-#add-row :where(input, select) {
+#root-folder-table :where(input, select) {
 	width: 20rem;
 
 	padding-inline: .3rem;

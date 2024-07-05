@@ -474,13 +474,20 @@ def api_rootfolder():
         return return_api(root_folder, code=201)
 
 
-@api.route('/rootfolder/<int:id>', methods=['GET', 'DELETE'])
+@api.route('/rootfolder/<int:id>', methods=['GET', 'PUT', 'DELETE'])
 @error_handler
 @auth
 def api_rootfolder_id(id: int):
     if request.method == 'GET':
         root_folder = root_folders.get_one(id)
         return return_api(root_folder)
+
+    elif request.method == 'PUT':
+        folder: Union[str, None] = request.get_json().get('folder')
+        if not folder:
+            raise KeyNotFound('folder')
+        root_folders[id] = folder
+        return return_api({})
 
     elif request.method == 'DELETE':
         root_folders.delete(id)
