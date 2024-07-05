@@ -5,7 +5,7 @@ Searching online sources (GC) for downloads
 """
 
 from asyncio import create_task, gather, run
-from typing import Dict, List, Union
+from typing import Dict, List, Tuple, Union
 
 from bs4 import BeautifulSoup
 
@@ -26,7 +26,7 @@ def _sort_search_results(
     result: MatchedSearchResultData,
     title: str,
     volume_number: int,
-    year: Union[int, None] = None,
+    year: Tuple[Union[int, None], Union[int, None]] = (None, None),
     calculated_issue_number: Union[float, None] = None
 ) -> List[int]:
     """Sort the search results
@@ -38,8 +38,9 @@ def _sort_search_results(
 
         volume_number (int): The volume number of the volume
 
-        year (Union[int, None], optional): The year of the volume.
-            Defaults to None.
+        year (Tuple[Union[int, None], Union[int, None]], optional): The year of
+        the volume and the issue.
+            Defaults to (None, None).
 
         calculated_issue_number (Union[float, None], optional): The
         calculated_issue_number of the issue.
@@ -63,16 +64,31 @@ def _sort_search_results(
     ]))
 
     # Prefer volume number or year matches, even better if both match
-    v_match = int(not (
+    vy_score = 3
+    if (
         result['volume_number'] is not None
         and result['volume_number'] == volume_number
-    ))
-    y_match = int(not (
-        year is not None
+    ):
+        vy_score -= 1
+
+    if (
+        year[1] is not None
         and result['year'] is not None
-        and year - 1 <= result['year'] <= year + 1
-    ))
-    rating.append(v_match + y_match)
+        and year[1] == result['year']
+    ):
+        # issue year direct match
+        vy_score -= 2
+
+    elif (
+        year[0] is not None
+        and year[1] is not None
+        and result['year'] is not None
+        and year[0] - 1 <= result['year'] <= year[1] + 1
+    ):
+        # fuzzy match between start year and issue year
+        vy_score -= 1
+
+    rating.append(vy_score)
 
     # Sort on issue number fitting
     if calculated_issue_number is not None:
@@ -303,7 +319,8 @@ def manual_search(
 
     # Sort results; put best result at top
     results.sort(key=lambda r: _sort_search_results(
-        r, title, volume_data.volume_number, volume_data.year,
+        r, title, volume_data.volume_number,
+        (volume_data.year, issue_numbers.get(calculated_issue_number)), # type: ignore
         calculated_issue_number
     ))
 
