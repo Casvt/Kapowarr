@@ -172,6 +172,10 @@ main:has(#massedit-toggle:checked) #table-container {
 	border-collapse: collapse;
 }
 
+.table-volume {
+    min-width: 6.2rem;
+}
+
 .table-entry {
 	border-top: 1px solid var(--border-color);
 	transition: background-color 200ms ease-in-out;
@@ -304,6 +308,7 @@ main:has(#massedit-toggle:checked) #lib-stats {
 
 @media (max-width: 850px) {
 	.action-bar {
+        flex-direction: column;
 		justify-content: center;
 	}
 	.action-divider {

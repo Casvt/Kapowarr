@@ -5,10 +5,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, List
 
 from backend.conversion import mass_convert
-from backend.custom_exceptions import InvalidKeyValue, VolumeDownloadedFor
+from backend.custom_exceptions import (InvalidKeyValue, KeyNotFound,
+                                       VolumeDownloadedFor)
 from backend.db import get_db
 from backend.logging import LOGGER
 from backend.naming import mass_rename
+from backend.root_folders import RootFolders
 from backend.search import auto_search
 from backend.volumes import Volume, refresh_and_scan
 
@@ -37,6 +39,28 @@ def mass_editor_delete(volume_ids: List[int], **kwargs) -> None:
             Volume(volume_id).delete(delete_volume_folder)
         except VolumeDownloadedFor:
             continue
+    return
+
+
+def mass_editor_rf(volume_ids: List[int], **kwargs) -> None:
+    root_folder_id = kwargs.get('root_folder_id')
+    if root_folder_id is None:
+        raise KeyNotFound('root_folder_id')
+    if not isinstance(root_folder_id, int):
+        raise InvalidKeyValue('root_folder_id', root_folder_id)
+    # Raises RootFolderNotFound if ID is invalid
+    RootFolders().get_one(root_folder_id)
+
+    LOGGER.info(
+        f'Using mass editor, settings root folder to {root_folder_id} for volumes: {volume_ids}')
+
+    cursor = get_db()
+    for volume_id in volume_ids:
+        Volume(volume_id)['root_folder'] = root_folder_id
+        # For loads of volumes, this loop can take a long time, blocking the db
+        # So commit after each volume to avoid db locking
+        cursor.connection.commit()
+
     return
 
 
@@ -92,6 +116,7 @@ def mass_editor_monitor(volume_ids: List[int], **kwargs) -> None:
 
 action_to_func = {
     'delete': mass_editor_delete,
+    'root_folder': mass_editor_rf,
     'rename': mass_editor_rename,
     'update': mass_editor_update,
     'search': mass_editor_search,

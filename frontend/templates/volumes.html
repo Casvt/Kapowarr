@@ -115,14 +115,21 @@
 		</div>
 		<div id="table-container">
 			<section class="action-bar" aria-label="Action Bar">
+                <div class="action-divider">
+                    <button id="cancel-massedit">Quit</button>
+                </div>
 				<div class="action-divider">
-					<button id="cancel-massedit">Quit</button>
 					<div class="option-container">
 						<button data-action="delete">Delete</button>
 						<select name="delete_folder" id="delete-folder-input" aria-label="Keep or delete the volume folder">
 							<option value="true">Delete Volume Folder</option>
 							<option value="false" selected>Keep Volume Folder</option>
 						</select>
+					</div>
+					<div class="option-container">
+						<button data-action="root_folder">Set Root Folder</button>
+						<select name="root_folder_id" id="rf-id-input" aria-label="Set the root folder for the selected volumes">
+                        </select>
 					</div>
 				</div>
 				<div class="action-divider">

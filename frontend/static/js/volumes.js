@@ -266,6 +266,29 @@ usingApiKey()
 		fetchLibrary(api_key);
 	};
 
+    library_els.mass_edit.button.onclick =
+    library_els.mass_edit.cancel.onclick =
+        e => {
+            const toggle = library_els.mass_edit.toggle;
+            if (toggle.hasAttribute('checked'))
+                toggle.removeAttribute('checked');
+            else {
+                const select = document.querySelector('select[name="root_folder_id"]');
+                if (select.querySelector('option') === null) {
+                    fetchAPI('/rootfolder', api_key)
+                    .then(json => {
+                        json.result.forEach(rf => {
+                            const entry = document.createElement('option');
+                            entry.value = rf.id;
+                            entry.innerText = rf.folder;
+                            select.appendChild(entry);
+                        });
+                        toggle.setAttribute('checked', '');
+                    });
+                } else
+                    toggle.setAttribute('checked', '');
+            }
+        };
 	library_els.mass_edit.bar.querySelectorAll('.action-divider > button[data-action]').forEach(
 		b => b.onclick = e => runAction(api_key, e.target.dataset.action)
 	);
@@ -279,11 +302,18 @@ usingApiKey()
 				).value === "true"
 			}
 		);
+	library_els.mass_edit.bar.querySelector('button[data-action="root_folder"]').onclick =
+		e => runAction(
+			api_key,
+			e.target.dataset.action,
+			{
+				'root_folder_id': parseInt(document.querySelector(
+					'select[name="root_folder_id"]'
+				).value)
+			}
+		);
 });
 library_els.search.container.action = 'javascript:searchLibrary();';
-library_els.mass_edit.button.onclick =
-library_els.mass_edit.cancel.onclick =
-	e => library_els.mass_edit.toggle.toggleAttribute('checked');
 library_els.mass_edit.select_all.onchange =
 	e => library_els.views.table.querySelectorAll('input[type="checkbox"]')
 			.forEach(c => c.checked = library_els.mass_edit.select_all.checked);
