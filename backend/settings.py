@@ -9,7 +9,7 @@ from typing import Any, Dict, Tuple
 from backend.custom_exceptions import (FolderNotFound, InvalidSettingKey,
                                        InvalidSettingModification,
                                        InvalidSettingValue)
-from backend.db import __DATABASE_FILEPATH__, __DATABASE_VERSION__, get_db
+from backend.db import __DATABASE_VERSION__, get_db
 from backend.enums import GCDownloadSource, SeedingHandling
 from backend.files import folder_path
 from backend.helpers import CommaList, Singleton, get_python_version
@@ -82,7 +82,7 @@ about_data = {
     'version': private_settings['version'],
     'python_version': private_settings['python_version'],
     'database_version': __DATABASE_VERSION__,
-    'database_location': folder_path(*__DATABASE_FILEPATH__),
+    'database_location': None, # Get's filled in by db.set_db_location()
     'data_folder': folder_path()
 }
 

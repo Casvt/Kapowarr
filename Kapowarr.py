@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from argparse import ArgumentParser
 from atexit import register
 from multiprocessing import set_start_method
 from os import environ, name
 from signal import SIGINT, SIGTERM, signal
 from subprocess import Popen
 from sys import argv
-from typing import NoReturn
+from typing import NoReturn, Union
 
 from backend.db import close_all_db, set_db_location, setup_db
 from backend.helpers import check_python_version, get_python_exe
@@ -18,8 +19,17 @@ from frontend.api import Settings, download_handler, task_handler
 SUB_PROCESS_TIMEOUT = 20.0
 
 
-def _main() -> NoReturn:
+def _main(db_folder: Union[str, None] = None) -> NoReturn:
     """The main function of the Kapowarr sub-process
+
+    Args:
+        db_folder (Union[str, None], optional): The folder in which the database
+        will be stored or in which a database is for Kapowarr to use. Give
+        `None` for the default location.
+            Defaults to None.
+
+    Raises:
+        ValueError: Value of `db_folder` exists but is not a folder.
 
     Returns:
         NoReturn: Exit code 0 means to shutdown.
@@ -32,7 +42,7 @@ def _main() -> NoReturn:
     if not check_python_version():
         exit(1)
 
-    set_db_location()
+    set_db_location(db_folder)
 
     SERVER.create_app()
 
@@ -117,16 +127,36 @@ def _run_sub_process() -> int:
         return 0
 
 
-def Kapowarr() -> None:
-    "The main function of Kapowarr"
+def Kapowarr() -> int:
+    """The main function of Kapowarr
+
+    Returns:
+        int: The return code.
+    """
     rc = 131
     while rc == 131:
         rc = _run_sub_process()
-    return
+
+    return rc
 
 
 if __name__ == "__main__":
     if environ.get("KAPOWARR_RUN_MAIN") == "1":
-        _main()
+
+        parser = ArgumentParser(
+            description="Kapowarr is a software to build and manage a comic book library, fitting in the *arr suite of software.")
+        parser.add_argument(
+            '-d', '--DatabaseFolder',
+            type=str,
+            help="The folder in which the database will be stored or in which a database is for Kapowarr to use"
+        )
+
+        args = parser.parse_args()
+        try:
+            _main(db_folder=args.DatabaseFolder)
+        except ValueError:
+            parser.error("The value for -d/--DatabaseFolder is not a folder")
+
     else:
-        Kapowarr()
+        rc = Kapowarr()
+        exit(rc)

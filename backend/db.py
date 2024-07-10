@@ -4,7 +4,7 @@
 Setting up the database and handling connections
 """
 
-from os.path import dirname
+from os.path import dirname, exists, isdir, join
 from sqlite3 import (PARSE_DECLTYPES, Connection, Cursor, ProgrammingError,
                      Row, register_adapter, register_converter)
 from threading import current_thread
@@ -16,7 +16,8 @@ from flask import g
 from backend.helpers import CommaList, DB_ThreadSafeSingleton
 from backend.logging import LOGGER, set_log_level
 
-__DATABASE_FILEPATH__ = 'db', 'Kapowarr.db'
+__DATABASE_FOLDER__ = "db",
+__DATABASE_NAME__ = "Kapowarr.db"
 __DATABASE_VERSION__ = 24
 __DATABASE_TIMEOUT__ = 10.0
 
@@ -104,20 +105,38 @@ class TempDBConnection(BaseConnection):
         return
 
 
-def set_db_location() -> None:
-    """
-    Setup database location. Create folder for database and set location for
+def set_db_location(
+    db_folder: Union[str, None] = None
+) -> None:
+    """Setup database location. Create folder for database and set location for
     `db.DBConnection` and `db.TempDBConnection`.
+
+    Args:
+        db_folder (Union[str, None], optional): The folder in which the database
+        will be stored or in which a database is for Kapowarr to use. Give
+        `None` for the default location.
+            Defaults to None.
+
+    Raises:
+        ValueError: Value of `db_folder` exists but is not a folder.
     """
     from backend.files import create_folder, folder_path
+    from backend.settings import about_data
 
-    db_file_location = folder_path(*__DATABASE_FILEPATH__)
+    if db_folder:
+        if exists(db_folder) and not isdir(db_folder):
+            raise ValueError
+
+    db_file_location = join(
+        db_folder or folder_path(*__DATABASE_FOLDER__),
+        __DATABASE_NAME__
+    )
 
     LOGGER.debug(f'Setting database location: {db_file_location}')
 
     create_folder(dirname(db_file_location))
 
-    BaseConnection.file = db_file_location
+    BaseConnection.file = about_data['database_location'] = db_file_location
 
     return
 
