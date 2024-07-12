@@ -50,12 +50,16 @@ function addAlreadyAdded(entry, id) {
 };
 
 function buildResults(results, api_key) {
-	SearchEls.search_results.querySelectorAll('button:not(.filter-bar)').forEach(e => e.remove());
+	SearchEls.search_results
+        .querySelectorAll('button:not(.filter-bar)')
+        .forEach(e => e.remove());
 	results.forEach(result => {
 		const entry = SearchEls.pre_build.search_entry.cloneNode(true);
 		entry.dataset.title =
 		entry.ariaLabel =
-			result.year !== null ? `${result.title} (${result.year})` : result.title;
+			result.year !== null
+            ? `${result.title} (${result.year})`
+            : result.title;
 		entry.dataset.cover = result.cover;
 		entry.dataset.comicvine_id = result.comicvine_id;
 		entry.dataset._translated = result.translated;
@@ -114,9 +118,10 @@ function buildResults(results, api_key) {
 			});
 		};
 
-		entry.querySelectorAll('.entry-description, .entry-spare-description').forEach(
-			d => d.innerHTML = result.description
-		);
+		entry.querySelectorAll('.entry-description, .entry-spare-description')
+            .forEach(
+                d => d.innerHTML = result.description
+            );
 
 		SearchEls.search_results.appendChild(entry);
 	});
@@ -136,7 +141,10 @@ function buildResults(results, api_key) {
 		SearchEls.filters.year.appendChild(entry);
 	});
 
-	const issue_counts = new Set(results.map(r => r.issue_count).sort((a, b) => a - b));
+	const issue_counts = new Set(results
+        .map(r => r.issue_count)
+        .sort((a, b) => a - b)
+    );
 	SearchEls.filters.issue_count.innerHTML = '';
 	const all_issue_counts_option = document.createElement('option');
 	all_issue_counts_option.value = '';
@@ -150,7 +158,10 @@ function buildResults(results, api_key) {
 		SearchEls.filters.issue_count.appendChild(entry);
 	});
 
-	const volume_numbers = new Set(results.map(r => r.volume_number).sort((a, b) => a - b));
+	const volume_numbers = new Set(results
+        .map(r => r.volume_number)
+        .sort((a, b) => a - b)
+    );
 	SearchEls.filters.volume_number.innerHTML = '';
 	const all_volume_numbers_option = document.createElement('option');
 	all_volume_numbers_option.value = '';
@@ -178,10 +189,11 @@ function buildResults(results, api_key) {
 		SearchEls.filters.publisher.appendChild(entry);
 	});
 
+    processURLFilters();
 	applyFilters();
 };
 
-function search() {
+function search(reset_url_params=true) {
 	if (!SearchEls.msgs.blocked.classList.contains('hidden'))
 		return;
 
@@ -195,7 +207,11 @@ function search() {
 	], [
 		SearchEls.msgs.loading
 	]);
-	usingApiKey().then(api_key => {
+
+    if (reset_url_params)
+        emptyParams();
+
+    usingApiKey().then(api_key => {
 		const query = SearchEls.search_bar.input.value;
 		fetchAPI('/volumes/search', api_key, {query: query})
 		.then(json => {
@@ -223,9 +239,12 @@ function clearSearch(e) {
 		SearchEls.msgs.failed
 	], [
 		SearchEls.msgs.explain
-	])
-	SearchEls.search_results.querySelectorAll('button:not(.filter-bar)').forEach(e => e.remove());
+	]);
+	SearchEls.search_results
+        .querySelectorAll('button:not(.filter-bar)')
+        .forEach(e => e.remove());
 	SearchEls.search_bar.input.value = '';
+    setURLParams();
 };
 
 function applyFilters() {
@@ -261,6 +280,68 @@ function applyFilters() {
 			SearchEls.search_results.querySelectorAll('button'),
 			SearchEls.search_results.querySelectorAll(`button${filter}`)
 		);
+
+    setURLParams();
+};
+
+//
+// URL params
+//
+function emptyParams() {
+    history.pushState(
+        {}, "",
+        window.location.origin + window.location.pathname
+    );
+};
+
+function setURLParams() {
+    const params = new URLSearchParams();
+
+    if (SearchEls.search_bar.input.value === "") {
+        emptyParams();
+        return;
+    };
+
+    if (SearchEls.search_bar.input.value)
+        params.set('q', SearchEls.search_bar.input.value);
+    if (SearchEls.filters.translations.value)
+        params.set('t', SearchEls.filters.translations.value);
+    if (SearchEls.filters.year.value)
+        params.set('y', SearchEls.filters.year.value);
+    if (SearchEls.filters.issue_count.value)
+        params.set('i', SearchEls.filters.issue_count.value);
+    if (SearchEls.filters.volume_number.value)
+        params.set('v', SearchEls.filters.volume_number.value);
+    if (SearchEls.filters.publisher.value)
+        params.set('p', SearchEls.filters.publisher.value);
+
+    history.pushState({}, "", `?${params.toString()}`);
+};
+
+function processURLParams() {
+    const params = new URLSearchParams(window.location.search);
+
+    const query = params.get('q');
+    if ((query || null) === null)
+        return;
+    SearchEls.search_bar.input.value = query;
+
+    search(reset_url_params=false);
+};
+
+function processURLFilters() {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get('t'))
+        SearchEls.filters.translations.value = params.get('t');
+    if (params.get('y'))
+        SearchEls.filters.year.value = params.get('y');
+    if (params.get('i'))
+        SearchEls.filters.issue_count.value = params.get('i');
+    if (params.get('v'))
+        SearchEls.filters.volume_number.value = params.get('v');
+    if (params.get('p'))
+        SearchEls.filters.publisher.value = params.get('p');
 };
 
 //
@@ -366,4 +447,8 @@ SearchEls.filters.issue_count.onchange =
 	e => applyFilters();
 
 const translated_filter = getLocalStorage('translated_filter')['translated_filter'];
-SearchEls.filters.translations.querySelector(`option[value="${translated_filter}"]`).setAttribute('selected', '');
+SearchEls.filters.translations
+    .querySelector(`option[value="${translated_filter}"]`)
+    .setAttribute('selected', '');
+
+processURLParams();
