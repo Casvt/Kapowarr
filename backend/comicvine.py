@@ -20,8 +20,9 @@ from backend.db import get_db
 from backend.enums import SpecialVersion
 from backend.file_extraction import (convert_volume_number_to_int,
                                      process_issue_number, volume_regex)
-from backend.helpers import (AsyncSession, DictKeyedDict, FilenameData,
-                             Session, T, batched, normalize_string)
+from backend.helpers import (AsyncSession, DictKeyedDict,
+                             FilenameData, Session, T, batched,
+                             create_range, normalize_string)
 from backend.logging import LOGGER
 from backend.matching import _match_title, _match_year
 from backend.settings import Settings, private_settings
@@ -380,9 +381,9 @@ class ComicVine:
             'comicvine_id': issue_data['id'],
             'volume_id': int(issue_data['volume']['id']),
             'issue_number': issue_data['issue_number'],
-            'calculated_issue_number': process_issue_number(
+            'calculated_issue_number': create_range(process_issue_number(
                 issue_data['issue_number']
-            ),
+            ))[0],
             'title': issue_data['name'] or None,
             'date': issue_data['cover_date'] or None,
             'description': _clean_description(
