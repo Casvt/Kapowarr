@@ -351,7 +351,16 @@ class DownloadHandler:
 
                 except LinkBroken as lb:
                     # Link is broken
-                    add_to_blocklist(download['donwload_link'], lb.reason)
+                    add_to_blocklist(
+                        web_link=download['web_link'],
+                        web_title=download['web_title'],
+                        web_sub_title=download['web_sub_title'],
+                        download_link=download['download_link'],
+                        source=DownloadSource(download['source']),
+                        volume_id=download['volume_id'],
+                        issue_id=download['issue_id'],
+                        reason=lb.reason
+                    )
                     cursor.execute(
                         "DELETE FROM download_queue WHERE id = ?;",
                         (download['id'],)
@@ -395,11 +404,14 @@ class DownloadHandler:
         volume_id: int,
         issue_id: Union[int, None] = None
     ) -> Tuple[List[dict], Union[FailReason, None]]:
-        """Add a download to the queue
+        """Add a download to the queue.
 
         Args:
-            link (str): A getcomics link to download from
-            volume_id (int): The id of the volume for which the download is intended
+            link (str): A getcomics link to download from.
+
+            volume_id (int): The id of the volume for which the download is
+            intended.
+
             issue_id (Union[int, None], optional): The id of the issue for which
             the download is intended.
                 Defaults to None.
@@ -423,13 +435,35 @@ class DownloadHandler:
         downloads: List[Download] = []
         if link_type == 'gc':
             try:
-                downloads = GetComicsPage(link).create_downloads(volume_id)
+                gcp = GetComicsPage(link)
+                downloads = gcp.create_downloads(
+                    volume_id, issue_id
+                )
+
             except FailedGCPage as e:
                 if e.reason == FailReason.BROKEN:
-                    add_to_blocklist(link, BlocklistReason.LINK_BROKEN)
+                    add_to_blocklist(
+                        web_link=link,
+                        web_title=None,
+                        web_sub_title=None,
+                        download_link=None,
+                        source=None,
+                        volume_id=volume_id,
+                        issue_id=issue_id,
+                        reason=BlocklistReason.LINK_BROKEN
+                    )
 
                 elif e.reason == FailReason.NO_WORKING_LINKS:
-                    add_to_blocklist(link, BlocklistReason.NO_WORKING_LINKS)
+                    add_to_blocklist(
+                        web_link=link,
+                        web_title=gcp.web_title, # type: ignore
+                        web_sub_title=None,
+                        download_link=None,
+                        source=None,
+                        volume_id=volume_id,
+                        issue_id=issue_id,
+                        reason=BlocklistReason.NO_WORKING_LINKS
+                    )
 
                 LOGGER.warning(
                     f'Unable to extract download links from source; fail_reason="{e.reason.value}"'
@@ -521,14 +555,15 @@ class DownloadHandler:
                     WebSocket().send_queue_ended(download)
 
                 if blocklist:
-                    if download.web_link is not None:
-                        bl_link = download.web_link
-                    else:
-                        bl_link = download.download_link
-
                     add_to_blocklist(
-                        bl_link,
-                        BlocklistReason.ADDED_BY_USER
+                        web_link=download.web_link,
+                        web_title=download.web_title,
+                        web_sub_title=download.web_sub_title,
+                        download_link=download.download_link,
+                        source=download.source,
+                        volume_id=download.volume_id,
+                        issue_id=download.issue_id,
+                        reason=BlocklistReason.ADDED_BY_USER
                     )
 
                 break

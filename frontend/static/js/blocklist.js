@@ -23,10 +23,24 @@ function fillList(api_key) {
 			const entry = BlockEls.entry.cloneNode(true);
 
 			const link = entry.querySelector('a');
-			link.href = obj.link;
-			link.innerText = obj.link;
+            if (obj.download_link === null) {
+                // GC page blocked
+                link.innerText = obj.web_title || obj.web_link;
+                link.href = obj.web_link;
 
-			entry.querySelector('.reason-column').innerText = obj.reason;
+            } else {
+                // Download link blocked
+                if (obj.web_title !== null) {
+                    link.innerText = `${obj.web_title} - ${obj.web_sub_title}`;
+                    if (obj.source !== null)
+                        link.innerText += ` - ${obj.source}`;
+                } else
+                    link.innerText = obj.download_link;
+
+                link.href = obj.download_link;
+            };
+
+            entry.querySelector('.reason-column').innerText = obj.reason;
 
 			var d = new Date(obj.added_at * 1000);
 			var formatted_date =

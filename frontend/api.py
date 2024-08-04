@@ -34,7 +34,8 @@ from backend.download_direct_clients import credentials
 from backend.download_queue import (DownloadHandler, delete_download_history,
                                     get_download_history)
 from backend.download_torrent_clients import TorrentClients, client_types
-from backend.enums import BlocklistReason, BlocklistReasonID, SpecialVersion
+from backend.enums import (BlocklistReason, BlocklistReasonID,
+                           DownloadSource, SpecialVersion)
 from backend.library_import import import_library, propose_library_import
 from backend.logging import LOGGER, get_debug_log_filepath
 from backend.mass_edit import MassEditorVariables, action_to_func
@@ -154,14 +155,6 @@ def extract_key(request, key: str, check_existence: bool = True) -> Any:
             try:
                 value = int(value)
             except (ValueError, TypeError):
-                raise InvalidKeyValue(key, value)
-
-        elif key == 'reason_id':
-            try:
-                value = BlocklistReason[
-                    BlocklistReasonID(int(value)).name
-                ]
-            except ValueError:
                 raise InvalidKeyValue(key, value)
 
         elif key in ('monitor', 'delete_folder', 'rename_files', 'only_english',
@@ -863,9 +856,84 @@ def api_blocklist():
         return return_api(result)
 
     elif request.method == 'POST':
-        link = extract_key(request, 'link')
-        reason = extract_key(request, 'reason_id')
-        result = add_to_blocklist(link, reason)
+        data = request.get_json()
+        if not isinstance(data, dict):
+            raise InvalidKeyValue(value=data)
+
+        web_link = data.get('web_link')
+        if not (web_link and isinstance(web_link, str)):
+            raise InvalidKeyValue('web_link', web_link)
+
+        web_title = data.get('web_title')
+        if not (
+            web_title is None
+            or web_title
+                and isinstance(web_title, str)
+        ):
+            raise InvalidKeyValue('web_title', web_title)
+
+        web_sub_title = data.get('web_sub_title')
+        if not (
+            web_sub_title is None
+            or web_sub_title
+                and isinstance(web_sub_title, str)
+        ):
+            raise InvalidKeyValue('web_sub_title', web_sub_title)
+
+        download_link = data.get('download_link')
+        if not (
+            download_link is None
+            or download_link
+                and isinstance(download_link, str)
+        ):
+            raise InvalidKeyValue('download_link', download_link)
+
+        source = data.get('source')
+        if not (
+            source is None
+            or source
+                and isinstance(source, str)
+        ):
+            raise InvalidKeyValue('source', source)
+
+        if not data.get('source'):
+            source = None
+        else:
+            try:
+                source = DownloadSource(data['source'])
+            except ValueError:
+                raise InvalidKeyValue('source', data['source'])
+
+        volume_id = data.get('volume_id')
+        if not (volume_id and isinstance(volume_id, int)):
+            raise InvalidKeyValue('volume_id', volume_id)
+
+        issue_id = data.get('issue_id')
+        if not (
+            issue_id is None
+            or issue_id
+                and isinstance(issue_id, int)
+        ):
+            raise InvalidKeyValue('issue_id', issue_id)
+
+        try:
+            reason = BlocklistReason[
+                BlocklistReasonID(data.get('reason_id')).name
+            ]
+
+        except ValueError:
+            raise InvalidKeyValue('reason_id', data.get('reason_id'))
+
+        result = add_to_blocklist(
+            web_link=web_link,
+            web_title=web_title,
+            web_sub_title=web_sub_title,
+            download_link=download_link,
+            source=source,
+            volume_id=volume_id,
+            issue_id=issue_id,
+            reason=reason
+        )
         return return_api(result, code=201)
 
     elif request.method == 'DELETE':

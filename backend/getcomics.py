@@ -37,6 +37,7 @@ from backend.volumes import Volume
 
 # autopep8: off
 check_year = compile(r'\b\d{4}\b')
+remove_year_suffix = compile(r'--\d{4}--$')
 mega_regex = compile(r'https?://mega\.(nz|io)/(#(F\!|\!)|folder/|file/)', IGNORECASE)
 mediafire_regex = compile(r'https?://www\.mediafire\.com/', IGNORECASE)
 mediafire_dd_regex = compile(r'https?://download\d+\.mediafire\.com/', IGNORECASE)
@@ -304,7 +305,7 @@ def _create_link_paths(
                 )
             }
             path_entry: DownloadGroup = {
-                'web_sub_title': desc,
+                'web_sub_title': remove_year_suffix.sub('', desc),
                 'info': processed_desc,
                 'links': sources
             }
@@ -528,14 +529,26 @@ def purify_link(link: str) -> dict:
 
 def _test_paths(
     link_paths: List[List[DownloadGroup]],
-    volume_id: int
+    web_link: str,
+    web_title: Union[str, None],
+    volume_id: int,
+    issue_id: Union[int, None] = None
 ) -> Tuple[List[Download], Union[FailReason, None]]:
     """Test the links of the paths and determine, based on which links work, which path to go for.
 
     Args:
         link_paths (List[List[DownloadGroup]]): The link paths.
             Output of `download._process_extracted_get_comics_links()`.
+
+        web_link (str): The link to the GC page.
+
+        web_title (Union[str, None]): The title of the GC release.
+
         volume_id (int): The id of the volume.
+
+        issue_id (Union[int, None], optional): The id of the issue for which
+        the download is intended.
+            Defaults to None.
 
     Returns:
         Tuple[List[Download], Union[FailReason, None]]:
@@ -566,6 +579,23 @@ def _test_paths(
                         # Maybe make purify link async so that all links can be
                         # purified 'at the same time'?
                         pure_link = purify_link(link)
+
+                    except LinkBroken as lb:
+                        # Link broken, source not supported
+                        add_to_blocklist(
+                            web_link=web_link,
+                            web_title=web_title,
+                            web_sub_title=download['web_sub_title'],
+                            download_link=link,
+                            source=None,
+                            volume_id=volume_id,
+                            issue_id=issue_id,
+                            reason=lb.reason
+                        )
+                        cursor.connection.commit()
+                        continue
+
+                    try:
                         dl_instance: Download = pure_link['target'](
                             download_link=pure_link['download_link'],
                             filename_body=name,
@@ -575,8 +605,17 @@ def _test_paths(
                         dl_instance.web_sub_title = download['web_sub_title']
 
                     except LinkBroken as lb:
-                        # Link is broken
-                        add_to_blocklist(link, lb.reason)
+                        # DL limit reached, link broken
+                        add_to_blocklist(
+                            web_link=web_link,
+                            web_title=web_title,
+                            web_sub_title=download['web_sub_title'],
+                            download_link=pure_link['download_link'],
+                            source=pure_link['source'],
+                            volume_id=volume_id,
+                            issue_id=issue_id,
+                            reason=lb.reason
+                        )
                         cursor.connection.commit()
 
                     except DownloadLimitReached:
@@ -696,13 +735,18 @@ class GetComicsPage:
         return
 
     def create_downloads(self,
-        volume_id: int
+        volume_id: int,
+        issue_id: Union[int, None] = None
     ) -> List[Download]:
         """Create downloads from the links on the page for a certain volume.
 
         Args:
             volume_id (int): The volume's ID for which to filter and create
             the downloads.
+
+            issue_id (Union[int, None], optional): The id of the issue for which
+            the download is intended.
+                Defaults to None.
 
         Raises:
             FailedGCPage: Something went wrong with creating the downloads.
@@ -720,7 +764,13 @@ class GetComicsPage:
         if not link_paths:
             raise FailedGCPage(FailReason.NO_MATCHES)
 
-        result, limit_reached = _test_paths(link_paths, volume_id)
+        result, limit_reached = _test_paths(
+            link_paths,
+            web_link=self.link,
+            web_title=self.web_title,
+            volume_id=volume_id,
+            issue_id=issue_id
+        )
 
         if not result:
             if limit_reached:

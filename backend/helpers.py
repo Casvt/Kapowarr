@@ -113,19 +113,19 @@ def reversed_tuples(
 
 
 def get_first_of_range(
-    n: Union[T, Sequence[T]]
+    n: Union[T, Tuple[T, ...], List[T]]
 ) -> T:
     """Get the first element from a variable that could potentially be a range,
     but could also be a single value. In the case of a single value, the value
     is returned.
 
     Args:
-        n (Union[T, Sequence[T]]): The range or single value.
+        n (Union[T, Tuple[T, ...], List[T]]): The range or single value.
 
     Returns:
         T: The first element or single value.
     """
-    if isinstance(n, Sequence):
+    if isinstance(n, (Tuple, List)):
         return n[0]
     else:
         return n

@@ -334,7 +334,8 @@ function showManualSearch(api_key, issue_id=null) {
 				// Show blocklist button
 				blocklist_button.onclick =
 					e => blockManualSearch(
-						result.link,
+                        result.link, result.display_title,
+                        volume_id, issue_id,
 						blocklist_button,
 						match,
 						api_key
@@ -373,15 +374,27 @@ function addManualSearch(link, button, api_key, issue_id=null) {
 	});
 };
 
-function blockManualSearch(link, button, match, api_key) {
-	sendAPI('POST', '/blocklist', api_key, {
-		link: link,
+function blockManualSearch(
+    web_link, web_title,
+    volume_id, issue_id,
+    button, match,
+    api_key
+) {
+	sendAPI('POST', '/blocklist', api_key, {}, {
+        web_link: web_link,
+        web_title: web_title,
+        volume_id: volume_id,
+        issue_id: issue_id,
 		reason_id: 4
 	})
 	.then(response => {
+        console.log(button, match);
 		button.querySelector('img').src = `${url_base}/static/img/check.svg`;
-		match.src = `${url_base}/static/img/cancel.svg`;
-		match.title = 'Link is blocklisted';
+        setImage(
+            match,
+            'cancel.svg',
+            'Link is blocklisted'
+        );
 	});
 };
 

@@ -2,16 +2,16 @@
 
 from sqlite3 import IntegrityError
 from time import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 from backend.custom_exceptions import BlocklistEntryNotFound
 from backend.db import get_db
-from backend.enums import BlocklistReason, BlocklistReasonID
+from backend.enums import BlocklistReason, BlocklistReasonID, DownloadSource
 from backend.logging import LOGGER
 
 
 def get_blocklist(offset: int = 0) -> List[Dict[str, Any]]:
-    """Get the blocklist entries in blocks of 50
+    """Get the blocklist entries in blocks of 50.
 
     Args:
         offset (int, optional): The offset of the list.
@@ -20,22 +20,24 @@ def get_blocklist(offset: int = 0) -> List[Dict[str, Any]]:
             Defaults to 0.
 
     Returns:
-        List[Dict[str, Any]]: A list of dicts where each dict is a blocklist entry
+        List[Dict[str, Any]]: A list of dicts where each dict is a blocklist
+        entry.
     """
-    LOGGER.debug(f'Fetching blocklist with offset {offset}')
     entries = list(map(
         dict,
         get_db(dict).execute("""
             SELECT
-                id,
-                link,
-                reason,
-                added_at
+                id, volume_id, issue_id,
+                web_link, web_title, web_sub_title,
+                download_link, source,
+                reason, added_at
             FROM blocklist
             ORDER BY id DESC
             LIMIT 50
             OFFSET ?;
-        """, (offset * 50,))
+            """,
+            (offset * 50,)
+        )
     ))
     for entry in entries:
         entry.update({
@@ -58,25 +60,24 @@ def delete_blocklist() -> None:
 
 
 def get_blocklist_entry(id: int) -> Dict[str, Any]:
-    """Get info about a blocklist entry
+    """Get info about a blocklist entry.
 
     Args:
-        id (int): The id of the blocklist entry
+        id (int): The id of the blocklist entry.
 
     Raises:
-        BlocklistEntryNotFound: The id doesn't map to any blocklist entry
+        BlocklistEntryNotFound: The id doesn't map to any blocklist entry.
 
     Returns:
         Dict[str, Any]: The info about the blocklist entry, similar to the dicts
         in the output of `blocklist.get_blocklist()`
     """
-    LOGGER.debug(f'Fetching blocklist entry {id}')
     entry = get_db(dict).execute("""
         SELECT
-            id,
-            link,
-            reason,
-            added_at
+            id, volume_id, issue_id,
+            web_link, web_title, web_sub_title,
+            download_link, source,
+            reason, added_at
         FROM blocklist
         WHERE id = ?
         LIMIT 1;
@@ -95,13 +96,13 @@ def get_blocklist_entry(id: int) -> Dict[str, Any]:
 
 
 def delete_blocklist_entry(id: int) -> None:
-    """Delete a blocklist entry
+    """Delete a blocklist entry.
 
     Args:
-        id (int): The id of the blocklist entry
+        id (int): The id of the blocklist entry.
 
     Raises:
-        BlocklistEntryNotFound: The id doesn't map to any blocklist entry
+        BlocklistEntryNotFound: The id doesn't map to any blocklist entry.
     """
     LOGGER.debug(f'Deleting blocklist entry {id}')
     entry_found = get_db().execute(
@@ -114,51 +115,102 @@ def delete_blocklist_entry(id: int) -> None:
     raise BlocklistEntryNotFound
 
 
-def blocklist_contains(link: str) -> bool:
-    """Check if a link is in the blocklist
+def blocklist_contains(link: str) -> Union[int, None]:
+    """Check if a link is in the blocklist.
 
     Args:
-        link (str): The link to check for
+        link (str): The link to check for.
 
     Returns:
-        bool: `True` if the link is in the blocklist, otherwise `False`.
+        Union[int, None]: The ID of the blocklist entry, if found. Otherwise
+        `None`.
     """
-    result = (1,) in get_db().execute(
-        "SELECT 1 FROM blocklist WHERE link = ? LIMIT 1",
-        (link,)
-    )
+    result = (get_db().execute("""
+        SELECT id
+        FROM blocklist
+        WHERE download_link = ?
+            OR (web_link = ? AND download_link IS NULL)
+        LIMIT 1;
+        """,
+        (link, link)
+    ).fetchone() or (None,))[0]
     return result
 
 
-def add_to_blocklist(link: str, reason: BlocklistReason) -> Dict[str, Any]:
-    """Add a link to the blocklist
+def add_to_blocklist(
+    web_link: Union[str, None],
+    web_title: Union[str, None],
+
+    web_sub_title: Union[str, None],
+    download_link: Union[str, None],
+    source: Union[DownloadSource, None],
+
+    volume_id: int,
+    issue_id: Union[int, None],
+
+    reason: BlocklistReason
+) -> Dict[str, Any]:
+    """Add a link to the blocklist.
 
     Args:
-        link (str): The link to block
+        web_link (Union[str, None]): The link to the GC page.
+
+        web_title (Union[str, None]): The title of the GC release.
+
+        web_sub_title (Union[str, None]): The name of the download group on the
+        GC page.
+
+        download_link (str): The link to block. Give `None` to block the whole
+        GC page (`web_link`).
+
+        source (Union[DownloadSource, None]): The source of the download.
+
+        volume_id (int): The ID of the volume for which this link is
+        blocklisted.
+
+        issue_id (Union[int, None]): The ID of the issue for which this link is
+        blocklisted, if the link is for a specific issue.
+
         reason (BlocklistReasons): The reason why the link is blocklisted.
             See `backend.enums.BlocklistReason`.
 
     Returns:
         Dict[str, Any]: Info about the blocklist entry.
     """
-    LOGGER.info(f'Adding {link} to blocklist with reason "{reason.value}"')
+    blocked_link = download_link if download_link is not None else web_link
+    if not blocked_link:
+        raise ValueError("No page link or download link supplied")
+
+    id = blocklist_contains(blocked_link)
+    if id:
+        return get_blocklist_entry(id)
+
+    LOGGER.info(
+        f'Adding {blocked_link} to blocklist with reason "{reason.value}"'
+    )
     cursor = get_db()
     reason_id = BlocklistReasonID[reason.name].value
 
-    # Try to add link to blocklist
-    try:
-        id = cursor.execute(
-            "INSERT INTO blocklist(link, reason, added_at) VALUES (?, ?, ?);",
-            (link, reason_id, round(time()))
-        ).lastrowid
-    except IntegrityError:
-        # Check if link isn't already in blocklist
-        id = cursor.execute(
-            "SELECT id FROM blocklist WHERE link = ? LIMIT 1",
-            (link,)
-        ).fetchone()
-        if id:
-            return get_blocklist_entry(id[0])
-        raise NotImplementedError
+    id = cursor.execute("""
+        INSERT INTO blocklist(
+            volume_id, issue_id,
+            web_link, web_title, web_sub_title,
+            download_link, source,
+            reason, added_at
+        )
+        VALUES (
+            ?, ?,
+            ?, ?, ?,
+            ?, ?,
+            ?, ?
+        );
+        """,
+        (
+            volume_id, issue_id,
+            web_link, web_title, web_sub_title,
+            download_link, source.value if source is not None else None,
+            reason_id, round(time())
+        )
+    ).lastrowid
 
     return get_blocklist_entry(id)

@@ -18,7 +18,7 @@ from backend.logging import LOGGER, set_log_level
 
 __DATABASE_FOLDER__ = "db",
 __DATABASE_NAME__ = "Kapowarr.db"
-__DATABASE_VERSION__ = 24
+__DATABASE_VERSION__ = 25
 __DATABASE_TIMEOUT__ = 10.0
 
 
@@ -761,6 +761,72 @@ def migrate_db(current_db_version: int) -> None:
         current_db_version = s['database_version'] = current_db_version + 1
         s._save_to_database()
 
+    if current_db_version == 24:
+        # V24 -> V25
+
+        cursor.executescript("""
+            BEGIN TRANSACTION;
+            PRAGMA defer_foreign_keys = ON;
+
+            CREATE TEMPORARY TABLE temp_blocklist AS
+                SELECT * FROM blocklist;
+            DROP TABLE blocklist;
+
+            CREATE TABLE blocklist(
+                id INTEGER PRIMARY KEY,
+                volume_id INTEGER,
+                issue_id INTEGER,
+
+                web_link TEXT,
+                web_title TEXT,
+                web_sub_title TEXT,
+
+                download_link TEXT UNIQUE,
+                source VARCHAR(30),
+
+                reason INTEGER NOT NULL CHECK (reason > 0),
+                added_at INTEGER NOT NULL CHECK (added_at > 0),
+
+                FOREIGN KEY (volume_id) REFERENCES volumes(id),
+                FOREIGN KEY (issue_id) REFERENCES issues(id)
+            );
+
+            INSERT INTO blocklist
+                SELECT
+                    id,
+                    NULL AS volume_id,
+                    NULL AS issue_id,
+                    NULL AS web_link,
+                    NULL AS web_title,
+                    NULL AS web_sub_title,
+                    link AS download_link,
+                    NULL AS source,
+                    reason,
+                    added_at
+                FROM temp_blocklist
+                WHERE link LIKE 'https://getcomics.org/dlds%';
+
+            INSERT INTO blocklist
+                SELECT
+                    id,
+                    NULL AS volume_id,
+                    NULL AS issue_id,
+                    link AS web_link,
+                    NULL AS web_title,
+                    NULL AS web_sub_title,
+                    NULL AS download_link,
+                    NULL AS source,
+                    reason,
+                    added_at
+                FROM temp_blocklist
+                WHERE NOT link LIKE 'https://getcomics.org/dlds%';
+
+            COMMIT;
+        """)
+
+        current_db_version = s['database_version'] = current_db_version + 1
+        s._save_to_database()
+
     return
 
 
@@ -892,9 +958,21 @@ def setup_db() -> None:
         );
         CREATE TABLE IF NOT EXISTS blocklist(
             id INTEGER PRIMARY KEY,
-            link TEXT NOT NULL UNIQUE,
+            volume_id INTEGER,
+            issue_id INTEGER,
+
+            web_link TEXT,
+            web_title TEXT,
+            web_sub_title TEXT,
+
+            download_link TEXT UNIQUE,
+            source VARCHAR(30),
+
             reason INTEGER NOT NULL CHECK (reason > 0),
-            added_at INTEGER NOT NULL
+            added_at INTEGER NOT NULL CHECK (added_at > 0),
+
+            FOREIGN KEY (volume_id) REFERENCES volumes(id),
+            FOREIGN KEY (issue_id) REFERENCES issues(id)
         );
         CREATE TABLE IF NOT EXISTS credentials_sources(
             id INTEGER PRIMARY KEY,
