@@ -141,9 +141,9 @@ def _get_formatting_data(
 
     # Build formatted data
     if volume_data.title.startswith('The '):
-        clean_title = volume_data.title + ', The'
+        clean_title = volume_data.title[len('The '):] + ', The'
     elif volume_data.title.startswith('A '):
-        clean_title = volume_data.title + ', A'
+        clean_title = volume_data.title[len('A '):] + ', A'
     else:
         clean_title = volume_data.title or 'Unknown'
 
