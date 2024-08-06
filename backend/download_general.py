@@ -67,13 +67,13 @@ class Download(ABC):
         Raises:
             LinkBroken: The link doesn't work
         """
-        return
+        ...
 
     @abstractmethod
     def run(self) -> None:
         """Start the download
         """
-        return
+        ...
 
     @abstractmethod
     def stop(
@@ -86,7 +86,7 @@ class Download(ABC):
             state (DownloadState, optional): The state to set for the download.
                 Defaults to DownloadState.CANCELED_STATE.
         """
-        return
+        ...
 
     @abstractmethod
     def todict(self) -> dict:
@@ -95,7 +95,7 @@ class Download(ABC):
         Returns:
             dict: The dict with all information.
         """
-        return
+        ...
 
 
 class DownloadClient(ABC):
@@ -120,7 +120,7 @@ class DownloadClient(ABC):
         Args:
             id (int): The id of the client.
         """
-        return
+        ...
 
     @abstractmethod
     def todict(self) -> dict:
@@ -129,7 +129,7 @@ class DownloadClient(ABC):
         Returns:
             dict: The info about the client.
         """
-        return
+        ...
 
     @abstractmethod
     def edit(self, edits: dict) -> dict:
@@ -145,7 +145,7 @@ class DownloadClient(ABC):
         Returns:
             dict: The new info of the client.
         """
-        return
+        ...
 
     @abstractmethod
     def delete(self) -> None:
@@ -154,7 +154,7 @@ class DownloadClient(ABC):
         Raises:
             ClientDownloading: There is a download in the queue using the client.
         """
-        return
+        ...
 
     @abstractmethod
     def add_download(self,
@@ -173,7 +173,7 @@ class DownloadClient(ABC):
         Returns:
             str: The id/hash of the entry in the download client.
         """
-        return
+        ...
 
     @abstractmethod
     def get_download_status(self, download_id: str) -> Union[dict, None]:
@@ -187,7 +187,7 @@ class DownloadClient(ABC):
             empty dict if download is not found
             and `None` if client deleted the download.
         """
-        return
+        ...
 
     @abstractmethod
     def delete_download(self, download_id: str, delete_files: bool) -> None:
@@ -197,7 +197,7 @@ class DownloadClient(ABC):
             download_id (str): The id/hash of the download to delete.
             delete_files (bool): Delete the downloaded files.
         """
-        return
+        ...
 
     @staticmethod
     @abstractmethod
@@ -219,7 +219,7 @@ class DownloadClient(ABC):
             Tuple[bool, Union[str, None]]: Whether or not the test succeeded and
             the reason for failing if so.
         """
-        return
+        ...
 
 
 class ExternalDownload(Download):
@@ -236,7 +236,7 @@ class ExternalDownload(Download):
         Update the various variables about the state/progress
         of the torrent download
         """
-        return
+        ...
 
     @abstractmethod
     def remove_from_client(self, delete_files: bool) -> None:
@@ -245,7 +245,7 @@ class ExternalDownload(Download):
         Args:
             delete_files (bool): Delete downloaded files
         """
-        return
+        ...
 
 
 class BaseTorrentClient(DownloadClient):

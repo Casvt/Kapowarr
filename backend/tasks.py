@@ -37,16 +37,16 @@ class Task(ABC):
     @property
     @abstractmethod
     def volume_id(self) -> Union[int, None]:
-        raise NotImplementedError()
+        ...
 
     @property
     @abstractmethod
     def issue_id(self) -> Union[int, None]:
-        raise NotImplementedError()
+        ...
 
     @abstractmethod
     def __init__(self, **kwargs) -> None:
-        return
+        ...
 
     @abstractmethod
     def run(self) -> Union[None, List[Tuple[str, int, Union[int, None]]]]:
@@ -58,7 +58,7 @@ class Task(ABC):
             `List[Tuple[str, int, Union[int, None]]]` if the task returns
             search results.
         """
-        return
+        ...
 
 # =====================
 # Issue tasks

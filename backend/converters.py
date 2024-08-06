@@ -130,7 +130,7 @@ class FileConverter(ABC):
         Returns:
             Union[str, List[str]]: The resulting files or directories, in target_format.
         """
-        pass
+        ...
 
 # =====================
 # ZIP
