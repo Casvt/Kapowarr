@@ -119,9 +119,7 @@ class Settings(metaclass=Singleton):
     "Note: Is singleton"
 
     def __init__(self) -> None:
-        cursor = get_db()
-
-        cursor.executemany(
+        get_db().executemany(
             """
             INSERT OR IGNORE INTO config
             VALUES (?,?);
@@ -129,7 +127,12 @@ class Settings(metaclass=Singleton):
             default_settings.items()
         ).connection.commit()
 
-        settings = dict(cursor.execute(
+        self._load_from_db()
+
+        return
+
+    def _load_from_db(self) -> None:
+        settings = dict(get_db().execute(
             "SELECT key, value FROM config;"
         ))
 

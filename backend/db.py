@@ -236,7 +236,7 @@ def migrate_db(current_db_version: int) -> None:
             PRAGMA defer_foreign_keys = ON;
 
             -- Issues
-            CREATE TEMPORARY TABLE temp_issues AS
+            CREATE TEMPORARY TABLE temp_issues_3 AS
                 SELECT * FROM issues;
             DROP TABLE issues;
 
@@ -255,10 +255,10 @@ def migrate_db(current_db_version: int) -> None:
                     ON DELETE CASCADE
             );
             INSERT INTO issues
-                SELECT * FROM temp_issues;
+                SELECT * FROM temp_issues_3;
 
             -- Issues files
-            CREATE TEMPORARY TABLE temp_issues_files AS
+            CREATE TEMPORARY TABLE temp_issues_files_3 AS
                 SELECT * FROM issues_files;
             DROP TABLE issues_files;
 
@@ -275,7 +275,7 @@ def migrate_db(current_db_version: int) -> None:
                 )
             );
             INSERT INTO issues_files
-                SELECT * FROM temp_issues_files;
+                SELECT * FROM temp_issues_files_3;
 
             COMMIT;
         """)
@@ -325,7 +325,7 @@ def migrate_db(current_db_version: int) -> None:
             PRAGMA defer_foreign_keys = ON;
 
             -- Issues
-            CREATE TEMPORARY TABLE temp_issues AS
+            CREATE TEMPORARY TABLE temp_issues_6 AS
                 SELECT * FROM issues;
             DROP TABLE issues;
 
@@ -344,7 +344,7 @@ def migrate_db(current_db_version: int) -> None:
                     ON DELETE CASCADE
             );
             INSERT INTO issues
-                SELECT * FROM temp_issues;
+                SELECT * FROM temp_issues_6;
 
             -- Volumes
             ALTER TABLE volumes
@@ -595,6 +595,10 @@ def migrate_db(current_db_version: int) -> None:
                 "SELECT source FROM service_preference ORDER BY pref;"
             )
         ])
+
+        # UPDATE, not INSERT,
+        # because first default settings are entered and only then is the db
+        # migration done, so the key will already exist.
         cursor.execute(
             "UPDATE config SET value = ? WHERE key = 'service_preference';",
             (service_preference,)
@@ -605,6 +609,7 @@ def migrate_db(current_db_version: int) -> None:
 
         current_db_version = s['database_version'] = 15
         s._save_to_database()
+        s._load_from_db()
 
     if current_db_version == 15:
         # V15 -> V16
@@ -615,7 +620,7 @@ def migrate_db(current_db_version: int) -> None:
 
             DROP TABLE blocklist_reasons;
 
-            CREATE TEMPORARY TABLE temp_blocklist AS
+            CREATE TEMPORARY TABLE temp_blocklist_16 AS
                 SELECT * FROM blocklist;
             DROP TABLE blocklist;
 
@@ -626,7 +631,7 @@ def migrate_db(current_db_version: int) -> None:
                 added_at INTEGER NOT NULL
             );
             INSERT INTO blocklist
-                SELECT * FROM temp_blocklist;
+                SELECT * FROM temp_blocklist_16;
 
             COMMIT;
         """)
@@ -682,10 +687,14 @@ def migrate_db(current_db_version: int) -> None:
 
         service_preference: CommaList = s["service_preference"]
         service_preference.append("wetransfer")
-        s["service_preference"] = service_preference
+        cursor.execute(
+            "UPDATE config SET value = ? WHERE key = 'service_preference';",
+            (service_preference,)
+        )
 
         current_db_version = s['database_version'] = current_db_version + 1
         s._save_to_database()
+        s._load_from_db()
 
     if current_db_version == 20:
         # V20 -> V21
@@ -704,10 +713,14 @@ def migrate_db(current_db_version: int) -> None:
 
         service_preference: CommaList = s["service_preference"]
         service_preference.append("pixeldrain")
-        s["service_preference"] = service_preference
+        cursor.execute(
+            "UPDATE config SET value = ? WHERE key = 'service_preference';",
+            (service_preference,)
+        )
 
         current_db_version = s['database_version'] = current_db_version + 1
         s._save_to_database()
+        s._load_from_db()
 
     if current_db_version == 22:
         # V22 -> V23
@@ -756,10 +769,14 @@ def migrate_db(current_db_version: int) -> None:
             for service in s['service_preference']
         ))
 
-        s['service_preference'] = new_service_preference
+        cursor.execute(
+            "UPDATE config SET value = ? WHERE key = 'service_preference';",
+            (new_service_preference,)
+        )
 
         current_db_version = s['database_version'] = current_db_version + 1
         s._save_to_database()
+        s._load_from_db()
 
     if current_db_version == 24:
         # V24 -> V25
@@ -768,7 +785,7 @@ def migrate_db(current_db_version: int) -> None:
             BEGIN TRANSACTION;
             PRAGMA defer_foreign_keys = ON;
 
-            CREATE TEMPORARY TABLE temp_blocklist AS
+            CREATE TEMPORARY TABLE temp_blocklist_25 AS
                 SELECT * FROM blocklist;
             DROP TABLE blocklist;
 
@@ -803,7 +820,7 @@ def migrate_db(current_db_version: int) -> None:
                     NULL AS source,
                     reason,
                     added_at
-                FROM temp_blocklist
+                FROM temp_blocklist_25
                 WHERE link LIKE 'https://getcomics.org/dlds%';
 
             INSERT INTO blocklist
@@ -818,7 +835,7 @@ def migrate_db(current_db_version: int) -> None:
                     NULL AS source,
                     reason,
                     added_at
-                FROM temp_blocklist
+                FROM temp_blocklist_25
                 WHERE NOT link LIKE 'https://getcomics.org/dlds%';
 
             COMMIT;
