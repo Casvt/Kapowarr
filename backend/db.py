@@ -18,7 +18,7 @@ from backend.logging import LOGGER, set_log_level
 
 __DATABASE_FOLDER__ = "db",
 __DATABASE_NAME__ = "Kapowarr.db"
-__DATABASE_VERSION__ = 25
+__DATABASE_VERSION__ = 26
 __DATABASE_TIMEOUT__ = 10.0
 
 
@@ -844,6 +844,51 @@ def migrate_db(current_db_version: int) -> None:
         current_db_version = s['database_version'] = current_db_version + 1
         s._save_to_database()
 
+    if current_db_version == 25:
+        # V25 -> V26
+
+        cursor.executescript("""
+            BEGIN TRANSACTION;
+            PRAGMA defer_foreign_keys = ON;
+
+            CREATE TEMPORARY TABLE temp_download_history_26 AS
+                SELECT * FROM download_history;
+            DROP TABLE download_history;
+
+            CREATE TABLE download_history(
+                web_link TEXT,
+                web_title TEXT,
+                web_sub_title TEXT,
+                file_title TEXT,
+
+                volume_id INTEGER,
+                issue_id INTEGER,
+
+                source VARCHAR(25),
+                downloaded_at INTEGER NOT NULL CHECK (downloaded_at > 0),
+
+                FOREIGN KEY (volume_id) REFERENCES volumes(id),
+                FOREIGN KEY (issue_id) REFERENCES issues(id)
+            );
+
+            INSERT INTO download_history
+                SELECT
+                    original_link AS web_link,
+                    title AS web_title,
+                    NULL AS web_sub_title,
+                    NULL AS file_title,
+                    NULL AS volume_id,
+                    NULL AS issue_id,
+                    NULL AS source,
+                    downloaded_at
+                FROM temp_download_history_26;
+
+            COMMIT;
+        """)
+
+        current_db_version = s['database_version'] = current_db_version + 1
+        s._save_to_database()
+
     return
 
 
@@ -959,9 +1004,19 @@ def setup_db() -> None:
             FOREIGN KEY (issue_id) REFERENCES issues(id)
         );
         CREATE TABLE IF NOT EXISTS download_history(
-            original_link TEXT NOT NULL,
-            title TEXT NOT NULL,
-            downloaded_at INTEGER NOT NULL
+            web_link TEXT,
+            web_title TEXT,
+            web_sub_title TEXT,
+            file_title TEXT,
+
+            volume_id INTEGER,
+            issue_id INTEGER,
+
+            source VARCHAR(25),
+            downloaded_at INTEGER NOT NULL CHECK (downloaded_at > 0),
+
+            FOREIGN KEY (volume_id) REFERENCES volumes(id),
+            FOREIGN KEY (issue_id) REFERENCES issues(id)
         );
         CREATE TABLE IF NOT EXISTS task_history(
             task_name NOT NULL,

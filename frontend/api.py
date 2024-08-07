@@ -825,8 +825,13 @@ def api_delete_download(download_id: int):
 @auth
 def api_download_history():
     if request.method == 'GET':
-        offset = extract_key(request, 'offset', False)
-        result = get_download_history(offset)
+        volume_id: int = extract_key(request, 'volume_id', False)
+        issue_id: int = extract_key(request, 'issue_id', False)
+        offset: int = extract_key(request, 'offset', False)
+        result = get_download_history(
+            volume_id, issue_id,
+            offset
+        )
         return return_api(result)
 
     elif request.method == 'DELETE':

@@ -39,10 +39,24 @@ class PostProcessingActions:
         "Add the download to history in the database"
         get_db().execute(
             """
-            INSERT INTO download_history(original_link, title, downloaded_at)
-            VALUES (?,?,?);
+            INSERT INTO download_history(
+                web_link, web_title, web_sub_title,
+                file_title,
+                volume_id, issue_id,
+                source, downloaded_at
+            ) VALUES (
+                ?, ?, ?,
+                ?,
+                ?, ?,
+                ?, ?
+            );
             """,
-            (download.web_link, download.title, round(time()))
+            (
+                download.web_link, download.web_title, download.web_sub_title,
+                download.title,
+                download.volume_id, download.issue_id,
+                download.source.value, round(time())
+            )
         )
         return
 

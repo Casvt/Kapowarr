@@ -10,7 +10,7 @@ from os import listdir
 from os.path import basename, join
 from threading import Thread
 from time import sleep
-from typing import TYPE_CHECKING, Dict, List, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Type, Union
 
 from regex import D
 
@@ -610,23 +610,68 @@ class DownloadHandler:
 # =====================
 
 
-def get_download_history(offset: int = 0) -> List[dict]:
+def get_download_history(
+    volume_id: Union[int, None] = None,
+    issue_id: Union[int, None] = None,
+    offset: int = 0
+) -> List[Dict[str, Any]]:
     """Get the download history in blocks of 50.
 
     Args:
+        volume_id (Union[int, None], optional): Get the history of a specific
+        volume.
+            Defaults to None.
+
+        issue_id (Union[int, None], optional): Get the history of a specific
+        issue. No need to supply volume_id in order to get issue history.
+            Defaults to None.
+
         offset (int, optional): The offset of the list.
         The higher the number, the deeper into history you go.
             Defaults to 0.
 
     Returns:
-        List[dict]: The history entries.
+        List[Dict[str, Any]]: The history entries.
     """
-    result = list(map(
-        dict,
-        get_db(dict).execute(
-            """
+    if issue_id is not None:
+        comm = ("""
             SELECT
-                original_link, title, downloaded_at
+                web_link, web_title, web_sub_title,
+                file_title,
+                volume_id, issue_id,
+                source, downloaded_at
+            FROM download_history
+            WHERE issue_id = ?
+            ORDER BY downloaded_at DESC
+            LIMIT 50
+            OFFSET ?;
+            """,
+            (issue_id, offset * 50)
+        )
+
+    elif volume_id is not None:
+        comm = ("""
+            SELECT
+                web_link, web_title, web_sub_title,
+                file_title,
+                volume_id, issue_id,
+                source, downloaded_at
+            FROM download_history
+            WHERE volume_id = ?
+            ORDER BY downloaded_at DESC
+            LIMIT 50
+            OFFSET ?;
+            """,
+            (volume_id, offset * 50)
+        )
+
+    else:
+        comm = ("""
+            SELECT
+                web_link, web_title, web_sub_title,
+                file_title,
+                volume_id, issue_id,
+                source, downloaded_at
             FROM download_history
             ORDER BY downloaded_at DESC
             LIMIT 50
@@ -634,6 +679,10 @@ def get_download_history(offset: int = 0) -> List[dict]:
             """,
             (offset * 50,)
         )
+
+    result = list(map(
+        dict,
+        get_db(dict).execute(*comm)
     ))
     return result
 
@@ -642,6 +691,6 @@ def delete_download_history() -> None:
     """
     Delete complete download history
     """
-    LOGGER.info('Deleting download history')
+    LOGGER.info("Deleting download history")
     get_db().execute("DELETE FROM download_history;")
     return

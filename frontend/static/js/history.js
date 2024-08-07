@@ -23,16 +23,28 @@ function fillHistory(api_key) {
 			const entry = HistoryEls.entry.cloneNode(true);
 
 			const title = entry.querySelector('a');
-			title.innerText = obj.title;
-			title.href = obj.original_link;
+            title.href = obj.web_link;
+			title.innerText = obj.web_title;
+            title.title = obj.web_title;
+            if (obj.web_sub_title !== null)
+                title.title += `\n\n${obj.web_sub_title}`;
 
+            if (obj.file_title !== null) {
+                const vol_link = entry.querySelector('td:nth-child(2) a')
+                vol_link.innerText = obj.file_title;
+                if (obj.volume_id !== null)
+                    vol_link.href = `/volumes/${obj.volume_id}`;
+            };
+
+            if (obj.source !== null)
+                entry.querySelector('td:nth-child(3)').innerText = obj.source;
 
 			let d = new Date(obj.downloaded_at * 1000);
 			let formatted_date = d.toLocaleString('en-CA').slice(0,10) + ' ' + d.toTimeString().slice(0,5);
 			entry.querySelector('td:last-child').innerText = formatted_date;
 
 			HistoryEls.table.appendChild(entry);
-		})
+		});
 	});
 };
 

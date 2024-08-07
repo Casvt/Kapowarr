@@ -305,7 +305,7 @@ def _create_link_paths(
                 )
             }
             path_entry: DownloadGroup = {
-                'web_sub_title': remove_year_suffix.sub('', desc),
+                'web_sub_title': remove_year_suffix.sub('', desc).strip(),
                 'info': processed_desc,
                 'links': sources
             }
