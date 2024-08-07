@@ -12,8 +12,6 @@ from threading import Thread
 from time import sleep
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Type, Union
 
-from regex import D
-
 from backend.blocklist import add_to_blocklist
 from backend.custom_exceptions import (DownloadLimitReached, DownloadNotFound,
                                        FailedGCPage, LinkBroken)
