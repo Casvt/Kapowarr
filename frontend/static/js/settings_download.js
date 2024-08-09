@@ -18,11 +18,17 @@ function saveSettings(api_key) {
 	};
 	sendAPI('PUT', '/settings', api_key, {}, data)
 	.catch(e => {
-		if (e.status === 404) {
-			document.querySelector('#download-folder-input').classList.add('error-input');
-		} else {
-			console.log(e);
-		};
+        e.json().then(e => {
+            if (
+                e.error === "InvalidSettingValue"
+                && e.result.key === "download_folder"
+                ||
+                e.error === "FolderNotFound"
+            )
+                document.querySelector('#download-folder-input').classList.add('error-input');
+            else
+                console.log(e);
+        });
 	});
 };
 

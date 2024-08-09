@@ -11,9 +11,10 @@ from backend.custom_exceptions import (FolderNotFound, InvalidSettingKey,
                                        InvalidSettingValue)
 from backend.db import __DATABASE_VERSION__, get_db
 from backend.enums import GCDownloadSource, SeedingHandling
-from backend.files import folder_path
+from backend.files import folder_is_inside_folder, folder_path
 from backend.helpers import CommaList, Singleton, get_python_version
 from backend.logging import LOGGER, set_log_level
+from backend.root_folders import RootFolders
 
 download_source_versions: Dict[GCDownloadSource, Tuple[str, ...]] = dict((
     (GCDownloadSource.MEGA, ('mega', 'mega link')),
@@ -178,8 +179,14 @@ class Settings(metaclass=Singleton):
             if not ComicVine(converted_value).test_token():
                 raise InvalidSettingValue(key, value)
 
-        elif key == 'download_folder' and not isdir(value):
-            raise FolderNotFound
+        elif key == 'download_folder':
+            if not isdir(value):
+                raise FolderNotFound
+
+            for rf in RootFolders().get_all():
+                if (folder_is_inside_folder(rf['folder'], value)
+                or folder_is_inside_folder(value, rf['folder'])):
+                    raise InvalidSettingValue(key, value)
 
         elif key in ('rename_downloaded_files', 'volumes_as_empty',
                     'convert', 'extract_issue_ranges',

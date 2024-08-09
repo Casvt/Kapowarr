@@ -89,6 +89,8 @@ class RootFolders:
         Returns:
             dict: The rootfolder info
         """
+        from backend.settings import Settings
+
         # Format folder and check if it exists
         LOGGER.info(f'Adding rootfolder from {folder}')
         if not isdir(folder):
@@ -102,7 +104,11 @@ class RootFolders:
         ):
             folder = folder[0].upper() + folder[1:]
 
-        for current_rf in self.get_all():
+        s = Settings()
+        for current_rf in (
+            *self.get_all(),
+            {'folder': s['download_folder']}
+        ):
             if (
                 folder_is_inside_folder(current_rf['folder'], folder)
                 or folder_is_inside_folder(folder, current_rf['folder'])

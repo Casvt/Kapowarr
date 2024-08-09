@@ -54,10 +54,6 @@ function saveSettings(api_key) {
 		'format_preference': convert_preference,
 	};
 	sendAPI('PUT', '/settings', api_key, {}, data)
-	.then(response => response.json())
-	.then(json => {
-		if (json.error !== null) return Promise.reject(json);
-	})
 	.catch(e => {
 		e.json().then(e => {
 			if (e.error === 'InvalidSettingValue') {
