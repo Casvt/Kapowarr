@@ -1378,7 +1378,9 @@ class Library:
         'year': 'year, title, volume_number',
         'volume_number': 'volume_number, title, year',
         'recently_added': 'id DESC, title, year, volume_number',
-        'publisher': 'publisher, title, year, volume_number'
+        'publisher': 'publisher, title, year, volume_number',
+        'wanted': ('issues_downloaded_monitored >= issue_count_monitored,'
+                   'title, year, volume_number')
     }
 
     filters = {
