@@ -11,6 +11,11 @@ class BaseEnum(Enum):
         return id(self.value)
 
 
+class RestartVersion(BaseEnum):
+    NORMAL = 131
+    HOSTING_CHANGES = 132
+
+
 class SeedingHandling(BaseEnum):
     COMPLETE = 'complete'
     "Let torrent complete (finish seeding) and then move all files"

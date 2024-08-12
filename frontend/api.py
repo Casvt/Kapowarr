@@ -42,7 +42,7 @@ from backend.mass_edit import MassEditorVariables, action_to_func
 from backend.naming import generate_volume_folder_name, preview_mass_rename
 from backend.root_folders import RootFolders
 from backend.search import manual_search
-from backend.server import SERVER
+from backend.server import SERVER, diffuse_timers
 from backend.settings import Settings, about_data
 from backend.tasks import (Task, TaskHandler, delete_task_history,
                            get_task_history, get_task_planning, task_library)
@@ -220,15 +220,20 @@ def auth(method):
                 or request.path.endswith('/cover'))
         ):
             LOGGER.debug(f'{request.method} {request.path}')
+
         try:
             extract_key(request, 'api_key')
         except (KeyNotFound, InvalidKeyValue):
             return return_api({}, 'ApiKeyInvalid', 401)
 
+        diffuse_timers()
+
         result = method(*args, **kwargs)
+
         if result[1] > 300:
             LOGGER.debug(
                 f'{request.method} {request.path} {result[1]} {result[0]}')
+
         return result
 
     wrapper.__name__ = method.__name__

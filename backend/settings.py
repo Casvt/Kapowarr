@@ -10,7 +10,7 @@ from backend.custom_exceptions import (FolderNotFound, InvalidSettingKey,
                                        InvalidSettingModification,
                                        InvalidSettingValue)
 from backend.db import __DATABASE_VERSION__, get_db
-from backend.enums import GCDownloadSource, SeedingHandling
+from backend.enums import GCDownloadSource, RestartVersion, SeedingHandling
 from backend.files import folder_is_inside_folder, folder_path
 from backend.helpers import CommaList, Singleton, get_python_version
 from backend.logging import LOGGER, set_log_level
@@ -116,6 +116,76 @@ def update_manifest(url_base: str) -> None:
     return
 
 
+def backup_hosting_settings() -> None:
+    """Copy current hosting settings to backup values.
+    """
+    cursor = get_db()
+    hosting_settings = dict(cursor.execute("""
+        SELECT key, value
+        FROM config
+        WHERE key = 'host'
+            OR key = 'port'
+            OR key = 'url_base'
+        LIMIT 3;
+        """
+    ))
+    hosting_settings = {
+        f'{k}_backup': v
+        for k, v in hosting_settings.items()
+    }
+
+    cursor.executemany("""
+        INSERT INTO config(key, value)
+        VALUES (?, ?)
+        ON CONFLICT(key) DO
+        UPDATE
+        SET value = ?;
+        """,
+        ((k, v, v) for k, v in hosting_settings.items())
+    )
+
+    return
+
+
+def restore_hosting_settings() -> None:
+    """Copy the hosting settings from the backup over to the main keys.
+    """
+    from backend.server import SERVER
+
+    LOGGER.warning('Timer for hosting changes expired; '
+                   'reverting back to original settings')
+
+    with SERVER.app.app_context():
+        cursor = get_db()
+        hosting_settings = dict(cursor.execute("""
+            SELECT key, value
+            FROM config
+            WHERE key = 'host_backup'
+                OR key = 'port_backup'
+                OR key = 'url_base_backup'
+            LIMIT 3;
+            """
+        ))
+        if len(hosting_settings) < 3:
+            return
+
+        hosting_settings = {
+            k.split('_backup')[0]: v
+            for k, v in hosting_settings.items()
+        }
+
+        cursor.executemany(
+            "UPDATE config SET value = ? WHERE key = ?",
+            ((v, k) for k, v in hosting_settings.items())
+        )
+
+    update_manifest(hosting_settings['url_base'])
+
+    SERVER.restart()
+
+    return
+
+
 class Settings(metaclass=Singleton):
     "Note: Is singleton"
 
@@ -167,8 +237,16 @@ class Settings(metaclass=Singleton):
             Any: (Converted) Setting value
         """
         converted_value = value
-        if key == 'port' and not value.isdigit():
+        if key == 'host':
+            if not isinstance(value, str):
+                raise InvalidSettingValue(key, value)
+
+        elif key == 'port' and not value.isdigit():
             raise InvalidSettingValue(key, value)
+
+        elif key == 'url_base':
+            if isinstance(value, str) and value:
+                converted_value = ('/' + value.lstrip('/')).rstrip('/')
 
         elif key == 'api_key':
             raise InvalidSettingModification(key, 'POST /settings/api_key')
@@ -203,10 +281,6 @@ class Settings(metaclass=Singleton):
 
         elif key == 'log_level' and not isinstance(value, int):
             raise InvalidSettingValue(key, value)
-
-        elif key == 'url_base':
-            if isinstance(value, str) and value:
-                converted_value = ('/' + value.lstrip('/')).rstrip('/')
 
         elif key == 'volume_padding':
             try:
@@ -288,18 +362,18 @@ class Settings(metaclass=Singleton):
 
         return
 
-    def update(self, changes: dict) -> None:
+    def update(self, changes: Dict[str, Any]) -> None:
         """dict-like update method for the settings
         but with checking of the values.
 
         Args:
-            changes (dict): The keys and their new values
+            changes (Dict[str, Any]): The keys and their new values.
 
         Raises:
-            InvalidSettingKey: Key is not allowed
-            InvalidSettingValue: Value of the key is not allowed
-            InvalidSettingModification: Key can not be modified this way
-            FolderNotFound: Folder not found
+            InvalidSettingKey: Key is not allowed.
+            InvalidSettingValue: Value of the key is not allowed.
+            InvalidSettingModification: Key can not be modified this way.
+            FolderNotFound: Folder not found.
         """
         for key, value in changes.items():
             if key not in default_settings:
@@ -309,6 +383,14 @@ class Settings(metaclass=Singleton):
 
             changes[key] = value
 
+        hosting_changes = any(
+            s in changes and changes[s] != self.settings[s]
+            for s in ('host', 'port', 'url_base')
+        )
+
+        if hosting_changes:
+            backup_hosting_settings()
+
         self.settings.update(changes)
         get_db().executemany(
             "UPDATE config SET value = ? WHERE key = ?;",
@@ -317,10 +399,17 @@ class Settings(metaclass=Singleton):
 
         if 'log_level' in changes:
             set_log_level(changes['log_level'])
+
         if 'url_base' in changes:
             update_manifest(changes['url_base'])
 
         LOGGER.info(f'Settings changed: {changes}')
+
+        if hosting_changes:
+            from backend.server import SERVER
+            SERVER.restart(
+                RestartVersion.HOSTING_CHANGES
+            )
 
         return
 

@@ -17,11 +17,11 @@ from waitress.task import ThreadedTaskDispatcher as TTD
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
 from backend.db import DBConnection, close_db, set_db_location
-from backend.enums import SocketEvent
+from backend.enums import RestartVersion, SocketEvent
 from backend.files import folder_path
 from backend.helpers import DB_ThreadSafeSingleton, Singleton
 from backend.logging import LOGGER, set_log_level, setup_logging
-from backend.settings import private_settings
+from backend.settings import private_settings, restore_hosting_settings
 
 if TYPE_CHECKING:
     from flask.ctx import AppContext
@@ -29,6 +29,9 @@ if TYPE_CHECKING:
 
     from backend.download_general import Download
     from backend.tasks import Task
+
+
+HOSTING_TIMER_DURATION = 60.0 # seconds
 
 
 class ThreadedTaskDispatcher(TTD):
@@ -61,12 +64,42 @@ class ThreadedTaskDispatcher(TTD):
         return result
 
 
+def handle_restart_version(restart_version: RestartVersion) -> None:
+    """Do special actions needed based on restart version.
+
+    Args:
+        restart_version (RestartVersion): The restart version.
+    """
+    if restart_version == RestartVersion.HOSTING_CHANGES:
+        LOGGER.info("Starting timer for hosting changes")
+        SERVER.revert_hosting_timer.start()
+
+    return
+
+
+def diffuse_timers() -> None:
+    """Stop any timers running after doing a special restart.
+    """
+    if SERVER.revert_hosting_timer.is_alive():
+        LOGGER.info("Timer for hosting changes diffused")
+        SERVER.revert_hosting_timer.cancel()
+
+    return
+
+
 class Server(metaclass=Singleton):
     api_prefix = "/api"
 
     def __init__(self) -> None:
-        self.do_restart = False
+        self.restart_version = None
         self.url_base = ''
+
+        self.revert_hosting_timer = Timer(
+            HOSTING_TIMER_DURATION,
+            restore_hosting_settings
+        )
+        self.revert_hosting_timer.name = "HostingHandler"
+
         return
 
     def create_app(self) -> None:
@@ -130,7 +163,7 @@ class Server(metaclass=Singleton):
             url_base (str): The desired URL base to set it to.
         """
         self.app.config['APPLICATION_ROOT'] = url_base
-        self.app.wsgi_app = DispatcherMiddleware( # type: ignore[method-assign]
+        self.app.wsgi_app = DispatcherMiddleware( # type: ignore
             Flask(__name__),
             {url_base: self.app.wsgi_app}
         )
@@ -180,6 +213,9 @@ class Server(metaclass=Singleton):
     def __shutdown_thread_function(self) -> None:
         """Shutdown waitress server. Intended to be run in a thread.
         """
+        if not hasattr(self, 'server'):
+            return
+
         self.server.task_dispatcher.shutdown()
         self.server.close()
         self.server._map.clear() # type: ignore
@@ -194,10 +230,18 @@ class Server(metaclass=Singleton):
         t.start()
         return
 
-    def restart(self) -> None:
+    def restart(
+        self,
+        restart_version: RestartVersion = RestartVersion.NORMAL
+    ) -> None:
         """Same as `self.shutdown()`, but restart instead of shutting down.
+
+        Args:
+            restart_version (RestartVersion, optional): Why Kapowarr should
+            restart.
+                Defaults to RestartVersion.NORMAL.
         """
-        self.do_restart = True
+        self.restart_version = restart_version
         self.shutdown()
         return
 
