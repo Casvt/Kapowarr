@@ -13,9 +13,9 @@ from backend.db import get_db
 from backend.enums import SpecialVersion
 from backend.file_extraction import extract_filename_data
 from backend.helpers import (AsyncSession, MatchedSearchResultData,
-                             SearchResultData, Session,
-                             check_overlapping_issues, create_range,
-                             extract_year_from_date, first_of_column)
+                             SearchResultData, check_overlapping_issues,
+                             create_range, extract_year_from_date,
+                             first_of_column)
 from backend.logging import LOGGER
 from backend.matching import _match_special_version, check_search_result_match
 from backend.settings import private_settings
@@ -144,11 +144,19 @@ class SearchSources:
             self._get_comics,
         ]
 
-    def search_all(self) -> List[SearchResultData]:
+    async def search_all(self) -> List[SearchResultData]:
         "Search all sources for the query"
         result: List[SearchResultData] = []
-        for source in self.source_list:
-            result += source()
+
+        tasks = [
+            create_task(source())
+            for source in self.source_list
+        ]
+        responses = await gather(*tasks)
+
+        for r in responses:
+            result += r
+
         return result
 
     async def __fetch_one(
@@ -173,22 +181,25 @@ class SearchSources:
             responses = await gather(*tasks)
             return [BeautifulSoup(r, 'html.parser') for r in responses]
 
-    def _get_comics(self) -> List[SearchResultData]:
+    async def _get_comics(self) -> List[SearchResultData]:
         """Search for the query in getcomics
 
         Returns:
             List[SearchResultData]: The search results
         """
-        search_results = Session().get(
-            private_settings["getcomics_url"],
-            params={'s': self.query}
-        ).text
+        async with AsyncSession() as session:
+            async with session.get(
+                private_settings["getcomics_url"],
+                params={'s': self.query}
+            ) as response:
+                search_results = await response.text()
+
         soup = BeautifulSoup(search_results, 'html.parser')
         pages = soup.find_all(['a', 'span'], {"class": 'page-numbers'})
         pages = min(int(pages[-1].get_text(strip=True)), 10) if pages else 1
 
         results = []
-        parsed_results = run(self.__fetch_GC_pages(range(2, pages + 1)))
+        parsed_results = await self.__fetch_GC_pages(range(2, pages + 1))
         for page in [soup] + parsed_results:
             results += page.find_all('article', {'class': 'post'})
 
@@ -213,6 +224,33 @@ class SearchSources:
             }))
 
         return formatted_results
+
+
+async def search_multiple_queries(*queries: str) -> List[SearchResultData]:
+    """Do a manual search for multiple queries asynchronously.
+
+    Returns:
+        List[SearchResultData]: The search results for all queries together,
+        duplicates removed.
+    """
+    search_results: List[SearchResultData] = []
+    format_searches = [
+        SearchSources(q)
+        for q in queries
+    ]
+    tasks = [
+        create_task(ss.search_all())
+        for ss in format_searches
+    ]
+    responses = await gather(*tasks)
+    for r in responses:
+        search_results += r
+
+    # Remove duplicates
+    # because multiple formats can return the same result
+    search_results = list({r['link']: r for r in search_results}.values())
+
+    return search_results
 
 
 def manual_search(
@@ -286,20 +324,13 @@ def manual_search(
     if volume_data.year is None:
         query_formats = tuple(f.replace('({year})', '') for f in query_formats)
 
-    # Get formatted search results
-    search_results: List[SearchResultData] = []
-    for format in query_formats:
-        search = SearchSources(
-            format.format(
-                title=title, volume_number=volume_data.volume_number,
-                year=volume_data.year, issue_number=issue_number
-            )
+    search_results = run(search_multiple_queries(*(
+        format.format(
+            title=title, volume_number=volume_data.volume_number,
+            year=volume_data.year, issue_number=issue_number
         )
-        search_results += search.search_all()
-
-    # Remove duplicates
-    # because multiple formats can return the same result
-    search_results = list({r['link']: r for r in search_results}.values())
+        for format in query_formats
+    )))
 
     # Decide what is a match and what not
     issue_numbers: Dict[float, Union[int, None]] = {

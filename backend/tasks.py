@@ -15,7 +15,6 @@ from backend.conversion import mass_convert
 from backend.custom_exceptions import (InvalidComicVineApiKey,
                                        TaskNotDeletable, TaskNotFound)
 from backend.db import get_db
-from backend.download_queue import DownloadHandler
 from backend.helpers import Singleton
 from backend.logging import LOGGER
 from backend.naming import mass_rename
@@ -25,6 +24,8 @@ from backend.volumes import Issue, Volume, refresh_and_scan
 
 if TYPE_CHECKING:
     from flask import Flask
+
+    from backend.download_queue import DownloadHandler
 
 
 class Task(ABC):
