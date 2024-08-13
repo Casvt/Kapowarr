@@ -280,6 +280,9 @@ main:has(#massedit-toggle:checked) .action-bar {
 }
 
 .option-container {
+    display: flex;
+    justify-content: space-between;
+
 	overflow: hidden;
 	border-radius: 4px;
 	border: 2px solid var(--border-color);
@@ -287,11 +290,13 @@ main:has(#massedit-toggle:checked) .action-bar {
 }
 
 .option-container button {
+    min-width: 6.8rem;
 	border-radius: 0px;
 	border: none;
 }
 
 .option-container select {
+    flex-grow: 1;
 	height: 100%;
 	background-color: var(--background-color);
 	color: var(--text-color);
@@ -306,7 +311,7 @@ main:has(#massedit-toggle:checked) #lib-stats {
 	display: none;
 }
 
-@media (max-width: 850px) {
+@media (max-width: 860px) {
 	.action-bar {
         flex-direction: column;
 		justify-content: center;
@@ -314,13 +319,13 @@ main:has(#massedit-toggle:checked) #lib-stats {
 	.action-divider {
 		width: 100%;
 	}
-	.option-container {
-		flex: 1 1 auto;
-	}
 	.action-divider > *,
 	.action-divider  {
-		flex: 1 1 0;
+        flex: 1 1 0;
 	}
+    .action-divider > .option-container {
+        flex: 1 1 auto;
+    }
 }
 
 @media (max-width: 535px) {
