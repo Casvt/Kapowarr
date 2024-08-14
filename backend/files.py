@@ -8,8 +8,9 @@ from os import listdir, makedirs, remove, scandir, sep, stat
 from os.path import (abspath, basename, commonpath, dirname, isdir,
                      isfile, join, relpath, samefile, splitext)
 from shutil import copytree, move, rmtree
-from typing import Iterable, List, Tuple, Union
+from typing import Any, Dict, Iterable, List, Tuple, Union
 
+from backend.custom_exceptions import FileNotFound
 from backend.db import get_db
 from backend.logging import LOGGER
 
@@ -54,16 +55,27 @@ def find_lowest_common_folder(files: List[str]) -> str:
     return commonpath(files)
 
 
-def delete_file_folder(path: str) -> None:
+def delete_file_folder(
+    path: str,
+    base_folder: Union[str, None] = None
+) -> None:
     """Delete a file or folder. In the case of a folder, it is deleted recursively.
 
     Args:
         path (str): The path to the file or folder.
+
+        base_folder (Union[str, None], optional): After deleting, delete empty
+        folders up to the base folder if value is not `None`.
+            Defaults to None.
     """
     if isfile(path):
         remove(path)
     elif isdir(path):
         rmtree(path, ignore_errors=True)
+
+    if base_folder:
+        delete_empty_folders(dirname(path), base_folder)
+
     return
 
 
@@ -138,6 +150,9 @@ def delete_empty_folders(top_folder: str, root_folder: str) -> None:
         top_folder (str): The folder to start deleting from
         root_folder (str): The root folder to stop at in case we reach it
     """
+    if top_folder == root_folder:
+        return
+
     LOGGER.debug(f'Deleting folders from {top_folder} until {root_folder}')
 
     if not folder_is_inside_folder(root_folder, top_folder):
@@ -276,6 +291,31 @@ def copy_directory(source: str, target: str) -> None:
     return
 
 
+def get_file(
+    file_id: int
+) -> Dict[str, Any]:
+    """Get file data based on it's ID.
+
+    Args:
+        file_id (int): The ID of the file to get the data of.
+
+    Raises:
+        FileNotFound: No file found with the given ID.
+
+    Returns:
+        Dict[str, Any]: The file data.
+    """
+    result = get_db(dict).execute(
+        "SELECT id, filepath, size FROM files WHERE id = ? LIMIT 1;",
+        (file_id,)
+    ).fetchone()
+
+    if not result:
+        raise FileNotFound
+
+    return dict(result)
+
+
 def get_file_id(
     filepath: str,
     add_file: bool
@@ -315,7 +355,7 @@ def filepath_to_volume_id(filepath: str) -> int:
     Returns:
         int: The ID of the volume.
     """
-    volume_id: int = get_db().execute("""
+    volume_id = get_db().execute("""
         SELECT i.volume_id
         FROM
             files f
@@ -328,6 +368,44 @@ def filepath_to_volume_id(filepath: str) -> int:
         LIMIT 1;
         """,
         (filepath,)
+    ).fetchone()
+
+    if not volume_id:
+        volume_id = get_db().execute("""
+            SELECT vf.volume_id
+            FROM
+                files f
+                INNER JOIN volume_files vf
+            ON
+                f.id = vf.file_id
+            WHERE f.filepath = ?
+            LIMIT 1;
+            """,
+            (filepath,)
+        ).fetchone()
+
+    return volume_id[0]
+
+
+def delete_file_from_db(file_id: int) -> None:
+    """Physically delete the file and remove it from the database.
+
+    Args:
+        file_id (int): The ID of the file to delete.
+    """
+    file_data = get_file(file_id)
+    volume_id = filepath_to_volume_id(file_data["filepath"])
+
+    cursor = get_db()
+    volume_folder = cursor.execute(
+        "SELECT folder FROM volumes WHERE id = ? LIMIT 1;",
+        (volume_id,)
     ).fetchone()[0]
 
-    return volume_id
+    delete_file_folder(file_data["filepath"], volume_folder)
+
+    cursor.execute(
+        "DELETE FROM files WHERE id = ?",
+        (file_id,)
+    )
+    return

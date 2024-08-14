@@ -8,7 +8,8 @@ const ViewEls = {
 		manual_search: document.querySelector('.pre-build-els .search-entry'),
 		rename_before: document.querySelector('.pre-build-els .rename-before'),
 		rename_after: document.querySelector('.pre-build-els .rename-after'),
-		files_entry: document.querySelector('.pre-build-els .files-entry')
+		files_entry: document.querySelector('.pre-build-els .files-entry'),
+		general_files_entry: document.querySelector('.pre-build-els .general-files-entry')
 	},
 	vol_data: {
 		monitor: document.querySelector('#volume-monitor'),
@@ -199,17 +200,24 @@ function fillPage(data, api_key) {
 	const table = document.querySelector('#files-window tbody');
 	table.innerHTML = '';
 	data.general_files.forEach(gf => {
-		const entry = ViewEls.pre_build.files_entry.cloneNode(true);
-		const short_f = gf.filepath.slice(
+		const entry = ViewEls.pre_build.general_files_entry.cloneNode(true);
+
+        const short_f = gf.filepath.slice(
 			gf.filepath.indexOf(data.volume_folder)
 			+ data.volume_folder.length
 			+ 1
 		);
-		const file_name = entry.querySelector(':first-child');
+		const file_name = entry.querySelector('.gf-filepath');
 		file_name.innerText = short_f;
 		file_name.title = gf.filepath;
-		entry.querySelector(':last-child').innerText = gf.file_type;
-		table.appendChild(entry);
+
+        entry.querySelector('.gf-type').innerText = gf.file_type;
+        entry.querySelector('.gf-size').innerText = convertSize(gf.size);
+        entry.querySelector('.gf-delete button').onclick = e =>
+            sendAPI("DELETE", `/files/${gf.id}`, api_key)
+            .then(response => entry.remove());
+
+        table.appendChild(entry);
 	});
 };
 
@@ -663,12 +671,26 @@ function showIssueInfo(issue_id, api_key) {
 		document.querySelector('#issue-info-title').innerText =
 			`${json.result.title} - #${json.result.issue_number} - ${json.result.date}`;
 		document.querySelector('#issue-info-desc').innerHTML = json.result.description;
-		const files_table = document.querySelector('#issue-files');
+		const files_table = document.querySelector('#issue-files-list');
 		files_table.innerHTML = '';
 		json.result.files.forEach(f => {
-			const entry = document.createElement('div');
-			entry.innerText = f;
-			files_table.appendChild(entry);
+            const entry = ViewEls.pre_build.files_entry.cloneNode(true);
+
+            const vf = ViewEls.vol_data.path.dataset.volume_folder;
+            const short_f = f.filepath.slice(
+                f.filepath.indexOf(vf)
+                + vf.length
+                + 1
+            );
+            entry.querySelector('.f-filepath').innerText = short_f;
+            entry.querySelector('.f-filepath').title = f.filepath;
+            
+            entry.querySelector('.f-size').innerText = convertSize(f.size);
+            entry.querySelector('.f-delete button').onclick = e =>
+                sendAPI("DELETE", `/files/${f.id}`, api_key)
+                .then(response => entry.remove());
+
+            files_table.appendChild(entry);
 		});
 		showWindow('issue-info-window');
 	});

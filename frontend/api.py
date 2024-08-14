@@ -17,8 +17,9 @@ from backend.custom_exceptions import (BlocklistEntryNotFound,
                                        CredentialInvalid, CredentialNotFound,
                                        CredentialSourceNotFound,
                                        CVRateLimitReached, DownloadNotFound,
-                                       FolderNotFound, InvalidComicVineApiKey,
-                                       InvalidKeyValue, InvalidSettingKey,
+                                       FileNotFound, FolderNotFound,
+                                       InvalidComicVineApiKey, InvalidKeyValue,
+                                       InvalidSettingKey,
                                        InvalidSettingModification,
                                        InvalidSettingValue, IssueNotFound,
                                        KeyNotFound, LogFileNotFound,
@@ -36,6 +37,7 @@ from backend.download_queue import (DownloadHandler, delete_download_history,
 from backend.download_torrent_clients import TorrentClients, client_types
 from backend.enums import (BlocklistReason, BlocklistReasonID,
                            DownloadSource, SpecialVersion)
+from backend.files import delete_file_from_db, get_file
 from backend.library_import import import_library, propose_library_import
 from backend.logging import LOGGER, get_debug_log_filepath
 from backend.mass_edit import MassEditorVariables, action_to_func
@@ -82,8 +84,9 @@ def error_handler(method) -> Any:
             CredentialInvalid, CredentialNotFound,
             CredentialSourceNotFound,
             CVRateLimitReached, DownloadNotFound,
-            FolderNotFound, InvalidComicVineApiKey,
-            InvalidKeyValue, InvalidSettingKey,
+            FileNotFound, FolderNotFound,
+            InvalidComicVineApiKey, InvalidKeyValue,
+            InvalidSettingKey,
             InvalidSettingModification,
             InvalidSettingValue, IssueNotFound,
             KeyNotFound, LogFileNotFound,
@@ -1087,7 +1090,7 @@ def api_torrent_client(id: int):
         return return_api({})
 
 # =====================
-# Torrent Clients
+# Mass Editor
 # =====================
 
 
@@ -1121,3 +1124,19 @@ def api_mass_editor():
 
     action_to_func[action](volume_ids, **args)
     return return_api({})
+
+# =====================
+# Files
+# =====================
+
+
+@api.route('/files/<int:id>', methods=['GET', 'DELETE'])
+@error_handler
+@auth
+def api_files(id: int):
+    if request.method == 'GET':
+        return return_api(get_file(id))
+
+    elif request.method == 'DELETE':
+        delete_file_from_db(id)
+        return return_api({})

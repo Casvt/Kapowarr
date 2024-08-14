@@ -23,7 +23,8 @@ from backend.enums import GeneralFileType, SpecialVersion
 from backend.file_extraction import (extract_filename_data, md_extensions,
                                      md_files, supported_extensions)
 from backend.files import (create_volume_folder, delete_empty_folders,
-                           folder_is_inside_folder, get_file_id, list_files,
+                           delete_file_folder, folder_is_inside_folder,
+                           get_file_id, list_files,
                            propose_basefolder_change, rename_file)
 from backend.helpers import PortablePool, first_of_column, reversed_tuples
 from backend.logging import LOGGER
@@ -229,22 +230,26 @@ class Issue:
         ).fetchone()[0]
         return value
 
-    def get_files(self) -> List[str]:
+    def get_files(self) -> List[Dict[str, Any]]:
         """Get all files linked to the issue.
 
         Returns:
-            List[str]: List of the files.
+            List[Dict[str, Any]]: List of filepaths. Each dict has the following
+            keys: "id", "filepath" and "size".
         """
-        files = first_of_column(get_db().execute(f"""
-            SELECT DISTINCT filepath
-            FROM files f
-            INNER JOIN issues_files if
-            ON f.id = if.file_id
-            WHERE if.issue_id = ?
-            ORDER BY filepath;
-            """,
-            (self.id,)
-        ))
+        files = [
+            dict(r)
+            for r in get_db(dict).execute(f"""
+                SELECT DISTINCT id, filepath, size
+                FROM files f
+                INNER JOIN issues_files if
+                ON f.id = if.file_id
+                WHERE if.issue_id = ?
+                ORDER BY filepath;
+                """,
+                (self.id,)
+            )
+        ]
         return files
 
     def __setitem__(self, key: str, value: Any) -> None:
@@ -438,7 +443,10 @@ class _VolumeBackend:
 
         return last_issue_date
 
-    def _get_files(self, issue_id: Union[int, None] = None) -> List[str]:
+    def _get_files(
+        self,
+        issue_id: Union[int, None] = None
+    ) -> List[Dict[str, Any]]:
         """Get the files matched to the volume.
 
         Args:
@@ -449,52 +457,53 @@ class _VolumeBackend:
                 Defaults to None.
 
         Returns:
-            List[str]: List of filepaths.
+            List[Dict[str, Any]]: List of filepaths. Each dict has the following
+            keys: "id", "filepath" and "size".
         """
         if not issue_id:
-            files = first_of_column(get_db().execute(f"""
-                SELECT DISTINCT filepath
-                FROM files f
-                INNER JOIN issues_files if
-                INNER JOIN issues i
-                ON
-                    f.id = if.file_id
-                    AND if.issue_id = i.id
-                WHERE volume_id = ?;
-                """,
-                (self.id,)
-            ))
+            files = [
+                dict(r)
+                for r in get_db(dict).execute(f"""
+                    SELECT DISTINCT f.id, filepath, size
+                    FROM files f
+                    INNER JOIN issues_files if
+                    INNER JOIN issues i
+                    ON
+                        f.id = if.file_id
+                        AND if.issue_id = i.id
+                    WHERE volume_id = ?;
+                    """,
+                    (self.id,)
+                )
+            ]
 
         else:
-            files = first_of_column(get_db().execute(f"""
-                SELECT DISTINCT filepath
-                FROM files f
-                INNER JOIN issues_files if
-                ON f.id = if.file_id
-                WHERE if.issue_id = ?;
-                """,
-                (issue_id,)
-            ))
+            files = [
+                dict(r)
+                for r in get_db(dict).execute(f"""
+                    SELECT DISTINCT f.id, filepath, size
+                    FROM files f
+                    INNER JOIN issues_files if
+                    ON f.id = if.file_id
+                    WHERE if.issue_id = ?;
+                    """,
+                    (issue_id,)
+                )
+            ]
 
         return files
 
-    def _get_general_files(self, include_id: bool = False) -> List[dict]:
+    def _get_general_files(self) -> List[Dict[str, Any]]:
         """Get the general files linked to the volume.
 
-        Args:
-            include_id (bool, optional): Also fetch the file ids.
-                Defaults to False.
-
         Returns:
-            List[dict]: The general files. The 'filepath' key gives the
-            filepath. The 'file_type' key gives the type of the general file
-            (e.g. 'metadata').
+            List[Dict[str, Any]]: The general files. Similarly formatted as
+            normal file output, but with the extra key "file_type".
         """
-        file_ids = ', file_id' if include_id else ''
         return [
             dict(r)
-            for r in get_db(dict).execute(f"""
-                SELECT filepath, file_type{file_ids}
+            for r in get_db(dict).execute("""
+                SELECT f.id, filepath, size, file_type
                 FROM files f
                 INNER JOIN volume_files vf
                 ON f.id = vf.file_id
@@ -602,8 +611,8 @@ class _VolumeBackend:
 
         file_changes = propose_basefolder_change(
             (
-                *self._get_files(),
-                *(f['filepath'] for f in self._get_general_files())
+                f["filepath"]
+                for f in (*self._get_files(), *self._get_general_files())
             ),
             current_root_folder[1],
             desired_root_folder[1]
@@ -673,8 +682,8 @@ class _VolumeBackend:
 
         file_changes = propose_basefolder_change(
             (
-                *self._get_files(),
-                *(f['filepath'] for f in self._get_general_files())
+                f["filepath"]
+                for f in (*self._get_files(), *self._get_general_files())
             ),
             current_volume_folder,
             new_volume_folder
@@ -802,7 +811,10 @@ class Volume(_VolumeBackend):
         result = VolumeData(**data)
         return result
 
-    def get_files(self, issue_id: Union[int, None] = None) -> List[str]:
+    def get_files(
+        self,
+        issue_id: Union[int, None] = None
+    ) -> List[Dict[str, Any]]:
         """Get the files matched to the volume.
 
         Args:
@@ -813,11 +825,12 @@ class Volume(_VolumeBackend):
                 Defaults to None.
 
         Returns:
-            List[str]: List of filepaths.
+            List[Dict[str, Any]]: List of filepaths. Each dict has the following
+            keys: "id", "filepath" and "size".
         """
         return self._get_files(issue_id=issue_id)
 
-    def get_general_files(self, include_id: bool = False) -> List[dict]:
+    def get_general_files(self) -> List[Dict[str, Any]]:
         """Get the general files linked to the volume.
 
         Args:
@@ -825,11 +838,10 @@ class Volume(_VolumeBackend):
                 Defaults to False.
 
         Returns:
-            List[dict]: The general files. The 'filepath' key gives the
-            filepath. The 'file_type' key gives the type of the general file
-            (e.g. 'metadata').
+            List[Dict[str, Any]]: The general files. Similarly formatted as
+            normal file output, but with the extra key "file_type".
         """
-        return self._get_general_files(include_id=include_id)
+        return self._get_general_files()
 
     def get_issues(self) -> List[dict]:
         """Get list of issues that are in the volume.
@@ -911,8 +923,7 @@ class Volume(_VolumeBackend):
 
         if delete_folder:
             for f in self.get_files():
-                remove(f)
-                delete_empty_folders(dirname(f), self['folder'])
+                delete_file_folder(f["filepath"], self["folder"])
 
             delete_empty_folders(
                 self['folder'],
@@ -1000,10 +1011,10 @@ def scan_files(
     volume_issues = volume.get_issues()
     # We're going to check a lot of a string is in here,
     # so convert to set for speed improvement.
-    volume_files = set(volume.get_files())
-    _general_files = volume.get_general_files(include_id=True)
+    volume_files = set((f["filepath"] for f in volume.get_files()))
+    _general_files = volume.get_general_files()
     general_files: Dict[str, int] = {
-        f['filepath']: f['file_id']
+        f['filepath']: f['id']
         for f in _general_files
     }
 
@@ -1129,9 +1140,9 @@ def scan_files(
     # Delete bindings for general files that aren't in new bindings
     if not hashed_files:
         delete_general_bindings = (
-            (b['file_id'],)
+            (b['id'],)
             for b in _general_files
-            if not (b['file_id'], b['file_type']) in general_bindings
+            if not (b['id'], b['file_type']) in general_bindings
         )
         cursor.executemany(
             "DELETE FROM volume_files WHERE file_id = ?;",

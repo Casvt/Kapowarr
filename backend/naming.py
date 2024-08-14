@@ -11,7 +11,7 @@ from os.path import basename, dirname, isdir, isfile, join, splitext
 from re import compile, escape, match
 from string import Formatter
 from sys import platform
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Tuple, Union
 
 from backend.custom_exceptions import InvalidSettingValue
 from backend.db import get_db
@@ -494,7 +494,9 @@ def preview_mass_rename(
     # Fetch all files linked to the volume or issue
     new_vf = None
     if not issue_id:
-        file_infos = sorted(volume.get_files())
+        file_infos: Iterable[str] = sorted((
+            f["filepath"] for f in volume.get_files()
+        ))
         if not volume['custom_folder']:
             root_folder = RootFolders()[volume['root_folder']]
             folder = join(root_folder, generate_volume_folder_name(volume_id))
@@ -503,7 +505,10 @@ def preview_mass_rename(
         else:
             folder = volume['folder']
     else:
-        file_infos = volume.get_files(issue_id)
+        file_infos: Iterable[str] = [
+            f["filepath"]
+            for f in volume.get_files(issue_id)
+        ]
         if not file_infos:
             return result, new_vf
         folder = volume['folder']

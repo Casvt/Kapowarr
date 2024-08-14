@@ -329,18 +329,8 @@ tbody .issue-title:hover {
 	background-color: var(--accent-color);
 }
 
-#issue-files {
-	display: flex;
-	flex-direction: column;
-}
-
-#issue-files > div {
-	padding: .25rem .5rem;
-	border-top: 1px solid var(--border-color);
-}
-
 /*  */
-/* General files window */
+/* (General) files window */
 /*  */
 #files-window:has(tbody tr) p,
 #files-window:not(:has(tbody tr)) table {
@@ -351,29 +341,37 @@ tbody .issue-title:hover {
 	justify-content: flex-start;
 }
 
-#files-window :where(td, th):first-child {
+:where(#files-window, #issue-files) :where(td, th):first-child {
 	padding-left: 1rem;
 }
 
-#files-window :where(td, th):last-child {
+:where(#files-window, #issue-files) :where(td, th):last-child {
 	padding-right: 1rem;
 }
 
-.files-entry {
+:where(.files-entry, .general-files-entry) {
 	transition: background-color 200ms linear;
 }
 
-.files-entry:hover {
+:where(.files-entry, .general-files-entry):hover {
 	background-color: var(--hover-color);
 }
 
-.files-entry td {
+:where(.files-entry, .general-files-entry) td {
 	border-top: 1px solid var(--border-color);
 	padding: .5rem;
 }
 
-.files-entry td:first-child {
-	width: 100%;
+:where(.files-entry, .general-files-entry) td:not(:first-child) {
+    width: 6.5rem;
+}
+
+:where(.files-entry, .general-files-entry) td:last-child {
+    width: 4.5rem;
+}
+
+:where(.files-entry, .general-files-entry) td button {
+    width: 1.5rem;
 }
 
 @media (max-width: 520px) {

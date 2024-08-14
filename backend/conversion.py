@@ -158,7 +158,7 @@ def preview_mass_convert(
     volume_folder = volume['folder']
 
     result = []
-    for f in sorted(volume.get_files(issue_id)):
+    for f in sorted((f["filepath"] for f in volume.get_files(issue_id))):
         converter = None
 
         if (
@@ -225,7 +225,7 @@ def mass_convert(
     extract_issue_ranges = settings['extract_issue_ranges']
 
     planned_conversions: List[Tuple[str, List[str]]] = []
-    for f in volume.get_files(issue_id):
+    for f in (f["filepath"] for f in volume.get_files(issue_id)):
         if hashed_files and f not in hashed_files:
             continue
 

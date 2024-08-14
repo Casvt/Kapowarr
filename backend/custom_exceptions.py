@@ -393,3 +393,8 @@ class TorrentClientNotWorking(Exception):
 class LogFileNotFound(CustomException):
     """No log file was found"""
     api_response = {'error': 'LogFileNotFound', 'result': {}, 'code': 404}
+
+
+class FileNotFound(CustomException):
+    """File with given ID not found"""
+    api_response = {'error': 'FileNotFound', 'result': {}, 'code': 404}

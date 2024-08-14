@@ -52,8 +52,19 @@
 		<td></td>
 	</tr>
 	<tr class="files-entry">
-		<td></td>
-		<td></td>
+		<td class="f-filepath"></td>
+        <td class="f-size"></td>
+        <td class="f-delete">
+            {{ icon_button('', "Delete", "delete.svg") }}
+        </td>
+	</tr>
+	<tr class="general-files-entry">
+		<td class="gf-filepath"></td>
+		<td class="gf-type"></td>
+        <td class="gf-size"></td>
+        <td class="gf-delete">
+            {{ icon_button('', "Delete", "delete.svg") }}
+        </td>
 	</tr>
 {% endblock pre_build_rows %}
 
@@ -137,10 +148,12 @@
 		<p class="empty-rename-message">Nothing to Rename</p>
 		<table class="rename-preview">
 			<thead>
-				<th colspan="2" aria-label="Select All">
-					<input type="checkbox" id="selectall-input" checked>
-				</th>
-				<th>Files</th>
+				<tr>
+                    <th colspan="2" aria-label="Select All">
+                        <input type="checkbox" id="selectall-input" checked>
+                    </th>
+                    <th>Files</th>
+                </tr>
 			</thead>
 			<tbody></tbody>
 		</table>
@@ -176,8 +189,16 @@
 			<h3 id="issue-info-title"></h3>
 			<p id="issue-info-desc" class="description"></p>
 		</div>
-		<div id="issue-files" class="hidden">
-		</div>
+		<table id="issue-files" class="icon-text-color hidden">
+            <thead>
+                <tr>
+                    <th>File</th>
+                    <th>Size</th>
+                    <th>Delete</th>
+                </tr>
+            </thead>
+            <tbody id="issue-files-list"></tbody>
+        </table>
 	{% endset %}
 	{{ window(False, "issue-info-window", "Issue info", issue_info_content, '') }}
 
@@ -186,10 +207,12 @@
 		<p class="empty-rename-message">Nothing to Convert</p>
 		<table class="rename-preview">
 			<thead>
-				<th colspan="2" aria-label="Select All">
-					<input type="checkbox" id="selectall-convert-input" checked>
-				</th>
-				<th>Files</th>
+				<tr>
+                    <th colspan="2" aria-label="Select All">
+                        <input type="checkbox" id="selectall-convert-input" checked>
+                    </th>
+                    <th>Files</th>
+                </tr>
 			</thead>
 			<tbody></tbody>
 		</table>
@@ -201,10 +224,14 @@
 
 	{% set files_content %}
 		<p class="empty-rename-message">No general files</p>
-		<table>
+		<table class="icon-text-color">
 			<thead>
-				<th>File</th>
-				<th>Type</th>
+				<tr>
+                    <th>File</th>
+                    <th>Type</th>
+                    <th>Size</th>
+                    <th>Delete</th>
+                </tr>
 			</thead>
 			<tbody></tbody>
 		</table>
