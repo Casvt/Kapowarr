@@ -25,10 +25,12 @@ alphabet = {
 digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 image_extensions = ('.png', '.jpeg', '.jpg', '.webp', '.gif',
                     '.PNG', '.JPEG', '.JPG', '.WEBP', '.GIF')
-supported_extensions = image_extensions + (
+container_extensions = (
     '.cbz', '.zip', '.rar', '.cbr', '.tar.gz',
     '.7zip', '.7z', '.cb7', '.cbt', '.epub', '.pdf'
 )
+supported_extensions = image_extensions + container_extensions
+archive_extensions = {'.zip', '.rar'}
 md_extensions = {'.xml', '.XML', '.json', '.JSON'}
 md_files = {'cvinfo.xml', 'comicinfo.xml', 'series.json', 'comicinfo.xml'}
 file_extensions = r'\.(' + '|'.join(e[1:] for e in supported_extensions) + r')$'

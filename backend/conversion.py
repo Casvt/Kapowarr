@@ -9,11 +9,11 @@ from multiprocessing import cpu_count
 from os.path import splitext
 from sys import platform
 from typing import Dict, Iterable, List, Set, Tuple, Type, Union
+from zipfile import ZipFile
 
-from backend.converters import FileConverter, rar_executables
+from backend.converters import FileConverter, get_rar_output, rar_executables
 from backend.db import get_db
-from backend.enums import SpecialVersion
-from backend.file_extraction import extract_filename_data
+from backend.file_extraction import archive_extensions, container_extensions
 from backend.helpers import PortablePool
 from backend.server import WebSocket
 from backend.settings import Settings
@@ -103,6 +103,38 @@ def map_convert_file(a: Tuple[str, Iterable[str]]) -> Union[str, List[str]]:
     return convert_file(*a)
 
 
+def archive_contains_issues(archive_file: str) -> bool:
+    """Check if an archive file contains full issues or if the whole archive
+    is one single issue.
+
+    Args:
+        archive_file (str): The archive file to check. Must have the zip or rar
+        extension.
+
+    Returns:
+        bool: Whether or not the archive file contains issue files.
+    """
+    ext = splitext(archive_file)[1].lower()
+
+    if ext == '.zip':
+        with ZipFile(archive_file) as zip:
+            namelist = zip.namelist()
+
+    elif ext == '.rar' and platform in rar_executables:
+        namelist = get_rar_output([
+            "lb",
+            archive_file
+        ]).split("\n")[:-1]
+
+    else:
+        return False
+
+    return any(
+        splitext(f)[1].lower() in container_extensions
+        for f in namelist
+    )
+
+
 def preview_mass_convert(
     volume_id: int,
     issue_id: Union[int, None] = None
@@ -124,23 +156,16 @@ def preview_mass_convert(
     format_preference = settings['format_preference']
     extract_issue_ranges = settings['extract_issue_ranges']
     volume_folder = volume['folder']
-    special_version = volume['special_version']
-    volume_as_issue = special_version == SpecialVersion.VOLUME_AS_ISSUE
 
     result = []
     for f in sorted(volume.get_files(issue_id)):
         converter = None
 
-        if (extract_issue_ranges
-        and ((
-                not volume_as_issue
-                and isinstance(extract_filename_data(f)['issue_number'], tuple)
-            )
-            or (
-                volume_as_issue
-                and isinstance(extract_filename_data(f)['volume_number'], tuple)
-        )
-        )):
+        if (
+            extract_issue_ranges
+            and splitext(f)[1].lower() in archive_extensions
+            and archive_contains_issues(f)
+        ):
             converter = find_target_format_file(
                 f,
                 ['folder']
@@ -163,6 +188,7 @@ def preview_mass_convert(
                     'before': f,
                     'after': splitext(f)[0] + '.' + converter.target_format
                 })
+
     return result
 
 
@@ -197,8 +223,6 @@ def mass_convert(
 
     format_preference = settings['format_preference']
     extract_issue_ranges = settings['extract_issue_ranges']
-    special_version = volume['special_version']
-    volume_as_issue = special_version == SpecialVersion.VOLUME_AS_ISSUE
 
     planned_conversions: List[Tuple[str, List[str]]] = []
     for f in volume.get_files(issue_id):
@@ -206,16 +230,11 @@ def mass_convert(
             continue
 
         converted = False
-        if (extract_issue_ranges
-        and ((
-                not volume_as_issue
-                and isinstance(extract_filename_data(f)['issue_number'], tuple)
-            )
-            or (
-                volume_as_issue
-                and isinstance(extract_filename_data(f)['volume_number'], tuple)
-        )
-        )):
+        if (
+            extract_issue_ranges
+            and splitext(f)[1].lower() in archive_extensions
+            and archive_contains_issues(f)
+        ):
             converter = find_target_format_file(
                 f,
                 ['folder']

@@ -5,10 +5,10 @@ Contains all the converters for converting from one format to another
 """
 
 from abc import ABC, abstractmethod
-from os import mkdir, utime
-from os.path import basename, dirname, getmtime, join, sep, splitext
+from os import utime
+from os.path import basename, dirname, getmtime, join, relpath, sep, splitext
 from shutil import make_archive
-from subprocess import call as spc
+from subprocess import call as spc, run as sprun
 from sys import platform
 from typing import List, Union
 from zipfile import ZipFile
@@ -100,9 +100,10 @@ def extract_files_from_folder(
 
 
 def _run_rar(args: List[str]) -> int:
-    """Run rar executable. This function takes care of the platform.
-        Note: It is already expected when this function is called
-        that the platform is supported. The check should be done outside.
+    """
+    Run rar executable. This function takes care of the platform.
+    Note: It is already expected when this function is called
+    that the platform is supported. The check should be done outside.
 
     Args:
         args (List[str]): The arguments to give to the executable.
@@ -113,6 +114,23 @@ def _run_rar(args: List[str]) -> int:
     exe = rar_executables[platform]
 
     return spc([exe, *args])
+
+
+def get_rar_output(args: List[str]) -> str:
+    """
+    Run rar executable and return stdout. This function takes care of
+    the platform. Note: It is already expected when this function is called
+    that the platform is supported. The check should be done outside.
+
+    Args:
+        args (List[str]): The arguments to give to the executable.
+
+    Returns:
+        str: The stdout of the executable.
+    """
+    exe = rar_executables[platform]
+
+    return sprun([exe, *args], capture_output=True, text=True).stdout
 
 
 class FileConverter(ABC):
@@ -162,7 +180,14 @@ class ZIPtoRAR(FileConverter):
         archive_folder = join(
             volume_folder,
             archive_extract_folder,
-            splitext(basename(file))[0]
+            splitext(
+                '_'.join(
+                    relpath(
+                        file,
+                        volume_folder
+                    ).split(sep)
+                )
+            )[0]
         )
 
         with ZipFile(file, 'r') as zip:
@@ -205,7 +230,14 @@ class ZIPtoFOLDER(FileConverter):
         zip_folder = join(
             volume_folder,
             archive_extract_folder,
-            splitext('_'.join(file.split(sep)[-3:]))[0]
+            splitext(
+                '_'.join(
+                    relpath(
+                        file,
+                        volume_folder
+                    ).split(sep)
+                )
+            )[0],
         )
 
         with ZipFile(file, 'r') as zip:
@@ -307,7 +339,14 @@ class RARtoZIP(FileConverter):
         rar_folder = join(
             volume_folder,
             archive_extract_folder,
-            splitext(basename(file))[0]
+            splitext(
+                '_'.join(
+                    relpath(
+                        file,
+                        volume_folder
+                    ).split(sep)
+                )
+            )[0]
         )
 
         create_folder(rar_folder)
@@ -356,10 +395,17 @@ class RARtoFOLDER(FileConverter):
         rar_folder = join(
             volume_folder,
             archive_extract_folder,
-            splitext('_'.join(file.split(sep)[-3:]))[0]
+            splitext(
+                '_'.join(
+                    relpath(
+                        file,
+                        volume_folder
+                    ).split(sep)
+                )
+            )[0]
         )
 
-        mkdir(rar_folder)
+        create_folder(rar_folder)
 
         _run_rar([
             'x',
@@ -433,14 +479,3 @@ class CBRtoFOLDER(FileConverter):
     @staticmethod
     def convert(file: str) -> List[str]:
         return RARtoFOLDER.convert(file)
-
-# =====================
-# FOLDER
-# =====================
-# FOLDER to ZIP
-
-# FOLDER to CBZ
-
-# FOLDER to RAR
-
-# FOLDER TO CBR
