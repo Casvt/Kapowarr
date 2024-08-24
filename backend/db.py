@@ -18,7 +18,7 @@ from backend.logging import LOGGER, set_log_level
 
 __DATABASE_FOLDER__ = "db",
 __DATABASE_NAME__ = "Kapowarr.db"
-__DATABASE_VERSION__ = 26
+__DATABASE_VERSION__ = 27
 __DATABASE_TIMEOUT__ = 10.0
 
 
@@ -889,6 +889,71 @@ def migrate_db(current_db_version: int) -> None:
         current_db_version = s['database_version'] = current_db_version + 1
         s._save_to_database()
 
+    if current_db_version == 26:
+        # V26 -> V27
+
+        cursor.executescript("""
+            BEGIN TRANSACTION;
+            PRAGMA defer_foreign_keys = ON;
+
+            CREATE TEMPORARY TABLE temp_download_history_27 AS
+                SELECT * FROM download_history;
+            DROP TABLE download_history;
+
+            CREATE TABLE download_history(
+                web_link TEXT,
+                web_title TEXT,
+                web_sub_title TEXT,
+                file_title TEXT,
+
+                volume_id INTEGER,
+                issue_id INTEGER,
+
+                source VARCHAR(25),
+                downloaded_at INTEGER NOT NULL CHECK (downloaded_at > 0),
+
+                FOREIGN KEY (volume_id) REFERENCES volumes(id)
+                    ON DELETE SET NULL,
+                FOREIGN KEY (issue_id) REFERENCES issues(id)
+                    ON DELETE SET NULL
+            );
+
+            INSERT INTO download_history
+                SELECT *
+                FROM temp_download_history_27;
+
+            CREATE TEMPORARY TABLE temp_blocklist_27 AS
+                SELECT * FROM blocklist;
+            DROP TABLE blocklist;
+
+            CREATE TABLE blocklist(
+                id INTEGER PRIMARY KEY,
+                volume_id INTEGER,
+                issue_id INTEGER,
+
+                web_link TEXT,
+                web_title TEXT,
+                web_sub_title TEXT,
+
+                download_link TEXT UNIQUE,
+                source VARCHAR(30),
+
+                reason INTEGER NOT NULL CHECK (reason > 0),
+                added_at INTEGER NOT NULL CHECK (added_at > 0),
+
+                FOREIGN KEY (volume_id) REFERENCES volumes(id)
+                    ON DELETE SET NULL,
+                FOREIGN KEY (issue_id) REFERENCES issues(id)
+                    ON DELETE SET NULL
+            );
+
+            INSERT INTO blocklist
+                SELECT *
+                FROM temp_blocklist_27;
+
+            COMMIT;
+        """)
+
     return
 
 
@@ -1015,8 +1080,10 @@ def setup_db() -> None:
             source VARCHAR(25),
             downloaded_at INTEGER NOT NULL CHECK (downloaded_at > 0),
 
-            FOREIGN KEY (volume_id) REFERENCES volumes(id),
+            FOREIGN KEY (volume_id) REFERENCES volumes(id)
+                ON DELETE SET NULL,
             FOREIGN KEY (issue_id) REFERENCES issues(id)
+                ON DELETE SET NULL
         );
         CREATE TABLE IF NOT EXISTS task_history(
             task_name NOT NULL,
@@ -1043,8 +1110,10 @@ def setup_db() -> None:
             reason INTEGER NOT NULL CHECK (reason > 0),
             added_at INTEGER NOT NULL CHECK (added_at > 0),
 
-            FOREIGN KEY (volume_id) REFERENCES volumes(id),
+            FOREIGN KEY (volume_id) REFERENCES volumes(id)
+                ON DELETE SET NULL,
             FOREIGN KEY (issue_id) REFERENCES issues(id)
+                ON DELETE SET NULL
         );
         CREATE TABLE IF NOT EXISTS credentials_sources(
             id INTEGER PRIMARY KEY,

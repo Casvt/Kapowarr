@@ -28,3 +28,7 @@ th, td {
 .history-entry > * {
 	border-top: 1px solid var(--border-color);
 }
+
+.history-entry a:not([href]):hover {
+    text-decoration: none;
+}
