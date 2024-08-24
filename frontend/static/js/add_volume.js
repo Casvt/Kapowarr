@@ -395,7 +395,7 @@ function addVolume() {
 	const data = {
 		'comicvine_id': SearchEls.window.cv_input.value,
 		'root_folder_id': parseInt(SearchEls.window.root_folder_input.value),
-		'monitor': SearchEls.window.monitor_input.value == 'true',
+		'monitor': SearchEls.window.monitor_input.value,
 		'volume_folder': '',
         'special_version': SearchEls.window.special_state_input.value || null,
 		'auto_search': SearchEls.window.auto_search_input.checked

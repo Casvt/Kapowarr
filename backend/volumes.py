@@ -7,8 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from io import BytesIO
 from multiprocessing import cpu_count
-from os import remove
-from os.path import abspath, basename, dirname, isdir, join, relpath
+from os.path import abspath, basename, isdir, join, relpath
 from re import IGNORECASE, compile
 from time import time
 from typing import Any, Callable, Dict, Iterable, List, Sequence, Tuple, Union
@@ -19,7 +18,7 @@ from backend.custom_exceptions import (InvalidKeyValue, IssueNotFound,
                                        VolumeAlreadyAdded, VolumeDownloadedFor,
                                        VolumeNotFound)
 from backend.db import get_db
-from backend.enums import GeneralFileType, SpecialVersion
+from backend.enums import GeneralFileType, MonitorScheme, SpecialVersion
 from backend.file_extraction import (extract_filename_data, md_extensions,
                                      md_files, supported_extensions)
 from backend.files import (create_volume_folder, delete_empty_folders,
@@ -1538,7 +1537,7 @@ class Library:
     def add(self,
         comicvine_id: str,
         root_folder_id: int,
-        monitor: bool = True,
+        monitor_scheme: MonitorScheme = MonitorScheme.ALL,
         volume_folder: Union[str, None] = None,
         special_version: Union[SpecialVersion, None] = None,
         auto_search: bool = False
@@ -1551,8 +1550,8 @@ class Library:
             root_folder_id (int): The id of the rootfolder in which
             the volume folder will be.
 
-            monitor (bool, optional): Whether or not to mark the volume as monitored.
-                Defaults to True.
+            monitor_scheme (MonitorScheme, optional): Which issues to monitor.
+                Defaults to `MonitorScheme.ALL`.
 
             volume_folder (Union[str, None], optional): Custom volume folder.
                 Defaults to None.
@@ -1577,7 +1576,7 @@ class Library:
         """
         LOGGER.debug(
             'Adding a volume to the library: ' +
-            f'CV ID {comicvine_id}, RF ID {root_folder_id}, Monitor {monitor}, VF {volume_folder}, SV {special_version}'
+            f'CV ID {comicvine_id}, RF ID {root_folder_id}, Monitor Scheme {monitor_scheme}, VF {volume_folder}, SV {special_version}'
         )
         cursor = get_db()
 
@@ -1594,7 +1593,7 @@ class Library:
         root_folder = RootFolders()[root_folder_id]
 
         volume_data = run(ComicVine().fetch_volume_async(comicvine_id))
-        volume_data['monitored'] = monitor
+        volume_data['monitored'] = True
         volume_data['root_folder'] = root_folder_id
 
         if special_version is None:
@@ -1676,6 +1675,36 @@ class Library:
         """, issue_list)
 
         scan_files(volume_id)
+
+        if monitor_scheme == MonitorScheme.NONE:
+            cursor.execute("""
+                UPDATE issues
+                SET monitored = 0
+                WHERE volume_id = ?;
+                """,
+                (volume_id,)
+            )
+            cursor.connection.commit()
+
+        elif monitor_scheme == MonitorScheme.MISSING:
+            cursor.execute("""
+                WITH missing_issues AS (
+                    SELECT id
+                    FROM issues i
+                    LEFT JOIN issues_files if
+                    ON i.id = if.issue_id
+                    WHERE volume_id = ?
+                        AND if.issue_id IS NULL
+                )
+                UPDATE issues
+                SET monitored = 0
+                WHERE
+                    volume_id = ?
+                    AND id NOT IN missing_issues;
+                """,
+                (volume_id, volume_id)
+            )
+            cursor.connection.commit()
 
         if auto_search:
             from backend.tasks import AutoSearchVolume, TaskHandler

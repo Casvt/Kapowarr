@@ -115,3 +115,9 @@ class DownloadSource(BaseEnum):
     PIXELDRAIN = 'Pixeldrain'
     GETCOMICS = 'GetComics'
     GETCOMICS_TORRENT = 'GetComics (torrent)'
+
+
+class MonitorScheme(BaseEnum):
+    ALL = "all"
+    MISSING = "missing"
+    NONE = "none"

@@ -36,7 +36,7 @@ from backend.download_queue import (DownloadHandler, delete_download_history,
                                     get_download_history)
 from backend.download_torrent_clients import TorrentClients, client_types
 from backend.enums import (BlocklistReason, BlocklistReasonID,
-                           DownloadSource, SpecialVersion)
+                           DownloadSource, MonitorScheme, SpecialVersion)
 from backend.files import delete_file_from_db, get_file
 from backend.library_import import import_library, propose_library_import
 from backend.logging import LOGGER, get_debug_log_filepath
@@ -611,9 +611,17 @@ def api_volumes():
         if root_folder_id is None:
             raise KeyNotFound('root_folder_id')
 
-        monitor = data.get('monitor', True)
+        monitor = data.get('monitor') or "all"
+        try:
+            monitor_scheme = MonitorScheme(monitor)
+        except ValueError:
+            raise InvalidKeyValue("monitor", monitor)
+
         volume_folder = data.get('volume_folder') or None
-        auto_search = data.get('auto_search', False)
+
+        auto_search = data.get('auto_search') or False
+        if not isinstance(auto_search, bool):
+            raise InvalidKeyValue('auto_search', auto_search)
 
         special_version = data.get('special_version') or None
         if special_version == 'auto':
@@ -627,7 +635,7 @@ def api_volumes():
         volume_id = library.add(
             comicvine_id,
             root_folder_id,
-            monitor,
+            monitor_scheme,
             volume_folder,
             sv,
             auto_search
