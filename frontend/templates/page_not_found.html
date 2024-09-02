@@ -7,8 +7,8 @@
 
 	<link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/x-icon">
 
-	<link rel="stylesheet" href="/static/css/general.css">
-	<link rel="stylesheet" href="/static/css/page_not_found.css">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/page_not_found.css') }}">
 
 	<script>
 		if (JSON.parse(localStorage.getItem('kapowarr') || {'theme': 'light'})['theme'] === 'dark')

@@ -22,10 +22,10 @@
 	<td class="number-column"></td>
 	<td class="option-column">
 		<button title="Remove download" class="remove-dl">
-			<img src="/static/img/delete.svg">
+			<img src="{{ url_for('static', filename='img/delete.svg') }}">
 		</button>
         <button title="Remove and blocklist download" class="blocklist-dl">
-            <img src="/static/img/blocklist.svg">
+            <img src="{{ url_for('static', filename='img/blocklist.svg') }}">
         </button>
 	</td>
 </tr>

@@ -1,6 +1,6 @@
 function redirect() {
 	parameters = new URLSearchParams(window.location.search);
-	redirect_value = parameters.get('redirect') || '/';
+	redirect_value = parameters.get('redirect') || `${url_base}/`;
 	window.location.href = redirect_value;
 };
 

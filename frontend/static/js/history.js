@@ -33,7 +33,7 @@ function fillHistory(api_key) {
                 const vol_link = entry.querySelector('td:nth-child(2) a')
                 vol_link.innerText = obj.file_title;
                 if (obj.volume_id !== null)
-                    vol_link.href = `/volumes/${obj.volume_id}`;
+                    vol_link.href = `${url_base}/volumes/${obj.volume_id}`;
             };
 
             if (obj.source !== null)

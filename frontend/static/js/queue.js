@@ -16,7 +16,7 @@ function addQueueEntry(api_key, obj) {
 
 	const title = entry.querySelector('a:first-of-type');
 	title.innerText = obj.title;
-	title.href = `/volumes/${obj.volume_id}`;
+	title.href = `${url_base}/volumes/${obj.volume_id}`;
 
 	const source = entry.querySelector('td:nth-child(3) a')
     source.innerText =
