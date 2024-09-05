@@ -4,7 +4,7 @@ This page covers how to get in contact, which platform to use and how to properl
 
 ## Choosing a Platform
 
-If you have a question, first check the [FAQ](./faq.md) and otherwise visit the [Discord server](https://discord.gg/5gWtW3ekgZ).  
+If you have a question, first check the [FAQ](./faq.md) and otherwise visit the [Discord server](https://discord.gg/nMNdgG7vsE).  
 If you experience behaviour that you are unsure of if it's correct, check the ['General Information' page](../general_info/workings.md).  
 If you are sure that something is going wrong (bug) or is missing (feature), create a [GitHub issue](https://github.com/Casvt/Kapowarr/issues).
 

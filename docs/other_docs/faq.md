@@ -38,3 +38,11 @@ The two most common causes for this are:
 
 - Not having a valid [ComicVine API key](../settings/general.md#comic-vine-api-key) to be able to match or look up volumes.
 - Not having a [root folder](../settings/mediamanagement.md#root-folders) defined.
+
+### My files don't match to the volume
+
+There are multiple causes to this:
+
+- The files are not in the volume folder.
+- They don't match the [matching criteria for the volume](../general_info/matching.md#files-to-issues). The matching criteria depend on the Special State of the volume. Read more about that in the linked section.
+- The filename matches the criteria of the volume, but the filename is not properly handled. If you think this is the case, please [report it](../other_docs/reporting.md).

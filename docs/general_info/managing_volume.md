@@ -32,7 +32,7 @@ On the home page (a.k.a. library page/view), the button 'Update All' will trigge
 
 Kapowarr has the ability to easily manage your files by (re)naming them all to one consistent format. You can change how Kapowarr should name files and folders [in the settings](../settings/mediamanagement.md#file-naming). The 'Preview Rename' button will show a list of the files for the volume and what Kapowarr will rename them to, if you agree.
 
-### Convert
+### Preview Convert
 
 Another feature of Kapowarr is the ability to change the format of files. For example, Kapowarr can convert cbr files to cbz. To what format Kapowarr will change the files is set [in the settings](../settings/mediamanagement.md#format-preference). The 'Convert' button will show a list of the files for the volume and what format Kapowarr will convert them to, if you agree.
 
