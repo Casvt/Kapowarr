@@ -101,7 +101,7 @@ nav:
     - Introduction: settings/settings.md
     - Media Management: settings/mediamanagement.md
     - Download: settings/download.md
-    - Download Clients: settings/download_clients.md
+    - Download Clients: settings/downloadclients.md
     - General: settings/general.md
   - Other Docs:
     - Reporting: other_docs/reporting.md
