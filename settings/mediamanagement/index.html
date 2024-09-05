@@ -1,0 +1,1906 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="The official guide for Kapowarr">
+      
+      
+        <meta name="author" content="Casvt">
+      
+      
+      
+        <link rel="prev" href="../settings/">
+      
+      
+        <link rel="next" href="../download/">
+      
+      
+      <link rel="icon" href="../../assets/img/favicon.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.34">
+    
+    
+      
+        <title>Media Management - Kapowarr Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.35f28582.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../css/timeago.css">
+    
+      <link rel="stylesheet" href="../../assets/css/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="Kapowarr" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#file-naming" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Kapowarr Docs" class="md-header__button md-logo" aria-label="Kapowarr Docs" data-md-component="logo">
+      
+  <img src="../../assets/img/favicon.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Kapowarr Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Media Management
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="Kapowarr" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="Kapowarr-dark" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Casvt/Kapowarr" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Casvt/Kapowarr
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../installation/installation/" class="md-tabs__link">
+          
+  
+    
+  
+  Installation And Updating
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../general_info/workings/" class="md-tabs__link">
+          
+  
+    
+  
+  General Information
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../beta/beta/" class="md-tabs__link">
+          
+  
+    
+  
+  Beta Documentation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../settings/" class="md-tabs__link">
+          
+  
+    
+  
+  Settings
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../other_docs/reporting/" class="md-tabs__link">
+          
+  
+    
+  
+  Other Docs
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Kapowarr Docs" class="md-nav__button md-logo" aria-label="Kapowarr Docs" data-md-component="logo">
+      
+  <img src="../../assets/img/favicon.svg" alt="logo">
+
+    </a>
+    Kapowarr Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Casvt/Kapowarr" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Casvt/Kapowarr
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Installation And Updating
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Installation And Updating
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/docker/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Docker
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/manual_install/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Manual Install
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/setup_after_installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Setup After Installation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    General Information
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            General Information
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../general_info/workings/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../general_info/managing_volume/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Managing A Volume
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../general_info/downloading/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Downloading
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../general_info/matching/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Matching
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../general_info/features/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Features
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Beta Documentation
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Beta Documentation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../beta/beta/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Documentation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Settings
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Settings
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../settings/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Media Management
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Media Management
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#file-naming" class="md-nav__link">
+    <span class="md-ellipsis">
+      File Naming
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="File Naming">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rename-downloaded-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Rename Downloaded Files
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#volume-folder-naming" class="md-nav__link">
+    <span class="md-ellipsis">
+      Volume Folder Naming
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-naming_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      File Naming
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-naming-for-special-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      File Naming For Special Versions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-naming-for-issues-without-title" class="md-nav__link">
+    <span class="md-ellipsis">
+      File Naming For Issues Without Title
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#treat-volume-issues-as-no-title" class="md-nav__link">
+    <span class="md-ellipsis">
+      Treat Volume Issues as "No Title"
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-long-special-version-labels" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use Long Special Version Labels
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issue-padding" class="md-nav__link">
+    <span class="md-ellipsis">
+      Issue Padding
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#volume-padding" class="md-nav__link">
+    <span class="md-ellipsis">
+      Volume Padding
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#converting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Converting
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Converting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#convert-downloaded-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Convert Downloaded Files
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extract-archives-covering-multiple-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      Extract archives covering multiple issues
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#format-preference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Format Preference
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#root-folders" class="md-nav__link">
+    <span class="md-ellipsis">
+      Root Folders
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../download/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Download
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../downloadclients/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Download Clients
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../general/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    General
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Other Docs
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            Other Docs
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../other_docs/reporting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Reporting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../other_docs/faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../other_docs/rate_limiting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Rate Limiting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../other_docs/api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#file-naming" class="md-nav__link">
+    <span class="md-ellipsis">
+      File Naming
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="File Naming">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rename-downloaded-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Rename Downloaded Files
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#volume-folder-naming" class="md-nav__link">
+    <span class="md-ellipsis">
+      Volume Folder Naming
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-naming_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      File Naming
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-naming-for-special-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      File Naming For Special Versions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-naming-for-issues-without-title" class="md-nav__link">
+    <span class="md-ellipsis">
+      File Naming For Issues Without Title
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#treat-volume-issues-as-no-title" class="md-nav__link">
+    <span class="md-ellipsis">
+      Treat Volume Issues as "No Title"
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-long-special-version-labels" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use Long Special Version Labels
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issue-padding" class="md-nav__link">
+    <span class="md-ellipsis">
+      Issue Padding
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#volume-padding" class="md-nav__link">
+    <span class="md-ellipsis">
+      Volume Padding
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#converting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Converting
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Converting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#convert-downloaded-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Convert Downloaded Files
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extract-archives-covering-multiple-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      Extract archives covering multiple issues
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#format-preference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Format Preference
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#root-folders" class="md-nav__link">
+    <span class="md-ellipsis">
+      Root Folders
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+  <h1>Media Management</h1>
+
+<p>In the 'Media Management' sub-section, you can find settings related to the placement, naming and format of files.</p>
+<h2 id="file-naming">File Naming<a class="headerlink" href="#file-naming" title="Permanent link">&para;</a></h2>
+<h3 id="rename-downloaded-files">Rename Downloaded Files<a class="headerlink" href="#rename-downloaded-files" title="Permanent link">&para;</a></h3>
+<p>When a file is downloaded, this setting decides if it should be renamed or not. If the checkbox is unchecked, the default filename is used. If the checkbox is checked, it is renamed following the formats set below. This does not affect the naming of the volume folder, only the filename itself.</p>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Example Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Disabled</td>
+<td>Deadpool 01 (of 04) (1994) (digital) (Minutemen-Slayer).cbr</td>
+</tr>
+<tr>
+<td>Enabled</td>
+<td>Deadpool (1994) Volume 02 Issue 001.cbr</td>
+</tr>
+</tbody>
+</table>
+<h3 id="volume-folder-naming">Volume Folder Naming<a class="headerlink" href="#volume-folder-naming" title="Permanent link">&para;</a></h3>
+<p>The naming format for the volume folder (folder structure allowed). Keep in mind that the resulting name could differ slightly from the format, in the case that certain values of variables contain illegal characters. For example, if the <code class="highlight">{series_name}</code> is "What If...", the resulting name will have "What If" as it's value, because the character <code class="highlight">.</code> is not allowed at the end of the name in Windows. This also applies to the other naming formats in this section.</p>
+<details class="info">
+<summary>Available Variables</summary>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Example Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>{series_name}</td>
+<td>The Incredibles</td>
+</tr>
+<tr>
+<td>{clean_series_name}</td>
+<td>Incredibles, The</td>
+</tr>
+<tr>
+<td>{volume_number}</td>
+<td>01</td>
+</tr>
+<tr>
+<td>{comicvine_id}</td>
+<td>2127</td>
+</tr>
+<tr>
+<td>{year}</td>
+<td>1994</td>
+</tr>
+<tr>
+<td>{publisher}</td>
+<td>DC Comics</td>
+</tr>
+</tbody>
+</table>
+</details>
+<table>
+<thead>
+<tr>
+<th>Example Value</th>
+<th>Example Resulting Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>{series_name}/Volume {volume_number} ({year})</td>
+<td>Deadpool/Volume 01 (1994)</td>
+</tr>
+<tr>
+<td>{clean_series_name} - Volume {year}</td>
+<td>Incredibles, The - Volume 1994</td>
+</tr>
+</tbody>
+</table>
+<h3 id="file-naming_1">File Naming<a class="headerlink" href="#file-naming_1" title="Permanent link">&para;</a></h3>
+<p>The naming format for the file (folder structure allowed).</p>
+<details class="info">
+<summary>Available Variables</summary>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Example Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>{series_name}</td>
+<td>The Incredibles</td>
+</tr>
+<tr>
+<td>{clean_series_name}</td>
+<td>Incredibles, The</td>
+</tr>
+<tr>
+<td>{volume_number}</td>
+<td>01</td>
+</tr>
+<tr>
+<td>{comicvine_id}</td>
+<td>2127</td>
+</tr>
+<tr>
+<td>{year}</td>
+<td>1994</td>
+</tr>
+<tr>
+<td>{publisher}</td>
+<td>DC Comics</td>
+</tr>
+<tr>
+<td>{issue_comicvine_id}</td>
+<td>6422</td>
+</tr>
+<tr>
+<td>{issue_number}</td>
+<td>001</td>
+</tr>
+<tr>
+<td>{issue_title}</td>
+<td>Spider-Man; Spider-Man Vs. The Chameleon</td>
+</tr>
+<tr>
+<td>{issue_release_date}</td>
+<td>1963-03-01</td>
+</tr>
+<tr>
+<td>{issue_release_year}</td>
+<td>1963</td>
+</tr>
+</tbody>
+</table>
+</details>
+<table>
+<thead>
+<tr>
+<th>Example Value</th>
+<th>Example Resulting Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>{series_name} ({year}) Volume {volume_number} Issue {issue_number}</td>
+<td>Deadpool (1994) Volume 01 Issue 002</td>
+</tr>
+<tr>
+<td>Issue {issue_number} - {issue_title} ({issue_release_date}) [issue_comicvine_id]</td>
+<td>Issue 001 - Spider-Man; Spider-Man Vs. The Chameleon (1963-03-01) [6422]</td>
+</tr>
+</tbody>
+</table>
+<h3 id="file-naming-for-special-versions">File Naming For Special Versions<a class="headerlink" href="#file-naming-for-special-versions" title="Permanent link">&para;</a></h3>
+<p>The naming format for the file itself (if it's a special version, like a one shot, tpb or hard cover).</p>
+<details class="info">
+<summary>Available Variables</summary>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Example Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>{series_name}</td>
+<td>Silver Surfer Rebirth</td>
+</tr>
+<tr>
+<td>{clean_series_name}</td>
+<td>Silver Surfer Rebirth</td>
+</tr>
+<tr>
+<td>{volume_number}</td>
+<td>01</td>
+</tr>
+<tr>
+<td>{comicvine_id}</td>
+<td>147555</td>
+</tr>
+<tr>
+<td>{year}</td>
+<td>2022</td>
+</tr>
+<tr>
+<td>{publisher}</td>
+<td>Marvel</td>
+</tr>
+<tr>
+<td>{special_version}</td>
+<td>One-Shot</td>
+</tr>
+</tbody>
+</table>
+</details>
+<table>
+<thead>
+<tr>
+<th>Example Value</th>
+<th>Example Resulting Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>{series_name} ({year}) Volume {volume_number} {special_version}</td>
+<td>Silver Surfer Rebirth (2022) Volume 01 TPB</td>
+</tr>
+<tr>
+<td>{series_name} ({year})</td>
+<td>Silver Surfer Rebirth (2022)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="file-naming-for-issues-without-title">File Naming For Issues Without Title<a class="headerlink" href="#file-naming-for-issues-without-title" title="Permanent link">&para;</a></h3>
+<p>The naming format for the file, in the case that the issue does not have a title.</p>
+<p>If the value of the setting <a href="#file-naming_1">File Naming</a> uses the issue title, it will most likely look ugly when the issue doesn't have a title. For example, if your format is <code class="highlight">Issue {issue_number} - {issue_title}</code>, but the issue doesn't have a title, it will result in a file like <code class="highlight">Issue 5 - Unknown.cbr</code>. For that scenario, this setting exists. Here you can set an alternative format for when the issue doesn't have a title.</p>
+<details class="info">
+<summary>Available Variables</summary>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Example Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>{series_name}</td>
+<td>The Incredibles</td>
+</tr>
+<tr>
+<td>{clean_series_name}</td>
+<td>Incredibles, The</td>
+</tr>
+<tr>
+<td>{volume_number}</td>
+<td>01</td>
+</tr>
+<tr>
+<td>{comicvine_id}</td>
+<td>2127</td>
+</tr>
+<tr>
+<td>{year}</td>
+<td>1994</td>
+</tr>
+<tr>
+<td>{publisher}</td>
+<td>DC Comics</td>
+</tr>
+<tr>
+<td>{issue_comicvine_id}</td>
+<td>6422</td>
+</tr>
+<tr>
+<td>{issue_number}</td>
+<td>001</td>
+</tr>
+<tr>
+<td>{issue_release_date}</td>
+<td>1963-03-01</td>
+</tr>
+<tr>
+<td>{issue_release_year}</td>
+<td>1963</td>
+</tr>
+</tbody>
+</table>
+</details>
+<table>
+<thead>
+<tr>
+<th>Example Value</th>
+<th>Example Resulting Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>{series_name} ({year}) Volume {volume_number} Issue {issue_number}</td>
+<td>Deadpool (1994) Volume 01 Issue 002</td>
+</tr>
+<tr>
+<td>Issue {issue_number} ({issue_release_date}) [issue_comicvine_id]</td>
+<td>Issue 001 (1963-03-01) [6422]</td>
+</tr>
+</tbody>
+</table>
+<h3 id="treat-volume-issues-as-no-title">Treat Volume Issues as "No Title"<a class="headerlink" href="#treat-volume-issues-as-no-title" title="Permanent link">&para;</a></h3>
+<p>Sometimes a volume will consist of multiple sub-volumes (these volumes are labelled 'Volume As Issue' in the web-UI). This setting controls whether Kapowarr should name these like issues (using the <a href="#file-naming-for-issues-without-title">File Naming For Issues Without Title</a> format) or not.</p>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Example Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Enabled</td>
+<td>Invincible Compendium (2011) Volume 1 Issue 1-2.cbr<br>Invincible Compendium (2011) Volume 1 Issue 3.cbr</td>
+</tr>
+<tr>
+<td>Disabled</td>
+<td>Invincible Compendium (2011) Volume 1 - 2.cbr<br>Invincible Compendium (2011) Volume 3.cbr</td>
+</tr>
+</tbody>
+</table>
+<h3 id="use-long-special-version-labels">Use Long Special Version Labels<a class="headerlink" href="#use-long-special-version-labels" title="Permanent link">&para;</a></h3>
+<p>Whether or not to use, for example, 'One-Shot' instead of 'OS' <a href="#file-naming-for-special-versions">in the filename of special versions</a>. The term 'TPB' will always stay 'TPB'.</p>
+<h3 id="issue-padding">Issue Padding<a class="headerlink" href="#issue-padding" title="Permanent link">&para;</a></h3>
+<p>This defines how issue numbers are 'padded' (3 digits, 2 digits, etc.). This is useful in the case of file sorting, as many operating systems sort <em>alphabetically</em>, instead of alphanumerically. To them, because 1 is lower than 2, "10" comes before "2". To get around this, we 'pad' the numbers with leading zeroes.</p>
+<p>Options are:</p>
+<ul>
+<li>x (no padding, i.e. 1, 2...99, 100)</li>
+<li>0x (2 digits, i.e. 01, 02...99, 100)</li>
+<li>00x (3 digits, i.e. 001, 002...099, 100)</li>
+<li>000x (4 digits, i.e. 0001, 0002...0099, 0100)</li>
+</ul>
+<h3 id="volume-padding">Volume Padding<a class="headerlink" href="#volume-padding" title="Permanent link">&para;</a></h3>
+<p>This defines how volume numbers are 'padded' (3 digits, 2 digits, etc.). It has the same use case that <a href="#issue-padding">Issue Padding</a> has.</p>
+<p>Options are:</p>
+<ul>
+<li>x (no padding, i.e. 1, 2...99, 100)</li>
+<li>0x (2 digits, i.e. 01, 02...99, 100)</li>
+<li>00x (3 digits, i.e. 001, 002...099, 100)</li>
+</ul>
+<h2 id="converting">Converting<a class="headerlink" href="#converting" title="Permanent link">&para;</a></h2>
+<p>The "Converting" feature allows you to change the format of your files (e.g. from cbr to cbz). It can also extract archive files.</p>
+<h3 id="convert-downloaded-files">Convert Downloaded Files<a class="headerlink" href="#convert-downloaded-files" title="Permanent link">&para;</a></h3>
+<p>If Kapowarr should automatically convert files after they've been downloaded. Kapowarr will follow the <a href="#format-preference">format preference</a> set.</p>
+<h3 id="extract-archives-covering-multiple-issues">Extract archives covering multiple issues<a class="headerlink" href="#extract-archives-covering-multiple-issues" title="Permanent link">&para;</a></h3>
+<p>If an archive file is downloaded with multiple issues inside, then first extract the files inside and <em>then</em> convert. With the setting disabled, Kapowarr will covert the file as normal. Even when no format preference is set (don't convert), this setting can still be enabled to extract archive files (up to beta-3, this was called 'unzipping').</p>
+<p><em>Note: if Kapowarr determines that a file in the archive file is not related to the volume, it will not be extracted and will be deleted when the archive file is finished being unpacked. If you find faulty deletions occurring, please <a href="../../other_docs/reporting/">report</a> this.</em></p>
+<h3 id="format-preference">Format Preference<a class="headerlink" href="#format-preference" title="Permanent link">&para;</a></h3>
+<p>The formats that Kapowarr should convert the files to. It will try to convert the files to the format at place 1, but if that is not possible, it will fall back to the format at place 2, and so forth. The last place will always be occupied by the format 'No Conversion'. That means that if Kapowarr is not able to convert the file to any of the set formats, it will just keep the current one. If no format preference is set ('No Conversion' is at place 1), no conversion will happen. </p>
+<details class="info">
+<summary>The format called 'folder'</summary>
+<p>The format called 'folder' means extracting archive files. Kapowarr will extract all files inside the archive, delete the original archive file, filter unrelated files and rename the relevant ones. This is different from the <a href="#extract-archives-covering-multiple-issues">'Extract archives covering multiple issues' setting</a>. That setting will extract the files from an archive file covering multiple issues and will then convert those extracted files. If you then add 'folder' to the format preference, it will extract any archive files coming out of the original archive file again. The format 'folder' will most likely lead to a folder with inside of it a series of image files. If you want to recreate the 'unzipping' feature from Kapowarr beta-3 and before, enable the before mentioned setting and do <em>not</em> include 'folder' in the format preference. </p>
+<p><em>Note: if Kapowarr determines that a file in the archive file is not related to the volume, it will not be extracted and will be deleted when the archive file is finished being unpacked. If you find faulty deletions occurring, please <a href="../../other_docs/reporting/">report</a> this.</em></p>
+</details>
+<h2 id="root-folders">Root Folders<a class="headerlink" href="#root-folders" title="Permanent link">&para;</a></h2>
+<p>Root folders are the base folders that Kapowarr works in. All content is put in these folders. Kapowarr needs at least one root folder set in order to work properly.</p>
+<p>When adding a volume (or when editing one), you choose in which root folder all content for that volume is put. Kapowarr will never touch any files outside the root folders (except in the <a href="#download-location">download folder</a>). You might have multiple root folders because you store your comics on multiple drives or want different access rights to certain volumes, to name a few reasons.</p>
+<p>If you use docker to run Kapowarr and have followed the <a href="../../installation/docker/#launch-container">installation instructions</a>, this is where you would enter <code class="highlight">/comics-1</code>, <code class="highlight">/comics-2</code>, etc.</p>
+
+
+
+
+
+
+
+  
+    
+  
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2024-09-05T20:37:23+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2024-09-05</span>
+  </span>
+
+    
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.tabs.link", "content.code.copy", "header.autohide", "navigation.expand", "navigation.indexes", "navigation.instant", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking"], "search": "../../assets/javascripts/workers/search.07f07601.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.56dfad97.min.js"></script>
+      
+        <script src="../../js/timeago.min.js"></script>
+      
+        <script src="../../js/timeago_mkdocs_material.js"></script>
+      
+    
+  </body>
+</html>
