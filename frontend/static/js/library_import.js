@@ -1,103 +1,116 @@
-const windows = {
-	start: document.querySelector('#start-window'),
-	no_result: document.querySelector('#no-result-window'),
-	list: document.querySelector('#list-window'),
-	loading: document.querySelector('#loading-window'),
-	no_cv: document.querySelector('#no-cv-window')
+const LIEls = {
+	pre_build: {
+		li_result: document.querySelector('.pre-build-els .li-result'),
+		search_result: document.querySelector('.pre-build-els .search-result')
+	},
+	views: {
+		start: document.querySelector('#start-window'),
+		no_result: document.querySelector('#no-result-window'),
+		list: document.querySelector('#list-window'),
+		loading: document.querySelector('#loading-window'),
+		no_cv: document.querySelector('#no-cv-window')
+	},
+	proposal_list: document.querySelector('.proposal-list'),
+	select_all: document.querySelector('#selectall-input'),
+	search: {
+		window: document.querySelector('#cv-window'),
+		input: document.querySelector('#search-input'),
+		results: document.querySelector('.search-results'),
+		container: document.querySelector('.search-results-container'),
+		bar: document.querySelector('.search-bar')
+	},
+	buttons: {
+		cancel: document.querySelectorAll('.cancel-button'),
+		run: document.querySelector('#run-import-button'),
+		import: document.querySelector('#import-button'),
+		import_rename: document.querySelector('#import-rename-button')
+	}
 };
 
-function loadProposal(api_key) {
-	windows.start.classList.add('hidden');
-	windows.loading.classList.remove('hidden');
-	const limit = parseInt(document.querySelector('#limit-input').value);
-	const lang_filter = document.querySelector('#lang-input').value;
-	const table = document.querySelector('.proposal-list');
-	table.innerHTML = '';
-	fetch(`${url_base}/api/libraryimport?api_key=${api_key}&limit=${limit}&only_english=${lang_filter}`)
-	.then(response => {
-		if (!response.ok) return Promise.reject(response.status);
-		return response.json();
-	})
-	.then(json => {
-		json.result.forEach(result => {
-			const entry = document.createElement('tr');
-			entry.dataset.cv_id = result.cv.id || '';
-			entry.dataset.group_number = result.group_number;
-			entry.dataset.filepath = encodeURIComponent(result.filepath);
-			
-			const select = document.createElement('td');
-			const select_button = document.createElement('input');
-			select_button.type = 'checkbox';
-			select_button.checked = true;
-			select.appendChild(select_button);
-			entry.appendChild(select);
+const rowid_to_filepath = {};
 
-			const title = document.createElement('td');
+function loadProposal(api_key) {
+	const params = {
+		limit: parseInt(document.querySelector('#limit-input').value),
+		limit_parent_folder: document.querySelector('#folder-input').value,
+		only_english: document.querySelector('#lang-input').value
+	};
+	const ffi = document.querySelector('#folder-filter-input');
+	if (ffi.offsetParent !== null && (ffi.value || null) !== null)
+		params.folder_filter = encodeURIComponent(ffi.value);
+
+	hide(
+		[LIEls.views.start, document.querySelector('#folder-filter-error')],
+		[LIEls.views.loading]
+	);
+
+	LIEls.proposal_list.innerHTML = '';
+	LIEls.select_all.checked = true;
+
+	fetchAPI('/libraryimport', api_key, params)
+	.then(json => {
+		json.result.forEach((result, rowid) => {
+			const entry = LIEls.pre_build.li_result.cloneNode(true);
+			entry.dataset.rowid = rowid;
+			entry.dataset.group_number = result.group_number;
+			rowid_to_filepath[rowid] = {
+				cv_id: result.cv.id || null,
+				filepath: result.filepath
+			};
+
+			const title = entry.querySelector('.file-column');
 			title.innerText = result.file_title;
 			title.title = result.filepath;
-			entry.appendChild(title);
 
-			const CV_match = document.createElement('td');
-			const CV_link = document.createElement('a');
+			const CV_link = entry.querySelector('a');
 			CV_link.href = result.cv.link || '';
 			CV_link.innerText = result.cv.title || '';
-			CV_link.target = '_blank';
-			CV_match.appendChild(CV_link);
-			entry.appendChild(CV_match);
-			
-			const issue_count = document.createElement('td');
-			issue_count.innerText = result.cv.issue_count;
-			entry.appendChild(issue_count);
 
-			const actions = document.createElement('td');
+			entry.querySelector('.issue-count').innerText = result.cv.issue_count;
 
-			const change_match = document.createElement('button');
-			change_match.title = 'Change match';
-			const change_match_icon = document.createElement('img');
-			change_match_icon.src = '/static/img/edit.svg';
-			change_match_icon.alt = '';
-			change_match.appendChild(change_match_icon);
-			change_match.addEventListener('click', e => openEditCVMatch(result.filepath));
-			actions.appendChild(change_match);
+			entry.querySelector('button').onclick = e => openEditCVMatch(rowid);
 
-			entry.appendChild(actions);
-			
-			table.appendChild(entry);
+			LIEls.proposal_list.appendChild(entry);
 		});
 
-		windows.loading.classList.add('hidden');
 		if (json.result.length > 0)
-			windows.list.classList.remove('hidden');
+			hide([LIEls.views.loading], [LIEls.views.list]);
 		else
-			windows.no_result.classList.remove('hidden');
+			hide([LIEls.views.loading], [LIEls.views.no_result]);
 	})
 	.catch(e => {
-		if (e === 400) {
-			windows.loading.classList.add('hidden');
-			windows.no_cv.classList.remove('hidden');
-		};
+		e.json().then(j => {
+			if (j.error === 'InvalidComicVineApiKey')
+				hide([LIEls.views.loading], [LIEls.views.no_cv]);
+			else if (j.error === 'InvalidKeyValue')
+				hide(
+					[LIEls.views.loading],
+					[LIEls.views.start, document.querySelector('#folder-filter-error')]
+				);
+			else
+				console.log(j);
+		});
 	});
 };
 
 function toggleSelectAll() {
-	const checked = document.querySelector('#selectall-input').checked;
-	document.querySelectorAll('.proposal-list input[type="checkbox"]').forEach(
+	const checked = LIEls.select_all.checked;
+	LIEls.proposal_list.querySelectorAll('input[type="checkbox"]').forEach(
 		e => e.checked = checked
 	);
 };
 
-function openEditCVMatch(filepath) {
-	document.querySelector('#cv-window').dataset.filepath =
-		encodeURIComponent(filepath);
-	document.querySelector('#search-input').value = '';
-	document.querySelector('.search-results').innerHTML = '';
-	document.querySelector('.search-results-container').classList.add('hidden');
+function openEditCVMatch(rowid) {
+	LIEls.search.window.dataset.rowid = rowid;
+	LIEls.search.results.innerHTML = '';
+	hide([LIEls.search.container]);
+	LIEls.search.input.value = '';
 	showWindow('cv-window');
-	document.querySelector('#search-input').focus();
+	LIEls.search.input.focus();
 };
 
 function editCVMatch(
-	filepath,
+	rowid,
 	comicvine_id,
 	comicvine_info,
 	title,
@@ -107,51 +120,41 @@ function editCVMatch(
 ) {
 	let target_td;
 	if (group_number === null)
-		target_td = document.querySelectorAll(`tr[data-filepath="${filepath}"]`);
+		target_td = document.querySelectorAll(`tr[data-rowid="${rowid}"]`);
 	else
 		target_td = document.querySelectorAll(`tr[data-group_number="${group_number}"]`);
 
 	target_td.forEach(tr => {
-		tr.dataset.cv_id = comicvine_id;
+		rowid_to_filepath[tr.dataset.rowid].cv_id = parseInt(comicvine_id);
 		const link = tr.querySelector('a');
 		link.href = comicvine_info;
 		link.innerText = `${title} (${year})`;
-		tr.querySelector(':nth-child(4)').innerText = issue_count;
+		tr.querySelector('.issue-count').innerText = issue_count;
 	});
 };
 
 function searchCV() {
-	const input = document.querySelector('#search-input');
+	const input = LIEls.search.input;
 	input.blur();
 	usingApiKey()
 	.then(api_key => {
-		const table = document.querySelector('.search-results');
-		table.innerHTML = '';
-		const query = input.value;
-		fetch(`${url_base}/api/volumes/search?api_key=${api_key}&query=${query}`)
-		.then(response => response.json())
+		LIEls.search.results.innerHTML = '';
+		fetchAPI('/volumes/search', api_key, {query: input.value})
 		.then(json => {
 			json.result.forEach(result => {
-				const entry = document.createElement('tr');
+				const entry = LIEls.pre_build.search_result.cloneNode(true);
 
-				const title = document.createElement('td');
-				const title_link = document.createElement('a');
-				title_link.target = '_blank';
-				title_link.href = result.comicvine_info;
-				title_link.innerText = `${result.title} (${result.year})`;
-				title.appendChild(title_link);
-				entry.appendChild(title);
-				
-				const issue_count = document.createElement('td');
-				issue_count.innerText = result.issue_count;
-				entry.appendChild(issue_count);
+				const title = entry.querySelector('td:nth-child(1) a');
+				title.href = result.comicvine_info;
+				title.innerText = `${result.title} (${result.year})`;
 
-				const select = document.createElement('td');
-				const select_button = document.createElement('button');
-				select_button.innerText = 'Select';
-				select_button.addEventListener('click', e => {
+				entry.querySelector('td:nth-child(2)').innerText =
+					result.issue_count;
+
+				const select_button = entry.querySelector('td:nth-child(3) button');
+				select_button.onclick = e => {
 					editCVMatch(
-						document.querySelector('#cv-window').dataset.filepath,
+						LIEls.search.window.dataset.rowid,
 						result.comicvine_id,
 						result.comicvine_info,
 						result.title,
@@ -159,20 +162,15 @@ function searchCV() {
 						result.issue_count
 					);
 					closeWindow();
-				});
-				select.appendChild(select_button);
-				entry.appendChild(select);
+				};
 
-				const select_for_all = document.createElement('td');
-				const select_for_all_button = document.createElement('button');
-				select_for_all_button.innerText = 'Select for group';
-				select_for_all_button.addEventListener('click', e => {
-					const filepath = document.querySelector('#cv-window')
-						.dataset.filepath;
-					const group_number = document.querySelector(`tr[data-filepath="${filepath}"]`)
+				const select_for_all_button = entry.querySelector('td:nth-child(4) button');
+				select_for_all_button.onclick = e => {
+					const rowid = LIEls.search.window.dataset.rowid;
+					const group_number = document.querySelector(`tr[data-rowid="${rowid}"]`)
 						.dataset.group_number;
 					editCVMatch(
-						filepath,
+						rowid,
 						result.comicvine_id,
 						result.comicvine_info,
 						result.title,
@@ -181,52 +179,47 @@ function searchCV() {
 						group_number
 					);
 					closeWindow();
-				});
-				select_for_all.appendChild(select_for_all_button);
-				entry.appendChild(select_for_all);
+				};
 
-				table.appendChild(entry);
+				LIEls.search.results.appendChild(entry);
 			});
-			document.querySelector('.search-results-container').classList.remove('hidden');
+			hide([], [LIEls.search.container]);
 		});
 	});
 };
 
 function importLibrary(api_key, rename=false) {
-	const data = [...document.querySelectorAll(
-		'.proposal-list > tr:not([data-cv_id=""]) input[type="checkbox"]:checked'
-	)].map(e => { return {
-		'filepath': e.parentNode.nextSibling.title,
-		'id': parseInt(e.parentNode.parentNode.dataset.cv_id)
-	} });
+	const data = [...LIEls.proposal_list.querySelectorAll(
+		'tr:has(input[type="checkbox"]:checked)'
+	)]
+		.filter(i => rowid_to_filepath[i.dataset.rowid].cv_id !== null)
+		.map(e => {
+			const rowid = e.dataset.rowid;
+			return {
+				'filepath': rowid_to_filepath[rowid].filepath,
+				'id': rowid_to_filepath[rowid].cv_id
+			};
+		});
 
-	windows.list.classList.add('hidden');
-	windows.loading.classList.remove('hidden');
-	fetch(`${url_base}/api/libraryimport?api_key=${api_key}&rename_files=${rename}`, {
-		'method': 'POST',
-		'headers': {'Content-Type': 'application/json'},
-		'body': JSON.stringify(data)
-	})
-	.then(response => {
-		windows.loading.classList.add('hidden');
-		windows.start.classList.remove('hidden');
-	});
+	hide([LIEls.views.list], [LIEls.views.loading]);
+	sendAPI('POST', '/libraryimport', api_key, {rename_files: rename}, data)
+	.then(response => hide([LIEls.views.loading], [LIEls.views.start]));
 };
 
 // code run on load
 
 usingApiKey()
 .then(api_key => {
-	addEventListener('#run-import-button', 'click', e => loadProposal(api_key));
-	addEventListener('#import-button', 'click', e => importLibrary(api_key, false));
-	addEventListener('#import-rename-button', 'click', e => importLibrary(api_key, true));
+	LIEls.buttons.run.onclick = e => loadProposal(api_key);
+	LIEls.buttons.import.onclick = e => importLibrary(api_key, false);
+	LIEls.buttons.import_rename.onclick = e => importLibrary(api_key, true);
 });
 
-setAttribute('.search-bar', 'action', 'javascript:searchCV();');
-addEventListener('#selectall-input', 'change', e => toggleSelectAll());
-addEventListener('.cancel-button', 'click', e => {
-	windows.list.classList.add('hidden');
-	windows.no_result.classList.add('hidden');
-	windows.no_cv.classList.add('hidden');
-	windows.start.classList.remove('hidden');
-});
+LIEls.search.bar.action = 'javascript:searchCV();';
+LIEls.select_all.onchange = e => toggleSelectAll();
+LIEls.buttons.cancel.forEach(b =>
+	b.onclick = e => hide(
+		[LIEls.views.list, LIEls.views.no_result, LIEls.views.no_cv],
+		[LIEls.views.start]
+	)
+);

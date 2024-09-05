@@ -1,81 +1,80 @@
-// 
-// Filling data
-// 
-function fillQueue(api_key) {
-	fetch(`${url_base}/api/activity/queue?api_key=${api_key}`)
-		.then(response => {
-			if (!response.ok) return Promise.reject(response.status);
-			return response.json();
-		})
-		.then(json => {
-			const table = document.getElementById('queue');
-			table.innerHTML = '';
-			json.result.forEach(obj => {
-				const entry = document.createElement('tr');
-				entry.classList.add('queue-entry');
-				entry.id = obj.id;
-
-				const status = document.createElement('td');
-				status.classList.add('status-column');
-				status.innerText = obj.status.charAt(0).toUpperCase() + obj.status.slice(1);
-				entry.appendChild(status);
-
-				const title = document.createElement('td');
-				const title_link = document.createElement('a');
-				title_link.innerText = obj.title;
-				title_link.href = obj.page_link;
-				title_link.target = '_blank';
-				title.appendChild(title_link);
-				entry.appendChild(title);
-
-				const source = document.createElement('td');
-				source.classList.add('status-column');
-				source.innerText = obj.source.charAt(0).toUpperCase() + obj.source.slice(1);
-				entry.appendChild(source);
-				
-				const size = document.createElement('td');
-				size.classList.add('number-column');
-				size.innerText = convertSize(obj.size);
-				entry.append(size);
-				
-				const speed = document.createElement('td');
-				speed.classList.add('number-column');
-				speed.innerText = (Math.round(obj.speed * 0.0001) / 100) + 'MB/s';
-				entry.append(speed);
-
-				const progress = document.createElement('td');
-				progress.classList.add('number-column');
-				if (progress > 100)
-					progress.innerText = convertSize(obj.progress)
-				else
-					progress.innerText = obj.progress + '%';
-				entry.append(progress);
-				
-				const delete_entry = document.createElement('td');
-				delete_entry.classList.add('option-column');
-				const delete_button = document.createElement('button');
-				delete_button.addEventListener('click', e => deleteEntry(obj.id, api_key));
-				delete_entry.appendChild(delete_button);
-				const delete_icon = document.createElement('img');
-				delete_icon.src = `${url_base}/static/img/delete.svg`;
-				delete_button.appendChild(delete_icon);
-				entry.append(delete_entry);
-
-				table.appendChild(entry);
-			});
-		})
-		.catch(e => {
-			if (e === 401) window.location.href = `${url_base}/`;
-		});
+const QEls = {
+	queue: document.querySelector('#queue'),
+	queue_entry: document.querySelector('.pre-build-els .queue-entry'),
+    tool_bar: {
+        remove_all: document.querySelector('#removeall-button')
+    }
 };
 
-// 
+//
+// Filling data
+//
+function addQueueEntry(api_key, obj) {
+	const entry = QEls.queue_entry.cloneNode(true);
+	entry.dataset.id = obj.id;
+	QEls.queue.appendChild(entry);
+
+	const title = entry.querySelector('a:first-of-type');
+	title.innerText = obj.title;
+	title.href = `${url_base}/volumes/${obj.volume_id}`;
+
+	const source = entry.querySelector('td:nth-child(3) a')
+    source.innerText =
+		obj.source.charAt(0).toUpperCase() + obj.source.slice(1);
+    source.href = obj.web_link;
+    source.title = `Page Title:\n${obj.web_title}`;
+    if (obj.web_sub_title !== null)
+        source.title += `\n\nSub Section:\n${obj.web_sub_title}`;
+
+	entry.querySelector('.remove-dl').onclick = e => deleteEntry(
+        obj.id, api_key
+    );
+	entry.querySelector('.blocklist-dl').onclick = e => deleteEntry(
+        obj.id,
+        api_key,
+        blocklist=true
+    );
+
+	updateQueueEntry(obj);
+};
+
+function updateQueueEntry(obj) {
+	const tr = document.querySelector(`#queue > tr[data-id="${obj.id}"]`);
+	tr.querySelector('td:nth-child(1)').innerText =
+		obj.status.charAt(0).toUpperCase() + obj.status.slice(1);
+	tr.querySelector('td:nth-child(4)').innerText =
+		convertSize(obj.size);
+	tr.querySelector('td:nth-child(5)').innerText =
+		twoDigits(Math.round(obj.speed / 100000) / 10) + 'MB/s';
+	tr.querySelector('td:nth-child(6)').innerText =
+		obj.size === -1
+			? convertSize(obj.progress)
+			: twoDigits(Math.round(obj.progress * 10) / 10) + '%';
+};
+
+function removeQueueEntry(id) {
+	document.querySelector(`#queue > tr[data-id="${id}"]`).remove();
+};
+
+function fillQueue(api_key) {
+	fetchAPI('/activity/queue', api_key)
+	.then(json => {
+		QEls.queue.innerHTML = '';
+		json.result.forEach(obj => addQueueEntry(api_key, obj));
+	})
+};
+
+//
 // Actions
-// 
-function deleteEntry(id, api_key) {
-	fetch(`${url_base}/api/activity/queue/${id}?api_key=${api_key}`, {
-		'method': 'DELETE'
-	});
+//
+function deleteAll(api_key) {
+   sendAPI('DELETE', '/activity/queue', api_key);
+};
+
+function deleteEntry(id, api_key, blocklist=false) {
+	sendAPI('DELETE', `/activity/queue/${id}`, api_key, {}, {
+        blocklist: blocklist
+    });
 };
 
 // code run on load
@@ -83,6 +82,8 @@ function deleteEntry(id, api_key) {
 usingApiKey()
 .then(api_key => {
 	fillQueue(api_key);
-	setInterval(() => fillQueue(api_key), 1500);
-	addEventListener('#refresh-button', 'click', e => fillQueue(api_key));
+	socket.on('queue_added', data => addQueueEntry(api_key, data));
+	socket.on('queue_status', updateQueueEntry);
+	socket.on('queue_ended', data => removeQueueEntry(data.id));
+    QEls.tool_bar.remove_all.onclick = e => deleteAll(api_key);
 });

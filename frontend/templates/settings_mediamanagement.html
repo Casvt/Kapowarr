@@ -1,192 +1,156 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta id="url_base" data-value="{{url_base}}">
-
-	<link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/x-icon">
-
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
+{% extends "base.html" %}
+{% from "base.html" import icon_button %}
+{% block title %}Media Management Settings{% endblock %}
+{% block css %}
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
-	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
-	<script src="{{ url_for('static', filename='js/general.js') }}" defer></script>
+{% endblock %}
+{% block js %}
 	<script src="{{ url_for('static', filename='js/settings_mediamanagement.js') }}" defer></script>
+{% endblock %}
 
-	<title>Media Management Settings - Kapowarr</title>
-</head>
-<body>
-	<header>
-		<div class="menu-title-container">
-			<button id="toggle-nav" aria-label="Toggle menu">
-				<img src="{{url_base}}/static/img/menu.svg" alt="">
-			</button>
-			<img src="{{ url_for('static', filename='img/favicon.svg') }}" alt="">
+{% block main %}
+<main>
+	<section class="tool-bar-container" aria-label="Tool bar">
+		<div class="tool-bar">
+			{{ icon_button("save-button", "Save the changes made", "save.svg", "Save", True) }}
 		</div>
-	</header>
-	<div class="nav-main">
-		<div id="nav-bar">
-			<nav>
-				<a href="{{url_base}}/">Volumes</a>
-				<a href="{{url_base}}/activity/queue">Activity</a>
-				<a href="{{url_base}}/settings">Settings</a>
-					<a href="{{url_base}}/settings/mediamanagement" class="sub-entry current-nav">Media Management</a>
-					<a href="{{url_base}}/settings/download" class="sub-entry">Download</a>
-					<a href="{{url_base}}/settings/downloadclients" class="sub-entry">Download Clients</a>
-					<a href="{{url_base}}/settings/general" class="sub-entry">General</a>
-				<a href="{{url_base}}/system/status">System</a>
-			</nav>
-			<div id="task-queue"></div>
+	</section>
+	<form id="settings-form">
+		<div class="settings-container">
+			<h2>File Naming</h2>
+			<table class="fold-table">
+				<tbody>
+					<tr>
+						<th><label for="renaming-input">Rename Downloaded Files</label></th>
+						<td><input type="checkbox" id="renaming-input"></td>
+					</tr>
+					<tr>
+						<th><label for="volume-folder-naming-input">Volume Folder Naming</label></th>
+						<td>
+							<input type="text" id="volume-folder-naming-input" required spellcheck="false">
+							<p>The naming format for the volume folder.</p>
+							<p>Available variables are: {series_name}, {clean_series_name}, {volume_number}, {comicvine_id}, {year} and {publisher}</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="file-naming-input">File Naming</label></th>
+						<td>
+							<input type="text" id="file-naming-input" required spellcheck="false">
+							<p>The naming format for the file itself.</p>
+							<p>Available variables are: {series_name}, {clean_series_name}, {volume_number}, {comicvine_id}, {year}, {publisher}, {issue_comicvine_id}, {issue_number}, {issue_title}, {issue_release_date} and {issue_release_year}</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="file-naming-sv-input">File Naming For Special Versions</label></th>
+						<td>
+							<input type="text" id="file-naming-sv-input" required spellcheck="false">
+							<p>The naming format for the file itself (if it's a special version, like a one shot, tpb or hard cover).</p>
+							<p>Available variables are: {series_name}, {clean_series_name}, {volume_number}, {comicvine_id}, {year}, {publisher} and {special_version}</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="file-naming-empty-input">File Naming For Issues Without Title</label></th>
+						<td>
+							<input type="text" id="file-naming-empty-input" required spellcheck="false">
+							<p>The naming format for the file itself if there is no issue title.</p>
+							<p>Available variables are: {series_name}, {clean_series_name}, {volume_number}, {comicvine_id}, {year}, {publisher}, {issue_comicvine_id}, {issue_number}, {issue_release_date} and {issue_release_year}</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="volume-as-empty-input">Treat Volume Issues As "No Title"</label></th>
+						<td>
+							<input type="checkbox" id="volume-as-empty-input">
+							<p>If a volume consists of volumes, often the issues will have the names "Volume N". Whether or not Kapowarr should name these the same as files for issues without a title.</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="long-sv-input">Use Long Special Version Labels</label></th>
+						<td>
+							<input type="checkbox" id="long-sv-input">
+							<p>Whether or not to use, for example, 'One-Shot' instead of 'OS'. The term 'TPB' will always stay 'TPB'.</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="issue-padding-input">Issue Padding</label></th>
+						<td>
+							<select id="issue-padding-input">
+								<option value="4">000x</option>
+								<option value="3">00x</option>
+								<option value="2">0x</option>
+								<option value="1">x</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="volume-padding-input">Volume Padding</label></th>
+						<td>
+							<select id="volume-padding-input">
+								<option value="3">00x</option>
+								<option value="2">0x</option>
+								<option value="1">x</option>
+							</select>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			<h2>Converting</h2>
+			<p>Convert files to a different format. The list below is the desired format, in order of preference.</p>
+			<table class="fold-table">
+				<tbody>
+					<tr>
+						<th><label for="convert-input">Convert Downloaded Files</label></th>
+						<td>
+							<input type="checkbox" id="convert-input">
+						</td>
+					</tr>
+					<tr>
+						<th><label for="extract-input">Extract archives covering multiple issues</label></th>
+						<td>
+							<input type="checkbox" id="extract-input">
+							<p>Extract the issue files from archives covering multiple issues, then convert those issue files following the format preference.</p>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			<p>Format Preference</p>
+			<table id="convert-table" class="short-table icon-text-color">
+				<tbody>
+					<tr>
+						<th></th>
+						<td>
+							<select id="add-convert-input"></select>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			<h2>Root Folders</h2>
+			<div id="root-folder-container">
+				<table id="root-folder-table" class="icon-text-color">
+					<thead>
+						<tr>
+							<th>Path</th>
+							<th class="number-column">Free Space</th>
+							<th class="number-column">Total Space</th>
+							<th class="action-column">Action</th>
+						</tr>
+					</thead>
+					<tbody id="root-folder-list"></tbody>
+					<tbody>
+						<tr id="add-row" class="hidden">
+							<td>
+								<input type="text" id="folder-input">
+								<p class="error" id="folder-error">*Folder doesn't exist</p>
+								<p class="error" id="folder-in-folder-error">*Folder is in other root folder or download folder</p>
+							</td>
+							<td></td>
+							<td></td>
+							<td><button id="add-folder" type="button">Add</button></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<button type="button" id="toggle-root-folder">Add Root Folder</button>
 		</div>
-		<main>
-			<div class="tool-bar-container">
-				<div class="tool-bar">
-					<button id="save-button" type="submit" aria-label="Save the changes made" title="Save the changes made">
-						<img src="{{url_base}}/static/img/save.svg" alt="">
-						<div>
-							<p>Save</p>
-						</div>
-					</button>
-				</div>
-			</div>
-			<div class="settings-container">
-				<form id="settings-form">
-					<h2>File Naming</h2>
-					<table class="fold">
-						<tbody>
-							<tr>
-								<th><label for="renaming-input">Rename Downloaded Files</label></th>
-								<td><input type="checkbox" id="renaming-input"></td>
-							</tr>
-							<tr>
-								<th><label for="volume-folder-naming-input">Volume Folder Naming</label></th>
-								<td>
-									<input type="text" id="volume-folder-naming-input" required spellcheck="false">
-									<p>The naming format for the volume folder (folder structure allowed).</p>
-									<p>Available variables are: {series_name}, {clean_series_name}, {volume_number}, {comicvine_id}, {year} and {publisher}</p>
-								</td>
-							</tr>
-							<tr>
-								<th><label for="file-naming-input">File Naming</label></th>
-								<td>
-									<input type="text" id="file-naming-input" required spellcheck="false">
-									<p>The naming format for the file itself.</p>
-									<p>Available variables are: {series_name}, {clean_series_name}, {volume_number}, {comicvine_id}, {year}, {publisher}, {issue_comicvine_id}, {issue_number}, {issue_title}, {issue_release_date} and {issue_release_year}</p>
-								</td>
-							</tr>
-							<tr>
-								<th><label for="file-naming-tpb-input">File Naming For TPB</label></th>
-								<td>
-									<input type="text" id="file-naming-tpb-input" required spellcheck="false">
-									<p>The naming format for the file itself (if it's a TPB).</p>
-									<p>Available variables are: {series_name}, {clean_series_name}, {volume_number}, {comicvine_id}, {year} and {publisher}</p>
-								</td>
-							</tr>
-							<tr>
-								<th><label for="file-naming-empty-input">File Naming For Issues Without Title</label></th>
-								<td>
-									<input type="text" id="file-naming-empty-input" required spellcheck="false">
-									<p>The naming format for the file itself if there is no issue title.</p>
-									<p>Available variables are: {series_name}, {clean_series_name}, {volume_number}, {comicvine_id}, {year}, {publisher}, {issue_comicvine_id}, {issue_number}, {issue_release_date} and {issue_release_year}</p>
-								</td>
-							</tr>
-							<tr>
-								<th><label for="volume-as-empty-input">Treat Volume Issues As "No Title"</label></th>
-								<td>
-									<input type="checkbox" id="volume-as-empty-input">
-									<p>If a volume consists of volumes, often the issues will have the names "Volume N". Whether or not Kapowarr should name these the same as files for issues without a title.</p>
-								</td>
-							</tr>
-                            <tr>
-                                <th><label for="issue-padding-input">Issue Padding</label></th>
-                                <td>
-                                    <select id="issue-padding-input">
-										<option value="4">000x</option>
-                                        <option value="3">00x</option>
-                                        <option value="2">0x</option>
-                                        <option value="1">x</option>
-                                    </select>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th><label for="volume-padding-input">Volume Padding</label></th>
-                                <td>
-                                    <select id="volume-padding-input">
-                                        <option value="3">00x</option>
-                                        <option value="2">0x</option>
-                                        <option value="1">x</option>
-                                    </select>
-                                </td>
-                            </tr>
-						</tbody>
-					</table>
-					<h2>Converting</h2>
-					<p>Convert files to a different format. The list below is the desired format, in order of preference.</p>
-					<table class="fold">
-						<tbody>
-							<tr>
-								<th><label for="convert-input">Convert Files</label></th>
-								<td>
-									<input type="checkbox" id="convert-input">
-									<p>Convert files after they've been downloaded.</p>
-								</td>
-							</tr>
-							<tr>
-								<th><label for="extract-input">Extract archives covering multiple issues</label></th>
-								<td>
-									<input type="checkbox" id="extract-input">
-									<p>Convert archive files covering multiple issues into folders, then convert the extracted files following the format preference.</p>
-								</td>
-							</tr>
-						</tbody>
-					</table>
-					<p>Format Preference</p>
-					<table id="convert-table" class="short-table">
-						<tbody>
-							<tr>
-								<th></th>
-								<td><p>No Conversion</p></td>
-							</tr>
-							<tr>
-								<th></th>
-								<td>
-									<select id="add-convert-input"></select>
-								</td>
-								<td>
-									<button id="add-convert-button" title="Add format to list" type="button">
-										<img src="/static/img/cancel_search.svg" alt="">
-									</button>
-								</td>
-							</tr>
-						</tbody>
-					</table>
-					<h2>Root Folders</h2>
-					<div id="root-folder-container">
-						<table id="root-folder-table">
-							<thead>
-								<tr>
-									<th>Path</th>
-									<th class="action-column">Action</th>
-								</tr>
-							</thead>
-							<tbody id="root-folder-list"></tbody>
-							<tbody>
-								<tr id="add-row" class="hidden">
-									<td>
-										<input type="text" id="folder-input">
-										<p class="error" id="folder-error">*Folder doesn't exist</p>
-									</td>
-									<td><button id="add-folder" type="button">Add</button></td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-					<button type="button" id="toggle-root-folder">Add Root Folder</button>
-				</form>
-			</div>
-		</main>
-	</div>
-
-</body>
-</html>
+	</form>
+</main>
+{% endblock main %}

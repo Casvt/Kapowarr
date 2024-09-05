@@ -1,53 +1,193 @@
 #!/usr/bin/env python3
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
-import logging
+from argparse import ArgumentParser
+from atexit import register
+from multiprocessing import set_start_method
+from os import environ, name
+from signal import SIGINT, SIGTERM, signal
+from subprocess import Popen
+from sys import argv
+from typing import NoReturn, Union
 
-from backend.db import __DATABASE_FILEPATH__, set_db_location, setup_db
-from backend.files import folder_path
-from backend.helpers import check_python_version
-from backend.logging import setup_logging
-from backend.server import create_app, create_waitress_server, set_url_base
+from backend.db import close_all_db, set_db_location, setup_db
+from backend.enums import RestartVersion
+from backend.helpers import check_python_version, get_python_exe
+from backend.logging import LOGGER, setup_logging
+from backend.server import SERVER, handle_restart_version
 from frontend.api import Settings, download_handler, task_handler
 
+SUB_PROCESS_TIMEOUT = 20.0
 
-def Kapowarr() -> None:
-	"""The main function of Kapowarr
-	"""
-	setup_logging()
-	logging.info('Starting up Kapowarr')
 
-	if not check_python_version():
-		exit(1)
+def _main(
+    restart_version: RestartVersion,
+    db_folder: Union[str, None] = None
+) -> NoReturn:
+    """The main function of the Kapowarr sub-process
 
-	set_db_location(folder_path(*__DATABASE_FILEPATH__))
+    Args:
+        restart_version (RestartVersion): The type of (re)start.
 
-	app = create_app()
+        db_folder (Union[str, None], optional): The folder in which the database
+        will be stored or in which a database is for Kapowarr to use. Give
+        `None` for the default location.
+            Defaults to None.
 
-	with app.app_context():
-		setup_db()
-		
-		settings = Settings()
-		url_base = settings['url_base']
-		set_url_base(app, url_base)
+    Raises:
+        ValueError: Value of `db_folder` exists but is not a folder.
 
-		download_handler.create_download_folder()
+    Returns:
+        NoReturn: Exit code 0 means to shutdown.
+        Exit code 131 or higher means to restart with possibly special reasons.
+    """
+    set_start_method('spawn')
+    setup_logging()
+    LOGGER.info('Starting up Kapowarr')
 
-	download_handler.load_download_thread.start()
-	task_handler.handle_intervals()
+    if not check_python_version():
+        exit(1)
 
-	host: str = settings['host']
-	port: int = settings['port']
-	server = create_waitress_server(app, host, port)
-	logging.info(f'Kapowarr running on http://{host}:{port}{url_base}/')
-	# =================
-	server.run()
-	# =================
+    set_db_location(db_folder)
 
-	download_handler.stop_handle()
-	task_handler.stop_handle()
+    handle_restart_version(restart_version)
 
-	return
+    SERVER.create_app()
+
+    with SERVER.app.app_context():
+        setup_db()
+
+        settings = Settings()
+        host: str = settings['host']
+        port: int = settings['port']
+        url_base: str = settings['url_base']
+        SERVER.set_url_base(url_base)
+
+        download_handler.create_download_folder()
+
+    download_handler.load_download_thread.start()
+    task_handler.handle_intervals()
+
+    try:
+        # =================
+        SERVER.run(host, port)
+        # =================
+
+    finally:
+        download_handler.stop_handle()
+        task_handler.stop_handle()
+        close_all_db()
+
+        if SERVER.restart_version is not None:
+            LOGGER.info('Restarting Kapowarr')
+            exit(SERVER.restart_version.value)
+
+        exit(0)
+
+
+def _stop_sub_process(proc: Popen) -> None:
+    """Gracefully stop the sub-process unless that fails. Then terminate it.
+
+    Args:
+        proc (Popen): The sub-process to stop.
+    """
+    if proc.returncode is not None:
+        return
+
+    try:
+        if name != 'nt':
+            try:
+                proc.send_signal(SIGINT)
+            except ProcessLookupError:
+                pass
+        else:
+            import win32api  # type: ignore
+            import win32con  # type: ignore
+            try:
+                win32api.GenerateConsoleCtrlEvent(
+                    win32con.CTRL_C_EVENT, proc.pid
+                )
+            except KeyboardInterrupt:
+                pass
+    except BaseException:
+        proc.terminate()
+
+
+def _run_sub_process(
+    restart_version: RestartVersion = RestartVersion.NORMAL
+) -> int:
+    """Start the sub-process that Kapowarr will be run in.
+
+    Args:
+        restart_version (RestartVersion, optional): Why Kapowarr was restarted.
+            Defaults to `RestartVersion.NORMAL`.
+
+    Returns:
+        int: The return code from the sub-process.
+    """
+    env = {
+        **environ,
+        "KAPOWARR_RUN_MAIN": "1",
+        "KAPOWARR_RESTART_VERSION": str(restart_version.value)
+    }
+
+    comm = [get_python_exe(), "-u", __file__] + argv[1:]
+    proc = Popen(
+        comm,
+        env=env
+    )
+    proc._sigint_wait_secs = SUB_PROCESS_TIMEOUT # type: ignore
+    register(_stop_sub_process, proc=proc)
+    signal(SIGTERM, lambda signal_no, frame: _stop_sub_process(proc))
+
+    try:
+        return proc.wait()
+    except (KeyboardInterrupt, SystemExit, ChildProcessError):
+        return 0
+
+
+def Kapowarr() -> int:
+    """The main function of Kapowarr
+
+    Returns:
+        int: The return code.
+    """
+    rc = RestartVersion.NORMAL.value
+    while rc in RestartVersion._member_map_.values():
+        rc = _run_sub_process(
+            RestartVersion(rc)
+        )
+
+    return rc
+
 
 if __name__ == "__main__":
-	Kapowarr()
+    if environ.get("KAPOWARR_RUN_MAIN") == "1":
+
+        parser = ArgumentParser(
+            description="Kapowarr is a software to build and manage a comic book library, fitting in the *arr suite of software.")
+        parser.add_argument(
+            '-d', '--DatabaseFolder',
+            type=str,
+            help="The folder in which the database will be stored or in which a database is for Kapowarr to use"
+        )
+        args = parser.parse_args()
+        db_folder = args.DatabaseFolder
+
+        rv = RestartVersion(int(environ.get(
+            "KAPOWARR_RESTART_VERSION",
+            RestartVersion.NORMAL.value
+        )))
+
+        try:
+            _main(
+                restart_version=rv,
+                db_folder=db_folder
+            )
+
+        except ValueError:
+            parser.error("The value for -d/--DatabaseFolder is not a folder")
+
+    else:
+        rc = Kapowarr()
+        exit(rc)

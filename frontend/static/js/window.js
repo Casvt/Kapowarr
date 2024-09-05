@@ -6,7 +6,7 @@ function showWindow(id) {
 
 	// Select the correct window
 	document.querySelector(`.window > section#${id}`).setAttribute('show-window', '');
-	
+
 	// Show the window
 	document.querySelector('.window').setAttribute('show-window', '');
 };
@@ -20,7 +20,7 @@ function showLoadWindow(id) {
 	// Select the correct window
 	const loading_window = document.querySelector(`.window > section#${id}`).dataset.loading_window;
 	if (loading_window !== undefined) document.querySelector(`.window > section#${loading_window}`).setAttribute('show-window', '');
-	
+
 	// Show the window
 	document.querySelector('.window').setAttribute('show-window', '');
 };
@@ -31,6 +31,28 @@ function closeWindow() {
 
 // code run on load
 
-document.querySelectorAll('.window > section > div:first-child > button').forEach(e => {
-	e.addEventListener('click', e => closeWindow());
+document.querySelector('body').onkeydown = e => {
+	if (
+		e.code === "Escape"
+		&&
+		document.querySelector('.window[show-window]')
+	) {
+		e.stopImmediatePropagation();
+		closeWindow();
+	};
+};
+
+document.querySelector('.window').onclick = e => {
+	e.stopImmediatePropagation();
+	closeWindow();
+};
+
+document.querySelectorAll('.window > section').forEach(
+	el => el.onclick = e => e.stopImmediatePropagation()
+);
+
+document.querySelectorAll(
+	'.window > section :where(button[title="Cancel"], button.cancel-window)'
+).forEach(e => {
+	e.onclick = f => closeWindow();
 });

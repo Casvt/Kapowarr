@@ -4,17 +4,17 @@
 	<meta charset="UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	
+
 	<link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/x-icon">
 
-	<link rel="stylesheet" href="/static/css/general.css">
-	<link rel="stylesheet" href="/static/css/page_not_found.css">
-	
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/page_not_found.css') }}">
+
 	<script>
 		if (JSON.parse(localStorage.getItem('kapowarr') || {'theme': 'light'})['theme'] === 'dark')
 			document.querySelector(':root').classList.add('dark-mode');
 	</script>
-	
+
 	<title>Not found - Kapowarr</title>
 </head>
 <body>

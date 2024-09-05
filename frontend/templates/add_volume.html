@@ -1,131 +1,147 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta id="url_base" data-value="{{url_base}}">
-
-	<link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/x-icon">
-
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
+{% extends "base.html" %}
+{% from "base.html" import icon_button, window, loading_window %}
+{% block title %}Add Volume{% endblock %}
+{% block css %}
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/window.css') }}">
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/add_volume.css') }}">
-	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
-	<script src="{{ url_for('static', filename='js/general.js') }}" defer></script>
+{% endblock %}
+{% block js %}
 	<script src="{{ url_for('static', filename='js/window.js') }}" defer></script>
 	<script src="{{ url_for('static', filename='js/add_volume.js') }}" defer></script>
+{% endblock %}
 
-	<title>Add Volume - Kapowarr</title>
-</head>
-<body>
-	<!-- Windows -->
-	<div class="window">
-		<section id="loading-window" class="loading-window">
-			<p>Adding volume...</p>
-		</section>
-		<section id="add-window" data-loading_window="loading-window">
-			<div>
-				<h2 id="add-title"></h2>
-				<button aria-label="Cancel adding volume" title="Cancel adding volume">
-					<img src="{{url_base}}/static/img/cancel_search.svg" alt="">
-				</button>
-			</div>
-			<div>
-				<img src="" id="add-cover">
-				<form id="add-form">
-					<input type="hidden" id="comicvine-input" value="">
-					<table>
-						<tr>
-							<th><label for="rootfolder-input">Root Folder</label></th>
-							<td>
-								<select id="rootfolder-input">
-								</select>
-							</td>
-						</tr>
-						<tr>
-							<th><label for="volumefolder-input">Volume Folder</label></th>
-							<td>
-								<input type="text" id="volumefolder-input">
-							</td>
-						</tr>
-						<tr>
-							<th><label for="monitor-input">Monitor</label></th>
-							<td>
-								<select id="monitor-input">
-									<option value="true" selected>Yes</option>
-									<option value="false">No</option>
-								</select>
-							</td>
-						</tr>
-					</table>
-				</form>
-			</div>
-			<div>
-				<button id="add-volume" type="submit" form="add-form">Add Volume</button>
-			</div>
-		</section>
+{% block pre_build_els %}
+<button
+	class="search-entry"
+	data-title=""
+	data-cover=""
+	data-comicvine_id=""
+	data-_translated=""
+	data-_title=""
+	data-_year=""
+	data-_volume_number=""
+	data-_publisher=""
+>
+	<div class="cover-info-container">
+		<div>
+			<img src="" alt="" loading="lazy">
+		</div>
+		<div class="entry-info-container">
+			<h2></h2>
+			<div class="entry-tags" aria-label="Tags"></div>
+			<div class="entry-aliases" aria-label="Aliases"></div>
+			<div class="entry-description description" aria-label="Description"></div>
+		</div>
 	</div>
-	
-	<header>
-		<div class="menu-title-container">
-			<button id="toggle-nav" aria-label="Toggle menu">
-				<img src="{{url_base}}/static/img/menu.svg" alt="">
-			</button>
-			<img src="{{ url_for('static', filename='img/favicon.svg') }}" alt="">
-		</div>
-	</header>
+	<div class="entry-spare-description description" aria-hidden="true"></div>
+</button>
+{% endblock pre_build_els %}
 
-	<div class="nav-main">
-		<div id="nav-bar">
-			<nav>
-				<a href="{{url_base}}/">Volumes</a>
-					<a href="{{url_base}}/add" class="sub-entry current-nav">Add Volume</a>
-					<a href="{{url_base}}/library-import" class="sub-entry">Library Import</a>
-					<a href="{{url_base}}/mass-editor" class="sub-entry">Mass Editor</a>
-				<a href="{{url_base}}/activity/queue">Activity</a>
-				<a href="{{url_base}}/settings">Settings</a>
-				<a href="{{url_base}}/system/status">System</a>
-			</nav>
-			<div id="task-queue"></div>
-		</div>
-		<main>
-			<div>
-				<form class="search-bar">
-					<button type="submit" id="search-button" aria-label="Start the search" title="Start the search">
-						<img src="{{url_base}}/static/img/search.svg" alt="">
-					</button>
-					<input type="text" id="search-input" autofocus aria-label="Search term">
-					<button type="button" id="search-cancel-button" aria-label="Clear search" title="Clear search">
-						<img src="{{url_base}}/static/img/cancel_search.svg" alt="">
-					</button>
-				</form>
-				<section id="search-explain">
-					<p>It's easy to add a new volume, just start typing the name of the volume you want to add</p>
-					<br>
-					<p>You can also search using the CV id of a volume. e.g. 'cv:4050-2127', 'cv:2127' or '4050-2127'</p>
-				</section>
-				<div id="search-empty" class="hidden">
-					<p>No results</p>
-				</div>
-				<div id="search-failed" class="hidden">
-					<p>The Comic Vine api key is not set or is invalid</p>
-					<p>Please set a working Comic Vine api key at Settings -> General -> Comic Vine API</p>
-				</div>
-				<div id="search-blocked" class="hidden">
-					<p>You can't add volumes before having added at least one root folder</p>
-					<p>A root folder can be added at Settings -> Media Management -> Root Folders</p>
-				</div>
-				<section id="search-results">
-					<div class="filter-bar hidden">
-						<select id="filter-translations">
-							<option value="all">All Languages</option>
-							<option value="only-english">Only English</option>
+{% block windows %}
+	{{ loading_window("loading-window", "Adding volume...") }}
+
+	{% set add_content %}
+		<img src="" id="add-cover" alt="">
+		<form id="add-form">
+			<input type="hidden" id="comicvine-input" value="">
+			<table class="fold-table">
+				<tr>
+					<th><label for="rootfolder-input">Root Folder</label></th>
+					<td>
+						<select id="rootfolder-input">
 						</select>
-					</div>
-				</section>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="volumefolder-input">Volume Folder</label></th>
+					<td>
+						<input type="text" id="volumefolder-input">
+					</td>
+				</tr>
+				<tr>
+					<th><label for="monitor-input">Monitor</label></th>
+					<td>
+						<select id="monitor-input">
+							<option value="all" selected>All</option>
+							<option value="missing">Missing</option>
+							<option value="none">None</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="specialoverride-input">Special State</label></th>
+					<td>
+						<select id="specialoverride-input">
+							<option value="auto" selected>Automatic</option>
+							<option value="">Normal Volume</option>
+							<option value="tpb">Trade Paper Back</option>
+							<option value="one-shot">One Shot</option>
+							<option value="hard-cover">Hard Cover</option>
+							<option value="volume-as-issue">Volume As Issue</option>
+						</select>
+					</td>
+				</tr>
+			</table>
+		</form>
+	{% endset %}
+
+	{% set add_submit %}
+		<label for="auto-search-input">Start search for missing volume</label>
+		<input type="checkbox" id="auto-search-input">
+		<button id="add-volume" type="submit" form="add-form">Add Volume</button>
+	{% endset %}
+
+	{{ window(False, "add-window", "Add volume", add_content, add_submit, "loading-window", False) }}
+
+{% endblock windows %}
+
+{% block main %}
+<main>
+	<div>
+		<form class="search-bar icon-text-color" aria-label="Search Bar">
+			<button type="submit" id="search-button" title="Start the search">
+				<img src="{{url_base}}/static/img/search.svg" alt="">
+			</button>
+			<input type="text" id="search-input" required autofocus aria-label="Search term">
+			<button type="button" id="search-cancel-button" title="Clear search">
+				<img src="{{url_base}}/static/img/cancel.svg" alt="">
+			</button>
+		</form>
+		<section id="search-explain" aria-label="Explanation">
+			<p>It's easy to add a new volume, just start typing the name of the volume you want to add</p>
+			<br>
+			<p>You can also search using the CV ID of a volume. e.g. 'cv:4050-2127', 'cv:2127' or '4050-2127'</p>
+		</section>
+		<section id="search-empty" class="hidden">
+			<p>No results</p>
+		</section>
+		<section id="search-loading" class="hidden">
+			<p>Searching...</p>
+		</section>
+		<section id="search-failed" class="hidden">
+			<p>The Comic Vine api key is not set or is invalid</p>
+			<p>Please set a working Comic Vine api key at Settings -> General -> Comic Vine API</p>
+		</section>
+		<section id="search-blocked" class="hidden">
+			<p>You can't add volumes before having added at least one root folder</p>
+			<p>A root folder can be added at Settings -> Media Management -> Root Folders</p>
+		</section>
+		<section id="search-results" class="hidden" aria-label="Search Results">
+			<div class="filter-bar" aria-label="Filter Bar">
+				<select id="filter-translations" aria-label="Filter translations">
+					<option value="all">All Languages</option>
+					<option value="only-english">Only English</option>
+				</select>
+				<select id="filter-year" aria-label="Filter year">
+				</select>
+				<select id="filter-issue-count" aria-label="Filter issue count">
+				</select>
+				<select id="filter-volume-number" aria-label="Filter volume number">
+				</select>
+				<select id="filter-publisher" aria-label="Filter publisher">
+				</select>
 			</div>
-		</main>
+		</section>
 	</div>
-</body>
-</html>
+</main>
+{% endblock main %}

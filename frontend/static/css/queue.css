@@ -1,13 +1,22 @@
 main {
-	overflow-x: hidden;
+    position: relative;
+}
+
+#empty-window {
+    position: absolute;
+    inset: 0 0 0 0;
+    background-color: var(--background-color);
+}
+
+main:has(#queue tr) #empty-window,
+main:not(:has(#queue tr)) .tool-bar-container {
+    display: none;
 }
 
 table {
 	width: 100%;
 	min-width: 50rem;
-	border-spacing: 0px;
 	padding: 1rem;
-	text-align: left;
 	color: var(--text-color);
 }
 
@@ -28,22 +37,19 @@ th, td {
 }
 
 .option-column {
-	width: 3.5rem;
+	width: 4.5rem;
 }
 
-.option-column button {
-	background-color: transparent;
+.option-column button:nth-of-type(2) {
+    margin-left: .5rem;
 }
 
 .option-column button img {
 	width: 20px;
 }
 
-table a {
-	text-decoration: none;
-	color: var(--text-color);
-}
-
-table a:hover {
-	text-decoration: underline;
+@media (min-width: 720px) {
+    main {
+        width: calc(100vw - var(--nav-width));
+    }
 }

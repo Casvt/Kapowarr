@@ -44,9 +44,9 @@
 	padding: clamp(.5rem, 3vw, 1.2rem) clamp(.5rem, 4.5vw, 1.4rem);
 }
 
-.window > section > div:nth-child(1),
-.window > section > div:nth-child(3) {
-	height: 4.5rem;
+.window-header,
+.window-footer {
+	min-height: 4.5rem;
 	display: flex;
 	align-items: center;
 	font-size: .8rem;
@@ -54,24 +54,24 @@
 }
 
 /* Header */
-.window > section > div:nth-child(1) {
+.window-header {
 	justify-content: space-between;
 	border-bottom: 2px solid var(--border-color);
 }
 
-.window > section > div:nth-child(1) > button:last-of-type {
+.window-header > button:last-of-type {
 	height: 1rem;
 	aspect-ratio: 1/1;
 	padding: 0;
 	background-color: transparent;
 }
 
-.window > section > div:nth-child(1) > button:last-of-type > img {
+.window-header > button:last-of-type > img {
 	height: 100%;
 }
 
 /* Main window */
-.window > section > div:nth-child(2) {
+.window-content {
 	min-height: 15rem;
 	display: flex;
 	flex-direction: column;
@@ -80,27 +80,27 @@
 	overflow: auto;
 }
 
-.window > section > div:nth-child(2) form {
+.window-content form {
 	align-self: center;
 }
 
-.window > section > div:nth-child(2) table {
+.window-content table {
 	width: 100%;
 }
 
-.window > section > div:nth-child(2) form table tr > * {
+.window-content tr > * {
 	padding: .5rem;
 }
 
-.window > section > div:nth-child(2) form table tr > th {
-	width: 30%;
-	text-align: right;
+.window-content th {
 	font-size: .8rem;
-	font-weight: 600;
 }
 
-.window > section > div:nth-child(2) form table tr > td > select,
-.window > section > div:nth-child(2) form table tr > td > input {
+.window-content table th :where(input) {
+	width: min-content;
+}
+
+.window-content table :where(select, input) {
 	width: 90%;
 	padding: .5rem;
 	border: 2px solid var(--border-color);
@@ -109,23 +109,30 @@
 	color: var(--text-color);
 }
 
-.window > section > div:nth-child(2) form table tr > td > p {
+.window-content td > p {
 	margin-top: .2rem;
 	margin-left: .1rem;
 	font-size: .8rem;
 }
 
 /* Footer */
-.window > section > div:nth-child(3) {
+.window-footer {
 	justify-content: flex-end;
 	border-top: 2px solid var(--border-color);
 }
 
-.window > section > div:nth-child(3) > button {
-	height: 2rem;
+.window-footer button {
 	padding: .5rem 1rem;
 	border-radius: 2px;
 	color: var(--light-color);
+}
+
+.cancel-window {
+	background-color: var(--error-color);
+}
+
+.window-footer button[type="submit"] {
+	background-color: var(--success-color);
 }
 
 @media (max-width: 850px) {
@@ -134,7 +141,7 @@
 		height: 90%;
 		max-height: unset;
 	}
-	.window > section[show-window].wide-window > div:nth-child(2) {
+	.window > section[show-window].wide-window .window-content {
 		flex-grow: 1;
 	}
 }
@@ -145,7 +152,7 @@
 		height: 90%;
 		max-height: unset;
 	}
-	.window > section[show-window] > div:nth-child(2) {
+	.window > section[show-window] .window-content {
 		flex-grow: 1;
 	}
 	.window > section[show-window].wide-window {

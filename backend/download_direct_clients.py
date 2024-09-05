@@ -1,295 +1,356 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 """
 Clients for downloading from a direct URL and Mega.
 Used when downloading from GC.
 """
 
-import logging
-from os.path import basename, join, splitext
+from __future__ import annotations
+
+from os.path import basename, join, sep, splitext
 from re import IGNORECASE, compile
 from time import perf_counter
+from typing import TYPE_CHECKING
 from urllib.parse import unquote_plus
 
-from requests import get
-from requests.exceptions import ChunkedEncodingError
+from bs4 import BeautifulSoup, Tag
+from requests import RequestException
 
 from backend.credentials import Credentials
 from backend.custom_exceptions import LinkBroken
 from backend.download_general import Download
-from backend.enums import BlocklistReason, DownloadState
+from backend.enums import BlocklistReason, DownloadSource, DownloadState
+from backend.helpers import Session, get_first_of_range
+from backend.logging import LOGGER
+from backend.server import WebSocket
 from backend.settings import Settings
 
 from .lib.mega import Mega, RequestError, sids
 
-file_extension_regex = compile(r'(?<=\.|\/)[\w\d]{2,4}(?=$|;|\s|\")', IGNORECASE)
+if TYPE_CHECKING:
+    from requests import Response
+
+file_extension_regex = compile(
+    r'(?<=\.|\/)[\w\d]{2,4}(?=$|;|\s|\")',
+    IGNORECASE)
+extract_mediafire_regex = compile(
+    r'window.location.href\s?=\s?\'https://download\d+\.mediafire.com/.*?(?=\')',
+    IGNORECASE)
 credentials = Credentials(sids)
-download_chunk_size = 4194304 # 4MB Chunks
+DOWNLOAD_CHUNK_SIZE = 4194304 # 4MB Chunks
+MEDIAFIRE_FOLDER_LINK = "https://www.mediafire.com/api/1.5/file/zip.php"
+WETRANSFER_API_LINK = "https://wetransfer.com/api/v4/transfers/{transfer_id}/download"
+PIXELDRAIN_API_LINK = "https://pixeldrain.com/api/file/{download_id}"
 
-class BaseDownload(Download):
-	def __init__(self):
-		self.id = None
-		self.state: DownloadState = DownloadState.QUEUED_STATE
 
-	def todict(self) -> dict:
-		"""Represent the download in the form of a dict
+class BaseDirectDownload(Download):
+    def __init__(self,
+        download_link: str,
+        filename_body: str,
+        source: DownloadSource,
+        custom_name: bool = True
+    ) -> None:
+        LOGGER.debug(f'Creating download: {download_link}, {filename_body}')
+        self._ssn = Session()
+        self.id = None # type: ignore
+        self.state: DownloadState = DownloadState.QUEUED_STATE
+        self.progress: float = 0.0
+        self.speed: float = 0.0
+        self.size: int = 0
+        self.download_link = download_link
+        self.source = source
 
-		Returns:
-			dict: The dict with all relevant info about the download
-		"""
-		return {
-			'id': self.id,
-			'volume_id': self.volume_id,
-			'issue_id': self.issue_id,
+        try:
+            self.pure_link = self._convert_to_pure_link()
+        except RequestException:
+            raise LinkBroken(BlocklistReason.LINK_BROKEN)
 
-			'page_link': self.page_link,
-			'source': self.source,
-			'download_link': self.download_link,
-			'type': self.type,
+        try:
+            r = self._fetch_pure_link()
+        except RequestException:
+            raise LinkBroken(BlocklistReason.LINK_BROKEN)
 
-			'file': self.file,
-			'title': self.title,
-			'size': self.size,
+        r.close()
+        if not r.ok:
+            raise LinkBroken(BlocklistReason.LINK_BROKEN)
+        self.size = int(r.headers.get('Content-Length', -1))
 
-			'status': self.state.value,
-			'progress': self.progress,
-			'speed': self.speed,
-		}
-	
-	def __repr__(self) -> str:
-		return f'<{self.__class__.__name__}, {self.download_link}, {self.file}>'
+        self._filename_body = filename_body
+        if not custom_name:
+            self._filename_body = self._extract_default_filename_body(r)
 
-class DirectDownload(BaseDownload):
-	"For downloading a file directly from a link"
+        self.title = basename(self._filename_body)
+        self.file = self._build_filename(r)
+        return
 
-	type = 'direct'
+    def _convert_to_pure_link(self) -> str:
+        return self.download_link
 
-	def __init__(self,
-		link: str,
-		filename_body: str,
-		source: str,
-		custom_name: bool=True
-	):
-		"""Setup the direct download
+    def _fetch_pure_link(self) -> Response:
+        return self._ssn.get(self.pure_link, stream=True)
 
-		Args:
-			link (str): The link (that leads to a file) that should be used
-			filename_body (str): The body of the filename to write to
-			source (str): The name of the source of the link
-			custom_name (bool, optional): If the name supplied should be used
-			or the default filename.
-				Defaults to True.
+    def _extract_default_filename_body(self, r: Response) -> str:
+        return splitext(unquote_plus(
+            self.pure_link.split('/')[-1].split("?")[0]
+        ))[0]
 
-		Raises:
-			LinkBroken: The link doesn't work
-		"""
-		logging.debug(f'Creating download: {link}, {filename_body}')
-		super().__init__()
-		self.progress: float = 0.0
-		self.speed: float = 0.0
-		self.size: int = 0
-		self.download_link = link
-		self.source = source
-		self._filename_body = filename_body
+    def _build_filename(self, r: Response) -> str:
+        folder = Settings()['download_folder']
+        extension = self._extract_extension(r)
+        return join(
+            folder,
+            '_'.join(self._filename_body.split(sep)) + extension
+        )
 
-		r = get(self.download_link, stream=True)
-		r.close()
-		if not r.ok:
-			raise LinkBroken(BlocklistReason.LINK_BROKEN)
-		self.size = int(r.headers.get('content-length', -1))
+    def _extract_extension(self, r: Response) -> str:
+        match = file_extension_regex.findall(
+            ' '.join((
+                r.headers.get('Content-Disposition', ''),
+                r.headers.get('Content-Type', ''),
+                r.url
+            ))
+        )
+        extension = ''
+        if match:
+            extension += '.' + match[0]
 
-		if custom_name:
-			self.title = filename_body.rstrip('.')
-		else:
-			self.title = splitext(unquote_plus(
-				self.download_link.split('/')[-1]
-			))[0]
+        return extension
 
-		self.file = self.__build_filename(r)
-		return
+    def run(self) -> None:
+        self.state = DownloadState.DOWNLOADING_STATE
+        size_downloaded = 0
+        ws = WebSocket()
+        ws.update_queue_status(self)
 
-	def __extract_extension(self,
-		content_type: str,
-		content_disposition: str,
-		url: str
-	) -> str:
-		"""Find the extension of the file behind the link
+        with self._fetch_pure_link() as r, \
+            open(self.file, 'wb') as f:
 
-		Args:
-			content_type (str): The value of the Content-Type header
-			content_disposition (str): The value of the Content-Disposition header
-			url (str): The url leading to the file
+            start_time = perf_counter()
+            try:
+                for chunk in r.iter_content(chunk_size=DOWNLOAD_CHUNK_SIZE):
+                    if self.state in (DownloadState.CANCELED_STATE,
+                                    DownloadState.SHUTDOWN_STATE):
+                        break
 
-		Returns:
-			str: The extension of the file, including the `.`
-		"""		
-		match = file_extension_regex.findall(
-			' '.join((
-				content_disposition,
-				content_type,
-				url
-			))
-		)
-		extension = ''
-		if match:
-			extension += '.' + match[0]
+                    f.write(chunk)
 
-		return extension
+                    # Update progress
+                    chunk_size = len(chunk)
+                    size_downloaded += chunk_size
+                    self.speed = round(
+                        chunk_size / (perf_counter() - start_time),
+                        2
+                    )
+                    if self.size == -1:
+                        # No file size so progress is amount downloaded
+                        self.progress = size_downloaded
+                    else:
+                        self.progress = round(
+                            size_downloaded / self.size * 100,
+                            2
+                        )
+                    start_time = perf_counter()
 
-	def __build_filename(self, r) -> str:
-		"""Build the filename from the download folder, filename body and extension
+                    ws.update_queue_status(self)
 
-		Args:
-			r (Request): The request to the link
+            except RequestException:
+                self.state = DownloadState.FAILED_STATE
 
-		Returns:
-			str: The filename
-		"""		
-		folder = Settings()['download_folder']
-		extension = self.__extract_extension(
-			r.headers.get('Content-Type', ''),
-			r.headers.get('Content-Disposition', ''),
-			r.url
-		)
-		return join(folder, self.title + extension)
+        return
 
-	def run(self) -> None:
-		self.state = DownloadState.DOWNLOADING_STATE
-		size_downloaded = 0
+    def stop(self,
+        state: DownloadState = DownloadState.CANCELED_STATE
+    ) -> None:
+        self.state = state
+        return
 
-		with get(self.download_link, stream=True) as r, \
-		open(self.file, 'wb') as f:
+    def todict(self) -> dict:
+        return {
+            'id': self.id,
+            'volume_id': self.volume_id,
+            'issue_id': self.issue_id,
 
-			start_time = perf_counter()
-			try:
-				for chunk in r.iter_content(chunk_size=download_chunk_size):
-					if self.state in (DownloadState.CANCELED_STATE,
-									DownloadState.SHUTDOWN_STATE):
-						break
+            'web_link': self.web_link,
+            'web_title': self.web_title,
+            'web_sub_title': self.web_sub_title,
+            'download_link': self.download_link,
+            'pure_link': self.pure_link,
 
-					f.write(chunk)
+            'source': self.source.value,
+            'type': self.type,
 
-					# Update progress
-					chunk_size = len(chunk)
-					size_downloaded += chunk_size
-					self.speed = round(
-						chunk_size / (perf_counter() - start_time),
-						2
-					)
-					if self.size == -1:
-						# No file size so progress is amount downloaded
-						self.progress = size_downloaded
-					else:
-						self.progress = round(
-							size_downloaded / self.size * 100, 
-							2
-						)
-					start_time = perf_counter()
+            'file': self.file,
+            'title': self.title,
 
-			except ChunkedEncodingError:
-				self.state = DownloadState.FAILED_STATE
+            'size': self.size,
+            'status': self.state.value,
+            'progress': self.progress,
+            'speed': self.speed
+        }
 
-		return
+    def __repr__(self) -> str:
+        return f'<{self.__class__.__name__}, {self.download_link}, {self.file}>'
 
-	def stop(self,
-		state: DownloadState = DownloadState.CANCELED_STATE
-	) -> None:
-		self.state = state
-		return
 
-class MegaDownload(BaseDownload):
-	"""For downloading a file via Mega
-	"""
+class DirectDownload(BaseDirectDownload):
+    "For downloading a file directly from a link"
 
-	type = 'mega'
+    type = 'direct'
 
-	@property
-	def progress(self) -> float:
-		return self._mega.progress
 
-	@property
-	def speed(self) -> float:
-		return self._mega.speed
+class MediaFireDownload(BaseDirectDownload):
+    "For downloading a MediaFire file"
 
-	@property
-	def size(self) -> int:
-		return self._mega.size
+    type = 'mf'
 
-	def __init__(self,
-		link: str,
-		filename_body: str,
-		source: str='mega',
-		custom_name: bool=True
-	):
-		"""Setup the mega download
+    def _convert_to_pure_link(self) -> str:
+        r = self._ssn.get(
+            self.download_link,
+            stream=True
+        )
+        result = extract_mediafire_regex.search(r.text)
+        if result:
+            return result.group(0).split("'")[-1]
 
-		Args:
-			link (str): The mega link.
+        soup = BeautifulSoup(r.text, 'html.parser')
+        button = soup.find('a', {'id': 'downloadButton'})
+        if isinstance(button, Tag):
+            return get_first_of_range(button['href'])
 
-			filename_body (str): The body of the filename to write to.
+        # Link is not broken and not a folder
+        # but we still can't find the download button...
+        raise LinkBroken(BlocklistReason.LINK_BROKEN)
 
-			source (str, optional): The name of the source of the link.
-				Defaults to 'mega'.
 
-			custom_name (bool, optional): If the name supplied should be used
-			or the default filename.
-				Defaults to True.
+class MediaFireFolderDownload(BaseDirectDownload):
+    "For downloading a MediaFire folder (for MF file, use MediaFireDownload)"
 
-		Raises:
-			LinkBroken: The link doesn't work
-		"""
-		logging.debug(f'Creating mega download: {link}, {filename_body}')
-		super().__init__()
-		self.download_link = link
-		self.source = source
+    type = 'mf_folder'
 
-		cred = credentials.get_one_from_source('mega')
-		try:
-			self._mega = Mega(link, cred['email'], cred['password'])
-		except RequestError:
-			raise LinkBroken(BlocklistReason.LINK_BROKEN)
+    def _convert_to_pure_link(self) -> str:
+        return self.download_link.split("/folder/")[1].split("/")[0]
 
-		self._filename_body = filename_body
-		if not custom_name:
-			self._filename_body = splitext(self._mega.mega_filename)[0]
+    def _fetch_pure_link(self) -> Response:
+        return self._ssn.post(
+            MEDIAFIRE_FOLDER_LINK,
+            files={
+                "keys": (None, self.pure_link),
+                "meta_only": (None, "no"),
+                "allow_large_download": (None, "yes"),
+                "response_format": (None, "json")
+            },
+            stream=True
+        )
 
-		self.file = self.__build_filename()
-		self.title = splitext(basename(self.file))[0]
-		return
-		
-	def __extract_extension(self) -> str:
-		"""Find the extension of the file behind the link
+    def _extract_default_filename_body(self, r: Response) -> str:
+        return splitext(unquote_plus(
+            r.headers["Content-Disposition"].split("filename*=UTF-8''")[-1]
+        ))[0]
 
-		Returns:
-			str: The extension of the file, including the `.`
-		"""
-		return splitext(self._mega.mega_filename)[1]
 
-	def __build_filename(self) -> str:
-		"""Build the filename from the download folder, filename body
-		and extension
+class WeTransferDownload(BaseDirectDownload):
+    "For downloading a file or folder from WeTransfer"
 
-		Returns:
-			str: The filename
-		"""
-		folder = Settings()['download_folder']
-		extension = self.__extract_extension()
-		return join(folder, self._filename_body + extension)
+    type = 'wt'
 
-	def run(self) -> None:
-		"""
-		Start the download
-		
-		Raises:
-			DownloadLimitReached: The Mega download limit is reached mid-download
-		"""		
-		self.state = DownloadState.DOWNLOADING_STATE
-		self._mega.download_url(self.file)
-		return
+    def _convert_to_pure_link(self) -> str:
+        transfer_id, security_hash = self.download_link.split("/")[-2:]
+        r = self._ssn.post(
+            WETRANSFER_API_LINK.format(transfer_id=transfer_id),
+            json={
+                "intent": "entire_transfer",
+                "security_hash": security_hash
+            },
+            headers={"x-requested-with": "XMLHttpRequest"}
+        )
+        if not r.ok:
+            raise LinkBroken(BlocklistReason.LINK_BROKEN)
 
-	def stop(self,
-		state: DownloadState = DownloadState.CANCELED_STATE
-	) -> None:
-		self.state = state
-		self._mega.downloading = False
-		return
+        direct_link = r.json().get("direct_link")
+
+        if not direct_link:
+            raise LinkBroken(BlocklistReason.LINK_BROKEN)
+
+        return direct_link
+
+
+class PixelDrainDownload(BaseDirectDownload):
+    "For downloading a file from PixelDrain"
+
+    type = 'pd'
+
+    def _convert_to_pure_link(self) -> str:
+        download_id = self.download_link.rstrip("/").split("/")[-1]
+        return PIXELDRAIN_API_LINK.format(download_id=download_id)
+
+
+class MegaDownload(BaseDirectDownload):
+    """For downloading a file via Mega
+    """
+
+    type = 'mega'
+
+    @property
+    def progress(self) -> float: # type: ignore
+        return self._mega.progress
+
+    @property
+    def speed(self) -> float: # type: ignore
+        return self._mega.speed
+
+    @property
+    def size(self) -> int: # type: ignore
+        return self._mega.size
+
+    def __init__(self,
+        download_link: str,
+        filename_body: str,
+        source: DownloadSource = DownloadSource.MEGA,
+        custom_name: bool = True
+    ):
+        LOGGER.debug(
+            f'Creating mega download: {download_link}, {filename_body}')
+        self.id = None # type: ignore
+        self.state: DownloadState = DownloadState.QUEUED_STATE
+        self.download_link = download_link
+        self.pure_link = download_link
+        self.source = source
+
+        cred = credentials.get_one_from_source('mega')
+        try:
+            self._mega = Mega(download_link, cred['email'], cred['password'])
+        except RequestError:
+            raise LinkBroken(BlocklistReason.LINK_BROKEN)
+
+        self._filename_body = filename_body
+        if not custom_name:
+            self._filename_body = splitext(self._mega.mega_filename)[0]
+
+        self.title = basename(self._filename_body)
+        self.file = self._build_filename(None) # type: ignore
+        return
+
+    def _extract_extension(self, r: Response) -> str:
+        return splitext(self._mega.mega_filename)[1]
+
+    def run(self) -> None:
+        """
+        Start the download
+
+        Raises:
+            DownloadLimitReached: The Mega download limit is reached mid-download
+        """
+        self.state = DownloadState.DOWNLOADING_STATE
+        ws = WebSocket()
+        self._mega.download_url(
+            self.file,
+            lambda: ws.update_queue_status(self)
+        )
+        return
+
+    def stop(self,
+        state: DownloadState = DownloadState.CANCELED_STATE
+    ) -> None:
+        super().stop(state)
+        self._mega.downloading = False
+        return

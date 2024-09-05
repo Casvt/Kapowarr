@@ -1,6 +1,5 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
-import logging
 from sqlite3 import IntegrityError
 from typing import List
 
@@ -10,186 +9,187 @@ from backend.custom_exceptions import (CredentialAlreadyAdded,
 from backend.db import get_db
 from backend.helpers import first_of_column
 from backend.lib.mega import Mega, RequestError
+from backend.logging import LOGGER
 
 
 class Credentials:
-	"""For interracting with the service credentials
-	"""
-	cache = {}
-	__load_first = True
-	
-	def __init__(self, sids: dict) -> None:
-		"""Set up the credential class
+    """For interracting with the service credentials
+    """
+    cache = {}
+    __load_first = True
 
-		Args:
-			sids (dict): The sids variable at backend.lib.mega.sids
-		"""
-		self.sids = sids
-		return
-	
-	def get_all(self, use_cache: bool=True) -> List[dict]:
-		"""Get all credentials
+    def __init__(self, sids: dict) -> None:
+        """Set up the credential class
 
-		Args:
-			use_cache (bool, optional): Wether or not to pull data from cache
-			instead of going to the database.
-				Defaults to True.
+        Args:
+            sids (dict): The sids variable at backend.lib.mega.sids
+        """
+        self.sids = sids
+        return
 
-		Returns:
-			List[dict]: The list of credentials
-		"""		
-		if not use_cache or not self.cache or self.__load_first:
-			cred = dict(
-				(c['id'], dict(c))
-				for c in get_db(dict).execute("""
-					SELECT
-						c.id, cs.source,
-						c.email, c.password
-					FROM credentials c
-					INNER JOIN credentials_sources cs
-					ON c.source = cs.id;
-					"""
-				)
-			)
-			self.cache = cred
-			self.__load_first = False
+    def get_all(self, use_cache: bool = True) -> List[dict]:
+        """Get all credentials
 
-		return list(self.cache.values())
-	
-	def get_one(self, id: int, use_cache: bool=True) -> dict:
-		"""Get a credential based on it's id.
+        Args:
+            use_cache (bool, optional): Wether or not to pull data from cache
+            instead of going to the database.
+                Defaults to True.
 
-		Args:
-			id (int): The id of the credential to get.
+        Returns:
+            List[dict]: The list of credentials
+        """
+        if not use_cache or not self.cache or self.__load_first:
+            cred = dict(
+                (c['id'], dict(c))
+                for c in get_db(dict).execute("""
+                    SELECT
+                        c.id, cs.source,
+                        c.email, c.password
+                    FROM credentials c
+                    INNER JOIN credentials_sources cs
+                    ON c.source = cs.id;
+                    """
+                )
+            )
+            self.cache = cred
+            self.__load_first = False
 
-			use_cache (bool, optional): Wether or not to pull data from cache
-			instead of going to the database.
-				Defaults to True.
+        return list(self.cache.values())
 
-		Raises:
-			CredentialNotFound: The id doesn't map to any credential.
-				Could also be because of cache being behind database.
+    def get_one(self, id: int, use_cache: bool = True) -> dict:
+        """Get a credential based on it's id.
 
-		Returns:
-			dict: The credential info
-		"""		
-		if not use_cache or self.__load_first:
-			self.get_all(use_cache=False)
-		cred = self.cache.get(id)
-		if not cred:
-			raise CredentialNotFound
-		return cred
+        Args:
+            id (int): The id of the credential to get.
 
-	def get_one_from_source(self, source: str, use_cache: bool=True) -> dict:
-		"""Get a credential based on it's source string.
+            use_cache (bool, optional): Wether or not to pull data from cache
+            instead of going to the database.
+                Defaults to True.
 
-		Args:
-			source (str): The source of which to get the credential.
+        Raises:
+            CredentialNotFound: The id doesn't map to any credential.
+                Could also be because of cache being behind database.
 
-			use_cache (bool, optional): Wether or not to pull data from cache
-			instead of going to the database.
-				Defaults to True.
+        Returns:
+            dict: The credential info
+        """
+        if not use_cache or self.__load_first:
+            self.get_all(use_cache=False)
+        cred = self.cache.get(id)
+        if not cred:
+            raise CredentialNotFound
+        return cred
 
-		Returns:
-			dict: The credential info or a 'ghost' version of the response
-		"""
-		if not use_cache or self.__load_first:
-			self.get_all(use_cache=False)
-		for cred in self.cache.values():
-			if cred['source'] == source:
-				return cred
-			
-		# If no cred is set for the source,
-		# return a 'ghost' cred because other code can then
-		# simply grab value of 'email' and 'password' and it'll be None
-		return {
-			'id': -1,
-			'source': source,
-			'email': None, 
-			'password': None
-		}
+    def get_one_from_source(self, source: str, use_cache: bool = True) -> dict:
+        """Get a credential based on it's source string.
 
-	def add(self, source: str, email: str, password: str) -> dict:
-		"""Add a credential
+        Args:
+            source (str): The source of which to get the credential.
 
-		Args:
-			source (str): The service for which the credential is.
-				Must be a value of `settings.credential_sources`.
+            use_cache (bool, optional): Wether or not to pull data from cache
+            instead of going to the database.
+                Defaults to True.
 
-			email (str): The email of the credential.
+        Returns:
+            dict: The credential info or a 'ghost' version of the response
+        """
+        if not use_cache or self.__load_first:
+            self.get_all(use_cache=False)
+        for cred in self.cache.values():
+            if cred['source'] == source:
+                return cred
 
-			password (str): The password of the credential
+        # If no cred is set for the source,
+        # return a 'ghost' cred because other code can then
+        # simply grab value of 'email' and 'password' and it'll be None
+        return {
+            'id': -1,
+            'source': source,
+            'email': None,
+            'password': None
+        }
 
-		Raises:
-			CredentialSourceNotFound: The source string doesn't map to any service.
-			CredentialAlreadyAdded: The service already has a credential for it.
+    def add(self, source: str, email: str, password: str) -> dict:
+        """Add a credential
 
-		Returns:
-			dict: The credential info
-		"""
-		cursor = get_db()
-		source_id = cursor.execute(
-			"SELECT id FROM credentials_sources WHERE source = ? LIMIT 1;",
-			(source,)
-		).fetchone()
-		if not source_id:
-			raise CredentialSourceNotFound(source)
+        Args:
+            source (str): The service for which the credential is.
+                Must be a value of `settings.credential_sources`.
 
-		logging.info(f'Adding credential for {source}')
-		try:
-			if source == 'mega':
-				Mega('', email, password, only_check_login=True)
-			
-			id = get_db().execute("""
-				INSERT INTO credentials(source, email, password)
-				VALUES (?,?,?);
-				""",
-				(source_id[0], email, password)
-			).lastrowid
+            email (str): The email of the credential.
 
-		except RequestError:
-			raise CredentialInvalid
+            password (str): The password of the credential
 
-		except IntegrityError:
-			raise CredentialAlreadyAdded
-		
-		return self.get_one(id, use_cache=False)
-	
-	def delete(self, cred_id: int) -> None:
-		"""Delete a credential
+        Raises:
+            CredentialSourceNotFound: The source string doesn't map to any service.
+            CredentialAlreadyAdded: The service already has a credential for it.
 
-		Args:
-			cred_id (int): The id of the credential to delete
+        Returns:
+            dict: The credential info
+        """
+        cursor = get_db()
+        source_id = cursor.execute(
+            "SELECT id FROM credentials_sources WHERE source = ? LIMIT 1;",
+            (source,)
+        ).fetchone()
+        if not source_id:
+            raise CredentialSourceNotFound(source)
 
-		Raises:
-			CredentialNotFound: The id doesn't map to any credential
-		"""
-		logging.info(f'Deleting credential: {cred_id}')
-		
-		if not get_db().execute(
-			"DELETE FROM credentials WHERE id = ?", (cred_id,)
-		).rowcount:
-			raise CredentialNotFound
+        LOGGER.info(f'Adding credential for {source}')
+        try:
+            if source == 'mega':
+                Mega('', email, password, only_check_login=True)
 
-		self.get_all(use_cache=False)
-		self.sids.clear()
-		return
+            id = get_db().execute("""
+                INSERT INTO credentials(source, email, password)
+                VALUES (?,?,?);
+                """,
+                (source_id[0], email, password)
+            ).lastrowid
 
-	def get_open(self) -> List[str]:
-		"""Get a list of all services that
-		don't have a credential registered for it
+        except RequestError:
+            raise CredentialInvalid
 
-		Returns:
-			List[str]: The list of service strings
-		"""
-		result = first_of_column(
-			get_db().execute("""
-				SELECT cs.source
-				FROM credentials_sources cs
-				LEFT JOIN credentials c
-				ON cs.id = c.source
-				WHERE c.id IS NULL;
-			""")
-		)
+        except IntegrityError:
+            raise CredentialAlreadyAdded
 
-		return result
+        return self.get_one(id, use_cache=False)
+
+    def delete(self, cred_id: int) -> None:
+        """Delete a credential
+
+        Args:
+            cred_id (int): The id of the credential to delete
+
+        Raises:
+            CredentialNotFound: The id doesn't map to any credential
+        """
+        LOGGER.info(f'Deleting credential: {cred_id}')
+
+        if not get_db().execute(
+            "DELETE FROM credentials WHERE id = ?", (cred_id,)
+        ).rowcount:
+            raise CredentialNotFound
+
+        self.get_all(use_cache=False)
+        self.sids.clear()
+        return
+
+    def get_open(self) -> List[str]:
+        """Get a list of all services that
+        don't have a credential registered for it
+
+        Returns:
+            List[str]: The list of service strings
+        """
+        result = first_of_column(
+            get_db().execute("""
+                SELECT cs.source
+                FROM credentials_sources cs
+                LEFT JOIN credentials c
+                ON cs.id = c.source
+                WHERE c.id IS NULL;
+            """)
+        )
+
+        return result

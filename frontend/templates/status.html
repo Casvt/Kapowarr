@@ -1,97 +1,79 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta id="url_base" data-value="{{url_base}}">
-
-	<link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/x-icon">
-
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
+{% extends "base.html" %}
+{% block title %}Status{% endblock %}
+{% block css %}
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/status.css') }}">
-	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
-	<script src="{{ url_for('static', filename='js/general.js') }}" defer></script>
+{% endblock %}
+{% block js %}
 	<script src="{{ url_for('static', filename='js/status.js') }}" defer></script>
+{% endblock %}
 
-	<title>Status - Kapowarr</title>
-</head>
-<body>
-	<header>
-		<div class="menu-title-container">
-			<button id="toggle-nav" aria-label="Toggle menu">
-				<img src="{{url_base}}/static/img/menu.svg" alt="">
-			</button>
-			<img src="{{ url_for('static', filename='img/favicon.svg') }}" alt="">
-		</div>
-	</header>
-	<div class="nav-main">
-		<div id="nav-bar">
-			<nav>
-				<a href="{{url_base}}/">Volumes</a>
-				<a href="{{url_base}}/activity/queue">Activity</a>
-				<a href="{{url_base}}/settings">Settings</a>
-				<a href="{{url_base}}/system/status">System</a>
-					<a href="{{url_base}}/system/status" class="sub-entry current-nav">Status</a>
-					<a href="{{url_base}}/system/tasks" class="sub-entry">Tasks</a>
-			</nav>
-			<div id="task-queue"></div>
-		</div>
-		<main>
-			<div>
-				<h2>About</h2>
-				<div class="container">
-					<table id="about-table">
-						<tr>
-							<th><label for="version">Kapowarr version</label></th>
-							<td id="version"></td>
-						</tr>
-						<tr>
-							<th><label for="python-version">Python version</label></th>
-							<td id="python-version"></td>
-						</tr>
-						<tr>
-							<th><label for="database-version">Database version</label></th>
-							<td id="database-version"></td>
-						</tr>
-						<tr>
-							<th><label for="database-location">Database location</label></th>
-							<td id="database-location"></td>
-						</tr>
-						<tr>
-							<th><label for="data-folder">Data folder</label></th>
-							<td id="data-folder"></td>
-						</tr>
-					</table>
-				</div>
-				<h2>Donate</h2>
-				<div class="donate-list">
-					<a href="https://getcomics.org/support/">
-						<img src="{{url_base}}/static/img/getcomics.png" alt="">
-						Donate to GetComics
-					</a>
-					<a href="https://ko-fi.com/casvt">
-						<img src="{{url_base}}/static/img/ko-fi.webp" alt="">
-						Donate to Kapowarr
-					</a>
-				</div>
-				<h2>Contact</h2>
-				<div class="contact-list">
-					<a href="https://github.com/Casvt/Kapowarr/issues">
-						<img src="{{url_base}}/static/img/github.svg" alt="">
-						Report an issue
-					</a>
-					<a href="https://casvt.github.io/Kapowarr/">
-						<img src="{{url_base}}/static/img/github.svg" alt="">
-						Documentation
-					</a>
-					<a href="https://discord.gg/nMNdgG7vsE">
-						<img src="{{url_base}}/static/img/discord.ico" alt="">
-						Discord server
-					</a>
-				</div>
+{% block main %}
+<main>
+	<div>
+		<section aria-label="About">
+			<h2>About</h2>
+			<div class="container">
+				<table id="about-table">
+					<tr>
+						<th><label for="version">Kapowarr version</label></th>
+						<td id="version"></td>
+					</tr>
+					<tr>
+						<th><label for="python-version">Python version</label></th>
+						<td id="python-version"></td>
+					</tr>
+					<tr>
+						<th><label for="database-version">Database version</label></th>
+						<td id="database-version"></td>
+					</tr>
+					<tr>
+						<th><label for="database-location">Database location</label></th>
+						<td id="database-location"></td>
+					</tr>
+					<tr>
+						<th><label for="data-folder">Data folder</label></th>
+						<td id="data-folder"></td>
+					</tr>
+				</table>
 			</div>
-		</main>
+		</section>
+		<section aria-label="Power Management">
+			<h2>Power</h2>
+			<div class="link-list">
+				<button id="restart-button">Restart</button>
+				<button id="shutdown-button">Shutdown</button>
+			</div>
+		</section>
+		<section aria-label="Donate">
+			<h2>Donate</h2>
+			<div class="link-list">
+				<a href="https://getcomics.org/support/">
+					<img src="{{url_base}}/static/img/getcomics.png" alt="">
+					Donate to GetComics
+				</a>
+				<a href="https://ko-fi.com/casvt">
+					<img src="{{url_base}}/static/img/ko-fi.webp" alt="">
+					Donate to Kapowarr
+				</a>
+			</div>
+		</section>
+		<section aria-label="Contact">
+			<h2>Contact</h2>
+			<div class="link-list">
+				<a href="https://github.com/Casvt/Kapowarr/issues">
+					<img src="{{url_base}}/static/img/github.svg" alt="">
+					Report an issue
+				</a>
+				<a href="https://casvt.github.io/Kapowarr/">
+					<img src="{{url_base}}/static/img/github.svg" alt="">
+					Documentation
+				</a>
+				<a href="https://discord.gg/nMNdgG7vsE">
+					<img src="{{url_base}}/static/img/discord.ico" alt="">
+					Discord server
+				</a>
+			</div>
+		</section>
 	</div>
-</body>
-</html>
+</main>
+{% endblock main %}

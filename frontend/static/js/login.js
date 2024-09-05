@@ -1,6 +1,6 @@
 function redirect() {
 	parameters = new URLSearchParams(window.location.search);
-	redirect_value = parameters.get('redirect') || '/';
+	redirect_value = parameters.get('redirect') || `${url_base}/`;
 	window.location.href = redirect_value;
 };
 
@@ -52,4 +52,4 @@ usingApiKey(false)
 if (JSON.parse(localStorage.getItem('kapowarr') || {'theme': 'light'})['theme'] === 'dark')
 	document.querySelector(':root').classList.add('dark-mode');
 
-document.querySelector('#login-form').setAttribute('action', 'javascript:login();');
+document.querySelector('#login-form').action = 'javascript:login();';

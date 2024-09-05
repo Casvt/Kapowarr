@@ -1,6 +1,5 @@
 function fillSettings(api_key) {
-	fetch(`${url_base}/api/settings?api_key=${api_key}`)
-	.then(response => response.json())
+	fetchAPI('/settings', api_key)
 	.then(json => {
 		document.querySelector('#bind-address-input').value = json.result.host;
 		document.querySelector('#port-input').value = json.result.port;
@@ -23,11 +22,7 @@ function saveSettings(api_key) {
 		'comicvine_api_key': document.querySelector('#cv-input').value,
 		'log_level': parseInt(document.querySelector('#log-level-input').value)
 	};
-	fetch(`${url_base}/api/settings?api_key=${api_key}`, {
-		'method': 'PUT',
-		'body': JSON.stringify(data),
-		'headers': {'Content-Type': 'application/json'}
-	})
+	sendAPI('PUT', '/settings', api_key, {}, data)
 	.then(response => response.json())
 	.then(json => {
 		if (json.error !== null) return Promise.reject(json);
@@ -35,15 +30,13 @@ function saveSettings(api_key) {
 	.catch(e => {
 		if (e.error === 'InvalidComicVineApiKey')
 			document.querySelector('#cv-input').classList.add('error-input');
-		else 
+		else
 			console.log(e.error);
 	});
 };
 
 function generateApiKey(api_key) {
-	fetch(`${url_base}/api/settings/api_key?api_key=${api_key}`, {
-		'method': 'POST'
-	})
+	sendAPI('POST', '/settings/api_key', api_key)
 	.then(response => response.json())
 	.then(json => {
 		setLocalStorage({'api_key': json.result.api_key});
@@ -56,15 +49,17 @@ function generateApiKey(api_key) {
 usingApiKey()
 .then(api_key => {
 	fillSettings(api_key);
-	addEventListener('#save-button', 'click', e => saveSettings(api_key));
-	addEventListener('#generate-api', 'click', e => generateApiKey(api_key));
+	document.querySelector('#save-button').onclick = e => saveSettings(api_key);
+	document.querySelector('#generate-api').onclick = e => generateApiKey(api_key);
+	document.querySelector('#download-logs-button').href =
+		`${url_base}/api/system/logs?api_key=${api_key}`;
 });
 
-addEventListener('#theme-input', 'change', e => {
+document.querySelector('#theme-input').onchange = e => {
 	const value = document.querySelector('#theme-input').value;
 	setLocalStorage({'theme': value});
 	if (value === 'dark')
 		document.querySelector(':root').classList.add('dark-mode');
 	else if (value === 'light')
 		document.querySelector(':root').classList.remove('dark-mode');
-});
+};

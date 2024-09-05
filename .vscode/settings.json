@@ -1,12 +1,38 @@
 {
-	"python.testing.unittestArgs": [
-		"-s",
-		"./tests",
-		"-p",
-		"*.py"
+	"editor.insertSpaces": true,
+    "editor.tabSize": 4,
+	
+	"[python]": {
+		"editor.codeActionsOnSave": {
+			"source.organizeImports": "always",
+		},
+		"editor.formatOnSave": true,
+		"editor.defaultFormatter": "ms-python.autopep8"
+	},
+	"isort.check": true,
+	"isort.severity": {
+		"W": "Warning",
+		"E": "Warning"
+	},
+	"isort.args": [
+		"--jobs", "-1"
 	],
-	"python.testing.pytestEnabled": false,
+
 	"python.testing.unittestEnabled": true,
+	"python.testing.unittestArgs": [
+		"-s", "./tests",
+		"-p", "*.py"
+	],
+
+	"python.analysis.typeCheckingMode": "standard",
+	"python.analysis.diagnosticMode": "workspace",
+
+	"mypy-type-checker.reportingScope": "workspace",
+	"mypy-type-checker.preferDaemon": false,
+	"mypy-type-checker.args": [
+		"--explicit-package-bases"
+	]
+  
 	"cSpell.words": [
 		"behaviour",
 		"blocklist",

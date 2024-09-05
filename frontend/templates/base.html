@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<!-- Standard headers -->
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta id="url_base" data-value="{{url_base}}">
+
+	<link rel="manifest" href="{{ url_for('static', filename='json/pwa_manifest.json') }}">
+	<link rel="apple-touch-icon" href="{{ url_for('static', filename='img/favicon.svg') }}">
+	<meta name="apple-mobile-web-app-status-bar" content="#ebc700">
+	<meta name="theme-color" content="#ebc700">
+
+	<link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/x-icon">
+
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
+	{% block css %}
+	{% endblock css %}
+	<script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO" crossorigin="anonymous"></script>
+	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+	<script src="{{ url_for('static', filename='js/general.js') }}" defer></script>
+	{% block js %}
+	{% endblock js %}
+
+	<title>{% block title %}{% endblock %} - Kapowarr</title>
+
+</head>
+<body>
+	<div class="pre-build-els hidden">
+		{% block pre_build_els %}
+		{% endblock %}
+	</div>
+
+	<table class="pre-build-els hidden">
+		<tbody>
+			{% block pre_build_rows %}
+			{% endblock %}
+		</tbody>
+	</table>
+
+	<div class="window">
+		{% block windows %}
+		{% endblock %}
+	</div>
+
+	<header>
+		<div class="menu-title-container">
+			<button id="toggle-nav" aria-label="Toggle menu" aria-hidden="true">
+				<img src="{{url_base}}/static/img/menu.svg" alt="">
+			</button>
+			<a href="{{url_base}}/" aria-label="Go to homepage">
+				<img src="{{ url_for('static', filename='img/favicon.svg') }}" alt="">
+			</a>
+		</div>
+		{% block right_side_header %}
+		{% endblock %}
+	</header>
+
+	<div class="nav-main">
+		<div id="nav-bar">
+			<nav>
+				<a
+					href="{{url_base}}/"
+					class="{% if request.path == '/' or request.path.startswith('/volumes/') %}current-nav{% endif %}"
+				>
+					<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" style="font-size: 14px;">
+						<path fill="currentColor" d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"></path>
+					</svg>
+					Volumes
+				</a>
+				<div class="sub-nav">
+					<a
+						href="{{url_base}}/add"
+						class="{% if request.path == '/add' %}current-nav{% endif %}"
+					>Add Volume</a>
+					<a
+						href="{{url_base}}/library-import"
+						class="{% if request.path == '/library-import' %}current-nav{% endif %}"
+					>Library Import</a>
+				</div>
+				<a href="{{url_base}}/activity/queue">
+					<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="font-size: 14px;">
+						<path fill="currentColor" d="M464 256A208 208 0 1 1 48 256a208 208 0 1 1 416 0zM0 256a256 256 0 1 0 512 0A256 256 0 1 0 0 256zM232 120V256c0 8 4 15.5 10.7 20l96 64c11 7.4 25.9 4.4 33.3-6.7s4.4-25.9-6.7-33.3L280 243.2V120c0-13.3-10.7-24-24-24s-24 10.7-24 24z"></path>
+					</svg>
+					Activity
+				</a>
+				<div class="sub-nav">
+					<a
+						href="{{url_base}}/activity/queue"
+						class="{% if request.path == '/activity/queue' %}current-nav{% endif %}"
+					>Queue</a>
+					<a
+						href="{{url_base}}/activity/history"
+						class="{% if request.path == '/activity/history' %}current-nav{% endif %}"
+					>History</a>
+					<a
+						href="{{url_base}}/activity/blocklist"
+						class="{% if request.path == '/activity/blocklist' %}current-nav{% endif %}"
+					>Blocklist</a>
+				</div>
+				<a href="{{url_base}}/settings">
+					<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" style="font-size: 14px;">
+						<path fill="currentColor" d="M308.5 135.3c7.1-6.3 9.9-16.2 6.2-25c-2.3-5.3-4.8-10.5-7.6-15.5L304 89.4c-3-5-6.3-9.9-9.8-14.6c-5.7-7.6-15.7-10.1-24.7-7.1l-28.2 9.3c-10.7-8.8-23-16-36.2-20.9L199 27.1c-1.9-9.3-9.1-16.7-18.5-17.8C173.9 8.4 167.2 8 160.4 8h-.7c-6.8 0-13.5 .4-20.1 1.2c-9.4 1.1-16.6 8.6-18.5 17.8L115 56.1c-13.3 5-25.5 12.1-36.2 20.9L50.5 67.8c-9-3-19-.5-24.7 7.1c-3.5 4.7-6.8 9.6-9.9 14.6l-3 5.3c-2.8 5-5.3 10.2-7.6 15.6c-3.7 8.7-.9 18.6 6.2 25l22.2 19.8C32.6 161.9 32 168.9 32 176s.6 14.1 1.7 20.9L11.5 216.7c-7.1 6.3-9.9 16.2-6.2 25c2.3 5.3 4.8 10.5 7.6 15.6l3 5.2c3 5.1 6.3 9.9 9.9 14.6c5.7 7.6 15.7 10.1 24.7 7.1l28.2-9.3c10.7 8.8 23 16 36.2 20.9l6.1 29.1c1.9 9.3 9.1 16.7 18.5 17.8c6.7 .8 13.5 1.2 20.4 1.2s13.7-.4 20.4-1.2c9.4-1.1 16.6-8.6 18.5-17.8l6.1-29.1c13.3-5 25.5-12.1 36.2-20.9l28.2 9.3c9 3 19 .5 24.7-7.1c3.5-4.7 6.8-9.5 9.8-14.6l3.1-5.4c2.8-5 5.3-10.2 7.6-15.5c3.7-8.7 .9-18.6-6.2-25l-22.2-19.8c1.1-6.8 1.7-13.8 1.7-20.9s-.6-14.1-1.7-20.9l22.2-19.8zM112 176a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zM504.7 500.5c6.3 7.1 16.2 9.9 25 6.2c5.3-2.3 10.5-4.8 15.5-7.6l5.4-3.1c5-3 9.9-6.3 14.6-9.8c7.6-5.7 10.1-15.7 7.1-24.7l-9.3-28.2c8.8-10.7 16-23 20.9-36.2l29.1-6.1c9.3-1.9 16.7-9.1 17.8-18.5c.8-6.7 1.2-13.5 1.2-20.4s-.4-13.7-1.2-20.4c-1.1-9.4-8.6-16.6-17.8-18.5L583.9 307c-5-13.3-12.1-25.5-20.9-36.2l9.3-28.2c3-9 .5-19-7.1-24.7c-4.7-3.5-9.6-6.8-14.6-9.9l-5.3-3c-5-2.8-10.2-5.3-15.6-7.6c-8.7-3.7-18.6-.9-25 6.2l-19.8 22.2c-6.8-1.1-13.8-1.7-20.9-1.7s-14.1 .6-20.9 1.7l-19.8-22.2c-6.3-7.1-16.2-9.9-25-6.2c-5.3 2.3-10.5 4.8-15.6 7.6l-5.2 3c-5.1 3-9.9 6.3-14.6 9.9c-7.6 5.7-10.1 15.7-7.1 24.7l9.3 28.2c-8.8 10.7-16 23-20.9 36.2L315.1 313c-9.3 1.9-16.7 9.1-17.8 18.5c-.8 6.7-1.2 13.5-1.2 20.4s.4 13.7 1.2 20.4c1.1 9.4 8.6 16.6 17.8 18.5l29.1 6.1c5 13.3 12.1 25.5 20.9 36.2l-9.3 28.2c-3 9-.5 19 7.1 24.7c4.7 3.5 9.5 6.8 14.6 9.8l5.4 3.1c5 2.8 10.2 5.3 15.5 7.6c8.7 3.7 18.6 .9 25-6.2l19.8-22.2c6.8 1.1 13.8 1.7 20.9 1.7s14.1-.6 20.9-1.7l19.8 22.2zM464 304a48 48 0 1 1 0 96 48 48 0 1 1 0-96z"></path>
+					</svg>
+					Settings
+				</a>
+				<div class="sub-nav">
+					<a
+						href="{{url_base}}/settings/mediamanagement"
+						class="{% if request.path == '/settings/mediamanagement' %}current-nav{% endif %}"
+					>Media Management</a>
+					<a
+						href="{{url_base}}/settings/download"
+						class="{% if request.path == '/settings/download' %}current-nav{% endif %}"
+					>Download</a>
+					<a
+						href="{{url_base}}/settings/downloadclients"
+						class="{% if request.path == '/settings/downloadclients' %}current-nav{% endif %}"
+					>Download Clients</a>
+					<a
+						href="{{url_base}}/settings/general"
+						class="{% if request.path == '/settings/general' %}current-nav{% endif %}"
+					>General</a>
+				</div>
+				<a href="{{url_base}}/system/status">
+					<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" style="font-size: 14px;">
+						<path fill="currentColor" d="M128 32C92.7 32 64 60.7 64 96V352h64V96H512V352h64V96c0-35.3-28.7-64-64-64H128zM19.2 384C8.6 384 0 392.6 0 403.2C0 445.6 34.4 480 76.8 480H563.2c42.4 0 76.8-34.4 76.8-76.8c0-10.6-8.6-19.2-19.2-19.2H19.2z"></path>
+					</svg>
+					System
+				</a>
+				<div class="sub-nav">
+					<a
+						href="{{url_base}}/system/status"
+						class="{% if request.path == '/system/status' %}current-nav{% endif %}"
+					>Status</a>
+					<a
+						href="{{url_base}}/system/tasks"
+						class="{% if request.path == '/system/tasks' %}current-nav{% endif %}"
+					>Tasks</a>
+				</div>
+			</nav>
+			<div id="task-queue"></div>
+		</div>
+		{% block main %}
+		{% endblock %}
+	</div>
+</body>
+</html>
+
+{% macro icon_button(id, title, icon, desc='', submit=False) %}
+	<button
+		id="{{ id }}"
+		title="{{ title }}"
+		type="{{ 'button' if not submit else 'submit' }}"
+	>
+		<img src="{{ url_for('static', filename='img/' + icon) }}" alt="">
+		{% if desc %}
+		<div aria-hidden="true">
+			<p>{{ desc }}</p>
+		</div>
+		{% endif %}
+	</button>
+{% endmacro %}
+
+{% macro window(wide_window, id, title, content, save_button='', loading_id='', cancel=True) %}
+	<!-- {{ title }} -->
+	<section
+		id="{{ id }}"
+		aria-label="{{ title }}"
+		{% if wide_window == True %}class="wide-window"{% endif %}
+		{% if loading_id %}data-loading_window="{{loading_id}}"{% endif %}
+	>
+		<div class="window-header">
+			<h2>{{ title }}</h2>
+			{{ icon_button('', "Cancel", "cancel.svg") }}
+		</div>
+		<div class="window-content">
+			{{ content }}
+		</div>
+		<div class="window-footer">
+			{% if cancel == True %}
+				<button class="cancel-window">Cancel</button>
+			{% endif %}
+			{{ save_button }}
+		</div>
+	</section>
+{% endmacro %}
+
+{% macro loading_window(id, msg) %}
+	<section id="{{ id }}" class="loading-window">
+		<p>{{ msg }}</p>
+	</section>
+{% endmacro %}
+
+{% macro page_turner() %}
+	<section class="page-turner" aria-label="Page Turner">
+		<button id="previous-page" aria-label="Previous Page"><<</button>
+		<p id="page-number" aria-label="Current Page">Page 1</p>
+		<button id="next-page" aria-label="Next Page">>></button>
+	</section>
+{% endmacro %}

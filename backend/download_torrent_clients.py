@@ -1,299 +1,343 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 """
 Clients for downloading a torrent using a torrent client
 """
 
-import logging
 from os.path import join
-from typing import Dict, List, Union
+from typing import Dict, List, Type, Union
 
-from bencoding import bdecode
-from requests import post
+from requests import RequestException
 
-from backend.custom_exceptions import (InvalidKeyValue, TorrentClientNotFound,
+from backend.custom_exceptions import (InvalidKeyValue, LinkBroken,
+                                       TorrentClientNotFound,
                                        TorrentClientNotWorking)
 from backend.db import get_db
-from backend.download_direct_clients import BaseDownload
-from backend.download_general import TorrentClient
-from backend.enums import DownloadState
+from backend.download_general import BaseTorrentClient, ExternalDownload
+from backend.enums import BlocklistReason, DownloadSource, DownloadState
+from backend.helpers import ClientTestResult, Session, get_torrent_info
+from backend.logging import LOGGER
 from backend.settings import Settings
 from backend.torrent_clients import qBittorrent
 
-#=====================
+# =====================
 # Managing clients
-#=====================
+# =====================
 
-client_types: Dict[str, TorrentClient] = {
-	'qBittorrent': qBittorrent.qBittorrent
+client_types: Dict[str, Type[BaseTorrentClient]] = {
+    'qBittorrent': qBittorrent.qBittorrent
 }
 
+
 class TorrentClients:
-	@staticmethod
-	def test(
-		type: str,
-		base_url: str,
-		username: Union[str, None],
-		password: Union[str, None],
-		api_token: Union[str, None]
-	) -> bool:
-		"""Test if a client is supported, working and available
+    @staticmethod
+    def test(
+        type: str,
+        base_url: str,
+        username: Union[str, None],
+        password: Union[str, None],
+        api_token: Union[str, None]
+    ) -> ClientTestResult:
+        """Test if a client is supported, working and available
 
-		Args:
-			type (str): The client identifier.
-				A key from `download_torrent_clients.client_types`.
+        Args:
+            type (str): The client identifier.
+                A key from `download_torrent_clients.client_types`.
 
-			base_url (str): The base url that Kapowarr needs to connect to the client
+            base_url (str): The base url that Kapowarr needs to connect to the client
 
-			username (Union[str, None]): The username to use when authenticating to the client.
-				Allowed to be `None` if not applicable.
+            username (Union[str, None]): The username to use when authenticating to the client.
+                Allowed to be `None` if not applicable.
 
-			password (Union[str, None]): The password to use when authenticating to the client.
-				Allowed to be `None` if not applicable.
+            password (Union[str, None]): The password to use when authenticating to the client.
+                Allowed to be `None` if not applicable.
 
-			api_token (Union[str, None]): The api token to use when authenticating to the client.
-				Allowed to be `None` if not applicable.
+            api_token (Union[str, None]): The api token to use when authenticating to the client.
+                Allowed to be `None` if not applicable.
 
-		Raises:
-			InvalidKeyValue: One of the parameters has an invalid argument
+        Raises:
+            InvalidKeyValue: One of the parameters has an invalid argument
 
-		Returns:
-			bool: Whether or not the test was successful or not
-		"""
-		if not type in client_types:
-			raise InvalidKeyValue('type', type)
+        Returns:
+            ClientTestResult: Whether or not the test was successful or not
+        """
+        if type not in client_types:
+            raise InvalidKeyValue('type', type)
 
-		base_url = base_url.rstrip('/')
-		
-		result = client_types[type].test(
-			base_url,
-			username,
-			password,
-			api_token
-		)
-		return result
+        base_url = base_url.rstrip('/')
+        if not base_url.startswith(('http://', 'https://')):
+            base_url = f'http://{base_url}'
 
-	@staticmethod
-	def add(
-		type: str,
-		title: str,
-		base_url: str,
-		username: Union[str, None],
-		password: Union[str, None],
-		api_token: Union[str, None]
-	) -> TorrentClient:
-		"""Add a torrent client
+        result = client_types[type].test(
+            base_url,
+            username,
+            password,
+            api_token
+        )
+        return ClientTestResult({
+            'success': result[0],
+            'description': result[1]
+        })
 
-		Args:
-			type (str): The client identifier.
-				A key from `download_torrent_clients.client_types`.
+    @staticmethod
+    def add(
+        type: str,
+        title: str,
+        base_url: str,
+        username: Union[str, None],
+        password: Union[str, None],
+        api_token: Union[str, None]
+    ) -> BaseTorrentClient:
+        """Add a torrent client
 
-			title (str): The title to give the client
+        Args:
+            type (str): The client identifier.
+                A key from `download_torrent_clients.client_types`.
 
-			base_url (str): The base url to use when connecting to the client
+            title (str): The title to give the client
 
-			username (Union[str, None]): The username to use when authenticating to the client.
-				Allowed to be `None` if not applicable.
+            base_url (str): The base url to use when connecting to the client
 
-			password (Union[str, None]): The password to use when authenticating to the client.
-				Allowed to be `None` if not applicable.
+            username (Union[str, None]): The username to use when authenticating to the client.
+                Allowed to be `None` if not applicable.
 
-			api_token (Union[str, None]): The api token to use when authenticating to the client.
-				Allowed to be `None` if not applicable.
+            password (Union[str, None]): The password to use when authenticating to the client.
+                Allowed to be `None` if not applicable.
 
-		Raises:
-			InvalidKeyValue: One of the parameters has an invalid argument
-			TorrentClientNotWorking: Testing the client failed.
-				The function `download_torrent_clients.TorrentClients.test` returned `False`.
+            api_token (Union[str, None]): The api token to use when authenticating to the client.
+                Allowed to be `None` if not applicable.
 
-		Returns:
-			TorrentClient: An instance of `download_general.TorrentClient`
-			representing the newly added client
-		"""
-		if not type in client_types:
-			raise InvalidKeyValue('type', type)
+        Raises:
+            InvalidKeyValue: One of the parameters has an invalid argument
+            TorrentClientNotWorking: Testing the client failed.
+                The function `download_torrent_clients.TorrentClients.test` returned `False`.
 
-		if title is None:
-			raise InvalidKeyValue('title', title)
-		
-		if base_url is None:
-			raise InvalidKeyValue('base_url', base_url)
-		
-		if username is not None and password is None:
-			raise InvalidKeyValue('password', password)
+        Returns:
+            BaseTorrentClient: An instance of `download_general.TorrentClient`
+            representing the newly added client
+        """
+        if type not in client_types:
+            raise InvalidKeyValue('type', type)
 
-		base_url = base_url.rstrip('/')
+        if title is None:
+            raise InvalidKeyValue('title', title)
 
-		ClientClass = client_types[type]
-		test_result = ClientClass.test(
-			base_url,
-			username,
-			password,
-			api_token
-		)
-		if not test_result:
-			raise TorrentClientNotWorking
+        if base_url is None:
+            raise InvalidKeyValue('base_url', base_url)
 
-		data = {
-			'type': type,
-			'title': title,
-			'base_url': base_url,
-			'username': username,
-			'password': password,
-			'api_token': api_token
-		}
-		data = {
-			k: (v if k in (*ClientClass._tokens, 'type') else None)
-			for k, v in data.items()
-		}
+        if username is not None and password is None:
+            raise InvalidKeyValue('password', password)
 
-		client_id = get_db().execute("""
-			INSERT INTO torrent_clients(
-				type, title,
-				base_url,
-				username, password, api_token
-			) VALUES (?, ?, ?, ?, ?, ?);
-			""",
-			(data['type'], data['title'],
-			data['base_url'],
-			data['username'], data['password'], data['api_token'])
-		).lastrowid
-		return ClientClass(client_id)
+        base_url = base_url.rstrip('/')
+        if not base_url.startswith(('http://', 'https://')):
+            base_url = f'http://{base_url}'
 
-	@staticmethod
-	def get_clients() -> List[dict]:
-		"""Get a list of all torrent clients
+        ClientClass = client_types[type]
+        test_result = ClientClass.test(
+            base_url,
+            username,
+            password,
+            api_token
+        )
+        if not test_result[0]:
+            raise TorrentClientNotWorking(test_result[1])
 
-		Returns:
-			List[dict]: The list with all torrent clients
-		"""
-		cursor = get_db(dict)
-		cursor.execute("""
-			SELECT
-				id, type,
-				title, base_url,
-				username, password,
-				api_token
-			FROM torrent_clients
-			ORDER BY title, id;
-			"""
-		)
-		result = [dict(r) for r in cursor]
-		return result
+        data = {
+            'type': type,
+            'title': title,
+            'base_url': base_url,
+            'username': username,
+            'password': password,
+            'api_token': api_token
+        }
+        data = {
+            k: (v if k in (*ClientClass._tokens, 'type') else None)
+            for k, v in data.items()
+        }
 
-	@staticmethod
-	def get_client(id: int) -> TorrentClient:
-		"""Get a torrent client based on it's ID.
+        client_id = get_db().execute("""
+            INSERT INTO torrent_clients(
+                type, title,
+                base_url,
+                username, password, api_token
+            ) VALUES (?, ?, ?, ?, ?, ?);
+            """,
+            (data['type'], data['title'],
+            data['base_url'],
+            data['username'], data['password'], data['api_token'])
+        ).lastrowid
+        return ClientClass(client_id)
 
-		Args:
-			id (int): The ID of the torrent client
+    @staticmethod
+    def get_clients() -> List[dict]:
+        """Get a list of all torrent clients
 
-		Raises:
-			TorrentClientNotFound: The ID does not link to any client
+        Returns:
+            List[dict]: The list with all torrent clients
+        """
+        cursor = get_db(dict)
+        cursor.execute("""
+            SELECT
+                id, type,
+                title, base_url,
+                username, password,
+                api_token
+            FROM torrent_clients
+            ORDER BY title, id;
+            """
+        )
+        result = [dict(r) for r in cursor]
+        return result
 
-		Returns:
-			TorrentClient: An instance of `download_general.TorrentClient`
-			representing the client with the given ID.
-		"""
-		client_type = get_db().execute(
-			"SELECT type FROM torrent_clients WHERE id = ? LIMIT 1;",
-			(id,)
-		).fetchone()
+    @staticmethod
+    def get_client(id: int) -> BaseTorrentClient:
+        """Get a torrent client based on it's ID.
 
-		if not client_type:
-			raise TorrentClientNotFound
+        Args:
+            id (int): The ID of the torrent client
 
-		return client_types[client_type[0]](id)
+        Raises:
+            TorrentClientNotFound: The ID does not link to any client
 
-#=====================
+        Returns:
+            BaseTorrentClient: An instance of `download_general.BaseTorrentClient`
+            representing the client with the given ID.
+        """
+        client_type = get_db().execute(
+            "SELECT type FROM torrent_clients WHERE id = ? LIMIT 1;",
+            (id,)
+        ).fetchone()
+
+        if not client_type:
+            raise TorrentClientNotFound
+
+        return client_types[client_type[0]](id)
+
+# =====================
 # Downloading torrents
-#=====================
+# =====================
 
-class TorrentDownload(BaseDownload):
-	"For downloading a torrent using a torrent client"
 
-	type = 'torrent'
+class TorrentDownload(ExternalDownload):
+    "For downloading a torrent using a torrent client"
 
-	def __init__(
-		self,
-		link: str,
-		filename_body: str,
-		source: str,
-		custom_name: bool=True
-	) -> None:
-		logging.debug(f'Creating torrent download: {link}, {filename_body}')
-		super().__init__()
-		self.client: Union[TorrentClient, None] = None
-		self.source = source
-		self.download_link = link
-		self._filename_body = filename_body
-		self.file = None
-		self.size: int = 0
-		self.progress: float = 0.0
-		self.speed: float = 0.0
-		self._torrent_id = None
-		self._download_thread = None
-		self._download_folder = Settings()['download_folder']
-		
-		if custom_name:
-			self.title = filename_body.rstrip('.')
-			
-		# Find name of torrent as it is folder that it's downloaded in
-		r = post(
-			'https://magnet2torrent.com/upload/',
-			data={'magnet': link},
-			headers={'User-Agent': 'Kapowarr'}
-		)
-		if r.headers.get('content-type') != 'application/x-bittorrent':
-			raise NotImplementedError
+    type = 'torrent'
 
-		name = bdecode(r.content)[b'info'][b'name'].decode()
-		self.title = self.title or name
-		self.file = join(self._download_folder, name)
+    def __init__(
+        self,
+        download_link: str,
+        filename_body: str,
+        source: DownloadSource,
+        custom_name: bool = True
+    ) -> None:
+        LOGGER.debug(
+            f'Creating torrent download: {download_link}, {filename_body}')
+        self.id = None # type: ignore
+        self.state: DownloadState = DownloadState.QUEUED_STATE
+        self.progress: float = 0.0
+        self.speed: float = 0.0
+        self.size: int = 0
+        self.download_link = download_link
+        self.source = source
 
-		return
+        self.client = None # type: ignore
+        self.external_id = None
+        self._download_thread = None
+        self._download_folder = Settings()['download_folder']
 
-	def run(self) -> None:
-		self._torrent_id = self.client.add_torrent(
-			self.download_link,
-			self._download_folder,
-			self.title
-		)
-		return
+        self._filename_body = filename_body
+        self._resulting_files = []
+        self._original_file = ''
 
-	def update_status(self) -> None:
-		"""
-		Update the various variables about the state/progress
-		of the torrent download
-		"""
-		torrent_status = self.client.get_torrent_status(self._torrent_id)
-		if not torrent_status:
-			return
+        self.title = ''
+        if custom_name:
+            self.title = filename_body.rstrip('.')
 
-		self.progress = torrent_status['progress']
-		self.speed = torrent_status['speed']
-		self.size = torrent_status['size']
-		if not self.state == DownloadState.CANCELED_STATE:
-			self.state = torrent_status['state']
-		return
+        # Find name of torrent as it is folder that it's downloaded in
+        try:
+            r = Session().post(
+                'https://magnet2torrent.com/upload/',
+                data={'magnet': download_link}
+            )
+        except RequestException:
+            raise LinkBroken(BlocklistReason.LINK_BROKEN)
 
-	def stop(self,
-		state: DownloadState = DownloadState.CANCELED_STATE
-	) -> None:
-		self.state = state
-		return
+        if r.headers.get('content-type') != 'application/x-bittorrent':
+            raise LinkBroken(BlocklistReason.LINK_BROKEN)
 
-	def remove_from_client(self, delete_files: bool) -> None:
-		"""Remove the download from the torrent client
+        name = get_torrent_info(r.content)[b'name'].decode()
+        self.title = self._filename_body
+        if not custom_name:
+            self.title = name
+        self.file = join(self._download_folder, name)
 
-		Args:
-			delete_files (bool): Delete downloaded files
-		"""
-		self.client.delete_torrent(self._torrent_id, delete_files)
-		return
+        return
 
-	def todict(self) -> dict:
-		return {
-			**super().todict(),
-			'client': self.client.id
-		}
+    def run(self) -> None:
+        self.external_id = self.client.add_download(
+            self.download_link,
+            self._download_folder,
+            self.title
+        )
+        return
+
+    def update_status(self) -> None:
+        if not self.external_id:
+            return
+
+        torrent_status = self.client.get_download_status(self.external_id)
+        if not torrent_status:
+            if torrent_status is None:
+                self.state = DownloadState.CANCELED_STATE
+            return
+
+        self.progress = torrent_status['progress']
+        self.speed = torrent_status['speed']
+        self.size = torrent_status['size']
+        if self.state not in (
+            DownloadState.CANCELED_STATE,
+            DownloadState.SHUTDOWN_STATE):
+            self.state = torrent_status['state']
+        return
+
+    def remove_from_client(self, delete_files: bool) -> None:
+        if not self.external_id:
+            return
+
+        self.client.delete_download(self.external_id, delete_files)
+        return
+
+    def stop(self,
+        state: DownloadState = DownloadState.CANCELED_STATE
+    ) -> None:
+        self.state = state
+        return
+
+    def todict(self) -> dict:
+        return {
+            'id': self.id,
+            'volume_id': self.volume_id,
+            'issue_id': self.issue_id,
+
+            'web_link': self.web_link,
+            'web_title': self.web_title,
+            'web_sub_title': self.web_sub_title,
+            'download_link': self.download_link,
+            'pure_link': self.download_link,
+
+            'source': self.source.value,
+            'type': self.type,
+
+            'file': self.file,
+            'title': self.title,
+
+            'size': self.size,
+            'status': self.state.value,
+            'progress': self.progress,
+            'speed': self.speed,
+
+            'client': self.client.id if self.client else None
+        }
+
+    def __repr__(self) -> str:
+        return f'<{self.__class__.__name__}, {self.download_link}, {self.file}>'

@@ -1,81 +1,84 @@
+const BlockEls = {
+	table: document.querySelector('#blocklist'),
+	page_turner: {
+		container: document.querySelector('.page-turner'),
+		previous: document.querySelector('#previous-page'),
+		next: document.querySelector('#next-page'),
+		number: document.querySelector('#page-number')
+	},
+	buttons: {
+		refresh: document.querySelector('#refresh-button'),
+		clear: document.querySelector('#clear-button')
+	},
+	entry: document.querySelector('.pre-build-els .list-entry')
+};
+
 var offset = 0;
 
 function fillList(api_key) {
-	fetch(`${url_base}/api/blocklist?api_key=${api_key}&offset=${offset}`)
-	.then(response => response.json())
+	fetchAPI('/blocklist', api_key, {offset: offset})
 	.then(json => {
-		const table = document.querySelector('#blocklist');
-		table.innerHTML = '';
+		BlockEls.table.innerHTML = '';
 		json.result.forEach(obj => {
-			const entry = document.createElement('tr');
-			entry.classList.add('list-entry');
-			entry.id = obj.id;
+			const entry = BlockEls.entry.cloneNode(true);
 
-			const link_container = document.createElement('td');
-			link_container.classList.add('link-column');
-			const link = document.createElement('a');
-			link.href = obj.link;
-			link.innerText = obj.link;
-			link.setAttribute('target', '_blank');
-			link_container.appendChild(link);
-			entry.append(link_container);
-			
-			const reason = document.createElement('td');
-			reason.classList.add('reason-column');
-			reason.innerText = obj.reason;
-			entry.appendChild(reason);
+			const link = entry.querySelector('a');
+            if (obj.download_link === null) {
+                // GC page blocked
+                link.innerText = obj.web_title || obj.web_link;
+                link.href = obj.web_link;
 
-			const date = document.createElement('td');
-			date.classList.add('date-column');
+            } else {
+                // Download link blocked
+                if (obj.web_title !== null) {
+                    link.innerText = `${obj.web_title} - ${obj.web_sub_title}`;
+                    if (obj.source !== null)
+                        link.innerText += ` - ${obj.source}`;
+                } else
+                    link.innerText = obj.download_link;
+
+                link.href = obj.download_link;
+            };
+
+            entry.querySelector('.reason-column').innerText = obj.reason;
+
 			var d = new Date(obj.added_at * 1000);
-			var formatted_date = d.toLocaleString('en-CA').slice(0,10) + ' ' + d.toTimeString().slice(0,5)
-			date.innerText = formatted_date;
-			entry.append(date);
+			var formatted_date =
+				d.toLocaleString('en-CA').slice(0,10)
+				+ ' '
+				+ d.toTimeString().slice(0,5);
+			entry.querySelector('.date-column').innerText = formatted_date;
 
-			const delete_entry = document.createElement('td');
-			const delete_button = document.createElement('button');
-			const delete_icon = document.createElement('img');
-			delete_icon.src = `${url_base}/static/img/delete.svg`;
-			delete_icon.classList.add('delete-entry-icon');
-			delete_button.appendChild(delete_icon);
-			delete_button.classList.add('delete-entry');
-			delete_button.addEventListener('click', e => deleteEntry(obj.id, api_key));
-			delete_entry.appendChild(delete_button);
-			delete_entry.classList.add('option-column');
-			entry.append(delete_entry);
+			entry.querySelector('button').onclick = e => deleteEntry(obj.id, api_key);
 
-			table.appendChild(entry);
+			BlockEls.table.appendChild(entry);
 		});
 	});
 };
 
 function deleteEntry(id, api_key) {
-	fetch(`${url_base}/api/blocklist/${id}?api_key=${api_key}`, {
-		'method': 'DELETE'
-	})
+	sendAPI('DELETE', `/blocklist/${id}`, api_key)
 	.then(response => fillList(api_key));
 };
 
 function clearList(api_key) {
-	fetch(`${url_base}/api/blocklist?api_key=${api_key}`, {
-		'method': 'DELETE'
-	});
+	sendAPI('DELETE', '/blocklist', api_key)
 	offset = 0;
-	document.querySelector('#page-number').innerText = 'Page 1';
-	document.querySelector('#blocklist').innerHTML = '';
+	BlockEls.page_turner.number.innerText = 'Page 1';
+	BlockEls.table.innerHTML = '';
 };
 
 function reduceOffset(api_key) {
 	if (offset === 0) return;
 	offset--;
-	document.querySelector('#page-number').innerText = `Page ${offset + 1}`;
+	BlockEls.page_turner.number.innerText = `Page ${offset + 1}`;
 	fillList(api_key);
 };
 
 function increaseOffset(api_key) {
-	if (document.querySelector('#blocklist').innerHTML === '') return;
+	if (BlockEls.table.innerHTML === '') return;
 	offset++;
-	document.querySelector('#page-number').innerText = `Page ${offset + 1}`;
+	BlockEls.page_turner.number.innerText = `Page ${offset + 1}`;
 	fillList(api_key);
 };
 
@@ -83,8 +86,8 @@ function increaseOffset(api_key) {
 usingApiKey()
 .then(api_key => {
 	fillList(api_key);
-	addEventListener('#clear-button', 'click', e => clearList(api_key));
-	addEventListener('#refresh-button', 'click', e => fillList(api_key));
-	addEventListener('#previous-page', 'click', e => reduceOffset(api_key));
-	addEventListener('#next-page', 'click', e => increaseOffset(api_key));
+	BlockEls.buttons.clear.onclick = e => clearList(api_key);
+	BlockEls.buttons.refresh.onclick = e => fillList(api_key);
+	BlockEls.page_turner.previous.onclick = e => reduceOffset(api_key);
+	BlockEls.page_turner.next.onclick = e => increaseOffset(api_key);
 });

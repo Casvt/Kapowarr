@@ -2,26 +2,23 @@
 	padding: 1rem;
 }
 
-.main-window > div:nth-child(2) {
+.table-container {
 	overflow-x: auto;
 }
 
 table {
 	width: 100%;
 	min-width: 30rem;
-	border-spacing: 0px;
-	text-align: left;
-	
+
 	color: var(--text-color);
 }
 
-table a {
-	text-decoration: none;
-	color: var(--text-color);
+tbody tr {
+	transition: background-color 200ms ease-in-out;
 }
 
-table a:hover {
-	text-decoration: underline;
+tbody tr:hover {
+	background-color: var(--hover-color);
 }
 
 th, td {
@@ -30,4 +27,8 @@ th, td {
 
 .history-entry > * {
 	border-top: 1px solid var(--border-color);
+}
+
+.history-entry a:not([href]):hover {
+    text-decoration: none;
 }

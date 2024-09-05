@@ -1,83 +1,51 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta id="url_base" data-value="{{url_base}}">
-
-	<link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/x-icon">
-
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
+{% extends "base.html" %}
+{% from "base.html" import icon_button, page_turner %}
+{% block title %}Blocklist{% endblock %}
+{% block css %}
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/blocklist.css') }}">
-	<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
-	<script src="{{ url_for('static', filename='js/general.js') }}" defer></script>
+{% endblock %}
+{% block js %}
 	<script src="{{ url_for('static', filename='js/blocklist.js') }}" defer></script>
+{% endblock %}
 
-	<title>Blocklist - Kapowarr</title>
-</head>
-<body>
-	<header>
-		<div class="menu-title-container">
-			<button id="toggle-nav" aria-label="Toggle menu">
-				<img src="{{url_base}}/static/img/menu.svg" alt="">
-			</button>
-			<img src="{{ url_for('static', filename='img/favicon.svg') }}" alt="">
+{% block pre_build_rows %}
+<tr class="list-entry" data-id="">
+	<td class="link-column">
+		<a href="" target="_blank"></a>
+	</td>
+	<td class="reason-column"></td>
+	<td class="date-column"></td>
+	<td class="option-column">
+		<button class="delete-entry">
+			<img src="{{ url_for('static', filename='img/delete.svg') }}">
+		</button>
+	</td>
+</tr>
+{% endblock %}
+
+{% block main %}
+<main>
+	<section class="tool-bar-container" aria-label="Tool bar">
+		<div class="tool-bar">
+			{{ icon_button("refresh-button", "Refresh the list", "refresh.svg", "Refresh") }}
+			{{ icon_button("clear-button", "Empty the complete blocklist", "delete.svg", "Clear Blocklist") }}
 		</div>
-	</header>
-	<div class="nav-main">
-		<div id="nav-bar">
-			<nav>
-				<a href="{{url_base}}/">Volumes</a>
-				<a href="{{url_base}}/activity/queue">Activity</a>
-					<a href="{{url_base}}/activity/queue" class="sub-entry">Queue</a>
-					<a href="{{url_base}}/activity/history" class="sub-entry">History</a>
-					<a href="{{url_base}}/activity/blocklist" class="sub-entry current-nav">Blocklist</a>
-				<a href="{{url_base}}/settings">Settings</a>
-				<a href="{{url_base}}/system/status">System</a>
-			</nav>
-			<div id="task-queue"></div>
+	</section>
+	<div class="main-window">
+		{{ page_turner() }}
+		<div class="table-container icon-text-color">
+			<table>
+				<thead>
+					<tr>
+						<th class="link-column">Link</th>
+						<th class="reason-column">Reason</th>
+						<th class="date-column">Added at</th>
+						<th class="option-column">Delete</th>
+					</tr>
+				</thead>
+				<tbody id="blocklist"></tbody>
+			</table>
 		</div>
-		<main>
-			<div class="tool-bar-container">
-				<div class="tool-bar">
-					<button id="refresh-button" aria-label="Refresh the list" title="Refresh the list">
-						<img src="{{url_base}}/static/img/refresh.svg" alt="">
-						<div>
-							<p>Refresh</p>
-						</div>
-					</button>
-					<button id="clear-button" aria-label="Empty the complete blocklist" title="Empty the complete blocklist">
-						<img src="{{url_base}}/static/img/delete_white.svg" alt="">
-						<div>
-							<p>Clear Blocklist</p>
-						</div>
-					</button>
-				</div>
-			</div>
-			<div class="main-window">
-				<div class="page-turner">
-					<button id="previous-page"><<</button>
-					<p id="page-number">Page 1</p>
-					<button id="next-page">>></button>
-				</div>
-				<div>
-					<table>
-						<thead>
-							<tr>
-								<th class="link-column">Link</th>
-								<th class="reason-column">Reason</th>
-								<th class="date-column">Added at</th>
-								<th class="option-column">Delete</th>
-							</tr>
-						</thead>
-						<tbody id="blocklist">
-							
-						</tbody>
-					</table>
-				</div>
-			</div>
-		</main>
 	</div>
-</body>
-</html>
+</main>
+{% endblock main %}
