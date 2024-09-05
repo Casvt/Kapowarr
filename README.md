@@ -29,7 +29,7 @@ Each day, each volume is checked to see if a new issue has come out and if so, i
 
 ## Screenshots
 
-<img src="https://github.com/Casvt/Kapowarr/assets/88994465/797a7f2d-b279-4e21-8b99-c03e99065949" style="width: max(45%, 400px); margin: .5rem;">
-<img src="https://github.com/Casvt/Kapowarr/assets/88994465/71465b08-03eb-477e-a511-f5bc5d953447" style="width: max(45%, 400px); margin: .5rem;">
-<img src="https://github.com/Casvt/Kapowarr/assets/88994465/b21ae416-1ae4-46f1-8f63-cca21cc4ee7e" style="width: max(45%, 400px); margin: .5rem;">
-<img src="https://github.com/Casvt/Kapowarr/assets/88994465/902b3c3a-4ffb-42c4-9184-a7197cecd965" style="width: max(45%, 400px); margin: .5rem;">
+![](https://github.com/user-attachments/assets/04656209-288e-4263-a2df-93e06758c443)
+![](https://github.com/user-attachments/assets/3fa8177c-f016-4cbd-b73e-6b577840b08e)
+![](https://github.com/user-attachments/assets/69d59c21-3983-4acc-8777-ae0c7b65fdff)
+![](https://github.com/user-attachments/assets/6e26c4e9-3c75-4b2c-b853-9fe2b56c9617)
