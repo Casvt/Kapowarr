@@ -13,7 +13,7 @@ On the start screen, there are some settings that change the behaviour of Librar
 - **Max folders scanned**: Limit the proposal to this amount of folders (roughly equal to the amount of volumes). Setting this to a large amount increases the chance of hitting the [CV rate limit](../other_docs/rate_limiting.md).
 - **Apply limit to parent folder**: Apply the folder limit (prev. bullet) to the parent folder instead of the folder. Enable this when each issue has it's own sub-folder.
 - **Only match english volumes**: When Kapowarr is searching on CV for a match for a file, only allow the match when it's an english release. So it won't allow translations.
-- **Folder(s) to scan**: Allows you to supply a specific folder to scan, instead of all root folders. Supports glob patterns (e.g. `/content/Star Wars*`).
+- **Folder(s) to scan**: Allows you to supply a specific folder to scan, instead of all root folders. Supports glob patterns (e.g. `/comics-1/Star Wars*`).
 
 ### Importing
 

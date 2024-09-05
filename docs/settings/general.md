@@ -68,3 +68,7 @@ The default theme is "Light". If you like dark mode, select "Dark".
 The default log level is 'Info'. This means that only things that would appear in a console (or stdout) get logged. If you are troubleshooting or want to share logs, setting this to 'Debug' will make the system log what it's doing in much more detail.  
 
 _Note that this should be set to 'Info' when not debugging, as Kapowarr logs so much in 'Debug' mode that it could slow down operation._
+
+### Download Logs
+
+By clicking the button, a text file will be downloaded containing all the latest logs. This file can be used in case a large amount of logs need to be shared (as it would be impractical to paste everything in a comment).

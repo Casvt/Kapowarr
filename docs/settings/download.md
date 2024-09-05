@@ -4,7 +4,7 @@
 
 This is where the files being downloaded get written to before being processed and moved to the correct location.
 
-If you run Kapowarr using Docker, leave this set to the default value of `/app/temp_downloads` and instead change the value of `/path/to/download_folder` in the [Docker command](../installation/docker.md#launch-container). If you have a manual install, you can change this value to whatever you want. It is recommended to be outside your root folders.
+If you run Kapowarr using Docker, leave this set to the default value of `/app/temp_downloads` and instead change the value of `/path/to/download_folder` in the [Docker command](../installation/docker.md#launch-container). If you have a manual install, you can change this value to whatever you want. It is required to be outside your root folders.
 
 ### Empty Temporary Download Folder
 
@@ -27,14 +27,4 @@ If Kapowarr should delete torrents from the client once they have completed. Oth
 
 Kapowarr has the ability to download directly from the servers of GetComics, but also to download from services like MediaFire and Mega. When an issue is queried on [GetComics](https://getcomics.org/) and found to have multiple possible download sources, this defines which source takes priority. If the first download fails, Kapowarr will try the next service in order.
 
-If you have an account for one of these services (see [Credentials](#credentials) setting), you might want to put that one at the top, to make Kapowarr take advantage of the extra features that the account offers (extra bandwidth, higher rate limit, etc.).  
-Options are:
-
-- Mega
-- MediaFire
-- GetComics ("Main Server", "Mirror Server", etc.)
-- GetComics (torrent)
-
-## Credentials
-
-If you have a paid account with Mega, Kapowarr has the ability to use this account. If you provide your login credentials for the service, Kapowarr will then take advantage of the extra features that your account has access to (higher speeds and limits, usually).  
+If you have an account for one of these services (see [Credentials](./downloadclients.md#credentials) setting), you might want to put that one at the top, to make Kapowarr take advantage of the extra features that the account offers (extra bandwidth, higher rate limit, etc.).  
