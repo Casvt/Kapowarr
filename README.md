@@ -16,7 +16,7 @@ Each day, each volume is checked to see if a new issue has come out and if so, i
 - Get loads of metadata about the volumes and issues in your library
 - Run a "Search Monitored" to download whole volumes with one click
 - Or use "Manual Search" to decide yourself what to download
-- Support for downloading directly from servers, via MediaFire and Mega
+- Support for downloading directly from servers, via MediaFire, Mega and many other services
 - Downloaded files automatically get moved wherever you want and renamed in the format you desire
 - Zip files can be extracted and it's contents renamed after downloading or with a single click
 - The recognisable UI from the *arr suite of software
