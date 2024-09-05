@@ -16,7 +16,7 @@ function saveSettings(api_key) {
 	document.querySelector('#cv-input').classList.remove('error-input');
 	const data = {
 		'host': document.querySelector('#bind-address-input').value,
-		'port': document.querySelector('#port-input').value,
+		'port': parseInt(document.querySelector('#port-input').value),
 		'url_base': document.querySelector('#url-base-input').value,
 		'auth_password': document.querySelector('#password-input').value,
 		'comicvine_api_key': document.querySelector('#cv-input').value,

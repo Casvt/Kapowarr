@@ -241,8 +241,12 @@ class Settings(metaclass=Singleton):
             if not isinstance(value, str):
                 raise InvalidSettingValue(key, value)
 
-        elif key == 'port' and not value.isdigit():
-            raise InvalidSettingValue(key, value)
+        elif key == 'port':
+            if not (
+                isinstance(value, int)
+                and 0 < value <= 65_535
+            ):
+                raise InvalidSettingValue(key, value)
 
         elif key == 'url_base':
             if isinstance(value, str) and value:
