@@ -13,6 +13,7 @@ On the start screen, there are some settings that change the behaviour of Librar
 - **Max folders scanned**: Limit the proposal to this amount of folders (roughly equal to the amount of volumes). Setting this to a large amount increases the chance of hitting the [CV rate limit](../other_docs/rate_limiting.md).
 - **Apply limit to parent folder**: Apply the folder limit (prev. bullet) to the parent folder instead of the folder. Enable this when each issue has it's own sub-folder.
 - **Only match english volumes**: When Kapowarr is searching on CV for a match for a file, only allow the match when it's an english release. So it won't allow translations.
+- **Folder(s) to scan**: Allows you to supply a specific folder to scan, instead of all root folders. Supports glob patterns (e.g. `/content/Star Wars*`).
 
 ### Importing
 
@@ -25,7 +26,3 @@ When 'Import' is used, the volume folder that is set is the 'lowest common folde
 If the CV rate limit is reached halfway through the proposal, the unhandled files will have no match. Files that don't have a match linked to them will be ignored when importing, regardless of the state of the checkbox for that file. It's advised to wait a few minutes and then do another run.
 
 If you imported files but certain ones pop up again in the next run, see the [FAQ on this topic](../other_docs/faq.md#why-do-certain-files-pop-up-in-the-library-import-even-though-i-just-imported-them).
-
-## Mass Editor
-
-The Mass Editor can be found in the web-UI at Volumes -> Mass Editor. It allows you to change settings or trigger actions for multiple volumes in your library in one go. First select the volumes using the checkboxes, then choose an action from the top.
