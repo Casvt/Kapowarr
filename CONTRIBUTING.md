@@ -11,10 +11,10 @@ Contributing to Kapowarr consists of 5 steps, listed hereunder.
 ## Local development steps
 Once your request is accepted, you can start your local development.
 
-1. Clone the repository onto your computer and open it using your prefered IDE (Visual Studio Code is used by us).
-2. Make the changes needed and write accompanying tests.
+1. Clone the repository onto your computer and open it using your preferred IDE (Visual Studio Code is used by us).
+2. Make the changes needed and write accompanying tests if needed.
 3. Check if the code written follows the styling guide below.
-4. Run the finished version, using python 3.7, to check if you've made any errors.
+4. Run the finished version, using python 3.8, to check if you've made any errors.
 5. Run the tests (unittest is used). This can be done with a button click within VS Code, or with the following command where you need to be inside the root folder of the project:
 ```bash
 python3 -m unittest discover -s ./tests -p '*.py'
@@ -24,11 +24,10 @@ python3 -m unittest discover -s ./tests -p '*.py'
 ## Styling guide
 The code of Kapowarr is written in such way that it follows the following rules. Your code should too.
 
-1. Compatible with python 3.7 .
+1. Compatible with python 3.8 to 3.11 .
 2. Tabs (4 space size) are used for indentation.
-3. Use type hints as much as possible, though don't if it requires importing extra functions or classes (except for the `typing` library).
+3. Use type hints as much as possible. If you encounter an import loop because something needs to be imported for type hinting, utilise [`typing.TYPE_CHECKING`](https://docs.python.org/3/library/typing.html#typing.TYPE_CHECKING).
 4. Each function in the backend needs a doc string describing the function, what the inputs are, what errors could be raised from within the function and what the output is.
-5. Each function in the `api.py` file should have a doc string describing the api endpoint. For the formatting, look at the doc strings of the other functions in the file.
-6. The imports need to be sorted (the extension `isort` is used in VS Code).
-7. The code needs to be compatible with Linux, MacOS and Windows.
-8. The code should, though not strictly enforced, reasonably comply with the rule of 80 characters per line.
+5. The imports need to be sorted (the extension `isort` is used in VS Code).
+6. The code needs to be compatible with Linux, MacOS, Windows and the Docker container.
+7. The code should, though not strictly enforced, reasonably comply with the rule of 80 characters per line.

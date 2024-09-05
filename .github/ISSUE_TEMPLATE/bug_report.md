@@ -6,6 +6,9 @@ labels: bug
 assignees: ''
 ---
 
+<!-- See the following page for more info -->
+<!-- https://casvt.github.io/Kapowarr/other_docs/reporting/#reporting-a-bug -->
+
 **Description of the bug**
 
 <!-- A clear and concise description of what the bug is. -->
@@ -35,5 +38,5 @@ assignees: ''
 **Additional context**
 
 <!-- Add any other context about the problem here. -->
-<!-- Errors can also be pasted here. Do it in a code block for good formatting.-->
-<!-- For code block: type '/codeblock' then choose 'Python' and paste the error logs inside -->
+<!-- If you are pasting errors, code or logs, see the link below for proper formatting -->
+<!-- https://casvt.github.io/Kapowarr/other_docs/reporting/#formatting-code-and-errors -->

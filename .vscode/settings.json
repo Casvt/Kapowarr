@@ -31,5 +31,15 @@
 	"mypy-type-checker.preferDaemon": false,
 	"mypy-type-checker.args": [
 		"--explicit-package-bases"
+	],
+  
+	"cSpell.words": [
+		"behaviour",
+		"blocklist",
+		"customisable",
+		"customised",
+		"mediamanagement",
+		"TPB's",
+		"traceback"
 	]
 }
