@@ -156,6 +156,16 @@ body[data-md-color-scheme="Kapowarr-dark"] {
 	color: var(--header-color);
 }
 
+.md-nav--primary .md-nav__title {
+    --md-default-fg-color--lightest: var(--md-default-bg-color);
+    --md-default-fg-color--lightest: var(--md-primary-fg-color);
+    --md-default-fg-color--light: var(--md-primary-bg-color);
+}
+
+.md-nav__source {
+    color: var(--light-text-color);
+}
+
 details {
 	border-color: var(--header-color);
 }
