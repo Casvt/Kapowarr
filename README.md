@@ -23,7 +23,7 @@ Each day, each volume is checked to see if a new issue has come out and if so, i
 
 ## Installation, support and documentation
 
-- For instructions on how to install Kapowarr, see the [installation documentation](https://casvt.github.io/Kapowarr/installation/).
+- For instructions on how to install Kapowarr, see the [installation documentation](https://casvt.github.io/Kapowarr/installation/installation/).
 - For support, a [Discord server](https://discord.gg/nMNdgG7vsE) is available or [make an issue](https://github.com/Casvt/Kapowarr/issues).
 - For all documentation, see the [documentation hub](https://casvt.github.io/Kapowarr/).
 
