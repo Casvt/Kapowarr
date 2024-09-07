@@ -4,16 +4,18 @@
 Setting up the database and handling connections
 """
 
+from __future__ import annotations
+
 from os.path import dirname, exists, isdir, join
 from sqlite3 import (PARSE_DECLTYPES, Connection, Cursor, ProgrammingError,
                      Row, register_adapter, register_converter)
 from threading import current_thread
 from time import time
-from typing import Any, Dict, List, Tuple, Type, Union, no_type_check
+from typing import Any, Dict, List, Union, no_type_check
 
 from flask import g
 
-from backend.helpers import CommaList, DB_ThreadSafeSingleton
+from backend.helpers import CommaList
 from backend.logging import LOGGER, set_log_level
 
 __DATABASE_FOLDER__ = "db",
@@ -22,20 +24,40 @@ __DATABASE_VERSION__ = 27
 __DATABASE_TIMEOUT__ = 10.0
 
 
-class NoNoneCursor(Cursor):
-    """
-    `Cursor` but `lastrowid` typehinting is overwritten to remove `None`.
-    The `lastrowid` property is only called when we know that we'll get
-    an `int`, so remove the `None` possibility to fix loads of type hinting
-    problems.
-    """
+class KapowarrCursor(Cursor):
+
+    row_factory: Union[Type[Row], None] # type: ignore
 
     @property
     def lastrowid(self) -> int:
         return super().lastrowid or 1
 
+    def fetchonedict(self) -> dict:
+        return dict(self.fetchone())
 
-class BaseConnection(Connection):
+    def fetchmanydict(self, size: Union[int, None] = 1) -> List[dict]:
+        return [dict(e) for e in self.fetchmany(size)]
+
+    def fetchalldict(self) -> List[dict]:
+        return [dict(e) for e in self]
+
+
+class DBConnectionManager(type):
+    instances: Dict[int, DBConnection] = {}
+
+    def __call__(cls, *args: Any, **kwargs: Any) -> DBConnection:
+        thread_id = current_thread().native_id or -1
+
+        if (
+            not thread_id in cls.instances
+            or cls.instances[thread_id].closed
+        ):
+            cls.instances[thread_id] = super().__call__(*args, **kwargs)
+
+        return cls.instances[thread_id]
+
+
+class DBConnection(Connection, metaclass=DBConnectionManager):
     file = ''
 
     def __init__(self, timeout: float) -> None:
@@ -44,6 +66,7 @@ class BaseConnection(Connection):
         Args:
             timeout (float): How long to wait before giving up on a command
         """
+        LOGGER.debug(f'Creating connection {self}')
         super().__init__(
             self.file,
             timeout=timeout,
@@ -53,56 +76,40 @@ class BaseConnection(Connection):
         self.closed = False
         return
 
-    def cursor(self) -> NoNoneCursor: # type: ignore
-        return super().cursor() # type: ignore
+    def cursor( # type: ignore
+        self,
+        force_new: bool = False
+    ) -> KapowarrCursor:
+        """Get a database cursor from the connection.
+
+        Args:
+            force_new (bool, optional): Get a new cursor instead of the cached
+            one.
+                Defaults to False.
+
+        Returns:
+            NoNoneCursor: The database cursor.
+        """
+        if not hasattr(g, 'cursors'):
+            g.cursors = []
+
+        if not force_new and g.cursors:
+            return g.cursors[0]
+        else:
+            c = KapowarrCursor(self)
+            c.row_factory = Row
+            g.cursors.append(c)
+            return g.cursors[-1]
 
     def close(self) -> None:
         """Close the database connection"""
+        LOGGER.debug(f'Closing connection {self}')
         self.closed = True
         super().close()
         return
 
     def __repr__(self) -> str:
         return f'<{self.__class__.__name__}; {current_thread().name}; {id(self)}>'
-
-
-class DBConnection(BaseConnection, metaclass=DB_ThreadSafeSingleton):
-    "For creating a connection with a database"
-
-    def __init__(self, timeout: float) -> None:
-        LOGGER.debug(f'Creating connection {self}')
-        super().__init__(timeout)
-        return
-
-    def close(self) -> None:
-        """Close the connection
-        """
-        LOGGER.debug(f'Closing connection {self}')
-        super().close()
-        return
-
-
-class TempDBConnection(BaseConnection):
-    """For creating a temporary connection with a database.
-    The user needs to manually commit and close.
-    """
-
-    def __init__(self, timeout: float) -> None:
-        """Create a temporary connection with a database
-
-        Args:
-            timeout (float): How long to wait before giving up on a command
-        """
-        LOGGER.debug(f'Creating temporary connection {self}')
-        super().__init__(timeout)
-        return
-
-    def close(self) -> None:
-        """Close the temporary connection
-        """
-        LOGGER.debug(f'Closing temporary connection {self}')
-        super().close()
-        return
 
 
 def set_db_location(
@@ -136,47 +143,27 @@ def set_db_location(
 
     create_folder(dirname(db_file_location))
 
-    BaseConnection.file = about_data['database_location'] = db_file_location
+    DBConnection.file = about_data['database_location'] = db_file_location
 
     return
 
 
-db_output_mapping: Dict[type, Any] = {
-    dict: Row,
-    tuple: None
-}
-
-
-def get_db(
-    output_type: Union[Type[Dict[Any, Any]], Type[Tuple[Any]]] = tuple,
-    temp: bool = False
-) -> NoNoneCursor:
+def get_db(force_new: bool = False) -> KapowarrCursor:
     """
     Get a database cursor instance or create a new one if needed
 
     Args:
-        output_type (Union[type[dict], type[tuple]], optional):
-        The type of output of the cursor.
-            Defaults to tuple.
-
-        temp (bool, optional): Decides if a new manually handled cursor is
-        returned instead of the cached one.
+        force_new (bool, optional): Decides if a new cursor is
+        returned instead of the standard one.
             Defaults to False.
 
     Returns:
-        NoAnyCursor: Database cursor instance with desired output type set.
+        NoAnyCursor: Database cursor instance that outputs Row objects.
     """
-    if temp:
-        cursor = TempDBConnection(timeout=__DATABASE_TIMEOUT__).cursor()
-    else:
-        try:
-            cursor: NoNoneCursor = g.cursor
-        except AttributeError:
-            db = DBConnection(timeout=__DATABASE_TIMEOUT__)
-            cursor = g.cursor = db.cursor()
-
-    cursor.row_factory = db_output_mapping[output_type]
-
+    cursor = (
+        DBConnection(timeout=__DATABASE_TIMEOUT__)
+        .cursor(force_new=force_new)
+    )
     return cursor
 
 
@@ -187,13 +174,15 @@ def close_db(e: Union[None, BaseException] = None):
         e (Union[None, BaseException], optional): Error. Defaults to None.
     """
     try:
-        cursor = g.cursor
-        db: DBConnection = cursor.connection
-        cursor.close()
-        delattr(g, 'cursor')
+        cursors = g.cursors
+        db: DBConnection = cursors[0].connection
+        for c in cursors:
+            c.close()
+        delattr(g, 'cursors')
         db.commit()
         if not current_thread().name.startswith('waitress-'):
             db.close()
+
     except (AttributeError, ProgrammingError):
         pass
 
@@ -203,9 +192,11 @@ def close_db(e: Union[None, BaseException] = None):
 def close_all_db() -> None:
     "Close all non-temporary database connections that are still open"
     LOGGER.debug('Closing any open database connections')
-    for i in DB_ThreadSafeSingleton._instances.values():
+
+    for i in DBConnectionManager.instances.values():
         if not i.closed:
             i.close()
+
     c = DBConnection(timeout=20.0)
     c.commit()
     c.close()
@@ -304,7 +295,7 @@ def migrate_db(current_db_version: int) -> None:
         # V4 -> V5
         from backend.file_extraction import process_issue_number
 
-        cursor2 = get_db(temp=True)
+        cursor2 = get_db(force_new=True)
         for result in cursor2.execute("SELECT id, issue_number FROM issues;"):
             calc_issue_number = process_issue_number(result[1])
             cursor.execute(

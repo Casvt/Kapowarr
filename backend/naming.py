@@ -490,7 +490,7 @@ def preview_mass_rename(
     """
     result = []
     volume = Volume(volume_id)
-    cursor = get_db(dict)
+    cursor = get_db()
     # Fetch all files linked to the volume or issue
     new_vf = None
     if not issue_id:

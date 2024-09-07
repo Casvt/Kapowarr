@@ -133,10 +133,12 @@ class Issue:
         self.id = id
 
         if check_existence:
-            if not (1,) in get_db().execute(
-                "SELECT 1 FROM issues WHERE id = ? LIMIT 1;",
+            issue_id = get_db().execute(
+                "SELECT id FROM issues WHERE id = ? LIMIT 1;",
                 (self.id,)
-            ):
+            ).fetchone()
+
+            if issue_id is None:
                 raise IssueNotFound
 
     @classmethod
@@ -180,7 +182,7 @@ class Issue:
         Returns:
             dict: The data.
         """
-        cursor = get_db(dict)
+        cursor = get_db()
 
         # Get issue data
         data = dict(cursor.execute(
@@ -214,7 +216,7 @@ class Issue:
             keys = (keys,)
 
         result = dict(
-            get_db(dict).execute(
+            get_db().execute(
                 f"SELECT {','.join(keys)} FROM issues WHERE id = ? LIMIT 1;",
                 (self.id,)
             ).fetchone()
@@ -238,7 +240,7 @@ class Issue:
         """
         files = [
             dict(r)
-            for r in get_db(dict).execute(f"""
+            for r in get_db().execute(f"""
                 SELECT DISTINCT id, filepath, size
                 FROM files f
                 INNER JOIN issues_files if
@@ -380,12 +382,12 @@ class _VolumeBackend:
         Returns:
             bool: Whether the volume exists or not
         """
-        volume_found = get_db().execute(
-            "SELECT 1 FROM volumes WHERE id = ? LIMIT 1;",
+        volume_id = get_db().execute(
+            "SELECT id FROM volumes WHERE id = ? LIMIT 1;",
             (self.id,)
-        )
+        ).fetchone()
 
-        return (1,) in volume_found
+        return volume_id is not None
 
     def _get_keys(self, keys: Union[Iterable[str], str]) -> dict:
         """Get a dict with the values of the given keys.
@@ -400,7 +402,7 @@ class _VolumeBackend:
             keys = (keys,)
 
         result = dict(
-            get_db(dict).execute(
+            get_db().execute(
                 f"SELECT {','.join(keys)} FROM volumes WHERE id = ? LIMIT 1;",
                 (self.id,)
             ).fetchone()
@@ -462,7 +464,7 @@ class _VolumeBackend:
         if not issue_id:
             files = [
                 dict(r)
-                for r in get_db(dict).execute(f"""
+                for r in get_db().execute(f"""
                     SELECT DISTINCT f.id, filepath, size
                     FROM files f
                     INNER JOIN issues_files if
@@ -479,7 +481,7 @@ class _VolumeBackend:
         else:
             files = [
                 dict(r)
-                for r in get_db(dict).execute(f"""
+                for r in get_db().execute(f"""
                     SELECT DISTINCT f.id, filepath, size
                     FROM files f
                     INNER JOIN issues_files if
@@ -501,7 +503,7 @@ class _VolumeBackend:
         """
         return [
             dict(r)
-            for r in get_db(dict).execute("""
+            for r in get_db().execute("""
                 SELECT f.id, filepath, size, file_type
                 FROM files f
                 INNER JOIN volume_files vf
@@ -743,7 +745,7 @@ class Volume(_VolumeBackend):
         Returns:
             dict: The data.
         """
-        cursor = get_db(dict)
+        cursor = get_db()
 
         cursor.execute("""
             SELECT
@@ -849,7 +851,7 @@ class Volume(_VolumeBackend):
             List[dict]: The list of issues.
         """
         issues = [
-            dict(i) for i in get_db(dict).execute("""
+            dict(i) for i in get_db().execute("""
                 SELECT
                     id, volume_id, comicvine_id,
                     issue_number, calculated_issue_number,
@@ -1420,7 +1422,7 @@ class Library:
         filter = self.filters.get(filter or '', '')
 
         volumes = [
-            dict(v) for v in get_db(dict).execute(f"""
+            dict(v) for v in get_db().execute(f"""
                 WITH
                     vol_issues AS (
                         SELECT id, monitored
@@ -1718,7 +1720,7 @@ class Library:
         return volume_id
 
     def get_stats(self) -> Dict[str, int]:
-        cursor = get_db(dict)
+        cursor = get_db()
         cursor.execute("""
             WITH v_stats AS (
                 SELECT

@@ -317,7 +317,7 @@ class DownloadHandler:
         for re-downloading
         """
         with self.context():
-            cursor = get_db(dict)
+            cursor = get_db()
             downloads = cursor.execute("""
                 SELECT
                     id, client_type, torrent_client_id,
@@ -680,7 +680,7 @@ def get_download_history(
 
     result = list(map(
         dict,
-        get_db(dict).execute(*comm)
+        get_db().execute(*comm)
     ))
     return result
 

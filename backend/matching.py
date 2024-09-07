@@ -114,7 +114,7 @@ def _match_volume_number(
     Returns:
         bool: `True` if the volume numbers 'match', otherwise `False`.
     """
-    cursor = get_db(dict)
+    cursor = get_db()
     cursor.execute("""
         SELECT volume_number, special_version, year
         FROM volumes

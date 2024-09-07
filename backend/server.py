@@ -16,10 +16,10 @@ from waitress.server import create_server
 from waitress.task import ThreadedTaskDispatcher as TTD
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
-from backend.db import DBConnection, close_db, set_db_location
+from backend.db import DBConnectionManager, close_db, set_db_location
 from backend.enums import RestartVersion, SocketEvent
 from backend.files import folder_path
-from backend.helpers import DB_ThreadSafeSingleton, Singleton
+from backend.helpers import Singleton
 from backend.logging import LOGGER, set_log_level, setup_logging
 from backend.settings import private_settings, restore_hosting_settings
 
@@ -38,13 +38,13 @@ class ThreadedTaskDispatcher(TTD):
     def handler_thread(self, thread_no: int) -> None:
         super().handler_thread(thread_no)
 
-        i = f'{DBConnection}{current_thread()}'
+        thread_id = current_thread().native_id or -1
         if (
-            i in DB_ThreadSafeSingleton._instances
+            thread_id in DBConnectionManager.instances
             and
-            not DB_ThreadSafeSingleton._instances[i].closed
+            not DBConnectionManager.instances[thread_id].closed
         ):
-            DB_ThreadSafeSingleton._instances[i].close()
+            DBConnectionManager.instances[thread_id].close()
 
         return
 

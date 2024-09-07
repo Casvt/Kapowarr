@@ -175,7 +175,7 @@ class TorrentClients:
         Returns:
             List[dict]: The list with all torrent clients
         """
-        cursor = get_db(dict)
+        cursor = get_db()
         cursor.execute("""
             SELECT
                 id, type,

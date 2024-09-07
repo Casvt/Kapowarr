@@ -305,7 +305,7 @@ def get_file(
     Returns:
         Dict[str, Any]: The file data.
     """
-    result = get_db(dict).execute(
+    result = get_db().execute(
         "SELECT id, filepath, size FROM files WHERE id = ? LIMIT 1;",
         (file_id,)
     ).fetchone()

@@ -41,7 +41,7 @@ class Credentials:
         if not use_cache or not self.cache or self.__load_first:
             cred = dict(
                 (c['id'], dict(c))
-                for c in get_db(dict).execute("""
+                for c in get_db().execute("""
                     SELECT
                         c.id, cs.source,
                         c.email, c.password

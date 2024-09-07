@@ -459,13 +459,13 @@ class SearchAll(Task):
         return
 
     def run(self) -> List[Tuple[str, int, Union[int, None]]]:
-        cursor = get_db()
-        volumes: List[Tuple[int, str]] = cursor.execute(
+        cursor = get_db(force_new=True)
+        cursor.execute(
             "SELECT id, title FROM volumes WHERE monitored = 1;"
-        ).fetchall()
+        )
         downloads: List[Tuple[str, int, Union[int, None]]] = []
         ws = WebSocket()
-        for volume_id, volume_title in volumes:
+        for volume_id, volume_title in cursor:
             if self.stop:
                 break
             self.message = f'Searching for {volume_title}'
@@ -624,7 +624,7 @@ class TaskHandler(metaclass=Singleton):
         with self.context():
             current_time = time()
 
-            cursor = get_db(dict)
+            cursor = get_db()
             interval_tasks = cursor.execute(
                 "SELECT task_name, interval, next_run FROM task_intervals;"
             ).fetchall()
@@ -762,7 +762,7 @@ def get_task_history(offset: int = 0) -> List[dict]:
     """
     result = list(map(
         dict,
-        get_db(dict).execute(
+        get_db().execute(
             """
             SELECT
                 task_name, display_title, run_at
@@ -790,7 +790,7 @@ def get_task_planning() -> List[dict]:
     Returns:
         List[dict]: List of interval tasks and their planning
     """
-    cursor = get_db(dict)
+    cursor = get_db()
 
     tasks = cursor.execute(
         """

@@ -317,18 +317,6 @@ class Singleton(type):
         return cls._instances[c]
 
 
-class DB_ThreadSafeSingleton(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        i = f'{cls}{current_thread()}'
-        if (i not in cls._instances
-        or cls._instances[i].closed):
-            cls._instances[i] = super().__call__(*args, **kwargs)
-
-        return cls._instances[i]
-
-
 class CommaList(list):
     """
     Normal list but init can also take a string with comma seperated values:

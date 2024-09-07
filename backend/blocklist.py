@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from sqlite3 import IntegrityError
 from time import time
 from typing import Any, Dict, List, Union
 
@@ -25,7 +24,7 @@ def get_blocklist(offset: int = 0) -> List[Dict[str, Any]]:
     """
     entries = list(map(
         dict,
-        get_db(dict).execute("""
+        get_db().execute("""
             SELECT
                 id, volume_id, issue_id,
                 web_link, web_title, web_sub_title,
@@ -72,7 +71,7 @@ def get_blocklist_entry(id: int) -> Dict[str, Any]:
         Dict[str, Any]: The info about the blocklist entry, similar to the dicts
         in the output of `blocklist.get_blocklist()`
     """
-    entry = get_db(dict).execute("""
+    entry = get_db().execute("""
         SELECT
             id, volume_id, issue_id,
             web_link, web_title, web_sub_title,
