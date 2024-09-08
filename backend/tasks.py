@@ -760,20 +760,17 @@ def get_task_history(offset: int = 0) -> List[dict]:
     Returns:
         List[dict]: The history entries.
     """
-    result = list(map(
-        dict,
-        get_db().execute(
-            """
-            SELECT
-                task_name, display_title, run_at
-            FROM task_history
-            ORDER BY run_at DESC
-            LIMIT 50
-            OFFSET ?;
-            """,
-            (offset * 50,)
-        )
-    ))
+    result = get_db().execute(
+        """
+        SELECT
+            task_name, display_title, run_at
+        FROM task_history
+        ORDER BY run_at DESC
+        LIMIT 50
+        OFFSET ?;
+        """,
+        (offset * 50,)
+    ).fetchalldict()
     return result
 
 
@@ -790,12 +787,10 @@ def get_task_planning() -> List[dict]:
     Returns:
         List[dict]: List of interval tasks and their planning
     """
-    cursor = get_db()
-
-    tasks = cursor.execute(
+    tasks = get_db().execute(
         """
         SELECT
-            i.task_name, interval, run_at, next_run
+            i.task_name, interval, next_run, run_at AS last_run
         FROM task_intervals i
         INNER JOIN (
             SELECT
@@ -806,12 +801,9 @@ def get_task_planning() -> List[dict]:
         ) h
         ON i.task_name = h.task_name;
         """
-    )
-    result = [{
-        'task_name': task['task_name'],
-        'display_name': task_library[task['task_name']].display_title,
-        'interval': task['interval'],
-        'next_run': task['next_run'],
-        'last_run': task['run_at']
-    } for task in tasks]
-    return result
+    ).fetchalldict()
+
+    for t in tasks:
+        t['display_name'] = task_library[t['task_name']].display_title
+
+    return tasks

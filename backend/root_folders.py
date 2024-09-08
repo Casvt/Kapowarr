@@ -184,11 +184,10 @@ class RootFolders:
             RootFolderInUse: The rootfolder is still in use by a volume
         """
         LOGGER.info(f'Deleting rootfolder {root_folder_id}')
-        cursor = get_db()
 
         # Remove from database
         try:
-            if not cursor.execute(
+            if not get_db().execute(
                 "DELETE FROM root_folders WHERE id = ?", (root_folder_id,)
             ).rowcount:
                 raise RootFolderNotFound

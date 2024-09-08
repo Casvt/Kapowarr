@@ -32,14 +32,48 @@ class KapowarrCursor(Cursor):
     def lastrowid(self) -> int:
         return super().lastrowid or 1
 
-    def fetchonedict(self) -> dict:
-        return dict(self.fetchone())
+    def fetchonedict(self) -> Union[dict, None]:
+        """Same as `fetchone` but convert the Row object to a dict.
+
+        Returns:
+            Union[dict, None]: The dict or None i.c.o. no result.
+        """
+        r = self.fetchone()
+        if r is None:
+            return r
+        return dict(r)
 
     def fetchmanydict(self, size: Union[int, None] = 1) -> List[dict]:
+        """Same as `fetchmany` but convert the Row object to a dict.
+
+        Args:
+            size (Union[int, None], optional): The amount of rows to return.
+                Defaults to 1.
+
+        Returns:
+            List[dict]: The rows.
+        """
         return [dict(e) for e in self.fetchmany(size)]
 
     def fetchalldict(self) -> List[dict]:
+        """Same as `fetchall` but convert the Row object to a dict.
+
+        Returns:
+            List[dict]: The results.
+        """
         return [dict(e) for e in self]
+
+    def exists(self) -> Union[Any, None]:
+        """Return the first column of the first row, or `None` if not found.
+
+        Returns:
+            Union[Any, None]: The value of the first column of the first row,
+            or `None` if not found.
+        """
+        r = self.fetchone()
+        if r is None:
+            return r
+        return r[0]
 
 
 class DBConnectionManager(type):

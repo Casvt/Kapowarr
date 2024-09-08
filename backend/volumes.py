@@ -169,12 +169,12 @@ class Issue:
             LIMIT 1;
             """,
             (volume_id, calculated_issue_number)
-        ).fetchone()
+        ).exists()
 
         if not issue_id:
             raise IssueNotFound
 
-        return cls(issue_id[0])
+        return cls(issue_id)
 
     def get_public_keys(self) -> dict:
         """Get data about the issue for the public to see (the API).
@@ -182,10 +182,7 @@ class Issue:
         Returns:
             dict: The data.
         """
-        cursor = get_db()
-
-        # Get issue data
-        data = dict(cursor.execute(
+        data = get_db().execute(
             """
             SELECT
                 id, volume_id, comicvine_id,
@@ -197,7 +194,10 @@ class Issue:
             LIMIT 1;
             """,
             (self.id,)
-        ).fetchone())
+        ).fetchonedict()
+
+        if not data:
+            raise IssueNotFound
 
         # Get all files linked to issue
         data['files'] = self.get_files()
@@ -238,19 +238,16 @@ class Issue:
             List[Dict[str, Any]]: List of filepaths. Each dict has the following
             keys: "id", "filepath" and "size".
         """
-        files = [
-            dict(r)
-            for r in get_db().execute(f"""
-                SELECT DISTINCT id, filepath, size
-                FROM files f
-                INNER JOIN issues_files if
-                ON f.id = if.file_id
-                WHERE if.issue_id = ?
-                ORDER BY filepath;
-                """,
-                (self.id,)
-            )
-        ]
+        files = get_db().execute(f"""
+            SELECT DISTINCT id, filepath, size
+            FROM files f
+            INNER JOIN issues_files if
+            ON f.id = if.file_id
+            WHERE if.issue_id = ?
+            ORDER BY filepath;
+            """,
+            (self.id,)
+        ).fetchalldict()
         return files
 
     def __setitem__(self, key: str, value: Any) -> None:
@@ -440,7 +437,7 @@ class _VolumeBackend:
             WHERE volume_id = ?;
             """,
             (self.id,)
-        ).fetchone()[0]
+        ).exists()
 
         return last_issue_date
 
@@ -461,38 +458,33 @@ class _VolumeBackend:
             List[Dict[str, Any]]: List of filepaths. Each dict has the following
             keys: "id", "filepath" and "size".
         """
+        cursor = get_db()
         if not issue_id:
-            files = [
-                dict(r)
-                for r in get_db().execute(f"""
-                    SELECT DISTINCT f.id, filepath, size
-                    FROM files f
-                    INNER JOIN issues_files if
-                    INNER JOIN issues i
-                    ON
-                        f.id = if.file_id
-                        AND if.issue_id = i.id
-                    WHERE volume_id = ?;
-                    """,
-                    (self.id,)
-                )
-            ]
+            cursor.execute(f"""
+                SELECT DISTINCT f.id, filepath, size
+                FROM files f
+                INNER JOIN issues_files if
+                INNER JOIN issues i
+                ON
+                    f.id = if.file_id
+                    AND if.issue_id = i.id
+                WHERE volume_id = ?;
+                """,
+                (self.id,)
+            )
 
         else:
-            files = [
-                dict(r)
-                for r in get_db().execute(f"""
-                    SELECT DISTINCT f.id, filepath, size
-                    FROM files f
-                    INNER JOIN issues_files if
-                    ON f.id = if.file_id
-                    WHERE if.issue_id = ?;
-                    """,
-                    (issue_id,)
-                )
-            ]
+            cursor.execute(f"""
+                SELECT DISTINCT f.id, filepath, size
+                FROM files f
+                INNER JOIN issues_files if
+                ON f.id = if.file_id
+                WHERE if.issue_id = ?;
+                """,
+                (issue_id,)
+            )
 
-        return files
+        return cursor.fetchalldict()
 
     def _get_general_files(self) -> List[Dict[str, Any]]:
         """Get the general files linked to the volume.
@@ -501,18 +493,15 @@ class _VolumeBackend:
             List[Dict[str, Any]]: The general files. Similarly formatted as
             normal file output, but with the extra key "file_type".
         """
-        return [
-            dict(r)
-            for r in get_db().execute("""
-                SELECT f.id, filepath, size, file_type
-                FROM files f
-                INNER JOIN volume_files vf
-                ON f.id = vf.file_id
-                WHERE volume_id = ?;
-                """,
-                (self.id,)
-            )
-        ]
+        return get_db().execute("""
+            SELECT f.id, filepath, size, file_type
+            FROM files f
+            INNER JOIN volume_files vf
+            ON f.id = vf.file_id
+            WHERE volume_id = ?;
+            """,
+            (self.id,)
+        ).fetchalldict()
 
     def __getitem__(self, key: str) -> Any:
         if key == 'cover':
@@ -745,9 +734,7 @@ class Volume(_VolumeBackend):
         Returns:
             dict: The data.
         """
-        cursor = get_db()
-
-        cursor.execute("""
+        volume_info = get_db().execute("""
             SELECT
                 v.id, comicvine_id,
                 title, year, publisher,
@@ -786,8 +773,7 @@ class Volume(_VolumeBackend):
             LIMIT 1;
             """,
             (self.id,)
-        )
-        volume_info = dict(cursor.fetchone())
+        ).fetchonedict() or {}
         volume_info['volume_folder'] = relpath(
             volume_info['folder'],
             volume_info['root_folder_path']
@@ -850,20 +836,18 @@ class Volume(_VolumeBackend):
         Returns:
             List[dict]: The list of issues.
         """
-        issues = [
-            dict(i) for i in get_db().execute("""
-                SELECT
-                    id, volume_id, comicvine_id,
-                    issue_number, calculated_issue_number,
-                    title, date, description,
-                    monitored
-                FROM issues
-                WHERE volume_id = ?
-                ORDER BY date, calculated_issue_number
-                """,
-                (self.id,)
-            )
-        ]
+        issues = get_db().execute("""
+            SELECT
+                id, volume_id, comicvine_id,
+                issue_number, calculated_issue_number,
+                title, date, description,
+                monitored
+            FROM issues
+            WHERE volume_id = ?
+            ORDER BY date, calculated_issue_number
+            """,
+            (self.id,)
+        ).fetchalldict()
         for issue in issues:
             issue['files'] = self.get_files(issue['id'])
 
@@ -1113,15 +1097,18 @@ def scan_files(
     cursor.connection.commit()
 
     # Get current bindings
-    current_bindings = cursor.execute("""
-        SELECT if.file_id, if.issue_id
-        FROM issues_files if
-        INNER JOIN issues i
-        ON if.issue_id = i.id
-        WHERE i.volume_id = ?;
-        """,
-        (volume_id,)
-    ).fetchall()
+    current_bindings: List[Tuple[int, int]] = [
+        tuple(b)
+        for b in cursor.execute("""
+            SELECT if.file_id, if.issue_id
+            FROM issues_files if
+            INNER JOIN issues i
+            ON if.issue_id = i.id
+            WHERE i.volume_id = ?;
+            """,
+            (volume_id,)
+        )
+    ]
 
     # Delete bindings that aren't in new bindings
     if not hashed_files:
@@ -1315,10 +1302,9 @@ def refresh_and_scan(
     # Check special version
     sv_updates = []
     for volume_data in volume_datas:
-        first_issue_date = (cursor.execute(
+        first_issue_date = cursor.execute(
             "SELECT date FROM issues WHERE volume_id = ? ORDER BY date LIMIT 1;",
-            (ids[volume_data['comicvine_id']],)
-        ).fetchone() or (None,))[0]
+            (ids[volume_data['comicvine_id']],)).exists()
 
         issue_titles = first_of_column(cursor.execute(
             "SELECT title FROM issues WHERE volume_id = ?;",
@@ -1421,44 +1407,42 @@ class Library:
         sort = self.sorting_orders[sort]
         filter = self.filters.get(filter or '', '')
 
-        volumes = [
-            dict(v) for v in get_db().execute(f"""
-                WITH
-                    vol_issues AS (
-                        SELECT id, monitored
-                        FROM issues
-                        WHERE volume_id = volumes.id
-                    ),
-                    issues_with_files AS (
-                        SELECT DISTINCT issue_id, monitored
-                        FROM issues i
-                        INNER JOIN issues_files if
-                        ON i.id = if.issue_id
-                        WHERE volume_id = volumes.id
-                    )
-                SELECT
-                    id, comicvine_id,
-                    title, year, publisher,
-                    volume_number, description,
-                    monitored,
-                    (
-                        SELECT COUNT(id) FROM vol_issues
-                    ) AS issue_count,
-                    (
-                        SELECT COUNT(id) FROM vol_issues WHERE monitored = 1
-                    ) AS issue_count_monitored,
-                    (
-                        SELECT COUNT(issue_id) FROM issues_with_files
-                    ) AS issues_downloaded,
-                    (
-                        SELECT COUNT(issue_id) FROM issues_with_files WHERE monitored = 1
-                    ) AS issues_downloaded_monitored
-                FROM volumes
-                {filter}
-                ORDER BY {sort};
-                """
-            )
-        ]
+        volumes = get_db().execute(f"""
+            WITH
+                vol_issues AS (
+                    SELECT id, monitored
+                    FROM issues
+                    WHERE volume_id = volumes.id
+                ),
+                issues_with_files AS (
+                    SELECT DISTINCT issue_id, monitored
+                    FROM issues i
+                    INNER JOIN issues_files if
+                    ON i.id = if.issue_id
+                    WHERE volume_id = volumes.id
+                )
+            SELECT
+                id, comicvine_id,
+                title, year, publisher,
+                volume_number, description,
+                monitored,
+                (
+                    SELECT COUNT(id) FROM vol_issues
+                ) AS issue_count,
+                (
+                    SELECT COUNT(id) FROM vol_issues WHERE monitored = 1
+                ) AS issue_count_monitored,
+                (
+                    SELECT COUNT(issue_id) FROM issues_with_files
+                ) AS issues_downloaded,
+                (
+                    SELECT COUNT(issue_id) FROM issues_with_files WHERE monitored = 1
+                ) AS issues_downloaded_monitored
+            FROM volumes
+            {filter}
+            ORDER BY {sort};
+            """
+        ).fetchalldict()
 
         return volumes
 
@@ -1720,8 +1704,7 @@ class Library:
         return volume_id
 
     def get_stats(self) -> Dict[str, int]:
-        cursor = get_db()
-        cursor.execute("""
+        result = get_db().execute("""
             WITH v_stats AS (
                 SELECT
                     COUNT(*) AS volumes,
@@ -1748,8 +1731,8 @@ class Library:
                 i_stats
             LEFT JOIN
                 files;
-        """)
-        return dict(cursor.fetchone())
+        """).fetchonedict() or {}
+        return result
 
 
 def search_volumes(query: str) -> List[dict]:

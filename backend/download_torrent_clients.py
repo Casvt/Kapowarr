@@ -175,8 +175,7 @@ class TorrentClients:
         Returns:
             List[dict]: The list with all torrent clients
         """
-        cursor = get_db()
-        cursor.execute("""
+        result = get_db().execute("""
             SELECT
                 id, type,
                 title, base_url,
@@ -185,8 +184,7 @@ class TorrentClients:
             FROM torrent_clients
             ORDER BY title, id;
             """
-        )
-        result = [dict(r) for r in cursor]
+        ).fetchalldict()
         return result
 
     @staticmethod
@@ -206,12 +204,12 @@ class TorrentClients:
         client_type = get_db().execute(
             "SELECT type FROM torrent_clients WHERE id = ? LIMIT 1;",
             (id,)
-        ).fetchone()
+        ).exists()
 
         if not client_type:
             raise TorrentClientNotFound
 
-        return client_types[client_type[0]](id)
+        return client_types[client_type](id)
 
 # =====================
 # Downloading torrents

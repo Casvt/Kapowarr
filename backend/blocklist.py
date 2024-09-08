@@ -22,22 +22,20 @@ def get_blocklist(offset: int = 0) -> List[Dict[str, Any]]:
         List[Dict[str, Any]]: A list of dicts where each dict is a blocklist
         entry.
     """
-    entries = list(map(
-        dict,
-        get_db().execute("""
-            SELECT
-                id, volume_id, issue_id,
-                web_link, web_title, web_sub_title,
-                download_link, source,
-                reason, added_at
-            FROM blocklist
-            ORDER BY id DESC
-            LIMIT 50
-            OFFSET ?;
-            """,
-            (offset * 50,)
-        )
-    ))
+    entries = get_db().execute("""
+        SELECT
+            id, volume_id, issue_id,
+            web_link, web_title, web_sub_title,
+            download_link, source,
+            reason, added_at
+        FROM blocklist
+        ORDER BY id DESC
+        LIMIT 50
+        OFFSET ?;
+        """,
+        (offset * 50,)
+    ).fetchalldict()
+
     for entry in entries:
         entry.update({
             'reason': BlocklistReason[
@@ -82,16 +80,15 @@ def get_blocklist_entry(id: int) -> Dict[str, Any]:
         LIMIT 1;
         """,
         (id,)
-    ).fetchone()
+    ).fetchonedict()
 
     if not entry:
         raise BlocklistEntryNotFound
 
-    result = dict(entry)
-    result['reason'] = BlocklistReason[
-        BlocklistReasonID(result['reason']).name
+    entry['reason'] = BlocklistReason[
+        BlocklistReasonID(entry['reason']).name
     ].value
-    return result
+    return entry
 
 
 def delete_blocklist_entry(id: int) -> None:
@@ -124,7 +121,7 @@ def blocklist_contains(link: str) -> Union[int, None]:
         Union[int, None]: The ID of the blocklist entry, if found. Otherwise
         `None`.
     """
-    result = (get_db().execute("""
+    result = get_db().execute("""
         SELECT id
         FROM blocklist
         WHERE download_link = ?
@@ -132,7 +129,7 @@ def blocklist_contains(link: str) -> Union[int, None]:
         LIMIT 1;
         """,
         (link, link)
-    ).fetchone() or (None,))[0]
+    ).exists()
     return result
 
 
@@ -187,10 +184,9 @@ def add_to_blocklist(
     LOGGER.info(
         f'Adding {blocked_link} to blocklist with reason "{reason.value}"'
     )
-    cursor = get_db()
-    reason_id = BlocklistReasonID[reason.name].value
 
-    id = cursor.execute("""
+    reason_id = BlocklistReasonID[reason.name].value
+    id = get_db().execute("""
         INSERT INTO blocklist(
             volume_id, issue_id,
             web_link, web_title, web_sub_title,

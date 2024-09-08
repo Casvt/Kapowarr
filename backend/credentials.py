@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from sqlite3 import IntegrityError
-from typing import List
+from typing import List, Union
 
 from backend.custom_exceptions import (CredentialAlreadyAdded,
                                        CredentialInvalid, CredentialNotFound,
@@ -128,10 +128,10 @@ class Credentials:
             dict: The credential info
         """
         cursor = get_db()
-        source_id = cursor.execute(
+        source_id: Union[int, None] = cursor.execute(
             "SELECT id FROM credentials_sources WHERE source = ? LIMIT 1;",
             (source,)
-        ).fetchone()
+        ).exists()
         if not source_id:
             raise CredentialSourceNotFound(source)
 
@@ -140,11 +140,11 @@ class Credentials:
             if source == 'mega':
                 Mega('', email, password, only_check_login=True)
 
-            id = get_db().execute("""
+            id = cursor.execute("""
                 INSERT INTO credentials(source, email, password)
                 VALUES (?,?,?);
                 """,
-                (source_id[0], email, password)
+                (source_id, email, password)
             ).lastrowid
 
         except RequestError:

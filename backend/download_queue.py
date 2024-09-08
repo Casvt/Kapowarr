@@ -678,11 +678,7 @@ def get_download_history(
             (offset * 50,)
         )
 
-    result = list(map(
-        dict,
-        get_db().execute(*comm)
-    ))
-    return result
+    return get_db().execute(*comm).fetchalldict()
 
 
 def delete_download_history() -> None:

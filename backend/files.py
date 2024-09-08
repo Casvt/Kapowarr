@@ -308,12 +308,12 @@ def get_file(
     result = get_db().execute(
         "SELECT id, filepath, size FROM files WHERE id = ? LIMIT 1;",
         (file_id,)
-    ).fetchone()
+    ).fetchonedict()
 
     if not result:
         raise FileNotFound
 
-    return dict(result)
+    return result
 
 
 def get_file_id(
