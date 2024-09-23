@@ -305,7 +305,7 @@ def generate_issue_range_name(
     if (formatting_data['issue_title'] == 'Unknown'
         or (
             settings['volume_as_empty']
-            and formatting_data['issue_title'].lower().startswith('volume ')
+            and formatting_data['issue_title'].lower().startswith(('volume ', 'vol. '))
     )):
         format: str = settings['file_naming_empty']
     else:
@@ -357,7 +357,7 @@ def generate_issue_name(
     if (formatting_data['issue_title'] == 'Unknown'
         or (
             settings['volume_as_empty']
-            and formatting_data['issue_title'].lower().startswith('volume ')
+            and formatting_data['issue_title'].lower().startswith(('volume ', 'vol. '))
     )):
         format: str = settings['file_naming_empty']
     else:
