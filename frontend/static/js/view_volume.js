@@ -38,6 +38,13 @@ const ViewEls = {
 	issues_list: document.querySelector('#issues-list')
 };
 
+function convertTitleToSlug(str) {
+    return str
+      .toLowerCase()
+      .replace(/[\s:]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
 //
 // Filling data
 //
@@ -179,6 +186,13 @@ function fillPage(data, api_key) {
 	const total_size = document.createElement('p');
 	total_size.innerText = data.total_size > 0 ? convertSize(data.total_size) : '0MB';
 	tags.appendChild(total_size);
+    
+	// ComicVine Link
+	const cvLink = document.createElement('a')
+	cvLink.innerText = 'ComicVine'
+	cvLink.href = `https://comicvine.gamespot.com/${convertTitleToSlug(data.title)}/4050-${data.comicvine_id}/`
+	cvLink.target = '_blank'
+	tags.appendChild(cvLink)
 
 	// Path
 	const path = ViewEls.vol_data.path;

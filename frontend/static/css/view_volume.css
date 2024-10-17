@@ -77,7 +77,8 @@ This flows better for ARIA.
 	gap: clamp(.5rem, 1.8vw, 1rem);
 }
 
-#volume-tags > p {
+#volume-tags > p,
+#volume-tags > a {
 	padding: .3rem;
 	border-radius: 3px;
 	background-color: var(--accent-color);
