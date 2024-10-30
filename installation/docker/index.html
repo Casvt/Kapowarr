@@ -1447,29 +1447,47 @@
 </div>
 <p>A few notes about this command:</p>
 <ol>
-<li>
-<p>If you're using a folder on the host machine instead of a docker volume to store the database file (<a href="#create-docker-volume-or-folder">reference</a>), replace <code class="highlight">kapowarr-db</code> with the path to the host folder.<br />
-E.g. <code class="highlight">&quot;/opt/Kapowarr/db:/app/db&quot;</code>.<br />
-E.g. <code class="highlight">&quot;C:\apps\Kapowarr\db:/app/db&quot;</code>.</p>
-</li>
-<li>
-<p>Replace <code class="highlight"><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">download_folder</span></code> with the path to the desired download folder, <a href="#creating-download-folder">that you created earlier</a>.<br />
-E.g. <code class="highlight"><span class="s2">&quot;/home/my-user/comic-downloads:/app/temp_downloads&quot;</span></code>.<br />
-E.g. <code class="highlight"><span class="s2">&quot;D:\Comic-Downloads:/app/temp_downloads&quot;</span></code>.</p>
-</li>
-<li>
-<p>Replace <code class="highlight">/path/to/root_folder</code> with the path to the desired root folder, <a href="#creating-root-folder">that you created earlier</a>.<br />
-E.g. <code class="highlight">&quot;/home/my-user/comics:/comics-1&quot;</code>.<br />
-E.g. <code class="highlight">&quot;D:\Comics:/comics-1&quot;</code>.</p>
-</li>
-<li>
-<p>You can map multiple root folders by repeating <code class="highlight">-v &quot;/path/to/root_folder:/comics-1&quot;</code> (or <code class="highlight">-v &quot;DRIVE:\with\root_folder:/comics-1&quot;</code> for Windows) in the command, but then supplying different values for <code class="highlight">/path/to/root_folder</code> and <code class="highlight">/comics-1</code>.<br />
-E.g. <code class="highlight">-v &quot;/home/my-user/comics-2:/comics-2&quot; \</code>.<br />
-E.g. <code class="highlight">-v &quot;E:\Comics:/comics-2&quot;</code></p>
-</li>
-<li>
-<p>Information on how to change the port can be found on the <a href="../setup_after_installation/#port">Setup After Installation page</a>.</p>
-</li>
+<li>If you're using a folder on the host machine instead of a docker volume to store the database file (<a href="#create-docker-volume-or-folder">reference</a>), replace <code class="highlight">kapowarr-db</code> with the path to the host folder.</li>
+</ol>
+<div class="admonition example">
+<p class="admonition-title">Examples</p>
+<ul>
+<li><code class="highlight">&quot;/opt/Kapowarr/db:/app/db&quot;</code></li>
+<li><code class="highlight">&quot;C:\apps\Kapowarr\db:/app/db&quot;</code></li>
+</ul>
+</div>
+<ol start="2">
+<li>Replace <code class="highlight"><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">download_folder</span></code> with the path to the desired download folder, <a href="#creating-download-folder">that you created earlier</a>.</li>
+</ol>
+<div class="admonition example">
+<p class="admonition-title">Examples</p>
+<ul>
+<li><code class="highlight"><span class="s2">&quot;/home/my-user/comic-downloads:/app/temp_downloads&quot;</span></code></li>
+<li><code class="highlight"><span class="s2">&quot;D:\Comic-Downloads:/app/temp_downloads&quot;</span></code></li>
+</ul>
+</div>
+<ol start="3">
+<li>Replace <code class="highlight">/path/to/root_folder</code> with the path to the desired root folder, <a href="#creating-root-folder">that you created earlier</a>. Later, when Kapowarr is running and you need to add a root folder, the mapped folder is what you'll add (e.g. <code class="highlight">/comics-1</code>).</li>
+</ol>
+<div class="admonition example">
+<p class="admonition-title">Examples</p>
+<ul>
+<li><code class="highlight">&quot;/home/my-user/comics:/comics-1&quot;</code></li>
+<li><code class="highlight">&quot;D:\Comics:/comics-1&quot;</code></li>
+</ul>
+</div>
+<ol start="4">
+<li>You can map multiple root folders by repeating <code class="highlight">-v &quot;/path/to/root_folder:/comics-1&quot;</code> (or <code class="highlight">-v &quot;DRIVE:\with\root_folder:/comics-1&quot;</code> for Windows) in the command, but then supplying different values for <code class="highlight">/path/to/root_folder</code> and <code class="highlight">/comics-1</code>.</li>
+</ol>
+<div class="admonition example">
+<p class="admonition-title">Examples</p>
+<ul>
+<li><code class="highlight">-v &quot;/home/my-user/comics-2:/comics-2&quot; \</code></li>
+<li><code class="highlight">-v &quot;E:\Comics:/comics-2&quot;</code></li>
+</ul>
+</div>
+<ol start="5">
+<li>Information on how to change the port can be found on the <a href="../setup_after_installation/#port">Setup After Installation page</a>.</li>
 </ol>
 </div>
 <div class="tabbed-block">
@@ -1494,29 +1512,47 @@ E.g. <code class="highlight">-v &quot;E:\Comics:/comics-2&quot;</code></p>
 </code></pre></div>
 <p>A few notes about the <code class="highlight">docker-compose.yml</code> file:</p>
 <ol>
-<li>
-<p>If you're using a folder on the host machine instead of a docker volume to store the database file (<a href="#create-docker-volume-or-folder">reference</a>), replace <code class="highlight">kapowarr-db</code> with the path to the host folder.<br />
-E.g. <code class="highlight">&quot;/opt/Kapowarr/db:/app/db&quot;</code>.<br />
-E.g. <code class="highlight">&quot;C:\apps\Kapowarr\db:/app/db&quot;</code>.</p>
-</li>
-<li>
-<p>Replace <code class="highlight"><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">download_folder</span></code> with the path to the desired download folder, <a href="#creating-download-folder">that you created earlier</a>.<br />
-E.g. <code class="highlight"><span class="s2">&quot;/home/my-user/comic-downloads:/app/temp_downloads&quot;</span></code>.<br />
-E.g. <code class="highlight"><span class="s2">&quot;D:\Comic-Downloads:/app/temp_downloads&quot;</span></code>.</p>
-</li>
-<li>
-<p>Replace <code class="highlight">/path/to/root_folder</code> with the path to the desired root folder, <a href="#creating-root-folder">that you created earlier</a>.<br />
-E.g. <code class="highlight">&quot;/home/my-user/comics:/comics-1&quot;</code>.<br />
-E.g. <code class="highlight">&quot;D:\Comics:/comics-1&quot;</code>.</p>
-</li>
-<li>
-<p>You can map multiple root folders by repeating <code class="highlight"><span class="k">-</span> &quot;/path/to/root_folder:/comics-1&quot;</code> in the command, but then supplying different values for <code class="highlight">/path/to/root_folder</code> and <code class="highlight">/comics-1</code>.<br />
-E.g. <code class="highlight">- &quot;/home/my-user/comics-2:/comics-2&quot;</code>.<br />
-E.g. <code class="highlight">- &quot;E:\Comics:/comics-2&quot;</code></p>
-</li>
-<li>
-<p>Information on how to change the port can be found on the <a href="../setup_after_installation/#port">Setup After Installation page</a>.</p>
-</li>
+<li>If you're using a folder on the host machine instead of a docker volume to store the database file (<a href="#create-docker-volume-or-folder">reference</a>), replace <code class="highlight">kapowarr-db</code> with the path to the host folder.</li>
+</ol>
+<div class="admonition example">
+<p class="admonition-title">Examples</p>
+<ul>
+<li><code class="highlight">&quot;/opt/Kapowarr/db:/app/db&quot;</code></li>
+<li><code class="highlight">&quot;C:\apps\Kapowarr\db:/app/db&quot;</code></li>
+</ul>
+</div>
+<ol start="2">
+<li>Replace <code class="highlight"><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">download_folder</span></code> with the path to the desired download folder, <a href="#creating-download-folder">that you created earlier</a>.</li>
+</ol>
+<div class="admonition example">
+<p class="admonition-title">Examples</p>
+<ul>
+<li><code class="highlight"><span class="s2">&quot;/home/my-user/comic-downloads:/app/temp_downloads&quot;</span></code></li>
+<li><code class="highlight"><span class="s2">&quot;D:\Comic-Downloads:/app/temp_downloads&quot;</span></code></li>
+</ul>
+</div>
+<ol start="3">
+<li>Replace <code class="highlight">/path/to/root_folder</code> with the path to the desired root folder, <a href="#creating-root-folder">that you created earlier</a>. Later, when Kapowarr is running and you need to add a root folder, the mapped folder is what you'll add (e.g. <code class="highlight">/comics-1</code>).</li>
+</ol>
+<div class="admonition example">
+<p class="admonition-title">Examples</p>
+<ul>
+<li><code class="highlight">&quot;/home/my-user/comics:/comics-1&quot;</code></li>
+<li><code class="highlight">&quot;D:\Comics:/comics-1&quot;</code></li>
+</ul>
+</div>
+<ol start="4">
+<li>You can map multiple root folders by repeating <code class="highlight"><span class="k">-</span> &quot;/path/to/root_folder:/comics-1&quot;</code> in the command, but then supplying different values for <code class="highlight">/path/to/root_folder</code> and <code class="highlight">/comics-1</code>.</li>
+</ol>
+<div class="admonition example">
+<p class="admonition-title">Examples</p>
+<ul>
+<li><code class="highlight">- &quot;/home/my-user/comics-2:/comics-2&quot;</code></li>
+<li><code class="highlight">- &quot;E:\Comics:/comics-2&quot;</code></li>
+</ul>
+</div>
+<ol start="5">
+<li>Information on how to change the port can be found on the <a href="../setup_after_installation/#port">Setup After Installation page</a>.</li>
 </ol>
 </div>
 <div class="tabbed-block">
@@ -1529,7 +1565,7 @@ E.g. <code class="highlight">- &quot;E:\Comics:/comics-2&quot;</code></p>
 <li>For the <code class="highlight">Host port</code>, set the value to <code class="highlight"><span class="mf">5656</span></code>. Information on how to change the port can be found on the <a href="../setup_after_installation/#port">Setup After Installation page</a>.</li>
 <li>For the <code class="highlight">Host path</code>, set the value to <code class="highlight">kapowarr-db</code> if you are using a Docker volume for the database. Otherwise, set it to the folder where you want to store the database, <a href="#create-docker-volume-or-folder">that you created earlier</a>. Set the accompanying <code class="highlight">Container path</code> to <code class="highlight">/app/db</code>.</li>
 <li>Add another volume mapping using the plus button on the right. Enter your download folder (<a href="#creating-download-folder">that you created earlier</a>) as the value of <code class="highlight">Host path</code> and set the accompanying <code class="highlight">Container path</code> to <code class="highlight"><span class="o">/</span><span class="n">app</span><span class="o">/</span><span class="n">temp_downloads</span></code>.</li>
-<li>Add another volume mapping using the plus button on the right. Enter your root folder (<a href="#creating-root-folder">that you created earlier</a>) as the value of <code class="highlight">Host path</code> and set the accompanying <code class="highlight">Container path</code> to <code class="highlight">/comics-1</code>.</li>
+<li>Add another volume mapping using the plus button on the right. Enter your root folder (<a href="#creating-root-folder">that you created earlier</a>) as the value of <code class="highlight">Host path</code> and set the accompanying <code class="highlight">Container path</code> to <code class="highlight">/comics-1</code>. Later, when Kapowarr is running and you need to add a root folder, the mapped folder is what you'll add (e.g. <code class="highlight">/comics-1</code>).</li>
 <li>If you have multiple root folders, repeat step 9, but with a different value for <code class="highlight">Host path</code> and <code class="highlight">Container path</code>.</li>
 </ol>
 </div>
@@ -1573,7 +1609,13 @@ E.g. <code class="highlight">- &quot;E:\Comics:/comics-2&quot;</code></p>
 </div>
 </div>
 </div>
-<p>In this example, we use a Docker volume as the place to store the database file, set <code class="highlight"><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">cas</span><span class="o">/</span><span class="n">media</span><span class="o">/</span><span class="n">Downloads</span></code> as the download folder and we map the folder <code class="highlight">/home/cas/media/Comics</code> to <code class="highlight">/comics-1</code> and <code class="highlight">/home/cas/other_media/Comics-2</code> to <code class="highlight">/comics-2</code>. In Kapowarr you'd then add <code class="highlight">/comics-1</code> and <code class="highlight">/comics-2</code> as root folders, but more information on that on the <a href="../setup_after_installation/#root-folders">Setup After Installation page</a>.</p>
+<ul>
+<li>We use a Docker volume as the place to store the database file.</li>
+<li>We set <code class="highlight"><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">cas</span><span class="o">/</span><span class="n">media</span><span class="o">/</span><span class="n">Downloads</span></code> as the download folder.</li>
+<li>We map the folder <code class="highlight">/home/cas/media/Comics</code> to <code class="highlight">/comics-1</code>.</li>
+<li>We map the folder <code class="highlight">/home/cas/other_media/Comics-2</code> to <code class="highlight">/comics-2</code>.</li>
+<li>In Kapowarr we'd then add <code class="highlight">/comics-1</code> and <code class="highlight">/comics-2</code> as root folders, but more information on that on the <a href="../setup_after_installation/#root-folders">Setup After Installation page</a>.</li>
+</ul>
 <h2 id="update-install">Update install<a class="headerlink" href="#update-install" title="Permanent link">&para;</a></h2>
 <p>Below you can find instructions on how to update an install. In order for the database to properly migrate, upgrade minor version by minor version (i.e. v1.0.0, v1.1.0, v1.2.0, etc.).</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="7:3"><input checked="checked" id="__tabbed_7_1" name="__tabbed_7" type="radio" /><input id="__tabbed_7_2" name="__tabbed_7" type="radio" /><input id="__tabbed_7_3" name="__tabbed_7" type="radio" /><div class="tabbed-labels"><label for="__tabbed_7_1">Docker CLI</label><label for="__tabbed_7_2">Docker Compose</label><label for="__tabbed_7_3">Docker Desktop</label></div>
@@ -1627,7 +1669,7 @@ E.g. <code class="highlight">- &quot;E:\Comics:/comics-2&quot;</code></p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2024-09-05T20:37:23+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2024-09-05</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2024-10-30T11:43:44+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2024-10-30</span>
   </span>
 
     

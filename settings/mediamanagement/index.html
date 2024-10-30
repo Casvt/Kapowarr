@@ -1816,7 +1816,10 @@
 <h2 id="root-folders">Root Folders<a class="headerlink" href="#root-folders" title="Permanent link">&para;</a></h2>
 <p>Root folders are the base folders that Kapowarr works in. All content is put in these folders. Kapowarr needs at least one root folder set in order to work properly.</p>
 <p>When adding a volume (or when editing one), you choose in which root folder all content for that volume is put. Kapowarr will never touch any files outside the root folders (except in the <a href="#download-location">download folder</a>). You might have multiple root folders because you store your comics on multiple drives or want different access rights to certain volumes, to name a few reasons.</p>
-<p>If you use docker to run Kapowarr and have followed the <a href="../../installation/docker/#launch-container">installation instructions</a>, this is where you would enter <code class="highlight">/comics-1</code>, <code class="highlight">/comics-2</code>, etc.</p>
+<div class="admonition warning adding root folders on docker">
+<p class="admonition-title">Warning</p>
+<p>If you use Docker to run Kapowarr, then the root folder that you enter in the web-UI is the mapped folder, not the folder path on the host machine. That means that if you followed the <a href="../../installation/docker/#launch-container">installation instructions</a>, you would need to enter <code class="highlight">/comics-1</code>, <code class="highlight">/comics-2</code>, etc. as your root folder.</p>
+</div>
 
 
 
@@ -1837,7 +1840,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2024-09-05T20:37:23+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2024-09-05</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2024-10-30T11:43:44+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2024-10-30</span>
   </span>
 
     
