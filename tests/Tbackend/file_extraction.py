@@ -115,6 +115,9 @@ class extract_filename_data(unittest.TestCase):
 
             'The Sandman Book 1 – 6 (2022-2023)':
                 {'series': 'The Sandman', 'year': 2022, 'volume_number': 1, 'special_version': None, 'issue_number': (1.0, 6.0), 'annual': False},
+
+            'Here --2014 + 1989--':
+                {'series': 'Here', 'year': 2014, 'volume_number': 1, 'special_version': 'tpb', 'issue_number': None, 'annual': False}
         }
         self.run_cases(cases)
 
