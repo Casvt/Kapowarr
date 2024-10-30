@@ -416,6 +416,18 @@ class Session(RSession):
 
         return
 
+    def send(self, request, **kwargs):
+        result = super().send(request, **kwargs)
+        if 400 <= result.status_code < 500:
+            LOGGER.warning(
+                f"{request.method} request to {request.url} returned with code {result.status_code}"
+            )
+            LOGGER.debug(
+                f"Request response for {request.method} {request.url}: %s",
+                result.text
+            )
+        return result
+
 
 class AsyncSession(ClientSession):
     """
@@ -436,6 +448,14 @@ class AsyncSession(ClientSession):
 
                 if response.status in STATUS_FORCELIST_RETRIES:
                     raise ClientError
+
+                if response.status >= 400:
+                    LOGGER.warning(
+                        f"{args[0]} request to {args[1]} returned with code {response.status}"
+                    )
+                    LOGGER.debug(
+                        f"Request response for {args[0]} {args[1]}: %s", await response.text()
+                    )
 
             except ClientError as e:
                 if round == TOTAL_RETRIES:
