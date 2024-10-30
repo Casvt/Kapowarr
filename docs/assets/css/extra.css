@@ -131,8 +131,16 @@ body[data-md-color-scheme="Kapowarr-dark"] {
 	border-radius: 6px;
 }
 
-.md-typeset a:not(.headerlink) {
+.md-typeset a {
 	text-decoration: underline;
+}
+
+.md-typeset a.headerlink {
+	text-decoration: none;
+}
+
+.md-typeset div.tabbed-labels a {
+	text-decoration: none;
 }
 
 .md-clipboard {
