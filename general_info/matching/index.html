@@ -20,7 +20,7 @@
       
       
       <link rel="icon" href="../../assets/img/favicon.svg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.34">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.42">
     
     
       
@@ -28,7 +28,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.35f28582.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.0253249f.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#files-to-issues" class="md-skip">
+        <a href="#special-version" class="md-skip">
           Skip to content
         </a>
       
@@ -712,6 +712,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#special-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      Special Version
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#files-to-issues" class="md-nav__link">
     <span class="md-ellipsis">
       Files to Issues
@@ -1243,6 +1252,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#special-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      Special Version
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#files-to-issues" class="md-nav__link">
     <span class="md-ellipsis">
       Files to Issues
@@ -1349,19 +1367,20 @@
 
   <h1>Matching</h1>
 
-<p>This page covers how Kapowarr matches certain things.</p>
-<h2 id="files-to-issues">Files to Issues<a class="headerlink" href="#files-to-issues" title="Permanent link">&para;</a></h2>
-<p>This covers how Kapowarr matches files to issues of a volume. Information is extracted from the filename, folder and parent folder.</p>
-<p>The matching criteria differ based on the type of volume. Kapowarr calls this the "Special State" of the volume. A volume can be a "Normal Volume", "Trade Paper Back", "One Shot", "Hard Cover" or "Volume As Issue". Kapowarr tries it's best to automatically determine the type, but there are scenario's where it's wrong. You can override the special state when adding a volume, or by editing the volume. This setting is one of the first things you should check in case the matching of files to issues does not work for a volume.</p>
-<div class="admonition info">
-<p class="admonition-title">What is a "Volume As Issue" volume?</p>
-<p>The "Volume As Issue" special state is for volumes where each issue is named "Volume N", where N is a number. An example of such a volume is <a href="https://comicvine.gamespot.com/reign-of-x/4050-137265/">Reign of X</a>. Issue 1 is named "Volume 1", issue 2 is named "Volume 2", etc.</p>
-</div>
-<p>If a specific string is required, most common variations are also supported. For example, if the string 'one-shot' is required, the variations 'one shot' and 'os' are also allowed. And upper case or lower case does not matter. </p>
+<p>This page covers how Kapowarr matches certain things. First a note on the Special Version, as it affects all matching.</p>
 <div class="admonition tip">
 <p class="admonition-title">Matching using year</p>
 <p>If it is an option to match using the year, both the release year of the volume and the release year of the issue is allowed. The year is also allowed to be off by one from the reference year.</p>
 </div>
+<h2 id="special-version">Special Version<a class="headerlink" href="#special-version" title="Permanent link">&para;</a></h2>
+<p>The matching criteria differ based on the type of volume. Kapowarr calls this the "Special Version" of the volume. A volume can be a "Normal Volume", "Trade Paper Back", "One Shot", "Hard Cover" or "Volume As Issue". Kapowarr tries it's best to automatically determine the type, but there are scenario's where it's wrong. You can override the Special Version when adding a volume, or by editing the volume. This setting is one of the first things you should check in case matching does not work for a volume.</p>
+<div class="admonition info">
+<p class="admonition-title">What is a "Volume As Issue" volume?</p>
+<p>The "Volume As Issue" Special Version is for volumes where each issue is named "Volume N", where N is a number. An example of such a volume is <a href="https://comicvine.gamespot.com/reign-of-x/4050-137265/">Reign of X</a>. Issue 1 is named "Volume 1", issue 2 is named "Volume 2", etc.</p>
+</div>
+<p>If a specific string is required, most common variations are also supported. For example, if the string 'one-shot' is required, the variations 'one shot' and 'os' are also allowed. And upper case or lower case does not matter. </p>
+<h2 id="files-to-issues">Files to Issues<a class="headerlink" href="#files-to-issues" title="Permanent link">&para;</a></h2>
+<p>This covers how Kapowarr matches files to issues of a volume. Information is extracted from the filename, folder and parent folder.</p>
 <h3 id="normal-volume">Normal Volume<a class="headerlink" href="#normal-volume" title="Permanent link">&para;</a></h3>
 <p>Rules:</p>
 <ol>
@@ -1475,7 +1494,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2024-09-05T20:37:23+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2024-09-05</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2024-10-30T10:53:07+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2024-10-30</span>
   </span>
 
     
@@ -1530,10 +1549,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["content.tabs.link", "content.code.copy", "header.autohide", "navigation.expand", "navigation.indexes", "navigation.instant", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking"], "search": "../../assets/javascripts/workers/search.07f07601.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.tabs.link", "content.code.copy", "header.autohide", "navigation.expand", "navigation.indexes", "navigation.instant", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.56dfad97.min.js"></script>
+      <script src="../../assets/javascripts/bundle.83f73b43.min.js"></script>
       
         <script src="../../js/timeago.min.js"></script>
       
