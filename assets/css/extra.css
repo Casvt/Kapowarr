@@ -171,7 +171,8 @@ body[data-md-color-scheme="Kapowarr-dark"] {
 }
 
 .md-nav__source {
-    color: var(--light-text-color);
+	background-color: var(--background-color);
+    color: var(--text-color);
 }
 
 details {
