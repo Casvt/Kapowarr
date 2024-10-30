@@ -78,7 +78,7 @@ There are multiple causes to the file not matching to the volume:
 
 ### Why does Kapowarr not grab the links from a GC page even though they work fine?
 
-GetComics pages often contain downloads for more than what is needed, so Kapowarr filters the links based on what it needs and what it doesn't. If Kapowarr did not download anything from a GC page, then it thought the links weren't for any content of interest [that matches the criteria](../general_info/matching#gc-groups).
+GetComics pages often contain downloads for more than what is needed, so Kapowarr filters the links based on what it needs and what it doesn't. If Kapowarr did not download anything from a GC page, then it thought the links weren't for any content of interest [that matches the criteria](../general_info/matching.md#gc-groups).
 
 There are multiple causes to this:
 
