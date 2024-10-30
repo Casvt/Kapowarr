@@ -112,6 +112,9 @@ class extract_filename_data(unittest.TestCase):
 
             'Spider-Man Chapter One 002-004(1999).cbr':
                 {'series': 'Spider Man Chapter One', 'year': 1999, 'volume_number': 1, 'special_version': None, 'issue_number': (2.0, 4.0), 'annual': False},
+
+            'The Sandman Book 1 – 6 (2022-2023)':
+                {'series': 'The Sandman', 'year': 2022, 'volume_number': 1, 'special_version': None, 'issue_number': (1.0, 6.0), 'annual': False},
         }
         self.run_cases(cases)
 
