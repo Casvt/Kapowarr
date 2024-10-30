@@ -24,6 +24,9 @@ Root folders are the base folders that Kapowarr works in. All content is put in 
 !!! info "You need at least one root folder"
 	At least one root folder must be set before you are able to add any volumes to your library.
 
+!!! warning Adding root folders on Docker
+	If you use Docker to run Kapowarr, then the root folder that you enter in the web-UI is the mapped folder, not the folder path on the host machine. That means that if you followed the [installation instructions](../installation/docker.md#launch-container), you would need to enter `/comics-1`, `/comics-2`, etc. as your root folder. This mistake is often made.
+
 ## Direct Download Temporary Folder
 
 If you want to, you can change the folder that Kapowarr downloads files to. It's called the ['Direct Download Temporary Folder' setting](../settings/download.md#direct-download-temporary-folder).

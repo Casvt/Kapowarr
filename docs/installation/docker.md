@@ -120,21 +120,29 @@ Now we can launch the container.
 
 	A few notes about this command:
 
-	1. If you're using a folder on the host machine instead of a docker volume to store the database file ([reference](#create-docker-volume-or-folder)), replace `kapowarr-db` with the path to the host folder.  
-	E.g. `"/opt/Kapowarr/db:/app/db"`.  
-	E.g. `"C:\apps\Kapowarr\db:/app/db"`.
+	1. If you're using a folder on the host machine instead of a docker volume to store the database file ([reference](#create-docker-volume-or-folder)), replace `kapowarr-db` with the path to the host folder.
 
-	2. Replace `/path/to/download_folder` with the path to the desired download folder, [that you created earlier](#creating-download-folder).  
-	E.g. `"/home/my-user/comic-downloads:/app/temp_downloads"`.  
-	E.g. `"D:\Comic-Downloads:/app/temp_downloads"`.
+	!!! example "Examples"
+		- `"/opt/Kapowarr/db:/app/db"`
+		- `"C:\apps\Kapowarr\db:/app/db"`
 
-	3. Replace `/path/to/root_folder` with the path to the desired root folder, [that you created earlier](#creating-root-folder).  
-	E.g. `"/home/my-user/comics:/comics-1"`.  
-	E.g. `"D:\Comics:/comics-1"`.
+	2. Replace `/path/to/download_folder` with the path to the desired download folder, [that you created earlier](#creating-download-folder).
+	
+	!!! example "Examples"
+		- `"/home/my-user/comic-downloads:/app/temp_downloads"`
+		- `"D:\Comic-Downloads:/app/temp_downloads"`
 
-	4. You can map multiple root folders by repeating `-v "/path/to/root_folder:/comics-1"` (or `-v "DRIVE:\with\root_folder:/comics-1"` for Windows) in the command, but then supplying different values for `/path/to/root_folder` and `/comics-1`.  
-	E.g. `-v "/home/my-user/comics-2:/comics-2" \`.  
-	E.g. `-v "E:\Comics:/comics-2"`
+	3. Replace `/path/to/root_folder` with the path to the desired root folder, [that you created earlier](#creating-root-folder). Later, when Kapowarr is running and you need to add a root folder, the mapped folder is what you'll add (e.g. `/comics-1`).
+
+	!!! example "Examples"
+		- `"/home/my-user/comics:/comics-1"`
+		- `"D:\Comics:/comics-1"`
+
+	4. You can map multiple root folders by repeating `-v "/path/to/root_folder:/comics-1"` (or `-v "DRIVE:\with\root_folder:/comics-1"` for Windows) in the command, but then supplying different values for `/path/to/root_folder` and `/comics-1`.
+	
+	!!! example "Examples"
+		- `-v "/home/my-user/comics-2:/comics-2" \`
+		- `-v "E:\Comics:/comics-2"`
 
 	5. Information on how to change the port can be found on the [Setup After Installation page](./setup_after_installation.md#port).
 
@@ -166,21 +174,29 @@ Now we can launch the container.
 
 	A few notes about the `docker-compose.yml` file:
 
-	1.  If you're using a folder on the host machine instead of a docker volume to store the database file ([reference](#create-docker-volume-or-folder)), replace `kapowarr-db` with the path to the host folder.  
-	E.g. `"/opt/Kapowarr/db:/app/db"`.  
-	E.g. `"C:\apps\Kapowarr\db:/app/db"`.
+	1.  If you're using a folder on the host machine instead of a docker volume to store the database file ([reference](#create-docker-volume-or-folder)), replace `kapowarr-db` with the path to the host folder.
 
-	2.  Replace `/path/to/download_folder` with the path to the desired download folder, [that you created earlier](#creating-download-folder).  
-	E.g. `"/home/my-user/comic-downloads:/app/temp_downloads"`.  
-	E.g. `"D:\Comic-Downloads:/app/temp_downloads"`.
+	!!! example "Examples"
+		- `"/opt/Kapowarr/db:/app/db"`
+		- `"C:\apps\Kapowarr\db:/app/db"`
 
-	3. Replace `/path/to/root_folder` with the path to the desired root folder, [that you created earlier](#creating-root-folder).  
-	E.g. `"/home/my-user/comics:/comics-1"`.  
-	E.g. `"D:\Comics:/comics-1"`.
+	2.  Replace `/path/to/download_folder` with the path to the desired download folder, [that you created earlier](#creating-download-folder).
+	
+	!!! example "Examples"
+		- `"/home/my-user/comic-downloads:/app/temp_downloads"`
+		- `"D:\Comic-Downloads:/app/temp_downloads"`
 
-	4. You can map multiple root folders by repeating `- "/path/to/root_folder:/comics-1"` in the command, but then supplying different values for `/path/to/root_folder` and `/comics-1`.  
-	E.g. `- "/home/my-user/comics-2:/comics-2"`.  
-	E.g. `- "E:\Comics:/comics-2"`
+	3. Replace `/path/to/root_folder` with the path to the desired root folder, [that you created earlier](#creating-root-folder). Later, when Kapowarr is running and you need to add a root folder, the mapped folder is what you'll add (e.g. `/comics-1`).
+
+	!!! example "Examples"
+		- `"/home/my-user/comics:/comics-1"`
+		- `"D:\Comics:/comics-1"`
+
+	4. You can map multiple root folders by repeating `- "/path/to/root_folder:/comics-1"` in the command, but then supplying different values for `/path/to/root_folder` and `/comics-1`.
+	
+	!!! example "Examples"
+		- `- "/home/my-user/comics-2:/comics-2"`
+		- `- "E:\Comics:/comics-2"`
 
 	5. Information on how to change the port can be found on the [Setup After Installation page](./setup_after_installation.md#port).
 
@@ -193,7 +209,7 @@ Now we can launch the container.
 	6. For the `Host port`, set the value to `5656`. Information on how to change the port can be found on the [Setup After Installation page](./setup_after_installation.md#port).
 	7. For the `Host path`, set the value to `kapowarr-db` if you are using a Docker volume for the database. Otherwise, set it to the folder where you want to store the database, [that you created earlier](#create-docker-volume-or-folder). Set the accompanying `Container path` to `/app/db`.
 	8. Add another volume mapping using the plus button on the right. Enter your download folder ([that you created earlier](#creating-download-folder)) as the value of `Host path` and set the accompanying `Container path` to `/app/temp_downloads`.
-	9. Add another volume mapping using the plus button on the right. Enter your root folder ([that you created earlier](#creating-root-folder)) as the value of `Host path` and set the accompanying `Container path` to `/comics-1`.
+	9. Add another volume mapping using the plus button on the right. Enter your root folder ([that you created earlier](#creating-root-folder)) as the value of `Host path` and set the accompanying `Container path` to `/comics-1`. Later, when Kapowarr is running and you need to add a root folder, the mapped folder is what you'll add (e.g. `/comics-1`).
 	10. If you have multiple root folders, repeat step 9, but with a different value for `Host path` and `Container path`.
 
 ### Example
@@ -234,7 +250,11 @@ Below you can find an example of running a Docker command and an example of a Do
 === "Docker Desktop"
 	![Docker Desktop Example](../assets/img/Docker_Desktop_setup.png)
 
-In this example, we use a Docker volume as the place to store the database file, set `/home/cas/media/Downloads` as the download folder and we map the folder `/home/cas/media/Comics` to `/comics-1` and `/home/cas/other_media/Comics-2` to `/comics-2`. In Kapowarr you'd then add `/comics-1` and `/comics-2` as root folders, but more information on that on the [Setup After Installation page](./setup_after_installation.md#root-folders).
+* We use a Docker volume as the place to store the database file.
+* We set `/home/cas/media/Downloads` as the download folder.
+* We map the folder `/home/cas/media/Comics` to `/comics-1`.
+* We map the folder `/home/cas/other_media/Comics-2` to `/comics-2`.
+* In Kapowarr we'd then add `/comics-1` and `/comics-2` as root folders, but more information on that on the [Setup After Installation page](./setup_after_installation.md#root-folders).
 
 ## Update install
 

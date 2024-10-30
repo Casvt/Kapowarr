@@ -162,4 +162,5 @@ Root folders are the base folders that Kapowarr works in. All content is put in 
 
 When adding a volume (or when editing one), you choose in which root folder all content for that volume is put. Kapowarr will never touch any files outside the root folders (except in the [download folder](#download-location)). You might have multiple root folders because you store your comics on multiple drives or want different access rights to certain volumes, to name a few reasons.
 
-If you use docker to run Kapowarr and have followed the [installation instructions](../installation/docker.md#launch-container), this is where you would enter `/comics-1`, `/comics-2`, etc.
+!!! warning Adding root folders on Docker
+	If you use Docker to run Kapowarr, then the root folder that you enter in the web-UI is the mapped folder, not the folder path on the host machine. That means that if you followed the [installation instructions](../installation/docker.md#launch-container), you would need to enter `/comics-1`, `/comics-2`, etc. as your root folder.
