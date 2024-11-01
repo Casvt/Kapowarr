@@ -260,9 +260,8 @@ def generate_empty_name(
         volume_id (int): The id of the volume for which to generate the string.
 
         _volume_number (Union[int, Tuple[int, int], None], optional):
-
-        Override the volume number.
-            Defaults to None.
+            Override the volume number.
+                Defaults to None.
 
     Returns:
         str: The empty name
@@ -302,11 +301,7 @@ def generate_issue_range_name(
     formatting_data = _get_formatting_data(volume_id, issue.id)
     settings = Settings()
 
-    if (formatting_data['issue_title'] == 'Unknown'
-        or (
-            settings['volume_as_empty']
-            and formatting_data['issue_title'].lower().startswith('volume ')
-    )):
+    if formatting_data['issue_title'] == 'Unknown':
         format: str = settings['file_naming_empty']
     else:
         format: str = settings['file_naming']
@@ -354,11 +349,7 @@ def generate_issue_name(
     formatting_data = _get_formatting_data(volume_id, issue.id)
     settings = Settings()
 
-    if (formatting_data['issue_title'] == 'Unknown'
-        or (
-            settings['volume_as_empty']
-            and formatting_data['issue_title'].lower().startswith('volume ')
-    )):
+    if formatting_data['issue_title'] == 'Unknown':
         format: str = settings['file_naming_empty']
     else:
         format: str = settings['file_naming']
@@ -567,6 +558,7 @@ def preview_mass_rename(
                 )
 
         elif (special_version.value or SpecialVersion.VOLUME_AS_ISSUE) != SpecialVersion.VOLUME_AS_ISSUE:
+            # Covers, etc.
             suggested_name = generate_empty_name(volume_id)
 
         elif len(issues) > 1:
