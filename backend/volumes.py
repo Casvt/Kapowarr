@@ -37,7 +37,7 @@ THIRTY_DAYS = timedelta(days=30)
 split_regex = compile(r'(?<!vs)(?<!r\.i\.p)\.(?:\s|</p>(?!$))', IGNORECASE)
 os_regex = compile(r'(?<!preceding\s)(?<!>)\bone[\- ]?shot\b(?!<)', IGNORECASE)
 hc_regex = compile(r'(?<!preceding\s)(?<!>)\bhard[\- ]?cover\b(?!<)', IGNORECASE)
-vol_regex = compile(r'^volume\.?\s\d+$', IGNORECASE)
+vol_regex = compile(r'^v(?:ol(?:ume)?)?\.?\s\d+$', IGNORECASE)
 # autopep8: on
 
 
