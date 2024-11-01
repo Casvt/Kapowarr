@@ -41,6 +41,7 @@ DOWNLOAD_CHUNK_SIZE = 4194304 # 4MB Chunks
 MEDIAFIRE_FOLDER_LINK = "https://www.mediafire.com/api/1.5/file/zip.php"
 WETRANSFER_API_LINK = "https://wetransfer.com/api/v4/transfers/{transfer_id}/download"
 PIXELDRAIN_API_LINK = "https://pixeldrain.com/api/file/{download_id}"
+PIXELDRAIN_FOLDER_API_LINK = "https://pixeldrain.com/api/list/{download_id}/zip"
 
 
 class BaseDirectDownload(Download):
@@ -282,6 +283,16 @@ class PixelDrainDownload(BaseDirectDownload):
     def _convert_to_pure_link(self) -> str:
         download_id = self.download_link.rstrip("/").split("/")[-1]
         return PIXELDRAIN_API_LINK.format(download_id=download_id)
+
+
+class PixelDrainFolderDownload(BaseDirectDownload):
+    "For downloading a PixelDrain folder (for PD file, use PixelDrainDownload)"
+
+    type = 'pd_folder'
+
+    def _convert_to_pure_link(self) -> str:
+        download_id = self.download_link.rstrip("/").split("/")[-1]
+        return PIXELDRAIN_FOLDER_API_LINK.format(download_id=download_id)
 
 
 class MegaDownload(BaseDirectDownload):

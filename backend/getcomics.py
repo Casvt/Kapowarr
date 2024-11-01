@@ -20,6 +20,7 @@ from backend.download_direct_clients import (DirectDownload, Download,
                                              MediaFireDownload,
                                              MediaFireFolderDownload,
                                              MegaDownload, PixelDrainDownload,
+                                             PixelDrainFolderDownload,
                                              WeTransferDownload)
 from backend.download_torrent_clients import TorrentDownload
 from backend.enums import (BlocklistReason, DownloadSource, FailReason,
@@ -42,7 +43,7 @@ mega_regex = compile(r'https?://mega\.(nz|io)/(#(F\!|\!)|folder/|file/)', IGNORE
 mediafire_regex = compile(r'https?://www\.mediafire\.com/', IGNORECASE)
 mediafire_dd_regex = compile(r'https?://download\d+\.mediafire\.com/', IGNORECASE)
 wetransfer_regex = compile(r'(?:https?://we.tl/|wetransfer.com/downloads/)', IGNORECASE)
-pixeldrain_regex = compile(r'https?://pixeldrain\.com/u/\w+', IGNORECASE)
+pixeldrain_regex = compile(r'https?://pixeldrain\.com/\w/\w+', IGNORECASE)
 extract_mediafire_regex = compile(r'window.location.href\s?=\s?\'https://download\d+\.mediafire.com/.*?(?=\')', IGNORECASE)
 # autopep8: on
 
@@ -500,11 +501,24 @@ def purify_link(link: str) -> dict:
 
         elif pixeldrain_regex.search(url):
             # Link is pixeldrain
-            return {
-                'download_link': url,
-                'target': PixelDrainDownload,
-                'source': DownloadSource.PIXELDRAIN
-            }
+            if not r.ok:
+                raise LinkBroken(BlocklistReason.LINK_BROKEN)
+
+            if '/l/' in url:
+                # Folder download
+                return {
+                    'download_link': url,
+                    'target': PixelDrainFolderDownload,
+                    'source': DownloadSource.PIXELDRAIN
+                }
+
+            else:
+                # File download
+                return {
+                    'download_link': url,
+                    'target': PixelDrainDownload,
+                    'source': DownloadSource.PIXELDRAIN
+                }
 
         elif r.headers.get('Content-Type', '') == 'application/x-bittorrent':
             # Link is torrent file
