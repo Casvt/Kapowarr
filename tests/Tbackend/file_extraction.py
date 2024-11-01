@@ -117,7 +117,10 @@ class extract_filename_data(unittest.TestCase):
                 {'series': 'The Sandman', 'year': 2022, 'volume_number': 1, 'special_version': None, 'issue_number': (1.0, 6.0), 'annual': False},
 
             'Here --2014 + 1989--':
-                {'series': 'Here', 'year': 2014, 'volume_number': 1, 'special_version': 'tpb', 'issue_number': None, 'annual': False}
+                {'series': 'Here', 'year': 2014, 'volume_number': 1, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
+
+            'Batgirls - #007 - One Way or Another, Part 1 of 2 (2022-02-01) [898184]':
+                {'series': 'Batgirls', 'year': 2022, 'volume_number': 1, 'special_version': None, 'issue_number': 7.0, 'annual': False}
         }
         self.run_cases(cases)
 
