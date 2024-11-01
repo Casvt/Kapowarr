@@ -335,7 +335,10 @@ def _create_link_paths(
                 for path in link_paths:
                     for entry in path:
                         if entry['info']['special_version'] == SpecialVersion.VOLUME_AS_ISSUE:
-                            if entry['info']['volume_number'] == processed_desc['volume_number']:
+                            if check_overlapping_issues(
+                                entry['info']['volume_number'], # type: ignore
+                                processed_desc['volume_number'] # type: ignore
+                            ):
                                 break
 
                         elif entry['info']['special_version'] is not None:
