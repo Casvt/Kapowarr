@@ -37,7 +37,11 @@ def folder_is_inside_folder(
     Returns:
         bool: Whether or not folder is in base_folder.
     """
-    return (abspath(folder) + sep).startswith(abspath(base_folder) + sep)
+    return (
+        abspath(folder).rstrip(sep) + sep
+    ).startswith(
+        abspath(base_folder).rstrip(sep) + sep
+    )
 
 
 def find_lowest_common_folder(files: List[str]) -> str:
