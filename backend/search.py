@@ -148,11 +148,12 @@ class SearchSources:
         "Search all sources for the query"
         result: List[SearchResultData] = []
 
-        tasks = [
-            create_task(source())
-            for source in self.source_list
-        ]
-        responses = await gather(*tasks)
+        async with AsyncSession() as session:
+            tasks = [
+                create_task(source(session))
+                for source in self.source_list
+            ]
+            responses = await gather(*tasks)
 
         for r in responses:
             result += r
@@ -169,37 +170,39 @@ class SearchSources:
         async with session.get(url, params=params, headers=headers) as response:
             return await response.text()
 
-    async def __fetch_GC_pages(self, pages: range):
-        async with AsyncSession() as session:
-            tasks = [
-                create_task(self.__fetch_one(
-                    session,
-                    f'{private_settings["getcomics_url"]}/page/{p}',
-                    {'s': self.query}
-                )) for p in pages
-            ]
-            responses = await gather(*tasks)
-            return [BeautifulSoup(r, 'html.parser') for r in responses]
+    async def __fetch_GC_pages(self, session: AsyncSession, pages: range):
+        tasks = [
+            create_task(self.__fetch_one(
+                session,
+                f'{private_settings["getcomics_url"]}/page/{p}',
+                {'s': self.query}
+            )) for p in pages
+        ]
+        responses = await gather(*tasks)
+        return [BeautifulSoup(r, 'html.parser') for r in responses]
 
-    async def _get_comics(self) -> List[SearchResultData]:
+    async def _get_comics(
+        self,
+        session: AsyncSession) -> List[SearchResultData]:
         """Search for the query in getcomics
 
         Returns:
             List[SearchResultData]: The search results
         """
-        async with AsyncSession() as session:
-            async with session.get(
-                private_settings["getcomics_url"],
-                params={'s': self.query}
-            ) as response:
-                search_results = await response.text()
+        async with session.get(
+            private_settings["getcomics_url"],
+            params={'s': self.query}
+        ) as response:
+            search_results = await response.text()
 
         soup = BeautifulSoup(search_results, 'html.parser')
         pages = soup.find_all(['a', 'span'], {"class": 'page-numbers'})
         pages = min(int(pages[-1].get_text(strip=True)), 10) if pages else 1
 
         results = []
-        parsed_results = await self.__fetch_GC_pages(range(2, pages + 1))
+        parsed_results = await self.__fetch_GC_pages(
+            session, range(2, pages + 1)
+        )
         for page in [soup] + parsed_results:
             results += page.find_all('article', {'class': 'post'})
 

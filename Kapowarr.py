@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from argparse import ArgumentParser
+from asyncio import gather, run
 from atexit import register
 from multiprocessing import set_start_method
 from os import environ, name
@@ -12,7 +13,7 @@ from typing import NoReturn, Union
 
 from backend.db import close_all_db, set_db_location, setup_db
 from backend.enums import RestartVersion
-from backend.helpers import check_python_version, get_python_exe
+from backend.helpers import AsyncSession, check_python_version, get_python_exe
 from backend.logging import LOGGER, setup_logging
 from backend.server import SERVER, handle_restart_version
 from frontend.api import Settings, download_handler, task_handler
@@ -64,6 +65,15 @@ def _main(
         SERVER.set_url_base(url_base)
 
         download_handler.create_download_folder()
+
+        if settings['flaresolverr_base_url']:
+            async def clear_urls():
+                async with AsyncSession() as session:
+                    await gather(*(
+                        session.update_cf_clearance(cf_url)
+                        for cf_url in session.cf_base_urls
+                    ))
+            run(clear_urls())
 
     download_handler.load_download_thread.start()
     task_handler.handle_intervals()

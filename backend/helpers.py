@@ -6,12 +6,12 @@ General "helper" functions and classes
 
 from __future__ import annotations
 
-from asyncio import sleep
+from asyncio import Event, sleep
 from multiprocessing.pool import Pool
 from os import symlink
 from os.path import exists, join
 from sys import base_exec_prefix, executable, platform, version_info
-from threading import current_thread
+from threading import Lock
 from typing import (TYPE_CHECKING, Any, Dict, Generator, Iterable, Iterator,
                     List, Mapping, Sequence, Tuple, TypedDict, TypeVar, Union)
 from urllib.parse import unquote
@@ -24,6 +24,9 @@ from requests.adapters import HTTPAdapter, Retry
 from backend.logging import LOGGER
 
 if TYPE_CHECKING:
+    from requests import PreparedRequest
+    from yarl import URL
+
     from backend.enums import GCDownloadSource
 
 T = TypeVar("T")
@@ -401,8 +404,19 @@ class Session(RSession):
     Inherits from `requests.Session`. Adds retries and sets user agent.
     """
 
+    lock = Lock()
+    cf_valid: Dict[str, bool] = {}
+    cf_cookies: Dict[str, List[Dict[str, str]]] = {}
+    cf_clients: Dict[str, str] = {}
+
     def __init__(self) -> None:
+        from backend.settings import Settings, private_settings
+
         super().__init__()
+
+        self.settings = Settings()
+        self.api_base = private_settings['flaresolverr_api_base']
+        self.cf_base_urls = (private_settings['getcomics_url'],)
 
         retries = Retry(
             total=TOTAL_RETRIES,
@@ -416,17 +430,79 @@ class Session(RSession):
 
         return
 
-    def send(self, request, **kwargs):
-        result = super().send(request, **kwargs)
-        if 400 <= result.status_code < 500:
-            LOGGER.warning(
-                f"{request.method} request to {request.url} returned with code {result.status_code}"
+    def update_cf_clearance(self, request: PreparedRequest) -> None:
+        base_url = (request.url or '').split(request.path_url)[0]
+
+        self.cf_valid[base_url] = False
+        with self.lock:
+            if not self.cf_valid[base_url]:
+                LOGGER.info(f"Completing CF challenge for {request.url}")
+
+                result = self.post(
+                    self.settings['flaresolverr_base_url'] + self.api_base,
+                    json={
+                        'cmd': 'request.get',
+                        'url': base_url,
+                        'maxTimeout': 60_000
+                    },
+                    verify=False,
+                    headers={'Content-Type': 'application/json'}
+                )
+
+                if result.status_code != 200:
+                    return
+
+                result = result.json()
+
+                self.cf_cookies[base_url] = [
+                    {'name': cookie['name'], 'value': cookie['value']}
+                    for cookie in result['solution']['cookies']
+                ]
+                self.cf_valid[base_url] = True
+                self.cf_clients[base_url] = result['solution']['userAgent']
+
+            for cookie in self.cf_cookies[base_url]:
+                self.cookies.set(name=cookie['name'], value=cookie['value'])
+
+            self.headers.update({'User-Agent': self.cf_clients[base_url]})
+
+        return
+
+    def request( # type: ignore
+        self,
+        method, url,
+        params=None, data=None, headers=None,
+        cookies=None, files=None, auth=None,
+        timeout=None, allow_redirects=True,
+        proxies=None, hooks=None,
+        stream=None, verify=None,
+        cert=None, json=None
+    ):
+        for round in range(1, 3):
+            result = super().request(
+                method, url, params, data, headers, cookies, files, auth,
+                timeout, allow_redirects, proxies, hooks, stream, verify, cert,
+                json
             )
-            LOGGER.debug(
-                f"Request response for {request.method} {request.url}: %s",
-                result.text
-            )
-        return result
+
+            if (
+                round == 1
+                and result.status_code == 403
+                and any(result.url.startswith(u) for u in self.cf_base_urls)
+                and self.settings['flaresolverr_base_url']
+            ):
+                self.update_cf_clearance(result.request)
+                continue
+
+            if 400 <= result.status_code < 500:
+                LOGGER.warning(
+                    f"{result.request.method} request to {result.request.url} returned with code {result.status_code}"
+                )
+                LOGGER.debug(
+                    f"Request response for {result.request.method} {result.request.url}: %s",
+                    result.text)
+
+            return result
 
 
 class AsyncSession(ClientSession):
@@ -434,10 +510,65 @@ class AsyncSession(ClientSession):
     Inherits from `aiohttp.ClientSession`. Adds retries and sets user agent.
     """
 
+    cf_valid: Dict[str, bool] = {}
+    cf_cookies: Dict[str, List[Dict[str, str]]] = {}
+    cf_clients: Dict[str, str] = {}
+
     def __init__(self) -> None:
+        from backend.settings import Settings, private_settings
+
         super().__init__(
             headers={'User-Agent': 'Kapowarr'}
         )
+
+        self.event = Event()
+        self.event.set()
+        self.settings = Settings()
+        self.api_base = private_settings['flaresolverr_api_base']
+        self.cf_base_urls = (private_settings['getcomics_url'],)
+
+        return
+
+    async def update_cf_clearance(self, url: Union[URL, str]) -> None:
+        if isinstance(url, str):
+            base_url = url
+        else:
+            base_url = str(url.origin())
+
+        self.cf_valid[base_url] = False
+        await self.event.wait()
+        self.event.clear()
+
+        if not self.cf_valid[base_url]:
+            LOGGER.info(f"Completing async CF challenge for {url}")
+
+            result = await self.post(
+                self.settings['flaresolverr_base_url'] + self.api_base,
+                json={
+                    'cmd': 'request.get',
+                    'url': base_url,
+                    'maxTimeout': 60_000
+                },
+                headers={'Content-Type': 'application/json'}
+            )
+
+            if result.status != 200:
+                return
+
+            result = await result.json()
+
+            self.cf_cookies[base_url] = [
+                {'name': cookie['name'], 'value': cookie['value']}
+                for cookie in result['solution']['cookies']
+            ]
+            self.cf_valid[base_url] = True
+            self.cf_clients[base_url] = result['solution']['userAgent']
+
+        for cookie in self.cf_cookies[base_url]:
+            self.cookie_jar.update_cookies({cookie['name']: cookie['value']})
+
+        self.headers.update({'User-Agent': self.cf_clients[base_url]})
+
         return
 
     async def _request(self, *args, **kwargs):
@@ -448,6 +579,15 @@ class AsyncSession(ClientSession):
 
                 if response.status in STATUS_FORCELIST_RETRIES:
                     raise ClientError
+
+                if (
+                    round == 1
+                    and response.status == 403
+                    and any(str(response.url).startswith(u) for u in self.cf_base_urls)
+                    and self.settings['flaresolverr_base_url']
+                ):
+                    await self.update_cf_clearance(response.url)
+                    continue
 
                 if response.status >= 400:
                     LOGGER.warning(

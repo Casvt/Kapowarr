@@ -6,6 +6,8 @@ from os import urandom
 from os.path import isdir, join, sep
 from typing import Any, Dict, Tuple
 
+from requests import RequestException, post
+
 from backend.custom_exceptions import (FolderNotFound, InvalidSettingKey,
                                        InvalidSettingModification,
                                        InvalidSettingValue)
@@ -64,13 +66,16 @@ default_settings = {
 
     'convert': False,
     'extract_issue_ranges': False,
-    'format_preference': ''
+    'format_preference': '',
+
+    'flaresolverr_base_url': None
 }
 
 private_settings = {
     'comicvine_url': 'https://comicvine.gamespot.com',
     'comicvine_api_url': 'https://comicvine.gamespot.com/api',
     'getcomics_url': 'https://getcomics.org',
+    'flaresolverr_api_base': '/v1',
     'hosting_threads': 10,
     'version': 'v1.0.0',
     'python_version': get_python_version(),
@@ -326,6 +331,32 @@ class Settings(metaclass=Singleton):
                 SeedingHandling(value)
             except ValueError:
                 raise InvalidSettingValue(key, value)
+
+        elif key == 'flaresolverr_base_url':
+            if not (
+                value is None
+                or (isinstance(value, str) and value)
+            ):
+                raise InvalidSettingValue(key, value)
+
+            if value:
+                converted_value = value.rstrip('/')
+
+                try:
+                    response = post(
+                        converted_value + private_settings['flaresolverr_api_base'],
+                        json={
+                            'cmd': 'request.get',
+                            'url': private_settings['getcomics_url'] + '?s=Test'},
+                        verify=False,
+                        headers={
+                            'Content-Type': 'application/json'},
+                        timeout=30)
+                    if not response.ok:
+                        raise RequestException
+
+                except RequestException:
+                    raise InvalidSettingValue(key, value)
 
         return converted_value
 
