@@ -77,7 +77,7 @@ private_settings = {
     'getcomics_url': 'https://getcomics.org',
     'flaresolverr_api_base': '/v1',
     'hosting_threads': 10,
-    'version': 'v1.0.0',
+    'version': 'alpha-31',
     'python_version': get_python_version(),
     'torrent_update_interval': 5, # Seconds
     'torrent_tag': 'kapowarr',
