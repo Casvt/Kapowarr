@@ -35,6 +35,7 @@ function fillSettings(api_key) {
 };
 
 function saveSettings(api_key) {
+	document.querySelector("#save-button p").innerText = 'Saving';
 	inputs.volume_folder_naming_input.classList.remove('error-input');
 	inputs.file_naming_input.classList.remove('error-input');
 	inputs.file_naming_sv_input.classList.remove('error-input');
@@ -54,7 +55,11 @@ function saveSettings(api_key) {
 		'format_preference': convert_preference,
 	};
 	sendAPI('PUT', '/settings', api_key, {}, data)
+	.then(response => 
+		document.querySelector("#save-button p").innerText = 'Saved'
+	)
 	.catch(e => {
+		document.querySelector("#save-button p").innerText = 'Failed';
 		e.json().then(e => {
 			if (e.error === 'InvalidSettingValue') {
 				if (e.result.key === 'volume_folder_naming')

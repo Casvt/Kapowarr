@@ -9,6 +9,7 @@ function fillSettings(api_key) {
 };
 
 function saveSettings(api_key) {
+	document.querySelector("#save-button p").innerText = 'Saving';
 	document.querySelector('#download-folder-input').classList.remove('error-input');
 	const data = {
 		'download_folder': document.querySelector('#download-folder-input').value,
@@ -17,7 +18,11 @@ function saveSettings(api_key) {
 		'service_preference': [...document.querySelectorAll('#pref-table select')].map(e => e.value)
 	};
 	sendAPI('PUT', '/settings', api_key, {}, data)
+	.then(response => 
+		document.querySelector("#save-button p").innerText = 'Saved'
+	)
 	.catch(e => {
+		document.querySelector("#save-button p").innerText = 'Failed';
         e.json().then(e => {
             if (
                 e.error === "InvalidSettingValue"

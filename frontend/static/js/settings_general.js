@@ -13,6 +13,7 @@ function fillSettings(api_key) {
 };
 
 function saveSettings(api_key) {
+	document.querySelector("#save-button p").innerText = 'Saving';
 	document.querySelector('#cv-input').classList.remove('error-input');
 	const data = {
 		'host': document.querySelector('#bind-address-input').value,
@@ -26,8 +27,10 @@ function saveSettings(api_key) {
 	.then(response => response.json())
 	.then(json => {
 		if (json.error !== null) return Promise.reject(json);
+		document.querySelector("#save-button p").innerText = 'Saved';
 	})
 	.catch(e => {
+		document.querySelector("#save-button p").innerText = 'Failed';
 		if (e.error === 'InvalidComicVineApiKey')
 			document.querySelector('#cv-input').classList.add('error-input');
 		else
