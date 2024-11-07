@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from argparse import ArgumentParser
-from asyncio import gather, run
 from atexit import register
 from multiprocessing import set_start_method
 from os import environ, name

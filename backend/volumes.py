@@ -1605,6 +1605,7 @@ class Library:
                 publisher,
                 volume_number,
                 description,
+                site_url,
                 cover,
                 monitored,
                 root_folder,
@@ -1613,7 +1614,7 @@ class Library:
                 special_version,
                 special_version_locked
             ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             );
             """,
             (
@@ -1623,6 +1624,7 @@ class Library:
                 volume_data['publisher'],
                 volume_data['volume_number'],
                 volume_data['description'],
+                volume_data['site_url'],
                 volume_data['cover'],
                 volume_data['monitored'],
                 volume_data['root_folder'],
