@@ -20,7 +20,7 @@ from backend.logging import LOGGER, set_log_level
 
 __DATABASE_FOLDER__ = "db",
 __DATABASE_NAME__ = "Kapowarr.db"
-__DATABASE_VERSION__ = 28
+__DATABASE_VERSION__ = 29
 __DATABASE_TIMEOUT__ = 10.0
 
 
@@ -993,6 +993,17 @@ def migrate_db(current_db_version: int) -> None:
         current_db_version = s['database_version'] = current_db_version + 1
         s._save_to_database()
 
+    if current_db_version == 28:
+        # V28 - V29
+
+        cursor.execute("""
+            ALTER TABLE volumes ADD
+                alt_title VARCHAR(255);
+        """)
+
+        current_db_version = s['database_version'] = current_db_version + 1
+        s._save_to_database()
+
     return
 
 
@@ -1021,6 +1032,7 @@ def setup_db() -> None:
             id INTEGER PRIMARY KEY,
             comicvine_id INTEGER NOT NULL,
             title VARCHAR(255) NOT NULL,
+            alt_title VARCHAR(255),
             year INTEGER(5),
             publisher VARCHAR(255),
             volume_number INTEGER(8) DEFAULT 1,

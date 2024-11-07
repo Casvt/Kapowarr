@@ -273,7 +273,7 @@ def manual_search(
     """
     volume = Volume(volume_id)
     volume_data = volume.get_keys(
-        ('title', 'volume_number', 'year', 'special_version')
+        ('title', 'alt_title', 'volume_number', 'year', 'special_version')
     )
 
     if issue_id and not volume_data.special_version.value:
@@ -294,69 +294,81 @@ def manual_search(
     )
 
     # Prepare query
-    title = volume_data.title.replace(':', '')
+    results = []
+    for search_title in (volume_data.title, volume_data.alt_title):
+        if search_title is None:
+            continue
+        title = search_title.replace(':', '')
 
-    if volume_data.special_version == SpecialVersion.TPB:
-        query_formats = (
-            '{title} Vol. {volume_number} ({year}) TPB',
-            '{title} ({year}) TPB',
-            '{title} Vol. {volume_number} TPB',
-            '{title} Vol. {volume_number}',
-            '{title}'
-        )
-    elif volume_data.special_version == SpecialVersion.VOLUME_AS_ISSUE:
-        query_formats = (
-            '{title} ({year})',
-            '{title}'
-        )
-    elif issue_number is None:
-        query_formats = (
-            '{title} Vol. {volume_number} ({year})',
-            '{title} ({year})',
-            '{title} Vol. {volume_number}',
-            '{title}'
-        )
-    else:
-        query_formats = (
-            '{title} #{issue_number} ({year})',
-            '{title} Vol. {volume_number} #{issue_number}',
-            '{title} #{issue_number}',
-            '{title}'
-        )
-
-    if volume_data.year is None:
-        query_formats = tuple(f.replace('({year})', '') for f in query_formats)
-
-    search_results = run(search_multiple_queries(*(
-        format.format(
-            title=title, volume_number=volume_data.volume_number,
-            year=volume_data.year, issue_number=issue_number
-        )
-        for format in query_formats
-    )))
-
-    # Decide what is a match and what not
-    issue_numbers: Dict[float, Union[int, None]] = {
-        i['calculated_issue_number']: extract_year_from_date(i['date'])
-        for i in volume.get_issues()
-    }
-    results = [
-        MatchedSearchResultData({
-            **result,
-            **check_search_result_match(result, volume_id, title,
-                volume_data.special_version, issue_numbers,
-                calculated_issue_number, volume_data.year
+        if volume_data.special_version == SpecialVersion.TPB:
+            query_formats = (
+                '{title} Vol. {volume_number} ({year}) TPB',
+                '{title} ({year}) TPB',
+                '{title} Vol. {volume_number} TPB',
+                '{title} Vol. {volume_number}',
+                '{title}'
             )
-        })
-        for result in search_results
-    ]
+        elif volume_data.special_version == SpecialVersion.VOLUME_AS_ISSUE:
+            query_formats = (
+                '{title} ({year})',
+                '{title}'
+            )
+        elif issue_number is None:
+            query_formats = (
+                '{title} Vol. {volume_number} ({year})',
+                '{title} ({year})',
+                '{title} Vol. {volume_number}',
+                '{title}'
+            )
+        else:
+            query_formats = (
+                '{title} #{issue_number} ({year})',
+                '{title} Vol. {volume_number} #{issue_number}',
+                '{title} #{issue_number}',
+                '{title}'
+            )
 
-    # Sort results; put best result at top
-    results.sort(key=lambda r: _sort_search_results(
-        r, title, volume_data.volume_number,
-        (volume_data.year, issue_numbers.get(calculated_issue_number)), # type: ignore
-        calculated_issue_number
-    ))
+        if volume_data.year is None:
+            query_formats = tuple(
+                f.replace('({year})', '')
+                for f in query_formats
+            )
+
+        search_results = run(search_multiple_queries(*(
+            format.format(
+                title=title, volume_number=volume_data.volume_number,
+                year=volume_data.year, issue_number=issue_number
+            )
+            for format in query_formats
+        )))
+        if not search_results:
+            continue
+
+        # Decide what is a match and what not
+        issue_numbers: Dict[float, Union[int, None]] = {
+            i['calculated_issue_number']: extract_year_from_date(i['date'])
+            for i in volume.get_issues()
+        }
+        results = [
+            MatchedSearchResultData({
+                **result,
+                **check_search_result_match(result, volume_id, title,
+                    volume_data.special_version, issue_numbers,
+                    calculated_issue_number, volume_data.year
+                )
+            })
+            for result in search_results
+        ]
+
+        # Sort results; put best result at top
+        results.sort(key=lambda r: _sort_search_results(
+            r, title, volume_data.volume_number,
+            (volume_data.year, issue_numbers.get(
+                calculated_issue_number)), # type: ignore
+            calculated_issue_number
+        ))
+
+        break
 
     LOGGER.debug(f'Manual search results: {results}')
     return results

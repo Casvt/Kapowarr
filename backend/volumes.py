@@ -338,6 +338,7 @@ class VolumeData:
     id: int = None # type: ignore
     comicvine_id: int = None # type: ignore
     title: str = None # type: ignore
+    alt_title: Union[str, None] = None # type: ignore
     year: int = None # type: ignore
     publisher: str = None # type: ignore
     volume_number: int = None # type: ignore
@@ -1222,6 +1223,7 @@ def refresh_and_scan(
     update_volumes = (
         (
             volume_data['title'],
+            (volume_data['aliases'] or [None])[0],
             volume_data['year'],
             volume_data['publisher'],
             volume_data['volume_number'],
@@ -1239,6 +1241,7 @@ def refresh_and_scan(
         UPDATE volumes
         SET
             title = ?,
+            alt_title = ?,
             year = ?,
             publisher = ?,
             volume_number = ?,
@@ -1601,6 +1604,7 @@ class Library:
             INSERT INTO volumes(
                 comicvine_id,
                 title,
+                alt_title,
                 year,
                 publisher,
                 volume_number,
@@ -1614,12 +1618,13 @@ class Library:
                 special_version,
                 special_version_locked
             ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             );
             """,
             (
                 volume_data['comicvine_id'],
                 volume_data['title'],
+                (volume_data['aliases'] or [None])[0],
                 volume_data['year'],
                 volume_data['publisher'],
                 volume_data['volume_number'],

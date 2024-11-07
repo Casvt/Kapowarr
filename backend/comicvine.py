@@ -111,7 +111,7 @@ def _clean_description(description: str, short: bool = False) -> str:
 class ComicVine:
     """Used for interacting with ComicVine
     """
-    volume_field_list = ','.join(('deck', 'description', 'id', 'image', 'issues', 'name', 'publisher', 'start_year', 'count_of_issues', 'site_detail_url')) # noqa
+    volume_field_list = ','.join(('aliases', 'deck', 'description', 'id', 'image', 'issues', 'name', 'publisher', 'start_year', 'count_of_issues', 'site_detail_url')) # noqa
     issue_field_list = ','.join(('id', 'issue_number', 'name', 'cover_date', 'description', 'volume')) # noqa
     search_field_list = ','.join(('aliases', 'count_of_issues', 'deck', 'description', 'id', 'image', 'name', 'publisher', 'site_detail_url', 'start_year')) # noqa
 
