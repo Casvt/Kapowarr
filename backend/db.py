@@ -20,7 +20,7 @@ from backend.logging import LOGGER, set_log_level
 
 __DATABASE_FOLDER__ = "db",
 __DATABASE_NAME__ = "Kapowarr.db"
-__DATABASE_VERSION__ = 27
+__DATABASE_VERSION__ = 28
 __DATABASE_TIMEOUT__ = 10.0
 
 
@@ -979,6 +979,20 @@ def migrate_db(current_db_version: int) -> None:
             COMMIT;
         """)
 
+        current_db_version = s['database_version'] = current_db_version + 1
+        s._save_to_database()
+
+    if current_db_version == 27:
+        # V27 - V28
+
+        cursor.execute("""
+            ALTER TABLE volumes ADD
+                site_url TEXT NOT NULL DEFAULT "";
+        """)
+
+        current_db_version = s['database_version'] = current_db_version + 1
+        s._save_to_database()
+
     return
 
 
@@ -1011,6 +1025,7 @@ def setup_db() -> None:
             publisher VARCHAR(255),
             volume_number INTEGER(8) DEFAULT 1,
             description TEXT,
+            site_url TEXT NOT NULL DEFAULT "",
             cover BLOB,
             monitored BOOL NOT NULL DEFAULT 0,
             root_folder INTEGER NOT NULL,

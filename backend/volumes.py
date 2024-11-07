@@ -342,6 +342,7 @@ class VolumeData:
     publisher: str = None # type: ignore
     volume_number: int = None # type: ignore
     description: str = None # type: ignore
+    site_url: str = None # type: ignore
     monitored: bool = None # type: ignore
     root_folder: int = None # type: ignore
     folder: str = None # type: ignore
@@ -740,7 +741,8 @@ class Volume(_VolumeBackend):
                 title, year, publisher,
                 volume_number,
                 special_version, special_version_locked,
-                description, monitored,
+                description, site_url,
+                monitored,
                 v.folder, root_folder,
                 rf.folder AS root_folder_path,
                 (
@@ -1224,6 +1226,7 @@ def refresh_and_scan(
             volume_data['publisher'],
             volume_data['volume_number'],
             volume_data['description'],
+            volume_data['site_url'],
             volume_data['cover'],
             one_day_ago + 86400,
 
@@ -1240,6 +1243,7 @@ def refresh_and_scan(
             publisher = ?,
             volume_number = ?,
             description = ?,
+            site_url = ?,
             cover = ?,
             last_cv_fetch = ?
         WHERE id = ?;

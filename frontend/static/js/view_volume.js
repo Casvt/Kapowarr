@@ -179,7 +179,13 @@ function fillPage(data, api_key) {
 	const total_size = document.createElement('p');
 	total_size.innerText = data.total_size > 0 ? convertSize(data.total_size) : '0MB';
 	tags.appendChild(total_size);
-
+	if (data.site_url !== "") {
+		const link = document.createElement('a');
+		link.href = data.site_url;
+		link.innerText = "link";
+		tags.appendChild(link);
+	};
+	
 	// Path
 	const path = ViewEls.vol_data.path;
 	path.innerText = data.folder;
