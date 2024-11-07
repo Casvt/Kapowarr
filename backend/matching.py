@@ -12,10 +12,10 @@ from typing import TYPE_CHECKING, Dict, List, Mapping, Tuple, Union
 
 from backend.blocklist import blocklist_contains
 from backend.db import get_db
-from backend.enums import SpecialVersion
-from backend.helpers import (FilenameData, SearchResultData,
-                             SearchResultMatchData, create_range,
-                             extract_year_from_date, get_first_of_range)
+from backend.definitions import (FilenameData, SearchResultData,
+                                 SearchResultMatchData, SpecialVersion)
+from backend.helpers import (create_range, extract_year_from_date,
+                             get_first_of_range)
 from backend.logging import LOGGER
 
 if TYPE_CHECKING:

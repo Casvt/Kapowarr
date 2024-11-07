@@ -11,8 +11,8 @@ from multiprocessing.pool import Pool
 from os import symlink
 from os.path import exists, join
 from sys import base_exec_prefix, executable, platform, version_info
-from typing import (TYPE_CHECKING, Any, Dict, Generator, Iterable, Iterator,
-                    List, Mapping, Sequence, Tuple, TypedDict, TypeVar, Union)
+from typing import (Any, Dict, Generator, Iterable, Iterator,
+                    List, Mapping, Sequence, Tuple, Union)
 from urllib.parse import unquote
 
 from aiohttp import ClientError, ClientSession
@@ -20,14 +20,8 @@ from bencoding import bdecode
 from requests import Session as RSession
 from requests.adapters import HTTPAdapter, Retry
 
+from backend.definitions import Constants, T, U
 from backend.logging import LOGGER
-
-if TYPE_CHECKING:
-    from backend.enums import GCDownloadSource
-
-T = TypeVar("T")
-U = TypeVar("U")
-DEFAULT_USERAGENT = "Kapowarr"
 
 
 def get_python_version() -> str:
@@ -262,50 +256,6 @@ def get_torrent_info(torrent: bytes) -> Dict[bytes, Any]:
     return bdecode(torrent)[b"info"] # type: ignore
 
 
-class FilenameData(TypedDict):
-    series: str
-    year: Union[int, None]
-    volume_number: Union[int, Tuple[int, int], None]
-    special_version: Union[str, None]
-    issue_number: Union[float, Tuple[float, float], None]
-    annual: bool
-
-
-class SearchResultData(FilenameData):
-    link: str
-    display_title: str
-    source: str
-
-
-class SearchResultMatchData(TypedDict):
-    match: bool
-    match_issue: Union[str, None]
-
-
-class MatchedSearchResultData(
-    SearchResultMatchData,
-    SearchResultData,
-    total=False
-):
-    _issue_number: Union[float, Tuple[float, float]]
-
-
-class CVFileMapping(TypedDict):
-    id: int
-    filepath: str
-
-
-class DownloadGroup(TypedDict):
-    web_sub_title: str
-    info: FilenameData
-    links: Dict[GCDownloadSource, List[str]]
-
-
-class ClientTestResult(TypedDict):
-    success: bool
-    description: Union[None, str]
-
-
 class Singleton(type):
     _instances = {}
 
@@ -391,11 +341,6 @@ class DictKeyedDict(dict):
         return zip(self.keys(), self.values())
 
 
-TOTAL_RETRIES = 5
-BACKOFF_FACTOR_RETRIES = 0.1
-STATUS_FORCELIST_RETRIES = (500, 502, 503, 504)
-
-
 class Session(RSession):
     """
     Inherits from `requests.Session`. Adds retries, sets user agent and handles
@@ -410,14 +355,14 @@ class Session(RSession):
         self.fs = FlareSolverr()
 
         retries = Retry(
-            total=TOTAL_RETRIES,
-            backoff_factor=BACKOFF_FACTOR_RETRIES, # type: ignore # floats work just fine
-            status_forcelist=STATUS_FORCELIST_RETRIES
+            total=Constants.TOTAL_RETRIES,
+            backoff_factor=Constants.BACKOFF_FACTOR_RETRIES, # type: ignore
+            status_forcelist=Constants.STATUS_FORCELIST_RETRIES
         )
         self.mount('http://', HTTPAdapter(max_retries=retries))
         self.mount('https://', HTTPAdapter(max_retries=retries))
 
-        self.headers.update({'User-Agent': DEFAULT_USERAGENT})
+        self.headers.update({'User-Agent': Constants.DEFAULT_USERAGENT})
 
         return
 
@@ -470,7 +415,7 @@ class AsyncSession(ClientSession):
         from backend.flaresolverr import FlareSolverr
 
         super().__init__(
-            headers={'User-Agent': DEFAULT_USERAGENT}
+            headers={'User-Agent': Constants.DEFAULT_USERAGENT}
         )
 
         self.fs = FlareSolverr()
@@ -478,8 +423,8 @@ class AsyncSession(ClientSession):
         return
 
     async def _request(self, *args, **kwargs):
-        sleep_time = BACKOFF_FACTOR_RETRIES
-        for round in range(1, TOTAL_RETRIES + 1):
+        sleep_time = Constants.BACKOFF_FACTOR_RETRIES
+        for round in range(1, Constants.TOTAL_RETRIES + 1):
             ua, cf_cookies = self.fs.get_ua_cookies(args[1])
             self.headers.update({'User-Agent': ua})
             self.cookie_jar.update_cookies(cf_cookies)
@@ -487,11 +432,11 @@ class AsyncSession(ClientSession):
             try:
                 response = await super()._request(*args, **kwargs)
 
-                if response.status in STATUS_FORCELIST_RETRIES:
+                if response.status in Constants.STATUS_FORCELIST_RETRIES:
                     raise ClientError
 
             except ClientError as e:
-                if round == TOTAL_RETRIES:
+                if round == Constants.TOTAL_RETRIES:
                     raise e
 
                 LOGGER.warning(

@@ -9,7 +9,7 @@ Note: Not all CE's inherit from CustomException.
 
 from typing import Any, Union
 
-from backend.enums import BlocklistReason, BlocklistReasonID, FailReason
+from backend.definitions import BlocklistReason, BlocklistReasonID, FailReason
 from backend.logging import LOGGER
 
 

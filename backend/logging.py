@@ -5,6 +5,8 @@ import logging.config
 from logging.handlers import RotatingFileHandler
 from typing import Any, Union
 
+from backend.definitions import Constants
+
 
 class UpToInfoFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
@@ -36,9 +38,7 @@ class MPRotatingFileHandler(RotatingFileHandler):
         return super().shouldRollover(record)
 
 
-LOGGER_NAME = "Kapowarr"
-LOGGER_DEBUG_FILENAME = "Kapowarr.log"
-LOGGER = logging.getLogger(LOGGER_NAME)
+LOGGER = logging.getLogger(Constants.LOGGER_NAME)
 LOGGING_CONFIG = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -87,7 +87,7 @@ LOGGING_CONFIG = {
         }
     },
     "loggers": {
-        LOGGER_NAME: {}
+        Constants.LOGGER_NAME: {}
     },
     "root": {
         "level": "INFO",
@@ -103,20 +103,20 @@ LOGGING_CONFIG = {
 def setup_logging(do_rollover: bool = True) -> None:
     "Setup the basic config of the logging module"
 
-    LOGGING_CONFIG["handlers"]["file"]["filename"] = get_debug_log_filepath()
+    LOGGING_CONFIG["handlers"]["file"]["filename"] = get_log_filepath()
     LOGGING_CONFIG["handlers"]["file"]["do_rollover"] = do_rollover
 
     logging.config.dictConfig(LOGGING_CONFIG)
     return
 
 
-def get_debug_log_filepath() -> str:
+def get_log_filepath() -> str:
     """
-    Get the filepath to the debug logging file.
+    Get the filepath to the logging file.
     Not in a global variable to avoid unnecessary computation.
     """
     from backend.files import folder_path
-    return folder_path(LOGGER_DEBUG_FILENAME)
+    return folder_path(Constants.LOGGER_FILENAME)
 
 
 def set_log_level(

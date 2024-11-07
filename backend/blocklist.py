@@ -5,7 +5,8 @@ from typing import Any, Dict, List, Union
 
 from backend.custom_exceptions import BlocklistEntryNotFound
 from backend.db import get_db
-from backend.enums import BlocklistReason, BlocklistReasonID, DownloadSource
+from backend.definitions import (BlocklistReason,
+                                 BlocklistReasonID, DownloadSource)
 from backend.logging import LOGGER
 
 

@@ -5,10 +5,9 @@ from typing import Tuple, Union
 
 from requests.exceptions import RequestException
 
+from backend.definitions import Constants, DownloadState
 from backend.download_general import BaseTorrentClient
-from backend.enums import DownloadState
 from backend.helpers import Session
-from backend.settings import private_settings
 
 filename_magnet_link = compile(r'(?<=&dn=).*?(?=&)', IGNORECASE)
 
@@ -49,7 +48,7 @@ class qBittorrent(BaseTorrentClient):
         files = {
             'urls': (None, magnet_link),
             'savepath': (None, target_folder),
-            'category': (None, private_settings['torrent_tag'])
+            'category': (None, Constants.TORRENT_TAG)
         }
 
         self.ssn.post(

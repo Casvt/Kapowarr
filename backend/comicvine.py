@@ -17,15 +17,14 @@ from backend.custom_exceptions import (CVRateLimitReached,
                                        InvalidComicVineApiKey,
                                        VolumeNotMatched)
 from backend.db import get_db
-from backend.enums import SpecialVersion
+from backend.definitions import Constants, FilenameData, SpecialVersion, T
 from backend.file_extraction import (convert_volume_number_to_int,
                                      process_issue_number, volume_regex)
-from backend.helpers import (AsyncSession, DictKeyedDict,
-                             FilenameData, Session, T, batched,
-                             create_range, normalize_string)
+from backend.helpers import (AsyncSession, DictKeyedDict, Session,
+                             batched, create_range, normalize_string)
 from backend.logging import LOGGER
 from backend.matching import _match_title, _match_year
-from backend.settings import Settings, private_settings
+from backend.settings import Settings
 
 translation_regex = compile(
     r'^<p>\s*\w+ publication(\.?</p>$|,\s| \(in the \w+ language\)|, translates )|' +
@@ -102,7 +101,7 @@ def _clean_description(description: str, short: bool = False) -> str:
         }
         link['href'] = link['href'].lstrip('./')
         if not link['href'].startswith('http'):
-            link['href'] = private_settings['comicvine_url'] + '/' + link['href']
+            link['href'] = Constants.CV_SITE_URL + '/' + link['href']
 
     result = str(soup)
     return result
@@ -135,7 +134,7 @@ class ComicVine:
         Raises:
             InvalidComicVineApiKey: No ComicVine API key is set in the settings
         """
-        self.api_url = private_settings['comicvine_api_url']
+        self.api_url = Constants.CV_API_URL
         if comicvine_api_key:
             api_key = comicvine_api_key
         else:
@@ -455,8 +454,8 @@ class ComicVine:
                 if request_batch[0] != ids[0]:
                     # From second round on
                     LOGGER.debug(
-                        f"Waiting {private_settings['cv_brake_time']}s to keep the CV rate limit happy")
-                    await sleep(private_settings['cv_brake_time'])
+                        f"Waiting {Constants.CV_BRAKE_TIME}s to keep the CV rate limit happy")
+                    await sleep(Constants.CV_BRAKE_TIME)
 
                 tasks = [
                     create_task(self.__call_api_async(
@@ -533,8 +532,8 @@ class ComicVine:
                         if offset_batch[0] != 100:
                             # From second round on
                             LOGGER.debug(
-                                f"Waiting {private_settings['cv_brake_time']}s to keep the CV rate limit happy")
-                            await sleep(private_settings['cv_brake_time'])
+                                f"Waiting {Constants.CV_BRAKE_TIME}s to keep the CV rate limit happy")
+                            await sleep(Constants.CV_BRAKE_TIME)
 
                         tasks = [
                             create_task(self.__call_api_async(

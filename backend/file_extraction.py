@@ -12,9 +12,8 @@ from os.path import basename, dirname, splitext
 from re import IGNORECASE, compile
 from typing import Tuple, Union
 
-from backend.enums import SpecialVersion
-from backend.helpers import (FilenameData, fix_year as fix_broken_year,
-                             normalize_string)
+from backend.definitions import FilenameData, SpecialVersion
+from backend.helpers import fix_year as fix_broken_year, normalize_string
 from backend.logging import LOGGER
 
 alphabet_letters = 'abcdefghijklmnopqrstuvwxyz'

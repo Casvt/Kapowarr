@@ -16,12 +16,12 @@ from backend.blocklist import add_to_blocklist
 from backend.custom_exceptions import (DownloadLimitReached, DownloadNotFound,
                                        FailedGCPage, LinkBroken)
 from backend.db import get_db
+from backend.definitions import (BlocklistReason, Constants, DownloadSource,
+                                 DownloadState, FailReason, SeedingHandling)
 from backend.download_direct_clients import (BaseDirectDownload,
                                              Download, MegaDownload)
 from backend.download_general import ExternalDownload
 from backend.download_torrent_clients import TorrentClients, TorrentDownload
-from backend.enums import (BlocklistReason, DownloadSource,
-                           DownloadState, FailReason, SeedingHandling)
 from backend.files import create_folder, delete_file_folder
 from backend.getcomics import GetComicsPage
 from backend.helpers import first_of_column
@@ -30,7 +30,7 @@ from backend.post_processing import (PostProcesser,
                                      PostProcesserTorrentsComplete,
                                      PostProcesserTorrentsCopy)
 from backend.server import WebSocket
-from backend.settings import Settings, private_settings
+from backend.settings import Settings
 
 if TYPE_CHECKING:
     from flask import Flask
@@ -192,7 +192,7 @@ class DownloadHandler:
                 else:
                     # Queued, downloading or
                     # seeding with files copied or seeding_handling = 'complete'
-                    sleep(private_settings['torrent_update_interval'])
+                    sleep(Constants.TORRENT_UPDATE_INTERVAL)
 
             ws.send_queue_ended(download)
         return
@@ -386,7 +386,7 @@ class DownloadHandler:
         return
 
     def __determine_link_type(self, link: str) -> Union[str, None]:
-        if link.startswith(private_settings['getcomics_url']):
+        if link.startswith(Constants.GC_SITE_URL):
             return 'gc'
         return None
 

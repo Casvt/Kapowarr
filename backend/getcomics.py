@@ -16,6 +16,10 @@ from backend.blocklist import add_to_blocklist, blocklist_contains
 from backend.custom_exceptions import (DownloadLimitReached,
                                        FailedGCPage, LinkBroken)
 from backend.db import get_db
+from backend.definitions import (BlocklistReason, DownloadGroup,
+                                 DownloadSource, FailReason, FilenameData,
+                                 GCDownloadSource, SpecialVersion,
+                                 download_source_versions)
 from backend.download_direct_clients import (DirectDownload, Download,
                                              MediaFireDownload,
                                              MediaFireFolderDownload,
@@ -23,17 +27,14 @@ from backend.download_direct_clients import (DirectDownload, Download,
                                              PixelDrainFolderDownload,
                                              WeTransferDownload)
 from backend.download_torrent_clients import TorrentDownload
-from backend.enums import (BlocklistReason, DownloadSource, FailReason,
-                           GCDownloadSource, SpecialVersion)
 from backend.file_extraction import extract_filename_data
-from backend.helpers import (DownloadGroup, FilenameData,
-                             Session, check_overlapping_issues,
+from backend.helpers import (Session, check_overlapping_issues,
                              create_range, get_torrent_info)
 from backend.logging import LOGGER
 from backend.matching import GC_group_filter
 from backend.naming import (generate_empty_name, generate_issue_name,
                             generate_issue_range_name, generate_sv_name)
-from backend.settings import Settings, download_source_versions
+from backend.settings import Settings
 from backend.volumes import Volume
 
 # autopep8: off

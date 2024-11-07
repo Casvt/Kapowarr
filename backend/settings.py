@@ -4,36 +4,18 @@ from json import dump, load
 from logging import INFO
 from os import urandom
 from os.path import isdir, join, sep
-from typing import Any, Dict, Tuple
+from typing import Any, Dict
 
 from backend.custom_exceptions import (FolderNotFound, InvalidSettingKey,
                                        InvalidSettingModification,
                                        InvalidSettingValue)
 from backend.db import __DATABASE_VERSION__, get_db
-from backend.enums import GCDownloadSource, RestartVersion, SeedingHandling
+from backend.definitions import (GCDownloadSource,
+                                 RestartVersion, SeedingHandling)
 from backend.files import folder_is_inside_folder, folder_path
 from backend.helpers import CommaList, Singleton, get_python_version
 from backend.logging import LOGGER, set_log_level
 from backend.root_folders import RootFolders
-
-download_source_versions: Dict[GCDownloadSource, Tuple[str, ...]] = dict((
-    (GCDownloadSource.MEGA, ('mega', 'mega link')),
-    (GCDownloadSource.MEDIAFIRE, ('mediafire', 'mediafire link')),
-    (GCDownloadSource.WETRANSFER,
-        ('wetransfer', 'we transfer', 'wetransfer link', 'we transfer link')),
-    (GCDownloadSource.PIXELDRAIN,
-        ('pixeldrain', 'pixel drain', 'pixeldrain link', 'pixel drain link')),
-    (GCDownloadSource.GETCOMICS,
-        ('getcomics', 'download now', 'main download', 'main server', 'main link',
-       'mirror download', 'mirror server', 'mirror link', 'link 1', 'link 2')),
-    (GCDownloadSource.GETCOMICS_TORRENT,
-        ('getcomics (torrent)', 'torrent', 'torrent link', 'magnet',
-        'magnet link')),
-))
-"""
-GCDownloadSource to strings that can be found in the button text for the
-service on the GC page.
-"""
 
 default_settings = {
     'database_version': __DATABASE_VERSION__,
@@ -69,22 +51,9 @@ default_settings = {
     'flaresolverr_base_url': None
 }
 
-private_settings = {
-    'comicvine_url': 'https://comicvine.gamespot.com',
-    'comicvine_api_url': 'https://comicvine.gamespot.com/api',
-    'getcomics_url': 'https://getcomics.org',
-    'flaresolverr_api_base': '/v1',
-    'hosting_threads': 10,
+about_data = {
     'version': 'alpha-32',
     'python_version': get_python_version(),
-    'torrent_update_interval': 5, # Seconds
-    'torrent_tag': 'kapowarr',
-    'cv_brake_time': 10.0, # Seconds
-}
-
-about_data = {
-    'version': private_settings['version'],
-    'python_version': private_settings['python_version'],
     'database_version': __DATABASE_VERSION__,
     'database_location': None, # Get's filled in by db.set_db_location()
     'data_folder': folder_path()
@@ -98,10 +67,6 @@ task_intervals = {
 }
 
 credential_sources = ('mega',)
-flaresolverr_urls = (
-    private_settings['getcomics_url'],
-    "https://www.mediafire.com/"
-)
 
 
 def update_manifest(url_base: str) -> None:

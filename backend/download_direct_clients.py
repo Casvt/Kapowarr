@@ -18,8 +18,8 @@ from requests import RequestException
 
 from backend.credentials import Credentials
 from backend.custom_exceptions import LinkBroken
+from backend.definitions import BlocklistReason, DownloadSource, DownloadState
 from backend.download_general import Download
-from backend.enums import BlocklistReason, DownloadSource, DownloadState
 from backend.helpers import Session, get_first_of_range
 from backend.logging import LOGGER
 from backend.server import WebSocket

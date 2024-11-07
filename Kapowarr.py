@@ -11,14 +11,12 @@ from sys import argv
 from typing import NoReturn, Union
 
 from backend.db import close_all_db, set_db_location, setup_db
-from backend.enums import RestartVersion
+from backend.definitions import Constants, RestartVersion
 from backend.flaresolverr import FlareSolverr
 from backend.helpers import check_python_version, get_python_exe
 from backend.logging import LOGGER, setup_logging
 from backend.server import SERVER, handle_restart_version
 from frontend.api import Settings, download_handler, task_handler
-
-SUB_PROCESS_TIMEOUT = 20.0
 
 
 def _main(
@@ -142,7 +140,7 @@ def _run_sub_process(
         comm,
         env=env
     )
-    proc._sigint_wait_secs = SUB_PROCESS_TIMEOUT # type: ignore
+    proc._sigint_wait_secs = Constants.SUB_PROCESS_TIMEOUT # type: ignore
     register(_stop_sub_process, proc=proc)
     signal(SIGTERM, lambda signal_no, frame: _stop_sub_process(proc))
 

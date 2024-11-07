@@ -1,62 +1,67 @@
 # -*- coding: utf-8 -*-
 
+from typing import Any
+
 from flask import Blueprint, redirect, render_template
 
 from backend.server import SERVER
 
 ui = Blueprint('ui', __name__)
-
 methods = ['GET']
+
+
+def render(filename: str, **kwargs: Any) -> str:
+    return render_template(filename, url_prefix=SERVER.url_base, **kwargs)
 
 
 @ui.route('/login', methods=methods)
 def ui_login():
-    return render_template('login.html', url_base=SERVER.url_base)
+    return render('login.html')
 
 
 @ui.route('/', methods=methods)
 def ui_volumes():
-    return render_template('volumes.html', url_base=SERVER.url_base)
+    return render('volumes.html')
 
 
 @ui.route('/add', methods=methods)
 def ui_add_volume():
-    return render_template('add_volume.html', url_base=SERVER.url_base)
+    return render('add_volume.html')
 
 
 @ui.route('/library-import', methods=methods)
 def ui_library_import():
-    return render_template('library_import.html', url_base=SERVER.url_base)
+    return render('library_import.html')
 
 
 @ui.route('/volumes/<id>', methods=methods)
 def ui_view_volume(id):
-    return render_template('view_volume.html', url_base=SERVER.url_base)
+    return render('view_volume.html')
 
 
 @ui.route('/activity/queue', methods=methods)
 def ui_queue():
-    return render_template('queue.html', url_base=SERVER.url_base)
+    return render('queue.html')
 
 
 @ui.route('/activity/history', methods=methods)
 def ui_history():
-    return render_template('history.html', url_base=SERVER.url_base)
+    return render('history.html')
 
 
 @ui.route('/activity/blocklist', methods=methods)
 def ui_blocklist():
-    return render_template('blocklist.html', url_base=SERVER.url_base)
+    return render('blocklist.html')
 
 
 @ui.route('/system/status', methods=methods)
 def ui_status():
-    return render_template('status.html', url_base=SERVER.url_base)
+    return render('status.html')
 
 
 @ui.route('/system/tasks', methods=methods)
 def ui_tasks():
-    return render_template('tasks.html', url_base=SERVER.url_base)
+    return render('tasks.html')
 
 
 @ui.route('/settings', methods=methods)
@@ -66,25 +71,19 @@ def ui_settings():
 
 @ui.route('/settings/mediamanagement', methods=methods)
 def ui_mediamanagement():
-    return render_template(
-        'settings_mediamanagement.html',
-        url_base=SERVER.url_base
-    )
+    return render('settings_mediamanagement.html')
 
 
 @ui.route('/settings/download', methods=methods)
 def ui_download():
-    return render_template('settings_download.html', url_base=SERVER.url_base)
+    return render('settings_download.html')
 
 
 @ui.route('/settings/downloadclients', methods=methods)
 def ui_download_clients():
-    return render_template(
-        'settings_download_clients.html',
-        url_base=SERVER.url_base
-    )
+    return render('settings_download_clients.html')
 
 
 @ui.route('/settings/general', methods=methods)
 def ui_general():
-    return render_template('settings_general.html', url_base=SERVER.url_base)
+    return render('settings_general.html')

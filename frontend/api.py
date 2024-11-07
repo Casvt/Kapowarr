@@ -31,15 +31,15 @@ from backend.custom_exceptions import (BlocklistEntryNotFound,
                                        VolumeAlreadyAdded, VolumeDownloadedFor,
                                        VolumeNotFound)
 from backend.db import close_db
+from backend.definitions import (BlocklistReason, BlocklistReasonID,
+                                 DownloadSource, MonitorScheme, SpecialVersion)
 from backend.download_direct_clients import credentials
 from backend.download_queue import (DownloadHandler, delete_download_history,
                                     get_download_history)
 from backend.download_torrent_clients import TorrentClients, client_types
-from backend.enums import (BlocklistReason, BlocklistReasonID,
-                           DownloadSource, MonitorScheme, SpecialVersion)
 from backend.files import delete_file_from_db, get_file
 from backend.library_import import import_library, propose_library_import
-from backend.logging import LOGGER, get_debug_log_filepath
+from backend.logging import LOGGER, get_log_filepath
 from backend.mass_edit import MassEditorVariables, action_to_func
 from backend.naming import generate_volume_folder_name, preview_mass_rename
 from backend.root_folders import RootFolders
@@ -285,7 +285,7 @@ def api_about():
 @error_handler
 @auth
 def api_logs():
-    file = get_debug_log_filepath()
+    file = get_log_filepath()
     if not exists(file):
         raise LogFileNotFound
 

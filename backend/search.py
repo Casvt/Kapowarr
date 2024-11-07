@@ -10,15 +10,14 @@ from typing import Dict, List, Tuple, Union
 from bs4 import BeautifulSoup
 
 from backend.db import get_db
-from backend.enums import SpecialVersion
+from backend.definitions import (Constants, MatchedSearchResultData,
+                                 SearchResultData, SpecialVersion)
 from backend.file_extraction import extract_filename_data
-from backend.helpers import (AsyncSession, MatchedSearchResultData,
-                             SearchResultData, check_overlapping_issues,
+from backend.helpers import (AsyncSession, check_overlapping_issues,
                              create_range, extract_year_from_date,
                              first_of_column)
 from backend.logging import LOGGER
 from backend.matching import _match_special_version, check_search_result_match
-from backend.settings import private_settings
 from backend.volumes import Issue, Volume, get_calc_number_range
 
 
@@ -174,7 +173,7 @@ class SearchSources:
         tasks = [
             create_task(self.__fetch_one(
                 session,
-                f'{private_settings["getcomics_url"]}/page/{p}',
+                f'{Constants.GC_SITE_URL}/page/{p}',
                 {'s': self.query}
             )) for p in pages
         ]
@@ -190,7 +189,7 @@ class SearchSources:
             List[SearchResultData]: The search results
         """
         async with session.get(
-            private_settings["getcomics_url"],
+            Constants.GC_SITE_URL,
             params={'s': self.query}
         ) as response:
             search_results = await response.text()

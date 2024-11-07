@@ -11,7 +11,7 @@ from typing import List, Sequence, Tuple, Union
 from backend.custom_exceptions import (ClientDownloading, InvalidKeyValue,
                                        KeyNotFound, TorrentClientNotWorking)
 from backend.db import get_db
-from backend.enums import DownloadSource, DownloadState
+from backend.definitions import DownloadSource, DownloadState
 
 
 class Download(ABC):

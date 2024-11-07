@@ -18,7 +18,7 @@ from backend.custom_exceptions import (InvalidKeyValue, IssueNotFound,
                                        VolumeAlreadyAdded, VolumeDownloadedFor,
                                        VolumeNotFound)
 from backend.db import get_db
-from backend.enums import GeneralFileType, MonitorScheme, SpecialVersion
+from backend.definitions import GeneralFileType, MonitorScheme, SpecialVersion
 from backend.file_extraction import (extract_filename_data, md_extensions,
                                      md_files, supported_extensions)
 from backend.files import (create_volume_folder, delete_empty_folders,

@@ -17,11 +17,11 @@ from waitress.task import ThreadedTaskDispatcher as TTD
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
 from backend.db import DBConnectionManager, close_db, set_db_location
-from backend.enums import RestartVersion, SocketEvent
+from backend.definitions import Constants, RestartVersion, SocketEvent
 from backend.files import folder_path
 from backend.helpers import Singleton
 from backend.logging import LOGGER, set_log_level, setup_logging
-from backend.settings import private_settings, restore_hosting_settings
+from backend.settings import restore_hosting_settings
 
 if TYPE_CHECKING:
     from flask.ctx import AppContext
@@ -29,9 +29,6 @@ if TYPE_CHECKING:
 
     from backend.download_general import Download
     from backend.tasks import Task
-
-
-HOSTING_TIMER_DURATION = 60.0 # seconds
 
 
 class ThreadedTaskDispatcher(TTD):
@@ -95,7 +92,7 @@ class Server(metaclass=Singleton):
         self.url_base = ''
 
         self.revert_hosting_timer = Timer(
-            HOSTING_TIMER_DURATION,
+            Constants.HOSTING_TIMER_DURATION,
             restore_hosting_settings
         )
         self.revert_hosting_timer.name = "HostingHandler"
@@ -186,14 +183,14 @@ class Server(metaclass=Singleton):
             Union[MultiSocketServer, BaseWSGIServer]: The waitress server instance.
         """
         dispatcher = ThreadedTaskDispatcher()
-        dispatcher.set_thread_count(private_settings['hosting_threads'])
+        dispatcher.set_thread_count(Constants.HOSTING_THREADS)
 
         server = create_server(
             self.app,
             _dispatcher=dispatcher,
             host=host,
             port=port,
-            threads=private_settings['hosting_threads']
+            threads=Constants.HOSTING_THREADS
         )
         return server
 

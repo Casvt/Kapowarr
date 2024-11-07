@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, Dict, Tuple, Union
 
 from requests import RequestException
 
-from backend.helpers import DEFAULT_USERAGENT, Session, Singleton
-from backend.settings import flaresolverr_urls, private_settings
+from backend.definitions import FS_URLS, Constants
+from backend.helpers import Session, Singleton
 
 if TYPE_CHECKING:
     from backend.helpers import AsyncSession
@@ -18,8 +18,8 @@ class FlareSolverr(metaclass=Singleton):
     ua_mapping: Dict[str, str] = {}
 
     def __init__(self) -> None:
-        self.urls = flaresolverr_urls
-        self.api_base = private_settings['flaresolverr_api_base']
+        self.urls = FS_URLS
+        self.api_base = Constants.FS_API_BASE
 
         self.session_id: Union[str, None] = None
         self.base_url: Union[str, None] = None
@@ -66,7 +66,7 @@ class FlareSolverr(metaclass=Singleton):
 
     def get_ua_cookies(self, url: str) -> Tuple[str, Dict[str, str]]:
         return (
-            self.ua_mapping.get(url, DEFAULT_USERAGENT),
+            self.ua_mapping.get(url, Constants.DEFAULT_USERAGENT),
             self.cookie_mapping.get(url, {})
         )
 

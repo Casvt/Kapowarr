@@ -15,7 +15,8 @@ from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Tuple, Union
 
 from backend.custom_exceptions import InvalidSettingValue
 from backend.db import get_db
-from backend.enums import SpecialVersion
+from backend.definitions import (SpecialVersion, full_sv_mapping,
+                                 short_sv_mapping)
 from backend.file_extraction import cover_regex, image_extensions
 from backend.files import (delete_empty_folders,
                            propose_basefolder_change, rename_file)
@@ -49,17 +50,6 @@ issue_formatting_keys = formatting_keys + (
     'issue_release_date',
     'issue_release_year'
 )
-
-short_sv_mapping: Dict[SpecialVersion, str] = dict((
-    (SpecialVersion.HARD_COVER, 'HC'),
-    (SpecialVersion.ONE_SHOT, 'OS'),
-    (SpecialVersion.TPB, 'TPB')
-))
-full_sv_mapping: Dict[SpecialVersion, str] = dict((
-    (SpecialVersion.HARD_COVER, 'Hard-Cover'),
-    (SpecialVersion.ONE_SHOT, 'One-Shot'),
-    (SpecialVersion.TPB, 'TPB')
-))
 
 filename_cleaner = compile(
     r'(<|>|(?<!^\w):|\"|\||\?|\*|\x00|(?:\s|\.)+(?=$|\\|/))')

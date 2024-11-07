@@ -13,6 +13,7 @@ from sys import platform
 from typing import List, Union
 from zipfile import ZipFile
 
+from backend.definitions import Constants
 from backend.file_extraction import (extract_filename_data, image_extensions,
                                      md_extensions, md_files,
                                      supported_extensions)
@@ -25,7 +26,6 @@ from backend.matching import folder_extraction_filter
 from backend.naming import mass_rename
 from backend.volumes import Volume, scan_files
 
-archive_extract_folder = '.archive_extract'
 rar_executables = {
     'linux': folder_path('backend', 'lib', 'rar_linux_64'),
     'darwin': folder_path('backend', 'lib', 'rar_bsd_64'),
@@ -179,7 +179,7 @@ class ZIPtoRAR(FileConverter):
         volume_folder = Volume(volume_id)['folder']
         archive_folder = join(
             volume_folder,
-            archive_extract_folder,
+            Constants.ARCHIVE_EXTRACT_FOLDER,
             splitext(
                 '_'.join(
                     relpath(
@@ -229,7 +229,7 @@ class ZIPtoFOLDER(FileConverter):
         volume_folder = Volume(volume_id)['folder']
         zip_folder = join(
             volume_folder,
-            archive_extract_folder,
+            Constants.ARCHIVE_EXTRACT_FOLDER,
             splitext(
                 '_'.join(
                     relpath(
@@ -338,7 +338,7 @@ class RARtoZIP(FileConverter):
         volume_folder = Volume(volume_id)['folder']
         rar_folder = join(
             volume_folder,
-            archive_extract_folder,
+            Constants.ARCHIVE_EXTRACT_FOLDER,
             splitext(
                 '_'.join(
                     relpath(
@@ -394,7 +394,7 @@ class RARtoFOLDER(FileConverter):
         volume_folder = Volume(volume_id)['folder']
         rar_folder = join(
             volume_folder,
-            archive_extract_folder,
+            Constants.ARCHIVE_EXTRACT_FOLDER,
             splitext(
                 '_'.join(
                     relpath(

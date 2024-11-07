@@ -8,13 +8,12 @@ from typing import Dict, Iterator, List, Set, Union
 from backend.comicvine import ComicVine
 from backend.custom_exceptions import InvalidKeyValue, VolumeAlreadyAdded
 from backend.db import get_db
-from backend.enums import MonitorScheme
+from backend.definitions import CVFileMapping, FilenameData, MonitorScheme
 from backend.file_extraction import (extract_filename_data,
                                      image_extensions, supported_extensions)
 from backend.files import (delete_empty_folders, find_lowest_common_folder,
                            folder_is_inside_folder, list_files, rename_file)
-from backend.helpers import (CVFileMapping, DictKeyedDict,
-                             FilenameData, batched, create_range)
+from backend.helpers import DictKeyedDict, batched, create_range
 from backend.logging import LOGGER
 from backend.naming import mass_rename
 from backend.root_folders import RootFolders

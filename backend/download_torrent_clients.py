@@ -13,9 +13,10 @@ from backend.custom_exceptions import (InvalidKeyValue, LinkBroken,
                                        TorrentClientNotFound,
                                        TorrentClientNotWorking)
 from backend.db import get_db
+from backend.definitions import (BlocklistReason, ClientTestResult,
+                                 DownloadSource, DownloadState)
 from backend.download_general import BaseTorrentClient, ExternalDownload
-from backend.enums import BlocklistReason, DownloadSource, DownloadState
-from backend.helpers import ClientTestResult, Session, get_torrent_info
+from backend.helpers import Session, get_torrent_info
 from backend.logging import LOGGER
 from backend.settings import Settings
 from backend.torrent_clients import qBittorrent

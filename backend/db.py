@@ -15,13 +15,11 @@ from typing import Any, Dict, List, Union, no_type_check
 
 from flask import g
 
+from backend.definitions import Constants
 from backend.helpers import CommaList
 from backend.logging import LOGGER, set_log_level
 
-__DATABASE_FOLDER__ = "db",
-__DATABASE_NAME__ = "Kapowarr.db"
 __DATABASE_VERSION__ = 29
-__DATABASE_TIMEOUT__ = 10.0
 
 
 class KapowarrCursor(Cursor):
@@ -169,8 +167,8 @@ def set_db_location(
             raise ValueError
 
     db_file_location = join(
-        db_folder or folder_path(*__DATABASE_FOLDER__),
-        __DATABASE_NAME__
+        db_folder or folder_path(*Constants.DB_FOLDER),
+        Constants.DB_NAME
     )
 
     LOGGER.debug(f'Setting database location: {db_file_location}')
@@ -195,7 +193,7 @@ def get_db(force_new: bool = False) -> KapowarrCursor:
         NoAnyCursor: Database cursor instance that outputs Row objects.
     """
     cursor = (
-        DBConnection(timeout=__DATABASE_TIMEOUT__)
+        DBConnection(timeout=Constants.DB_TIMEOUT)
         .cursor(force_new=force_new)
     )
     return cursor
@@ -724,7 +722,7 @@ def migrate_db(current_db_version: int) -> None:
     if current_db_version == 20:
         # V20 -> V21
 
-        from backend.enums import BlocklistReasonID
+        from backend.definitions import BlocklistReasonID
         cursor.execute(
             "DELETE FROM blocklist WHERE reason = ?;",
             (BlocklistReasonID.SOURCE_NOT_SUPPORTED.value,)
@@ -779,7 +777,7 @@ def migrate_db(current_db_version: int) -> None:
     if current_db_version == 23:
         # V23 -> V24
 
-        from backend.enums import GCDownloadSource
+        from backend.definitions import GCDownloadSource
         source_string_to_enum = {
             'mega': GCDownloadSource.MEGA.value,
             'mediafire': GCDownloadSource.MEDIAFIRE.value,
