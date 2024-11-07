@@ -13,7 +13,8 @@ from typing import NoReturn, Union
 
 from backend.db import close_all_db, set_db_location, setup_db
 from backend.enums import RestartVersion
-from backend.helpers import AsyncSession, check_python_version, get_python_exe
+from backend.flaresolverr import FlareSolverr
+from backend.helpers import check_python_version, get_python_exe
 from backend.logging import LOGGER, setup_logging
 from backend.server import SERVER, handle_restart_version
 from frontend.api import Settings, download_handler, task_handler
@@ -59,6 +60,7 @@ def _main(
         setup_db()
 
         settings = Settings()
+        flaresolverr = FlareSolverr()
         host: str = settings['host']
         port: int = settings['port']
         url_base: str = settings['url_base']
@@ -67,13 +69,7 @@ def _main(
         download_handler.create_download_folder()
 
         if settings['flaresolverr_base_url']:
-            async def clear_urls():
-                async with AsyncSession() as session:
-                    await gather(*(
-                        session.update_cf_clearance(cf_url)
-                        for cf_url in session.cf_base_urls
-                    ))
-            run(clear_urls())
+            flaresolverr.enable_flaresolverr(settings['flaresolverr_base_url'])
 
     download_handler.load_download_thread.start()
     task_handler.handle_intervals()
@@ -86,6 +82,7 @@ def _main(
     finally:
         download_handler.stop_handle()
         task_handler.stop_handle()
+        flaresolverr.disable_flaresolverr()
         close_all_db()
 
         if SERVER.restart_version is not None:

@@ -6,8 +6,6 @@ from os import urandom
 from os.path import isdir, join, sep
 from typing import Any, Dict, Tuple
 
-from requests import RequestException, post
-
 from backend.custom_exceptions import (FolderNotFound, InvalidSettingKey,
                                        InvalidSettingModification,
                                        InvalidSettingValue)
@@ -100,6 +98,10 @@ task_intervals = {
 }
 
 credential_sources = ('mega',)
+flaresolverr_urls = (
+    private_settings['getcomics_url'],
+    "https://www.mediafire.com/"
+)
 
 
 def update_manifest(url_base: str) -> None:
@@ -333,6 +335,8 @@ class Settings(metaclass=Singleton):
                 raise InvalidSettingValue(key, value)
 
         elif key == 'flaresolverr_base_url':
+            from backend.flaresolverr import FlareSolverr
+
             if not (
                 value is None
                 or (isinstance(value, str) and value)
@@ -340,22 +344,13 @@ class Settings(metaclass=Singleton):
                 raise InvalidSettingValue(key, value)
 
             if value:
-                converted_value = value.rstrip('/')
+                converted_value = value.rstrip("/")
 
-                try:
-                    response = post(
-                        converted_value + private_settings['flaresolverr_api_base'],
-                        json={
-                            'cmd': 'request.get',
-                            'url': private_settings['getcomics_url'] + '?s=Test'},
-                        verify=False,
-                        headers={
-                            'Content-Type': 'application/json'},
-                        timeout=30)
-                    if not response.ok:
-                        raise RequestException
+            fs = FlareSolverr()
 
-                except RequestException:
+            if not fs.base_url == (converted_value + fs.api_base):
+                fs.disable_flaresolverr()
+                if not fs.enable_flaresolverr(converted_value):
                     raise InvalidSettingValue(key, value)
 
         return converted_value
