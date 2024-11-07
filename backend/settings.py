@@ -348,9 +348,12 @@ class Settings(metaclass=Singleton):
 
             fs = FlareSolverr()
 
-            if not fs.base_url == (converted_value + fs.api_base):
+            if fs.base_url != ((converted_value or '') + fs.api_base):
                 fs.disable_flaresolverr()
-                if not fs.enable_flaresolverr(converted_value):
+                if (
+                    converted_value
+                    and not fs.enable_flaresolverr(converted_value)
+                ):
                     raise InvalidSettingValue(key, value)
 
         return converted_value
