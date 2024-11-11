@@ -21,9 +21,9 @@ from backend.db import get_db
 from backend.definitions import GeneralFileType, MonitorScheme, SpecialVersion
 from backend.file_extraction import (extract_filename_data, md_extensions,
                                      md_files, supported_extensions)
-from backend.files import (create_volume_folder, delete_empty_folders,
-                           delete_file_folder, folder_is_inside_folder,
-                           get_file_id, list_files,
+from backend.files import (create_folder, delete_empty_child_folders,
+                           delete_empty_parent_folders, delete_file_folder,
+                           folder_is_inside_folder, get_file_id, list_files,
                            propose_basefolder_change, rename_file)
 from backend.helpers import PortablePool, first_of_column, reversed_tuples
 from backend.logging import LOGGER
@@ -107,6 +107,45 @@ def determine_special_version(
         return SpecialVersion.TPB
     else:
         return SpecialVersion.NORMAL
+
+
+def create_volume_folder(
+    root_folder: str,
+    volume_id: int,
+    volume_folder: Union[str, None] = None
+) -> str:
+    """Generate, register and create a folder for a volume.
+
+    Args:
+        root_folder (str): The rootfolder (path, not id).
+        volume_id (int): The id of the volume for which the folder is.
+        volume_folder (Union[str, None], optional): Custom volume folder.
+            Defaults to None.
+
+    Returns:
+        str: The path to the folder.
+    """
+    if volume_folder is None:
+        from backend.naming import generate_volume_folder_name
+
+        volume_folder = join(
+            root_folder, generate_volume_folder_name(volume_id)
+        )
+    else:
+        from backend.naming import make_filename_safe
+        volume_folder = join(
+            root_folder, make_filename_safe(volume_folder)
+        )
+
+    get_db().execute(
+        "UPDATE volumes SET folder = ? WHERE id = ?",
+        (volume_folder, volume_id)
+    )
+
+    create_folder(volume_folder)
+
+    return volume_folder
+
 
 # =====================
 # region Main issue class
@@ -609,15 +648,16 @@ class _VolumeBackend:
             current_root_folder[1],
             desired_root_folder[1]
         )
-        for old_name, new_name in file_changes:
+        for old_name, new_name in file_changes.items():
             rename_file(
                 old_name,
-                new_name,
-                True
+                new_name
             )
+        delete_empty_child_folders(volume_folder)
+
         cursor.executemany(
             "UPDATE files SET filepath = ? WHERE filepath = ?",
-            reversed_tuples(file_changes)
+            reversed_tuples(file_changes.items())
         )
 
         self._set_value('root_folder', desired_root_folder[0])
@@ -625,9 +665,9 @@ class _VolumeBackend:
             (volume_folder,),
             current_root_folder[1],
             desired_root_folder[1]
-        )[0][1]
+        )[volume_folder]
 
-        delete_empty_folders(
+        delete_empty_parent_folders(
             volume_folder,
             current_root_folder[1]
         )
@@ -683,23 +723,24 @@ class _VolumeBackend:
         for old_name, new_name in file_changes:
             rename_file(
                 old_name,
-                new_name,
-                True
+                new_name
             )
+        delete_empty_child_folders(current_volume_folder)
+
         get_db().executemany(
             "UPDATE files SET filepath = ? WHERE filepath = ?",
-            reversed_tuples(file_changes)
+            reversed_tuples(file_changes.items())
         )
 
         if folder_is_inside_folder(new_volume_folder, current_volume_folder):
             # New folder is parent of current folder, so delete up to new
             # folder.
-            delete_empty_folders(
+            delete_empty_parent_folders(
                 current_volume_folder,
                 new_volume_folder
             )
         else:
-            delete_empty_folders(
+            delete_empty_parent_folders(
                 current_volume_folder,
                 root_folder
             )
@@ -910,10 +951,12 @@ class Volume(_VolumeBackend):
             raise VolumeDownloadedFor(self.id)
 
         if delete_folder:
+            folder = self["folder"]
             for f in self.get_files():
-                delete_file_folder(f["filepath"], self["folder"])
+                delete_file_folder(f["filepath"])
 
-            delete_empty_folders(
+            delete_empty_child_folders(folder)
+            delete_empty_parent_folders(
                 self['folder'],
                 RootFolders()[self['root_folder']]
             )

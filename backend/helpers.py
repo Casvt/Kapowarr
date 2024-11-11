@@ -8,11 +8,11 @@ from __future__ import annotations
 
 from asyncio import sleep
 from multiprocessing.pool import Pool
-from os import symlink
+from os import sep, symlink
 from os.path import exists, join
 from sys import base_exec_prefix, executable, platform, version_info
-from typing import (Any, Dict, Generator, Iterable, Iterator,
-                    List, Mapping, Sequence, Tuple, Union)
+from typing import (Any, Collection, Dict, Generator, Iterable,
+                    Iterator, List, Mapping, Sequence, Tuple, Union)
 from urllib.parse import unquote
 
 from aiohttp import ClientError, ClientSession
@@ -140,6 +140,62 @@ def create_range(
         return n
     else:
         return (n, n)
+
+
+def force_suffix(source: str, suffix: str = sep) -> str:
+    """Add `suffix` to `source`, but only if it's not already there.
+
+    Args:
+        source (str): The string to process.
+        suffix (str, optional): The suffix to apply. Defaults to sep.
+
+    Returns:
+        str: The resulting string with suffix applied.
+    """
+    if source.endswith(suffix):
+        return source
+    else:
+        return source + suffix
+
+
+def check_filter(element: T, collection: Collection[T]) -> bool:
+    """Check if `element` is in `collection`, but only if `collection` has
+    content, otherwise return True. Useful as filtering where an empty filter
+    is possible.
+
+    Args:
+        element (T): The element to check for.
+        collection (Collection[T]): The collection. If empty, True is returned.
+
+    Returns:
+        bool: Whether the element is in the collection if the collection has
+        content, otherwise True.
+    """
+    return True if not collection else (element in collection)
+
+
+def filtered_iter(
+    elements: Iterable[T],
+    collection: Collection[T]
+) -> Generator[T, Any, Any]:
+    """Yields elements from `elements` but an element is only yielded if
+    `collection` is empty or if the element is in `collection`. Useful as
+    applying the filter `collection` to elements where an empty filter is
+    possible.
+
+    Args:
+        elements (Iterable[T]): The elements to iterate over and yield.
+        collection (Collection[T]): The collection. If empty, all elements of
+        `elements` are returned.
+
+    Yields:
+        Generator[T, Any, Any]: All elements in `elements` if `collection` is
+        empty, otherwise only elements that are in `collection`.
+    """
+    for el in elements:
+        if check_filter(el, collection):
+            yield el
+    return
 
 
 def normalize_string(s: str) -> str:

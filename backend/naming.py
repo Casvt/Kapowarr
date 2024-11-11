@@ -7,7 +7,7 @@ The (re)naming of folders and media
 from __future__ import annotations
 
 from os import listdir
-from os.path import basename, dirname, isdir, isfile, join, splitext
+from os.path import basename, isdir, isfile, join, splitext
 from re import compile, escape, match
 from string import Formatter
 from sys import platform
@@ -18,9 +18,10 @@ from backend.db import get_db
 from backend.definitions import (SpecialVersion, full_sv_mapping,
                                  short_sv_mapping)
 from backend.file_extraction import cover_regex, image_extensions
-from backend.files import (delete_empty_folders,
+from backend.files import (delete_empty_child_folders,
+                           delete_empty_parent_folders,
                            propose_basefolder_change, rename_file)
-from backend.helpers import first_of_column
+from backend.helpers import filtered_iter, first_of_column
 from backend.logging import LOGGER
 from backend.root_folders import RootFolders
 from backend.server import WebSocket
@@ -503,6 +504,8 @@ def preview_mass_rename(
             lambda f: f in hashed_files,
             file_infos
         )
+    else:
+        filepath_filter = []
 
     special_version = volume['special_version']
     name_volume_as_issue = Settings()['volume_as_empty']
@@ -618,15 +621,14 @@ def preview_mass_rename(
     if folder != volume['folder']:
         # New volume folder so rename general files too
         new_general_files = propose_basefolder_change(
-            (
-                f['filepath']
-                for f in volume.get_general_files()
-                if not filepath_filter or f in filepath_filter
+            filtered_iter(
+                (f['filepath'] for f in volume.get_general_files()),
+                filepath_filter
             ),
             volume['folder'],
             folder
         )
-        for old, new in new_general_files:
+        for old, new in new_general_files.items():
             LOGGER.debug(f'Renaming: original filename: {old}')
             LOGGER.debug(f'Renaming: suggested filename: {new}')
             LOGGER.debug(f'Renaming: added rename')
@@ -683,11 +685,11 @@ def mass_rename(
             ws.update_task_status(
                 message=f'Renaming file {idx+1}/{total_renames}'
             )
-            rename_file(r['before'], r['after'], True)
+            rename_file(r['before'], r['after'])
 
     else:
         for idx, r in enumerate(renames):
-            rename_file(r['before'], r['after'], True)
+            rename_file(r['before'], r['after'])
 
     cursor.executemany(
         "UPDATE files SET filepath = ? WHERE filepath = ?;",
@@ -695,7 +697,8 @@ def mass_rename(
     )
 
     if renames:
-        delete_empty_folders(dirname(renames[0]['before']), root_folder)
+        delete_empty_child_folders(volume['folder'])
+        delete_empty_parent_folders(volume['folder'], root_folder)
 
     LOGGER.info(
         f'Renamed volume {volume_id} {f"issue {issue_id}" if issue_id else ""}'

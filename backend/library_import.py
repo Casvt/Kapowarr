@@ -11,7 +11,7 @@ from backend.db import get_db
 from backend.definitions import CVFileMapping, FilenameData, MonitorScheme
 from backend.file_extraction import (extract_filename_data,
                                      image_extensions, supported_extensions)
-from backend.files import (delete_empty_folders, find_lowest_common_folder,
+from backend.files import (delete_empty_parent_folders, find_common_folder,
                            folder_is_inside_folder, list_files, rename_file)
 from backend.helpers import DictKeyedDict, batched, create_range
 from backend.logging import LOGGER
@@ -190,7 +190,7 @@ def import_library(
     for cv_id, files in cvid_to_filepath.items():
         # Find lowest common folder (lcf)
         if not rename_files:
-            volume_folder = find_lowest_common_folder(files)
+            volume_folder = find_common_folder(files)
         else:
             volume_folder = None
 
@@ -234,7 +234,7 @@ def import_library(
 
                 rename_file(f, target_f)
                 new_files.append(target_f)
-                delete_empty_folders(dirname(f), root_folder['folder'])
+                delete_empty_parent_folders(dirname(f), root_folder['folder'])
 
             scan_files(volume_id, filepath_filter=new_files)
 

@@ -17,7 +17,7 @@ from backend.definitions import Constants
 from backend.file_extraction import (extract_filename_data, image_extensions,
                                      md_extensions, md_files,
                                      supported_extensions)
-from backend.files import (create_folder, delete_empty_folders,
+from backend.files import (create_folder, delete_empty_parent_folders,
                            delete_file_folder, filepath_to_volume_id,
                            folder_path, list_files, rename_file)
 from backend.helpers import extract_year_from_date
@@ -84,7 +84,6 @@ def extract_files_from_folder(
 
     # Move remaining files to main folder and delete source folder
     result = []
-    result_append = result.append
     for c in rel_files:
         if c.endswith(image_extensions):
             dest = join(volume_data.folder, basename(dirname(c)), basename(c))
@@ -92,8 +91,8 @@ def extract_files_from_folder(
         else:
             dest = join(volume_data.folder, basename(c))
 
-        rename_file(c, dest, True)
-        result_append(dest)
+        rename_file(c, dest)
+        result.append(dest)
 
     delete_file_folder(source_folder)
     return result
@@ -202,8 +201,8 @@ class ZIPtoRAR(FileConverter):
 
         delete_file_folder(archive_folder)
         delete_file_folder(file)
-        delete_empty_folders(dirname(file), volume_folder)
-        delete_empty_folders(dirname(archive_folder), volume_folder)
+        delete_empty_parent_folders(dirname(file), volume_folder)
+        delete_empty_parent_folders(dirname(archive_folder), volume_folder)
 
         return splitext(file)[0] + '.rar'
 
@@ -257,8 +256,8 @@ class ZIPtoFOLDER(FileConverter):
 
         delete_file_folder(zip_folder)
         delete_file_folder(file)
-        delete_empty_folders(dirname(file), volume_folder)
-        delete_empty_folders(dirname(zip_folder), volume_folder)
+        delete_empty_parent_folders(dirname(file), volume_folder)
+        delete_empty_parent_folders(dirname(zip_folder), volume_folder)
 
         return resulting_files
 
@@ -367,8 +366,8 @@ class RARtoZIP(FileConverter):
 
         delete_file_folder(rar_folder)
         delete_file_folder(file)
-        delete_empty_folders(dirname(file), volume_folder)
-        delete_empty_folders(dirname(rar_folder), volume_folder)
+        delete_empty_parent_folders(dirname(file), volume_folder)
+        delete_empty_parent_folders(dirname(rar_folder), volume_folder)
 
         return target_archive
 
@@ -428,8 +427,8 @@ class RARtoFOLDER(FileConverter):
 
         delete_file_folder(rar_folder)
         delete_file_folder(file)
-        delete_empty_folders(dirname(file), volume_folder)
-        delete_empty_folders(dirname(rar_folder), volume_folder)
+        delete_empty_parent_folders(dirname(file), volume_folder)
+        delete_empty_parent_folders(dirname(rar_folder), volume_folder)
 
         return resulting_files
 

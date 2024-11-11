@@ -4,15 +4,34 @@
 Handling folders, files and filenames.
 """
 
-from os import listdir, makedirs, remove, scandir, sep, stat
+from collections import deque
+from os import listdir, makedirs, remove, scandir, stat
 from os.path import (abspath, basename, commonpath, dirname, isdir,
                      isfile, join, relpath, samefile, splitext)
 from shutil import copytree, move, rmtree
-from typing import Any, Dict, Iterable, List, Tuple, Union
+from typing import Any, Deque, Dict, Iterable, List, Sequence, Set
 
 from backend.custom_exceptions import FileNotFound
 from backend.db import get_db
+from backend.helpers import check_filter, force_suffix
 from backend.logging import LOGGER
+
+
+# region Conversion
+def dirname_times(path: str, amount: int = 1) -> str:
+    """Apply `os.path.dirname` to `path` for `amount` times.
+
+    Args:
+        path (str): The path to apply to.
+        amount (int, optional): The amount of times to apply dirname.
+            Defaults to 1.
+
+    Returns:
+        str: The resulting path.
+    """
+    for _ in range(0, amount):
+        path = dirname(path)
+    return path
 
 
 def folder_path(*folders: str) -> str:
@@ -21,7 +40,7 @@ def folder_path(*folders: str) -> str:
     Returns:
         str: The absolute filepath.
     """
-    return join(dirname(dirname(abspath(__file__))), *folders)
+    return join(dirname_times(abspath(__file__), 2), *folders)
 
 
 def folder_is_inside_folder(
@@ -38,20 +57,21 @@ def folder_is_inside_folder(
         bool: Whether or not folder is in base_folder.
     """
     return (
-        abspath(folder).rstrip(sep) + sep
+        force_suffix(abspath(folder))
     ).startswith(
-        abspath(base_folder).rstrip(sep) + sep
+        force_suffix(abspath(base_folder))
     )
 
 
-def find_lowest_common_folder(files: List[str]) -> str:
-    """Find the lowest folder that is shared between the files
+def find_common_folder(files: Sequence[str]) -> str:
+    """Find the deepest folder that is shared between the files.
 
     Args:
-        files (List[str]): The list of files to find the lowest common folder for
+        files (Sequence[str]): The list of files to find the deepest common folder
+        for.
 
     Returns:
-        str: The path of the lowest common folder
+        str: The path of the deepest common folder.
     """
     if len(files) == 1:
         return dirname(files[0])
@@ -59,105 +79,182 @@ def find_lowest_common_folder(files: List[str]) -> str:
     return commonpath(files)
 
 
-def delete_file_folder(
-    path: str,
-    base_folder: Union[str, None] = None
-) -> None:
-    """Delete a file or folder. In the case of a folder, it is deleted recursively.
-
-    Args:
-        path (str): The path to the file or folder.
-
-        base_folder (Union[str, None], optional): After deleting, delete empty
-        folders up to the base folder if value is not `None`.
-            Defaults to None.
-    """
-    if isfile(path):
-        remove(path)
-    elif isdir(path):
-        rmtree(path, ignore_errors=True)
-
-    if base_folder:
-        delete_empty_folders(dirname(path), base_folder)
-
-    return
-
-
 def list_files(folder: str, ext: Iterable[str] = []) -> List[str]:
-    """List all files in a folder recursively with absolute paths
+    """List all files in a folder recursively with absolute paths. Hidden files
+    (files starting with `.`) are ignored.
 
     Args:
-        folder (str): The root folder to search through
+        folder (str): The base folder to search through.
 
         ext (Iterable[str], optional): File extensions to only include.
-            Give WITH preceding `.`.
-
+        Dot-prefix not necessary.
             Defaults to [].
 
     Returns:
-        List[str]: The paths of the files in the folder
+        List[str]: The paths of the files in the folder.
     """
-    files: List[str] = []
-    for f in scandir(folder):
-        if f.is_dir():
-            files += list_files(f.path, ext)
+    files: Deque[str] = deque()
 
-        elif f.is_file():
-            if (not f.name.startswith('.')
-            and (
-                not ext
-                or splitext(f.name)[1].lower() in ext
-            )):
+    def _list_files(folder: str, ext: Set[str] = set()):
+        """Internal function to add all files in a folder to the files list.
+
+        Args:
+            folder (str): The base folder to search through.
+            ext (Set[str], optional): A set of lowercase, dot-prefixed,
+            extensions to filter for or empty for no filter. Defaults to set().
+        """
+        for f in scandir(folder):
+            if f.is_dir():
+                _list_files(f.path, ext)
+
+            elif (
+                f.is_file()
+                and not f.name.startswith('.')
+                and check_filter(
+                    splitext(f.name)[1].lower(),
+                    ext
+                )
+            ):
                 files.append(f.path)
 
-    return files
+    ext = {'.' + e.lower().lstrip('.') for e in ext}
+    _list_files(folder, ext)
+    return list(files)
 
 
 def propose_basefolder_change(
     files: Iterable[str],
     current_base_folder: str,
     desired_base_folder: str
-) -> List[Tuple[str, str]]:
-    """Propose new filenames with a different base folder for a list of files.
+) -> Dict[str, str]:
+    """
+    Propose new filenames with a different base folder for a list of files.
     E.g. /current/base/folder/file.ext -> /desired_base_folder/file.ext
 
     Args:
-        files (List[str]): List of files to change base folder for.
+        files (Iterable[str]): Iterable of files to change base folder for.
         current_base_folder (str): Current base folder, to replace.
         desired_base_folder (str): Desired base folder, to replace with.
 
     Returns:
-        List[Tuple[str, str]]: First entry of sub-tuple is old filename,
-        second is new filename.
+        Dict[str, str]: Key is old filename, value is new filename.
     """
-    file_changes = [
-        (
-            f,
-            join(
-                desired_base_folder,
-                relpath(
-                    f,
-                    current_base_folder
-                )
+    file_changes = {
+        f: join(
+            desired_base_folder,
+            relpath(
+                f,
+                current_base_folder
             )
         )
         for f in files
-    ]
+    }
+
     return file_changes
 
 
-def delete_empty_folders(top_folder: str, root_folder: str) -> None:
-    """Keep deleting empty folders until we reach a folder with content
-    or the root folder
+# region Creation
+def create_folder(folder: str) -> None:
+    """Create a folder
 
     Args:
-        top_folder (str): The folder to start deleting from
-        root_folder (str): The root folder to stop at in case we reach it
+        folder (str): The path to the folder to create.
+    """
+    makedirs(folder, exist_ok=True)
+    return
+
+
+# region Moving
+def rename_file(
+    before: str,
+    after: str
+) -> None:
+    """Rename a file, taking care of new folder locations and
+    the possible complications with files on OS'es.
+
+    Args:
+        before (str): The current filepath of the file.
+        after (str): The new desired filepath of the file.
+    """
+    if folder_is_inside_folder(before, after):
+        # Cannot move folder into itself
+        return
+
+    LOGGER.debug(f'Renaming file {before} to {after}')
+
+    create_folder(dirname(after))
+
+    # Move file into folder
+    try:
+        move(before, after)
+    except PermissionError:
+        # Happens when moving between an NFS file system.
+        # Raised when chmod is used inside.
+        # Checking the source code, chmod is used at the very end,
+        #     so just skipping it is alright I think.
+        pass
+
+    return
+
+
+def copy_directory(source: str, target: str) -> None:
+    """Copy a directory.
+
+    Args:
+        source (str): The path to the source directory.
+        target (str): The path to where the directory should be copied.
+    """
+    try:
+        copytree(source, target)
+    except PermissionError:
+        # Happens when moving between an NFS file system.
+        # Raised when chmod is used inside.
+        # Checking the source code, chmod is used at the very end,
+        #     so just skipping it is alright I think.
+        pass
+
+    return
+
+
+# region Deletion
+def delete_file_folder(path: str) -> None:
+    """Delete a file or folder. In the case of a folder, it is deleted recursively.
+
+    Args:
+        path (str): The path to the file or folder.
+    """
+    if isfile(path):
+        remove(path)
+
+    elif isdir(path):
+        rmtree(path, ignore_errors=True)
+
+    return
+
+
+def delete_empty_parent_folders(top_folder: str, root_folder: str) -> None:
+    """Delete parent folders that are empty until we reach a folder with content
+    or the root folder. Take notice of the difference between this function and
+    `delete_empty_child_folders()`.
+
+    For example, with the following file structure, and
+    `top_folder="/a/b1/c1/d1", root_folder="/a"`, the folder `/a/b1/c1` is
+    deleted.
+    ```
+    /a/b1/c1/d1/
+    /a/b1/c2/d2.txt
+    ```
+
+    Args:
+        top_folder (str): The folder to start deleting from.
+        root_folder (str): The root folder to stop at in case we reach it.
     """
     if top_folder == root_folder:
         return
 
-    LOGGER.debug(f'Deleting folders from {top_folder} until {root_folder}')
+    LOGGER.debug(
+        f'Deleting empty parent folders from {top_folder} until {root_folder}'
+    )
 
     if not folder_is_inside_folder(root_folder, top_folder):
         LOGGER.error(f'The folder {top_folder} is not in {root_folder}')
@@ -189,112 +286,79 @@ def delete_empty_folders(top_folder: str, root_folder: str) -> None:
     return
 
 
-def create_folder(folder: str) -> None:
-    """Create a folder
+def delete_empty_child_folders(base_folder: str) -> None:
+    """Delete child folders that don't (indirectly) contain any files. Take
+    notice of the difference between this function and
+    `delete_empty_parent_folders()`.
+
+    For example, with the following file structure, and `base_folder="/a"`,
+    the folders `/a/b1` and `/a/b2/c2` are deleted because they don't contain
+    any files.
+    ```
+    /a/b1/c1/d1/
+    /a/b1/c1/d2/
+    /a/b2/c2/
+    /a/b2/c3.txt
+    /a/b3.txt
+    ```
 
     Args:
-        folder (str): The path to the folder to create.
+        base_folder (str): The base folder to remove children of.
     """
-    makedirs(folder, exist_ok=True)
-    return
+    LOGGER.debug(f'Deleting empty child folders from {base_folder}')
 
+    if isfile(base_folder):
+        base_folder = dirname(base_folder)
 
-def create_volume_folder(
-    root_folder: str,
-    volume_id: int,
-    volume_folder: Union[str, None] = None
-) -> str:
-    """Generate, register and create a folder for a volume.
+    resulting_folders: List[str] = []
 
-    Args:
-        root_folder (str): The rootfolder (path, not id).
-        volume_id (int): The id of the volume for which the folder is.
-        volume_folder (Union[str, None], optional): Custom volume folder.
-            Defaults to None.
+    def _decf(
+        folder: str,
+        resulting_folders: List[str],
+        _first_call: bool = True
+    ) -> bool:
+        folders: List[str] = []
+        contains_files: bool = False
 
-    Returns:
-        str: The path to the folder.
-    """
-    # Generate and register folder
-    if volume_folder is None:
-        from backend.naming import generate_volume_folder_name
+        for f in scandir(folder):
+            if f.is_dir():
+                folders.append(f.path)
+            elif f.is_file():
+                contains_files = True
 
-        volume_folder = join(
-            root_folder, generate_volume_folder_name(volume_id)
-        )
-    else:
-        from backend.naming import make_filename_safe
-        volume_folder = join(
-            root_folder, make_filename_safe(volume_folder)
-        )
-    get_db().execute(
-        "UPDATE volumes SET folder = ? WHERE id = ?",
-        (volume_folder, volume_id)
-    )
+        if not (contains_files or folders):
+            # Folder is empty
+            return True
 
-    create_folder(volume_folder)
+        sub_folder_results = {
+            f: _decf(f, resulting_folders, False)
+            for f in folders
+        }
 
-    return volume_folder
+        if not contains_files and all(sub_folder_results.values()):
+            # Folder only contains (indirectly) empty folders
+            if _first_call:
+                resulting_folders.extend(sub_folder_results.keys())
+            return True
 
+        resulting_folders.extend((
+            k
+            for k, v in sub_folder_results.items()
+            if v
+        ))
 
-def rename_file(
-    before: str,
-    after: str,
-    delete_empty_folder: bool = False
-) -> None:
-    """Rename a file, taking care of new folder locations and
-    the possible complications with files on OS'es.
+        return False
 
-    Args:
-        before (str): The current filepath of the file.
-        after (str): The new desired filepath of the file.
-        delete_empty_folder (bool, optional): Delete the empty folders
-        that the original file was in.
-            Defaults to False.
-    """
-    if folder_is_inside_folder(before, after):
-        # Cannot move folder into itself
-        return
+    _decf(base_folder, resulting_folders)
 
-    LOGGER.debug(f'Renaming file {before} to {after}')
-
-    create_folder(dirname(after))
-
-    # Move file into folder
-    try:
-        move(before, after)
-    except PermissionError:
-        # Happens when moving between an NFS file system.
-        # Raised when chmod is used inside.
-        # Checking the source code, chmod is used at the very end,
-        #     so just skipping it is alright I think.
-        pass
-
-    if delete_empty_folder:
-        delete_empty_folders(dirname(before), dirname(dirname(before)))
+    for f in resulting_folders:
+        LOGGER.debug(f"Deleting folder and children: {f}")
+        delete_file_folder(f)
 
     return
 
 
-def copy_directory(source: str, target: str) -> None:
-    """Copy a directory.
-
-    Args:
-        source (str): The path to the source directory.
-        target (str): The path to where the directory should be copied.
-    """
-    try:
-        copytree(source, target)
-    except PermissionError:
-        # Happens when moving between an NFS file system.
-        # Raised when chmod is used inside.
-        # Checking the source code, chmod is used at the very end,
-        #     so just skipping it is alright I think.
-        pass
-
-    return
-
-
+# region Get from database
 def get_file(
     file_id: int
 ) -> Dict[str, Any]:
@@ -406,7 +470,8 @@ def delete_file_from_db(file_id: int) -> None:
         (volume_id,)
     ).fetchone()[0]
 
-    delete_file_folder(file_data["filepath"], volume_folder)
+    delete_file_folder(file_data["filepath"])
+    delete_empty_parent_folders(dirname(file_data["filepath"]), volume_folder)
 
     cursor.execute(
         "DELETE FROM files WHERE id = ?",
