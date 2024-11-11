@@ -7,48 +7,61 @@ from typing import Any, Dict, List, Tuple, Type, Union
 
 from flask import Blueprint, Flask, request, send_file
 
-from backend.blocklist import (add_to_blocklist, delete_blocklist,
-                               delete_blocklist_entry, get_blocklist,
-                               get_blocklist_entry)
-from backend.conversion import get_available_formats, preview_mass_convert
-from backend.custom_exceptions import (BlocklistEntryNotFound,
-                                       ClientDownloading,
-                                       CredentialAlreadyAdded,
-                                       CredentialInvalid, CredentialNotFound,
-                                       CredentialSourceNotFound,
-                                       CVRateLimitReached, DownloadNotFound,
-                                       FileNotFound, FolderNotFound,
-                                       InvalidComicVineApiKey, InvalidKeyValue,
-                                       InvalidSettingKey,
-                                       InvalidSettingModification,
-                                       InvalidSettingValue, IssueNotFound,
-                                       KeyNotFound, LogFileNotFound,
-                                       RootFolderInUse, RootFolderInvalid,
-                                       RootFolderNotFound,
-                                       TaskForVolumeRunning, TaskNotDeletable,
-                                       TaskNotFound, TorrentClientNotFound,
-                                       TorrentClientNotWorking,
-                                       VolumeAlreadyAdded, VolumeDownloadedFor,
-                                       VolumeNotFound)
-from backend.db import close_db
-from backend.definitions import (BlocklistReason, BlocklistReasonID,
-                                 DownloadSource, MonitorScheme, SpecialVersion)
-from backend.download_direct_clients import credentials
-from backend.download_queue import (DownloadHandler, delete_download_history,
-                                    get_download_history)
-from backend.download_torrent_clients import TorrentClients, client_types
-from backend.files import delete_file_from_db, get_file
-from backend.library_import import import_library, propose_library_import
-from backend.logging import LOGGER, get_log_filepath
-from backend.mass_edit import MassEditorVariables, action_to_func
-from backend.naming import generate_volume_folder_name, preview_mass_rename
-from backend.root_folders import RootFolders
-from backend.search import manual_search
-from backend.server import SERVER, diffuse_timers
-from backend.settings import Settings, about_data
-from backend.tasks import (Task, TaskHandler, delete_task_history,
-                           get_task_history, get_task_planning, task_library)
-from backend.volumes import Library, VolumeData, search_volumes
+from backend.base.custom_exceptions import (BlocklistEntryNotFound,
+                                            ClientDownloading,
+                                            CredentialAlreadyAdded,
+                                            CredentialInvalid,
+                                            CredentialNotFound,
+                                            CredentialSourceNotFound,
+                                            CVRateLimitReached,
+                                            DownloadNotFound, FileNotFound,
+                                            FolderNotFound,
+                                            InvalidComicVineApiKey,
+                                            InvalidKeyValue, InvalidSettingKey,
+                                            InvalidSettingModification,
+                                            InvalidSettingValue, IssueNotFound,
+                                            KeyNotFound, LogFileNotFound,
+                                            RootFolderInUse, RootFolderInvalid,
+                                            RootFolderNotFound,
+                                            TaskForVolumeRunning,
+                                            TaskNotDeletable, TaskNotFound,
+                                            TorrentClientNotFound,
+                                            TorrentClientNotWorking,
+                                            VolumeAlreadyAdded,
+                                            VolumeDownloadedFor,
+                                            VolumeNotFound)
+from backend.base.definitions import (BlocklistReason, BlocklistReasonID,
+                                      DownloadSource, MonitorScheme,
+                                      SpecialVersion)
+from backend.base.files import delete_file_from_db, get_file
+from backend.base.logging import LOGGER, get_log_filepath
+from backend.features.download_queue import (DownloadHandler,
+                                             delete_download_history,
+                                             get_download_history)
+from backend.features.library_import import (import_library,
+                                             propose_library_import)
+from backend.features.mass_edit import MassEditorVariables, action_to_func
+from backend.features.naming import (generate_volume_folder_name,
+                                     preview_mass_rename)
+from backend.features.search import manual_search
+from backend.features.tasks import (Task, TaskHandler,
+                                    delete_task_history, get_task_history,
+                                    get_task_planning, task_library)
+from backend.implementations.blocklist import (add_to_blocklist,
+                                               delete_blocklist,
+                                               delete_blocklist_entry,
+                                               get_blocklist,
+                                               get_blocklist_entry)
+from backend.implementations.conversion import (get_available_formats,
+                                                preview_mass_convert)
+from backend.implementations.download_direct_clients import credentials
+from backend.implementations.download_torrent_clients import (TorrentClients,
+                                                              client_types)
+from backend.implementations.root_folders import RootFolders
+from backend.implementations.volumes import Library, VolumeData, search_volumes
+from backend.internals.db import close_db
+from backend.internals.server import SERVER, diffuse_timers
+from backend.internals.settings import Settings, about_data
 
 api = Blueprint('api', __name__)
 root_folders = RootFolders()

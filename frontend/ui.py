@@ -4,7 +4,7 @@ from typing import Any
 
 from flask import Blueprint, redirect, render_template
 
-from backend.server import SERVER
+from backend.internals.server import SERVER
 
 ui = Blueprint('ui', __name__)
 methods = ['GET']

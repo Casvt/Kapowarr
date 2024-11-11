@@ -42,8 +42,8 @@ from requests import get, post
 from simplejson.errors import JSONDecodeError
 from tenacity import retry, retry_if_exception_type, wait_exponential
 
-from backend.custom_exceptions import DownloadLimitReached
-from backend.logging import LOGGER
+from backend.base.custom_exceptions import DownloadLimitReached
+from backend.base.logging import LOGGER
 
 _CODE_TO_DESCRIPTIONS = {
     -1: ('EINTERNAL',

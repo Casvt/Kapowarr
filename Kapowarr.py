@@ -10,12 +10,12 @@ from subprocess import Popen
 from sys import argv
 from typing import NoReturn, Union
 
-from backend.db import close_all_db, set_db_location, setup_db
-from backend.definitions import Constants, RestartVersion
-from backend.flaresolverr import FlareSolverr
-from backend.helpers import check_python_version, get_python_exe
-from backend.logging import LOGGER, setup_logging
-from backend.server import SERVER, handle_restart_version
+from backend.base.definitions import Constants, RestartVersion
+from backend.base.helpers import check_python_version, get_python_exe
+from backend.base.logging import LOGGER, setup_logging
+from backend.implementations.flaresolverr import FlareSolverr
+from backend.internals.db import close_all_db, set_db_location, setup_db
+from backend.internals.server import SERVER, handle_restart_version
 from frontend.api import Settings, download_handler, task_handler
 
 
