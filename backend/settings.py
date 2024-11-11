@@ -9,7 +9,8 @@ from typing import Any, Dict
 from backend.custom_exceptions import (FolderNotFound, InvalidSettingKey,
                                        InvalidSettingModification,
                                        InvalidSettingValue)
-from backend.db import __DATABASE_VERSION__, get_db
+from backend.db import get_db
+from backend.db_migration import get_latest_db_version
 from backend.definitions import (GCDownloadSource,
                                  RestartVersion, SeedingHandling)
 from backend.files import folder_is_inside_folder, folder_path
@@ -18,7 +19,7 @@ from backend.logging import LOGGER, set_log_level
 from backend.root_folders import RootFolders
 
 default_settings = {
-    'database_version': __DATABASE_VERSION__,
+    'database_version': get_latest_db_version(),
     'host': '0.0.0.0',
     'port': 5656,
     'url_base': '',
@@ -54,7 +55,7 @@ default_settings = {
 about_data = {
     'version': 'alpha-32',
     'python_version': get_python_version(),
-    'database_version': __DATABASE_VERSION__,
+    'database_version': get_latest_db_version(),
     'database_location': None, # Get's filled in by db.set_db_location()
     'data_folder': folder_path()
 }

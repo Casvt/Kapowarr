@@ -6,6 +6,7 @@ Definitions of basic types, abstract classes, enums, etc.
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Dict, List, Tuple, TypedDict, TypeVar, Union
 
@@ -252,3 +253,12 @@ class DownloadGroup(TypedDict):
 class ClientTestResult(TypedDict):
     success: bool
     description: Union[None, str]
+
+
+# region Abstract Classes
+class DBMigrator(ABC):
+    start_version: int
+
+    @abstractmethod
+    def run(self) -> None:
+        ...
