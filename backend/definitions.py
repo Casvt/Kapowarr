@@ -7,8 +7,9 @@ Definitions of basic types, abstract classes, enums, etc.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import asdict, dataclass
 from enum import Enum
-from typing import Dict, List, Tuple, TypedDict, TypeVar, Union
+from typing import Any, Dict, List, Tuple, TypedDict, TypeVar, Union
 
 # region Types
 T = TypeVar("T")
@@ -55,9 +56,8 @@ FS_URLS = (
     Constants.MF_SITE_URL
 )
 
+
 # region Enums
-
-
 class BaseEnum(Enum):
     def __eq__(self, other: object) -> bool:
         return self.value == other
@@ -253,6 +253,29 @@ class DownloadGroup(TypedDict):
 class ClientTestResult(TypedDict):
     success: bool
     description: Union[None, str]
+
+
+# region Dataclasses
+@dataclass
+class BlocklistEntry:
+    id: int
+    volume_id: Union[int, None]
+    issue_id: Union[int, None]
+
+    web_link: Union[str, None]
+    web_title: Union[str, None]
+    web_sub_title: Union[str, None]
+
+    download_link: Union[str, None]
+    source: Union[str, None]
+
+    reason: BlocklistReason
+    added_at: int
+
+    def as_dict(self) -> Dict[str, Any]:
+        result = asdict(self)
+        result["reason"] = self.reason.value
+        return result
 
 
 # region Abstract Classes

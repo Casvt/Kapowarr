@@ -873,7 +873,12 @@ def api_empty_download_folder():
 def api_blocklist():
     if request.method == 'GET':
         offset = extract_key(request, 'offset', False)
-        result = get_blocklist(offset)
+
+        blocklist = get_blocklist(offset)
+        result = [
+            b.as_dict()
+            for b in blocklist
+        ]
         return return_api(result)
 
     elif request.method == 'POST':
@@ -954,7 +959,7 @@ def api_blocklist():
             volume_id=volume_id,
             issue_id=issue_id,
             reason=reason
-        )
+        ).as_dict()
         return return_api(result, code=201)
 
     elif request.method == 'DELETE':
@@ -967,7 +972,7 @@ def api_blocklist():
 @auth
 def api_blocklist_entry(id: int):
     if request.method == 'GET':
-        result = get_blocklist_entry(id)
+        result = get_blocklist_entry(id).as_dict()
         return return_api(result)
 
     elif request.method == 'DELETE':

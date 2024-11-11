@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 
 from time import time
-from typing import Any, Dict, List, Union
+from typing import List, Union
 
 from backend.custom_exceptions import BlocklistEntryNotFound
 from backend.db import get_db
-from backend.definitions import (BlocklistReason,
+from backend.definitions import (BlocklistEntry, BlocklistReason,
                                  BlocklistReasonID, DownloadSource)
 from backend.logging import LOGGER
 
 
-def get_blocklist(offset: int = 0) -> List[Dict[str, Any]]:
+# region Get
+def get_blocklist(offset: int = 0) -> List[BlocklistEntry]:
     """Get the blocklist entries in blocks of 50.
 
     Args:
@@ -20,8 +21,7 @@ def get_blocklist(offset: int = 0) -> List[Dict[str, Any]]:
             Defaults to 0.
 
     Returns:
-        List[Dict[str, Any]]: A list of dicts where each dict is a blocklist
-        entry.
+        List[BlocklistEntry]: A list of the current entries in the blocklist.
     """
     entries = get_db().execute("""
         SELECT
@@ -37,27 +37,20 @@ def get_blocklist(offset: int = 0) -> List[Dict[str, Any]]:
         (offset * 50,)
     ).fetchalldict()
 
-    for entry in entries:
-        entry.update({
-            'reason': BlocklistReason[
-                BlocklistReasonID(entry['reason']).name
-            ].value
+    result = [
+        BlocklistEntry(**{
+            **entry,
+            "reason": BlocklistReason[
+                BlocklistReasonID(entry["reason"]).name
+            ]
         })
+        for entry in entries
+    ]
 
-    return entries
-
-
-def delete_blocklist() -> None:
-    """Delete all blocklist entries
-    """
-    LOGGER.info('Deleting blocklist')
-    get_db().execute(
-        "DELETE FROM blocklist;"
-    )
-    return
+    return result
 
 
-def get_blocklist_entry(id: int) -> Dict[str, Any]:
+def get_blocklist_entry(id: int) -> BlocklistEntry:
     """Get info about a blocklist entry.
 
     Args:
@@ -67,8 +60,7 @@ def get_blocklist_entry(id: int) -> Dict[str, Any]:
         BlocklistEntryNotFound: The id doesn't map to any blocklist entry.
 
     Returns:
-        Dict[str, Any]: The info about the blocklist entry, similar to the dicts
-        in the output of `blocklist.get_blocklist()`
+        BlocklistEntry: The info of the blocklist entry.
     """
     entry = get_db().execute("""
         SELECT
@@ -86,32 +78,15 @@ def get_blocklist_entry(id: int) -> Dict[str, Any]:
     if not entry:
         raise BlocklistEntryNotFound
 
-    entry['reason'] = BlocklistReason[
-        BlocklistReasonID(entry['reason']).name
-    ].value
-    return entry
+    return BlocklistEntry(**{
+        **entry,
+        "reason": BlocklistReason[
+            BlocklistReasonID(entry["reason"]).name
+        ]
+    })
 
 
-def delete_blocklist_entry(id: int) -> None:
-    """Delete a blocklist entry.
-
-    Args:
-        id (int): The id of the blocklist entry.
-
-    Raises:
-        BlocklistEntryNotFound: The id doesn't map to any blocklist entry.
-    """
-    LOGGER.debug(f'Deleting blocklist entry {id}')
-    entry_found = get_db().execute(
-        "DELETE FROM blocklist WHERE id = ?",
-        (id,)
-    ).rowcount
-
-    if entry_found:
-        return
-    raise BlocklistEntryNotFound
-
-
+# region Contains and Add
 def blocklist_contains(link: str) -> Union[int, None]:
     """Check if a link is in the blocklist.
 
@@ -146,7 +121,7 @@ def add_to_blocklist(
     issue_id: Union[int, None],
 
     reason: BlocklistReason
-) -> Dict[str, Any]:
+) -> BlocklistEntry:
     """Add a link to the blocklist.
 
     Args:
@@ -172,21 +147,25 @@ def add_to_blocklist(
             See `backend.enums.BlocklistReason`.
 
     Returns:
-        Dict[str, Any]: Info about the blocklist entry.
+        BlocklistEntry: Info about the blocklist entry.
     """
-    blocked_link = download_link if download_link is not None else web_link
+    # Select link to blocklist
+    blocked_link = download_link or web_link
     if not blocked_link:
         raise ValueError("No page link or download link supplied")
 
+    # Stop if it's already added
     id = blocklist_contains(blocked_link)
     if id:
         return get_blocklist_entry(id)
 
+    # Add to database
     LOGGER.info(
         f'Adding {blocked_link} to blocklist with reason "{reason.value}"'
     )
 
     reason_id = BlocklistReasonID[reason.name].value
+    source_value = source.value if source is not None else None
     id = get_db().execute("""
         INSERT INTO blocklist(
             volume_id, issue_id,
@@ -195,18 +174,55 @@ def add_to_blocklist(
             reason, added_at
         )
         VALUES (
-            ?, ?,
-            ?, ?, ?,
-            ?, ?,
-            ?, ?
+            :volume_id, :issue_id,
+            :web_link, :web_title, :web_sub_title,
+            :download_link, :source,
+            :reason, :added_at
         );
         """,
-        (
-            volume_id, issue_id,
-            web_link, web_title, web_sub_title,
-            download_link, source.value if source is not None else None,
-            reason_id, round(time())
-        )
+        {
+            "volume_id": volume_id,
+            "issue_id": issue_id,
+            "web_link": web_link,
+            "web_title": web_title,
+            "web_sub_title": web_sub_title,
+            "download_link": download_link,
+            "source": source_value,
+            "reason": reason_id,
+            "added_at": round(time())
+        }
     ).lastrowid
 
     return get_blocklist_entry(id)
+
+
+# region Delete
+def delete_blocklist() -> None:
+    """Delete all blocklist entries."""
+    LOGGER.info('Deleting blocklist')
+    get_db().execute(
+        "DELETE FROM blocklist;"
+    )
+    return
+
+
+def delete_blocklist_entry(id: int) -> None:
+    """Delete a blocklist entry.
+
+    Args:
+        id (int): The id of the blocklist entry.
+
+    Raises:
+        BlocklistEntryNotFound: The id doesn't map to any blocklist entry.
+    """
+    LOGGER.debug(f'Deleting blocklist entry {id}')
+
+    entry_found = get_db().execute(
+        "DELETE FROM blocklist WHERE id = ?",
+        (id,)
+    ).rowcount
+
+    if not entry_found:
+        raise BlocklistEntryNotFound
+
+    return
