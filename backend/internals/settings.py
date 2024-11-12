@@ -14,7 +14,6 @@ from backend.base.definitions import (GCDownloadSource,
 from backend.base.files import folder_is_inside_folder, folder_path
 from backend.base.helpers import CommaList, Singleton, get_python_version
 from backend.base.logging import LOGGER, set_log_level
-from backend.implementations.root_folders import RootFolders
 from backend.internals.db import get_db
 from backend.internals.db_migration import get_latest_db_version
 
@@ -235,12 +234,16 @@ class Settings(metaclass=Singleton):
                 raise InvalidSettingValue(key, value)
 
         elif key == 'download_folder':
+            from backend.implementations.root_folders import RootFolders
+
             if not isdir(value):
                 raise FolderNotFound
 
             for rf in RootFolders().get_all():
-                if (folder_is_inside_folder(rf['folder'], value)
-                or folder_is_inside_folder(value, rf['folder'])):
+                if (
+                    folder_is_inside_folder(rf.folder, value)
+                    or folder_is_inside_folder(value, rf.folder)
+                ):
                     raise InvalidSettingValue(key, value)
 
         elif key in ('rename_downloaded_files', 'volumes_as_empty',

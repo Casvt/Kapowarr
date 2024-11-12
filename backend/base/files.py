@@ -12,6 +12,7 @@ from shutil import copytree, move, rmtree
 from typing import Any, Deque, Dict, Iterable, List, Sequence, Set
 
 from backend.base.custom_exceptions import FileNotFound
+from backend.base.definitions import CharConstants
 from backend.base.helpers import check_filter, force_suffix
 from backend.base.logging import LOGGER
 from backend.internals.db import get_db
@@ -77,6 +78,30 @@ def find_common_folder(files: Sequence[str]) -> str:
         return dirname(files[0])
 
     return commonpath(files)
+
+
+def uppercase_drive_letter(path: str) -> str:
+    """Return the input, but if it's a Windows path that starts with a drive
+    letter, then return the path with the drive letter uppercase.
+
+    Args:
+        path (str): The input path, possibly a windows path with a drive letter.
+
+    Returns:
+        str: The input path, but with an upper case Windows drive letter if
+        a Windows drive letter is present.
+    """
+    if (
+        len(path) >= 4
+        and (
+            path[1:3] == ":\\"
+            or path[1:3] == ":/"
+        )
+        and path[0].lower() in CharConstants.ALPHABET
+    ):
+        path = path[0].upper() + path[1:]
+
+    return path
 
 
 def list_files(folder: str, ext: Iterable[str] = []) -> List[str]:

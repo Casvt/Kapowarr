@@ -64,7 +64,6 @@ from backend.internals.server import SERVER, diffuse_timers
 from backend.internals.settings import Settings, about_data
 
 api = Blueprint('api', __name__)
-root_folders = RootFolders()
 library = Library()
 
 # Create handlers
@@ -475,8 +474,13 @@ def api_settings_available_formats():
 @error_handler
 @auth
 def api_rootfolder():
+    root_folders = RootFolders()
+
     if request.method == 'GET':
-        result = root_folders.get_all()
+        result = [
+            rf.as_dict()
+            for rf in root_folders.get_all()
+        ]
         return return_api(result)
 
     elif request.method == 'POST':
@@ -484,7 +488,7 @@ def api_rootfolder():
         folder = data.get('folder')
         if folder is None:
             raise KeyNotFound('folder')
-        root_folder = root_folders.add(folder)
+        root_folder = root_folders.add(folder).as_dict()
         return return_api(root_folder, code=201)
 
 
@@ -492,8 +496,10 @@ def api_rootfolder():
 @error_handler
 @auth
 def api_rootfolder_id(id: int):
+    root_folders = RootFolders()
+
     if request.method == 'GET':
-        root_folder = root_folders.get_one(id)
+        root_folder = root_folders.get_one(id).as_dict()
         return return_api(root_folder)
 
     elif request.method == 'PUT':

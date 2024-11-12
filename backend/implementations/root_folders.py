@@ -1,133 +1,141 @@
 # -*- coding: utf-8 -*-
 
-from os import mkdir
-from os.path import abspath, isdir, samefile, sep as path_sep
+from os.path import abspath, isdir, samefile
 from shutil import disk_usage
 from sqlite3 import IntegrityError
-from typing import List
+from typing import Dict, List
 
 from backend.base.custom_exceptions import (FolderNotFound, RootFolderInUse,
                                             RootFolderInvalid,
                                             RootFolderNotFound)
-from backend.base.definitions import CharConstants
-from backend.base.files import folder_is_inside_folder
-from backend.base.helpers import first_of_column
+from backend.base.definitions import RootFolder, SizeData
+from backend.base.files import (create_folder, folder_is_inside_folder,
+                                uppercase_drive_letter)
+from backend.base.helpers import Singleton, first_of_column, force_suffix
 from backend.base.logging import LOGGER
 from backend.internals.db import get_db
+from backend.internals.settings import Settings
 
 
-class RootFolders:
-    cache = {}
+class RootFolders(metaclass=Singleton):
+    cache: Dict[int, RootFolder] = {}
 
-    def get_all(self, use_cache: bool = True) -> List[dict]:
-        """Get all rootfolders
+    def __init__(self) -> None:
+        if not self.cache:
+            self._load_cache()
+        return
 
-        Args:
-            use_cache (bool, optional): Wether or not to pull data from
-            cache instead of going to the database.
-                Defaults to True.
+    def _load_cache(self) -> None:
+        """Update the cache."""
+        root_folders = get_db().execute(
+            "SELECT id, folder FROM root_folders;"
+        )
+        self.cache = {
+            r['id']: RootFolder(
+                r["id"],
+                r["folder"],
+                SizeData(**dict(zip(
+                    ('total', 'used', 'free'),
+                    disk_usage(r['folder'])
+                )))
+            )
+            for r in root_folders
+        }
+        return
+
+    def get_all(self) -> List[RootFolder]:
+        """Get all rootfolders.
 
         Returns:
-            List[dict]: The list of rootfolders
+            List[RootFolder]: The list of rootfolders.
         """
-        if not use_cache or not self.cache:
-            root_folders = get_db().execute(
-                "SELECT id, folder FROM root_folders;"
-            )
-            self.cache = {
-                r['id']: {
-                    **dict(r),
-                    'size': dict(zip(
-                        ('total', 'used', 'free'),
-                        disk_usage(r['folder'])
-                    ))
-                }
-                for r in root_folders
-            }
         return list(self.cache.values())
 
-    def get_one(self, root_folder_id: int, use_cache: bool = True) -> dict:
+    def get_one(self, root_folder_id: int) -> RootFolder:
         """Get a rootfolder based on it's id.
 
         Args:
             root_folder_id (int): The id of the rootfolder to get.
-
-            use_cache (bool, optional): Wether or not to pull data from
-            cache instead of going to the database.
-                Defaults to True.
 
         Raises:
             RootFolderNotFound: The id doesn't map to any rootfolder.
                 Could also be because of cache being behind database.
 
         Returns:
-            dict: The rootfolder info
+            RootFolder: The rootfolder info.
         """
-        if not use_cache or not self.cache:
-            self.get_all(use_cache=False)
         root_folder = self.cache.get(root_folder_id)
+
         if not root_folder:
             raise RootFolderNotFound
+
         return root_folder
 
     def __getitem__(self, root_folder_id: int) -> str:
-        return self.get_one(root_folder_id)['folder']
+        """
+        Get folder based on ID. Assumes folder with given ID exists.
+        """
+        return self.get_one(root_folder_id).folder
 
     def __setitem__(self, root_folder_id: int, new_folder: str) -> None:
+        """
+        Rename root folder to given value. Assumes folder with given ID exists.
+        """
         self.rename(root_folder_id, new_folder)
         return
 
-    def add(self, folder: str) -> dict:
-        """Add a rootfolder
+    def add(self, folder: str) -> RootFolder:
+        """Add a rootfolder.
 
         Args:
-            folder (str): The folder to add
+            folder (str): The folder to add.
 
         Raises:
-            FolderNotFound: The folder doesn't exist
-            RootFolderInvalid: The folder is not allowed
+            FolderNotFound: The folder doesn't exist.
+            RootFolderInvalid: The folder is not allowed.
 
         Returns:
-            dict: The rootfolder info
+            RootFolder: The rootfolder info.
         """
-        from backend.internals.settings import Settings
-
         # Format folder and check if it exists
         LOGGER.info(f'Adding rootfolder from {folder}')
+
         if not isdir(folder):
             raise FolderNotFound
-        folder = abspath(folder) + path_sep
 
-        if (
-            len(folder) >= 4
-            and folder[1:3] == ":\\"
-            and folder[0].lower() in CharConstants.ALPHABET
-        ):
-            folder = folder[0].upper() + folder[1:]
+        folder = uppercase_drive_letter(
+            force_suffix(abspath(folder))
+        )
 
+        # New root folder can not be in, or be a parent of,
+        # other root folders or the download folder.
         s = Settings()
-        for current_rf in (
-            *self.get_all(),
-            {'folder': s['download_folder']}
-        ):
+        other_folders = (
+            *(
+                f.folder
+                for f in self.get_all()
+            ),
+            s['download_folder']
+        )
+        for other_folder in other_folders:
             if (
-                folder_is_inside_folder(current_rf['folder'], folder)
-                or folder_is_inside_folder(folder, current_rf['folder'])
+                folder_is_inside_folder(other_folder, folder)
+                or folder_is_inside_folder(folder, other_folder)
             ):
                 raise RootFolderInvalid
 
-        # Insert into database
         root_folder_id = get_db().execute(
             "INSERT INTO root_folders(folder) VALUES (?)",
             (folder,)
         ).lastrowid
 
-        root_folder = self.get_one(root_folder_id, use_cache=False)
+        self._load_cache()
+        root_folder = self.get_one(root_folder_id)
 
         LOGGER.debug(f'Adding rootfolder result: {root_folder_id}')
         return root_folder
 
-    def rename(self, root_folder_id: int, new_folder: str) -> dict:
+    def rename(self, root_folder_id: int, new_folder: str) -> RootFolder:
         """Rename a root folder.
 
         Args:
@@ -138,21 +146,21 @@ class RootFolders:
             RootFolderInvalid: The folder is not allowed.
 
         Returns:
-            dict: The rootfolder info
+            RootFolder: The rootfolder info.
         """
         from backend.implementations.volumes import Volume
 
-        if not isdir(new_folder):
-            mkdir(new_folder)
+        create_folder(new_folder)
 
         if samefile(self[root_folder_id], new_folder):
+            # Renaming to itself
             return self.get_one(root_folder_id)
 
         LOGGER.info(
             f'Renaming root folder {self[root_folder_id]} ({root_folder_id}) '
             f'to {new_folder}'
         )
-        new_id: int = self.add(new_folder)['id']
+        new_id: int = self.add(new_folder).id
 
         cursor = get_db()
         volume_ids: List[int] = first_of_column(cursor.execute(
@@ -161,9 +169,9 @@ class RootFolders:
         ))
 
         for volume_id in volume_ids:
-            Volume(volume_id, check_existence=False)['root_folder'] = new_id
+            Volume(volume_id)['root_folder'] = new_id
 
-        cursor.executescript(f"""
+        get_db().executescript(f"""
             PRAGMA foreign_keys = OFF;
 
             DELETE FROM root_folders WHERE id = {root_folder_id};
@@ -172,7 +180,8 @@ class RootFolders:
 
             PRAGMA foreign_keys = ON;
         """)
-        return self.get_one(root_folder_id, use_cache=False)
+        self._load_cache()
+        return self.get_one(root_folder_id)
 
     def delete(self, root_folder_id: int) -> None:
         """Delete a rootfolder
@@ -187,13 +196,15 @@ class RootFolders:
         LOGGER.info(f'Deleting rootfolder {root_folder_id}')
 
         # Remove from database
+        cursor = get_db()
         try:
-            if not get_db().execute(
+            cursor.execute(
                 "DELETE FROM root_folders WHERE id = ?", (root_folder_id,)
-            ).rowcount:
+            )
+            if not cursor.rowcount:
                 raise RootFolderNotFound
         except IntegrityError:
             raise RootFolderInUse
 
-        self.get_all(use_cache=False)
+        self._load_cache()
         return

@@ -657,7 +657,8 @@ class _VolumeBackend:
                 old_name,
                 new_name
             )
-        delete_empty_child_folders(volume_folder)
+        if isdir(volume_folder):
+            delete_empty_child_folders(volume_folder)
 
         cursor.executemany(
             "UPDATE files SET filepath = ? WHERE filepath = ?",

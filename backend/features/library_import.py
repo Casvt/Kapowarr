@@ -57,7 +57,7 @@ def propose_library_import(
 
     # Get all files in all root folders
     root_folders: Set[str] = set(
-        abspath(r['folder'])
+        abspath(r.folder)
         for r in RootFolders().get_all()
     )
 
@@ -198,8 +198,8 @@ def import_library(
 
         # Find root folder that media is in
         for root_folder in root_folders:
-            if folder_is_inside_folder(root_folder['folder'], files[0]):
-                root_folder_id = root_folder['id']
+            if folder_is_inside_folder(root_folder.folder, files[0]):
+                root_folder_id = root_folder.id
                 break
         else:
             continue
@@ -236,7 +236,7 @@ def import_library(
 
                 rename_file(f, target_f)
                 new_files.append(target_f)
-                delete_empty_parent_folders(dirname(f), root_folder['folder'])
+                delete_empty_parent_folders(dirname(f), root_folder.folder)
 
             scan_files(volume_id, filepath_filter=new_files)
 

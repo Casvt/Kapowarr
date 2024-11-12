@@ -330,6 +330,12 @@ class ClientTestResult(TypedDict):
     description: Union[None, str]
 
 
+class SizeData(TypedDict):
+    total: int
+    used: int
+    free: int
+
+
 # region Dataclasses
 @dataclass
 class BlocklistEntry:
@@ -351,6 +357,16 @@ class BlocklistEntry:
         result = asdict(self)
         result["reason"] = self.reason.value
         return result
+
+
+@dataclass
+class RootFolder:
+    id: int
+    folder: str
+    size: SizeData
+
+    def as_dict(self) -> Dict[str, Any]:
+        return asdict(self)
 
 
 # region Abstract Classes
