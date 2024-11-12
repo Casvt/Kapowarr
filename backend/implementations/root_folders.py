@@ -9,7 +9,7 @@ from typing import List
 from backend.base.custom_exceptions import (FolderNotFound, RootFolderInUse,
                                             RootFolderInvalid,
                                             RootFolderNotFound)
-from backend.base.file_extraction import alphabet
+from backend.base.definitions import CharConstants
 from backend.base.files import folder_is_inside_folder
 from backend.base.helpers import first_of_column
 from backend.base.logging import LOGGER
@@ -101,7 +101,7 @@ class RootFolders:
         if (
             len(folder) >= 4
             and folder[1:3] == ":\\"
-            and folder[0].lower() in alphabet
+            and folder[0].lower() in CharConstants.ALPHABET
         ):
             folder = folder[0].upper() + folder[1:]
 

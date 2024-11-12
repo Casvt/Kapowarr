@@ -14,9 +14,9 @@ from sys import platform
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Tuple, Union
 
 from backend.base.custom_exceptions import InvalidSettingValue
-from backend.base.definitions import (SpecialVersion, full_sv_mapping,
-                                      short_sv_mapping)
-from backend.base.file_extraction import cover_regex, image_extensions
+from backend.base.definitions import (FileConstants, SpecialVersion,
+                                      full_sv_mapping, short_sv_mapping)
+from backend.base.file_extraction import cover_regex
 from backend.base.files import (delete_empty_child_folders,
                                 delete_empty_parent_folders,
                                 propose_basefolder_change, rename_file)
@@ -568,7 +568,7 @@ def preview_mass_rename(
 
         # If file is image, it's probably a page instead of a whole issue/tpb.
         # So put it in it's own folder together with the other images.
-        if file.endswith(image_extensions):
+        if file.endswith(FileConstants.IMAGE_EXTENSIONS):
             filename: str = splitext(basename(file))[0]
             page_number = None
             cover_result = cover_regex.search(filename)

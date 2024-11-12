@@ -57,7 +57,82 @@ FS_URLS = (
 )
 
 
+class FileConstants:
+    IMAGE_EXTENSIONS = ('.png', '.jpeg', '.jpg', '.webp', '.gif',
+                        '.PNG', '.JPEG', '.JPG', '.WEBP', '.GIF')
+    "Image extensions, with dot-prefix, and with both lowercase and uppercase"
+
+    CONTAINER_EXTENSIONS = (
+        '.cbz', '.zip', '.rar', '.cbr', '.tar.gz',
+        '.7zip', '.7z', '.cb7', '.cbt', '.epub', '.pdf'
+    )
+    "Archive/container extensions, with dot-prefix, and only lowercase"
+
+    EXTRACTABLE_EXTENSIONS = (
+        '.zip', '.rar',
+        '.ZIP', '.RAR'
+    )
+    """
+    Archive extensions that will be considered to be extracted,
+    and with both lowercase and uppercase
+    """
+
+    METADATA_EXTENSIONS = (
+        ".xml", ".json",
+        ".XML", ".JSON"
+    )
+    "Extensions of metadata files, and with both lowercase and uppercase"
+
+    METADATA_FILES = {
+        "cvinfo.xml", "comicinfo.xml",
+        "series.json", "comicinfo.xml"
+    }
+    "Filenames of metadata files, and only lowercase"
+
+
+CONTENT_EXTENSIONS = (
+    *FileConstants.IMAGE_EXTENSIONS,
+    *FileConstants.CONTAINER_EXTENSIONS
+)
+"Extensions of media files"
+
+
+SCANNABLE_EXTENSIONS = (
+    *CONTENT_EXTENSIONS,
+    *FileConstants.METADATA_EXTENSIONS
+)
+"Extensions of files that we want to scan for"
+
+
+class CharConstants:
+    ALPHABET = (
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'
+    )
+    "A tuple of all lowercase letters in the alphabet"
+
+    DIGITS = {
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
+    }
+    "A set of the numbers 0-9 in string form"
+
+    ROMAN_DIGITS = {
+        'i': 1,
+        'ii': 2,
+        'iii': 3,
+        'iv': 4,
+        'v': 5,
+        'vi': 6,
+        'vii': 7,
+        'viii': 8,
+        'ix': 9,
+        'x': 10
+    }
+    "A map of lowercase roman numerals 1-10 to their int equivalent"
+
 # region Enums
+
+
 class BaseEnum(Enum):
     def __eq__(self, other: object) -> bool:
         return self.value == other

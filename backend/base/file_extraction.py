@@ -2,37 +2,25 @@
 
 """
 Extracting data from filenames or search results and generalising it.
-
-extract_filename_data() is inspired by the file parsing of Kavita and Comictagger:
-    https://github.com/Kareadita/Kavita/blob/develop/API/Services/Tasks/Scanner/Parser/Parser.cs
-    https://github.com/comictagger/comictagger/blob/develop/comicapi/filenameparser.py
 """
 
 from os.path import basename, dirname, splitext
 from re import IGNORECASE, compile
 from typing import Tuple, Union
 
-from backend.base.definitions import FilenameData, SpecialVersion
-from backend.base.helpers import fix_year as fix_broken_year, normalize_string
+from backend.base.definitions import (CONTENT_EXTENSIONS, CharConstants,
+                                      FileConstants, FilenameData,
+                                      SpecialVersion)
+from backend.base.helpers import (fix_year as fix_broken_year,
+                                  normalize_number, normalize_string)
 from backend.base.logging import LOGGER
 
-alphabet_letters = 'abcdefghijklmnopqrstuvwxyz'
+# autopep8: off
 alphabet = {
-    letter: str(alphabet_letters.index(letter) + 1).zfill(2)
-    for letter in alphabet_letters
+    letter: str(CharConstants.ALPHABET.index(letter) + 1).zfill(2)
+    for letter in CharConstants.ALPHABET
 }
-digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
-image_extensions = ('.png', '.jpeg', '.jpg', '.webp', '.gif',
-                    '.PNG', '.JPEG', '.JPG', '.WEBP', '.GIF')
-container_extensions = (
-    '.cbz', '.zip', '.rar', '.cbr', '.tar.gz',
-    '.7zip', '.7z', '.cb7', '.cbt', '.epub', '.pdf'
-)
-supported_extensions = image_extensions + container_extensions
-archive_extensions = {'.zip', '.rar'}
-md_extensions = {'.xml', '.XML', '.json', '.JSON'}
-md_files = {'cvinfo.xml', 'comicinfo.xml', 'series.json', 'comicinfo.xml'}
-file_extensions = r'\.(' + '|'.join(e[1:] for e in supported_extensions) + r')$'
+
 volume_regex_snippet = r'\b(?:v(?:ol|olume)?)(?:\.\s|[\.\-\s])?(\d+(?:\s?\-\s?\d+)?|(?<!v)I{1,3})'
 year_regex_snippet = r'(?:(\d{4})(?:-\d{2}){0,2}|(\d{4})[\s\.]?[\-\s](?:[\s\.]?\d{4})?|(?:\d{2}-){1,2}(\d{4})|(\d{4})[\s\.\-_]Edition|(\d{4})\-\d{4}\s{3}\d{4})'
 issue_regex_snippet = r'(?!\d+(?:th|rd|st|\s?(?:gb|mb)))(?<!\')(?:\d+(?:\.\d{1,2}|\.?[a-z0-9]{1,3}|[\s\-\._]?[½¼])?|[½¼])'
@@ -49,7 +37,6 @@ korean_volume_regex = compile(r'제?(\d+)권', IGNORECASE)
 japanese_volume_regex = compile(r'(\d+)巻', IGNORECASE)
 
 # Extract data from (stripped)filename
-# autopep8: off
 special_version_regex = compile(r'(?:(?<!\s{3})\b|\()(?:(?P<tpb>tpb|trade paper back)|(?P<one_shot>os|one[ \-_]?shot)|(?P<hard_cover>hc|hard[ \-_]?cover))(?:\b|\))', IGNORECASE)
 volume_regex = compile(volume_regex_snippet, IGNORECASE)
 volume_folder_regex = compile(volume_regex_snippet + r'|^(\d+)$', IGNORECASE)
@@ -68,10 +55,10 @@ cover_regex = compile(r'\b(?<!no[ \-_])(?<!hard[ \-_])(?<!\d[ \-_]covers)cover\b
 
 
 def _calc_float_issue_number(issue_number: str) -> Union[float, None]:
-    """Convert an issue number from string to representive float
+    """Convert an issue number from string to representive float.
 
     Args:
-        issue_number (str): The issue number to convert
+        issue_number (str): The issue number to convert.
 
     Returns:
         Union[float, None]: Either the float version or `None` on fail.
@@ -83,16 +70,15 @@ def _calc_float_issue_number(issue_number: str) -> Union[float, None]:
         pass
 
     # Issue has special number notation
-    issue_number = (issue_number
-        .replace(',', '.')
-        .replace('?', '0')
-        .rstrip('.')
-        .lower()
-    )
+    issue_number = normalize_number(issue_number)
+
+    # Negative or not
     if issue_number.startswith('-'):
         converted_issue_number = '-'
     else:
         converted_issue_number = ''
+
+    digits = CharConstants.DIGITS
     dot = True
     for c in issue_number:
         if c in digits:
@@ -114,6 +100,7 @@ def _calc_float_issue_number(issue_number: str) -> Union[float, None]:
 
     if converted_issue_number:
         return float(converted_issue_number)
+
     return
 
 
@@ -132,53 +119,58 @@ def process_issue_number(
         the original issue number was a range of numbers (e.g. 1a-5b)
         or `None` if it wasn't succesfull in converting.
     """
-    if '-' in issue_number[1:]:
-        entries = issue_number[1:].replace(' ', '').split('-', 1)
-        entries[0] = issue_number[0] + entries[0]
+    if '-' not in issue_number[1:]:
+        # Normal issue number
+        return _calc_float_issue_number(issue_number)
 
-        if not all(
-            e[0] in digits or (
-                e[0] == '-'
-                and e[1] in digits
-            )
-            for e in entries
-        ):
-            return _calc_float_issue_number(issue_number)
+    # Issue range
+    start, end = issue_number[1:].replace(' ', '').split('-', 1)
+    start = issue_number[0] + start
 
-        start = _calc_float_issue_number(entries[0])
-        end = _calc_float_issue_number(entries[1])
+    if not (
+        start.lstrip('-')[0] in CharConstants.DIGITS
+        and end.lstrip('-')[0] in CharConstants.DIGITS
+    ):
+        # Not both are starting with a (negative) number, so the split
+        # must've been false, so cancel the idea that the input is a range.
+        return _calc_float_issue_number(issue_number)
 
-        if start is None:
-            if end is None:
-                return None
-            else:
-                return end
-        elif end is None:
-            return start
-        else:
-            return (start, end)
+    start = _calc_float_issue_number(start)
+    end = _calc_float_issue_number(end)
 
-    return _calc_float_issue_number(issue_number)
+    if start and end:
+        return (start, end)
+    elif start:
+        return start
+    elif end:
+        return end
+    else:
+        return None
 
 
-def convert_volume_number_to_int(
+def process_volume_number(
     volume_number: Union[str, None]
 ) -> Union[int, Tuple[int, int], None]:
-    """Convert the volume number (or volume range) from float(s) to int(s).
+    """Convert a volume number or volume range to a (tuple of) int.
 
     Args:
-        volume_number (Union[str, None]): The volume number (range) in string format
+        volume_number (Union[str, None]): The volume number (range) in string
+        format. Or `None`, which will return `None`.
 
     Returns:
-        Union[int, Tuple[int, int], None]: The converted volume number(s).
+        Union[int, Tuple[int, int], None]: The converted volume number(s) or
+        `None` if the input was also `None`.
     """
     if volume_number is None:
-        return
+        return None
 
-    if 'i' in volume_number.lower():
-        i_count = volume_number.lower().count('i')
-        if i_count == len(volume_number):
-            volume_number = str(i_count)
+    # If volume number is a straight 1-10 roman numeral, then convert it.
+    volume_number = str(
+        CharConstants.ROMAN_DIGITS.get(
+            volume_number.lower(),
+            volume_number
+        )
+    )
 
     result = process_issue_number(volume_number)
     if isinstance(result, float):
@@ -240,11 +232,11 @@ def extract_filename_data(
     if '巻' in filepath:
         filepath = japanese_volume_regex.sub(r'Volume \1', filepath)
 
-    is_image_file = filepath.endswith(image_extensions)
+    is_image_file = filepath.endswith(FileConstants.IMAGE_EXTENSIONS)
 
     # filename without .extension
     filename = basename(filepath)
-    if splitext(filename)[1].lower() in supported_extensions:
+    if splitext(filename)[1].lower() in CONTENT_EXTENSIONS:
         filename = splitext(filename)[0]
 
     # Keep stripped version of filename without (), {}, [] and extensions
@@ -269,10 +261,15 @@ def extract_filename_data(
             if year is None:
                 year = next(y for y in year_result[0].groups() if y)
             if location == filename:
-                all_year_pos = [(r.start(0), r.end(0)) for r in year_result]
+                all_year_pos = [
+                    (r.start(0), r.end(0))
+                    for r in year_result
+                ]
             if location == foldername:
-                all_year_folderpos = [(r.start(0), r.end(0))
-                                      for r in year_result]
+                all_year_folderpos = [
+                    (r.start(0), r.end(0))
+                    for r in year_result
+                ]
 
     # Get volume number
     volume_end, volume_pos, volume_folderpos, volume_folderend = (
@@ -281,7 +278,7 @@ def extract_filename_data(
     volume_result = volume_regex.search(clean_filename)
     if volume_result:
         # Volume number found (e.g. Series Volume 1 Issue 6.ext)
-        volume_number = convert_volume_number_to_int(volume_result.group(1))
+        volume_number = process_volume_number(volume_result.group(1))
         volume_pos = volume_result.start(0)
         volume_end = volume_result.end(1)
 
@@ -293,7 +290,7 @@ def extract_filename_data(
         volume_folderpos = volume_folder_result.start(0)
         volume_folderend = volume_folder_result.end(0)
         if not volume_result:
-            volume_number = convert_volume_number_to_int(
+            volume_number = process_volume_number(
                 volume_folder_result.group(1) or volume_folder_result.group(2)
             )
 
@@ -352,7 +349,10 @@ def extract_filename_data(
                 group_number = 1 if regex != issue_regex_6 else 3
                 if r:
                     r.sort(key=lambda e: (
-                        int(e.group(group_number)[-1] not in '0123456789'),
+                        int(
+                            e.group(group_number)[-1]
+                            not in CharConstants.DIGITS
+                        ),
                         (
                             1 / e.start(0)
                             if e.start(0) else

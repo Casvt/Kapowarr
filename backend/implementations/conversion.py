@@ -11,8 +11,7 @@ from sys import platform
 from typing import Dict, Iterable, List, Set, Tuple, Type, Union
 from zipfile import ZipFile
 
-from backend.base.file_extraction import (archive_extensions,
-                                          container_extensions)
+from backend.base.definitions import FileConstants
 from backend.base.helpers import PortablePool
 from backend.implementations.converters import (FileConverter, get_rar_output,
                                                 rar_executables)
@@ -132,7 +131,7 @@ def archive_contains_issues(archive_file: str) -> bool:
         return False
 
     return any(
-        splitext(f)[1].lower() in container_extensions
+        splitext(f)[1].lower() in FileConstants.CONTAINER_EXTENSIONS
         for f in namelist
     )
 
@@ -165,7 +164,7 @@ def preview_mass_convert(
 
         if (
             extract_issue_ranges
-            and splitext(f)[1].lower() in archive_extensions
+            and splitext(f)[1].lower() in FileConstants.EXTRACTABLE_EXTENSIONS
             and archive_contains_issues(f)
         ):
             converter = find_target_format_file(
@@ -234,7 +233,7 @@ def mass_convert(
         converted = False
         if (
             extract_issue_ranges
-            and splitext(f)[1].lower() in archive_extensions
+            and splitext(f)[1].lower() in FileConstants.EXTRACTABLE_EXTENSIONS
             and archive_contains_issues(f)
         ):
             converter = find_target_format_file(

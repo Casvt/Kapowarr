@@ -13,10 +13,9 @@ from sys import platform
 from typing import List, Union
 from zipfile import ZipFile
 
-from backend.base.definitions import Constants
-from backend.base.file_extraction import (extract_filename_data,
-                                          image_extensions, md_extensions,
-                                          md_files, supported_extensions)
+from backend.base.definitions import (SCANNABLE_EXTENSIONS,
+                                      Constants, FileConstants)
+from backend.base.file_extraction import extract_filename_data
 from backend.base.files import (create_folder, delete_empty_parent_folders,
                                 delete_file_folder, filepath_to_volume_id,
                                 folder_path, list_files, rename_file)
@@ -51,7 +50,7 @@ def extract_files_from_folder(
     """
     folder_contents = list_files(
         source_folder,
-        (*supported_extensions, *md_extensions)
+        SCANNABLE_EXTENSIONS
     )
 
     volume = Volume(volume_id)
@@ -70,7 +69,7 @@ def extract_files_from_folder(
         if (
             not 'variant cover' in c.lower()
             and (
-                basename(c).lower() in md_files
+                basename(c).lower() in FileConstants.METADATA_FILES
                 or
                 folder_extraction_filter(
                     extract_filename_data(c, False),
@@ -85,7 +84,7 @@ def extract_files_from_folder(
     # Move remaining files to main folder and delete source folder
     result = []
     for c in rel_files:
-        if c.endswith(image_extensions):
+        if c.endswith(FileConstants.IMAGE_EXTENSIONS):
             dest = join(volume_data.folder, basename(dirname(c)), basename(c))
 
         else:

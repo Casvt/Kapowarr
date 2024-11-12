@@ -6,10 +6,10 @@ from os.path import abspath, basename, dirname, isfile, join, splitext
 from typing import Dict, Iterator, List, Set, Union
 
 from backend.base.custom_exceptions import InvalidKeyValue, VolumeAlreadyAdded
-from backend.base.definitions import CVFileMapping, FilenameData, MonitorScheme
-from backend.base.file_extraction import (extract_filename_data,
-                                          image_extensions,
-                                          supported_extensions)
+from backend.base.definitions import (CONTENT_EXTENSIONS, CVFileMapping,
+                                      FileConstants, FilenameData,
+                                      MonitorScheme)
+from backend.base.file_extraction import extract_filename_data
 from backend.base.files import (delete_empty_parent_folders,
                                 find_common_folder, folder_is_inside_folder,
                                 list_files, rename_file)
@@ -73,7 +73,7 @@ def propose_library_import(
 
     try:
         for f in scan_folders:
-            all_files += list_files(f, supported_extensions)
+            all_files += list_files(f, CONTENT_EXTENSIONS)
     except NotADirectoryError:
         raise InvalidKeyValue('folder_filter', folder_filter)
 
@@ -98,7 +98,7 @@ def propose_library_import(
             # File directly in root folder not allowed
             continue
 
-        if f.endswith(image_extensions):
+        if f.endswith(FileConstants.IMAGE_EXTENSIONS):
             if d in image_folders:
                 continue
             image_folders.add(d)
@@ -225,7 +225,7 @@ def import_library(
             vf: str = Volume(volume_id)['folder']
             new_files = []
             for f in files:
-                if f.endswith(image_extensions):
+                if f.endswith(FileConstants.IMAGE_EXTENSIONS):
                     target_f = join(vf, basename(dirname(f)), basename(f))
                 else:
                     target_f = join(vf, basename(f))

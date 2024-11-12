@@ -200,8 +200,9 @@ def filtered_iter(
 
 def normalize_string(s: str) -> str:
     """Fix some common stuff in strings coming from online sources. Parses
-    html escapes (`%20` -> ` `), fixing encoding errors (`_28` -> `(`), and
-    replaces unicode chars by standard chars (`’` -> `'`).
+    html escapes (`%20` -> ` `), fixing encoding errors (`_28` -> `(`),
+    removing surrounding whitespace and replaces unicode chars by standard
+    chars (`’` -> `'`).
 
     Args:
         s (str): Input string.
@@ -214,6 +215,27 @@ def normalize_string(s: str) -> str:
         .replace('_29', ')')
         .replace('–', '-')
         .replace('’', "'")
+        .strip()
+    )
+
+
+def normalize_number(s: str) -> str:
+    """Turn user-entered numbers (in string form) into more handable versions.
+    Handles locale, unknown numbers, trailing chars, surrounding whitespace,
+    etc.
+
+    Args:
+        s (str): Input string representing a(n) (issue) number.
+
+    Returns:
+        str: Normilized string.
+    """
+    return (s
+        .replace(',', '.')
+        .replace('?', '0')
+        .rstrip('.')
+        .strip()
+        .lower()
     )
 
 

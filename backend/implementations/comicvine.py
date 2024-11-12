@@ -17,8 +17,8 @@ from backend.base.custom_exceptions import (CVRateLimitReached,
                                             InvalidComicVineApiKey,
                                             VolumeNotMatched)
 from backend.base.definitions import Constants, FilenameData, SpecialVersion, T
-from backend.base.file_extraction import (convert_volume_number_to_int,
-                                          process_issue_number, volume_regex)
+from backend.base.file_extraction import (process_issue_number,
+                                          process_volume_number, volume_regex)
 from backend.base.helpers import (AsyncSession, DictKeyedDict, Session,
                                   batched, create_range, normalize_string)
 from backend.base.logging import LOGGER
@@ -314,7 +314,7 @@ class ComicVine:
         result = {
             'comicvine_id': int(volume_data['id']),
 
-            'title': normalize_string(volume_data['name'].strip()),
+            'title': normalize_string(volume_data['name']),
             'year': None,
             'volume_number': 1,
             'cover': volume_data['image']['small_url'],
@@ -351,7 +351,7 @@ class ComicVine:
 
         volume_result = volume_regex.search(volume_data['deck'] or '')
         if volume_result:
-            result['volume_number'] = convert_volume_number_to_int(
+            result['volume_number'] = process_volume_number(
                 volume_result.group(1)
             )
 

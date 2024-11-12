@@ -17,10 +17,10 @@ from backend.base.custom_exceptions import (InvalidKeyValue, IssueNotFound,
                                             VolumeAlreadyAdded,
                                             VolumeDownloadedFor,
                                             VolumeNotFound)
-from backend.base.definitions import (GeneralFileType,
+from backend.base.definitions import (SCANNABLE_EXTENSIONS,
+                                      FileConstants, GeneralFileType,
                                       MonitorScheme, SpecialVersion)
-from backend.base.file_extraction import (extract_filename_data, md_extensions,
-                                          md_files, supported_extensions)
+from backend.base.file_extraction import extract_filename_data
 from backend.base.files import (create_folder, delete_empty_child_folders,
                                 delete_empty_parent_folders,
                                 delete_file_folder, folder_is_inside_folder,
@@ -1062,13 +1062,13 @@ def scan_files(
     general_bindings: List[Tuple[int, GeneralFileType]] = []
     folder_contents = list_files(
         folder=volume_data.folder,
-        ext=(*supported_extensions, *md_extensions)
+        ext=SCANNABLE_EXTENSIONS
     )
     for file in folder_contents:
         if hashed_files and file not in hashed_files:
             continue
 
-        if basename(file).lower() in md_files:
+        if basename(file).lower() in FileConstants.METADATA_FILES:
             # Volume metadata file
             file_id = general_files.get(file)
             if file_id is None:
