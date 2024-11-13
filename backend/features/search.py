@@ -7,15 +7,13 @@ Searching online sources (GC) for downloads
 from asyncio import create_task, gather, run
 from typing import Dict, List, Tuple, Union
 
-from bs4 import BeautifulSoup
-
-from backend.base.definitions import (Constants, MatchedSearchResultData,
+from backend.base.definitions import (MatchedSearchResultData,
                                       SearchResultData, SpecialVersion)
-from backend.base.file_extraction import extract_filename_data
 from backend.base.helpers import (AsyncSession, check_overlapping_issues,
                                   create_range, extract_year_from_date,
                                   first_of_column)
 from backend.base.logging import LOGGER
+from backend.implementations.getcomics import search_getcomics
 from backend.implementations.matching import (_match_special_version,
                                               check_search_result_match)
 from backend.implementations.volumes import (Issue, Volume,
@@ -161,73 +159,16 @@ class SearchSources:
 
         return result
 
-    async def __fetch_one(
-        self,
-        session: AsyncSession,
-        url: str,
-        params: dict = {},
-        headers: dict = {}
-    ):
-        async with session.get(url, params=params, headers=headers) as response:
-            return await response.text()
-
-    async def __fetch_GC_pages(self, session: AsyncSession, pages: range):
-        tasks = [
-            create_task(self.__fetch_one(
-                session,
-                f'{Constants.GC_SITE_URL}/page/{p}',
-                {'s': self.query}
-            )) for p in pages
-        ]
-        responses = await gather(*tasks)
-        return [BeautifulSoup(r, 'html.parser') for r in responses]
-
     async def _get_comics(
         self,
-        session: AsyncSession) -> List[SearchResultData]:
+        session: AsyncSession
+    ) -> List[SearchResultData]:
         """Search for the query in getcomics
 
         Returns:
-            List[SearchResultData]: The search results
+            List[SearchResultData]: The search results.
         """
-        async with session.get(
-            Constants.GC_SITE_URL,
-            params={'s': self.query}
-        ) as response:
-            search_results = await response.text()
-
-        soup = BeautifulSoup(search_results, 'html.parser')
-        pages = soup.find_all(['a', 'span'], {"class": 'page-numbers'})
-        pages = min(int(pages[-1].get_text(strip=True)), 10) if pages else 1
-
-        results = []
-        parsed_results = await self.__fetch_GC_pages(
-            session, range(2, pages + 1)
-        )
-        for page in [soup] + parsed_results:
-            results += page.find_all('article', {'class': 'post'})
-
-        formatted_results: List[SearchResultData] = []
-        for result in results:
-            link = result.find('a')['href']
-            title = (result
-                .find("h1", {"class": "post-title"})
-                .get_text(strip=True)
-            )
-
-            data = extract_filename_data(
-                title,
-                assume_volume_number=False,
-                fix_year=True
-            )
-            formatted_results.append(SearchResultData(**{
-                **data,
-                'link': link,
-                'display_title': title,
-                'source': 'GetComics'
-            }))
-
-        return formatted_results
+        return await search_getcomics(session, self.query)
 
 
 async def search_multiple_queries(*queries: str) -> List[SearchResultData]:

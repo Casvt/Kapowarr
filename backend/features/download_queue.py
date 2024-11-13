@@ -6,6 +6,7 @@ Handling the download queue and history
 
 from __future__ import annotations
 
+from asyncio import run
 from os import listdir
 from os.path import basename, join
 from threading import Thread
@@ -403,7 +404,8 @@ class DownloadHandler:
     def add(self,
         link: str,
         volume_id: int,
-        issue_id: Union[int, None] = None
+        issue_id: Union[int, None] = None,
+        force_match: bool = False
     ) -> Tuple[List[dict], Union[FailReason, None]]:
         """Add a download to the queue.
 
@@ -416,6 +418,10 @@ class DownloadHandler:
             issue_id (Union[int, None], optional): The id of the issue for which
             the download is intended.
                 Defaults to None.
+
+            force_match (bool, optional): On sources where downloads are
+            filtered, skip this and instead download everything.
+                Defaults to False.
 
         Returns:
             Tuple[List[dict], Union[FailReason, None]]:
@@ -437,9 +443,10 @@ class DownloadHandler:
         if link_type == 'gc':
             try:
                 gcp = GetComicsPage(link)
-                downloads = gcp.create_downloads(
-                    volume_id, issue_id
-                )
+                run(gcp.load_data())
+                downloads = run(gcp.create_downloads(
+                    volume_id, issue_id, force_match
+                ))
 
             except FailedGCPage as e:
                 if e.reason == FailReason.BROKEN:

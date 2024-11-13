@@ -548,6 +548,27 @@ class AsyncSession(ClientSession):
     async def __aenter__(self) -> "AsyncSession":
         return self
 
+    async def get_text(
+        self,
+        url: str,
+        params: Dict[str, Any] = {},
+        headers: Dict[str, Any] = {}
+    ) -> str:
+        """Fetch a page and return the body.
+
+        Args:
+            url (str): The URL to fetch from.
+            params (Dict[str, Any], optional): Any additional params.
+                Defaults to {}.
+            headers (Dict[str, Any], optional): Any additional headers.
+                Defaults to {}.
+
+        Returns:
+            str: The body of the response.
+        """
+        async with self.get(url, params=params, headers=headers) as response:
+            return await response.text()
+
 
 class _ContextKeeper(metaclass=Singleton):
     def __init__(self, log_level: Union[int, None] = None) -> None:

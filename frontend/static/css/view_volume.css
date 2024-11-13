@@ -238,7 +238,7 @@ tbody .issue-title:hover {
 }
 
 .search-action-column {
-	width: 6rem;
+	width: 9rem;
 	display: flex;
 	gap: .1rem;
 	flex-wrap: wrap;

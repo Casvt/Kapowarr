@@ -341,9 +341,14 @@ function showManualSearch(api_key, issue_id=null) {
 			const download_button = entry.querySelector('.search-action-column :nth-child(1)');
 			download_button.classList.add('icon-text-color');
 			download_button.onclick =
-				e => addManualSearch(result.link, download_button, api_key, issue_id);
+				e => addManualSearch(result.link, false, download_button, api_key, issue_id);
 
-			const blocklist_button = entry.querySelector('.search-action-column :nth-child(2)')
+			const force_download_button = entry.querySelector('.search-action-column :nth-child(2)');
+			force_download_button.classList.add('icon-text-color');
+			force_download_button.onclick =
+				e => addManualSearch(result.link, true, force_download_button, api_key, issue_id);
+
+			const blocklist_button = entry.querySelector('.search-action-column :nth-child(3)')
 			if (result.match_issue === null || !result.match_issue.includes('blocklist'))
 				// Show blocklist button
 				blocklist_button.onclick =
@@ -363,7 +368,7 @@ function showManualSearch(api_key, issue_id=null) {
 	});
 };
 
-function addManualSearch(link, button, api_key, issue_id=null) {
+function addManualSearch(link, force, button, api_key, issue_id=null) {
 	button.classList.remove('error');
 	button.title = 'Download';
 	const img = button.querySelector('img');
@@ -374,7 +379,7 @@ function addManualSearch(link, button, api_key, issue_id=null) {
 		? `/issues/${issue_id}/download`
 		: `/volumes/${volume_id}/download`;
 
-	sendAPI('POST', url, api_key, {link: link})
+	sendAPI('POST', url, api_key, {link: link, force_match: force})
 	.then(response => response.json())
 	.then(json => {
 		img.classList.remove('spinning');

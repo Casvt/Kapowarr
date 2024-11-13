@@ -173,7 +173,7 @@ def extract_key(request, key: str, check_existence: bool = True) -> Any:
                 raise InvalidKeyValue(key, value)
 
         elif key in ('monitor', 'delete_folder', 'rename_files', 'only_english',
-                    'limit_parent_folder'):
+                    'limit_parent_folder', 'force_match'):
             if value == 'true':
                 value = True
             elif value == 'false':
@@ -216,6 +216,9 @@ def extract_key(request, key: str, check_existence: bool = True) -> Any:
             value = True
 
         elif key == 'limit_parent_folder':
+            value = False
+
+        elif key == 'force_match':
             value = False
 
     return value
@@ -785,8 +788,9 @@ def api_volume_manual_search(id: int):
 @auth
 def api_volume_download(id: int):
     library.get_volume(id)
-    link = extract_key(request, 'link')
-    result = download_handler.add(link, id)
+    link: str = extract_key(request, 'link')
+    force_match: bool = extract_key(request, 'force_match')
+    result = download_handler.add(link, id, force_match=force_match)
     return return_api(
         {
             'result': (result or (None,))[0],
@@ -814,7 +818,8 @@ def api_issue_manual_search(id: int):
 def api_issue_download(id: int):
     volume_id = library.get_issue(id)['volume_id']
     link = extract_key(request, 'link')
-    result = download_handler.add(link, volume_id, id)
+    force_match: bool = extract_key(request, 'force_match')
+    result = download_handler.add(link, volume_id, id, force_match=force_match)
     return return_api(
         {
             'result': result[0],

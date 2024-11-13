@@ -349,6 +349,89 @@ def generate_issue_name(
     save_name = make_filename_safe(name)
     return save_name
 
+
+def generate_name(
+    volume_id: int,
+    special_version: SpecialVersion,
+    calculated_issue_number: Union[float, Tuple[float, float], None],
+    name_volume_as_issue: bool
+) -> str:
+    """Generate the proper filename based on the information.
+
+    Args:
+        volume_id (int): The ID of the volume that the file is for.
+        special_version (SpecialVersion): The Special Version of the volume.
+        calculated_issue_number (Union[float, Tuple[float, float], None]):
+        The issue (or issue range) that the file covers. Give volume number
+        here in case of VAI.
+        name_volume_as_issue (bool): Whether to name the volume as an issue in
+        case of a VAI.
+
+    Returns:
+        str: The filename.
+    """
+    if special_version in (
+        SpecialVersion.TPB,
+        SpecialVersion.ONE_SHOT,
+        SpecialVersion.HARD_COVER
+    ):
+        # Iron-Man Volume 2 One-Shot
+        return generate_sv_name(volume_id)
+
+    elif (
+        special_version == SpecialVersion.VOLUME_AS_ISSUE
+        and calculated_issue_number is not None
+    ):
+        if name_volume_as_issue:
+            if isinstance(calculated_issue_number, tuple):
+                # Iron-Man Volume 2 Issue 3-4 (Vol is VAI)
+                return generate_issue_range_name(
+                    volume_id,
+                    *calculated_issue_number
+                )
+
+            else:
+                # Iron-Man Volume 2 Issue 3 (Vol is VAI)
+                return generate_issue_name(
+                    volume_id,
+                    calculated_issue_number
+                )
+
+        else:
+            if isinstance(calculated_issue_number, tuple):
+                # Iron-Man Volume 3-4 (Vol is VAI)
+                return generate_empty_name(
+                    volume_id,
+                    (
+                        int(calculated_issue_number[0]),
+                        int(calculated_issue_number[1])
+                    )
+                )
+
+            else:
+                # Iron-Man Volume 3 (Vol is VAI)
+                return generate_empty_name(
+                    volume_id,
+                    int(calculated_issue_number)
+                )
+
+    elif special_version != SpecialVersion.NORMAL:
+        # Iron-Man Volume 2 (File is cover)
+        return generate_empty_name(volume_id)
+
+    elif isinstance(calculated_issue_number, tuple):
+        # Iron-Man Volume 2 Issue 3-4
+        return generate_issue_range_name(
+            volume_id,
+            *calculated_issue_number
+        )
+
+    # Iron-Man Volume 2 Issue 3
+    return generate_issue_name(
+        volume_id,
+        calculated_issue_number # type: ignore
+    )
+
 # =====================
 # Checking formats
 # =====================
@@ -530,41 +613,22 @@ def preview_mass_rename(
             """,
             (file,)
         ))
-        if special_version in (
-            SpecialVersion.TPB,
-            SpecialVersion.ONE_SHOT,
-            SpecialVersion.HARD_COVER
-        ):
-            suggested_name = generate_sv_name(volume_id)
 
-        elif (special_version == SpecialVersion.VOLUME_AS_ISSUE
-        and not name_volume_as_issue):
-            if len(issues) > 1:
-                suggested_name = generate_empty_name(
-                    volume_id,
-                    (int(issues[0]), int(issues[-1]))
-                )
-            else:
-                suggested_name = generate_empty_name(
-                    volume_id,
-                    int(issues[0])
-                )
-
-        elif (special_version.value or SpecialVersion.VOLUME_AS_ISSUE) != SpecialVersion.VOLUME_AS_ISSUE:
-            # Covers, etc.
-            suggested_name = generate_empty_name(volume_id)
-
-        elif len(issues) > 1:
-            # File covers multiple issues
-            suggested_name = generate_issue_range_name(
+        if len(issues) > 1:
+            suggested_name = generate_name(
                 volume_id,
-                issues[0],
-                issues[-1]
+                special_version,
+                (issues[0], issues[-1]),
+                name_volume_as_issue
             )
 
         else:
-            # File covers one issue
-            suggested_name = generate_issue_name(volume_id, issues[0])
+            suggested_name = generate_name(
+                volume_id,
+                special_version,
+                issues[0],
+                name_volume_as_issue
+            )
 
         # If file is image, it's probably a page instead of a whole issue/tpb.
         # So put it in it's own folder together with the other images.
