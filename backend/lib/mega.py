@@ -474,7 +474,10 @@ class Mega:
         if '/file/' in url:
             # V2 URL structure
             url = url.replace(' ', '')
-            file_id = findall(r'\W\w\w\w\w\w\w\w\w\W', url)[0][1:-1]
+            file_id_match = findall(r'\W\w\w\w\w\w\w\w\w\W', url)
+            if not file_id_match:
+                raise RequestError(-18)
+            file_id = file_id_match[0][1:-1]
             id_index = search(file_id, url).end()
             key = url[id_index + 1:]
             return f'{file_id}!{key}'
