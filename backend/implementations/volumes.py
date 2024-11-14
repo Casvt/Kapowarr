@@ -49,16 +49,17 @@ def determine_special_version(
     volume_title: str,
     volume_description: str,
     first_issue_date: Union[str, None],
-    issue_titles: Sequence[str]
+    issue_titles: Sequence[Union[str, None]]
 ) -> SpecialVersion:
     """Determine if a volume is a special version.
 
     Args:
         volume_title (str): The title of the volume.
         volume_description (str): The description of the volume.
-        first_issue_date (Union[str, None]): The release date of the first issue,
-        if the volume has an issue.
-        issue_titles (Sequence[str]): The titles of all issues in the volume.
+        first_issue_date (Union[str, None]): The release date of the first
+        issue, if the volume has an issue.
+        issue_titles (Sequence[Union[str, None]]): The titles of all issues in
+        the volume.
 
     Returns:
         SpecialVersion: The result.
@@ -1267,7 +1268,7 @@ def refresh_and_scan(
     cv = ComicVine()
 
     # Update volumes
-    volume_datas = run(cv.fetch_volumes_async(str_ids))
+    volume_datas = run(cv.fetch_volumes(str_ids))
     update_volumes = (
         (
             volume_data['title'],
@@ -1304,7 +1305,7 @@ def refresh_and_scan(
     cursor.connection.commit()
 
     # Update issues
-    issue_datas = run(cv.fetch_issues_async([
+    issue_datas = run(cv.fetch_issues([
         str(v['comicvine_id'])
         for v in volume_datas
     ]))
@@ -1313,16 +1314,12 @@ def refresh_and_scan(
             ids[issue_data['volume_id']],
             issue_data['comicvine_id'],
             issue_data['issue_number'],
-            (
-                issue_data['calculated_issue_number']
-                if not isinstance(issue_data['calculated_issue_number'], tuple)
-                else 0.0
-            ),
+            issue_data['calculated_issue_number'] or 0.0,
             issue_data['title'],
             issue_data['date'],
             issue_data['description'],
             True, issue_data['issue_number'],
-            issue_data['calculated_issue_number'],
+            issue_data['calculated_issue_number'] or 0.0,
             issue_data['title'],
             issue_data['date'],
             issue_data['description']
@@ -1633,16 +1630,14 @@ class Library:
         # Raises RootFolderNotFound when id is invalid
         root_folder = RootFolders()[root_folder_id]
 
-        volume_data = run(ComicVine().fetch_volume_async(comicvine_id))
-        volume_data['monitored'] = True
-        volume_data['root_folder'] = root_folder_id
+        volume_data = run(ComicVine().fetch_volume(comicvine_id))
 
         if special_version is None:
             sv = determine_special_version(
                 volume_data['title'],
                 volume_data['description'],
                 (volume_data["issues"] or [{}])[0].get("date"),
-                tuple(i['title'] for i in volume_data['issues'])
+                tuple(i['title'] for i in volume_data['issues'] or [])
             ).value
         else:
             sv = special_version.value
@@ -1679,8 +1674,8 @@ class Library:
                 volume_data['description'],
                 volume_data['site_url'],
                 volume_data['cover'],
-                volume_data['monitored'],
-                volume_data['root_folder'],
+                True,
+                root_folder_id,
                 int(volume_folder is not None),
                 round(time()),
                 sv,
@@ -1703,7 +1698,7 @@ class Library:
                 i['description'],
                 True
             )
-            for i in volume_data['issues']
+            for i in volume_data['issues'] or []
         )
 
         cursor.executemany("""
@@ -1792,18 +1787,3 @@ class Library:
                 files;
         """).fetchonedict() or {}
         return result
-
-
-def search_volumes(query: str) -> List[dict]:
-    """Search for a volume in the ComicVine database
-
-    Args:
-        query (str): The query to search with
-
-    Raises:
-        InvalidComicVineApiKey: The ComicVine API key is not set or is invalid
-
-    Returns:
-        List[dict]: The list with search results
-    """
-    return ComicVine().search_volumes(query)

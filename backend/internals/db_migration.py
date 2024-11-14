@@ -223,8 +223,8 @@ class MigrateAddCVFetchTime(DBMigrator):
             for v in cursor.execute("SELECT comicvine_id FROM volumes;")
         ]
         updates = (
-            (r['date_last_updated'], r['comicvine_id'])
-            for r in run(ComicVine().fetch_volumes_async(volume_ids))
+            ('', r['comicvine_id'])
+            for r in run(ComicVine().fetch_volumes(volume_ids))
         )
         cursor.executemany(
             "UPDATE volumes SET last_cv_update = ? WHERE comicvine_id = ?;",

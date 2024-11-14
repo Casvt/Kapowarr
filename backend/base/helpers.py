@@ -208,7 +208,7 @@ def normalize_string(s: str) -> str:
         s (str): Input string.
 
     Returns:
-        str: Normilized string.
+        str: Normalized string.
     """
     return (unquote(s)
         .replace('_28', '(')
@@ -228,7 +228,7 @@ def normalize_number(s: str) -> str:
         s (str): Input string representing a(n) (issue) number.
 
     Returns:
-        str: Normilized string.
+        str: Normalized string.
     """
     return (s
         .replace(',', '.')
@@ -237,6 +237,46 @@ def normalize_number(s: str) -> str:
         .strip()
         .lower()
     )
+
+
+def normalize_year(s: str) -> Union[int, None]:
+    """Turn user-entered years (in string form) into an int if possible.
+    Handles unknown numbers, trailing chars, surrounding whitespace,
+    etc.
+
+    Args:
+        s (str): Input string representing a year.
+
+    Returns:
+        str: Normalized string.
+    """
+    if not s:
+        return None
+
+    s = (s
+        .strip()
+        .replace('-', '0')
+        .replace(',', '/')
+        .replace('?', '')
+        .replace('>', '')
+        .replace('<', '')
+        .replace('+', '')
+        .replace('.', '')
+    )
+
+    if '/' in s:
+        s = next(
+            (
+                e
+                for e in s.split('/')
+                if len(e) == 4
+            ),
+            ''
+        )
+
+    if s and s.isdigit():
+        return int(s)
+    return None
 
 
 def extract_year_from_date(
@@ -568,6 +608,27 @@ class AsyncSession(ClientSession):
         """
         async with self.get(url, params=params, headers=headers) as response:
             return await response.text()
+
+    async def get_content(
+        self,
+        url: str,
+        params: Dict[str, Any] = {},
+        headers: Dict[str, Any] = {}
+    ) -> bytes:
+        """Fetch a page and return the content in bytes.
+
+        Args:
+            url (str): The URL to fetch from.
+            params (Dict[str, Any], optional): Any additional params.
+                Defaults to {}.
+            headers (Dict[str, Any], optional): Any additional headers.
+                Defaults to {}.
+
+        Returns:
+            bytes: The content of the response.
+        """
+        async with self.get(url, params=params, headers=headers) as response:
+            return await response.content.read()
 
 
 class _ContextKeeper(metaclass=Singleton):

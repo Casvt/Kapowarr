@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from asyncio import run
 from datetime import datetime
 from io import BytesIO, StringIO
 from os.path import exists
@@ -52,13 +53,14 @@ from backend.implementations.blocklist import (add_to_blocklist,
                                                delete_blocklist_entry,
                                                get_blocklist,
                                                get_blocklist_entry)
+from backend.implementations.comicvine import ComicVine
 from backend.implementations.conversion import (get_available_formats,
                                                 preview_mass_convert)
 from backend.implementations.download_direct_clients import credentials
 from backend.implementations.download_torrent_clients import (TorrentClients,
                                                               client_types)
 from backend.implementations.root_folders import RootFolders
-from backend.implementations.volumes import Library, VolumeData, search_volumes
+from backend.implementations.volumes import Library, VolumeData
 from backend.internals.db import close_db
 from backend.internals.server import SERVER, diffuse_timers
 from backend.internals.settings import Settings, about_data
@@ -581,7 +583,9 @@ def api_library_import():
 def api_volumes_search():
     if request.method == 'GET':
         query = extract_key(request, 'query')
-        search_results = search_volumes(query)
+        search_results = run(ComicVine().search_volumes(query))
+        for r in search_results:
+            del r["cover"] # type: ignore
         return return_api(search_results)
 
     elif request.method == 'POST':

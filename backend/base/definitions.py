@@ -130,9 +130,8 @@ class CharConstants:
     }
     "A map of lowercase roman numerals 1-10 to their int equivalent"
 
+
 # region Enums
-
-
 class BaseEnum(Enum):
     def __eq__(self, other: object) -> bool:
         return self.value == other
@@ -312,6 +311,33 @@ class MatchedSearchResultData(
     total=False
 ):
     _issue_number: Union[float, Tuple[float, float]]
+
+
+class VolumeMetadata(TypedDict):
+    comicvine_id: int
+    title: str
+    year: Union[int, None]
+    volume_number: int
+    cover_link: str
+    cover: Union[bytes, None]
+    description: str
+    site_url: str
+    aliases: List[str]
+    publisher: Union[str, None]
+    issue_count: int
+    translated: bool
+    already_added: Union[int, None]
+    issues: Union[List[IssueMetadata], None]
+
+
+class IssueMetadata(TypedDict):
+    comicvine_id: int
+    volume_id: int
+    issue_number: str
+    calculated_issue_number: Union[float, None]
+    title: Union[str, None]
+    date: Union[str, None]
+    description: str
 
 
 class CVFileMapping(TypedDict):

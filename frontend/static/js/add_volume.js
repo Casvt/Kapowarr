@@ -60,7 +60,7 @@ function buildResults(results, api_key) {
 			result.year !== null
             ? `${result.title} (${result.year})`
             : result.title;
-		entry.dataset.cover = result.cover;
+		entry.dataset.cover = result.cover_link;
 		entry.dataset.comicvine_id = result.comicvine_id;
 		entry.dataset._translated = result.translated;
 		entry.dataset._title = result.title;
@@ -73,7 +73,7 @@ function buildResults(results, api_key) {
 		if (result.already_added === null)
 			entry.onclick = e => showAddWindow(result.comicvine_id, api_key);
 
-		entry.querySelector('img').src = result.cover;
+		entry.querySelector('img').src = result.cover_link;
 
 		const title = entry.querySelector('h2');
 		title.innerText = result.title;
