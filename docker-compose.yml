@@ -2,6 +2,9 @@ version: "3.3"
 services:
   kapowarr:
     container_name: kapowarr
+    environment:
+      - "PGID=1000"
+      - "PUID=1000"
     image: mrcas/kapowarr:latest
     volumes:
       - "kapowarr-db:/app/db"
