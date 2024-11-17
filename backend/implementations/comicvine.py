@@ -360,13 +360,15 @@ class ComicVine:
 
             'issue_count': int(volume_data['count_of_issues']),
 
-            'translated': translation_regex.match(
-                volume_data['description'] or ''
-            ) is not None,
-
+            'translated': False,
             'already_added': None, # Only used when searching
             'issues': None # Only used for certain fetches
         }
+
+        if translation_regex.match(
+            result['description'] or ''
+        ) is not None:
+            result['translated'] = True
 
         volume_result = volume_regex.search(volume_data['deck'] or '')
         if volume_result:
