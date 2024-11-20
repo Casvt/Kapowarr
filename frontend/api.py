@@ -42,8 +42,6 @@ from backend.features.download_queue import (DownloadHandler,
 from backend.features.library_import import (import_library,
                                              propose_library_import)
 from backend.features.mass_edit import MassEditorVariables, action_to_func
-from backend.features.naming import (generate_volume_folder_name,
-                                     preview_mass_rename)
 from backend.features.search import manual_search
 from backend.features.tasks import (Task, TaskHandler,
                                     delete_task_history, get_task_history,
@@ -59,6 +57,8 @@ from backend.implementations.conversion import (get_available_formats,
 from backend.implementations.download_direct_clients import credentials
 from backend.implementations.download_torrent_clients import (TorrentClients,
                                                               client_types)
+from backend.implementations.naming import (generate_volume_folder_name,
+                                            preview_mass_rename)
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Library, VolumeData
 from backend.internals.db import close_db

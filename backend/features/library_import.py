@@ -15,8 +15,8 @@ from backend.base.files import (delete_empty_parent_folders,
                                 list_files, rename_file)
 from backend.base.helpers import DictKeyedDict, batched, create_range
 from backend.base.logging import LOGGER
-from backend.features.naming import mass_rename
 from backend.implementations.comicvine import ComicVine
+from backend.implementations.naming import mass_rename
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Library, Volume, scan_files
 from backend.internals.db import get_db

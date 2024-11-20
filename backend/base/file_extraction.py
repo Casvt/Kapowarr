@@ -51,6 +51,8 @@ year_regex = compile(r'\((?:[a-z]+\.?\s)?' + year_regex_snippet + r'\)|--' + yea
 series_regex = compile(r'(^(\d+\.)?\s+|^\d+\s{3}|\s(?=\s)|[\s,]+$)')
 annual_regex = compile(r'\+[\s\._]?annuals?|annuals?[\s\._]?\+|^((?!annuals?).)*$', IGNORECASE)
 cover_regex = compile(r'\b(?<!no[ \-_])(?<!hard[ \-_])(?<!\d[ \-_]covers)cover\b|n\d+c(\d+)|(?:\b|\d)i?fc\b', IGNORECASE)
+page_regex = compile(r'^(\d+(?:[a-f]|_\d+)?)$|\b(?i:page|pg)[\s\.\-_]?(\d+(?:[a-f]|_\d+)?)|n?\d+[_\-p](\d+(?:[a-f]|_\d+)?)')
+page_regex_2 = compile(r'(\d+)')
 # autopep8: on
 
 

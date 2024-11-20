@@ -15,9 +15,9 @@ from backend.base.custom_exceptions import (InvalidComicVineApiKey,
                                             TaskNotDeletable, TaskNotFound)
 from backend.base.helpers import Singleton
 from backend.base.logging import LOGGER
-from backend.features.naming import mass_rename
 from backend.features.search import auto_search
 from backend.implementations.conversion import mass_convert
+from backend.implementations.naming import mass_rename
 from backend.implementations.volumes import Issue, Volume, refresh_and_scan
 from backend.internals.db import get_db
 from backend.internals.server import WebSocket

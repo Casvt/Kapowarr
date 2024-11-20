@@ -356,7 +356,7 @@ class Settings(metaclass=Singleton):
             'file_naming_special_version',
             'file_naming_empty'
         ):
-            from backend.features.naming import check_format
+            from backend.implementations.naming import check_format
 
             converted_value = value.strip().strip(sep)
             check_format(converted_value, key)

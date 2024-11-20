@@ -25,8 +25,8 @@ from backend.base.file_extraction import extract_filename_data
 from backend.base.files import (create_folder, delete_empty_child_folders,
                                 delete_empty_parent_folders,
                                 delete_file_folder, folder_is_inside_folder,
-                                list_files, propose_basefolder_change,
-                                rename_file)
+                                list_files, make_filename_safe,
+                                propose_basefolder_change, rename_file)
 from backend.base.helpers import PortablePool, first_of_column
 from backend.base.logging import LOGGER
 from backend.implementations.comicvine import ComicVine
@@ -133,13 +133,12 @@ def create_volume_folder(
         str: The path to the folder.
     """
     if volume_folder is None:
-        from backend.features.naming import generate_volume_folder_name
+        from backend.implementations.naming import generate_volume_folder_name
 
         volume_folder = join(
             root_folder, generate_volume_folder_name(volume_id)
         )
     else:
-        from backend.features.naming import make_filename_safe
         volume_folder = join(
             root_folder, make_filename_safe(volume_folder)
         )
@@ -650,8 +649,7 @@ class _VolumeBackend:
             new_volume_folder (Union[str, None]): The new folder,
             or `None` if the default folder should be generated and used.
         """
-        from backend.features.naming import (generate_volume_folder_name,
-                                             make_filename_safe)
+        from backend.implementations.naming import generate_volume_folder_name
         current_volume_folder = self['folder']
         root_folder = RootFolders()[self['root_folder']]
 

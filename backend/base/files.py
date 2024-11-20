@@ -8,12 +8,17 @@ from collections import deque
 from os import listdir, makedirs, remove, scandir
 from os.path import (abspath, basename, commonpath, dirname, isdir,
                      isfile, join, relpath, samefile, splitext)
+from re import compile
 from shutil import copytree, move, rmtree
 from typing import Deque, Dict, Iterable, List, Sequence, Set
 
 from backend.base.definitions import CharConstants
 from backend.base.helpers import check_filter, force_suffix
 from backend.base.logging import LOGGER
+
+filename_cleaner = compile(
+    r'(<|>|(?<!^\w):|\"|\||\?|\*|\x00|(?:\s|\.)+(?=$|\\|/))'
+)
 
 
 # region Conversion
@@ -100,6 +105,21 @@ def uppercase_drive_letter(path: str) -> str:
         path = path[0].upper() + path[1:]
 
     return path
+
+
+def make_filename_safe(unsafe_filename: str) -> str:
+    """Make a filename safe to use in a filesystem.
+    It removes illegal characters.
+
+    Args:
+        unsafe_filename (str): The filename to be made safe.
+
+    Returns:
+        str: The filename, now with characters removed/replaced
+        so that it's filesystem-safe.
+    """
+    safe_filename = filename_cleaner.sub('', unsafe_filename)
+    return safe_filename
 
 
 def list_files(folder: str, ext: Iterable[str] = []) -> List[str]:

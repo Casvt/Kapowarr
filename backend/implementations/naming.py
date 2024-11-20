@@ -16,10 +16,11 @@ from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Tuple, Union
 from backend.base.custom_exceptions import InvalidSettingValue
 from backend.base.definitions import (FileConstants, SpecialVersion,
                                       full_sv_mapping, short_sv_mapping)
-from backend.base.file_extraction import cover_regex
+from backend.base.file_extraction import cover_regex, page_regex, page_regex_2
 from backend.base.files import (delete_empty_child_folders,
                                 delete_empty_parent_folders,
-                                propose_basefolder_change, rename_file)
+                                make_filename_safe, propose_basefolder_change,
+                                rename_file)
 from backend.base.helpers import filtered_iter
 from backend.base.logging import LOGGER
 from backend.implementations.root_folders import RootFolders
@@ -30,6 +31,7 @@ from backend.internals.settings import Settings
 
 if TYPE_CHECKING:
     from backend.implementations.volumes import VolumeData
+
 
 formatting_keys = (
     'series_name',
@@ -52,33 +54,12 @@ issue_formatting_keys = formatting_keys + (
     'issue_release_year'
 )
 
-filename_cleaner = compile(
-    r'(<|>|(?<!^\w):|\"|\||\?|\*|\x00|(?:\s|\.)+(?=$|\\|/))')
 remove_year_in_image_regex = compile(r'(?:19|20)\d{2}')
-page_regex = compile(
-    r'^(\d+(?:[a-f]|_\d+)?)$|\b(?i:page|pg)[\s\.\-_]?(\d+(?:[a-f]|_\d+)?)|n?\d+[_\-p](\d+(?:[a-f]|_\d+)?)'
-)
-page_regex_2 = compile(r'(\d+)')
+
 
 # =====================
 # Name generation
 # =====================
-
-
-def make_filename_safe(unsafe_filename: str) -> str:
-    """Make a filename safe to use in a filesystem. It removes illegal characters.
-
-    Args:
-        unsafe_filename (str): The filename to be made safe.
-
-    Returns:
-        str: The filename, now with characters removed/replaced
-        so that it's filesystem-safe.
-    """
-    safe_filename = filename_cleaner.sub('', unsafe_filename)
-    return safe_filename
-
-
 def _get_formatting_data(
     volume_id: int,
     issue_id: Union[int, None] = None,

@@ -12,10 +12,10 @@ from typing import TYPE_CHECKING
 
 from backend.base.files import copy_directory, delete_file_folder, rename_file
 from backend.base.logging import LOGGER
-from backend.features.naming import mass_rename
 from backend.implementations.conversion import mass_convert
 from backend.implementations.converters import extract_files_from_folder
 from backend.implementations.download_torrent_clients import TorrentDownload
+from backend.implementations.naming import mass_rename
 from backend.implementations.volumes import Volume, scan_files
 from backend.internals.db import get_db
 from backend.internals.settings import Settings

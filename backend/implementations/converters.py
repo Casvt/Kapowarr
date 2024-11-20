@@ -21,8 +21,8 @@ from backend.base.files import (create_folder, delete_empty_parent_folders,
                                 list_files, rename_file)
 from backend.base.helpers import extract_year_from_date
 from backend.base.logging import LOGGER
-from backend.features.naming import mass_rename
 from backend.implementations.matching import folder_extraction_filter
+from backend.implementations.naming import mass_rename
 from backend.implementations.volumes import Volume, scan_files
 from backend.internals.db_models import FilesDB
 
