@@ -156,7 +156,7 @@ def extract_key(request, key: str, check_existence: bool = True) -> Any:
                 raise TaskNotFound
 
         elif key == 'api_key':
-            if not value == Settings()['api_key']:
+            if not value or value != Settings().sv.api_key:
                 raise InvalidKeyValue(key, value)
 
         elif key == 'sort':
@@ -262,22 +262,22 @@ def auth(method):
 
 @api.route('/auth', methods=['POST'])
 def api_auth():
-    settings = Settings()
+    settings = Settings().get_settings()
 
     ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
 
-    if settings['auth_password']:
+    if settings.auth_password:
         given_password = request.get_json().get('password')
         if given_password is None:
             return return_api({}, 'PasswordInvalid', 401)
 
-        auth_password = settings['auth_password']
+        auth_password = settings.auth_password
         if auth_password is not None and given_password != auth_password:
             LOGGER.warning(f'Login attempt failed from {ip}')
             return return_api({}, 'PasswordInvalid', 401)
 
     LOGGER.info(f'Login attempt successful from {ip}')
-    return return_api({'api_key': settings['api_key']})
+    return return_api({'api_key': settings.api_key})
 
 
 @api.route('/auth/check', methods=['POST'])
@@ -444,18 +444,18 @@ def api_restart():
 def api_settings():
     settings = Settings()
     if request.method == 'GET':
-        result = settings.get_all()
+        result = settings.get_settings().to_dict()
         return return_api(result)
 
     elif request.method == 'PUT':
         data = request.get_json()
         settings.update(data)
-        return return_api(settings.get_all())
+        return return_api(settings.get_settings().to_dict())
 
     elif request.method == 'DELETE':
         key = extract_key(request, 'key')
         settings.reset(key)
-        return return_api(settings.get_all())
+        return return_api(settings.get_settings().to_dict())
 
 
 @api.route('/settings/api_key', methods=['POST'])
@@ -464,7 +464,7 @@ def api_settings():
 def api_settings_api_key():
     settings = Settings()
     settings.generate_api_key()
-    return return_api(settings.get_all())
+    return return_api(settings.get_settings().to_dict())
 
 
 @api.route('/settings/availableformats', methods=['GET'])

@@ -125,10 +125,10 @@ def _get_formatting_data(
     if not isinstance(_vn, tuple):
         _vn = (_vn,)
 
-    settings = Settings()
-    long_special_version = settings['long_special_version']
-    volume_padding = settings['volume_padding']
-    issue_padding = settings['issue_padding']
+    settings = Settings().get_settings()
+    long_special_version = settings.long_special_version
+    volume_padding = settings.volume_padding
+    issue_padding = settings.issue_padding
 
     # Build formatted data
     if volume_data.title.startswith('The '):
@@ -207,7 +207,7 @@ def generate_volume_folder_name(
         str: The volume folder name.
     """
     formatting_data = _get_formatting_data(volume_id, None, _volume_data)
-    format: str = Settings()['volume_folder_naming']
+    format = Settings().sv.volume_folder_naming
 
     name = format.format(**formatting_data)
     save_name = make_filename_safe(name)
@@ -234,7 +234,7 @@ def generate_sv_name(
         volume_id,
         _volume_number=_volume_number
     )
-    format: str = Settings()['file_naming_special_version']
+    format = Settings().sv.file_naming_special_version
 
     name = format.format(**formatting_data)
     save_name = make_filename_safe(name)
@@ -290,12 +290,12 @@ def generate_issue_range_name(
         calculated_issue_number_start
     )
     formatting_data = _get_formatting_data(volume_id, issue.id)
-    settings = Settings()
+    settings = Settings().get_settings()
 
     if formatting_data['issue_title'] == 'Unknown':
-        format: str = settings['file_naming_empty']
+        format = settings.file_naming_empty
     else:
-        format: str = settings['file_naming']
+        format = settings.file_naming
 
     # Override issue number to range
     issue_number_start = issue['issue_number']
@@ -306,10 +306,10 @@ def generate_issue_range_name(
 
     formatting_data['issue_number'] = (
         str(issue_number_start)
-        .zfill(settings['issue_padding'])
+        .zfill(settings.issue_padding)
         + ' - ' +
         str(issue_number_end)
-        .zfill(settings['issue_padding'])
+        .zfill(settings.issue_padding)
     )
 
     name = format.format(**formatting_data)
@@ -338,12 +338,12 @@ def generate_issue_name(
     )
 
     formatting_data = _get_formatting_data(volume_id, issue.id)
-    settings = Settings()
+    settings = Settings().get_settings()
 
     if formatting_data['issue_title'] == 'Unknown':
-        format: str = settings['file_naming_empty']
+        format: str = settings.file_naming_empty
     else:
-        format: str = settings['file_naming']
+        format: str = settings.file_naming
 
     name = format.format(**formatting_data)
     save_name = make_filename_safe(name)
@@ -444,7 +444,7 @@ def check_format(format: str, type: str) -> None:
         format (str): The format string to check
         type (str): What type of format string it is
             Options: 'file_naming', 'file_naming_special_version',
-            'file_naming_empty', 'folder_naming'.
+            'file_naming_empty', 'volume_folder_naming'.
 
     Raises:
         InvalidSettingValue: Something in the string is invalid
@@ -459,7 +459,7 @@ def check_format(format: str, type: str) -> None:
 
     keys = [fn for _, fn, _, _ in Formatter().parse(format) if fn is not None]
 
-    if type == 'folder_naming':
+    if type == 'volume_folder_naming':
         naming_keys = formatting_keys
     elif type == 'file_naming_special_version':
         naming_keys = formatting_keys_sv
@@ -591,7 +591,7 @@ def preview_mass_rename(
         filepath_filter = []
 
     special_version = volume['special_version']
-    name_volume_as_issue = Settings()['volume_as_empty']
+    name_volume_as_issue = Settings().sv.volume_as_empty
 
     for file in file_infos:
         if not isfile(file):

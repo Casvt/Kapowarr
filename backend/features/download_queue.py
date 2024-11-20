@@ -146,7 +146,7 @@ class DownloadHandler:
         with self.context():
             ws = WebSocket()
             settings = Settings()
-            seeding_handling = settings['seeding_handling']
+            seeding_handling = settings.sv.seeding_handling
 
             if seeding_handling == SeedingHandling.COMPLETE:
                 post_processer = PostProcesserTorrentsComplete
@@ -187,7 +187,7 @@ class DownloadHandler:
                     post_processer.seeding(download)
 
                 elif download.state == DownloadState.IMPORTING_STATE:
-                    if settings['delete_completed_torrents']:
+                    if settings.sv.delete_completed_torrents:
                         download.remove_from_client(delete_files=False)
                     post_processer.success(download)
                     self.queue.remove(download)
@@ -592,7 +592,7 @@ class DownloadHandler:
         """
         Create the download folder if it doesn't already.
         """
-        create_folder(Settings()['download_folder'])
+        create_folder(Settings().sv.download_folder)
         return
 
     def empty_download_folder(self) -> None:
@@ -601,7 +601,7 @@ class DownloadHandler:
         Handy in the case that a crash left half-downloaded files behind in the folder.
         """
         LOGGER.info(f'Emptying the temporary download folder')
-        folder = Settings()['download_folder']
+        folder = Settings().sv.download_folder
         files_in_queue = [basename(download.file) for download in self.queue]
         files_in_folder = listdir(folder)
         ghost_files = [

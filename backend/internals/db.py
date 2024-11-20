@@ -15,7 +15,7 @@ from typing import Any, Dict, List, Union
 
 from flask import g
 
-from backend.base.definitions import Constants
+from backend.base.definitions import Constants, SeedingHandling
 from backend.base.helpers import CommaList
 from backend.base.logging import LOGGER, set_log_level
 from backend.internals.db_migration import migrate_db
@@ -246,6 +246,7 @@ def setup_db() -> None:
     register_adapter(bool, lambda b: int(b))
     register_converter("BOOL", lambda b: b == b'1')
     register_adapter(CommaList, lambda c: str(c))
+    register_adapter(SeedingHandling, lambda e: e.value)
 
     setup_commands = """
         CREATE TABLE IF NOT EXISTS config(
@@ -412,13 +413,14 @@ def setup_db() -> None:
     cursor.executescript(setup_commands)
 
     settings = Settings()
+    settings_values = settings.get_settings()
 
-    set_log_level(settings['log_level'])
+    set_log_level(settings_values.log_level)
 
     migrate_db()
 
     # Generate api key
-    if settings['api_key'] is None:
+    if not settings_values.api_key:
         settings.generate_api_key()
 
     # Add task intervals

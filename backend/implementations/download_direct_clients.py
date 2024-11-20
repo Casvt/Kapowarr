@@ -97,7 +97,7 @@ class BaseDirectDownload(Download):
         ))[0]
 
     def _build_filename(self, r: Response) -> str:
-        folder = Settings()['download_folder']
+        folder = Settings().sv.download_folder
         extension = self._extract_extension(r)
         return join(
             folder,

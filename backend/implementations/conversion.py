@@ -151,11 +151,11 @@ def preview_mass_convert(
         List[Dict[str, str]]: The list of suggestions.
             Dicts have the keys `before` and `after`.
     """
-    settings = Settings()
+    settings = Settings().get_settings()
     volume = Volume(volume_id)
 
-    format_preference = settings['format_preference']
-    extract_issue_ranges = settings['extract_issue_ranges']
+    format_preference = settings.format_preference
+    extract_issue_ranges = settings.extract_issue_ranges
     volume_folder = volume['folder']
 
     result = []
@@ -219,11 +219,11 @@ def mass_convert(
     # so making it a set will increase performance (due to hashing).
     hashed_files = set(filepath_filter or [])
 
-    settings = Settings()
+    settings = Settings().get_settings()
     volume = Volume(volume_id)
 
-    format_preference = settings['format_preference']
-    extract_issue_ranges = settings['extract_issue_ranges']
+    format_preference = settings.format_preference
+    extract_issue_ranges = settings.extract_issue_ranges
 
     planned_conversions: List[Tuple[str, List[str]]] = []
     for f in (f["filepath"] for f in volume.get_files(issue_id)):

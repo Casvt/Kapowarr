@@ -52,10 +52,10 @@ def migrate_db() -> None:
         if start_version not in VersionMappingContainer.version_map:
             continue
         VersionMappingContainer.version_map[start_version]().run()
-        s.update({'database_version': start_version + 1})
+        s["database_version"] = start_version + 1
         cursor.connection.commit()
 
-    s._load_from_db()
+    s._fetch_settings()
 
     return
 
@@ -584,8 +584,8 @@ class MigrateLogLevelToInt(DBMigrator):
         from backend.internals.settings import Settings
 
         s = Settings()
-        log_number = 20 if s['log_level'] == 'info' else 10
-        s['log_level'] = log_number
+        log_number = 20 if s.sv.log_level == 'info' else 10
+        s["log_level"] = log_number
 
         return
 
@@ -644,11 +644,10 @@ class MigrateAddWeTransferToPreference(DBMigrator):
     def run(self) -> None:
         # V19 -> V20
 
-        from backend.base.helpers import CommaList
         from backend.internals.db import get_db
         from backend.internals.settings import Settings
 
-        service_preference: CommaList = Settings()["service_preference"]
+        service_preference = Settings().sv.service_preference
         service_preference.append("wetransfer")
         get_db().execute(
             "UPDATE config SET value = ? WHERE key = 'service_preference';",
@@ -678,11 +677,10 @@ class MigrateAddPixelDrainToPreference(DBMigrator):
     def run(self) -> None:
         # V21 -> V22
 
-        from backend.base.helpers import CommaList
         from backend.internals.db import get_db
         from backend.internals.settings import Settings
 
-        service_preference: CommaList = Settings()["service_preference"]
+        service_preference = Settings().sv.service_preference
         service_preference.append("pixeldrain")
         get_db().execute(
             "UPDATE config SET value = ? WHERE key = 'service_preference';",
@@ -747,7 +745,7 @@ class MigrateServicePreferenceToEnumValues(DBMigrator):
 
         new_service_preference = CommaList((
             source_string_to_enum[service.lower()]
-            for service in Settings()['service_preference']
+            for service in Settings().sv.service_preference
         ))
 
         get_db().execute(
@@ -976,4 +974,53 @@ class MigrateAddAltTitleToVolumes(DBMigrator):
             ALTER TABLE volumes ADD
                 alt_title VARCHAR(255);
         """)
+        return
+
+
+class MigrateNoneToStringFlareSolverr(DBMigrator):
+    start_version = 29
+
+    def run(self) -> None:
+        # V29 -> V30
+
+        from backend.internals.db import get_db
+
+        cursor = get_db()
+        value = cursor.execute("""
+            SELECT value
+            FROM config
+            WHERE key = 'flaresolverr_base_url'
+            LIMIT 1;
+            """
+        ).fetchone()['value']
+
+        if not value:
+            cursor.execute("""
+                UPDATE config
+                SET value = ''
+                WHERE key = 'flaresolverr_base_url';
+            """)
+        return
+
+
+class MigrateRemoveUnusedSettings(DBMigrator):
+    start_version = 30
+
+    def run(self) -> None:
+        # V30 -> V31
+
+        from backend.internals.db import get_db
+        from backend.internals.settings import SettingsValues
+
+        cursor = get_db()
+        cursor.execute("SELECT key FROM config")
+        delete_keys = [
+            key
+            for key in cursor
+            if key[0] not in SettingsValues.__dataclass_fields__
+        ]
+        cursor.executemany(
+            "DELETE FROM config WHERE key = ?;",
+            delete_keys
+        )
         return

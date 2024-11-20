@@ -21,7 +21,7 @@ from backend.base.files import folder_path
 from backend.base.helpers import Singleton
 from backend.base.logging import LOGGER, set_log_level, setup_logging
 from backend.internals.db import DBConnectionManager, close_db, set_db_location
-from backend.internals.settings import restore_hosting_settings
+from backend.internals.settings import Settings
 
 if TYPE_CHECKING:
     from flask.ctx import AppContext
@@ -93,7 +93,7 @@ class Server(metaclass=Singleton):
 
         self.revert_hosting_timer = Timer(
             Constants.HOSTING_TIMER_DURATION,
-            restore_hosting_settings
+            self.restore_hosting_settings
         )
         self.revert_hosting_timer.name = "HostingHandler"
 
@@ -240,6 +240,20 @@ class Server(metaclass=Singleton):
         """
         self.restart_version = restart_version
         self.shutdown()
+        return
+
+    def restore_hosting_settings(self) -> None:
+        "Restore the hosting settings from the backup, and restart."
+        with self.app.app_context():
+            settings = Settings()
+            values = settings.get_settings()
+            main_settings = {
+                'host': values.backup_host,
+                'port': values.backup_port,
+                'url_base': values.backup_url_base
+            }
+            settings.update(main_settings)
+            self.restart()
         return
 
 

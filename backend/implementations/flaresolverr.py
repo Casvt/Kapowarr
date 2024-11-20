@@ -40,7 +40,7 @@ class FlareSolverr(metaclass=Singleton):
 
                 result = result.json()
                 self.session_id = result["session"]
-                self.base_url = base_url + self.api_base
+                self.base_url = base_url
 
             except RequestException:
                 return False
@@ -52,7 +52,7 @@ class FlareSolverr(metaclass=Singleton):
 
         with Session() as session:
             session.post(
-                self.base_url,
+                self.base_url + self.api_base,
                 json={
                     'cmd': 'sessions.destroy',
                     'session': self.session_id
@@ -83,7 +83,7 @@ class FlareSolverr(metaclass=Singleton):
 
         with Session() as session:
             result = session.post(
-                self.base_url,
+                self.base_url + self.api_base,
                 json={
                     'cmd': 'request.get',
                     'session': self.session_id,
@@ -117,7 +117,7 @@ class FlareSolverr(metaclass=Singleton):
             return
 
         result = (await (await session.post(
-                self.base_url,
+                self.base_url + self.api_base,
                 json={
                     'cmd': 'request.get',
                     'session': self.session_id,

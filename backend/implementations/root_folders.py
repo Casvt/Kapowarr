@@ -109,13 +109,12 @@ class RootFolders(metaclass=Singleton):
 
         # New root folder can not be in, or be a parent of,
         # other root folders or the download folder.
-        s = Settings()
         other_folders = (
             *(
                 f.folder
                 for f in self.get_all()
             ),
-            s['download_folder']
+            Settings().sv.download_folder
         )
         for other_folder in other_folders:
             if (

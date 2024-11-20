@@ -17,7 +17,7 @@ function saveSettings(api_key) {
 		'download_folder': document.querySelector('#download-folder-input').value,
 		'seeding_handling': document.querySelector('#seeding-handling-input').value,
 		'delete_completed_torrents': document.querySelector('#delete-torrents-input').checked,
-		'flaresolverr_base_url': document.querySelector('#flaresolverr-input').value || null,
+		'flaresolverr_base_url': document.querySelector('#flaresolverr-input').value,
 		'service_preference': [...document.querySelectorAll('#pref-table select')].map(e => e.value)
 	};
 	sendAPI('PUT', '/settings', api_key, {}, data)

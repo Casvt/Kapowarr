@@ -243,7 +243,7 @@ class TorrentDownload(ExternalDownload):
         self.client = None # type: ignore
         self.external_id = None
         self._download_thread = None
-        self._download_folder = Settings()['download_folder']
+        self._download_folder = Settings().sv.download_folder
 
         self._filename_body = filename_body
         self._resulting_files = []

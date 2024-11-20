@@ -239,7 +239,7 @@ class ComicVine:
             InvalidComicVineApiKey: No ComicVine API key is set in the settings.
         """
         self.api_url = Constants.CV_API_URL
-        api_key = comicvine_api_key or Settings()['comicvine_api_key']
+        api_key = comicvine_api_key or Settings().sv.comicvine_api_key
         if not api_key:
             raise InvalidComicVineApiKey
 

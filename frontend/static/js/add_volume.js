@@ -104,7 +104,7 @@ function buildResults(results, api_key) {
 		tags.appendChild(issue_count);
 
 		const info_link = document.createElement('a');
-		info_link.href = result.comicvine_info;
+		info_link.href = result.site_url;
 		info_link.innerText = 'Link';
 		info_link.onclick = e => e.stopImmediatePropagation();
 		tags.appendChild(info_link);

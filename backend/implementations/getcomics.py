@@ -334,7 +334,7 @@ def _get_download_groups(
     download_groups = __extract_button_links(body, torrent_client_available)
     download_groups.extend(__extract_list_links(body, torrent_client_available))
 
-    service_preference: List[str] = Settings()['service_preference']
+    service_preference = Settings().sv.service_preference
     for group in download_groups:
         group["links"] = {
             k: v
@@ -702,9 +702,9 @@ async def _test_paths(
     Returns:
         List[Download]: A list of downloads.
     """
-    settings = Settings()
-    rename_downloaded_files = settings['rename_downloaded_files']
-    name_volume_as_issue = settings['volume_as_empty']
+    settings = Settings().get_settings()
+    rename_downloaded_files = settings.rename_downloaded_files
+    name_volume_as_issue = settings.volume_as_empty
 
     downloads: List[Union[Download, None]] = []
     limit_reached: List[bool] = []

@@ -104,7 +104,7 @@ class PostProcessingActions:
     @staticmethod
     def convert_file(download: Download) -> None:
         "Convert a file into a different format based on settings"
-        if not Settings()['convert']:
+        if not Settings().sv.convert:
             return
 
         if isinstance(download, TorrentDownload):
@@ -137,7 +137,7 @@ class PostProcessingActions:
 
         scan_files(download.volume_id, download._resulting_files)
 
-        rename_files = Settings()['rename_downloaded_files']
+        rename_files = Settings().sv.rename_downloaded_files
 
         if rename_files and download._resulting_files:
             mass_rename(
@@ -176,7 +176,7 @@ class PostProcessingActions:
 
             scan_files(download.volume_id, download._resulting_files)
 
-            rename_files = Settings()['rename_downloaded_files']
+            rename_files = Settings().sv.rename_downloaded_files
 
             if rename_files and download._resulting_files:
                 mass_rename(

@@ -49,31 +49,27 @@ def _main(
 
     set_db_location(db_folder)
 
-    handle_restart_version(restart_version)
-
     SERVER.create_app()
 
     with SERVER.app.app_context():
+        handle_restart_version(restart_version)
         setup_db()
 
-        settings = Settings()
+        settings = Settings().get_settings()
         flaresolverr = FlareSolverr()
-        host: str = settings['host']
-        port: int = settings['port']
-        url_base: str = settings['url_base']
-        SERVER.set_url_base(url_base)
+        SERVER.set_url_base(settings.url_base)
 
         download_handler.create_download_folder()
 
-        if settings['flaresolverr_base_url']:
-            flaresolverr.enable_flaresolverr(settings['flaresolverr_base_url'])
+        if settings.flaresolverr_base_url:
+            flaresolverr.enable_flaresolverr(settings.flaresolverr_base_url)
 
     download_handler.load_download_thread.start()
     task_handler.handle_intervals()
 
     try:
         # =================
-        SERVER.run(host, port)
+        SERVER.run(settings.host, settings.port)
         # =================
 
     finally:
