@@ -3,7 +3,7 @@
 from asyncio import run
 from datetime import datetime
 from io import BytesIO, StringIO
-from os.path import exists
+from os.path import dirname, exists
 from typing import Any, Dict, List, Tuple, Type, Union
 
 from flask import Blueprint, Flask, request, send_file
@@ -34,7 +34,7 @@ from backend.base.custom_exceptions import (BlocklistEntryNotFound,
 from backend.base.definitions import (BlocklistReason, BlocklistReasonID,
                                       DownloadSource, MonitorScheme,
                                       SpecialVersion)
-from backend.base.files import delete_file_from_db, get_file
+from backend.base.files import delete_empty_parent_folders, delete_file_folder
 from backend.base.logging import LOGGER, get_log_filepath
 from backend.features.download_queue import (DownloadHandler,
                                              delete_download_history,
@@ -62,6 +62,7 @@ from backend.implementations.download_torrent_clients import (TorrentClients,
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Library, VolumeData
 from backend.internals.db import close_db
+from backend.internals.db_models import FilesDB
 from backend.internals.server import SERVER, diffuse_timers
 from backend.internals.settings import Settings, about_data
 
@@ -1176,8 +1177,19 @@ def api_mass_editor():
 @auth
 def api_files(id: int):
     if request.method == 'GET':
-        return return_api(get_file(id))
+        result = FilesDB.fetch(file_id=id)[0]
+        return return_api(result)
 
     elif request.method == 'DELETE':
-        delete_file_from_db(id)
+        file_data = FilesDB.fetch(file_id=id)[0]
+        volume_id = FilesDB.volume_of_file(file_data["filepath"])
+
+        if volume_id:
+            vf = library.get_volume(volume_id)['folder']
+            delete_file_folder(file_data["filepath"])
+            delete_empty_parent_folders(dirname(file_data["filepath"]), vf)
+        else:
+            delete_file_folder(file_data["filepath"])
+
+        FilesDB.delete_file(id)
         return return_api({})

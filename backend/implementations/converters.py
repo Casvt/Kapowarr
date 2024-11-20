@@ -17,13 +17,14 @@ from backend.base.definitions import (SCANNABLE_EXTENSIONS,
                                       Constants, FileConstants)
 from backend.base.file_extraction import extract_filename_data
 from backend.base.files import (create_folder, delete_empty_parent_folders,
-                                delete_file_folder, filepath_to_volume_id,
-                                folder_path, list_files, rename_file)
+                                delete_file_folder, folder_path,
+                                list_files, rename_file)
 from backend.base.helpers import extract_year_from_date
 from backend.base.logging import LOGGER
 from backend.features.naming import mass_rename
 from backend.implementations.matching import folder_extraction_filter
 from backend.implementations.volumes import Volume, scan_files
+from backend.internals.db_models import FilesDB
 
 rar_executables = {
     'linux': folder_path('backend', 'lib', 'rar_linux_64'),
@@ -173,7 +174,10 @@ class ZIPtoRAR(FileConverter):
 
     @staticmethod
     def convert(file: str) -> str:
-        volume_id = filepath_to_volume_id(file)
+        volume_id = FilesDB.volume_of_file(file)
+        if not volume_id:
+            # File not matched to volume
+            return file
         volume_folder = Volume(volume_id)['folder']
         archive_folder = join(
             volume_folder,
@@ -223,7 +227,10 @@ class ZIPtoFOLDER(FileConverter):
 
     @staticmethod
     def convert(file: str) -> List[str]:
-        volume_id = filepath_to_volume_id(file)
+        volume_id = FilesDB.volume_of_file(file)
+        if not volume_id:
+            # File not matched to volume
+            return [file]
         volume_folder = Volume(volume_id)['folder']
         zip_folder = join(
             volume_folder,
@@ -332,7 +339,10 @@ class RARtoZIP(FileConverter):
 
     @staticmethod
     def convert(file: str) -> str:
-        volume_id = filepath_to_volume_id(file)
+        volume_id = FilesDB.volume_of_file(file)
+        if not volume_id:
+            # File not matched to volume
+            return file
         volume_folder = Volume(volume_id)['folder']
         rar_folder = join(
             volume_folder,
@@ -388,7 +398,10 @@ class RARtoFOLDER(FileConverter):
 
     @staticmethod
     def convert(file: str) -> List[str]:
-        volume_id = filepath_to_volume_id(file)
+        volume_id = FilesDB.volume_of_file(file)
+        if not volume_id:
+            # File not matched to volume
+            return [file]
         volume_folder = Volume(volume_id)['folder']
         rar_folder = join(
             volume_folder,

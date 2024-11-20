@@ -137,18 +137,10 @@ class MigrateRemoveUnmatchedFiles(DBMigrator):
     def run(self) -> None:
         # V3 -> V4
 
-        from backend.internals.db import get_db
+        from backend.internals.db_models import FilesDB
 
-        get_db().execute("""
-            DELETE FROM files
-            WHERE rowid IN (
-                SELECT f.rowid
-                FROM files f
-                LEFT JOIN issues_files if
-                ON f.id = if.file_id
-                WHERE if.file_id IS NULL
-            );
-        """)
+        FilesDB.delete_unmatched_files()
+
         return
 
 

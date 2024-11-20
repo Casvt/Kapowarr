@@ -362,6 +362,16 @@ class SizeData(TypedDict):
     free: int
 
 
+class FileData(TypedDict):
+    id: int
+    filepath: str
+    size: int
+
+
+class GeneralFileData(FileData):
+    file_type: str
+
+
 # region Dataclasses
 @dataclass
 class BlocklistEntry:

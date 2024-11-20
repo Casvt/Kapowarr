@@ -20,6 +20,7 @@ from backend.implementations.comicvine import ComicVine
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Library, Volume, scan_files
 from backend.internals.db import get_db
+from backend.internals.db_models import FilesDB
 
 
 def propose_library_import(
@@ -78,11 +79,9 @@ def propose_library_import(
         raise InvalidKeyValue('folder_filter', folder_filter)
 
     # Get imported files
-    cursor = get_db()
     imported_files = set(
-        f[0] for f in cursor.execute(
-            "SELECT filepath FROM files"
-        )
+        f["filepath"]
+        for f in FilesDB.fetch()
     )
 
     # Filter away imported files and apply limit

@@ -17,16 +17,17 @@ from backend.base.custom_exceptions import (InvalidKeyValue, IssueNotFound,
                                             VolumeAlreadyAdded,
                                             VolumeDownloadedFor,
                                             VolumeNotFound)
-from backend.base.definitions import (SCANNABLE_EXTENSIONS,
-                                      FileConstants, GeneralFileType,
-                                      MonitorScheme, SpecialVersion)
+from backend.base.definitions import (SCANNABLE_EXTENSIONS, FileConstants,
+                                      FileData, GeneralFileData,
+                                      GeneralFileType, MonitorScheme,
+                                      SpecialVersion)
 from backend.base.file_extraction import extract_filename_data
 from backend.base.files import (create_folder, delete_empty_child_folders,
                                 delete_empty_parent_folders,
                                 delete_file_folder, folder_is_inside_folder,
-                                get_file_id, list_files,
-                                propose_basefolder_change, rename_file)
-from backend.base.helpers import PortablePool, first_of_column, reversed_tuples
+                                list_files, propose_basefolder_change,
+                                rename_file)
+from backend.base.helpers import PortablePool, first_of_column
 from backend.base.logging import LOGGER
 from backend.implementations.comicvine import ComicVine
 from backend.implementations.matching import (clean_title_regex,
@@ -34,6 +35,7 @@ from backend.implementations.matching import (clean_title_regex,
                                               file_importing_filter)
 from backend.implementations.root_folders import RootFolders
 from backend.internals.db import get_db
+from backend.internals.db_models import FilesDB, GeneralFilesDB
 from backend.internals.server import WebSocket
 
 THIRTY_DAYS = timedelta(days=30)
@@ -275,24 +277,14 @@ class Issue:
         ).fetchone()[0]
         return value
 
-    def get_files(self) -> List[Dict[str, Any]]:
+    def get_files(self) -> List[FileData]:
         """Get all files linked to the issue.
 
         Returns:
-            List[Dict[str, Any]]: List of filepaths. Each dict has the following
+            List[FileData]: List of filepaths. Each dict has the following
             keys: "id", "filepath" and "size".
         """
-        files = get_db().execute(f"""
-            SELECT DISTINCT id, filepath, size
-            FROM files f
-            INNER JOIN issues_files if
-            ON f.id = if.file_id
-            WHERE if.issue_id = ?
-            ORDER BY filepath;
-            """,
-            (self.id,)
-        ).fetchalldict()
-        return files
+        return FilesDB.fetch(issue_id=self.id)
 
     def __setitem__(self, key: str, value: Any) -> None:
         if key != 'monitored':
@@ -490,7 +482,7 @@ class _VolumeBackend:
     def _get_files(
         self,
         issue_id: Union[int, None] = None
-    ) -> List[Dict[str, Any]]:
+    ) -> List[FileData]:
         """Get the files matched to the volume.
 
         Args:
@@ -501,53 +493,21 @@ class _VolumeBackend:
                 Defaults to None.
 
         Returns:
-            List[Dict[str, Any]]: List of filepaths. Each dict has the following
+            List[FileData]: List of filepaths. Each dict has the following
             keys: "id", "filepath" and "size".
         """
-        cursor = get_db()
         if not issue_id:
-            cursor.execute(f"""
-                SELECT DISTINCT f.id, filepath, size
-                FROM files f
-                INNER JOIN issues_files if
-                INNER JOIN issues i
-                ON
-                    f.id = if.file_id
-                    AND if.issue_id = i.id
-                WHERE volume_id = ?;
-                """,
-                (self.id,)
-            )
+            return FilesDB.fetch(volume_id=self.id)
+        return FilesDB.fetch(issue_id=issue_id)
 
-        else:
-            cursor.execute(f"""
-                SELECT DISTINCT f.id, filepath, size
-                FROM files f
-                INNER JOIN issues_files if
-                ON f.id = if.file_id
-                WHERE if.issue_id = ?;
-                """,
-                (issue_id,)
-            )
-
-        return cursor.fetchalldict()
-
-    def _get_general_files(self) -> List[Dict[str, Any]]:
+    def _get_general_files(self) -> List[GeneralFileData]:
         """Get the general files linked to the volume.
 
         Returns:
-            List[Dict[str, Any]]: The general files. Similarly formatted as
+            List[GeneralFileData]: The general files. Similarly formatted as
             normal file output, but with the extra key "file_type".
         """
-        return get_db().execute("""
-            SELECT f.id, filepath, size, file_type
-            FROM files f
-            INNER JOIN volume_files vf
-            ON f.id = vf.file_id
-            WHERE volume_id = ?;
-            """,
-            (self.id,)
-        ).fetchalldict()
+        return GeneralFilesDB.fetch(self.id)
 
     def __getitem__(self, key: str) -> Any:
         if key == 'cover':
@@ -661,9 +621,9 @@ class _VolumeBackend:
         if isdir(volume_folder):
             delete_empty_child_folders(volume_folder)
 
-        cursor.executemany(
-            "UPDATE files SET filepath = ? WHERE filepath = ?",
-            reversed_tuples(file_changes.items())
+        FilesDB.update_filepaths(
+            file_changes.keys(),
+            file_changes.values()
         )
 
         self._set_value('root_folder', desired_root_folder[0])
@@ -726,16 +686,16 @@ class _VolumeBackend:
             current_volume_folder,
             new_volume_folder
         )
-        for old_name, new_name in file_changes:
+        for old_name, new_name in file_changes.items():
             rename_file(
                 old_name,
                 new_name
             )
         delete_empty_child_folders(current_volume_folder)
 
-        get_db().executemany(
-            "UPDATE files SET filepath = ? WHERE filepath = ?",
-            reversed_tuples(file_changes.items())
+        FilesDB.update_filepaths(
+            file_changes.keys(),
+            file_changes.values()
         )
 
         if folder_is_inside_folder(new_volume_folder, current_volume_folder):
@@ -851,7 +811,7 @@ class Volume(_VolumeBackend):
     def get_files(
         self,
         issue_id: Union[int, None] = None
-    ) -> List[Dict[str, Any]]:
+    ) -> List[FileData]:
         """Get the files matched to the volume.
 
         Args:
@@ -862,12 +822,12 @@ class Volume(_VolumeBackend):
                 Defaults to None.
 
         Returns:
-            List[Dict[str, Any]]: List of filepaths. Each dict has the following
+            List[FileData]: List of filepaths. Each dict has the following
             keys: "id", "filepath" and "size".
         """
         return self._get_files(issue_id=issue_id)
 
-    def get_general_files(self) -> List[Dict[str, Any]]:
+    def get_general_files(self) -> List[GeneralFileData]:
         """Get the general files linked to the volume.
 
         Args:
@@ -875,7 +835,7 @@ class Volume(_VolumeBackend):
                 Defaults to False.
 
         Returns:
-            List[Dict[str, Any]]: The general files. Similarly formatted as
+            List[GeneralFileData]: The general files. Similarly formatted as
             normal file output, but with the extra key "file_type".
         """
         return self._get_general_files()
@@ -969,19 +929,8 @@ class Volume(_VolumeBackend):
 
         # Delete file entries
         # ON DELETE CASCADE will take care of issues_files
-        cursor.execute(
-            """
-            DELETE FROM files
-            WHERE id IN (
-                SELECT DISTINCT file_id
-                FROM issues_files
-                INNER JOIN issues
-                ON issues_files.issue_id = issues.id
-                WHERE volume_id = ?
-            );
-            """,
-            (self.id,)
-        )
+        FilesDB.delete_linked_files(self.id)
+
         # Delete metadata entries
         # ON DELETE CASCADE will take care of issues
         cursor.execute("DELETE FROM volumes WHERE id = ?", (self.id,))
@@ -991,30 +940,10 @@ class Volume(_VolumeBackend):
     def __repr__(self) -> str:
         return f'<{self.__class__.__name__}; ID {self.id}>'
 
+
 # =====================
 # region Scanning and updating
 # =====================
-
-
-def _del_unmatched_files() -> None:
-    """
-    Delete all file entries in the DB that aren't binded.
-    So files that were present last scan but this scan not anymore.
-    """
-    get_db().execute("""
-        WITH ids AS (
-            SELECT file_id
-            FROM issues_files
-            UNION
-            SELECT file_id
-            FROM volume_files
-        )
-        DELETE FROM files
-        WHERE id NOT IN ids;
-    """)
-    return
-
-
 def scan_files(
     volume_id: int,
     filepath_filter: List[str] = [],
@@ -1073,11 +1002,11 @@ def scan_files(
         if basename(file).lower() in FileConstants.METADATA_FILES:
             # Volume metadata file
             file_id = general_files.get(file)
+
             if file_id is None:
-                file_id = get_file_id(
-                    file,
-                    add_file=True
-                )
+                FilesDB.add_file(file)
+                file_id = FilesDB.fetch(filepath=file)[0]['id']
+
             general_bindings.append((file_id, GeneralFileType.METADATA))
             continue
 
@@ -1090,11 +1019,11 @@ def scan_files(
         ):
             # Volume cover file
             file_id = general_files.get(file)
+
             if file_id is None:
-                file_id = get_file_id(
-                    file,
-                    add_file=True
-                )
+                FilesDB.add_file(file)
+                file_id = FilesDB.fetch(filepath=file)[0]['id']
+
             general_bindings.append((file_id, GeneralFileType.COVER))
             continue
 
@@ -1109,10 +1038,8 @@ def scan_files(
             )
             and file_data['special_version']
         ):
-            file_id = get_file_id(
-                file,
-                add_file=file not in volume_files
-            )
+            FilesDB.add_file(file)
+            file_id = FilesDB.fetch(filepath=file)[0]['id']
 
             bindings.append((file_id, volume_issues[0]['id']))
 
@@ -1137,10 +1064,8 @@ def scan_files(
             ) # type: ignore
 
             if matching_issues:
-                file_id = get_file_id(
-                    file,
-                    add_file=file not in volume_files
-                )
+                FilesDB.add_file(file)
+                file_id = FilesDB.fetch(filepath=file)[0]['id']
 
                 for issue_id in matching_issues:
                     bindings.append((file_id, issue_id))
@@ -1201,7 +1126,7 @@ def scan_files(
         new_general_bindings)
 
     if del_unmatched_files:
-        _del_unmatched_files()
+        FilesDB.delete_unmatched_files()
 
     cursor.connection.commit()
 
@@ -1413,7 +1338,7 @@ def refresh_and_scan(
             else:
                 pool.map(map_scan_files, v_ids)
 
-        _del_unmatched_files()
+        FilesDB.delete_unmatched_files()
 
     return
 

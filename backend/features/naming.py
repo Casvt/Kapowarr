@@ -20,11 +20,11 @@ from backend.base.file_extraction import cover_regex
 from backend.base.files import (delete_empty_child_folders,
                                 delete_empty_parent_folders,
                                 propose_basefolder_change, rename_file)
-from backend.base.helpers import filtered_iter, first_of_column
+from backend.base.helpers import filtered_iter
 from backend.base.logging import LOGGER
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Issue, Volume
-from backend.internals.db import get_db
+from backend.internals.db_models import FilesDB
 from backend.internals.server import WebSocket
 from backend.internals.settings import Settings
 
@@ -555,7 +555,6 @@ def preview_mass_rename(
     """
     result = []
     volume = Volume(volume_id)
-    cursor = get_db()
     # Fetch all files linked to the volume or issue
     new_vf = None
     if not issue_id:
@@ -599,20 +598,7 @@ def preview_mass_rename(
         LOGGER.debug(f'Renaming: original filename: {file}')
 
         # Find the issues that the file covers
-        issues = first_of_column(cursor.execute("""
-            SELECT
-                i.calculated_issue_number
-            FROM issues i
-            INNER JOIN issues_files if
-            INNER JOIN files f
-            ON
-                i.id = if.issue_id
-                AND if.file_id = f.id
-            WHERE f.filepath = ?
-            ORDER BY calculated_issue_number;
-            """,
-            (file,)
-        ))
+        issues = FilesDB.issues_covered(file)
 
         if len(issues) > 1:
             suggested_name = generate_name(
@@ -730,7 +716,6 @@ def mass_rename(
     Returns:
         List[str]: The new files.
     """
-    cursor = get_db()
     renames, new_folder = preview_mass_rename(
         volume_id, issue_id,
         filepath_filter
@@ -755,9 +740,9 @@ def mass_rename(
         for idx, r in enumerate(renames):
             rename_file(r['before'], r['after'])
 
-    cursor.executemany(
-        "UPDATE files SET filepath = ? WHERE filepath = ?;",
-        ((r['after'], r['before']) for r in renames)
+    FilesDB.update_filepaths(
+        (r["before"] for r in renames),
+        (r["after"] for r in renames)
     )
 
     if renames:

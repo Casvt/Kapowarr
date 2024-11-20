@@ -5,17 +5,15 @@ Handling folders, files and filenames.
 """
 
 from collections import deque
-from os import listdir, makedirs, remove, scandir, stat
+from os import listdir, makedirs, remove, scandir
 from os.path import (abspath, basename, commonpath, dirname, isdir,
                      isfile, join, relpath, samefile, splitext)
 from shutil import copytree, move, rmtree
-from typing import Any, Deque, Dict, Iterable, List, Sequence, Set
+from typing import Deque, Dict, Iterable, List, Sequence, Set
 
-from backend.base.custom_exceptions import FileNotFound
 from backend.base.definitions import CharConstants
 from backend.base.helpers import check_filter, force_suffix
 from backend.base.logging import LOGGER
-from backend.internals.db import get_db
 
 
 # region Conversion
@@ -380,126 +378,4 @@ def delete_empty_child_folders(base_folder: str) -> None:
         LOGGER.debug(f"Deleting folder and children: {f}")
         delete_file_folder(f)
 
-    return
-
-
-# region Get from database
-def get_file(
-    file_id: int
-) -> Dict[str, Any]:
-    """Get file data based on it's ID.
-
-    Args:
-        file_id (int): The ID of the file to get the data of.
-
-    Raises:
-        FileNotFound: No file found with the given ID.
-
-    Returns:
-        Dict[str, Any]: The file data.
-    """
-    result = get_db().execute(
-        "SELECT id, filepath, size FROM files WHERE id = ? LIMIT 1;",
-        (file_id,)
-    ).fetchonedict()
-
-    if not result:
-        raise FileNotFound
-
-    return result
-
-
-def get_file_id(
-    filepath: str,
-    add_file: bool
-) -> int:
-    """Get the ID of a file, and add it first if requested.
-
-    Args:
-        filepath (str): The file to get the ID of.
-        add_file (bool): Add file to database first before getting ID.
-
-    Returns:
-        int: The id of the entry in the database
-    """
-    cursor = get_db()
-
-    if add_file:
-        LOGGER.debug(f'Adding file to the database: {filepath}')
-        cursor.execute(
-            "INSERT OR IGNORE INTO files(filepath, size) VALUES (?,?)",
-            (filepath, stat(filepath).st_size)
-        )
-
-    file_id = cursor.execute(
-        "SELECT id FROM files WHERE filepath = ? LIMIT 1",
-        (filepath,)
-    ).fetchone()[0]
-
-    return file_id
-
-
-def filepath_to_volume_id(filepath: str) -> int:
-    """Get the ID of the volume based on a filename.
-
-    Args:
-        filepath (str): The filepath based on which to get the volume ID.
-
-    Returns:
-        int: The ID of the volume.
-    """
-    volume_id = get_db().execute("""
-        SELECT i.volume_id
-        FROM
-            files f
-            INNER JOIN issues_files if
-            INNER JOIN issues i
-        ON
-            f.id = if.file_id
-            AND if.issue_id = i.id
-        WHERE f.filepath = ?
-        LIMIT 1;
-        """,
-        (filepath,)
-    ).fetchone()
-
-    if not volume_id:
-        volume_id = get_db().execute("""
-            SELECT vf.volume_id
-            FROM
-                files f
-                INNER JOIN volume_files vf
-            ON
-                f.id = vf.file_id
-            WHERE f.filepath = ?
-            LIMIT 1;
-            """,
-            (filepath,)
-        ).fetchone()
-
-    return volume_id[0]
-
-
-def delete_file_from_db(file_id: int) -> None:
-    """Physically delete the file and remove it from the database.
-
-    Args:
-        file_id (int): The ID of the file to delete.
-    """
-    file_data = get_file(file_id)
-    volume_id = filepath_to_volume_id(file_data["filepath"])
-
-    cursor = get_db()
-    volume_folder = cursor.execute(
-        "SELECT folder FROM volumes WHERE id = ? LIMIT 1;",
-        (volume_id,)
-    ).fetchone()[0]
-
-    delete_file_folder(file_data["filepath"])
-    delete_empty_parent_folders(dirname(file_data["filepath"]), volume_folder)
-
-    cursor.execute(
-        "DELETE FROM files WHERE id = ?",
-        (file_id,)
-    )
     return
