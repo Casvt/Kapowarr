@@ -947,15 +947,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#file-naming-for-special-versions" class="md-nav__link">
-    <span class="md-ellipsis">
-      File Naming For Special Versions
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#file-naming-for-issues-without-title" class="md-nav__link">
     <span class="md-ellipsis">
       File Naming For Issues Without Title
@@ -965,9 +956,18 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#treat-volume-issues-as-no-title" class="md-nav__link">
+  <a href="#file-naming-for-special-versions" class="md-nav__link">
     <span class="md-ellipsis">
-      Treat Volume Issues as "No Title"
+      File Naming For Special Versions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-naming-for-volume-as-issue" class="md-nav__link">
+    <span class="md-ellipsis">
+      File Naming For "Volume As Issue"
     </span>
   </a>
   
@@ -1340,15 +1340,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#file-naming-for-special-versions" class="md-nav__link">
-    <span class="md-ellipsis">
-      File Naming For Special Versions
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#file-naming-for-issues-without-title" class="md-nav__link">
     <span class="md-ellipsis">
       File Naming For Issues Without Title
@@ -1358,9 +1349,18 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#treat-volume-issues-as-no-title" class="md-nav__link">
+  <a href="#file-naming-for-special-versions" class="md-nav__link">
     <span class="md-ellipsis">
-      Treat Volume Issues as "No Title"
+      File Naming For Special Versions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-naming-for-volume-as-issue" class="md-nav__link">
+    <span class="md-ellipsis">
+      File Naming For "Volume As Issue"
     </span>
   </a>
   
@@ -1492,7 +1492,7 @@
 </tbody>
 </table>
 <h3 id="volume-folder-naming">Volume Folder Naming<a class="headerlink" href="#volume-folder-naming" title="Permanent link">&para;</a></h3>
-<p>The naming format for the volume folder (folder structure allowed). Keep in mind that the resulting name could differ slightly from the format, in the case that certain values of variables contain illegal characters. For example, if the <code class="highlight">{series_name}</code> is "What If...", the resulting name will have "What If" as it's value, because the character <code class="highlight">.</code> is not allowed at the end of the name in Windows. This also applies to the other naming formats in this section.</p>
+<p>The naming format for the volume folder. Keep in mind that the resulting name could differ slightly from the format, in the case that certain values of variables contain illegal characters. For example, if the <code class="highlight">{series_name}</code> is "What If...", the resulting name will have "What If" as it's value, because the character <code class="highlight">.</code> is not allowed at the end of the name in Windows. This also applies to the other naming formats in this section.</p>
 <details class="info">
 <summary>Available Variables</summary>
 <table>
@@ -1549,7 +1549,7 @@
 </tbody>
 </table>
 <h3 id="file-naming_1">File Naming<a class="headerlink" href="#file-naming_1" title="Permanent link">&para;</a></h3>
-<p>The naming format for the file (folder structure allowed).</p>
+<p>The naming format for the file itself.</p>
 <details class="info">
 <summary>Available Variables</summary>
 <table>
@@ -1622,67 +1622,6 @@
 <tr>
 <td>Issue {issue_number} - {issue_title} ({issue_release_date}) [issue_comicvine_id]</td>
 <td>Issue 001 - Spider-Man; Spider-Man Vs. The Chameleon (1963-03-01) [6422]</td>
-</tr>
-</tbody>
-</table>
-<h3 id="file-naming-for-special-versions">File Naming For Special Versions<a class="headerlink" href="#file-naming-for-special-versions" title="Permanent link">&para;</a></h3>
-<p>The naming format for the file itself (if it's a special version, like a one shot, tpb or hard cover).</p>
-<details class="info">
-<summary>Available Variables</summary>
-<table>
-<thead>
-<tr>
-<th>Variable</th>
-<th>Example Value</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>{series_name}</td>
-<td>Silver Surfer Rebirth</td>
-</tr>
-<tr>
-<td>{clean_series_name}</td>
-<td>Silver Surfer Rebirth</td>
-</tr>
-<tr>
-<td>{volume_number}</td>
-<td>01</td>
-</tr>
-<tr>
-<td>{comicvine_id}</td>
-<td>147555</td>
-</tr>
-<tr>
-<td>{year}</td>
-<td>2022</td>
-</tr>
-<tr>
-<td>{publisher}</td>
-<td>Marvel</td>
-</tr>
-<tr>
-<td>{special_version}</td>
-<td>One-Shot</td>
-</tr>
-</tbody>
-</table>
-</details>
-<table>
-<thead>
-<tr>
-<th>Example Value</th>
-<th>Example Resulting Name</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>{series_name} ({year}) Volume {volume_number} {special_version}</td>
-<td>Silver Surfer Rebirth (2022) Volume 01 TPB</td>
-</tr>
-<tr>
-<td>{series_name} ({year})</td>
-<td>Silver Surfer Rebirth (2022)</td>
 </tr>
 </tbody>
 </table>
@@ -1760,23 +1699,137 @@
 </tr>
 </tbody>
 </table>
-<h3 id="treat-volume-issues-as-no-title">Treat Volume Issues as "No Title"<a class="headerlink" href="#treat-volume-issues-as-no-title" title="Permanent link">&para;</a></h3>
-<p>Sometimes a volume will consist of multiple sub-volumes (these volumes are labelled 'Volume As Issue' in the web-UI). This setting controls whether Kapowarr should name these like issues (using the <a href="#file-naming-for-issues-without-title">File Naming For Issues Without Title</a> format) or not.</p>
+<h3 id="file-naming-for-special-versions">File Naming For Special Versions<a class="headerlink" href="#file-naming-for-special-versions" title="Permanent link">&para;</a></h3>
+<p>The naming format for the file itself (if it's a special version, like a one shot, tpb or hard cover).</p>
+<details class="info">
+<summary>Available Variables</summary>
 <table>
 <thead>
 <tr>
-<th>Setting</th>
-<th>Example Result</th>
+<th>Variable</th>
+<th>Example Value</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Enabled</td>
-<td>Invincible Compendium (2011) Volume 1 Issue 1-2.cbr<br>Invincible Compendium (2011) Volume 1 Issue 3.cbr</td>
+<td>{series_name}</td>
+<td>Silver Surfer Rebirth</td>
 </tr>
 <tr>
-<td>Disabled</td>
-<td>Invincible Compendium (2011) Volume 1 - 2.cbr<br>Invincible Compendium (2011) Volume 3.cbr</td>
+<td>{clean_series_name}</td>
+<td>Silver Surfer Rebirth</td>
+</tr>
+<tr>
+<td>{volume_number}</td>
+<td>01</td>
+</tr>
+<tr>
+<td>{comicvine_id}</td>
+<td>147555</td>
+</tr>
+<tr>
+<td>{year}</td>
+<td>2022</td>
+</tr>
+<tr>
+<td>{publisher}</td>
+<td>Marvel</td>
+</tr>
+<tr>
+<td>{special_version}</td>
+<td>One-Shot</td>
+</tr>
+</tbody>
+</table>
+</details>
+<table>
+<thead>
+<tr>
+<th>Example Value</th>
+<th>Example Resulting Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>{series_name} ({year}) Volume {volume_number} {special_version}</td>
+<td>Silver Surfer Rebirth (2022) Volume 01 TPB</td>
+</tr>
+</tbody>
+</table>
+<h3 id="file-naming-for-volume-as-issue">File Naming For "Volume As Issue"<a class="headerlink" href="#file-naming-for-volume-as-issue" title="Permanent link">&para;</a></h3>
+<p>The naming format for the file itself (if it's a Volume As Issue, so an issue named "Volume N").</p>
+<details class="info">
+<summary>Available Variables</summary>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Example Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>{series_name}</td>
+<td>The Incredibles</td>
+</tr>
+<tr>
+<td>{clean_series_name}</td>
+<td>Incredibles, The</td>
+</tr>
+<tr>
+<td>{volume_number}</td>
+<td>01</td>
+</tr>
+<tr>
+<td>{comicvine_id}</td>
+<td>2127</td>
+</tr>
+<tr>
+<td>{year}</td>
+<td>1994</td>
+</tr>
+<tr>
+<td>{publisher}</td>
+<td>DC Comics</td>
+</tr>
+<tr>
+<td>{issue_comicvine_id}</td>
+<td>6422</td>
+</tr>
+<tr>
+<td>{issue_number}</td>
+<td>002</td>
+</tr>
+<tr>
+<td>{issue_title}</td>
+<td>Spider-Man; Spider-Man Vs. The Chameleon</td>
+</tr>
+<tr>
+<td>{issue_release_date}</td>
+<td>1963-03-01</td>
+</tr>
+<tr>
+<td>{issue_release_year}</td>
+<td>1963</td>
+</tr>
+</tbody>
+</table>
+</details>
+<table>
+<thead>
+<tr>
+<th>Example Value</th>
+<th>Example Resulting Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>{series_name} ({year}) Volume {issue_number}</td>
+<td>Reign of X (1994) Volume 002 - 003</td>
+</tr>
+<tr>
+<td>Volume {volume_number} Issue {issue_number} ({issue_release_date}) [issue_comicvine_id]</td>
+<td>Volume 01 Issue 002 - 003 (1963-03-01) [6422]</td>
 </tr>
 </tbody>
 </table>
@@ -1840,7 +1893,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2024-10-30T11:43:44+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2024-10-30</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2024-11-23T14:54:43+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2024-11-23</span>
   </span>
 
     
