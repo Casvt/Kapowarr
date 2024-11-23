@@ -675,6 +675,7 @@ class _VolumeBackend:
 
         self['custom_folder'] = custom_folder
         self['folder'] = new_volume_folder
+        create_folder(new_volume_folder)
 
         file_changes = propose_basefolder_change(
             (
