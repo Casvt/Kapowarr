@@ -980,8 +980,7 @@ def scan_files(
     }
 
     if not isdir(volume_data.folder):
-        root_folder = RootFolders()[volume_data.root_folder]
-        create_volume_folder(root_folder, volume_id)
+        create_folder(volume_data.folder)
 
     cursor = get_db()
     bindings: List[Tuple[int, int]] = []
