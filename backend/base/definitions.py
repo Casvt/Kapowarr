@@ -190,12 +190,14 @@ class SpecialVersion(BaseEnum):
 short_sv_mapping: Dict[SpecialVersion, str] = dict((
     (SpecialVersion.HARD_COVER, 'HC'),
     (SpecialVersion.ONE_SHOT, 'OS'),
-    (SpecialVersion.TPB, 'TPB')
+    (SpecialVersion.TPB, 'TPB'),
+    (SpecialVersion.COVER, 'Cover')
 ))
 full_sv_mapping: Dict[SpecialVersion, str] = dict((
     (SpecialVersion.HARD_COVER, 'Hard-Cover'),
     (SpecialVersion.ONE_SHOT, 'One-Shot'),
-    (SpecialVersion.TPB, 'TPB')
+    (SpecialVersion.TPB, 'TPB'),
+    (SpecialVersion.COVER, 'Cover')
 ))
 
 

@@ -38,12 +38,13 @@ class SettingsValues:
 
     rename_downloaded_files: bool = True
     volume_folder_naming: str = join(
-        '{series_name}', 'Volume {volume_number} ({year})')
+        '{series_name}', 'Volume {volume_number} ({year})'
+    )
     file_naming: str = '{series_name} ({year}) Volume {volume_number} Issue {issue_number}'
-    file_naming_special_version: str = '{series_name} ({year}) Volume {volume_number} {special_version}'
     file_naming_empty: str = '{series_name} ({year}) Volume {volume_number} Issue {issue_number}'
+    file_naming_special_version: str = '{series_name} ({year}) Volume {volume_number} {special_version}'
+    file_naming_vai: str = '{series_name} ({year}) Volume {issue_number}'
 
-    volume_as_empty: bool = False
     long_special_version: bool = False
     volume_padding: int = 2
     issue_padding: int = 3

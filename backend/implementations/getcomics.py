@@ -572,8 +572,7 @@ async def __purify_download_group(
     issue_id: Union[int, None],
     web_link: str,
     web_title: Union[str, None],
-    rename_downloaded_files: bool,
-    name_volume_as_issue: bool
+    rename_downloaded_files: bool
 ) -> Tuple[Union[Download, None], bool]:
     """Turn a download group into a working link and client for the link.
 
@@ -585,7 +584,6 @@ async def __purify_download_group(
         web_link (str): The link to the web page.
         web_title (Union[str, None]): The title of the GC article.
         rename_downloaded_files (bool): Whether to rename the downloaded files.
-        name_volume_as_issue (bool): Whether to name the VAI's as an issue.
 
     Returns:
         Tuple[Union[Download, None], bool]: If successful, the download and
@@ -599,7 +597,6 @@ async def __purify_download_group(
             volume_id,
             SpecialVersion(group["info"]["special_version"]),
             group["info"]["issue_number"],
-            name_volume_as_issue
         )
 
     else:
@@ -704,7 +701,6 @@ async def _test_paths(
     """
     settings = Settings().get_settings()
     rename_downloaded_files = settings.rename_downloaded_files
-    name_volume_as_issue = settings.volume_as_empty
 
     downloads: List[Union[Download, None]] = []
     limit_reached: List[bool] = []
@@ -716,8 +712,7 @@ async def _test_paths(
                 issue_id,
                 web_link,
                 web_title,
-                rename_downloaded_files and not force_original_name,
-                name_volume_as_issue
+                rename_downloaded_files and not force_original_name
             )
             for group in path
         ))))

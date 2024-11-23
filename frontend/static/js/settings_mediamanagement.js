@@ -2,9 +2,9 @@ const inputs = {
 	'renaming_input': document.querySelector('#renaming-input'),
 	'volume_folder_naming_input': document.querySelector('#volume-folder-naming-input'),
 	'file_naming_input': document.querySelector('#file-naming-input'),
-	'file_naming_sv_input': document.querySelector('#file-naming-sv-input'),
 	'file_naming_empty_input': document.querySelector('#file-naming-empty-input'),
-	'volume_as_empty_input': document.querySelector('#volume-as-empty-input'),
+	'file_naming_sv_input': document.querySelector('#file-naming-sv-input'),
+	'file_naming_vai_input': document.querySelector("#file-naming-vai-input"),
 	'long_sv_input': document.querySelector('#long-sv-input'),
 	'issue_padding_input': document.querySelector('#issue-padding-input'),
 	'volume_padding_input': document.querySelector('#volume-padding-input'),
@@ -21,9 +21,9 @@ function fillSettings(api_key) {
 		inputs.renaming_input.checked = json.result.rename_downloaded_files;
 		inputs.volume_folder_naming_input.value = json.result.volume_folder_naming;
 		inputs.file_naming_input.value = json.result.file_naming;
-		inputs.file_naming_sv_input.value = json.result.file_naming_special_version;
 		inputs.file_naming_empty_input.value = json.result.file_naming_empty;
-		inputs.volume_as_empty_input.checked = json.result.volume_as_empty;
+		inputs.file_naming_sv_input.value = json.result.file_naming_special_version;
+		inputs.file_naming_vai_input.value = json.result.file_naming_vai;
 		inputs.long_sv_input.checked = json.result.long_special_version;
 		inputs.issue_padding_input.value = json.result.issue_padding;
 		inputs.volume_padding_input.value = json.result.volume_padding;
@@ -38,15 +38,16 @@ function saveSettings(api_key) {
 	document.querySelector("#save-button p").innerText = 'Saving';
 	inputs.volume_folder_naming_input.classList.remove('error-input');
 	inputs.file_naming_input.classList.remove('error-input');
-	inputs.file_naming_sv_input.classList.remove('error-input');
 	inputs.file_naming_empty_input.classList.remove('error-input');
+	inputs.file_naming_sv_input.classList.remove('error-input');
+	inputs.file_naming_vai_input.classList.remove('error-input');
 	const data = {
 		'rename_downloaded_files': document.querySelector('#renaming-input').checked,
 		'volume_folder_naming': document.querySelector('#volume-folder-naming-input').value,
 		'file_naming': inputs.file_naming_input.value,
-		'file_naming_special_version': inputs.file_naming_sv_input.value,
 		'file_naming_empty': inputs.file_naming_empty_input.value,
-		'volume_as_empty': inputs.volume_as_empty_input.checked,
+		'file_naming_special_version': inputs.file_naming_sv_input.value,
+		'file_naming_vai': inputs.file_naming_vai_input.value,
 		'long_special_version': inputs.long_sv_input.checked,
 		'issue_padding': parseInt(inputs.issue_padding_input.value),
 		'volume_padding': parseInt(inputs.volume_padding_input.value),
@@ -66,10 +67,12 @@ function saveSettings(api_key) {
 					inputs.volume_folder_naming_input.classList.add('error-input');
 				else if (e.result.key === 'file_naming')
 					inputs.file_naming_input.classList.add('error-input');
-				else if (e.result.key === 'file_naming_special_version')
-					inputs.file_naming_sv_input.classList.add('error-input');
 				else if (e.result.key === 'file_naming_empty')
 					inputs.file_naming_empty_input.classList.add('error-input');
+				else if (e.result.key === 'file_naming_special_version')
+					inputs.file_naming_sv_input.classList.add('error-input');
+				else if (e.result.key === 'file_naming_vai')
+					inputs.file_naming_vai_input.classList.add('error-input');
 			} else
 				console.log(e.error);
 		});

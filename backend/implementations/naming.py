@@ -64,7 +64,7 @@ def _get_formatting_data(
     volume_id: int,
     issue_id: Union[int, None] = None,
     _volume_data: Union[VolumeData, None] = None,
-    _volume_number: Union[int, Tuple[int, int], None] = None
+    _special_version: Union[SpecialVersion, None] = None
 ) -> Dict[str, Any]:
     """Get the values of the formatting keys for a volume or issue.
 
@@ -78,8 +78,8 @@ def _get_formatting_data(
         data based on the volume id, work with the data given in this variable.
             Defaults to None.
 
-        _volume_number (Union[int, Tuple[int, int], None], optional):
-        Override the volume number.
+        _special_version (Union[SpecialVersion, None], optional): Override the
+        special version that is used.
             Defaults to None.
 
     Raises:
@@ -98,13 +98,8 @@ def _get_formatting_data(
             'publisher', 'special_version'
         ))
 
-    if _volume_number:
-        _vn = _volume_number
-    else:
-        _vn = volume_data.volume_number
-
-    if not isinstance(_vn, tuple):
-        _vn = (_vn,)
+    if _special_version is not None:
+        volume_data.__dict__["special_version"] = _special_version
 
     settings = Settings().get_settings()
     long_special_version = settings.long_special_version
@@ -118,11 +113,6 @@ def _get_formatting_data(
         clean_title = volume_data.title[len('A '):] + ', A'
     else:
         clean_title = volume_data.title or 'Unknown'
-
-    volume_number = ' - '.join((
-        str(n).zfill(volume_padding)
-        for n in _vn
-    ))
 
     if long_special_version:
         sv_mapping = full_sv_mapping
@@ -138,7 +128,7 @@ def _get_formatting_data(
             .replace('/', '')
             .replace(r'\\', '')
         ),
-        'volume_number': volume_number,
+        'volume_number': str(volume_data.volume_number).zfill(volume_padding),
         'comicvine_id': volume_data.comicvine_id or 'Unknown',
         'year': volume_data.year or 'Unknown',
         'publisher': volume_data.publisher or 'Unknown',
@@ -195,55 +185,36 @@ def generate_volume_folder_name(
     return save_name
 
 
-def generate_sv_name(
+def generate_issue_name(
     volume_id: int,
-    _volume_number: Union[int, Tuple[int, int], None] = None
+    calculated_issue_number: float
 ) -> str:
-    """Generate a special version name based on the format string
+    """Generate a issue name based on the format string
 
     Args:
-        volume_id (int): The id of the volume for which to generate the string.
+        volume_id (int): The id of the volume of the issue
 
-        _volume_number (Union[int, Tuple[int, int], None], optional):
-        Override the volume number.
-            Defaults to None.
+        calculated_issue_number (float): The issue number.
+            Output of `files.process_issue_number()`.
 
     Returns:
-        str: The name for special versions
+        str: The issue name
     """
-    formatting_data = _get_formatting_data(
+    issue = Issue.from_volume_and_calc_number(
         volume_id,
-        _volume_number=_volume_number
+        calculated_issue_number
     )
-    format = Settings().sv.file_naming_special_version
+
+    formatting_data = _get_formatting_data(volume_id, issue.id)
+    settings = Settings().get_settings()
+
+    if formatting_data['issue_title'] == 'Unknown':
+        format: str = settings.file_naming_empty
+    else:
+        format: str = settings.file_naming
 
     name = format.format(**formatting_data)
     save_name = make_filename_safe(name)
-    return save_name
-
-
-def generate_empty_name(
-    volume_id: int,
-    _volume_number: Union[int, Tuple[int, int], None] = None
-) -> str:
-    """Generate a name without issue number or sv marking
-
-    Args:
-        volume_id (int): The id of the volume for which to generate the string.
-
-        _volume_number (Union[int, Tuple[int, int], None], optional):
-            Override the volume number.
-                Defaults to None.
-
-    Returns:
-        str: The empty name
-    """
-    save_sv_name = generate_sv_name(volume_id, _volume_number)
-    sv_l = save_sv_name.split(' ')
-    sv_l.reverse()
-    sv_l.remove('None')
-    sv_l.reverse()
-    save_name = ' '.join(sv_l).strip()
     return save_name
 
 
@@ -298,11 +269,38 @@ def generate_issue_range_name(
     return save_name
 
 
-def generate_issue_name(
+def generate_sv_name(
+    volume_id: int,
+    special_version: Union[SpecialVersion, None] = None
+) -> str:
+    """Generate a special version name based on the format string
+
+    Args:
+        volume_id (int): The id of the volume for which to generate the string.
+
+        special_version (Union[SpecialVersion, None], optional): Override the
+        special version used.
+            Defaults to None.
+
+    Returns:
+        str: The name for special versions
+    """
+    formatting_data = _get_formatting_data(
+        volume_id,
+        _special_version=special_version
+    )
+    format = Settings().sv.file_naming_special_version
+
+    name = format.format(**formatting_data)
+    save_name = make_filename_safe(name)
+    return save_name
+
+
+def generate_vai_name(
     volume_id: int,
     calculated_issue_number: float
 ) -> str:
-    """Generate a issue name based on the format string
+    """Generate a VAI name based on the format string.
 
     Args:
         volume_id (int): The id of the volume of the issue
@@ -319,12 +317,54 @@ def generate_issue_name(
     )
 
     formatting_data = _get_formatting_data(volume_id, issue.id)
-    settings = Settings().get_settings()
+    format = Settings().sv.file_naming_vai
 
-    if formatting_data['issue_title'] == 'Unknown':
-        format: str = settings.file_naming_empty
-    else:
-        format: str = settings.file_naming
+    name = format.format(**formatting_data)
+    save_name = make_filename_safe(name)
+    return save_name
+
+
+def generate_vai_range_name(
+    volume_id: int,
+    calculated_issue_number_start: float,
+    calculated_issue_number_end: float
+) -> str:
+    """Generate a VAI range name based on the format string.
+
+    Args:
+        volume_id (int): The id of the volume of the issues.
+
+        calculated_issue_number_start (float): The start of the issue range.
+            Output of `files.process_issue_number()`.
+
+        calculated_issue_number_end (float): The end of the issue range.
+            Output of `files.process_issue_number()`.
+
+    Returns:
+        str: The issue range name
+    """
+    issue = Issue.from_volume_and_calc_number(
+        volume_id,
+        calculated_issue_number_start
+    )
+    formatting_data = _get_formatting_data(volume_id, issue.id)
+    settings = Settings().get_settings()
+    format = settings.file_naming_vai
+
+    # Override issue number to range
+    issue_number_start = issue['issue_number']
+    issue_number_end = Issue.from_volume_and_calc_number(
+        volume_id,
+        calculated_issue_number_end
+    )['issue_number']
+
+    formatting_data['issue_number'] = (
+        str(issue_number_start)
+        .zfill(settings.issue_padding)
+        + ' - ' +
+        str(issue_number_end)
+        .zfill(settings.issue_padding)
+    )
 
     name = format.format(**formatting_data)
     save_name = make_filename_safe(name)
@@ -334,8 +374,7 @@ def generate_issue_name(
 def generate_name(
     volume_id: int,
     special_version: SpecialVersion,
-    calculated_issue_number: Union[float, Tuple[float, float], None],
-    name_volume_as_issue: bool
+    calculated_issue_number: Union[float, Tuple[float, float], None]
 ) -> str:
     """Generate the proper filename based on the information.
 
@@ -345,8 +384,6 @@ def generate_name(
         calculated_issue_number (Union[float, Tuple[float, float], None]):
         The issue (or issue range) that the file covers. Give volume number
         here in case of VAI.
-        name_volume_as_issue (bool): Whether to name the volume as an issue in
-        case of a VAI.
 
     Returns:
         str: The filename.
@@ -361,44 +398,22 @@ def generate_name(
 
     elif (
         special_version == SpecialVersion.VOLUME_AS_ISSUE
-        and calculated_issue_number is not None
+        and calculated_issue_number is not None # Just to update type checker
     ):
-        if name_volume_as_issue:
-            if isinstance(calculated_issue_number, tuple):
-                # Iron-Man Volume 2 Issue 3-4 (Vol is VAI)
-                return generate_issue_range_name(
-                    volume_id,
-                    *calculated_issue_number
-                )
-
-            else:
-                # Iron-Man Volume 2 Issue 3 (Vol is VAI)
-                return generate_issue_name(
-                    volume_id,
-                    calculated_issue_number
-                )
-
+        if isinstance(calculated_issue_number, tuple):
+            return generate_vai_range_name(
+                volume_id,
+                *calculated_issue_number
+            )
         else:
-            if isinstance(calculated_issue_number, tuple):
-                # Iron-Man Volume 3-4 (Vol is VAI)
-                return generate_empty_name(
-                    volume_id,
-                    (
-                        int(calculated_issue_number[0]),
-                        int(calculated_issue_number[1])
-                    )
-                )
-
-            else:
-                # Iron-Man Volume 3 (Vol is VAI)
-                return generate_empty_name(
-                    volume_id,
-                    int(calculated_issue_number)
-                )
+            return generate_vai_name(
+                volume_id,
+                calculated_issue_number
+            )
 
     elif special_version != SpecialVersion.NORMAL:
         # Iron-Man Volume 2 (File is cover)
-        return generate_empty_name(volume_id)
+        return generate_sv_name(volume_id, special_version)
 
     elif isinstance(calculated_issue_number, tuple):
         # Iron-Man Volume 2 Issue 3-4
@@ -571,8 +586,6 @@ def preview_mass_rename(
         filepath_filter = []
 
     special_version = volume['special_version']
-    name_volume_as_issue = Settings().sv.volume_as_empty
-
     for file in file_infos:
         if not isfile(file):
             continue
@@ -586,7 +599,6 @@ def preview_mass_rename(
                 volume_id,
                 special_version,
                 (issues[0], issues[-1]),
-                name_volume_as_issue
             )
 
         else:
@@ -594,7 +606,6 @@ def preview_mass_rename(
                 volume_id,
                 special_version,
                 issues[0],
-                name_volume_as_issue
             )
 
         # If file is image, it's probably a page instead of a whole issue/tpb.

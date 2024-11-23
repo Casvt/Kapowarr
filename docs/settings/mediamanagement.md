@@ -13,7 +13,7 @@ When a file is downloaded, this setting decides if it should be renamed or not. 
 
 ### Volume Folder Naming
 
-The naming format for the volume folder (folder structure allowed). Keep in mind that the resulting name could differ slightly from the format, in the case that certain values of variables contain illegal characters. For example, if the `{series_name}` is "What If...", the resulting name will have "What If" as it's value, because the character `.` is not allowed at the end of the name in Windows. This also applies to the other naming formats in this section.
+The naming format for the volume folder. Keep in mind that the resulting name could differ slightly from the format, in the case that certain values of variables contain illegal characters. For example, if the `{series_name}` is "What If...", the resulting name will have "What If" as it's value, because the character `.` is not allowed at the end of the name in Windows. This also applies to the other naming formats in this section.
 
 ??? info "Available Variables"
 	| Variable | Example Value |
@@ -32,7 +32,7 @@ The naming format for the volume folder (folder structure allowed). Keep in mind
 
 ### File Naming
 
-The naming format for the file (folder structure allowed).
+The naming format for the file itself.
 
 ??? info "Available Variables"
 	| Variable | Example Value |
@@ -53,26 +53,6 @@ The naming format for the file (folder structure allowed).
 | ------------- | -------------- |
 | {series_name} ({year}) Volume {volume_number} Issue \{issue_number\} | Deadpool (1994) Volume 01 Issue 002 |
 | Issue {issue_number} - {issue_title} ({issue_release_date}) [issue_comicvine_id] | Issue 001 - Spider-Man; Spider-Man Vs. The Chameleon (1963-03-01) [6422] |
-
-### File Naming For Special Versions
-
-The naming format for the file itself (if it's a special version, like a one shot, tpb or hard cover).
-
-??? info "Available Variables"
-	| Variable | Example Value |
-	| -------- | ------------- |
-	| {series_name} | Silver Surfer Rebirth |
-	| {clean_series_name} | Silver Surfer Rebirth |
-	| {volume_number} | 01 |
-	| {comicvine_id} | 147555 |
-	| {year} | 2022 |
-	| {publisher} | Marvel |
-    | {special_version} | One-Shot |
-
-| Example Value | Example Resulting Name |
-| ------- | -------------- |
-| {series_name} ({year}) Volume {volume_number} \{special_version\} | Silver Surfer Rebirth (2022) Volume 01 TPB |
-| {series_name} ({year}) | Silver Surfer Rebirth (2022) |
 
 ### File Naming For Issues Without Title
 
@@ -99,14 +79,48 @@ If the value of the setting [File Naming](#file-naming_1) uses the issue title, 
 | {series_name} ({year}) Volume {volume_number} Issue \{issue_number\} | Deadpool (1994) Volume 01 Issue 002 |
 | Issue {issue_number} ({issue_release_date}) [issue_comicvine_id] | Issue 001 (1963-03-01) [6422] |
 
-### Treat Volume Issues as "No Title"
+### File Naming For Special Versions
 
-Sometimes a volume will consist of multiple sub-volumes (these volumes are labelled 'Volume As Issue' in the web-UI). This setting controls whether Kapowarr should name these like issues (using the [File Naming For Issues Without Title](#file-naming-for-issues-without-title) format) or not.
+The naming format for the file itself (if it's a special version, like a one shot, tpb or hard cover).
 
-| Setting | Example Result |
+??? info "Available Variables"
+	| Variable | Example Value |
+	| -------- | ------------- |
+	| {series_name} | Silver Surfer Rebirth |
+	| {clean_series_name} | Silver Surfer Rebirth |
+	| {volume_number} | 01 |
+	| {comicvine_id} | 147555 |
+	| {year} | 2022 |
+	| {publisher} | Marvel |
+    | {special_version} | One-Shot |
+
+| Example Value | Example Resulting Name |
 | ------- | -------------- |
-| Enabled | Invincible Compendium (2011) Volume 1 Issue 1-2.cbr<br>Invincible Compendium (2011) Volume 1 Issue 3.cbr |
-| Disabled | Invincible Compendium (2011) Volume 1 - 2.cbr<br>Invincible Compendium (2011) Volume 3.cbr |
+| {series_name} ({year}) Volume {volume_number} \{special_version\} | Silver Surfer Rebirth (2022) Volume 01 TPB |
+
+### File Naming For "Volume As Issue"
+
+The naming format for the file itself (if it's a Volume As Issue, so an issue named "Volume N").
+
+??? info "Available Variables"
+	| Variable | Example Value |
+	| -------- | ------------- |
+	| {series_name} | The Incredibles |
+	| {clean_series_name} | Incredibles, The |
+	| {volume_number} | 01 |
+	| {comicvine_id} | 2127 |
+	| {year} | 1994 |
+	| {publisher} | DC Comics |
+	| {issue_comicvine_id} | 6422 |
+	| {issue_number} | 002 |
+	| {issue_title} | Spider-Man; Spider-Man Vs. The Chameleon |
+	| {issue_release_date} | 1963-03-01 |
+	| {issue_release_year} | 1963 |
+
+| Example Value | Example Resulting Name |
+| ------------- | -------------- |
+| {series_name} ({year}) Volume \{issue_number\} | Reign of X (1994) Volume 002 - 003 |
+| Volume {volume_number} Issue {issue_number} ({issue_release_date}) [issue_comicvine_id] | Volume 01 Issue 002 - 003 (1963-03-01) [6422] |
 
 ### Use Long Special Version Labels
 

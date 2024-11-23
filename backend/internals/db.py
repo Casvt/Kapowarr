@@ -419,6 +419,9 @@ def setup_db() -> None:
 
     migrate_db()
 
+    # DB Migration might change settings, so update cache just to be sure.
+    settings._fetch_settings()
+
     # Generate api key
     if not settings_values.api_key:
         settings.generate_api_key()
