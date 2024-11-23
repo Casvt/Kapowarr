@@ -973,9 +973,6 @@ def scan_files(
         'special_version'
     ))
     volume_issues = volume.get_issues()
-    # We're going to check a lot of a string is in here,
-    # so convert to set for speed improvement.
-    volume_files = set((f["filepath"] for f in volume.get_files()))
     _general_files = volume.get_general_files()
     general_files: Dict[str, int] = {
         f['filepath']: f['id']
