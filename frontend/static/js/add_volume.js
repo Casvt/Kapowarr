@@ -151,6 +151,11 @@ function buildResults(results, api_key) {
 	all_issue_counts_option.innerText = 'All Issue Counts';
 	all_issue_counts_option.selected = true;
 	SearchEls.filters.issue_count.appendChild(all_issue_counts_option);
+	const one_higher_issue_counts_option = document.createElement('option');
+	one_higher_issue_counts_option.value = '>1 issues';
+	one_higher_issue_counts_option.innerText = '>1 issues';
+	one_higher_issue_counts_option.selected = true;
+	SearchEls.filters.issue_count.appendChild(one_higher_issue_counts_option);
 
 	issue_counts.forEach(ic => {
 		const entry = document.createElement('option');
@@ -266,7 +271,9 @@ function applyFilters() {
 		filter += '[data-_translated="false"]';
 	if (year !== '')
 		filter += `[data-_year="${year}"]`;
-	if (issue_count !== '')
+	if (issue_count === '>1')
+		filter += `:not([data-_issue_count="0"]):not([data-_issue_count="1"])`
+	else if (issue_count !== '')
 		filter += `[data-_issue_count="${issue_count}"]`;
 	if (volume_number !== '')
 		filter += `[data-_volume_number="${volume_number}"]`;
