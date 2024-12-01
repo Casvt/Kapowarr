@@ -360,7 +360,8 @@ class Settings(metaclass=Singleton):
             from backend.implementations.naming import check_format
 
             converted_value = value.strip().strip(sep)
-            check_format(converted_value, key)
+            if not check_format(converted_value, key):
+                raise InvalidSettingValue(key, value)
 
         elif key == 'volume_padding' and not 1 <= value <= 3:
             raise InvalidSettingValue(key, value)

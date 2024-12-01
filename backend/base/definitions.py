@@ -85,7 +85,7 @@ class FileConstants:
 
     METADATA_FILES = {
         "cvinfo.xml", "comicinfo.xml",
-        "series.json", "comicinfo.xml"
+        "series.json"
     }
     "Filenames of metadata files, and only lowercase"
 
@@ -405,6 +405,30 @@ class RootFolder:
 
     def as_dict(self) -> Dict[str, Any]:
         return asdict(self)
+
+
+@dataclass
+class BaseNamingKeys:
+    series_name: str
+    clean_series_name: str
+    volume_number: str
+    comicvine_id: int
+    year: Union[int, None]
+    publisher: Union[str, None]
+
+
+@dataclass
+class SVNamingKeys(BaseNamingKeys):
+    special_version: Union[str, None]
+
+
+@dataclass
+class IssueNamingKeys(SVNamingKeys):
+    issue_comicvine_id: int
+    issue_number: Union[str, None]
+    issue_title: Union[str, None]
+    issue_release_date: Union[str, None]
+    issue_release_year: Union[int, None]
 
 
 # region Abstract Classes

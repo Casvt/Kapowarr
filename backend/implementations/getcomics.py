@@ -32,7 +32,7 @@ from backend.implementations.download_direct_clients import (
     PixelDrainFolderDownload, WeTransferDownload)
 from backend.implementations.download_torrent_clients import TorrentDownload
 from backend.implementations.matching import GC_group_filter
-from backend.implementations.naming import generate_name
+from backend.implementations.naming import generate_issue_name
 from backend.implementations.volumes import Volume
 from backend.internals.db import get_db
 from backend.internals.settings import Settings
@@ -593,7 +593,7 @@ async def __purify_download_group(
     commit = get_db().connection.commit
 
     if rename_downloaded_files:
-        name = generate_name(
+        name = generate_issue_name(
             volume_id,
             SpecialVersion(group["info"]["special_version"]),
             group["info"]["issue_number"],

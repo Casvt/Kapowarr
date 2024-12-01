@@ -608,7 +608,7 @@ def api_volumes_search():
             special_version=SpecialVersion(data.get('special_version'))
         )
 
-        folder = generate_volume_folder_name(-1, vd)
+        folder = generate_volume_folder_name(vd)
         return return_api({'folder': folder})
 
 

@@ -6,22 +6,22 @@ The (re)naming of folders and media
 
 from __future__ import annotations
 
-from os import listdir
 from os.path import basename, isdir, isfile, join, splitext
-from re import compile, escape, match
+from re import compile
 from string import Formatter
 from sys import platform
-from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
 
-from backend.base.custom_exceptions import InvalidSettingValue
-from backend.base.definitions import (FileConstants, SpecialVersion,
-                                      full_sv_mapping, short_sv_mapping)
+from backend.base.definitions import (BaseNamingKeys, FileConstants,
+                                      IssueNamingKeys, SpecialVersion,
+                                      SVNamingKeys, full_sv_mapping,
+                                      short_sv_mapping)
 from backend.base.file_extraction import cover_regex, page_regex, page_regex_2
 from backend.base.files import (delete_empty_child_folders,
-                                delete_empty_parent_folders,
-                                make_filename_safe, propose_basefolder_change,
-                                rename_file)
-from backend.base.helpers import filtered_iter
+                                delete_empty_parent_folders, list_files,
+                                make_filename_safe, rename_file)
+from backend.base.helpers import (create_range, extract_year_from_date,
+                                  filtered_iter)
 from backend.base.logging import LOGGER
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Issue, Volume
@@ -33,70 +33,36 @@ if TYPE_CHECKING:
     from backend.implementations.volumes import VolumeData
 
 
-formatting_keys = (
-    'series_name',
-    'clean_series_name',
-    'volume_number',
-    'comicvine_id',
-    'year',
-    'publisher'
-)
-
-formatting_keys_sv = formatting_keys + (
-    'special_version',
-)
-
-issue_formatting_keys = formatting_keys + (
-    'issue_comicvine_id',
-    'issue_number',
-    'issue_title',
-    'issue_release_date',
-    'issue_release_year'
-)
-
 remove_year_in_image_regex = compile(r'(?:19|20)\d{2}')
 
 
 # =====================
-# Name generation
+# region Name generation
 # =====================
-def _get_formatting_data(
-    volume_id: int,
-    issue_id: Union[int, None] = None,
-    _volume_data: Union[VolumeData, None] = None,
+def _get_volume_naming_keys(
+    volume: Union[int, VolumeData],
     _special_version: Union[SpecialVersion, None] = None
-) -> Dict[str, Any]:
-    """Get the values of the formatting keys for a volume or issue.
+) -> SVNamingKeys:
+    """Generate the values of the naming keys for a volume.
 
     Args:
-        volume_id (int): The id of the volume.
-
-        issue_id (Union[int, None], optional): The id of the issue.
-            Defaults to None.
-
-        _volume_data (Union[VolumeData, None], optional): Instead of fetching
-        data based on the volume id, work with the data given in this variable.
-            Defaults to None.
-
+        volume (Union[int, VolumeData]): The ID of the volume to fetch the data
+        for or manually supplied volume data to work with.
         _special_version (Union[SpecialVersion, None], optional): Override the
-        special version that is used.
+        Special Version used.
             Defaults to None.
-
-    Raises:
-        VolumeNotFound: The volume id doesn't map to any volume in the library.
-        IssueNotFound: The issue id doesn't map to any issue in the volume.
 
     Returns:
-        Dict[str, Any]: The formatting keys and their values for the item.
+        SVNamingKeys: The values of the naming keys for a volume.
     """
-    if _volume_data is not None:
-        volume_data = _volume_data
-    else:
-        volume_data = Volume(volume_id, check_existence=True).get_keys((
+    if isinstance(volume, int):
+        volume_data = Volume(volume, check_existence=True).get_keys((
             'comicvine_id',
             'title', 'year', 'volume_number',
             'publisher', 'special_version'
         ))
+    else:
+        volume_data = volume
 
     if _special_version is not None:
         volume_data.__dict__["special_version"] = _special_version
@@ -104,279 +70,98 @@ def _get_formatting_data(
     settings = Settings().get_settings()
     long_special_version = settings.long_special_version
     volume_padding = settings.volume_padding
-    issue_padding = settings.issue_padding
+    series_name = (
+        volume_data.title
+        .replace('/', '')
+        .replace(r'\\', '')
+    )
 
-    # Build formatted data
-    if volume_data.title.startswith('The '):
-        clean_title = volume_data.title[len('The '):] + ', The'
-    elif volume_data.title.startswith('A '):
-        clean_title = volume_data.title[len('A '):] + ', A'
+    for prefix in ('The ', 'A '):
+        if series_name.startswith(prefix):
+            clean_title = series_name[len(prefix):] + ", " + prefix.strip()
+            break
     else:
-        clean_title = volume_data.title or 'Unknown'
+        clean_title = series_name
 
-    if long_special_version:
-        sv_mapping = full_sv_mapping
-    else:
-        sv_mapping = short_sv_mapping
+    sv_mapping = full_sv_mapping if long_special_version else short_sv_mapping
 
-    formatting_data = {
-        'series_name': ((volume_data.title or 'Unknown')
+    return SVNamingKeys(
+        series_name=series_name,
+        clean_series_name=clean_title,
+        volume_number=str(volume_data.volume_number).zfill(volume_padding),
+        comicvine_id=volume_data.comicvine_id,
+        year=volume_data.year,
+        publisher=volume_data.publisher,
+        special_version=sv_mapping.get(volume_data.special_version)
+    )
+
+
+def _get_issue_naming_keys(
+    issue_id: int
+) -> IssueNamingKeys:
+    """Generate the values of the naming keys for an issue.
+
+    Args:
+        issue_id (int): The ID of the issue to fetch the data for.
+
+    Returns:
+        IssueNamingKeys: The values of the naming keys for an issue.
+    """
+    issue_padding = Settings().sv.issue_padding
+    issue_data: Dict[str, Any] = Issue(
+        issue_id, check_existence=True
+    ).get_keys((
+        'comicvine_id', 'issue_number', 'title', 'date', 'volume_id'
+    ))
+
+    return IssueNamingKeys(
+        **_get_volume_naming_keys(issue_data['volume_id']).__dict__,
+        issue_comicvine_id=issue_data['comicvine_id'],
+        issue_number=(
+            str(issue_data['issue_number'] or '').zfill(issue_padding)
+            or None
+        ),
+        issue_title=(
+            (issue_data['title'] or '')
             .replace('/', '')
             .replace(r'\\', '')
+            or None
         ),
-        'clean_series_name': (clean_title
-            .replace('/', '')
-            .replace(r'\\', '')
-        ),
-        'volume_number': str(volume_data.volume_number).zfill(volume_padding),
-        'comicvine_id': volume_data.comicvine_id or 'Unknown',
-        'year': volume_data.year or 'Unknown',
-        'publisher': volume_data.publisher or 'Unknown',
-        'special_version': sv_mapping.get(volume_data.special_version)
-    }
-
-    if issue_id:
-        # Add issue data if issue is found
-        issue_data: Dict[str, Any] = Issue(issue_id, check_existence=True).get_keys(
-            ('comicvine_id', 'issue_number', 'title', 'date'))
-
-        formatting_data.update({
-            'issue_comicvine_id': issue_data.get('comicvine_id') or 'Unknown',
-            'issue_number': (
-                str(issue_data.get('issue_number'))
-                .zfill(issue_padding)
-                or 'Unknown'
-            ),
-            'issue_title': ((issue_data.get('title') or 'Unknown')
-                .replace('/', '')
-                .replace(r'\\', '')
-            ),
-            'issue_release_date': issue_data.get('date') or 'Unknown',
-            'issue_release_year': ((issue_data.get('date') or '')
-                    .split('-')[0]
-                or 'Unknown'
-            )
-        })
-
-    return formatting_data
+        issue_release_date=issue_data["date"],
+        issue_release_year=extract_year_from_date(issue_data["date"])
+    )
 
 
 def generate_volume_folder_name(
-    volume_id: int,
-    _volume_data: Union[VolumeData, None] = None
+    volume: Union[int, VolumeData]
 ) -> str:
-    """Generate a volume folder name based on the format string
+    """Generate a volume folder name based on the format string.
 
     Args:
-        volume_id (int): The id of the volume for which to generate the string
-
-        _volume_data (Union[VolumeData, None], optional): Instead of fetching
-        data based on the volume id, work with the data given in this variable.
-            Defaults to None.
+        volume (Union[int, VolumeData]): The ID of the volume to generate the
+        name for or manually supplied volume data to generate a name with.
 
     Returns:
         str: The volume folder name.
     """
-    formatting_data = _get_formatting_data(volume_id, None, _volume_data)
+    formatting_data = _get_volume_naming_keys(volume)
     format = Settings().sv.volume_folder_naming
 
-    name = format.format(**formatting_data)
+    name = format.format_map({
+        k: v if v is not None else 'Unknown'
+        for k, v in formatting_data.__dict__.items()
+    })
     save_name = make_filename_safe(name)
     return save_name
 
 
 def generate_issue_name(
     volume_id: int,
-    calculated_issue_number: float
-) -> str:
-    """Generate a issue name based on the format string
-
-    Args:
-        volume_id (int): The id of the volume of the issue
-
-        calculated_issue_number (float): The issue number.
-            Output of `files.process_issue_number()`.
-
-    Returns:
-        str: The issue name
-    """
-    issue = Issue.from_volume_and_calc_number(
-        volume_id,
-        calculated_issue_number
-    )
-
-    formatting_data = _get_formatting_data(volume_id, issue.id)
-    settings = Settings().get_settings()
-
-    if formatting_data['issue_title'] == 'Unknown':
-        format: str = settings.file_naming_empty
-    else:
-        format: str = settings.file_naming
-
-    name = format.format(**formatting_data)
-    save_name = make_filename_safe(name)
-    return save_name
-
-
-def generate_issue_range_name(
-    volume_id: int,
-    calculated_issue_number_start: float,
-    calculated_issue_number_end: float
-) -> str:
-    """Generate an issue range name based on the format string
-
-    Args:
-        volume_id (int): The id of the volume of the issues
-
-        calculated_issue_number_start (float): The start of the issue range.
-            Output of `files.process_issue_number()`.
-
-        calculated_issue_number_end (float): The end of the issue range.
-            Output of `files.process_issue_number()`.
-
-    Returns:
-        str: The issue range name
-    """
-    issue = Issue.from_volume_and_calc_number(
-        volume_id,
-        calculated_issue_number_start
-    )
-    formatting_data = _get_formatting_data(volume_id, issue.id)
-    settings = Settings().get_settings()
-
-    if formatting_data['issue_title'] == 'Unknown':
-        format = settings.file_naming_empty
-    else:
-        format = settings.file_naming
-
-    # Override issue number to range
-    issue_number_start = issue['issue_number']
-    issue_number_end = Issue.from_volume_and_calc_number(
-        volume_id,
-        calculated_issue_number_end
-    )['issue_number']
-
-    formatting_data['issue_number'] = (
-        str(issue_number_start)
-        .zfill(settings.issue_padding)
-        + ' - ' +
-        str(issue_number_end)
-        .zfill(settings.issue_padding)
-    )
-
-    name = format.format(**formatting_data)
-    save_name = make_filename_safe(name)
-    return save_name
-
-
-def generate_sv_name(
-    volume_id: int,
-    special_version: Union[SpecialVersion, None] = None
-) -> str:
-    """Generate a special version name based on the format string
-
-    Args:
-        volume_id (int): The id of the volume for which to generate the string.
-
-        special_version (Union[SpecialVersion, None], optional): Override the
-        special version used.
-            Defaults to None.
-
-    Returns:
-        str: The name for special versions
-    """
-    formatting_data = _get_formatting_data(
-        volume_id,
-        _special_version=special_version
-    )
-    format = Settings().sv.file_naming_special_version
-
-    name = format.format(**formatting_data)
-    save_name = make_filename_safe(name)
-    return save_name
-
-
-def generate_vai_name(
-    volume_id: int,
-    calculated_issue_number: float
-) -> str:
-    """Generate a VAI name based on the format string.
-
-    Args:
-        volume_id (int): The id of the volume of the issue
-
-        calculated_issue_number (float): The issue number.
-            Output of `files.process_issue_number()`.
-
-    Returns:
-        str: The issue name
-    """
-    issue = Issue.from_volume_and_calc_number(
-        volume_id,
-        calculated_issue_number
-    )
-
-    formatting_data = _get_formatting_data(volume_id, issue.id)
-    format = Settings().sv.file_naming_vai
-
-    name = format.format(**formatting_data)
-    save_name = make_filename_safe(name)
-    return save_name
-
-
-def generate_vai_range_name(
-    volume_id: int,
-    calculated_issue_number_start: float,
-    calculated_issue_number_end: float
-) -> str:
-    """Generate a VAI range name based on the format string.
-
-    Args:
-        volume_id (int): The id of the volume of the issues.
-
-        calculated_issue_number_start (float): The start of the issue range.
-            Output of `files.process_issue_number()`.
-
-        calculated_issue_number_end (float): The end of the issue range.
-            Output of `files.process_issue_number()`.
-
-    Returns:
-        str: The issue range name
-    """
-    issue = Issue.from_volume_and_calc_number(
-        volume_id,
-        calculated_issue_number_start
-    )
-    formatting_data = _get_formatting_data(volume_id, issue.id)
-    settings = Settings().get_settings()
-    format = settings.file_naming_vai
-
-    # Override issue number to range
-    issue_number_start = issue['issue_number']
-    issue_number_end = Issue.from_volume_and_calc_number(
-        volume_id,
-        calculated_issue_number_end
-    )['issue_number']
-
-    formatting_data['issue_number'] = (
-        str(issue_number_start)
-        .zfill(settings.issue_padding)
-        + ' - ' +
-        str(issue_number_end)
-        .zfill(settings.issue_padding)
-    )
-
-    name = format.format(**formatting_data)
-    save_name = make_filename_safe(name)
-    return save_name
-
-
-def generate_name(
-    volume_id: int,
     special_version: SpecialVersion,
     calculated_issue_number: Union[float, Tuple[float, float], None]
 ) -> str:
-    """Generate the proper filename based on the information.
+    """Generate an issue file name based on the format string for the issue
+    type.
 
     Args:
         volume_id (int): The ID of the volume that the file is for.
@@ -386,64 +171,123 @@ def generate_name(
         here in case of VAI.
 
     Returns:
-        str: The filename.
+        str: The issue file name.
     """
+    sv = Settings().sv
+
     if special_version in (
         SpecialVersion.TPB,
         SpecialVersion.ONE_SHOT,
         SpecialVersion.HARD_COVER
     ):
         # Iron-Man Volume 2 One-Shot
-        return generate_sv_name(volume_id)
+        formatting_data = _get_volume_naming_keys(volume_id)
+        format = sv.file_naming_special_version
 
     elif (
         special_version == SpecialVersion.VOLUME_AS_ISSUE
         and calculated_issue_number is not None # Just to update type checker
     ):
-        if isinstance(calculated_issue_number, tuple):
-            return generate_vai_range_name(
-                volume_id,
-                *calculated_issue_number
-            )
-        else:
-            return generate_vai_name(
-                volume_id,
-                calculated_issue_number
-            )
+        # Iron-Man Volume 1 - 3
+        issue = Issue.from_volume_and_calc_number(
+            volume_id, create_range(calculated_issue_number)[0]
+        )
+        formatting_data = _get_issue_naming_keys(issue.id)
+        format = sv.file_naming_vai
 
     elif special_version != SpecialVersion.NORMAL:
-        # Iron-Man Volume 2 (File is cover)
-        return generate_sv_name(volume_id, special_version)
-
-    elif isinstance(calculated_issue_number, tuple):
-        # Iron-Man Volume 2 Issue 3-4
-        return generate_issue_range_name(
+        # Iron-Man Volume 2 Cover
+        formatting_data = _get_volume_naming_keys(
             volume_id,
-            *calculated_issue_number
+            _special_version=special_version
+        )
+        format = sv.file_naming_special_version
+
+    else:
+        # Iron-Man Volume 1 Issue 2 - 3
+        issue = Issue.from_volume_and_calc_number(
+            volume_id,
+            create_range(calculated_issue_number)[0] # type: ignore
+        )
+        formatting_data = _get_issue_naming_keys(issue.id)
+
+        if formatting_data.issue_title is None:
+            format = sv.file_naming_empty
+        else:
+            format = sv.file_naming
+
+    if (
+        isinstance(calculated_issue_number, tuple)
+        and isinstance(formatting_data, IssueNamingKeys)
+    ):
+        issue_number_end = Issue.from_volume_and_calc_number(
+            volume_id,
+            calculated_issue_number[1]
+        )['issue_number']
+        formatting_data.issue_number = (
+            str(formatting_data.issue_number)
+            .zfill(sv.issue_padding)
+            + ' - ' +
+            str(issue_number_end)
+            .zfill(sv.issue_padding)
         )
 
-    # Iron-Man Volume 2 Issue 3
-    return generate_issue_name(
-        volume_id,
-        calculated_issue_number # type: ignore
-    )
-
-# =====================
-# Checking formats
-# =====================
+    name = format.format_map({
+        k: v if v is not None else 'Unknown'
+        for k, v in formatting_data.__dict__.items()
+    })
+    save_name = make_filename_safe(name)
+    return save_name
 
 
-def check_format(format: str, type: str) -> None:
-    """Check if a format string is valid
+def generate_image_name(
+    filename: str
+) -> str:
+    """Generate an image file name based on what the current filename suggests
+    is the cover or page covered.
 
     Args:
-        format (str): The format string to check
-        type (str): What type of format string it is
-            Options: 'file_naming', 'file_naming_special_version',
-            'file_naming_empty', 'volume_folder_naming'.
+        filename (str): The current filename of the image file.
 
-    Raises:
-        InvalidSettingValue: Something in the string is invalid
+    Returns:
+        str: The image file name.
+    """
+    file_body = remove_year_in_image_regex.sub(
+        '',
+        splitext(basename(filename))[0]
+    )
+
+    cover_result = cover_regex.search(file_body)
+    if cover_result:
+        return f'Cover {cover_result.groups("")[0]}'.strip()
+
+    page_result = page_regex.search(file_body)
+    if page_result:
+        return next(filter(
+            bool,
+            page_result.groups()
+        ))
+
+    page_result = page_regex_2.findall(file_body)
+    if page_result:
+        return page_result[-1]
+
+    return '1'
+
+
+# =====================
+# region Checking formats
+# =====================
+def check_format(format: str, type: str) -> bool:
+    """Check if a format string is valid.
+
+    Args:
+        format (str): The format string to check.
+        type (str): What type of format string it is, specified by their
+        settings key. E.g. 'file_naming'.
+
+    Returns:
+        bool: Whether the format is allowed.
     """
     if platform.startswith('win32'):
         disallowed_sep = '/'
@@ -451,92 +295,81 @@ def check_format(format: str, type: str) -> None:
         disallowed_sep = '\\'
 
     if disallowed_sep in format:
-        raise InvalidSettingValue(type, format)
+        return False
 
-    keys = [fn for _, fn, _, _ in Formatter().parse(format) if fn is not None]
+    keys = [
+        fn
+        for _, fn, _, _ in Formatter().parse(format)
+        if fn is not None
+    ]
 
     if type == 'volume_folder_naming':
-        naming_keys = formatting_keys
+        naming_keys = BaseNamingKeys
     elif type == 'file_naming_special_version':
-        naming_keys = formatting_keys_sv
+        naming_keys = SVNamingKeys
     else:
-        naming_keys = issue_formatting_keys
+        naming_keys = IssueNamingKeys
 
     for format_key in keys:
-        if format_key not in naming_keys:
-            raise InvalidSettingValue(type, format)
+        if format_key not in naming_keys.__dict__:
+            return False
 
-    return
+    return True
+
 
 # =====================
-# Renaming
+# region Renaming
 # =====================
-
-
 def same_name_indexing(
-    suggested_name: str,
-    current_name: str,
-    folder: str,
-    planned_names: List[Dict[str, str]]
-) -> str:
-    """Add a number after a filename if the filename already exists.
+    volume_folder: str,
+    planned_renames: Dict[str, str]
+) -> Dict[str, str]:
+    """Add a number at the end the filenames if the suggested filename already
+    exists.
 
     Args:
-        suggested_name (str): The currently suggested filename
-        current_name (str): The current name of the file
-        folder (str): The folder that the file is in
-        planned_names (List[Dict[str, str]]): The already planned names of
-        other files.
+        volume_folder (str): The volume folder that the files will be in.
+        planned_renames (Dict[str, str]): The currently planned renames (key
+        is before, value is after).
 
     Returns:
-        str: The suggested name, now with number at the end if needed
+        Dict[str, str]: The planned renamed, now updated with numbers i.c.o.
+        duplicate filenames.
     """
-    same_names = tuple(
-        filter(
-            lambda r: match(escape(suggested_name) + r'( \(\d+\))?$', r),
-            [splitext(basename(r['after']))[0] for r in planned_names]
-        )
-    )
-    if isdir(folder):
-        # Add number to filename if an other file has the same name
-        basename_file = splitext(basename(current_name))[0]
-        same_names += tuple(
-            filter(
-                lambda f: (
-                    not f == basename_file
-                    and match(
-                        escape(suggested_name) + r'(?: \(\d+\))?$',
-                        f
-                    )
-                ),
-                [splitext(f)[0] for f in listdir(folder) if isfile(f)]
-            )
-        )
+    if not isdir(volume_folder):
+        return planned_renames
 
-    if same_names:
-        i = 0
-        while True:
-            if not i and suggested_name not in same_names:
-                break
-            if i and not f"{suggested_name} ({i})" in same_names:
-                suggested_name += f" ({i})"
-                break
-            i += 1
+    final_names = set(list_files(volume_folder))
+    for before, after in planned_renames.items():
 
-    return suggested_name
+        new_after = after
+        index = 1
+        while before != new_after and new_after in final_names:
+            new_after = splitext(after)[0] + f' ({index})' + splitext(after)[1]
+            index += 1
+
+        final_names.add(new_after)
+        planned_renames[before] = new_after
+
+    return {
+        k: v
+        for k, v in planned_renames.items()
+        if k != v
+    }
 
 
 def preview_mass_rename(
     volume_id: int,
     issue_id: Union[int, None] = None,
     filepath_filter: Union[List[str], None] = None
-) -> Tuple[List[Dict[str, str]], Union[str, None]]:
-    """Preview what naming.mass_rename() will do.
+) -> Tuple[Dict[str, str], Union[str, None]]:
+    """Determine what the new filenames would be, if they aren't already
+    following the format.
 
     Args:
-        volume_id (int): The id of the volume for which to check the renaming.
+        volume_id (int): The ID of the volume for which to check the renaming.
 
-        issue_id (Union[int, None], optional): The id of the issue for which to
+        issue_id (Union[int, None], optional): The ID of the issue for which to
         check the renaming.
             Defaults to None.
 
@@ -545,141 +378,94 @@ def preview_mass_rename(
             Defaults to None.
 
     Returns:
-        Tuple[List[Dict[str, str]], Union[str, None]]: The renaming proposals,
-        and the new volume folder if it is not the same as the current folder.
-        Otherwise, it's `None`.
+        Tuple[Dict[str, str], Union[str, None]]: The renaming proposals where
+        the key is the "before" and the value is the "after", and the new volume
+        folder if it is not the same as the current folder. Otherwise, it's
+        `None`.
     """
-    result = []
+    result = {}
     volume = Volume(volume_id)
-    # Fetch all files linked to the volume or issue
-    new_vf = None
+    special_version = volume['special_version']
+    volume_folder = volume['folder']
+
+    files = tuple(filtered_iter(
+        sorted(
+            f["filepath"] for f in (
+                *volume.get_files(issue_id),
+                *(volume.get_general_files() if not issue_id else [])
+            )
+        ),
+        set(filepath_filter or [])
+    ))
+
     if not issue_id:
-        file_infos: Iterable[str] = sorted((
-            f["filepath"] for f in volume.get_files()
-        ))
+        if not files:
+            return result, None
+
         if not volume['custom_folder']:
             root_folder = RootFolders()[volume['root_folder']]
-            folder = join(root_folder, generate_volume_folder_name(volume_id))
-            if folder != volume['folder']:
-                new_vf = folder
-        else:
-            folder = volume['folder']
-    else:
-        file_infos: Iterable[str] = [
-            f["filepath"]
-            for f in volume.get_files(issue_id)
-        ]
-        if not file_infos:
-            return result, new_vf
-        folder = volume['folder']
+            volume_folder = join(
+                root_folder,
+                generate_volume_folder_name(volume_id)
+            )
 
-    if filepath_filter is not None:
-        # We're checking a lot if strings are in this list,
-        # so making it a set will increase performance (due to hashing).
-        hashed_files = set(filepath_filter)
-
-        file_infos = filter(
-            lambda f: f in hashed_files,
-            file_infos
-        )
-    else:
-        filepath_filter = []
-
-    special_version = volume['special_version']
-    for file in file_infos:
+    for file in files:
         if not isfile(file):
             continue
+
         LOGGER.debug(f'Renaming: original filename: {file}')
 
-        # Find the issues that the file covers
         issues = FilesDB.issues_covered(file)
-
         if len(issues) > 1:
-            suggested_name = generate_name(
+            gen_filename_body = generate_issue_name(
                 volume_id,
                 special_version,
                 (issues[0], issues[-1]),
             )
 
-        else:
-            suggested_name = generate_name(
+        elif issues:
+            gen_filename_body = generate_issue_name(
                 volume_id,
                 special_version,
                 issues[0],
             )
 
-        # If file is image, it's probably a page instead of a whole issue/tpb.
-        # So put it in it's own folder together with the other images.
-        if file.endswith(FileConstants.IMAGE_EXTENSIONS):
-            filename: str = splitext(basename(file))[0]
-            page_number = None
-            cover_result = cover_regex.search(filename)
-            if cover_result:
-                cover_number = cover_result.group(1)
-                if cover_number:
-                    page_number = f'Cover {cover_number}'
-                else:
-                    page_number = 'Cover'
-            else:
-                page_result = page_regex.search(
-                    remove_year_in_image_regex.sub('', filename)
-                )
-                if page_result:
-                    page_number = next(
-                        r
-                        for r in page_result.groups()
-                        if r is not None
-                    )
-                else:
-                    page_result = None
-                    r = page_regex_2.finditer(basename(file))
-                    for page_result in r:
-                        pass
-                    if page_result:
-                        page_number = page_result.group(1)
-            suggested_name = join(suggested_name, page_number or '1')
+        elif file.endswith(FileConstants.IMAGE_EXTENSIONS):
+            # Cover
+            gen_filename_body = generate_issue_name(
+                volume_id,
+                SpecialVersion.COVER,
+                calculated_issue_number=None
+            )
 
-        # Add number to filename if other file has the same name
-        suggested_name = same_name_indexing(
-            suggested_name,
-            file,
-            folder,
-            result
-        )
+        else:
+            # Metadata
+            gen_filename_body = splitext(basename(file))[0]
+
+        if issues and file.endswith(FileConstants.IMAGE_EXTENSIONS):
+            # Image file is page of issue, so put it in it's own
+            # folder together with the other images.
+            gen_filename_body = join(
+                gen_filename_body,
+                generate_image_name(file)
+            )
 
         suggested_name = join(
-            folder,
-            suggested_name + splitext(file)[1]
+            volume_folder,
+            gen_filename_body + splitext(file)[1].lower()
         )
 
         LOGGER.debug(f'Renaming: suggested filename: {suggested_name}')
         if file != suggested_name:
             LOGGER.debug(f'Renaming: added rename')
-            result.append({
-                'before': file,
-                'after': suggested_name
-            })
+            result[file] = suggested_name
 
-    if folder != volume['folder']:
-        # New volume folder so rename general files too
-        new_general_files = propose_basefolder_change(
-            filtered_iter(
-                (f['filepath'] for f in volume.get_general_files()),
-                filepath_filter
-            ),
-            volume['folder'],
-            folder
-        )
-        for old, new in new_general_files.items():
-            LOGGER.debug(f'Renaming: original filename: {old}')
-            LOGGER.debug(f'Renaming: suggested filename: {new}')
-            LOGGER.debug(f'Renaming: added rename')
-            result.append({
-                'before': old,
-                'after': new
-            })
+    result = same_name_indexing(volume_folder, result)
 
-    return result, new_vf
+    if volume_folder != volume['folder']:
+        return result, volume_folder
+    else:
+        return result, None
 
 
 def mass_rename(
@@ -688,12 +474,12 @@ def mass_rename(
     filepath_filter: Union[List[str], None] = None,
     update_websocket: bool = False
 ) -> List[str]:
-    """Carry out proposal of `naming.preview_mass_rename()`.
+    """Rename files so that they follow the naming formats.
 
     Args:
-        volume_id (int): The id of the volume for which to rename.
+        volume_id (int): The ID of the volume for which to rename.
 
-        issue_id (Union[int, None], optional): The id of the issue for which
+        issue_id (Union[int, None], optional): The ID of the issue for which
         to rename.
             Defaults to None.
 
@@ -706,36 +492,32 @@ def mass_rename(
             Defaults to False.
 
     Returns:
-        List[str]: The new files.
+        List[str]: The new filenames, only of files that have been be renamed.
     """
-    renames, new_folder = preview_mass_rename(
+    renames, new_volume_folder = preview_mass_rename(
         volume_id, issue_id,
         filepath_filter
     )
-
     volume = Volume(volume_id)
     root_folder = RootFolders()[volume['root_folder']]
 
-    if new_folder:
-        volume['folder'] = new_folder
+    if new_volume_folder:
+        volume['folder'] = new_volume_folder
 
     if update_websocket:
         ws = WebSocket()
         total_renames = len(renames)
-        for idx, r in enumerate(renames):
+        for idx, (before, after) in enumerate(renames.items()):
             ws.update_task_status(
                 message=f'Renaming file {idx+1}/{total_renames}'
             )
-            rename_file(r['before'], r['after'])
+            rename_file(before, after)
 
     else:
-        for idx, r in enumerate(renames):
-            rename_file(r['before'], r['after'])
+        for before, after in renames.items():
+            rename_file(before, after)
 
-    FilesDB.update_filepaths(
-        (r["before"] for r in renames),
-        (r["after"] for r in renames)
-    )
+    FilesDB.update_filepaths(*zip(*renames.items()))
 
     if renames:
         delete_empty_child_folders(volume['folder'])
@@ -744,4 +526,4 @@ def mass_rename(
     LOGGER.info(
         f'Renamed volume {volume_id} {f"issue {issue_id}" if issue_id else ""}'
     )
-    return [r['after'] for r in renames]
+    return list(renames.values())

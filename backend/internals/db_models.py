@@ -125,7 +125,7 @@ class FilesDB:
     @staticmethod
     def issues_covered(filepath: str) -> List[float]:
         return first_of_column(get_db().execute("""
-            SELECT
+            SELECT DISTINCT
                 i.calculated_issue_number
             FROM issues i
             INNER JOIN issues_files if

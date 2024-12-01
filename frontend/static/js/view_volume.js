@@ -441,18 +441,18 @@ function showRename(api_key, issue_id=null) {
 			table = table_container.querySelector('tbody');
 		table.innerHTML = '';
 
-		if (!json.result.length) {
+		if (!Object.keys(json.result).length) {
 			hide([table_container, rename_button], [empty_message]);
 		} else {
 			hide([empty_message], [table_container, rename_button]);
-			json.result.forEach(rename_entry => {
-				const before = ViewEls.pre_build.rename_before.cloneNode(true);
-				table.appendChild(before);
-				const after = ViewEls.pre_build.rename_after.cloneNode(true);
-				table.appendChild(after);
+			Object.entries(json.result).forEach(mapping => {
+				const before_row = ViewEls.pre_build.rename_before.cloneNode(true);
+				table.appendChild(before_row);
+				const after_row = ViewEls.pre_build.rename_after.cloneNode(true);
+				table.appendChild(after_row);
 
-				before.querySelector('td:last-child').innerText = rename_entry.before;
-				after.querySelector('td:last-child').innerText = rename_entry.after;
+				before_row.querySelector('td:last-child').innerText = mapping[0];
+				after_row.querySelector('td:last-child').innerText = mapping[1];
 			});
 		};
 		showWindow('rename-window');
