@@ -274,15 +274,17 @@ def extract_filename_data(
                 ]
 
     # Get volume number
+    volume_result = None
     volume_end, volume_pos, volume_folderpos, volume_folderend = (
         0, 10_000, 10_000, 0
     )
-    volume_result = volume_regex.search(clean_filename)
-    if volume_result:
-        # Volume number found (e.g. Series Volume 1 Issue 6.ext)
-        volume_number = process_volume_number(volume_result.group(1))
-        volume_pos = volume_result.start(0)
-        volume_end = volume_result.end(1)
+    if not is_image_file:
+        volume_result = volume_regex.search(clean_filename)
+        if volume_result:
+            # Volume number found (e.g. Series Volume 1 Issue 6.ext)
+            volume_number = process_volume_number(volume_result.group(1))
+            volume_pos = volume_result.start(0)
+            volume_end = volume_result.end(1)
 
     # Find volume match in folder for finding series name
     # (or when volume number couldn't be found in filename)

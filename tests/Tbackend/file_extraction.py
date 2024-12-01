@@ -177,7 +177,10 @@ class extract_filename_data(unittest.TestCase):
                 {'series': 'Silver Surfer Rebirth', 'year': 2022, 'volume_number': 2, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
 
             'Star Wars Darth Vader (2020) Volume 3 Issue 18/Star Wars - Darth Vader (2021-) 019-002.jpg':
-                {'series': 'Star Wars Darth Vader', 'year': 2021, 'volume_number': 3, 'special_version': None, 'issue_number': 18.0, 'annual': False}
+                {'series': 'Star Wars Darth Vader', 'year': 2021, 'volume_number': 3, 'special_version': None, 'issue_number': 18.0, 'annual': False},
+
+            'Reign of X (2021) Volume 2/Reign Of X v02 (2021) (Digital-Empire)/Reign Of X v02-003.jpg':
+                {'series': 'Reign Of X', 'year': 2021, 'volume_number': 2, 'special_version': 'tpb', 'issue_number': None, 'annual': False}
         }
         self.run_cases(cases)
 
