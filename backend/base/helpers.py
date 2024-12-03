@@ -509,7 +509,7 @@ class Session(RSession):
                 round == 1
                 and result.status_code == 403
             ):
-                self.fs.handle_cf_block(url)
+                self.fs.handle_cf_block(url, result.headers)
                 continue
 
             if 400 <= result.status_code < 500:
@@ -570,7 +570,11 @@ class AsyncSession(ClientSession):
                 round == 1
                 and response.status == 403
             ):
-                await self.fs.handle_cf_block_async(self, args[1])
+                await self.fs.handle_cf_block_async(
+                    self,
+                    args[1],
+                    response.headers
+                )
                 continue
 
             if response.status >= 400:

@@ -43,18 +43,11 @@ class Constants:
 
     GC_SITE_URL = "https://getcomics.org"
 
-    MF_SITE_URL = "https://www.mediafire.com"
-
     FS_API_BASE = "/v1"
+    CF_CHALLENGE_HEADER = ("cf-mitigated", "challenge")
 
     TORRENT_UPDATE_INTERVAL = 5 # seconds
     TORRENT_TAG = "kapowarr"
-
-
-FS_URLS = (
-    Constants.GC_SITE_URL,
-    Constants.MF_SITE_URL
-)
 
 
 class FileConstants:

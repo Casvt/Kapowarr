@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Tuple, Union
+from typing import TYPE_CHECKING, Dict, Mapping, Tuple, Union
 
 from requests import RequestException
 
-from backend.base.definitions import FS_URLS, Constants
+from backend.base.definitions import Constants
 from backend.base.helpers import Session, Singleton
 
 if TYPE_CHECKING:
@@ -18,7 +18,6 @@ class FlareSolverr(metaclass=Singleton):
     ua_mapping: Dict[str, str] = {}
 
     def __init__(self) -> None:
-        self.urls = FS_URLS
         self.api_base = Constants.FS_API_BASE
 
         self.session_id: Union[str, None] = None
@@ -70,15 +69,19 @@ class FlareSolverr(metaclass=Singleton):
             self.cookie_mapping.get(url, {})
         )
 
-    def handle_cf_block(self, url: str) -> None:
+    def handle_cf_block(
+        self,
+        url: str,
+        headers: Mapping[str, str]
+    ) -> None:
         if not (self.session_id and self.base_url):
             return
 
-        if not any(
-            url.startswith(u)
-            for u in self.urls
+        if (
+            headers.get(Constants.CF_CHALLENGE_HEADER[0])
+            != Constants.CF_CHALLENGE_HEADER[1]
         ):
-            # URL is not CF guarded
+            # Request not failed because of CF block
             return
 
         with Session() as session:
@@ -104,27 +107,28 @@ class FlareSolverr(metaclass=Singleton):
     async def handle_cf_block_async(
         self,
         session: AsyncSession,
-        url: str
+        url: str,
+        headers: Mapping[str, str]
     ) -> None:
         if not (self.session_id and self.base_url):
             return
 
-        if not any(
-            url.startswith(u)
-            for u in self.urls
+        if (
+            headers.get(Constants.CF_CHALLENGE_HEADER[0])
+            != Constants.CF_CHALLENGE_HEADER[1]
         ):
-            # URL is not CF guarded
+            # Request not failed because of CF block
             return
 
         result = (await (await session.post(
-                self.base_url + self.api_base,
-                json={
-                    'cmd': 'request.get',
-                    'session': self.session_id,
-                    'returnOnlyCookies': True,
-                    'url': url
-                },
-                headers={'Content-Type': 'application/json'}
+            self.base_url + self.api_base,
+            json={
+                'cmd': 'request.get',
+                'session': self.session_id,
+                'returnOnlyCookies': True,
+                'url': url
+            },
+            headers={'Content-Type': 'application/json'}
         )).json())["solution"]
 
         self.ua_mapping[url] = result["userAgent"]
