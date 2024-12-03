@@ -26,6 +26,15 @@ class FlareSolverr(metaclass=Singleton):
         return
 
     def enable_flaresolverr(self, base_url: str) -> bool:
+        """Connect to a FlareSolverr instance.
+
+        Args:
+            base_url (str): The base URL of the FlareSolverr instance. Supply
+            base URL without API extension.
+
+        Returns:
+            bool: Whether the connection was successful.
+        """
         with Session() as session:
             try:
                 result = session.post(
@@ -46,6 +55,9 @@ class FlareSolverr(metaclass=Singleton):
         return True
 
     def disable_flaresolverr(self) -> None:
+        """
+        If there was a connection to a FlareSolverr instance, disconnect.
+        """
         if not (self.session_id and self.base_url):
             return
 
@@ -64,6 +76,18 @@ class FlareSolverr(metaclass=Singleton):
         return
 
     def get_ua_cookies(self, url: str) -> Tuple[str, Dict[str, str]]:
+        """Get the user agent and cookies for a certain URL. The UA and cookies
+        can be cleared by CF, so use them to avoid challenges. In case the URL
+        is not CF protected, or hasn't explicitly been cleared yet, then the
+        default UA is returned and no cookie definitions.
+
+        Args:
+            url (str): The URL to get the UA and cookies for.
+
+        Returns:
+            Tuple[str, Dict[str, str]]: First element is the UA, or default
+            UA. Second element is a mapping of any extra cookies.
+        """
         return (
             self.ua_mapping.get(url, Constants.DEFAULT_USERAGENT),
             self.cookie_mapping.get(url, {})
@@ -74,6 +98,14 @@ class FlareSolverr(metaclass=Singleton):
         url: str,
         headers: Mapping[str, str]
     ) -> None:
+        """Let FS handle a URL to aquire cleared cookies and UA. These become
+        available using `get_ua_cookies()` after this method completes.
+
+        Args:
+            url (str): The URL to clear.
+            headers (Mapping[str, str]): The response headers from the
+            (possibly) blocked request.
+        """
         if not (self.session_id and self.base_url):
             return
 
@@ -110,6 +142,15 @@ class FlareSolverr(metaclass=Singleton):
         url: str,
         headers: Mapping[str, str]
     ) -> None:
+        """Let FS handle a URL to aquire cleared cookies and UA. These become
+        available using `get_ua_cookies()` after this method completes.
+
+        Args:
+            session (AsyncSession): The session to make the request to FS with.
+            url (str): The URL to clear.
+            headers (Mapping[str, str]): The response headers from the
+            (possibly) blocked request.
+        """
         if not (self.session_id and self.base_url):
             return
 
