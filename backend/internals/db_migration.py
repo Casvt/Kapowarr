@@ -32,7 +32,7 @@ def migrate_db() -> None:
     Migrate a Kapowarr database from it's current version
     to the newest version supported by the Kapowarr version installed.
     """
-    from backend.internals.db import get_db
+    from backend.internals.db import iter_commit
     from backend.internals.settings import Settings
 
     s = Settings()
@@ -47,13 +47,11 @@ def migrate_db() -> None:
         current_db_version, newest_version
     )
 
-    cursor = get_db()
-    for start_version in range(current_db_version, newest_version):
+    for start_version in iter_commit(range(current_db_version, newest_version)):
         if start_version not in VersionMappingContainer.version_map:
             continue
         VersionMappingContainer.version_map[start_version]().run()
         s["database_version"] = start_version + 1
-        cursor.connection.commit()
 
     s._fetch_settings()
 

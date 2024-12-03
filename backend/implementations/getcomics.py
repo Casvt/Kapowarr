@@ -30,11 +30,12 @@ from backend.implementations.download_direct_clients import (
     DirectDownload, Download, MediaFireDownload,
     MediaFireFolderDownload, MegaDownload, PixelDrainDownload,
     PixelDrainFolderDownload, WeTransferDownload)
-from backend.implementations.download_torrent_clients import TorrentDownload
+from backend.implementations.download_torrent_clients import (TorrentClients,
+                                                              TorrentDownload)
 from backend.implementations.matching import gc_group_filter
 from backend.implementations.naming import generate_issue_name
 from backend.implementations.volumes import Volume
-from backend.internals.db import get_db
+from backend.internals.db import iter_commit
 from backend.internals.settings import Settings
 
 mediafire_dd_regex = compile(
@@ -321,9 +322,7 @@ def _get_download_groups(
     """
     LOGGER.debug('Extracting download groups')
 
-    torrent_client_available = get_db().execute(
-        "SELECT 1 FROM torrent_clients"
-    ).fetchone() is not None
+    torrent_client_available = bool(TorrentClients.get_clients())
 
     body: Union[Tag, None] = soup.find(
         'section', {'class': 'post-contents'}
@@ -589,8 +588,6 @@ async def __purify_download_group(
         `False`. If unsuccessful, `None` and whether it failed because the
         limit of a service was reached.
     """
-    commit = get_db().connection.commit
-
     if rename_downloaded_files:
         name = generate_issue_name(
             volume_id,
@@ -604,7 +601,7 @@ async def __purify_download_group(
     # Find working link
     limit_reached = False
     for source, links in group['links'].items():
-        for link in links:
+        for link in iter_commit(links):
             try:
                 pure_link, dl_class = await __purify_link(source, link)
 
@@ -620,7 +617,6 @@ async def __purify_download_group(
                     issue_id=issue_id,
                     reason=lb.reason
                 )
-                commit()
                 continue
 
             try:
@@ -646,7 +642,6 @@ async def __purify_download_group(
                     issue_id=issue_id,
                     reason=lb.reason
                 )
-                commit()
 
             except DownloadLimitReached:
                 # Link works but the download limit for the service is

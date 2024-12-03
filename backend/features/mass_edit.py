@@ -12,7 +12,7 @@ from backend.implementations.conversion import mass_convert
 from backend.implementations.naming import mass_rename
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Volume, refresh_and_scan
-from backend.internals.db import get_db
+from backend.internals.db import iter_commit
 
 if TYPE_CHECKING:
     from backend.features.download_queue import DownloadHandler
@@ -54,12 +54,8 @@ def mass_editor_rf(volume_ids: List[int], **kwargs) -> None:
     LOGGER.info(
         f'Using mass editor, settings root folder to {root_folder_id} for volumes: {volume_ids}')
 
-    cursor = get_db()
-    for volume_id in volume_ids:
+    for volume_id in iter_commit(volume_ids):
         Volume(volume_id)['root_folder'] = root_folder_id
-        # For loads of volumes, this loop can take a long time, blocking the db
-        # So commit after each volume to avoid db locking
-        cursor.connection.commit()
 
     return
 
@@ -80,16 +76,13 @@ def mass_editor_update(volume_ids: List[int], **kwargs) -> None:
 
 def mass_editor_search(volume_ids: List[int], **kwargs) -> None:
     LOGGER.info(f'Using mass editor, auto searching for volumes: {volume_ids}')
-    cursor = get_db()
     for volume_id in volume_ids:
         search_results = auto_search(volume_id)
-        for result in search_results:
+        for result in iter_commit(search_results):
             MassEditorVariables.download_handler.add(
                 result['link'],
                 volume_id
             )
-            # add() does a write so commit in-between to avoid db locking
-            cursor.connection.commit()
     return
 
 

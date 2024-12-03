@@ -17,7 +17,7 @@ from backend.base.files import (folder_is_inside_folder,
 from backend.base.helpers import (CommaList, Singleton, force_suffix,
                                   get_python_version, reversed_tuples)
 from backend.base.logging import LOGGER, set_log_level
-from backend.internals.db import get_db
+from backend.internals.db import commit, get_db
 from backend.internals.db_migration import get_latest_db_version
 
 
@@ -102,7 +102,7 @@ class Settings(metaclass=Singleton):
             "INSERT OR IGNORE INTO config(key, value) VALUES (?, ?);",
             asdict(SettingsValues()).items()
         )
-        self._save_to_database()
+        commit()
         return
 
     def _fetch_settings(self) -> None:
@@ -124,11 +124,6 @@ class Settings(metaclass=Singleton):
             db_values[en_key] = en[db_values[en_key].upper()]
 
         self.__cached_values = SettingsValues(**db_values)
-        return
-
-    def _save_to_database(self) -> None:
-        "Commit database to save changes."
-        get_db().connection.commit()
         return
 
     def get_settings(self) -> SettingsValues:

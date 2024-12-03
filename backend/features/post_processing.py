@@ -17,7 +17,7 @@ from backend.implementations.converters import extract_files_from_folder
 from backend.implementations.download_torrent_clients import TorrentDownload
 from backend.implementations.naming import mass_rename
 from backend.implementations.volumes import Volume, scan_files
-from backend.internals.db import get_db
+from backend.internals.db import commit, get_db
 from backend.internals.settings import Settings
 
 if TYPE_CHECKING:
@@ -68,7 +68,7 @@ class PostProcessingActions:
 
         # If it takes very long to move the file (because of it's size),
         # the DB is left locked for a long period leading to timeouts.
-        get_db().connection.commit()
+        commit()
 
         folder = Volume(download.volume_id)['folder']
         file_dest = join(

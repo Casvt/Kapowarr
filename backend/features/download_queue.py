@@ -32,7 +32,7 @@ from backend.implementations.download_general import ExternalDownload
 from backend.implementations.download_torrent_clients import (TorrentClients,
                                                               TorrentDownload)
 from backend.implementations.getcomics import GetComicsPage
-from backend.internals.db import get_db
+from backend.internals.db import get_db, iter_commit
 from backend.internals.server import WebSocket
 from backend.internals.settings import Settings
 
@@ -334,7 +334,7 @@ class DownloadHandler:
             if downloads:
                 LOGGER.info('Loading downloads')
 
-            for download in downloads:
+            for download in iter_commit(downloads):
                 LOGGER.debug(f'Download from database: {dict(download)}')
                 try:
                     dl_instance = download_type_to_class[download['client_type']](
@@ -367,10 +367,6 @@ class DownloadHandler:
                         "DELETE FROM download_queue WHERE id = ?;",
                         (download['id'],)
                     )
-                    # Link is broken, which triggers a write to the database
-                    # To avoid the database being locked for a long time while
-                    # importing, we commit in-between.
-                    cursor.connection.commit()
                     continue
 
                 except DownloadLimitReached:
@@ -382,9 +378,6 @@ class DownloadHandler:
                     download['issue_id'],
                     download['web_link']
                 )
-                # self.__prepare_downloads_for_queue() has a write to the db
-                # To avoid locking the db, commit in-between.
-                cursor.connection.commit()
 
             self._process_queue()
         return

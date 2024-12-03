@@ -11,11 +11,11 @@ from sqlite3 import (PARSE_DECLTYPES, Connection, Cursor, ProgrammingError,
                      Row, register_adapter, register_converter)
 from threading import current_thread
 from time import time
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, Generator, Iterable, List, Union
 
 from flask import g
 
-from backend.base.definitions import Constants, SeedingHandling
+from backend.base.definitions import Constants, SeedingHandling, T
 from backend.base.helpers import CommaList
 from backend.base.logging import LOGGER, set_log_level
 from backend.internals.db_migration import migrate_db
@@ -196,6 +196,30 @@ def get_db(force_new: bool = False) -> KapowarrCursor:
         .cursor(force_new=force_new)
     )
     return cursor
+
+
+def commit() -> None:
+    """Commit the database"""
+    get_db().connection.commit()
+    return
+
+
+def iter_commit(iterable: Iterable[T]) -> Generator[T, Any, Any]:
+    """Commit the database after each iteration. Also commits just before the
+    first iteration starts.
+
+    Args:
+        iterable (Iterable[T]): Iterable that will be iterated over like normal.
+
+    Yields:
+        Generator[T, Any, Any]: Items of iterable.
+    """
+    commit = get_db().connection.commit
+    commit()
+    for i in iterable:
+        yield i
+        commit()
+    return
 
 
 def close_db(e: Union[None, BaseException] = None):

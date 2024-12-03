@@ -19,7 +19,7 @@ from backend.implementations.comicvine import ComicVine
 from backend.implementations.naming import mass_rename
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Library, Volume, scan_files
-from backend.internals.db import get_db
+from backend.internals.db import commit
 from backend.internals.db_models import FilesDB
 
 
@@ -186,7 +186,6 @@ def import_library(
 
     root_folders = RootFolders().get_all()
 
-    cursor = get_db()
     library = Library()
     for cv_id, files in cvid_to_filepath.items():
         # Find lowest common folder (lcf)
@@ -210,7 +209,7 @@ def import_library(
                 monitor_scheme=MonitorScheme.ALL,
                 volume_folder=volume_folder
             )
-            cursor.connection.commit()
+            commit()
 
         except VolumeAlreadyAdded:
             # The volume is already added but the file is not matched to it

@@ -19,7 +19,7 @@ from backend.features.search import auto_search
 from backend.implementations.conversion import mass_convert
 from backend.implementations.naming import mass_rename
 from backend.implementations.volumes import Issue, Volume, refresh_and_scan
-from backend.internals.db import get_db
+from backend.internals.db import get_db, iter_commit
 from backend.internals.server import WebSocket
 
 if TYPE_CHECKING:
@@ -535,12 +535,8 @@ class TaskHandler(metaclass=Singleton):
 
                 if not task.stop:
                     if task.category == 'download' and result:
-                        cursor.connection.commit()
-                        for download in result:
+                        for download in iter_commit(result):
                             self.download_handler.add(*download)
-                            # add() does a write to db so commit in-between
-                            # to avoid locking up the db
-                            cursor.connection.commit()
 
                     LOGGER.info(f'Finished task {task.display_title}')
 

@@ -16,7 +16,7 @@ from backend.base.helpers import PortablePool
 from backend.implementations.converters import (FileConverter, get_rar_output,
                                                 rar_executables)
 from backend.implementations.volumes import Volume, scan_files
-from backend.internals.db import get_db
+from backend.internals.db import commit
 from backend.internals.server import WebSocket
 from backend.internals.settings import Settings
 
@@ -268,7 +268,7 @@ def mass_convert(
 
     else:
         # Commit changes because new connections are opened in the processes
-        get_db().connection.commit()
+        commit()
         with PortablePool(processes=processes) as pool:
             if update_websocket:
                 ws = WebSocket()

@@ -34,7 +34,7 @@ from backend.implementations.comicvine import ComicVine
 from backend.implementations.matching import (_match_title,
                                               file_importing_filter)
 from backend.implementations.root_folders import RootFolders
-from backend.internals.db import get_db
+from backend.internals.db import commit, get_db
 from backend.internals.db_models import FilesDB, GeneralFilesDB
 from backend.internals.server import WebSocket
 
@@ -1075,7 +1075,7 @@ def scan_files(
                     bindings.append((file_id, issue_id))
 
     # Commit files added to DB
-    cursor.connection.commit()
+    commit()
 
     # Get current bindings
     current_bindings: List[Tuple[int, int]] = [
@@ -1132,7 +1132,7 @@ def scan_files(
     if del_unmatched_files:
         FilesDB.delete_unmatched_files()
 
-    cursor.connection.commit()
+    commit()
 
     return
 
@@ -1231,7 +1231,7 @@ def refresh_and_scan(
         """,
         update_volumes
     )
-    cursor.connection.commit()
+    commit()
 
     # Update issues
     issue_datas = run(cv.fetch_issues([
@@ -1278,7 +1278,7 @@ def refresh_and_scan(
         """,
         issue_updates
     )
-    cursor.connection.commit()
+    commit()
 
     # Check special version
     sv_updates = []
@@ -1309,7 +1309,7 @@ def refresh_and_scan(
         """,
         sv_updates
     )
-    cursor.connection.commit()
+    commit()
 
     # Scan for files
     if volume_id:
@@ -1637,7 +1637,7 @@ class Library:
                 """,
                 (volume_id,)
             )
-            cursor.connection.commit()
+            commit()
 
         elif monitor_scheme == MonitorScheme.MISSING:
             cursor.execute("""
@@ -1657,12 +1657,12 @@ class Library:
                 """,
                 (volume_id, volume_id)
             )
-            cursor.connection.commit()
+            commit()
 
         if auto_search:
             from backend.features.tasks import AutoSearchVolume, TaskHandler
             task = AutoSearchVolume(volume_id)
-            cursor.connection.commit()
+            commit()
             TaskHandler().add(task) # type: ignore
 
         LOGGER.info(
