@@ -287,16 +287,17 @@ def manual_search(
             continue
 
         # Decide what is a match and what not
-        issue_numbers: Dict[float, Union[int, None]] = {
+        volume_issues = volume.get_issues()
+        number_to_year: Dict[float, Union[int, None]] = {
             i['calculated_issue_number']: extract_year_from_date(i['date'])
-            for i in volume.get_issues()
+            for i in volume_issues
         }
         results = [
             MatchedSearchResultData({
                 **result,
-                **check_search_result_match(result, volume_id, title,
-                    volume_data.special_version, issue_numbers,
-                    calculated_issue_number, volume_data.year
+                **check_search_result_match(
+                    result, volume_data, volume_issues,
+                    number_to_year, calculated_issue_number
                 )
             })
             for result in search_results
@@ -305,7 +306,7 @@ def manual_search(
         # Sort results; put best result at top
         results.sort(key=lambda r: _sort_search_results(
             r, title, volume_data.volume_number,
-            (volume_data.year, issue_numbers.get(
+            (volume_data.year, number_to_year.get(
                 calculated_issue_number)), # type: ignore
             calculated_issue_number
         ))

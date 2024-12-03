@@ -56,8 +56,9 @@ def extract_files_from_folder(
 
     volume = Volume(volume_id)
     volume_data = volume.get_keys(
-        ('id', 'title', 'year', 'folder')
+        ('id', 'title', 'year', 'volume_number', 'folder', 'special_version')
     )
+    volume_issues = volume.get_issues()
     end_year = extract_year_from_date(
         volume['last_issue_date'],
         volume_data.year
@@ -75,6 +76,7 @@ def extract_files_from_folder(
                 folder_extraction_filter(
                     extract_filename_data(c, False),
                     volume_data,
+                    volume_issues,
                     end_year
                 )
             )

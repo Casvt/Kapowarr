@@ -10,7 +10,7 @@ from multiprocessing import cpu_count
 from os.path import abspath, basename, isdir, join, relpath
 from re import IGNORECASE, compile
 from time import time
-from typing import Any, Callable, Dict, Iterable, List, Sequence, Tuple, Union
+from typing import Any, Dict, Iterable, List, Sequence, Tuple, Union
 
 from backend.base.custom_exceptions import (InvalidKeyValue, IssueNotFound,
                                             TaskForVolumeRunning,
@@ -27,11 +27,11 @@ from backend.base.files import (create_folder, delete_empty_child_folders,
                                 delete_file_folder, folder_is_inside_folder,
                                 list_files, make_filename_safe,
                                 propose_basefolder_change, rename_file)
-from backend.base.helpers import PortablePool, first_of_column
+from backend.base.helpers import (PortablePool, extract_year_from_date,
+                                  first_of_column)
 from backend.base.logging import LOGGER
 from backend.implementations.comicvine import ComicVine
-from backend.implementations.matching import (clean_title_regex,
-                                              clean_title_regex_2,
+from backend.implementations.matching import (_match_title,
                                               file_importing_filter)
 from backend.implementations.root_folders import RootFolders
 from backend.internals.db import get_db
@@ -974,6 +974,10 @@ def scan_files(
         'special_version'
     ))
     volume_issues = volume.get_issues()
+    number_to_year: Dict[float, Union[int, None]] = {
+        i['calculated_issue_number']: extract_year_from_date(i['date'])
+        for i in volume_issues
+    }
     _general_files = volume.get_general_files()
     general_files: Dict[str, int] = {
         f['filepath']: f['id']
@@ -1023,7 +1027,12 @@ def scan_files(
             continue
 
         # Check if file matches volume
-        if not file_importing_filter(file_data, volume_data, volume_issues):
+        if not file_importing_filter(
+            file_data,
+            volume_data,
+            volume_issues,
+            number_to_year
+        ):
             continue
 
         if (
@@ -1438,26 +1447,10 @@ class Library:
         Returns:
             List[dict]: The resulting list of matching volumes in the library
         """
-        clean_query = clean_title_regex_2.sub(
-            '',
-            clean_title_regex.sub(
-                '',
-                query.lower()
-            )
-        )
-
-        clean_title: Callable[[str], str] = lambda t: clean_title_regex_2.sub(
-            '',
-            clean_title_regex.sub(
-                '',
-                t.lower()
-            )
-        )
-
         volumes = [
             v
             for v in self.get_volumes(sort, filter)
-            if clean_query in clean_title(v['title'])
+            if _match_title(v['title'], query, allow_contains=True)
         ]
 
         return volumes

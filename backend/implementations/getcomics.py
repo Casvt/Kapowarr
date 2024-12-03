@@ -31,7 +31,7 @@ from backend.implementations.download_direct_clients import (
     MediaFireFolderDownload, MegaDownload, PixelDrainDownload,
     PixelDrainFolderDownload, WeTransferDownload)
 from backend.implementations.download_torrent_clients import TorrentDownload
-from backend.implementations.matching import GC_group_filter
+from backend.implementations.matching import gc_group_filter
 from backend.implementations.naming import generate_issue_name
 from backend.implementations.volumes import Volume
 from backend.internals.db import get_db
@@ -412,16 +412,15 @@ def _create_link_paths(
         ('title', 'year', 'special_version', 'volume_number')
     )
     last_issue_date = volume['last_issue_date']
+    volume_issues = volume.get_issues()
 
     link_paths: List[List[DownloadGroup]] = []
     for group in download_groups:
-        if not GC_group_filter(
+        if not gc_group_filter(
             group['info'],
-            volume_id,
-            volume_data.title,
-            volume_data.year,
+            volume_data,
             last_issue_date,
-            volume_data.special_version
+            volume_issues
         ):
             continue
 
