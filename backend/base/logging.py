@@ -107,6 +107,30 @@ def setup_logging(do_rollover: bool = True) -> None:
     LOGGING_CONFIG["handlers"]["file"]["do_rollover"] = do_rollover
 
     logging.config.dictConfig(LOGGING_CONFIG)
+
+    # Log uncaught exceptions using the logger instead of printing the stderr
+    # Logger goes to stderr anyway, so still visible in console but also logs
+    # to file, so that downloaded log file also contains any errors.
+    import sys
+    import threading
+    from traceback import format_exception
+
+    def log_uncaught_exceptions(e_type, value, tb):
+        LOGGER.error(
+            "UNCAUGHT EXCEPTION:\n" +
+            ''.join(format_exception(e_type, value, tb))
+        )
+        return
+
+    def log_uncaught_threading_exceptions(args):
+        LOGGER.exception(
+            f"UNCAUGHT EXCEPTION IN THREAD: {args.exc_value}"
+        )
+        return
+
+    sys.excepthook = log_uncaught_exceptions
+    threading.excepthook = log_uncaught_threading_exceptions
+
     return
 
 
