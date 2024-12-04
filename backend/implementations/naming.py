@@ -10,28 +10,28 @@ from os.path import basename, isdir, isfile, join, splitext
 from re import compile
 from string import Formatter
 from sys import platform
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Type, Union
 
+from backend.base.custom_exceptions import InvalidSettingValue
 from backend.base.definitions import (BaseNamingKeys, FileConstants,
                                       IssueNamingKeys, SpecialVersion,
                                       SVNamingKeys, full_sv_mapping,
                                       short_sv_mapping)
-from backend.base.file_extraction import cover_regex, page_regex, page_regex_2
+from backend.base.file_extraction import (cover_regex, extract_filename_data,
+                                          page_regex, page_regex_2,
+                                          process_issue_number)
 from backend.base.files import (delete_empty_child_folders,
                                 delete_empty_parent_folders, list_files,
                                 make_filename_safe, rename_file)
 from backend.base.helpers import (create_range, extract_year_from_date,
                                   filtered_iter)
 from backend.base.logging import LOGGER
+from backend.implementations.matching import file_importing_filter
 from backend.implementations.root_folders import RootFolders
-from backend.implementations.volumes import Issue, Volume
+from backend.implementations.volumes import Issue, Volume, VolumeData
 from backend.internals.db_models import FilesDB
 from backend.internals.server import WebSocket
 from backend.internals.settings import Settings
-
-if TYPE_CHECKING:
-    from backend.implementations.volumes import VolumeData
-
 
 remove_year_in_image_regex = compile(r'(?:19|20)\d{2}')
 
@@ -97,25 +97,33 @@ def _get_volume_naming_keys(
 
 
 def _get_issue_naming_keys(
-    issue_id: int
+    volume: Union[int, VolumeData],
+    issue: Union[int, dict]
 ) -> IssueNamingKeys:
     """Generate the values of the naming keys for an issue.
 
     Args:
-        issue_id (int): The ID of the issue to fetch the data for.
+        volume (Union[int, VolumeData]): The ID of the volume to fetch the data
+        for or manually supplied volume data to work with.
+        issue (Union[int, dict]): The ID of the issue to fetch the data
+        for or manually supplied issue data to work with.
 
     Returns:
         IssueNamingKeys: The values of the naming keys for an issue.
     """
     issue_padding = Settings().sv.issue_padding
-    issue_data: Dict[str, Any] = Issue(
-        issue_id, check_existence=True
-    ).get_keys((
-        'comicvine_id', 'issue_number', 'title', 'date', 'volume_id'
-    ))
+
+    if isinstance(issue, int):
+        issue_data: Dict[str, Any] = Issue(
+            issue, check_existence=True
+        ).get_keys((
+            'comicvine_id', 'issue_number', 'title', 'date'
+        ))
+    else:
+        issue_data = issue
 
     return IssueNamingKeys(
-        **_get_volume_naming_keys(issue_data['volume_id']).__dict__,
+        **_get_volume_naming_keys(volume).__dict__,
         issue_comicvine_id=issue_data['comicvine_id'],
         issue_number=(
             str(issue_data['issue_number'] or '').zfill(issue_padding)
@@ -192,7 +200,7 @@ def generate_issue_name(
         issue = Issue.from_volume_and_calc_number(
             volume_id, create_range(calculated_issue_number)[0]
         )
-        formatting_data = _get_issue_naming_keys(issue.id)
+        formatting_data = _get_issue_naming_keys(volume_id, issue.id)
         format = sv.file_naming_vai
 
     elif special_version != SpecialVersion.NORMAL:
@@ -209,7 +217,7 @@ def generate_issue_name(
             volume_id,
             create_range(calculated_issue_number)[0] # type: ignore
         )
-        formatting_data = _get_issue_naming_keys(issue.id)
+        formatting_data = _get_issue_naming_keys(volume_id, issue.id)
 
         if formatting_data.issue_title is None:
             format = sv.file_naming_empty
@@ -278,6 +286,15 @@ def generate_image_name(
 # =====================
 # region Checking formats
 # =====================
+NAMING_MAPPING: Dict[str, Type[BaseNamingKeys]] = {
+    'volume_folder_naming': BaseNamingKeys,
+    'file_naming': IssueNamingKeys,
+    'file_naming_empty': IssueNamingKeys,
+    'file_naming_special_version': SVNamingKeys,
+    'file_naming_vai': IssueNamingKeys
+}
+
+
 def check_format(format: str, type: str) -> bool:
     """Check if a format string is valid.
 
@@ -303,18 +320,166 @@ def check_format(format: str, type: str) -> bool:
         if fn is not None
     ]
 
-    if type == 'volume_folder_naming':
-        naming_keys = BaseNamingKeys
-    elif type == 'file_naming_special_version':
-        naming_keys = SVNamingKeys
-    else:
-        naming_keys = IssueNamingKeys
-
+    naming_keys = NAMING_MAPPING[type]
     for format_key in keys:
-        if format_key not in naming_keys.__dict__:
+        if format_key not in naming_keys.__dataclass_fields__:
             return False
 
     return True
+
+
+def check_mock_filename(
+    volume_folder_naming: Union[str, None],
+    file_naming: Union[str, None],
+    file_naming_empty: Union[str, None],
+    file_naming_special_version: Union[str, None],
+    file_naming_vai: Union[str, None]
+) -> None:
+    """Check if the supplied naming formats are supported by Kapowarr. This is
+    checked by creating a filename using the format, and seeing if it matches
+    to a fake volume and issue. If it does not match, then the filename must be
+    insufficient.
+
+    Args:
+        volume_folder_naming (Union[str, None]): The new naming format for the
+        volume folder, or `None` if the current one should be used.
+
+        file_naming (Union[str, None]): The new naming format for a standard
+        file, or `None` if the current one should be used.
+
+        file_naming_empty (Union[str, None]): The new naming format for an issue
+        without title, or `None` if the current one should be used.
+
+        file_naming_special_version (Union[str, None]): The new naming format
+        for a Special Version, or `None` if the current one should be used.
+
+        file_naming_vai (Union[str, None]): The new naming format for a VAI,
+        or `None` if the current one should be used.
+
+    Raises:
+        InvalidSettingValue: One of the formats is insufficient.
+    """
+    naming_mocks = {
+        "file_naming_special_version": [
+            (
+                VolumeData(
+                    comicvine_id=123,
+                    title="Spider-Man",
+                    year=2023,
+                    volume_number=2,
+                    publisher="Marvel",
+                    special_version=SpecialVersion.ONE_SHOT
+                ),
+                [
+                    {
+                        "comicvine_id": 456,
+                        "title": "One Shot",
+                        "issue_number": "1",
+                        "calculated_issue_number": process_issue_number("1"),
+                        "date": "2023-03-04"
+                    }
+                ]
+            ),
+            (
+                VolumeData(
+                    comicvine_id=123,
+                    title="Spider-Man",
+                    year=2023,
+                    volume_number=2,
+                    publisher="Marvel",
+                    special_version=SpecialVersion.TPB
+                ),
+                [
+                    {
+                        "comicvine_id": 456,
+                        "title": "",
+                        "issue_number": "1",
+                        "calculated_issue_number": process_issue_number("1"),
+                        "date": "2023-03-04"
+                    }
+                ]
+            )
+        ],
+        "file_naming": [
+            (
+                VolumeData(
+                    comicvine_id=123,
+                    title="Spider-Man",
+                    year=2023,
+                    volume_number=2,
+                    publisher="Marvel",
+                    special_version=SpecialVersion.NORMAL
+                ),
+                [
+                    {
+                        "comicvine_id": 456,
+                        "title": "",
+                        "issue_number": "3",
+                        "calculated_issue_number": process_issue_number("3"),
+                        "date": "2023-03-04"
+                    }
+                ]
+            )
+        ],
+        "file_naming_vai": [
+            (
+                VolumeData(
+                    comicvine_id=123,
+                    title="Spider-Man",
+                    year=2023,
+                    volume_number=2,
+                    publisher="Marvel",
+                    special_version=SpecialVersion.VOLUME_AS_ISSUE
+                ),
+                [
+                    {
+                        "comicvine_id": 456,
+                        "title": "",
+                        "issue_number": "4b",
+                        "calculated_issue_number": process_issue_number("4b"),
+                        "date": "2023-03-04"
+                    }
+                ]
+            )
+        ]
+    }
+    naming_mocks['file_naming_empty'] = naming_mocks['file_naming']
+
+    settings = Settings().get_settings()
+    vf_naming = volume_folder_naming or settings.volume_folder_naming
+    namings = {
+        'file_naming': file_naming or settings.file_naming,
+        'file_naming_empty': file_naming_empty or settings.file_naming_empty,
+        'file_naming_special_version': file_naming_special_version or settings.file_naming_special_version,
+        'file_naming_vai': file_naming_vai or settings.file_naming_vai}
+
+    for key, value in namings.items():
+        filepath = join(vf_naming, value)
+        for volume_mock, issue_mock in naming_mocks[key]:
+            if key == 'special_version':
+                formatting_data = _get_volume_naming_keys(volume_mock)
+            else:
+                formatting_data = _get_issue_naming_keys(
+                    volume_mock, issue_mock[0])
+
+            name = filepath.format_map({
+                k: v if v is not None else 'Unknown'
+                for k, v in formatting_data.__dict__.items()
+            })
+            save_name = make_filename_safe(name)
+
+            number_to_year: Dict[float, Union[int, None]] = {
+                i['calculated_issue_number']: extract_year_from_date(i['date'])
+                for i in issue_mock
+            }
+            if not file_importing_filter(
+                extract_filename_data(save_name),
+                volume_mock,
+                issue_mock,
+                number_to_year
+            ):
+                raise InvalidSettingValue(key, value)
+    return
 
 
 # =====================

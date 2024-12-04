@@ -174,9 +174,22 @@ class Settings(metaclass=Singleton):
             InvalidSettingModification: Key can not be modified this way.
             FolderNotFound: Folder not found.
         """
+        from backend.implementations.naming import (NAMING_MAPPING,
+                                                    check_mock_filename)
+
         formatted_data = {}
         for key, value in data.items():
             formatted_data[key] = self.__format_value(key, value)
+
+        if any(
+            key in formatted_data
+            for key in NAMING_MAPPING
+        ):
+            # Changes to naming schemes
+            check_mock_filename(**{
+                key: formatted_data.get(key)
+                for key in NAMING_MAPPING
+            })
 
         hosting_changes = any(
             s in data
@@ -346,18 +359,6 @@ class Settings(metaclass=Singleton):
                 ):
                     raise InvalidSettingValue(key, value)
 
-        elif key in (
-            'volume_folder_naming',
-            'file_naming',
-            'file_naming_special_version',
-            'file_naming_empty'
-        ):
-            from backend.implementations.naming import check_format
-
-            converted_value = value.strip().strip(sep)
-            if not check_format(converted_value, key):
-                raise InvalidSettingValue(key, value)
-
         elif key == 'volume_padding' and not 1 <= value <= 3:
             raise InvalidSettingValue(key, value)
 
@@ -414,6 +415,14 @@ class Settings(metaclass=Singleton):
                 fs.disable_flaresolverr()
                 if not fs.enable_flaresolverr(converted_value):
                     fs.enable_flaresolverr(old_value)
+                    raise InvalidSettingValue(key, value)
+
+        else:
+            from backend.implementations.naming import (NAMING_MAPPING,
+                                                        check_format)
+            if key in NAMING_MAPPING:
+                converted_value = value.strip().strip(sep)
+                if not check_format(converted_value, key):
                     raise InvalidSettingValue(key, value)
 
         return converted_value
