@@ -214,6 +214,16 @@ def extract_filename_data(
         None, None, None, None, None
     )
 
+    # Process folder if file is metadata file, as metadata filename contains
+    # no useful information.
+    is_metadata_file = (
+        basename(filepath.lower())
+        in FileConstants.METADATA_FILES
+    )
+    if is_metadata_file:
+        filepath = dirname(filepath)
+        special_version = SpecialVersion.METADATA.value
+
     # Determine annual or not
     annual_result = annual_regex.search(basename(filepath))
     annual_folder_result = annual_regex.search(basename(dirname(filepath)))
@@ -304,25 +314,30 @@ def extract_filename_data(
     # Check if it's a special version
     issue_pos, issue_folderpos = 10_000, 10_000
     special_pos, special_end = 10_000, 0
-    special_result = special_version_regex.search(filename)
-    cover_result = cover_regex.search(filename)
-    if cover_result:
-        special_version = SpecialVersion.COVER.value
-        if cover_result.group(1):
-            special_pos = cover_result.start(1)
-            special_end = cover_result.end(1)
-        else:
-            special_pos = cover_result.start(0)
-            special_end = cover_result.end(0)
+    if not special_version:
+        special_result = special_version_regex.search(filename)
+        cover_result = cover_regex.search(filename)
+        if cover_result:
+            special_version = SpecialVersion.COVER.value
+            if cover_result.group(1):
+                special_pos = cover_result.start(1)
+                special_end = cover_result.end(1)
+            else:
+                special_pos = cover_result.start(0)
+                special_end = cover_result.end(0)
 
-    elif special_result:
-        special_version = [
-            k for k, v in special_result.groupdict().items()
-            if v is not None
-        ][0].replace('_', '-')
-        special_pos = special_result.start(0)
+        elif special_result:
+            special_version = [
+                k for k, v in special_result.groupdict().items()
+                if v is not None
+            ][0].replace('_', '-')
+            special_pos = special_result.start(0)
 
-    if special_version in (None, SpecialVersion.COVER):
+    if special_version in (
+        None,
+        SpecialVersion.COVER,
+        SpecialVersion.METADATA
+    ):
         # No special version so find issue number
         if not is_image_file:
             pos_options = (

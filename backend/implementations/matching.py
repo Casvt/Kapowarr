@@ -173,7 +173,8 @@ def _match_special_version(
     """
     if check_version in (
         reference_version,
-        SpecialVersion.COVER
+        SpecialVersion.COVER,
+        SpecialVersion.METADATA
     ):
         return True
 

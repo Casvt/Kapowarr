@@ -998,21 +998,13 @@ def scan_files(
         if hashed_files and file not in hashed_files:
             continue
 
-        if basename(file).lower() in FileConstants.METADATA_FILES:
-            # Volume metadata file
-            file_id = general_files.get(file)
-
-            if file_id is None:
-                FilesDB.add_file(file)
-                file_id = FilesDB.fetch(filepath=file)[0]['id']
-
-            general_bindings.append((file_id, GeneralFileType.METADATA))
-            continue
-
         file_data = extract_filename_data(file)
 
         if (
-            file_data['special_version'] == SpecialVersion.COVER
+            file_data['special_version'] in (
+                SpecialVersion.COVER,
+                SpecialVersion.METADATA
+            )
             and file_data['volume_number'] == volume_data.volume_number
             and file_data['issue_number'] is None
         ):
@@ -1023,7 +1015,10 @@ def scan_files(
                 FilesDB.add_file(file)
                 file_id = FilesDB.fetch(filepath=file)[0]['id']
 
-            general_bindings.append((file_id, GeneralFileType.COVER))
+            if file_data['special_version'] == SpecialVersion.COVER:
+                general_bindings.append((file_id, GeneralFileType.COVER))
+            else:
+                general_bindings.append((file_id, GeneralFileType.METADATA))
             continue
 
         # Check if file matches volume

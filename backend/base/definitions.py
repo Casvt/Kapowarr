@@ -176,6 +176,9 @@ class SpecialVersion(BaseEnum):
     COVER = 'cover'
     "Image file is cover of either issue or volume. Overrules over SV's."
 
+    METADATA = 'metadata'
+    "Metadata file"
+
     NORMAL = None
     "Normal volume, so not a special version"
 

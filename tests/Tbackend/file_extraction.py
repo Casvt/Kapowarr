@@ -264,7 +264,13 @@ class extract_filename_data(unittest.TestCase):
                 {'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'hard-cover', 'issue_number': None, 'annual': False},
 
             'Iron Man Vol. 2 #1 – 13 + TPB (1996-1997 + 2006)':
-                {'series': 'Iron Man', 'year': 1996, 'volume_number': 2, 'special_version': None, 'issue_number': (1.0, 13.0), 'annual': False}
+                {'series': 'Iron Man', 'year': 1996, 'volume_number': 2, 'special_version': None, 'issue_number': (1.0, 13.0), 'annual': False},
+
+            'Iron Man/Vol. 2 (2012)/series.json':
+                {'series': 'Iron Man', 'year': 2012, 'volume_number': 2, 'special_version': 'metadata', 'issue_number': None, 'annual': False},
+
+            'Iron Man/Volume 2 (2012)/Issue 5/comicinfo.xml':
+                {'series': 'Iron Man', 'year': 2012, 'volume_number': 2, 'special_version': 'metadata', 'issue_number': 5.0, 'annual': False}
         }
         self.run_cases(cases)
     # autopep8: on
