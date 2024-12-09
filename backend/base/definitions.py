@@ -197,6 +197,21 @@ full_sv_mapping: Dict[SpecialVersion, str] = dict((
 ))
 
 
+class LibrarySorting(BaseEnum):
+    TITLE = 'title, year, volume_number'
+    YEAR = 'year, title, volume_number'
+    VOLUME_NUMBER = 'volume_number, title, year'
+    RECENTLY_ADDED = 'id DESC, title, year, volume_number'
+    PUBLISHER = 'publisher, title, year, volume_number'
+    WANTED = ('issues_downloaded_monitored >= issue_count_monitored, '
+              'title, year, volume_number')
+
+
+class LibraryFilters(BaseEnum):
+    WANTED = 'WHERE issues_downloaded_monitored < issue_count_monitored'
+    MONITORED = 'WHERE monitored = 1'
+
+
 class DownloadState(BaseEnum):
     QUEUED_STATE = 'queued'
     DOWNLOADING_STATE = 'downloading'
@@ -332,7 +347,7 @@ class IssueMetadata(TypedDict):
     comicvine_id: int
     volume_id: int
     issue_number: str
-    calculated_issue_number: Union[float, None]
+    calculated_issue_number: float
     title: Union[str, None]
     date: Union[str, None]
     description: str
@@ -425,6 +440,43 @@ class IssueNamingKeys(SVNamingKeys):
     issue_title: Union[str, None]
     issue_release_date: Union[str, None]
     issue_release_year: Union[int, None]
+
+
+@dataclass
+class IssueData:
+    id: int
+    volume_id: int
+    comicvine_id: int
+    issue_number: str
+    calculated_issue_number: float
+    title: Union[str, None]
+    date: Union[str, None]
+    description: Union[str, None]
+    monitored: bool
+    files: List[FileData]
+
+    def as_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
+class VolumeData:
+    id: int
+    comicvine_id: int
+    title: str
+    alt_title: Union[str, None]
+    year: int
+    publisher: str
+    volume_number: int
+    description: str
+    site_url: str
+    monitored: bool
+    root_folder: int
+    folder: str
+    custom_folder: bool
+    special_version: SpecialVersion
+    special_version_locked: bool
+    last_cv_fetch: int
 
 
 # region Abstract Classes

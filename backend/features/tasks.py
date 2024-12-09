@@ -95,9 +95,9 @@ class AutoSearchIssue(Task):
         return
 
     def run(self) -> List[Tuple[str, int, Union[int, None]]]:
-        volume = Volume(self._volume_id)
-        issue = Issue(self._issue_id)
-        self.message = f'Searching for {volume["title"]} #{issue["issue_number"]}'
+        volume_title = Volume(self._volume_id).vd.title
+        issue_number = Issue(self._issue_id).get_data().issue_number
+        self.message = f'Searching for {volume_title} #{issue_number}'
         WebSocket().update_task_status(self)
 
         # Get search results and download them
@@ -148,9 +148,9 @@ class MassRenameIssue(Task):
         return
 
     def run(self) -> None:
-        volume = Volume(self._volume_id)
-        issue = Issue(self._issue_id)
-        self.message = f'Renaming files for {volume["title"]} #{issue["issue_number"]}'
+        volume_title = Volume(self._volume_id).vd.title
+        issue_number = Issue(self._issue_id).get_data().issue_number
+        self.message = f'Renaming files for {volume_title} #{issue_number}'
         WebSocket().update_task_status(self)
 
         mass_rename(
@@ -201,9 +201,9 @@ class MassConvertIssue(Task):
         return
 
     def run(self) -> None:
-        volume = Volume(self._volume_id)
-        issue = Issue(self._issue_id)
-        self.message = f'Converting files for {volume["title"]} #{issue["issue_number"]}'
+        volume_title = Volume(self._volume_id).vd.title
+        issue_number = Issue(self._issue_id).get_data().issue_number
+        self.message = f'Converting files for {volume_title} #{issue_number}'
         WebSocket().update_task_status(self)
 
         mass_convert(
@@ -247,7 +247,8 @@ class AutoSearchVolume(Task):
         return
 
     def run(self) -> List[Tuple[str, int, Union[int, None]]]:
-        self.message = f'Searching for {Volume(self._volume_id)["title"]}'
+        volume_title = Volume(self._volume_id).vd.title
+        self.message = f'Searching for {volume_title}'
         WebSocket().update_task_status(self)
 
         # Get search results and download them
@@ -287,7 +288,8 @@ class RefreshAndScanVolume(Task):
         return
 
     def run(self) -> None:
-        self.message = f'Updating info on {Volume(self._volume_id)["title"]}'
+        volume_title = Volume(self._volume_id).vd.title
+        self.message = f'Updating info on {volume_title}'
         WebSocket().update_task_status(self)
 
         try:
@@ -333,7 +335,8 @@ class MassRenameVolume(Task):
         return
 
     def run(self) -> None:
-        self.message = f'Renaming files for {Volume(self._volume_id)["title"]}'
+        volume_title = Volume(self._volume_id).vd.title
+        self.message = f'Renaming files for {volume_title}'
         WebSocket().update_task_status(self)
 
         mass_rename(
@@ -380,7 +383,8 @@ class MassConvertVolume(Task):
         return
 
     def run(self) -> None:
-        self.message = f'Converting files for {Volume(self._volume_id)["title"]}'
+        volume_title = Volume(self._volume_id).vd.title
+        self.message = f'Converting files for {volume_title}'
         WebSocket().update_task_status(self)
 
         mass_convert(

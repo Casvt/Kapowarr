@@ -5,7 +5,6 @@ Converting files to a different format
 """
 
 from itertools import chain
-from multiprocessing import cpu_count
 from os.path import splitext
 from sys import platform
 from typing import Dict, Iterable, List, Set, Tuple, Type, Union
@@ -156,10 +155,17 @@ def preview_mass_convert(
 
     format_preference = settings.format_preference
     extract_issue_ranges = settings.extract_issue_ranges
-    volume_folder = volume['folder']
+    volume_folder = volume.vd.folder
 
     result = []
-    for f in sorted((f["filepath"] for f in volume.get_files(issue_id))):
+    for f in sorted((
+        f["filepath"]
+        for f in (
+            volume.get_all_files()
+            if not issue_id else
+            volume.get_issue(issue_id).get_files()
+        )
+    )):
         converter = None
 
         if (
@@ -226,7 +232,14 @@ def mass_convert(
     extract_issue_ranges = settings.extract_issue_ranges
 
     planned_conversions: List[Tuple[str, List[str]]] = []
-    for f in (f["filepath"] for f in volume.get_files(issue_id)):
+    for f in (
+        f["filepath"]
+        for f in (
+            volume.get_all_files()
+            if not issue_id else
+            volume.get_issue(issue_id).get_files()
+        )
+    ):
         if hashed_files and f not in hashed_files:
             continue
 
@@ -253,14 +266,12 @@ def mass_convert(
                 (f, format_preference)
             )
 
-    # Don't start more processes than files, but also not
-    # more than that is supported by the CPU
-    processes = min(len(planned_conversions), cpu_count())
+    total_count = len(planned_conversions)
 
-    if processes == 0:
+    if total_count == 0:
         return
 
-    elif processes == 1:
+    elif total_count == 1:
         # Avoid mp overhead when we're only converting one file
         convert_file(
             *planned_conversions[0]
@@ -269,21 +280,18 @@ def mass_convert(
     else:
         # Commit changes because new connections are opened in the processes
         commit()
-        with PortablePool(processes=processes) as pool:
+        with PortablePool(max_processes=total_count) as pool:
             if update_websocket:
                 ws = WebSocket()
-                completed = 0
-                total = len(planned_conversions)
                 ws.update_task_status(
-                    message=f'Converted {completed}/{total}'
+                    message=f'Converted 0/{total_count}'
                 )
-                for _ in pool.imap_unordered(
+                for idx, _ in enumerate(pool.imap_unordered(
                     map_convert_file,
                     planned_conversions
-                ):
-                    completed += 1
+                )):
                     ws.update_task_status(
-                        message=f'Converted {completed}/{total}'
+                        message=f'Converted {idx+1}/{total_count}'
                     )
             else:
                 pool.starmap(

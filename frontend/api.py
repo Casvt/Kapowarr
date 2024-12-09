@@ -32,8 +32,9 @@ from backend.base.custom_exceptions import (BlocklistEntryNotFound,
                                             VolumeDownloadedFor,
                                             VolumeNotFound)
 from backend.base.definitions import (BlocklistReason, BlocklistReasonID,
-                                      DownloadSource, MonitorScheme,
-                                      SpecialVersion)
+                                      DownloadSource, LibraryFilters,
+                                      LibrarySorting, MonitorScheme,
+                                      SpecialVersion, VolumeData)
 from backend.base.files import delete_empty_parent_folders, delete_file_folder
 from backend.base.logging import LOGGER, get_log_filepath
 from backend.features.download_queue import (DownloadHandler,
@@ -60,7 +61,7 @@ from backend.implementations.download_torrent_clients import (TorrentClients,
 from backend.implementations.naming import (generate_volume_folder_name,
                                             preview_mass_rename)
 from backend.implementations.root_folders import RootFolders
-from backend.implementations.volumes import Library, VolumeData
+from backend.implementations.volumes import Library
 from backend.internals.db import close_db
 from backend.internals.db_models import FilesDB
 from backend.internals.server import SERVER, diffuse_timers
@@ -161,13 +162,16 @@ def extract_key(request, key: str, check_existence: bool = True) -> Any:
                 raise InvalidKeyValue(key, value)
 
         elif key == 'sort':
-            if value not in library.sorting_orders:
+            try:
+                value = LibrarySorting[value.upper()]
+            except KeyError:
                 raise InvalidKeyValue(key, value)
 
         elif key == 'filter':
-            if value and value not in library.filters:
+            try:
+                value = LibraryFilters[value.upper()] if value else None
+            except KeyError:
                 raise InvalidKeyValue(key, value)
-            value = value or None
 
         elif key in ('root_folder_id', 'root_folder', 'offset', 'limit'):
             try:
@@ -600,12 +604,22 @@ def api_volumes_search():
                 raise KeyNotFound(key)
 
         vd = VolumeData(
+            id=0,
             comicvine_id=data['comicvine_id'],
             title=data['title'],
+            alt_title=data['title'],
             year=data['year'],
-            volume_number=data['volume_number'],
             publisher=data['publisher'],
-            special_version=SpecialVersion(data.get('special_version'))
+            volume_number=data['volume_number'],
+            description="",
+            site_url="",
+            monitored=True,
+            root_folder=1,
+            folder="",
+            custom_folder=False,
+            special_version=SpecialVersion(data.get('special_version')),
+            special_version_locked=False,
+            last_cv_fetch=0
         )
 
         folder = generate_volume_folder_name(vd)
@@ -623,7 +637,7 @@ def api_volumes():
         if query:
             volumes = library.search(query, sort, filter)
         else:
-            volumes = library.get_volumes(sort, filter)
+            volumes = library.get_public_volumes(sort, filter)
 
         return return_api(volumes)
 
@@ -690,8 +704,19 @@ def api_volume(id: int):
         return return_api(volume_info)
 
     elif request.method == 'PUT':
-        edit_info = request.get_json()
-        volume.update(edit_info)
+        edit_info: Dict[str, Any] = request.get_json()
+
+        if 'root_folder' in edit_info:
+            volume.change_root_folder(edit_info['root_folder'])
+
+        if 'volume_folder' in edit_info:
+            volume.change_volume_folder(edit_info['volume_folder'])
+
+        volume.update({
+            k: v
+            for k, v in edit_info.items()
+            if k not in ('root_folder', 'volume_folder')
+        })
         return return_api(None)
 
     elif request.method == 'DELETE':
@@ -704,7 +729,7 @@ def api_volume(id: int):
 @error_handler
 @auth
 def api_volume_cover(id: int):
-    cover = library.get_volume(id)['cover']
+    cover = library.get_volume(id).get_cover()
     return send_file(
         cover,
         mimetype='image/jpeg'
@@ -718,7 +743,7 @@ def api_issues(id: int):
     issue = library.get_issue(id)
 
     if request.method == 'GET':
-        result = issue.get_public_keys()
+        result = issue.get_data()
         return return_api(result)
 
     elif request.method == 'PUT':
@@ -727,7 +752,7 @@ def api_issues(id: int):
         if monitored is not None:
             issue['monitored'] = bool(monitored)
 
-        result = issue.get_public_keys()
+        result = issue.get_data()
         return return_api(result)
 
 # =====================
@@ -748,7 +773,7 @@ def api_rename(id: int):
 @error_handler
 @auth
 def api_rename_issue(id: int):
-    volume_id = library.get_issue(id)['volume_id']
+    volume_id = library.get_issue(id).get_data().volume_id
     result = preview_mass_rename(volume_id, id)[0]
     return return_api(result)
 
@@ -770,7 +795,7 @@ def api_convert(id: int):
 @error_handler
 @auth
 def api_convert_issue(id: int):
-    volume_id = library.get_issue(id)['volume_id']
+    volume_id = library.get_issue(id).get_data().volume_id
     result = preview_mass_convert(volume_id, id)
     return return_api(result)
 
@@ -809,7 +834,7 @@ def api_volume_download(id: int):
 @error_handler
 @auth
 def api_issue_manual_search(id: int):
-    volume_id = library.get_issue(id)['volume_id']
+    volume_id = library.get_issue(id).get_data().volume_id
     result = manual_search(
         volume_id,
         id
@@ -821,7 +846,7 @@ def api_issue_manual_search(id: int):
 @error_handler
 @auth
 def api_issue_download(id: int):
-    volume_id = library.get_issue(id)['volume_id']
+    volume_id = library.get_issue(id).get_data().volume_id
     link = extract_key(request, 'link')
     force_match: bool = extract_key(request, 'force_match')
     result = download_handler.add(link, volume_id, id, force_match=force_match)
@@ -1185,7 +1210,7 @@ def api_files(id: int):
         volume_id = FilesDB.volume_of_file(file_data["filepath"])
 
         if volume_id:
-            vf = library.get_volume(volume_id)['folder']
+            vf = library.get_volume(volume_id).vd.folder
             delete_file_folder(file_data["filepath"])
             delete_empty_parent_folders(dirname(file_data["filepath"]), vf)
         else:

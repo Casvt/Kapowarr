@@ -16,8 +16,7 @@ from backend.base.logging import LOGGER
 from backend.implementations.getcomics import search_getcomics
 from backend.implementations.matching import (_match_special_version,
                                               check_search_result_match)
-from backend.implementations.volumes import (Issue, Volume,
-                                             get_calc_number_range)
+from backend.implementations.volumes import Issue, Volume
 from backend.internals.db import get_db
 
 
@@ -214,22 +213,16 @@ def manual_search(
         List[MatchedSearchResultData]: List with search results.
     """
     volume = Volume(volume_id)
-    volume_data = volume.get_keys(
-        ('title', 'alt_title', 'volume_number', 'year', 'special_version')
-    )
+    volume_data = volume.get_data()
 
     if issue_id and not volume_data.special_version.value:
-        issue_data = Issue(issue_id).get_keys(
-            ('issue_number', 'calculated_issue_number')
-        )
-        issue_number: Union[str, None] = issue_data['issue_number']
-        calculated_issue_number: Union[float, None] = issue_data[
-            'calculated_issue_number'
-        ]
+        issue_data = Issue(issue_id).get_data()
+        issue_number = issue_data.issue_number
+        calculated_issue_number = issue_data.calculated_issue_number
 
     else:
-        issue_number: Union[str, None] = None
-        calculated_issue_number: Union[float, None] = None
+        issue_number = None
+        calculated_issue_number = None
 
     LOGGER.info(
         f'Starting manual search: {volume_data.title} ({volume_data.year}) {"#" + issue_number if issue_number else ""}'
@@ -289,7 +282,7 @@ def manual_search(
         # Decide what is a match and what not
         volume_issues = volume.get_issues()
         number_to_year: Dict[float, Union[int, None]] = {
-            i['calculated_issue_number']: extract_year_from_date(i['date'])
+            i.calculated_issue_number: extract_year_from_date(i.date)
             for i in volume_issues
         }
         results = [
@@ -335,12 +328,11 @@ def auto_search(
     cursor = get_db()
 
     volume = Volume(volume_id)
-    monitored = volume['monitored']
-    special_version = volume['special_version']
+    volume_data = volume.get_data()
     LOGGER.info(
         f'Starting auto search for volume {volume_id} {f"issue {issue_id}" if issue_id else ""}'
     )
-    if not monitored:
+    if not volume_data.monitored:
         # Volume is unmonitored so regardless of what to search for, ignore
         # searching
         result = []
@@ -372,7 +364,7 @@ def auto_search(
     else:
         # Auto search issue
         issue = Issue(issue_id)
-        if not issue['monitored']:
+        if not issue.get_data().monitored:
             # Auto search for issue but issue is unmonitored
             result = []
             LOGGER.debug(f'Auto search results: {result}')
@@ -385,6 +377,7 @@ def auto_search(
                 return result
 
     results = [r for r in manual_search(volume_id, issue_id) if r['match']]
+    special_version = volume_data.special_version
 
     if issue_id is not None or (
         special_version.value is not None
@@ -407,8 +400,7 @@ def auto_search(
             # Normal issue, VAS with issue number,
             # OS/HC using issue 1
             result['_issue_number'] = result['issue_number']
-            covered_issues = get_calc_number_range(
-                volume_id,
+            covered_issues = volume.get_issues_in_range(
                 *create_range(result['issue_number'])
             )
 
@@ -426,8 +418,7 @@ def auto_search(
             else:
                 result['_issue_number'] = float(result['volume_number'])
 
-            covered_issues = get_calc_number_range(
-                volume_id,
+            covered_issues = volume.get_issues_in_range(
                 *create_range(result['volume_number'])
             )
 
@@ -444,12 +435,15 @@ def auto_search(
         ):
             # OS/HC using no issue number, TPB
             result['_issue_number'] = 1.0
-            covered_issues = (1.0,)
+            covered_issues = volume.get_issues()
 
         else:
             continue
 
-        if any(i not in searchable_issues for i in covered_issues):
+        if any(
+            i.calculated_issue_number not in searchable_issues
+            for i in covered_issues
+        ):
             continue
 
         # Check that any other selected download doesn't already cover the issue

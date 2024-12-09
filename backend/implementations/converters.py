@@ -19,7 +19,6 @@ from backend.base.file_extraction import extract_filename_data
 from backend.base.files import (create_folder, delete_empty_parent_folders,
                                 delete_file_folder, folder_path,
                                 list_files, rename_file)
-from backend.base.helpers import extract_year_from_date
 from backend.base.logging import LOGGER
 from backend.implementations.matching import folder_extraction_filter
 from backend.implementations.naming import mass_rename
@@ -55,14 +54,9 @@ def extract_files_from_folder(
     )
 
     volume = Volume(volume_id)
-    volume_data = volume.get_keys(
-        ('id', 'title', 'year', 'volume_number', 'folder', 'special_version')
-    )
+    volume_data = volume.get_data()
     volume_issues = volume.get_issues()
-    end_year = extract_year_from_date(
-        volume['last_issue_date'],
-        volume_data.year
-    )
+    end_year = volume.get_ending_year() or volume_data.year
 
     # Filter non-relevant files
     rel_files = [
@@ -180,7 +174,7 @@ class ZIPtoRAR(FileConverter):
         if not volume_id:
             # File not matched to volume
             return file
-        volume_folder = Volume(volume_id)['folder']
+        volume_folder = Volume(volume_id).vd.folder
         archive_folder = join(
             volume_folder,
             Constants.ARCHIVE_EXTRACT_FOLDER,
@@ -233,7 +227,7 @@ class ZIPtoFOLDER(FileConverter):
         if not volume_id:
             # File not matched to volume
             return [file]
-        volume_folder = Volume(volume_id)['folder']
+        volume_folder = Volume(volume_id).vd.folder
         zip_folder = join(
             volume_folder,
             Constants.ARCHIVE_EXTRACT_FOLDER,
@@ -345,7 +339,7 @@ class RARtoZIP(FileConverter):
         if not volume_id:
             # File not matched to volume
             return file
-        volume_folder = Volume(volume_id)['folder']
+        volume_folder = Volume(volume_id).vd.folder
         rar_folder = join(
             volume_folder,
             Constants.ARCHIVE_EXTRACT_FOLDER,
@@ -404,7 +398,7 @@ class RARtoFOLDER(FileConverter):
         if not volume_id:
             # File not matched to volume
             return [file]
-        volume_folder = Volume(volume_id)['folder']
+        volume_folder = Volume(volume_id).vd.folder
         rar_folder = join(
             volume_folder,
             Constants.ARCHIVE_EXTRACT_FOLDER,

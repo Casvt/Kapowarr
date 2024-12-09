@@ -10,14 +10,13 @@ from __future__ import annotations
 from re import compile
 from typing import TYPE_CHECKING, List, Mapping, Tuple, Union
 
-from backend.base.definitions import SpecialVersion
-from backend.base.helpers import create_range, extract_year_from_date
+from backend.base.definitions import IssueData, SpecialVersion
+from backend.base.helpers import create_range
 from backend.implementations.blocklist import blocklist_contains
 
 if TYPE_CHECKING:
     from backend.base.definitions import (FilenameData, SearchResultData,
-                                          SearchResultMatchData)
-    from backend.implementations.volumes import VolumeData
+                                          SearchResultMatchData, VolumeData)
 
 clean_title_regex = compile(
     r'((?<=annual)s|/|\-|–|\+|,|\.|\!|:|\bthe\s|\band\b|&|’|\'|\"|\bone-shot\b|\btpb\b)'
@@ -92,7 +91,7 @@ def _match_year(
 
 def _match_volume_number(
     volume_data: VolumeData,
-    volume_issues: List[dict],
+    volume_issues: List[IssueData],
     check_number: Union[None, int, Tuple[int, int]],
     conservative: bool = False
 ) -> bool:
@@ -103,7 +102,7 @@ def _match_volume_number(
     Args:
         volume_data (VolumeData): The data of the volume.
 
-        volume_issues (List[dict]): The data of the issues of the volume.
+        volume_issues (List[IssueData]): The data of the issues of the volume.
 
         check_number (Union[None, int, Tuple[int, int]]): The volume number
         (or range) to check.
@@ -143,7 +142,7 @@ def _match_volume_number(
         (check_number,)
     )
     for issue in volume_issues:
-        if issue['calculated_issue_number'] in numbers:
+        if issue.calculated_issue_number in numbers:
             number_found += 1
 
     return number_found == len(numbers)
@@ -209,7 +208,7 @@ def _match_special_version(
 def folder_extraction_filter(
     file_data: FilenameData,
     volume_data: VolumeData,
-    volume_issues: List[dict],
+    volume_issues: List[IssueData],
     end_year: Union[int, None]
 ) -> bool:
     """The filter applied to the files when extracting from a folder,
@@ -219,7 +218,7 @@ def folder_extraction_filter(
     Args:
         file_data (FilenameData): Extracted data from file.
         volume_data (VolumeData): The data of the volume.
-        volume_issues (List[dict]): The data of the issues of the volume.
+        volume_issues (List[IssueData]): The data of the issues of the volume.
         end_year (Union[int, None]): Year of last issue or volume year.
 
     Returns:
@@ -263,7 +262,7 @@ def folder_extraction_filter(
 def file_importing_filter(
     file_data: FilenameData,
     volume_data: VolumeData,
-    volume_issues: List[dict],
+    volume_issues: List[IssueData],
     number_to_year: Mapping[float, Union[int, None]]
 ) -> bool:
     """Filter for matching files to volumes.
@@ -271,7 +270,7 @@ def file_importing_filter(
     Args:
         file_data (FilenameData): Extraced data from file.
         volume_data (VolumeData): The data of the volume.
-        volume_issues (List[dict]): The data of the issues of the volume.
+        volume_issues (List[IssueData]): The data of the issues of the volume.
 
     Returns:
         bool: Whether the file passes the filter (if it should be matched or not).
@@ -320,8 +319,8 @@ def file_importing_filter(
 def gc_group_filter(
     processed_desc: FilenameData,
     volume_data: VolumeData,
-    last_issue_date: str,
-    volume_issues: List[dict]
+    ending_year: Union[int, None],
+    volume_issues: List[IssueData]
 ) -> bool:
     """Filter for deciding if a GC download group is a match for the
     volume/issue.
@@ -329,13 +328,13 @@ def gc_group_filter(
     Args:
         processed_desc (FilenameData): Extracted data from group title.
         volume_data (VolumeData): The data of the volume.
-        last_issue_date (str): The date of the last released issue of the volume.
-        volume_issues (List[dict]): The data of the issues of the volume.
+        ending_year (Union[int, None]): The year of the last released issue of
+        the volume.
+        volume_issues (List[IssueData]): The data of the issues of the volume.
 
     Returns:
         bool: Whether the group passes the filter.
     """
-    last_year = extract_year_from_date(last_issue_date, volume_data.year)
     annual = 'annual' in volume_data.title.lower()
 
     matching_title = _match_title(
@@ -353,7 +352,7 @@ def gc_group_filter(
     matching_year = _match_year(
         volume_data.year,
         processed_desc['year'],
-        last_year,
+        ending_year or volume_data.year,
         conservative=True
     )
 
@@ -377,7 +376,7 @@ def gc_group_filter(
 def check_search_result_match(
     result: SearchResultData,
     volume_data: VolumeData,
-    volume_issues: List[dict],
+    volume_issues: List[IssueData],
     number_to_year: Mapping[float, Union[int, None]],
     calculated_issue_number: Union[float, None] = None
 ) -> SearchResultMatchData:
@@ -389,7 +388,7 @@ def check_search_result_match(
 
         volume_data (VolumeData): The data of the volume.
 
-        volume_issues (List[dict]): The data of the issues of the volume.
+        volume_issues (List[IssueData]): The data of the issues of the volume.
 
         number_to_year (Mapping[float, Union[int, None]]):
         calculated_issue_number to release year for all issues of volume.

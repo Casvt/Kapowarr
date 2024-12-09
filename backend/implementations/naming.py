@@ -6,17 +6,17 @@ The (re)naming of folders and media
 
 from __future__ import annotations
 
-from os.path import basename, isdir, isfile, join, splitext
+from os.path import abspath, basename, isdir, isfile, join, splitext
 from re import compile
 from string import Formatter
 from sys import platform
-from typing import Any, Dict, List, Tuple, Type, Union
+from typing import Dict, List, Tuple, Type, Union
 
 from backend.base.custom_exceptions import InvalidSettingValue
-from backend.base.definitions import (BaseNamingKeys, FileConstants,
+from backend.base.definitions import (BaseNamingKeys, FileConstants, IssueData,
                                       IssueNamingKeys, SpecialVersion,
-                                      SVNamingKeys, full_sv_mapping,
-                                      short_sv_mapping)
+                                      SVNamingKeys, VolumeData,
+                                      full_sv_mapping, short_sv_mapping)
 from backend.base.file_extraction import (cover_regex, extract_filename_data,
                                           page_regex, page_regex_2,
                                           process_issue_number)
@@ -28,7 +28,7 @@ from backend.base.helpers import (create_range, extract_year_from_date,
 from backend.base.logging import LOGGER
 from backend.implementations.matching import file_importing_filter
 from backend.implementations.root_folders import RootFolders
-from backend.implementations.volumes import Issue, Volume, VolumeData
+from backend.implementations.volumes import Issue, Volume
 from backend.internals.db_models import FilesDB
 from backend.internals.server import WebSocket
 from backend.internals.settings import Settings
@@ -56,11 +56,7 @@ def _get_volume_naming_keys(
         SVNamingKeys: The values of the naming keys for a volume.
     """
     if isinstance(volume, int):
-        volume_data = Volume(volume, check_existence=True).get_keys((
-            'comicvine_id',
-            'title', 'year', 'volume_number',
-            'publisher', 'special_version'
-        ))
+        volume_data = Volume(volume, check_existence=True).get_data()
     else:
         volume_data = volume
 
@@ -98,14 +94,14 @@ def _get_volume_naming_keys(
 
 def _get_issue_naming_keys(
     volume: Union[int, VolumeData],
-    issue: Union[int, dict]
+    issue: Union[int, IssueData]
 ) -> IssueNamingKeys:
     """Generate the values of the naming keys for an issue.
 
     Args:
         volume (Union[int, VolumeData]): The ID of the volume to fetch the data
         for or manually supplied volume data to work with.
-        issue (Union[int, dict]): The ID of the issue to fetch the data
+        issue (Union[int, IssueData]): The ID of the issue to fetch the data
         for or manually supplied issue data to work with.
 
     Returns:
@@ -114,29 +110,27 @@ def _get_issue_naming_keys(
     issue_padding = Settings().sv.issue_padding
 
     if isinstance(issue, int):
-        issue_data: Dict[str, Any] = Issue(
+        issue_data = Issue(
             issue, check_existence=True
-        ).get_keys((
-            'comicvine_id', 'issue_number', 'title', 'date'
-        ))
+        ).get_data()
     else:
         issue_data = issue
 
     return IssueNamingKeys(
         **_get_volume_naming_keys(volume).__dict__,
-        issue_comicvine_id=issue_data['comicvine_id'],
+        issue_comicvine_id=issue_data.comicvine_id,
         issue_number=(
-            str(issue_data['issue_number'] or '').zfill(issue_padding)
+            str(issue_data.issue_number or '').zfill(issue_padding)
             or None
         ),
         issue_title=(
-            (issue_data['title'] or '')
+            (issue_data.title or '')
             .replace('/', '')
             .replace(r'\\', '')
             or None
         ),
-        issue_release_date=issue_data["date"],
-        issue_release_year=extract_year_from_date(issue_data["date"])
+        issue_release_date=issue_data.date,
+        issue_release_year=extract_year_from_date(issue_data.date)
     )
 
 
@@ -161,6 +155,28 @@ def generate_volume_folder_name(
     })
     save_name = make_filename_safe(name)
     return save_name
+
+
+def generate_volume_folder_path(
+    root_folder: str,
+    volume: Union[int, str]
+) -> str:
+    """Generate an absolute path to a volume folder.
+
+    Args:
+        root_folder (str): The root folder that the volume is in.
+        volume (Union[int, str]): Either the ID of the volume when the folder
+        name needs to be generated, or the path of the custom volume folder.
+
+    Returns:
+        str: The absolute path to the volume folder, allowing custom folders.
+    """
+    if isinstance(volume, str):
+        vf = volume
+    else:
+        vf = generate_volume_folder_name(volume)
+
+    return make_filename_safe(abspath(join(root_folder, vf)))
 
 
 def generate_issue_name(
@@ -231,7 +247,7 @@ def generate_issue_name(
         issue_number_end = Issue.from_volume_and_calc_number(
             volume_id,
             calculated_issue_number[1]
-        )['issue_number']
+        ).get_data().issue_number
         formatting_data.issue_number = (
             str(formatting_data.issue_number)
             .zfill(sv.issue_padding)
@@ -363,82 +379,150 @@ def check_mock_filename(
         "file_naming_special_version": [
             (
                 VolumeData(
+                    id=0,
                     comicvine_id=123,
                     title="Spider-Man",
+                    alt_title="Spiderman",
                     year=2023,
-                    volume_number=2,
                     publisher="Marvel",
-                    special_version=SpecialVersion.ONE_SHOT
+                    volume_number=2,
+                    description="",
+                    site_url="",
+                    monitored=True,
+                    root_folder=1,
+                    folder="",
+                    custom_folder=False,
+                    special_version=SpecialVersion.ONE_SHOT,
+                    special_version_locked=False,
+                    last_cv_fetch=0
                 ),
                 [
-                    {
-                        "comicvine_id": 456,
-                        "title": "One Shot",
-                        "issue_number": "1",
-                        "calculated_issue_number": process_issue_number("1"),
-                        "date": "2023-03-04"
-                    }
+                    IssueData(
+                        id=0,
+                        volume_id=0,
+                        comicvine_id=456,
+                        issue_number="1",
+                        calculated_issue_number=create_range(
+                            process_issue_number("1") or 0.0
+                        )[0],
+                        title="One Shot",
+                        date="2023-03-04",
+                        description="",
+                        monitored=True,
+                        files=[]
+                    )
                 ]
             ),
             (
                 VolumeData(
+                    id=0,
                     comicvine_id=123,
                     title="Spider-Man",
+                    alt_title="Spiderman",
                     year=2023,
-                    volume_number=2,
                     publisher="Marvel",
-                    special_version=SpecialVersion.TPB
+                    volume_number=2,
+                    description="",
+                    site_url="",
+                    monitored=True,
+                    root_folder=1,
+                    folder="",
+                    custom_folder=False,
+                    special_version=SpecialVersion.TPB,
+                    special_version_locked=False,
+                    last_cv_fetch=0
                 ),
                 [
-                    {
-                        "comicvine_id": 456,
-                        "title": "",
-                        "issue_number": "1",
-                        "calculated_issue_number": process_issue_number("1"),
-                        "date": "2023-03-04"
-                    }
+                    IssueData(
+                        id=0,
+                        volume_id=0,
+                        comicvine_id=456,
+                        issue_number="1",
+                        calculated_issue_number=create_range(
+                            process_issue_number("1") or 0.0
+                        )[0],
+                        title="",
+                        date="2023-03-04",
+                        description="",
+                        monitored=True,
+                        files=[]
+                    )
                 ]
             )
         ],
         "file_naming": [
             (
                 VolumeData(
+                    id=0,
                     comicvine_id=123,
                     title="Spider-Man",
+                    alt_title="Spiderman",
                     year=2023,
-                    volume_number=2,
                     publisher="Marvel",
-                    special_version=SpecialVersion.NORMAL
+                    volume_number=2,
+                    description="",
+                    site_url="",
+                    monitored=True,
+                    root_folder=1,
+                    folder="",
+                    custom_folder=False,
+                    special_version=SpecialVersion.NORMAL,
+                    special_version_locked=False,
+                    last_cv_fetch=0
                 ),
                 [
-                    {
-                        "comicvine_id": 456,
-                        "title": "",
-                        "issue_number": "3",
-                        "calculated_issue_number": process_issue_number("3"),
-                        "date": "2023-03-04"
-                    }
+                    IssueData(
+                        id=0,
+                        volume_id=0,
+                        comicvine_id=456,
+                        issue_number="3",
+                        calculated_issue_number=create_range(
+                            process_issue_number("3") or 0.0
+                        )[0],
+                        title="",
+                        date="2023-03-04",
+                        description="",
+                        monitored=True,
+                        files=[]
+                    )
                 ]
             )
         ],
         "file_naming_vai": [
             (
                 VolumeData(
+                    id=0,
                     comicvine_id=123,
                     title="Spider-Man",
+                    alt_title="Spiderman",
                     year=2023,
-                    volume_number=2,
                     publisher="Marvel",
-                    special_version=SpecialVersion.VOLUME_AS_ISSUE
+                    volume_number=2,
+                    description="",
+                    site_url="",
+                    monitored=True,
+                    root_folder=1,
+                    folder="",
+                    custom_folder=False,
+                    special_version=SpecialVersion.VOLUME_AS_ISSUE,
+                    special_version_locked=False,
+                    last_cv_fetch=0
                 ),
                 [
-                    {
-                        "comicvine_id": 456,
-                        "title": "",
-                        "issue_number": "4b",
-                        "calculated_issue_number": process_issue_number("4b"),
-                        "date": "2023-03-04"
-                    }
+                    IssueData(
+                        id=0,
+                        volume_id=0,
+                        comicvine_id=456,
+                        issue_number="4b",
+                        calculated_issue_number=create_range(
+                            process_issue_number("4b") or 0.0
+                        )[0],
+                        title="",
+                        date="2023-03-04",
+                        description="",
+                        monitored=True,
+                        files=[]
+                    )
                 ]
             )
         ]
@@ -469,7 +553,7 @@ def check_mock_filename(
             save_name = make_filename_safe(name)
 
             number_to_year: Dict[float, Union[int, None]] = {
-                i['calculated_issue_number']: extract_year_from_date(i['date'])
+                i.calculated_issue_number: extract_year_from_date(i.date)
                 for i in issue_mock
             }
             if not file_importing_filter(
@@ -550,14 +634,15 @@ def preview_mass_rename(
     """
     result = {}
     volume = Volume(volume_id)
-    special_version = volume['special_version']
-    volume_folder = volume['folder']
+    volume_data = volume.get_data()
+    volume_folder = volume_data.folder
 
     files = tuple(filtered_iter(
         sorted(
             f["filepath"] for f in (
-                *volume.get_files(issue_id),
-                *(volume.get_general_files() if not issue_id else [])
+                volume.get_all_files()
+                if not issue_id else
+                volume.get_issue(issue_id).get_files()
             )
         ),
         set(filepath_filter or [])
@@ -567,11 +652,11 @@ def preview_mass_rename(
         if not files:
             return result, None
 
-        if not volume['custom_folder']:
-            root_folder = RootFolders()[volume['root_folder']]
-            volume_folder = join(
+        if not volume_data.custom_folder:
+            root_folder = RootFolders()[volume_data.root_folder]
+            volume_folder = generate_volume_folder_path(
                 root_folder,
-                generate_volume_folder_name(volume_id)
+                volume_id
             )
 
     for file in files:
@@ -584,14 +669,14 @@ def preview_mass_rename(
         if len(issues) > 1:
             gen_filename_body = generate_issue_name(
                 volume_id,
-                special_version,
+                volume_data.special_version,
                 (issues[0], issues[-1]),
             )
 
         elif issues:
             gen_filename_body = generate_issue_name(
                 volume_id,
-                special_version,
+                volume_data.special_version,
                 issues[0],
             )
 
@@ -630,7 +715,7 @@ def preview_mass_rename(
 
     result = same_name_indexing(volume_folder, result)
 
-    if volume_folder != volume['folder']:
+    if volume_folder != volume.get_data().folder:
         return result, volume_folder
     else:
         return result, None
@@ -667,7 +752,8 @@ def mass_rename(
         filepath_filter
     )
     volume = Volume(volume_id)
-    root_folder = RootFolders()[volume['root_folder']]
+    volume_data = volume.get_data()
+    root_folder = RootFolders()[volume_data.root_folder]
 
     if new_volume_folder:
         volume['folder'] = new_volume_folder
@@ -688,8 +774,8 @@ def mass_rename(
     FilesDB.update_filepaths(*zip(*renames.items()))
 
     if renames:
-        delete_empty_child_folders(volume['folder'])
-        delete_empty_parent_folders(volume['folder'], root_folder)
+        delete_empty_child_folders(volume_data.folder)
+        delete_empty_parent_folders(volume_data.folder, root_folder)
 
     LOGGER.info(
         f'Renamed volume {volume_id} {f"issue {issue_id}" if issue_id else ""}'

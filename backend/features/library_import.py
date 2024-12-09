@@ -204,7 +204,7 @@ def import_library(
 
         try:
             volume_id = library.add(
-                comicvine_id=str(cv_id),
+                comicvine_id=cv_id,
                 root_folder_id=root_folder_id,
                 monitor_scheme=MonitorScheme.ALL,
                 volume_folder=volume_folder
@@ -220,7 +220,7 @@ def import_library(
 
         if rename_files:
             # Put files in volume folder
-            vf: str = Volume(volume_id)['folder']
+            vf = Volume(volume_id).vd.folder
             new_files = []
             for f in files:
                 if f.endswith(FileConstants.IMAGE_EXTENSIONS):

@@ -142,7 +142,7 @@ class FilesDB:
     @staticmethod
     def add_file(
         filepath: str
-    ) -> None:
+    ) -> int:
         cursor = get_db()
         cursor.execute(
             "INSERT OR IGNORE INTO files(filepath, size) VALUES (?,?)",
@@ -151,8 +151,9 @@ class FilesDB:
 
         if cursor.rowcount:
             LOGGER.debug(f'Added file to the database: {filepath}')
+            return cursor.lastrowid
 
-        return
+        return FilesDB.fetch(filepath=filepath)[0]["id"]
 
     @staticmethod
     def update_filepaths(
@@ -191,6 +192,20 @@ class FilesDB:
             (volume_id,)
         )
         return
+
+    @staticmethod
+    def delete_issue_linked_files(issue_id: int) -> None:
+        get_db().execute(
+            """
+            DELETE FROM files
+            WHERE id in (
+                SELECT DISTINCT file_id
+                FROM issues_files
+                WHERE issue_id = ?
+            );
+            """,
+            (issue_id,)
+        )
 
     @staticmethod
     def delete_unmatched_files() -> None:

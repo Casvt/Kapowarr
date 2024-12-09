@@ -407,10 +407,8 @@ def _create_link_paths(
 
     # Get info of volume
     volume = Volume(volume_id)
-    volume_data = volume.get_keys(
-        ('title', 'year', 'special_version', 'volume_number')
-    )
-    last_issue_date = volume['last_issue_date']
+    volume_data = volume.get_data()
+    ending_year = volume.get_ending_year()
     volume_issues = volume.get_issues()
 
     link_paths: List[List[DownloadGroup]] = []
@@ -418,7 +416,7 @@ def _create_link_paths(
         if not gc_group_filter(
             group['info'],
             volume_data,
-            last_issue_date,
+            ending_year,
             volume_issues
         ):
             continue

@@ -5,6 +5,7 @@ repos:
     -   id: isort
         name: isort
         additional_dependencies: [
+          typing_extensions ~= 4.12,
           requests ~= 2.31,
           bs4 ~= 0.0.2,
           flask ~= 3.0,
@@ -26,6 +27,7 @@ repos:
         additional_dependencies: [
           mypy~=1.10,
 
+          typing_extensions ~= 4.12,
           requests ~= 2.31,
           bs4 ~= 0.0.2,
           flask ~= 3.0,
@@ -44,6 +46,7 @@ repos:
         language: python
         pass_filenames: false
         additional_dependencies: [
+          typing_extensions ~= 4.12,
           requests ~= 2.31,
           bs4 ~= 0.0.2,
           flask ~= 3.0,
@@ -63,6 +66,7 @@ repos:
     -   id: autopep8
         name: autopep8
         additional_dependencies: [
+          typing_extensions ~= 4.12,
           requests ~= 2.31,
           bs4 ~= 0.0.2,
           flask ~= 3.0,

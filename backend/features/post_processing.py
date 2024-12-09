@@ -70,7 +70,7 @@ class PostProcessingActions:
         # the DB is left locked for a long period leading to timeouts.
         commit()
 
-        folder = Volume(download.volume_id)['folder']
+        folder = Volume(download.volume_id).vd.folder
         file_dest = join(
             folder,
             download._filename_body + splitext(download.file)[1]
@@ -154,7 +154,7 @@ class PostProcessingActions:
         """
         download._original_file = download.file
         if exists(download.file):
-            folder = Volume(download.volume_id)['folder']
+            folder = Volume(download.volume_id).vd.folder
             file_dest = join(folder, basename(download.file))
             LOGGER.debug(
                 f'Copying download to final destination: {download}, Dest: {file_dest}'

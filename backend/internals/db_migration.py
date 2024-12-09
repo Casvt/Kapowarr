@@ -245,8 +245,8 @@ class MigrateAddSpecialVersion(DBMigrator):
     def run(self) -> None:
         # V7 -> V8
 
-        from backend.base.helpers import first_of_column
-        from backend.implementations.volumes import determine_special_version
+        from backend.implementations.volumes import (Library,
+                                                     determine_special_version)
         from backend.internals.db import get_db
 
         cursor = get_db()
@@ -255,33 +255,12 @@ class MigrateAddSpecialVersion(DBMigrator):
                 ADD special_version VARCHAR(255);
         """)
 
-        volumes = cursor.execute("""
-            SELECT
-                v.id,
-                v.title,
-                v.description,
-                i.date AS first_issue_date,
-                COUNT(*) AS issue_count
-            FROM volumes v
-            INNER JOIN issues i
-            ON v.id = i.volume_id
-            GROUP BY v.id;
-        """).fetchall()
-
         updates = (
             (
-                determine_special_version(
-                    v["title"],
-                    v["description"],
-                    v["first_issue_date"],
-                    first_of_column(cursor.execute(
-                        "SELECT title FROM issues WHERE volume_id = ?",
-                        (v["id"],)
-                    ))
-                ),
-                v["id"]
+                determine_special_version(v_id),
+                v_id
             )
-            for v in volumes
+            for v_id in Library().get_volumes()
         )
 
         cursor.executemany(
@@ -366,41 +345,19 @@ class MigrateUpdateSpecialVersion(DBMigrator):
     def run(self) -> None:
         # V10 -> V11
 
-        from backend.base.helpers import first_of_column
-        from backend.implementations.volumes import determine_special_version
+        from backend.implementations.volumes import (Library,
+                                                     determine_special_version)
         from backend.internals.db import get_db
-
-        cursor = get_db()
-        volumes = cursor.execute("""
-            SELECT
-                v.id,
-                v.title,
-                v.description,
-                i.date AS first_issue_date,
-                COUNT(*) AS issue_count
-            FROM volumes v
-            INNER JOIN issues i
-            ON v.id = i.volume_id
-            GROUP BY v.id;
-        """).fetchall()
 
         updates = (
             (
-                determine_special_version(
-                    v["title"],
-                    v["description"],
-                    v["first_issue_date"],
-                    first_of_column(cursor.execute(
-                        "SELECT title FROM issues WHERE volume_id = ?",
-                        (v["id"],)
-                    ))
-                ),
-                v["id"]
+                determine_special_version(v_id),
+                v_id
             )
-            for v in volumes
+            for v_id in Library().get_volumes()
         )
 
-        cursor.executemany(
+        get_db().executemany(
             "UPDATE volumes SET special_version = ? WHERE id = ?;",
             updates
         )

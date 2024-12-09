@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from asyncio import sleep
 from multiprocessing.pool import Pool
-from os import sep, symlink
+from os import cpu_count, sep, symlink
 from os.path import exists, join
 from sys import base_exec_prefix, executable, platform, version_info
 from typing import (Any, Collection, Dict, Generator, Iterable,
@@ -663,9 +663,24 @@ def pool_starmap_func(func, *args):
 
 
 class PortablePool(Pool):
-    def __init__(self, processes=None) -> None:
+    def __init__(
+        self,
+        max_processes: Union[int, None] = None
+    ) -> None:
+        """Create a multiprocessing pool that can run on all OS'es and has
+        access to the app context.
+
+        Args:
+            max_processes (Union[int, None], optional): The amount of processes
+            that the pool should manage. Given int is limited to CPU count.
+            Give `None` for default which is CPU count. Defaults to None.
+        """
         super().__init__(
-            processes=processes,
+            processes=(
+                min(cpu_count() or 1, max_processes)
+                if max_processes is not None else
+                None
+            ),
             initializer=_ContextKeeper,
             initargs=(LOGGER.root.level,)
         )
@@ -686,12 +701,14 @@ class PortablePool(Pool):
     ):
         new_args = (func, args)
         new_func = pool_apply_func
-        return super().apply_async(new_func, new_args, kwds, callback, error_callback)
+        return super().apply_async(
+            new_func, new_args, kwds,
+            callback, error_callback
+        )
 
     def map(self, func, iterable, chunksize=None):
         new_iterable = ((func, i) for i in iterable)
         new_func = pool_map_func
-
         return super().map(new_func, new_iterable, chunksize)
 
     def imap(self, func, iterable, chunksize=1):
@@ -726,6 +743,12 @@ class PortablePool(Pool):
         new_iterable = ((func, *i) for i in iterable)
         new_func = pool_starmap_func
         return super().starmap(new_func, new_iterable, chunksize)
+
+    def istarmap_unordered(self, func, iterable, chunksize=1):
+        "A combination of starmap and imap_unordered."
+        new_iterable = ((func, i) for i in iterable)
+        new_func = pool_apply_func
+        return super().imap_unordered(new_func, new_iterable, chunksize)
 
     def starmap_async(
         self,

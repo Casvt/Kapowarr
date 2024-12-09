@@ -15,7 +15,8 @@ from typing import Any, Dict, Generator, Iterable, List, Union
 
 from flask import g
 
-from backend.base.definitions import Constants, SeedingHandling, T
+from backend.base.definitions import (Constants, SeedingHandling,
+                                      SpecialVersion, T)
 from backend.base.helpers import CommaList
 from backend.base.logging import LOGGER, set_log_level
 from backend.internals.db_migration import migrate_db
@@ -271,6 +272,7 @@ def setup_db() -> None:
     register_converter("BOOL", lambda b: b == b'1')
     register_adapter(CommaList, lambda c: str(c))
     register_adapter(SeedingHandling, lambda e: e.value)
+    register_adapter(SpecialVersion, lambda e: e.value)
 
     setup_commands = """
         CREATE TABLE IF NOT EXISTS config(
