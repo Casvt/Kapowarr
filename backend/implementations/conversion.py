@@ -4,103 +4,20 @@
 Converting files to a different format
 """
 
+from functools import lru_cache
 from itertools import chain
 from os.path import splitext
-from sys import platform
-from typing import Dict, Iterable, List, Set, Tuple, Type, Union
+from typing import Dict, List, Set, Type, Union
 from zipfile import ZipFile
 
-from backend.base.definitions import FileConstants
-from backend.base.helpers import PortablePool
-from backend.implementations.converters import (FileConverter, get_rar_output,
-                                                rar_executables)
+from backend.base.definitions import FileConstants, FileConverter
+from backend.base.helpers import PortablePool, filtered_iter
+from backend.base.logging import LOGGER
+from backend.implementations.converters import run_rar
 from backend.implementations.volumes import Volume, scan_files
 from backend.internals.db import commit
 from backend.internals.server import WebSocket
 from backend.internals.settings import Settings
-
-conversion_methods: Dict[str, Dict[str, Type[FileConverter]]] = {}
-"source_format -> target_format -> conversion class"
-for fc in FileConverter.__subclasses__():
-    conversion_methods.setdefault(fc.source_format, {})[fc.target_format] = fc
-
-
-def get_available_formats() -> Set[str]:
-    """Get all available formats that can be converted to.
-
-    Returns:
-        Set[str]: The list with all formats
-    """
-    return set(chain.from_iterable(conversion_methods.values()))
-
-
-def find_target_format_file(
-    file: str,
-    formats: Iterable[str]
-) -> Union[Type[FileConverter], None]:
-    """Get a FileConverter class based on source format and desired formats.
-
-    Args:
-        file (str): The file to get the converter for.
-        formats (Iterable[str]): The formats to convert to, in order of preference.
-
-    Returns:
-        Union[Type[FileConverter], None]: The converter class that is possible
-        and most prefered.
-            In case of no possible conversion, `None` is returned.
-    """
-    source_format = splitext(file)[1].lstrip('.').lower()
-
-    if source_format not in conversion_methods:
-        return
-
-    if (
-        source_format in ('rar', 'cbr')
-        and platform not in rar_executables
-    ):
-        return
-
-    available_formats = conversion_methods[source_format]
-
-    for format in formats:
-        if source_format == format:
-            break
-
-        if format in available_formats:
-            return available_formats[format]
-
-    return
-
-
-def convert_file(
-    file: str,
-    formats: Iterable[str]
-) -> Union[str, List[str]]:
-    """Convert a file from one format to another.
-
-    Args:
-        file (str): The file to convert.
-
-        formats (Iterable[str]): A iterable of formats to convert the file to.
-            Order of list is preference of format (left to right).
-
-            Should be key `conversion.conversion_methods` -> source_format dict.
-
-    Returns:
-        Union[str, List[str]]: The path of the converted file.
-    """
-    conversion_class = find_target_format_file(
-        file,
-        formats
-    )
-    if conversion_class is not None:
-        return conversion_class.convert(file)
-    else:
-        return file
-
-
-def map_convert_file(a: Tuple[str, Iterable[str]]) -> Union[str, List[str]]:
-    return convert_file(*a)
 
 
 def archive_contains_issues(archive_file: str) -> bool:
@@ -112,7 +29,7 @@ def archive_contains_issues(archive_file: str) -> bool:
         extension.
 
     Returns:
-        bool: Whether or not the archive file contains issue files.
+        bool: Whether the archive file contains issue files.
     """
     ext = splitext(archive_file)[1].lower()
 
@@ -120,11 +37,11 @@ def archive_contains_issues(archive_file: str) -> bool:
         with ZipFile(archive_file) as zip:
             namelist = zip.namelist()
 
-    elif ext == '.rar' and platform in rar_executables:
-        namelist = get_rar_output([
-            "lb",
-            archive_file
-        ]).split("\n")[:-1]
+    elif ext == '.rar':
+        namelist = run_rar([
+            "lb", # List archive contents bare
+            archive_file # Archive to list contents of
+        ]).stdout.split("\n")[:-1]
 
     else:
         return False
@@ -135,11 +52,95 @@ def archive_contains_issues(archive_file: str) -> bool:
     )
 
 
+class FileConversionHandler:
+    @staticmethod
+    @lru_cache(1)
+    def get_conversion_methods() -> Dict[str, Dict[str, Type[FileConverter]]]:
+        """Get all converters.
+
+        Returns:
+            Dict[str, Dict[str, Type[FileConverter]]]: Mapping of source_format
+            to target_format to conversion class.
+        """
+        conversion_methods = {}
+        for fc in FileConverter.__subclasses__():
+            conversion_methods.setdefault(
+                fc.source_format, {}
+            )[fc.target_format] = fc
+        return conversion_methods
+
+    @staticmethod
+    @lru_cache(1)
+    def get_available_formats() -> Set[str]:
+        """Get all available formats that can be converted to.
+
+        Returns:
+            Set[str]: The list with all formats.
+        """
+        return set(chain.from_iterable(
+            FileConversionHandler.get_conversion_methods().values()
+        ))
+
+    def __init__(
+        self,
+        file: str,
+        format_preference: Union[List[str], None] = None
+    ) -> None:
+        """Prepare file for conversion.
+
+        Args:
+            file (str): The file to convert.
+            format_preference (Union[List[str], None], optional): Custom format
+            preference to use, or `None` to use the one from the settings.
+                Defaults to None.
+        """
+        self.file = file
+        self.fp = format_preference or Settings().sv.format_preference
+        self.source_format = splitext(file)[1].lstrip('.').lower()
+        self.target_format = self.source_format
+        self.converter = None
+
+        conversion_methods = self.get_conversion_methods()
+
+        if self.source_format not in conversion_methods:
+            return
+
+        available_formats = conversion_methods[self.source_format]
+        for format in self.fp:
+            if self.source_format == format:
+                break
+
+            if format in available_formats:
+                self.target_format = available_formats[format].target_format
+                self.converter = available_formats[format]
+                break
+
+        return
+
+
+def convert_file(converter: FileConversionHandler) -> List[str]:
+    """Convert a file.
+
+    Args:
+        converter (FileConversionHandler): The file converter.
+
+    Returns:
+        List[str]: The resulting files from the conversion.
+    """
+    if not converter.converter:
+        return [converter.file]
+
+    LOGGER.info(
+        f"Converting file from {converter.source_format} to {converter.target_format}: {converter.file}"
+    )
+    return converter.converter.convert(converter.file)
+
+
 def preview_mass_convert(
     volume_id: int,
     issue_id: Union[int, None] = None
-) -> List[Dict[str, str]]:
-    """Get a list of suggested conversions for a volume or issue
+) -> Dict[str, str]:
+    """Get a list of suggested conversions for a volume or issue.
 
     Args:
         volume_id (int): The ID of the volume to check for.
@@ -147,17 +148,15 @@ def preview_mass_convert(
             Defaults to None.
 
     Returns:
-        List[Dict[str, str]]: The list of suggestions.
-            Dicts have the keys `before` and `after`.
+        Dict[str, str]: Mapping of filename before to after conversion.
     """
     settings = Settings().get_settings()
     volume = Volume(volume_id)
 
-    format_preference = settings.format_preference
     extract_issue_ranges = settings.extract_issue_ranges
     volume_folder = volume.vd.folder
 
-    result = []
+    result = {}
     for f in sorted((
         f["filepath"]
         for f in (
@@ -173,28 +172,16 @@ def preview_mass_convert(
             and splitext(f)[1].lower() in FileConstants.EXTRACTABLE_EXTENSIONS
             and archive_contains_issues(f)
         ):
-            converter = find_target_format_file(
-                f,
-                ['folder']
-            )
+            converter = FileConversionHandler(f, ['folder']).converter
 
         if converter is None:
-            converter = find_target_format_file(
-                f,
-                format_preference
-            )
+            converter = FileConversionHandler(f).converter
 
         if converter is not None:
             if converter.target_format == 'folder':
-                result.append({
-                    'before': f,
-                    'after': volume_folder
-                })
+                result[f] = volume_folder
             else:
-                result.append({
-                    'before': f,
-                    'after': splitext(f)[0] + '.' + converter.target_format
-                })
+                result[f] = splitext(f)[0] + '.' + converter.target_format
 
     return result
 
@@ -202,7 +189,7 @@ def preview_mass_convert(
 def mass_convert(
     volume_id: int,
     issue_id: Union[int, None] = None,
-    filepath_filter: Union[List[str], None] = None,
+    filepath_filter: List[str] = [],
     update_websocket: bool = False
 ) -> None:
     """Convert files for a volume or issue.
@@ -213,58 +200,48 @@ def mass_convert(
         issue_id (Union[int, None], optional): The ID of the issue to convert for.
             Defaults to None.
 
-        filepath_filter (Union[List[str], None], optional): Only convert files
+        filepath_filter (List[str], optional): Only convert files
         mentioned in this list.
-            Defaults to None.
+            Defaults to [].
 
         update_websocket (bool, optional): Send task progress updates over
         the websocket.
             Defaults to False.
     """
-    # We're checking a lot if strings are in this list,
-    # so making it a set will increase performance (due to hashing).
-    hashed_files = set(filepath_filter or [])
-
     settings = Settings().get_settings()
     volume = Volume(volume_id)
 
-    format_preference = settings.format_preference
     extract_issue_ranges = settings.extract_issue_ranges
 
-    planned_conversions: List[Tuple[str, List[str]]] = []
-    for f in (
-        f["filepath"]
+    planned_conversions: List[FileConversionHandler] = []
+    for f in filtered_iter(
+        (f["filepath"]
         for f in (
             volume.get_all_files()
             if not issue_id else
             volume.get_issue(issue_id).get_files()
-        )
+        )),
+        set(filepath_filter)
     ):
-        if hashed_files and f not in hashed_files:
-            continue
-
         converted = False
         if (
             extract_issue_ranges
             and splitext(f)[1].lower() in FileConstants.EXTRACTABLE_EXTENSIONS
             and archive_contains_issues(f)
         ):
-            converter = find_target_format_file(
-                f,
-                ['folder']
-            )
-            if converter is not None:
-                resulting_files = converter.convert(f)
+            converter = FileConversionHandler(f, ['folder'])
+            if converter.converter is not None:
+                resulting_files = convert_file(converter)
                 for file in resulting_files:
-                    planned_conversions.append(
-                        (file, format_preference)
-                    )
+                    fch = FileConversionHandler(file)
+                    if fch.converter is not None:
+                        planned_conversions.append(fch)
                 converted = True
 
         if not converted:
-            planned_conversions.append(
-                (f, format_preference)
-            )
+            fch = FileConversionHandler(f)
+            if fch.converter is not None:
+                planned_conversions.append(fch)
 
     total_count = len(planned_conversions)
 
@@ -273,9 +250,7 @@ def mass_convert(
 
     elif total_count == 1:
         # Avoid mp overhead when we're only converting one file
-        convert_file(
-            *planned_conversions[0]
-        )
+        convert_file(planned_conversions[0])
 
     else:
         # Commit changes because new connections are opened in the processes
@@ -287,14 +262,14 @@ def mass_convert(
                     message=f'Converted 0/{total_count}'
                 )
                 for idx, _ in enumerate(pool.imap_unordered(
-                    map_convert_file,
+                    convert_file,
                     planned_conversions
                 )):
                     ws.update_task_status(
                         message=f'Converted {idx+1}/{total_count}'
                     )
             else:
-                pool.starmap(
+                pool.map(
                     convert_file,
                     planned_conversions
                 )

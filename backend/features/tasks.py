@@ -131,15 +131,15 @@ class MassRenameIssue(Task):
         self,
         volume_id: int,
         issue_id: int,
-        filepath_filter: Union[List[str], None] = []
+        filepath_filter: List[str] = []
     ) -> None:
         """Create the task
 
         Args:
             volume_id (int): The ID of the volume for which to perform the task.
             issue_id (int): The ID of the issue for which to perform the task.
-            filepath_filter (Union[List[str], None], optional): Only rename
-            files in this list.
+            filepath_filter (List[str], optional): Only rename files in this
+            list.
                 Defaults to [].
         """
         self._volume_id = volume_id
@@ -184,15 +184,15 @@ class MassConvertIssue(Task):
         self,
         volume_id: int,
         issue_id: int,
-        filepath_filter: Union[List[str], None] = []
+        filepath_filter: List[str] = []
     ) -> None:
         """Create the task
 
         Args:
             volume_id (int): The ID of the volume for which to perform the task.
             issue_id (int): The ID of the issue for which to perform the task.
-            filepath_filter (Union[List[str], None], optional): Only rename
-            files in this list.
+            filepath_filter (List[str], optional): Only rename files in this
+            list.
                 Defaults to [].
         """
         self._volume_id = volume_id
@@ -320,14 +320,14 @@ class MassRenameVolume(Task):
     def __init__(
         self,
         volume_id: int,
-        filepath_filter: Union[List[str], None] = []
+        filepath_filter: List[str] = []
     ) -> None:
         """Create the task
 
         Args:
             volume_id (int): The ID of the volume for which to perform the task.
-            filepath_filter (Union[List[str], None], optional): Only rename
-            files in this list.
+            filepath_filter (List[str], optional): Only rename files in this
+            list.
                 Defaults to [].
         """
         self._volume_id = volume_id
@@ -368,14 +368,14 @@ class MassConvertVolume(Task):
     def __init__(
         self,
         volume_id: int,
-        filepath_filter: Union[List[str], None] = []
+        filepath_filter: List[str] = []
     ) -> None:
         """Create the task
 
         Args:
             volume_id (int): The ID of the volume for which to perform the task.
-            filepath_filter (Union[List[str], None], optional): Only convert
-            files in this list.
+            filepath_filter (List[str], optional): Only convert files in this
+            list.
                 Defaults to [].
         """
         self._volume_id = volume_id

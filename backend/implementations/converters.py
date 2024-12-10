@@ -4,33 +4,47 @@
 Contains all the converters for converting from one format to another
 """
 
-from abc import ABC, abstractmethod
+from __future__ import annotations
+
 from os import utime
-from os.path import basename, dirname, getmtime, join, relpath, sep, splitext
+from os.path import basename, dirname, getmtime, join, splitext
 from shutil import make_archive
-from subprocess import call as spc, run as sprun
+from subprocess import run
 from sys import platform
-from typing import List, Union
+from typing import TYPE_CHECKING, List, final
 from zipfile import ZipFile
 
-from backend.base.definitions import (SCANNABLE_EXTENSIONS,
-                                      Constants, FileConstants)
+from backend.base.definitions import (SCANNABLE_EXTENSIONS, Constants,
+                                      FileConstants, FileConverter)
 from backend.base.file_extraction import extract_filename_data
 from backend.base.files import (create_folder, delete_empty_parent_folders,
                                 delete_file_folder, folder_path,
-                                list_files, rename_file)
+                                generate_archive_folder, list_files,
+                                rename_file)
 from backend.base.logging import LOGGER
 from backend.implementations.matching import folder_extraction_filter
 from backend.implementations.naming import mass_rename
 from backend.implementations.volumes import Volume, scan_files
 from backend.internals.db_models import FilesDB
 
-rar_executables = {
-    'linux': folder_path('backend', 'lib', 'rar_linux_64'),
-    'darwin': folder_path('backend', 'lib', 'rar_bsd_64'),
-    'win32': folder_path('backend', 'lib', 'rar_windows_64.exe')
-}
-"Maps a platform name to it's rar executable"
+if TYPE_CHECKING:
+    from subprocess import CompletedProcess
+
+
+def run_rar(args: List[str]) -> CompletedProcess[str]:
+    """Run rar executable. Platform is taken care of inside function.
+
+    Args:
+        args (List[str]): The arguments to give to the executable.
+
+    Raises:
+        KeyError: Platform not supported.
+
+    Returns:
+        CompletedProcess[str]: The result of the process.
+    """
+    exe = folder_path('backend', 'lib', Constants.RAR_EXECUTABLES[platform])
+    return run([exe, *args], capture_output=True, text=True)
 
 
 def extract_files_from_folder(
@@ -63,17 +77,13 @@ def extract_files_from_folder(
         c
         for c in folder_contents
         if (
-            not 'variant cover' in c.lower()
-            and (
-                basename(c).lower() in FileConstants.METADATA_FILES
-                or
-                folder_extraction_filter(
-                    extract_filename_data(c, False),
-                    volume_data,
-                    volume_issues,
-                    end_year
-                )
+            folder_extraction_filter(
+                extract_filename_data(c, False),
+                volume_data,
+                volume_issues,
+                end_year
             )
+            and 'variant cover' not in c.lower()
         )
     ]
     LOGGER.debug(f'Relevant files: {rel_files}')
@@ -94,108 +104,48 @@ def extract_files_from_folder(
     return result
 
 
-def _run_rar(args: List[str]) -> int:
-    """
-    Run rar executable. This function takes care of the platform.
-    Note: It is already expected when this function is called
-    that the platform is supported. The check should be done outside.
-
-    Args:
-        args (List[str]): The arguments to give to the executable.
-
-    Returns:
-        int: The exit code of the executable.
-    """
-    exe = rar_executables[platform]
-
-    return spc([exe, *args])
-
-
-def get_rar_output(args: List[str]) -> str:
-    """
-    Run rar executable and return stdout. This function takes care of
-    the platform. Note: It is already expected when this function is called
-    that the platform is supported. The check should be done outside.
-
-    Args:
-        args (List[str]): The arguments to give to the executable.
-
-    Returns:
-        str: The stdout of the executable.
-    """
-    exe = rar_executables[platform]
-
-    return sprun([exe, *args], capture_output=True, text=True).stdout
-
-
-class FileConverter(ABC):
-    source_format: str
-    target_format: str
-
-    @staticmethod
-    @abstractmethod
-    def convert(file: str) -> Union[str, List[str]]:
-        """Convert a file from source_format to target_format.
-
-        Args:
-            file (str): Filepath to the source file, should be in source_format.
-
-        Returns:
-            Union[str, List[str]]: The resulting files or directories, in target_format.
-        """
-        ...
-
 # =====================
-# ZIP
+# region ZIP
 # =====================
-
-
+@final
 class ZIPtoCBZ(FileConverter):
     source_format = 'zip'
     target_format = 'cbz'
 
     @staticmethod
-    def convert(file: str) -> str:
+    def convert(file: str) -> List[str]:
         target = splitext(file)[0] + '.cbz'
         rename_file(
             file,
             target
         )
-        return target
+        return [target]
 
 
+@final
 class ZIPtoRAR(FileConverter):
     source_format = 'zip'
     target_format = 'rar'
 
     @staticmethod
-    def convert(file: str) -> str:
+    def convert(file: str) -> List[str]:
         volume_id = FilesDB.volume_of_file(file)
         if not volume_id:
             # File not matched to volume
-            return file
+            return [file]
+
         volume_folder = Volume(volume_id).vd.folder
-        archive_folder = join(
-            volume_folder,
-            Constants.ARCHIVE_EXTRACT_FOLDER,
-            splitext(
-                '_'.join(
-                    relpath(
-                        file,
-                        volume_folder
-                    ).split(sep)
-                )
-            )[0]
-        )
+        archive_folder = generate_archive_folder(volume_folder, file)
 
         with ZipFile(file, 'r') as zip:
             zip.extractall(archive_folder)
 
-        _run_rar([
-            'a',
-            '-ep', '-inul',
-            splitext(file)[0],
-            archive_folder
+        run_rar([
+            'a', # Add files to archive
+            '-ep', # Exclude paths from names
+            '-inul', # Disable all messages
+            splitext(file)[0], # Ext-less target filename of created archive
+            archive_folder # Source folder
         ])
 
         delete_file_folder(archive_folder)
@@ -203,20 +153,22 @@ class ZIPtoRAR(FileConverter):
         delete_empty_parent_folders(dirname(file), volume_folder)
         delete_empty_parent_folders(dirname(archive_folder), volume_folder)
 
-        return splitext(file)[0] + '.rar'
+        return [splitext(file)[0] + '.rar']
 
 
+@final
 class ZIPtoCBR(FileConverter):
     source_format = 'zip'
     target_format = 'cbr'
 
     @staticmethod
-    def convert(file: str) -> str:
-        rar_file = ZIPtoRAR.convert(file)
+    def convert(file: str) -> List[str]:
+        rar_file = ZIPtoRAR.convert(file)[0]
         cbr_file = RARtoCBR.convert(rar_file)
         return cbr_file
 
 
+@final
 class ZIPtoFOLDER(FileConverter):
     source_format = 'zip'
     target_format = 'folder'
@@ -227,25 +179,15 @@ class ZIPtoFOLDER(FileConverter):
         if not volume_id:
             # File not matched to volume
             return [file]
+
         volume_folder = Volume(volume_id).vd.folder
-        zip_folder = join(
-            volume_folder,
-            Constants.ARCHIVE_EXTRACT_FOLDER,
-            splitext(
-                '_'.join(
-                    relpath(
-                        file,
-                        volume_folder
-                    ).split(sep)
-                )
-            )[0],
-        )
+        archive_folder = generate_archive_folder(volume_folder, file)
 
         with ZipFile(file, 'r') as zip:
-            zip.extractall(zip_folder)
+            zip.extractall(archive_folder)
 
         resulting_files = extract_files_from_folder(
-            zip_folder,
+            archive_folder,
             volume_id
         )
 
@@ -256,52 +198,55 @@ class ZIPtoFOLDER(FileConverter):
                 filepath_filter=resulting_files
             )
 
-        delete_file_folder(zip_folder)
+        delete_file_folder(archive_folder)
         delete_file_folder(file)
         delete_empty_parent_folders(dirname(file), volume_folder)
-        delete_empty_parent_folders(dirname(zip_folder), volume_folder)
+        delete_empty_parent_folders(dirname(archive_folder), volume_folder)
 
         return resulting_files
 
-# =====================
-# CBZ
-# =====================
 
-
+# =====================
+# region CBZ
+# =====================
+@final
 class CBZtoZIP(FileConverter):
     source_format = 'cbz'
     target_format = 'zip'
 
     @staticmethod
-    def convert(file: str) -> str:
+    def convert(file: str) -> List[str]:
         target = splitext(file)[0] + '.zip'
         rename_file(
             file,
             target
         )
-        return target
+        return [target]
 
 
+@final
 class CBZtoRAR(FileConverter):
     source_format = 'cbz'
     target_format = 'rar'
 
     @staticmethod
-    def convert(file: str) -> str:
+    def convert(file: str) -> List[str]:
         return ZIPtoRAR.convert(file)
 
 
+@final
 class CBZtoCBR(FileConverter):
     source_format = 'cbz'
     target_format = 'cbr'
 
     @staticmethod
-    def convert(file: str) -> str:
-        rar_file = ZIPtoRAR.convert(file)
+    def convert(file: str) -> List[str]:
+        rar_file = ZIPtoRAR.convert(file)[0]
         cbr_file = RARtoCBR.convert(rar_file)
         return cbr_file
 
 
+@final
 class CBZtoFOLDER(FileConverter):
     source_format = 'cbz'
     target_format = 'folder'
@@ -310,84 +255,81 @@ class CBZtoFOLDER(FileConverter):
     def convert(file: str) -> List[str]:
         return ZIPtoFOLDER.convert(file)
 
-# =====================
-# RAR
-# =====================
 
-
+# =====================
+# region RAR
+# =====================
+@final
 class RARtoCBR(FileConverter):
     source_format = 'rar'
     target_format = 'cbr'
 
     @staticmethod
-    def convert(file: str) -> str:
+    def convert(file: str) -> List[str]:
         target = splitext(file)[0] + '.cbr'
         rename_file(
             file,
             target
         )
-        return target
+        return [target]
 
 
+@final
 class RARtoZIP(FileConverter):
     source_format = 'rar'
     target_format = 'zip'
 
     @staticmethod
-    def convert(file: str) -> str:
+    def convert(file: str) -> List[str]:
         volume_id = FilesDB.volume_of_file(file)
         if not volume_id:
             # File not matched to volume
-            return file
+            return [file]
+
         volume_folder = Volume(volume_id).vd.folder
-        rar_folder = join(
-            volume_folder,
-            Constants.ARCHIVE_EXTRACT_FOLDER,
-            splitext(
-                '_'.join(
-                    relpath(
-                        file,
-                        volume_folder
-                    ).split(sep)
-                )
-            )[0]
-        )
+        archive_folder = generate_archive_folder(volume_folder, file)
+        create_folder(archive_folder)
 
-        create_folder(rar_folder)
-
-        _run_rar([
-            'x',
-            '-inul',
-            file,
-            rar_folder
+        run_rar([
+            'x', # Extract files with full path
+            '-inul', # Disable all messages
+            file, # Source archive file
+            archive_folder # Target folder to extract into
         ])
 
-        for f in list_files(rar_folder):
-            if getmtime(f) <= 315619200:
-                utime(f, (315619200, 315619200))
+        # Files that are put in a ZIP file have to have a minimum last
+        # modification time.
+        for f in list_files(archive_folder):
+            if getmtime(f) <= Constants.ZIP_MIN_MOD_TIME:
+                utime(
+                    f,
+                    (Constants.ZIP_MIN_MOD_TIME, Constants.ZIP_MIN_MOD_TIME)
+                )
 
         target_file = splitext(file)[0]
-        target_archive = make_archive(target_file, 'zip', rar_folder)
+        target_archive = make_archive(target_file, 'zip', archive_folder)
 
-        delete_file_folder(rar_folder)
+        delete_file_folder(archive_folder)
         delete_file_folder(file)
         delete_empty_parent_folders(dirname(file), volume_folder)
-        delete_empty_parent_folders(dirname(rar_folder), volume_folder)
+        delete_empty_parent_folders(dirname(archive_folder), volume_folder)
 
-        return target_archive
+        return [target_archive]
 
 
+@final
 class RARtoCBZ(FileConverter):
     source_format = 'rar'
     target_format = 'cbz'
 
     @staticmethod
-    def convert(file: str) -> str:
-        zip_file = RARtoZIP.convert(file)
+    def convert(file: str) -> List[str]:
+        zip_file = RARtoZIP.convert(file)[0]
         cbz_file = ZIPtoCBZ.convert(zip_file)
         return cbz_file
 
 
+@final
 class RARtoFOLDER(FileConverter):
     source_format = 'rar'
     target_format = 'folder'
@@ -398,31 +340,20 @@ class RARtoFOLDER(FileConverter):
         if not volume_id:
             # File not matched to volume
             return [file]
+
         volume_folder = Volume(volume_id).vd.folder
-        rar_folder = join(
-            volume_folder,
-            Constants.ARCHIVE_EXTRACT_FOLDER,
-            splitext(
-                '_'.join(
-                    relpath(
-                        file,
-                        volume_folder
-                    ).split(sep)
-                )
-            )[0]
-        )
+        archive_folder = generate_archive_folder(volume_folder, file)
+        create_folder(archive_folder)
 
-        create_folder(rar_folder)
-
-        _run_rar([
-            'x',
-            '-inul',
-            file,
-            rar_folder
+        run_rar([
+            'x', # Extract files with full path
+            '-inul', # Disable all messages
+            file, # Source archive file
+            archive_folder # Target folder to extract into
         ])
 
         resulting_files = extract_files_from_folder(
-            rar_folder,
+            archive_folder,
             volume_id
         )
 
@@ -433,52 +364,55 @@ class RARtoFOLDER(FileConverter):
                 filepath_filter=resulting_files
             )
 
-        delete_file_folder(rar_folder)
+        delete_file_folder(archive_folder)
         delete_file_folder(file)
         delete_empty_parent_folders(dirname(file), volume_folder)
-        delete_empty_parent_folders(dirname(rar_folder), volume_folder)
+        delete_empty_parent_folders(dirname(archive_folder), volume_folder)
 
         return resulting_files
 
-# =====================
-# CBR
-# =====================
 
-
+# =====================
+# region CBR
+# =====================
+@final
 class CBRtoRAR(FileConverter):
     source_format = 'cbr'
     target_format = 'rar'
 
     @staticmethod
-    def convert(file: str) -> str:
+    def convert(file: str) -> List[str]:
         target = splitext(file)[0] + '.rar'
         rename_file(
             file,
             target
         )
-        return target
+        return [target]
 
 
+@final
 class CBRtoZIP(FileConverter):
     source_format = 'cbr'
     target_format = 'zip'
 
     @staticmethod
-    def convert(file: str) -> str:
+    def convert(file: str) -> List[str]:
         return RARtoZIP.convert(file)
 
 
+@final
 class CBRtoCBZ(FileConverter):
     source_format = 'cbr'
     target_format = 'cbz'
 
     @staticmethod
-    def convert(file: str) -> str:
-        zip_file = RARtoZIP.convert(file)
+    def convert(file: str) -> List[str]:
+        zip_file = RARtoZIP.convert(file)[0]
         cbz_file = ZIPtoCBZ.convert(zip_file)
         return cbz_file
 
 
+@final
 class CBRtoFOLDER(FileConverter):
     source_format = 'cbr'
     target_format = 'folder'

@@ -53,7 +53,7 @@ from backend.implementations.blocklist import (add_to_blocklist,
                                                get_blocklist,
                                                get_blocklist_entry)
 from backend.implementations.comicvine import ComicVine
-from backend.implementations.conversion import (get_available_formats,
+from backend.implementations.conversion import (FileConversionHandler,
                                                 preview_mass_convert)
 from backend.implementations.download_direct_clients import credentials
 from backend.implementations.download_torrent_clients import (TorrentClients,
@@ -375,7 +375,7 @@ def api_tasks():
                 or isinstance(filepath_filter, list)
             ):
                 raise InvalidKeyValue('filepath_filter', filepath_filter)
-            kwargs['filepath_filter'] = filepath_filter
+            kwargs['filepath_filter'] = filepath_filter or []
 
         if task.action == 'update_all':
             allow_skipping = data.get('allow_skipping', False)
@@ -476,7 +476,7 @@ def api_settings_api_key():
 @error_handler
 @auth
 def api_settings_available_formats():
-    result = list(get_available_formats())
+    result = list(FileConversionHandler.get_available_formats())
     return return_api(result)
 
 

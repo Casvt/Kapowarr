@@ -31,6 +31,12 @@ class Constants:
     LOGGER_FILENAME = "Kapowarr.log"
 
     ARCHIVE_EXTRACT_FOLDER = '.archive_extract'
+    ZIP_MIN_MOD_TIME = 315619200
+    RAR_EXECUTABLES = {
+        'linux': 'rar_linux_64',
+        'darwin': 'rar_bsd_64',
+        'win32': 'rar_windows_64.exe'
+    }
 
     DEFAULT_USERAGENT = "Kapowarr"
     TOTAL_RETRIES = 5
@@ -485,4 +491,22 @@ class DBMigrator(ABC):
 
     @abstractmethod
     def run(self) -> None:
+        ...
+
+
+class FileConverter(ABC):
+    source_format: str
+    target_format: str
+
+    @staticmethod
+    @abstractmethod
+    def convert(file: str) -> List[str]:
+        """Convert a file from source_format to target_format.
+
+        Args:
+            file (str): Filepath to the source file, should be in source_format.
+
+        Returns:
+            List[str]: The resulting files or directories, in target_format.
+        """
         ...

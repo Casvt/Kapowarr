@@ -7,12 +7,12 @@ Handling folders, files and filenames.
 from collections import deque
 from os import listdir, makedirs, remove, scandir
 from os.path import (abspath, basename, commonpath, dirname, isdir,
-                     isfile, join, relpath, samefile, splitext)
+                     isfile, join, relpath, samefile, sep, splitext)
 from re import compile
 from shutil import copytree, move, rmtree
 from typing import Deque, Dict, Iterable, List, Sequence, Set
 
-from backend.base.definitions import CharConstants
+from backend.base.definitions import CharConstants, Constants
 from backend.base.helpers import check_filter, force_suffix
 from backend.base.logging import LOGGER
 
@@ -194,6 +194,33 @@ def propose_basefolder_change(
     }
 
     return file_changes
+
+
+def generate_archive_folder(
+    volume_folder: str,
+    archive_file: str
+) -> str:
+    """Generate a folder in which the given archive file can be extracted.
+
+    Args:
+        volume_folder (str): The volume folder that the archive file is in.
+        archive_file (str): The filepath of the archive file itself.
+
+    Returns:
+        str: The folder in which the archive file can be extracted.
+    """
+    return join(
+        volume_folder,
+        Constants.ARCHIVE_EXTRACT_FOLDER,
+        splitext(
+            '_'.join(
+                relpath(
+                    archive_file,
+                    volume_folder
+                ).split(sep)
+            )
+        )[0]
+    )
 
 
 # region Creation

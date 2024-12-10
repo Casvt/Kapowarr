@@ -367,9 +367,9 @@ class Settings(metaclass=Singleton):
 
         elif key == 'format_preference':
             from backend.implementations.conversion import \
-                get_available_formats
+                FileConversionHandler
 
-            available = get_available_formats()
+            available = FileConversionHandler.get_available_formats()
             for entry in value:
                 if entry not in available:
                     raise InvalidSettingValue(key, value)
