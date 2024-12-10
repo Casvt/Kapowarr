@@ -507,7 +507,7 @@ async def __purify_link(
         r = await session.get(link)
     if not r.ok:
         raise LinkBroken(BlocklistReason.LINK_BROKEN)
-    url = str(r.url)
+    url = str(r.real_url)
     content_type = r.headers.getone("Content-Type", "")
 
     if source == GCDownloadSource.MEGA:
