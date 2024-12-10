@@ -154,7 +154,6 @@ function buildResults(results, api_key) {
 	const one_higher_issue_counts_option = document.createElement('option');
 	one_higher_issue_counts_option.value = '>1 issues';
 	one_higher_issue_counts_option.innerText = '>1 issues';
-	one_higher_issue_counts_option.selected = true;
 	SearchEls.filters.issue_count.appendChild(one_higher_issue_counts_option);
 
 	issue_counts.forEach(ic => {
