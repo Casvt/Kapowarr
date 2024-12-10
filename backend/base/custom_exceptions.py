@@ -290,34 +290,6 @@ class CredentialNotFound(CustomException):
     api_response = {'error': 'CredentialNotFound', 'result': {}, 'code': 404}
 
 
-class CredentialSourceNotFound(Exception):
-    """The credential source with the given string was not found"""
-
-    def __init__(self, string: str) -> None:
-        self.string = string
-        LOGGER.warning(
-            f'Credential source with given string not found: {string}'
-        )
-        return
-
-    @property
-    def api_response(self):
-        return {
-            'error': 'CredentialSourceNotFound',
-            'result': {'string': self.string},
-            'code': 404
-        }
-
-
-class CredentialAlreadyAdded(CustomException):
-    """A credential for the given source is already added"""
-    api_response = {
-        'error': 'CredentialAlreadyAdded',
-        'result': {},
-        'code': 400
-    }
-
-
 class CredentialInvalid(Exception):
     """A credential is incorrect (can't login with it)"""
     api_response = {'error': 'CredentialInvalid', 'result': {}, 'code': 400}

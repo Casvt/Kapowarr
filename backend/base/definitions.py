@@ -303,6 +303,10 @@ class MonitorScheme(BaseEnum):
     NONE = "none"
 
 
+class CredentialSource(BaseEnum):
+    MEGA = "mega"
+
+
 # region TypedDicts
 class FilenameData(TypedDict):
     series: str
@@ -483,6 +487,21 @@ class VolumeData:
     special_version: SpecialVersion
     special_version_locked: bool
     last_cv_fetch: int
+
+
+@dataclass
+class CredentialData:
+    id: int
+    source: CredentialSource
+    username: Union[str, None]
+    email: Union[str, None]
+    password: Union[str, None]
+    api_key: Union[str, None]
+
+    def as_dict(self) -> Dict[str, Any]:
+        result = asdict(self)
+        result['source'] = self.source.value
+        return result
 
 
 # region Abstract Classes

@@ -10,10 +10,8 @@ from flask import Blueprint, Flask, request, send_file
 
 from backend.base.custom_exceptions import (BlocklistEntryNotFound,
                                             ClientDownloading,
-                                            CredentialAlreadyAdded,
                                             CredentialInvalid,
                                             CredentialNotFound,
-                                            CredentialSourceNotFound,
                                             CVRateLimitReached,
                                             DownloadNotFound, FileNotFound,
                                             FolderNotFound,
@@ -32,6 +30,7 @@ from backend.base.custom_exceptions import (BlocklistEntryNotFound,
                                             VolumeDownloadedFor,
                                             VolumeNotFound)
 from backend.base.definitions import (BlocklistReason, BlocklistReasonID,
+                                      CredentialData, CredentialSource,
                                       DownloadSource, LibraryFilters,
                                       LibrarySorting, MonitorScheme,
                                       SpecialVersion, VolumeData)
@@ -55,7 +54,7 @@ from backend.implementations.blocklist import (add_to_blocklist,
 from backend.implementations.comicvine import ComicVine
 from backend.implementations.conversion import (FileConversionHandler,
                                                 preview_mass_convert)
-from backend.implementations.download_direct_clients import credentials
+from backend.implementations.credentials import Credentials
 from backend.implementations.download_torrent_clients import (TorrentClients,
                                                               client_types)
 from backend.implementations.naming import (generate_volume_folder_name,
@@ -96,9 +95,7 @@ def error_handler(method) -> Any:
         except (
             BlocklistEntryNotFound,
             ClientDownloading,
-            CredentialAlreadyAdded,
             CredentialInvalid, CredentialNotFound,
-            CredentialSourceNotFound,
             CVRateLimitReached, DownloadNotFound,
             FileNotFound, FolderNotFound,
             InvalidComicVineApiKey, InvalidKeyValue,
@@ -1033,57 +1030,67 @@ def api_blocklist_entry(id: int):
         delete_blocklist_entry(id)
         return return_api({})
 
+
 # =====================
 # Credentials
 # =====================
-
-
 @api.route('/credentials', methods=['GET', 'POST'])
 @error_handler
 @auth
 def api_credentials():
+    cred = Credentials()
+
     if request.method == 'GET':
-        result = credentials.get_all()
+        result = [
+            c.as_dict()
+            for c in cred.get_all()
+        ]
         return return_api(result)
 
     elif request.method == 'POST':
-        data: dict = request.get_json()
-        for k in ('source', 'email', 'password'):
-            if k not in data:
-                raise KeyNotFound(k)
-        result = credentials.add(
-            data['source'],
-            data['email'],
-            data['password']
-        )
-        return return_api(result, code=201)
+        data = request.get_json()
+        if not isinstance(data, dict):
+            raise InvalidKeyValue(value=data)
 
+        if 'source' not in data:
+            raise KeyNotFound('source')
 
-@api.route('/credentials/open', methods=['GET'])
-@error_handler
-@auth
-def api_open_credentials():
-    result = credentials.get_open()
-    return return_api(result)
+        try:
+            source = CredentialSource(
+                data["source"]
+            )
+
+        except ValueError:
+            raise InvalidKeyValue('source', data["source"])
+
+        result = cred.add(CredentialData(
+            id=-1,
+            source=source,
+            username=data.get("username"),
+            email=data.get("email"),
+            password=data.get("password"),
+            api_key=data.get("api_key")
+        ))
+        return return_api(result.as_dict(), code=201)
 
 
 @api.route('/credentials/<int:id>', methods=['GET', 'DELETE'])
 @error_handler
 @auth
 def api_credential(id: int):
+    cred = Credentials()
     if request.method == 'GET':
-        result = credentials.get_one(id)
+        result = cred.get_one(id).as_dict()
         return return_api(result)
 
     elif request.method == 'DELETE':
-        credentials.delete(id)
+        cred.delete(id)
         return return_api({})
+
 
 # =====================
 # Torrent Clients
 # =====================
-
-
 @api.route('/torrentclients', methods=['GET', 'POST'])
 @error_handler
 @auth

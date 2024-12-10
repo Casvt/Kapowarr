@@ -43,7 +43,9 @@ from simplejson.errors import JSONDecodeError
 from tenacity import retry, retry_if_exception_type, wait_exponential
 
 from backend.base.custom_exceptions import DownloadLimitReached
+from backend.base.definitions import CredentialData, CredentialSource
 from backend.base.logging import LOGGER
+from backend.implementations.credentials import Credentials
 
 _CODE_TO_DESCRIPTIONS = {
     -1: ('EINTERNAL',
@@ -241,17 +243,8 @@ def decrypt_attr(attr, key):
     return loads(attr[4:]) if attr[:6] == 'MEGA{"' else False
 
 
-sids = {}
-
-
 class Mega:
-    def __init__(
-        self,
-        url: str,
-        email: Union[str, None] = None,
-        password: Union[str, None] = None,
-        only_check_login: bool = False
-    ):
+    def __init__(self, url: str, _only_login: bool = False):
         self.downloading: bool = False
         self.progress: float = 0.0
         self.speed: float = 0.0
@@ -264,37 +257,53 @@ class Mega:
         self.sid = None
         self.sequence_num = randint(0, 0xFFFFFFFF)
 
-        logged_in = False
-        try:
-            if email is not None and password is not None:
-                if email not in sids or only_check_login:
-                    # No sid fetched for user yet
-                    self._login_user(email, password)
-                    sids.update({email: (self.sid, None)})
-                self.sid = sids[email][0]
-                if only_check_login:
-                    return
-                logged_in = True
-        except JSONDecodeError:
-            LOGGER.error(
-                'Login credentials for mega are invalid. Login failed.')
-            raise RequestError(-16)
-        if not logged_in:
-            try:
-                if -1 not in sids:
-                    # No sid fetched for user yet
-                    # Make it "expire" after an hour
-                    self.login_anonymous()
-                    sids.update({-1: (self.sid, time() + 3600)})
-                expire_time = sids[-1][1]
-                if expire_time <= time():
-                    # Current sid is "expired"
-                    self.login_anonymous()
-                    sids.update({-1: (self.sid, time() + 3600)})
-                self.sid = sids[-1][0]
+        if _only_login:
+            return
 
-            except JSONDecodeError:
-                raise RequestError(-16)
+        cred = Credentials()
+        for mega_cred in (
+            *cred.get_from_source(CredentialSource.MEGA),
+            CredentialData(
+                id=-1,
+                source=CredentialSource.MEGA,
+                username=None,
+                email='',
+                password='',
+                api_key=None
+            )
+        ):
+            auth_token = (
+                cred
+                .auth_tokens.get(CredentialSource.MEGA, {})
+                .get(mega_cred.email or '', (None, 0))
+            )
+            if auth_token[1] > time():
+                self.sid = auth_token[0]
+                break
+
+            try:
+                if mega_cred.email and mega_cred.password:
+                    self._login_user(
+                        mega_cred.email,
+                        mega_cred.password
+                    )
+                else:
+                    self.login_anonymous()
+
+            except (JSONDecodeError, RequestError):
+                LOGGER.error(
+                    'Login credentials for mega are invalid. Login failed.'
+                )
+
+            else:
+                cred.auth_tokens.setdefault(CredentialSource.MEGA, {})[
+                    mega_cred.email or ''
+                ] = (self.sid, round(time()) + 3600)
+                break
+
+        else:
+            # Failed to login with creds or anonymous
+            raise RequestError(-16)
 
         self.file_id, file_key = self._parse_url(url).split('!')
         try:

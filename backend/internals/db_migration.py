@@ -1005,3 +1005,40 @@ class MigrateVaiNaming(DBMigrator):
         )
 
         return
+
+
+class MigrateCredentials(DBMigrator):
+    start_version = 32
+
+    def run(self) -> None:
+        # V32 -> V33
+
+        from backend.internals.db import get_db
+
+        get_db().executescript("""
+            BEGIN TRANSACTION;
+            PRAGMA defer_foreign_keys = ON;
+
+            CREATE TEMPORARY TABLE temp_credentials_33 AS
+                SELECT * FROM credentials;
+            DROP TABLE credentials;
+
+            DROP TABLE credentials_sources;
+
+            CREATE TABLE IF NOT EXISTS credentials(
+                id INTEGER PRIMARY KEY,
+                source VARCHAR(30) NOT NULL UNIQUE,
+                username TEXT,
+                email TEXT,
+                password TEXT,
+                api_key TEXT
+            );
+
+            INSERT INTO credentials(id, source, email, password)
+                SELECT id, 'mega' AS source, email, password
+                FROM temp_credentials_33;
+
+            COMMIT;
+        """)
+
+        return

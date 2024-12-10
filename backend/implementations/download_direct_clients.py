@@ -21,28 +21,25 @@ from backend.base.definitions import (BlocklistReason,
                                       DownloadSource, DownloadState)
 from backend.base.helpers import Session, get_first_of_range
 from backend.base.logging import LOGGER
-from backend.implementations.credentials import Credentials
 from backend.implementations.download_general import Download
 from backend.internals.server import WebSocket
 from backend.internals.settings import Settings
 
-from ..lib.mega import Mega, RequestError, sids
+from ..lib.mega import Mega, RequestError
 
 if TYPE_CHECKING:
     from requests import Response
 
-file_extension_regex = compile(
-    r'(?<=\.|\/)[\w\d]{2,4}(?=$|;|\s|\")',
-    IGNORECASE)
-extract_mediafire_regex = compile(
-    r'window.location.href\s?=\s?\'https://download\d+\.mediafire.com/.*?(?=\')',
-    IGNORECASE)
-credentials = Credentials(sids)
+
+# autopep8: off
+file_extension_regex = compile(r'(?<=\.|\/)[\w\d]{2,4}(?=$|;|\s|\")', IGNORECASE)
+extract_mediafire_regex = compile(r'window.location.href\s?=\s?\'https://download\d+\.mediafire.com/.*?(?=\')', IGNORECASE)
 DOWNLOAD_CHUNK_SIZE = 4194304 # 4MB Chunks
 MEDIAFIRE_FOLDER_LINK = "https://www.mediafire.com/api/1.5/file/zip.php"
 WETRANSFER_API_LINK = "https://wetransfer.com/api/v4/transfers/{transfer_id}/download"
 PIXELDRAIN_API_LINK = "https://pixeldrain.com/api/file/{download_id}"
 PIXELDRAIN_FOLDER_API_LINK = "https://pixeldrain.com/api/list/{download_id}/zip"
+# autopep8: on
 
 
 class BaseDirectDownload(Download):
@@ -328,9 +325,8 @@ class MegaDownload(BaseDirectDownload):
         self.pure_link = download_link
         self.source = source
 
-        cred = credentials.get_one_from_source('mega')
         try:
-            self._mega = Mega(download_link, cred['email'], cred['password'])
+            self._mega = Mega(download_link)
         except RequestError:
             raise LinkBroken(BlocklistReason.LINK_BROKEN)
 

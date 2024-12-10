@@ -263,8 +263,7 @@ def setup_db() -> None:
     """
     Setup the database tables and default config when they aren't setup yet
     """
-    from backend.internals.settings import (Settings, credential_sources,
-                                            task_intervals)
+    from backend.internals.settings import Settings, task_intervals
 
     cursor = get_db()
     cursor.execute("PRAGMA journal_mode = wal;")
@@ -422,18 +421,13 @@ def setup_db() -> None:
             FOREIGN KEY (issue_id) REFERENCES issues(id)
                 ON DELETE SET NULL
         );
-        CREATE TABLE IF NOT EXISTS credentials_sources(
-            id INTEGER PRIMARY KEY,
-            source VARCHAR(30) NOT NULL UNIQUE
-        );
         CREATE TABLE IF NOT EXISTS credentials(
             id INTEGER PRIMARY KEY,
-            source INTEGER NOT NULL UNIQUE,
-            email VARCHAR(255) NOT NULL,
-            password VARCHAR(255) NOT NULL,
-
-            FOREIGN KEY (source) REFERENCES credentials_sources(id)
-                ON DELETE CASCADE
+            source VARCHAR(30) NOT NULL UNIQUE,
+            username TEXT,
+            email TEXT,
+            password TEXT,
+            api_key TEXT
         );
     """
     cursor.executescript(setup_commands)
@@ -465,16 +459,6 @@ def setup_db() -> None:
             interval = ?;
         """,
         ((k, v, current_time, v) for k, v in task_intervals.items())
-    )
-
-    # Add credentials sources
-    LOGGER.debug(f'Inserting credentials sources: {credential_sources}')
-    cursor.executemany(
-        """
-        INSERT OR IGNORE INTO credentials_sources(source)
-        VALUES (?);
-        """,
-        [(s,) for s in credential_sources]
     )
 
     return

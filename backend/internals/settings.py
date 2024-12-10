@@ -87,9 +87,6 @@ task_intervals = {
 }
 
 
-credential_sources = ('mega',)
-
-
 class Settings(metaclass=Singleton):
     def __init__(self) -> None:
         self._insert_missing_settings()
