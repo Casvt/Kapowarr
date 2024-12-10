@@ -272,7 +272,10 @@ class Volume:
             (self.id,)
         ).fetchonedict() or {}
 
-        return VolumeData(**data)
+        return VolumeData(**{
+            **data,
+            "special_version": SpecialVersion(data["special_version"])
+        })
 
     def get_public_keys(self) -> dict:
         """Get data about the volume for the public to see (the API).
