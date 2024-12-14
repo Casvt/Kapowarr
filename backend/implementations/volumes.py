@@ -385,7 +385,8 @@ class Volume:
         Returns:
             List[IssueData]: The list of issues.
         """
-        issues = get_db().execute("""
+        cursor = get_db()
+        issues = cursor.execute("""
             SELECT
                 id, volume_id, comicvine_id,
                 issue_number, calculated_issue_number,
@@ -398,14 +399,31 @@ class Volume:
             (self.id,)
         ).fetchalldict()
 
+        file_mapping: Dict[int, List[FileData]] = {}
+        if not _skip_files:
+            cursor.execute("""
+                SELECT i.id AS issue_id, f.id AS file_id, filepath, size
+                FROM files f
+                INNER JOIN issues_files if
+                    ON f.id = if.file_id
+                INNER JOIN issues i
+                    ON if.issue_id = i.id
+                WHERE i.volume_id = ?
+                ORDER BY filepath;
+                """,
+                (self.id,)
+            )
+            for file in cursor:
+                file_mapping.setdefault(file[0], []).append({
+                    "id": file["file_id"],
+                    "filepath": file["filepath"],
+                    "size": file["size"]
+                })
+
         result = [
             IssueData(
                 **i,
-                files=(
-                    self.get_issue(i["id"]).get_files()
-                    if not _skip_files else
-                    []
-                )
+                files=file_mapping.get(i["id"], [])
             )
             for i in issues
         ]
