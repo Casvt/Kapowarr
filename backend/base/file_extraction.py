@@ -49,7 +49,7 @@ issue_regex_6 = compile(r'(?:(?P<i_start>^)|(?<=(?<!part)[\s\._]))(?P<n_c>n)?(\-
 issue_regex_7 = compile(r'^(\-?' + issue_regex_snippet + r')$', IGNORECASE)
 year_regex = compile(r'\((?:[a-z]+\.?\s)?' + year_regex_snippet + r'\)|--' + year_regex_snippet + r'--|__' + year_regex_snippet + r'__|, ' + year_regex_snippet + r'\s{3}|\b(?:(?:\d{2}-){1,2}(\d{4})|(\d{4})(?:-\d{2}){1,2})\b', IGNORECASE)
 series_regex = compile(r'(^(\d+\.)?\s+|^\d+\s{3}|\s(?=\s)|[\s,]+$)')
-annual_regex = compile(r'\+[\s\._]?annuals?|annuals?[\s\._]?\+|^((?!annuals?).)*$', IGNORECASE)
+annual_regex = compile(r'(?:\+|plus)[\s\._]?annuals?|annuals?[\s\._]?(?:\+|plus)|^((?!annuals?).)*$', IGNORECASE) # If regex matches, it's NOT an annual
 cover_regex = compile(r'\b(?<!no[ \-_])(?<!hard[ \-_])(?<!\d[ \-_]covers)cover\b|n\d+c(\d+)|(?:\b|\d)i?fc\b', IGNORECASE)
 page_regex = compile(r'^(\d+(?:[a-f]|_\d+)?)$|\b(?i:page|pg)[\s\.\-_]?(\d+(?:[a-f]|_\d+)?)|n?\d+[_\-p](\d+(?:[a-f]|_\d+)?)')
 page_regex_2 = compile(r'(\d+)')
