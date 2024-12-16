@@ -15,7 +15,8 @@ from backend.base.definitions import (BaseEnum, GCDownloadSource,
 from backend.base.files import (folder_is_inside_folder,
                                 folder_path, uppercase_drive_letter)
 from backend.base.helpers import (CommaList, Singleton, force_suffix,
-                                  get_python_version, reversed_tuples)
+                                  get_python_version, normalize_base_url,
+                                  reversed_tuples)
 from backend.base.logging import LOGGER, set_log_level
 from backend.internals.db import commit, get_db
 from backend.internals.db_migration import get_latest_db_version
@@ -392,7 +393,10 @@ class Settings(metaclass=Singleton):
 
             fs = FlareSolverr()
 
-            converted_value = value.rstrip("/")
+            converted_value = value
+            if converted_value:
+                converted_value = normalize_base_url(converted_value)
+
             if not converted_value and fs.base_url:
                 # Disable FS, it was running before.
                 fs.disable_flaresolverr()

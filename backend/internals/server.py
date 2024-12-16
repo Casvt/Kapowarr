@@ -27,8 +27,8 @@ if TYPE_CHECKING:
     from flask.ctx import AppContext
     from waitress.server import BaseWSGIServer, MultiSocketServer
 
+    from backend.base.definitions import Download
     from backend.features.tasks import Task
-    from backend.implementations.download_general import Download
 
 
 class ThreadedTaskDispatcher(TTD):

@@ -282,6 +282,22 @@ def normalize_year(s: str) -> Union[int, None]:
     return None
 
 
+def normalize_base_url(base_url: str) -> str:
+    """Turn user-entered base URL's into a standard format. No trailing slash,
+    and `http://` prefix applied if no protocol is found.
+
+    Args:
+        base_url (str): Input base URL.
+
+    Returns:
+        str: Normalized base URL.
+    """
+    result = base_url.rstrip('/')
+    if not result.startswith(('http://', 'https://')):
+        result = f'http://{result}'
+    return result
+
+
 def extract_year_from_date(
     date: Union[str, None],
     default: T = None

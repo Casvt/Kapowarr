@@ -16,7 +16,7 @@ from bs4 import BeautifulSoup, Tag
 
 from backend.base.custom_exceptions import (DownloadLimitReached,
                                             FailedGCPage, LinkBroken)
-from backend.base.definitions import (BlocklistReason, Constants,
+from backend.base.definitions import (BlocklistReason, Constants, Download,
                                       DownloadGroup, FailReason,
                                       GCDownloadSource, SearchResultData,
                                       SpecialVersion, download_source_versions)
@@ -26,12 +26,15 @@ from backend.base.helpers import (AsyncSession, check_overlapping_issues,
 from backend.base.logging import LOGGER
 from backend.implementations.blocklist import (add_to_blocklist,
                                                blocklist_contains)
-from backend.implementations.download_direct_clients import (
-    DirectDownload, Download, MediaFireDownload,
-    MediaFireFolderDownload, MegaDownload, PixelDrainDownload,
-    PixelDrainFolderDownload, WeTransferDownload)
-from backend.implementations.download_torrent_clients import (TorrentClients,
-                                                              TorrentDownload)
+from backend.implementations.download_clients import (DirectDownload,
+                                                      MediaFireDownload,
+                                                      MediaFireFolderDownload,
+                                                      MegaDownload,
+                                                      PixelDrainDownload,
+                                                      PixelDrainFolderDownload,
+                                                      TorrentDownload,
+                                                      WeTransferDownload)
+from backend.implementations.external_clients import ExternalClients
 from backend.implementations.matching import gc_group_filter
 from backend.implementations.naming import generate_issue_name
 from backend.implementations.volumes import Volume
@@ -322,7 +325,7 @@ def _get_download_groups(
     """
     LOGGER.debug('Extracting download groups')
 
-    torrent_client_available = bool(TorrentClients.get_clients())
+    torrent_client_available = bool(ExternalClients.get_clients())
 
     body: Union[Tag, None] = soup.find(
         'section', {'class': 'post-contents'}

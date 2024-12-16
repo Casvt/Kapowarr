@@ -346,9 +346,10 @@ def setup_db() -> None:
             FOREIGN KEY (file_id) REFERENCES files(id)
                 ON DELETE CASCADE
         );
-        CREATE TABLE IF NOT EXISTS torrent_clients(
+        CREATE TABLE IF NOT EXISTS external_download_clients(
             id INTEGER PRIMARY KEY,
-            type VARCHAR(255) NOT NULL,
+            download_type INTEGER NOT NULL,
+            client_type VARCHAR(255) NOT NULL,
             title VARCHAR(255) NOT NULL,
             base_url TEXT NOT NULL,
             username VARCHAR(255),
@@ -358,7 +359,7 @@ def setup_db() -> None:
         CREATE TABLE IF NOT EXISTS download_queue(
             id INTEGER PRIMARY KEY,
             client_type VARCHAR(255) NOT NULL,
-            torrent_client_id INTEGER,
+            external_client_id INTEGER,
 
             download_link TEXT NOT NULL,
             filename_body TEXT NOT NULL,
@@ -370,7 +371,7 @@ def setup_db() -> None:
             web_title TEXT,
             web_sub_title TEXT,
 
-            FOREIGN KEY (torrent_client_id) REFERENCES torrent_clients(id),
+            FOREIGN KEY (external_client_id) REFERENCES external_download_clients(id),
             FOREIGN KEY (volume_id) REFERENCES volumes(id),
             FOREIGN KEY (issue_id) REFERENCES issues(id)
         );

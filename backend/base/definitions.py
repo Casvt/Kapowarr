@@ -9,7 +9,9 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass
 from enum import Enum
-from typing import Any, Dict, List, Tuple, TypedDict, TypeVar, Union
+from threading import Thread
+from typing import (Any, Dict, List, Mapping, Sequence,
+                    Tuple, TypedDict, TypeVar, Union)
 
 # region Types
 T = TypeVar("T")
@@ -307,6 +309,11 @@ class CredentialSource(BaseEnum):
     MEGA = "mega"
 
 
+class DownloadType(BaseEnum):
+    DIRECT = 1
+    TORRENT = 2
+
+
 # region TypedDicts
 class FilenameData(TypedDict):
     series: str
@@ -527,5 +534,271 @@ class FileConverter(ABC):
 
         Returns:
             List[str]: The resulting files or directories, in target_format.
+        """
+        ...
+
+
+class ExternalDownloadClient(ABC):
+    client_type: str
+    "What name the external client has, like 'qBittorrent'."
+
+    download_type: DownloadType
+    "What type of download it is, e.g. a torrent."
+
+    required_tokens: Sequence[str]
+    """The keys the client needs or could need for operation
+    (mostly whether it's username + password or api_token)"""
+
+    @property
+    @abstractmethod
+    def id(self) -> int:
+        ...
+
+    @property
+    @abstractmethod
+    def title(self) -> str:
+        ...
+
+    @property
+    @abstractmethod
+    def base_url(self) -> str:
+        ...
+
+    @property
+    @abstractmethod
+    def username(self) -> Union[str, None]:
+        ...
+
+    @property
+    @abstractmethod
+    def password(self) -> Union[str, None]:
+        ...
+
+    @property
+    @abstractmethod
+    def api_token(self) -> Union[str, None]:
+        ...
+
+    @abstractmethod
+    def __init__(self, client_id: int) -> None:
+        """Create a connection with a client.
+
+        Args:
+            client_id (int): The ID of the client.
+        """
+        ...
+
+    @abstractmethod
+    def get_client_data(self) -> Dict[str, Any]:
+        """Get info about the client.
+
+        Returns:
+            Dict[str, Any]: The info about the client.
+        """
+        ...
+
+    @abstractmethod
+    def update_client(self, data: Mapping[str, Any]) -> None:
+        """Edit the client.
+
+        Args:
+            data (Mapping[str, Any]): The keys and their new values for
+            the client settings.
+
+        Raises:
+            ClientDownloading: There is a download in the queue using the
+            client.
+            ExternalClientNotWorking: Failed to connect to the client.
+            KeyNotFound: A required key was not found.
+            InvalidKeyValue: One of the parameters has an invalid argument.
+        """
+        ...
+
+    @abstractmethod
+    def delete_client(self) -> None:
+        """Delete the client.
+
+        Raises:
+            ClientDownloading: There is a download in the queue using the
+            client.
+        """
+        ...
+
+    @abstractmethod
+    def add_download(
+        self,
+        download_link: str,
+        target_folder: str,
+        download_name: Union[str, None]
+    ) -> str:
+        """Add a download to the client.
+
+        Args:
+            download_link (str): The link to the download (e.g. magnet link).
+            target_folder (str): The folder to download in.
+            download_name (Union[str, None]): The name of the downloaded folder
+            or file. Set to `None` to keep original name.
+
+        Returns:
+            str: The ID/hash of the entry in the download client.
+        """
+        ...
+
+    @abstractmethod
+    def get_download(self, download_id: str) -> Union[dict, None]:
+        """Get the information/status of a download.
+
+        Args:
+            download_id (str): The ID/hash of the download to get info of.
+
+        Returns:
+            Union[dict, None]: The status of the download,
+            empty dict if download is not found
+            and `None` if client deleted the download.
+        """
+        ...
+
+    @abstractmethod
+    def delete_download(self, download_id: str, delete_files: bool) -> None:
+        """Remove the download from the client.
+
+        Args:
+            download_id (str): The ID/hash of the download to delete.
+            delete_files (bool): Whether to delete the downloaded files.
+        """
+        ...
+
+    @staticmethod
+    @abstractmethod
+    def test(
+        base_url: str,
+        username: Union[str, None],
+        password: Union[str, None],
+        api_token: Union[str, None]
+    ) -> Union[str, None]:
+        """Check if a download client is working.
+
+        Args:
+            base_url (str): The base url on which the client is running.
+            username (Union[str, None]): The username to access the client, if set.
+            password (Union[str, None]): The password to access the client, if set.
+            api_token (Union[str, None]): The api token to access the client, if set.
+
+        Returns:
+            Union[str, None]: If it's a fail, the reason for failing. If it's
+            a success, `None`.
+        """
+        ...
+
+    def __repr__(self) -> str:
+        return f'<{self.__class__.__name__}; ID {self.id}; {id(self)}>'
+
+
+class Download(ABC):
+    # This block is assigned after initialisation of the object
+    # All types should actually be Union[None, {TYPE}]
+    id: int
+    volume_id: int
+    issue_id: Union[int, None]
+    web_link: Union[str, None]
+    "Link to webpage for download"
+    web_title: Union[str, None]
+    "Title of webpage (or release) for download"
+    web_sub_title: Union[str, None]
+    "Title of sub-section that download falls under (e.g. GC group name)"
+
+    download_link: str
+    "The link to the download or service page (e.g. link to MF page)"
+    pure_link: str
+    "The pure link to download from (e.g. pixeldrain API link or MF folder ID)"
+    source: DownloadSource
+    type: str
+
+    _filename_body: str
+    file: str
+    title: str
+
+    size: int
+    state: DownloadState
+    progress: float
+    speed: float
+
+    @abstractmethod
+    def __init__(
+        self,
+        download_link: str,
+        filename_body: str,
+        source: DownloadSource,
+        custom_name: bool = True
+    ) -> None:
+        """Create the download instance
+
+        Args:
+            download_link (str): The link to the download
+                (could be direct download link, mega link or magnet link)
+
+            filename_body (str): The body of the file to download to
+
+            source (DownloadSource): The source of the download
+
+            custom_name (bool, optional): Whether or not to use the filename body
+            or to use the default name of the download. Defaults to True.
+
+        Raises:
+            LinkBroken: The link doesn't work
+        """
+        ...
+
+    @abstractmethod
+    def run(self) -> None:
+        """Start the download
+        """
+        ...
+
+    @abstractmethod
+    def stop(
+        self,
+        state: DownloadState = DownloadState.CANCELED_STATE
+    ) -> None:
+        """Interrupt the download
+
+        Args:
+            state (DownloadState, optional): The state to set for the download.
+                Defaults to DownloadState.CANCELED_STATE.
+        """
+        ...
+
+    @abstractmethod
+    def todict(self) -> dict:
+        """Get a dict representing the download.
+
+        Returns:
+            dict: The dict with all information.
+        """
+        ...
+
+
+class ExternalDownload(Download):
+    client: ExternalDownloadClient
+    external_id: Union[str, None]
+    _download_thread: Union[Thread, None]
+    _download_folder: str
+    _resulting_files: List[str]
+    _original_file: str
+
+    @abstractmethod
+    def update_status(self) -> None:
+        """
+        Update the various variables about the state/progress
+        of the torrent download
+        """
+        ...
+
+    @abstractmethod
+    def remove_from_client(self, delete_files: bool) -> None:
+        """Remove the download from the client
+
+        Args:
+            delete_files (bool): Delete downloaded files
         """
         ...

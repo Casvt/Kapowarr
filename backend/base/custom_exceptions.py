@@ -314,9 +314,13 @@ class DownloadLimitReached(Exception):
         }
 
 
-class TorrentClientNotFound(CustomException):
-    """Torrent client with given ID not found"""
-    api_response = {'error': 'TorrentClientNotFound', 'result': {}, 'code': 404}
+class ExternalClientNotFound(CustomException):
+    """External client with given ID not found"""
+    api_response = {
+        'error': 'ExternalClientNotFound',
+        'result': {},
+        'code': 404
+    }
 
 
 class ClientDownloading(Exception):
@@ -343,21 +347,21 @@ class ClientDownloading(Exception):
         }
 
 
-class TorrentClientNotWorking(Exception):
-    """Torrent client is not working"""
+class ExternalClientNotWorking(Exception):
+    """External client is not working"""
 
     def __init__(self, description: Union[str, None] = None) -> None:
         self.desc = description
         super().__init__(self.desc)
         LOGGER.warning(
-            f'Failed to connect to torrent client with the following reason: {self.desc}'
+            f'Failed to connect to external client for the following reason: {self.desc}'
         )
         return
 
     @property
     def api_response(self):
         return {
-            'error': 'TorrentClientNotWorking',
+            'error': 'ExternalClientNotWorking',
             'result': {'description': self.desc},
             'code': 400
         }

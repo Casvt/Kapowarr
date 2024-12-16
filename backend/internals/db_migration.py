@@ -1042,3 +1042,72 @@ class MigrateCredentials(DBMigrator):
         """)
 
         return
+
+
+class MigrateExternalDownloadClients(DBMigrator):
+    start_version = 33
+
+    def run(self) -> None:
+        # V33 -> V34
+
+        from backend.internals.db import get_db
+
+        get_db().executescript(
+            """
+            BEGIN TRANSACTION;
+            PRAGMA defer_foreign_keys = ON;
+
+            CREATE TEMPORARY TABLE temp_download_queue_34 AS
+                SELECT * FROM download_queue;
+            DROP TABLE download_queue;
+
+            CREATE TABLE IF NOT EXISTS download_queue(
+                id INTEGER PRIMARY KEY,
+                client_type VARCHAR(255) NOT NULL,
+                external_client_id INTEGER,
+
+                download_link TEXT NOT NULL,
+                filename_body TEXT NOT NULL,
+                source VARCHAR(25) NOT NULL,
+
+                volume_id INTEGER NOT NULL,
+                issue_id INTEGER,
+                web_link TEXT,
+                web_title TEXT,
+                web_sub_title TEXT,
+
+                FOREIGN KEY (external_client_id) REFERENCES external_download_clients(id),
+                FOREIGN KEY (volume_id) REFERENCES volumes(id),
+                FOREIGN KEY (issue_id) REFERENCES issues(id)
+            );
+
+            INSERT INTO download_queue(
+                id, client_type, external_client_id,
+                download_link, filename_body, source,
+                volume_id, issue_id,
+                web_link, web_title, web_sub_title
+            )
+                SELECT
+                    id, client_type, torrent_client_id AS external_client_id,
+                    download_link, filename_body, source,
+                    volume_id, issue_id,
+                    web_link, web_title, web_sub_title
+                FROM temp_download_queue_34;
+
+            CREATE TEMPORARY TABLE temp_torrent_clients_34 AS
+                SELECT * FROM torrent_clients;
+            DROP TABLE torrent_clients;
+
+            INSERT INTO external_download_clients(
+                id, download_type, client_type, title, base_url,
+                username, password, api_token
+            )
+                SELECT
+                    id, 2 AS download_type, type AS client_type, title, base_url,
+                    username, password, api_token
+                FROM temp_torrent_clients_34;
+
+            COMMIT;
+        """)
+
+        return

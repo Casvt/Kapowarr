@@ -13,8 +13,10 @@ from backend.base.custom_exceptions import (BlocklistEntryNotFound,
                                             CredentialInvalid,
                                             CredentialNotFound,
                                             CVRateLimitReached,
-                                            DownloadNotFound, FileNotFound,
-                                            FolderNotFound,
+                                            DownloadNotFound,
+                                            ExternalClientNotFound,
+                                            ExternalClientNotWorking,
+                                            FileNotFound, FolderNotFound,
                                             InvalidComicVineApiKey,
                                             InvalidKeyValue, InvalidSettingKey,
                                             InvalidSettingModification,
@@ -24,8 +26,6 @@ from backend.base.custom_exceptions import (BlocklistEntryNotFound,
                                             RootFolderNotFound,
                                             TaskForVolumeRunning,
                                             TaskNotDeletable, TaskNotFound,
-                                            TorrentClientNotFound,
-                                            TorrentClientNotWorking,
                                             VolumeAlreadyAdded,
                                             VolumeDownloadedFor,
                                             VolumeNotFound)
@@ -55,8 +55,7 @@ from backend.implementations.comicvine import ComicVine
 from backend.implementations.conversion import (FileConversionHandler,
                                                 preview_mass_convert)
 from backend.implementations.credentials import Credentials
-from backend.implementations.download_torrent_clients import (TorrentClients,
-                                                              client_types)
+from backend.implementations.external_clients import ExternalClients
 from backend.implementations.naming import (generate_volume_folder_name,
                                             preview_mass_rename)
 from backend.implementations.root_folders import RootFolders
@@ -95,20 +94,24 @@ def error_handler(method) -> Any:
         except (
             BlocklistEntryNotFound,
             ClientDownloading,
-            CredentialInvalid, CredentialNotFound,
-            CVRateLimitReached, DownloadNotFound,
+            CredentialInvalid,
+            CredentialNotFound,
+            CVRateLimitReached,
+            DownloadNotFound,
+            ExternalClientNotFound,
+            ExternalClientNotWorking,
             FileNotFound, FolderNotFound,
-            InvalidComicVineApiKey, InvalidKeyValue,
-            InvalidSettingKey,
+            InvalidComicVineApiKey,
+            InvalidKeyValue, InvalidSettingKey,
             InvalidSettingModification,
             InvalidSettingValue, IssueNotFound,
             KeyNotFound, LogFileNotFound,
             RootFolderInUse, RootFolderInvalid,
             RootFolderNotFound,
-            TaskForVolumeRunning, TaskNotDeletable,
-            TaskNotFound, TorrentClientNotFound,
-            TorrentClientNotWorking,
-            VolumeAlreadyAdded, VolumeDownloadedFor,
+            TaskForVolumeRunning,
+            TaskNotDeletable, TaskNotFound,
+            VolumeAlreadyAdded,
+            VolumeDownloadedFor,
             VolumeNotFound
         ) as e:
             return return_api(**e.api_response)
@@ -183,10 +186,6 @@ def extract_key(request, key: str, check_existence: bool = True) -> Any:
             elif value == 'false':
                 value = False
             else:
-                raise InvalidKeyValue(key, value)
-
-        elif key == 'type':
-            if value not in client_types:
                 raise InvalidKeyValue(key, value)
 
         elif key in ('query', 'folder_filter'):
@@ -1091,83 +1090,85 @@ def api_credential(id: int):
 # =====================
 # Torrent Clients
 # =====================
-@api.route('/torrentclients', methods=['GET', 'POST'])
+@api.route('/externalclients', methods=['GET', 'POST'])
 @error_handler
 @auth
-def api_torrent_clients():
+def api_external_clients():
     if request.method == 'GET':
-        result = TorrentClients.get_clients()
+        result = ExternalClients.get_clients()
         return return_api(result)
 
     elif request.method == 'POST':
         data: dict = request.get_json()
         data = {
             k: data.get(k)
-            for k in ('type',
-                    'title', 'base_url',
-                    'username', 'password',
-                    'api_token'
+            for k in (
+                'client_type',
+                'title', 'base_url',
+                'username', 'password', 'api_token'
             )
         }
-        result = TorrentClients.add(**data).todict()
+        result = ExternalClients.add(**data).get_client_data()
         return return_api(result, code=201)
 
 
-@api.route('/torrentclients/options', methods=['GET'])
+@api.route('/externalclients/options', methods=['GET'])
 @error_handler
 @auth
-def api_torrent_clients_keys():
-    result = {k: v._tokens for k, v in client_types.items()}
+def api_external_clients_keys():
+    result = {
+        k: v.required_tokens
+        for k, v in ExternalClients.get_client_types().items()
+    }
     return return_api(result)
 
 
-@api.route('/torrentclients/test', methods=['POST'])
+@api.route('/externalclients/test', methods=['POST'])
 @error_handler
 @auth
-def api_torrent_clients_test():
+def api_external_clients_test():
     data: dict = request.get_json()
     data = {
         k: data.get(k)
-        for k in ('type', 'base_url',
-                'username', 'password',
-                'api_token'
+        for k in (
+            'client_type', 'base_url',
+            'username', 'password', 'api_token'
         )
     }
-    result = TorrentClients.test(**data)
+    result = ExternalClients.test(**data)
     return return_api(result)
 
 
-@api.route('/torrentclients/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+@api.route('/externalclients/<int:id>', methods=['GET', 'PUT', 'DELETE'])
 @error_handler
 @auth
-def api_torrent_client(id: int):
-    client = TorrentClients.get_client(id)
+def api_external_client(id: int):
+    client = ExternalClients.get_client(id)
 
     if request.method == 'GET':
-        result = client.todict()
+        result = client.get_client_data()
         return return_api(result)
 
     elif request.method == 'PUT':
         data: dict = request.get_json()
         data = {
             k: data.get(k)
-            for k in ('title', 'base_url',
-                    'username', 'password',
-                    'api_token'
+            for k in (
+                'title', 'base_url',
+                'username', 'password', 'api_token'
             )
         }
-        result = client.edit(data)
-        return return_api(result)
+        client.update_client(data)
+        return return_api(client.get_client_data())
 
     elif request.method == 'DELETE':
-        client.delete()
+        client.delete_client()
         return return_api({})
+
 
 # =====================
 # Mass Editor
 # =====================
-
-
 @api.route('/masseditor', methods=['POST'])
 @error_handler
 @auth

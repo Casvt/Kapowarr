@@ -60,11 +60,11 @@ function loadEditTorrent(api_key, id) {
 	)
 	hide([document.querySelector('#edit-error')]);
 
-	fetchAPI(`/torrentclients/${id}`, api_key)
+	fetchAPI(`/externalclients/${id}`, api_key)
 	.then(client_data => {
-		const client_type = client_data.result.type;
+		const client_type = client_data.result.client_type;
 		form.dataset.type = client_type;
-		fetchAPI('/torrentclients/options', api_key)
+		fetchAPI('/externalclients/options', api_key)
 		.then(options => {
 			const client_options = options.result[client_type];
 
@@ -116,10 +116,18 @@ function saveEditTorrent() {
 				password: form.querySelector('#edit-password-input')?.value || null,
 				api_token: form.querySelector('#edit-token-input')?.value || null
 			};
-			sendAPI('PUT', `/torrentclients/${id}`, api_key, {}, data)
+			sendAPI('PUT', `/externalclients/${id}`, api_key, {}, data)
 			.then(response => {
 				loadTorrentClients(api_key);
 				closeWindow();
+			})
+			.catch(e => {
+				if (e.status === 400) {
+					// Client is downloading
+					const error = document.querySelector('#edit-error');
+					error.innerText = '*Client is downloading';
+					hide([], [error]);
+				};
 			});
 		});
 	});
@@ -132,13 +140,13 @@ async function testEditTorrent(api_key) {
 	const test_button = document.querySelector('#test-torrent-edit');
 	test_button.classList.remove('show-success', 'show-fail');
 	const data = {
-		type: form.dataset.type,
+		client_type: form.dataset.type,
 		base_url: form.querySelector('#edit-baseurl-input').value,
 		username: form.querySelector('#edit-username-input')?.value || null,
 		password: form.querySelector('#edit-password-input')?.value || null,
 		api_token: form.querySelector('#edit-token-input')?.value || null,
 	};
-	return await sendAPI('POST', '/torrentclients/test', api_key, {}, data)
+	return await sendAPI('POST', '/externalclients/test', api_key, {}, data)
 	.then(response => response.json())
 	.then(json => {
 		if (json.result.success)
@@ -156,7 +164,7 @@ async function testEditTorrent(api_key) {
 
 function deleteTorrent(api_key) {
 	const id = document.querySelector('#edit-torrent-form tbody').dataset.id;
-	sendAPI('DELETE', `/torrentclients/${id}`, api_key)
+	sendAPI('DELETE', `/externalclients/${id}`, api_key)
 	.then(response => {
 		loadTorrentClients(api_key);
 		closeWindow();
@@ -175,7 +183,7 @@ function loadTorrentList(api_key) {
 	const table = document.querySelector('#choose-torrent-list');
 	table.innerHTML = '';
 
-	fetchAPI('/torrentclients/options', api_key)
+	fetchAPI('/externalclients/options', api_key)
 	.then(json => {
 		Object.keys(json.result).forEach(c => {
 			const entry = document.createElement('button');
@@ -187,9 +195,9 @@ function loadTorrentList(api_key) {
 	});
 };
 
-function loadAddTorrent(api_key, type) {
+function loadAddTorrent(api_key, client_type) {
 	const form = document.querySelector('#add-torrent-form tbody');
-	form.dataset.type = type;
+	form.dataset.type = client_type;
 	form.querySelectorAll(
 		'tr:not(:has(input#add-title-input, input#add-baseurl-input))'
 	).forEach(el => el.remove());
@@ -200,9 +208,9 @@ function loadAddTorrent(api_key, type) {
 		'#add-title-input, #add-baseurl-input'
 	).forEach(el => el.value = '');
 
-	fetchAPI('/torrentclients/options', api_key)
+	fetchAPI('/externalclients/options', api_key)
 	.then(json => {
-		const client_options = json.result[type];
+		const client_options = json.result[client_type];
 
 		if (client_options.includes('username'))
 			form.appendChild(createUsernameInput('add-username-input'));
@@ -226,14 +234,14 @@ function saveAddTorrent() {
 
 			const form = document.querySelector('#add-torrent-form tbody');
 			const data = {
-				type: form.dataset.type,
+				client_type: form.dataset.type,
 				title: form.querySelector('#add-title-input').value,
 				base_url: form.querySelector('#add-baseurl-input').value,
 				username: form.querySelector('#add-username-input')?.value || null,
 				password: form.querySelector('#add-password-input')?.value || null,
 				api_token: form.querySelector('#add-token-input')?.value || null
 			};
-			sendAPI('POST', '/torrentclients', api_key, {}, data)
+			sendAPI('POST', '/externalclients', api_key, {}, data)
 			.then(response => {
 				loadTorrentClients(api_key);
 				closeWindow();
@@ -249,13 +257,13 @@ async function testAddTorrent(api_key) {
 	const test_button = document.querySelector('#test-torrent-add');
 	test_button.classList.remove('show-success', 'show-fail');
 	const data = {
-		type: form.dataset.type,
+		client_type: form.dataset.type,
 		base_url: form.querySelector('#add-baseurl-input').value,
 		username: form.querySelector('#add-username-input')?.value || null,
 		password: form.querySelector('#add-password-input')?.value || null,
 		api_token: form.querySelector('#add-token-input')?.value || null,
 	};
-	return await sendAPI('POST', '/torrentclients/test', api_key, {}, data)
+	return await sendAPI('POST', '/externalclients/test', api_key, {}, data)
 	.then(response => response.json())
 	.then(json => {
 		if (json.result.success)
@@ -271,7 +279,7 @@ async function testAddTorrent(api_key) {
 };
 
 function loadTorrentClients(api_key) {
-	fetchAPI('/torrentclients', api_key)
+	fetchAPI('/externalclients', api_key)
 	.then(json => {
 		const table = document.querySelector('#torrent-client-list');
 		document.querySelectorAll('#torrent-client-list > :not(:first-child)')

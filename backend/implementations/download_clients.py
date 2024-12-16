@@ -17,11 +17,11 @@ from bs4 import BeautifulSoup, Tag
 from requests import RequestException
 
 from backend.base.custom_exceptions import LinkBroken
-from backend.base.definitions import (BlocklistReason,
-                                      DownloadSource, DownloadState)
-from backend.base.helpers import Session, get_first_of_range
+from backend.base.definitions import (BlocklistReason, Download,
+                                      DownloadSource, DownloadState,
+                                      ExternalDownload)
+from backend.base.helpers import Session, get_first_of_range, get_torrent_info
 from backend.base.logging import LOGGER
-from backend.implementations.download_general import Download
 from backend.internals.server import WebSocket
 from backend.internals.settings import Settings
 
@@ -362,3 +362,126 @@ class MegaDownload(BaseDirectDownload):
         super().stop(state)
         self._mega.downloading = False
         return
+
+
+class TorrentDownload(ExternalDownload):
+    type = 'torrent'
+
+    def __init__(
+        self,
+        download_link: str,
+        filename_body: str,
+        source: DownloadSource,
+        custom_name: bool = True
+    ) -> None:
+        LOGGER.debug(
+            f'Creating torrent download: {download_link}, {filename_body}')
+        self.id = None # type: ignore
+        self.state: DownloadState = DownloadState.QUEUED_STATE
+        self.progress: float = 0.0
+        self.speed: float = 0.0
+        self.size: int = 0
+        self.download_link = download_link
+        self.source = source
+
+        self.client = None # type: ignore
+        self.external_id = None
+        self._download_thread = None
+        self._download_folder = Settings().sv.download_folder
+
+        self._filename_body = filename_body
+        self._resulting_files = []
+        self._original_file = ''
+
+        self.title = ''
+        if custom_name:
+            self.title = filename_body.rstrip('.')
+
+        # Find name of torrent as it is folder that it's downloaded in
+        try:
+            r = Session().post(
+                'https://magnet2torrent.com/upload/',
+                data={'magnet': download_link}
+            )
+        except RequestException:
+            raise LinkBroken(BlocklistReason.LINK_BROKEN)
+
+        if r.headers.get('content-type') != 'application/x-bittorrent':
+            raise LinkBroken(BlocklistReason.LINK_BROKEN)
+
+        name = get_torrent_info(r.content)[b'name'].decode()
+        self.title = self._filename_body
+        if not custom_name:
+            self.title = name
+        self.file = join(self._download_folder, name)
+
+        return
+
+    def run(self) -> None:
+        self.external_id = self.client.add_download(
+            self.download_link,
+            self._download_folder,
+            self.title
+        )
+        return
+
+    def update_status(self) -> None:
+        if not self.external_id:
+            return
+
+        torrent_status = self.client.get_download(self.external_id)
+        if not torrent_status:
+            if torrent_status is None:
+                self.state = DownloadState.CANCELED_STATE
+            return
+
+        self.progress = torrent_status['progress']
+        self.speed = torrent_status['speed']
+        self.size = torrent_status['size']
+        if self.state not in (
+            DownloadState.CANCELED_STATE,
+            DownloadState.SHUTDOWN_STATE):
+            self.state = torrent_status['state']
+        return
+
+    def remove_from_client(self, delete_files: bool) -> None:
+        if not self.external_id:
+            return
+
+        self.client.delete_download(self.external_id, delete_files)
+        return
+
+    def stop(self,
+        state: DownloadState = DownloadState.CANCELED_STATE
+    ) -> None:
+        self.state = state
+        return
+
+    def todict(self) -> dict:
+        return {
+            'id': self.id,
+            'volume_id': self.volume_id,
+            'issue_id': self.issue_id,
+
+            'web_link': self.web_link,
+            'web_title': self.web_title,
+            'web_sub_title': self.web_sub_title,
+            'download_link': self.download_link,
+            'pure_link': self.download_link,
+
+            'source': self.source.value,
+            'type': self.type,
+
+            'file': self.file,
+            'title': self.title,
+
+            'size': self.size,
+            'status': self.state.value,
+            'progress': self.progress,
+            'speed': self.speed,
+
+            'client': self.client.id if self.client else None # type: ignore
+        }
+
+    def __repr__(self) -> str:
+        return f'<{self.__class__.__name__}, {self.download_link}, {self.file}>'

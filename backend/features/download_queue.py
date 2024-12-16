@@ -17,7 +17,8 @@ from backend.base.custom_exceptions import (DownloadLimitReached,
                                             DownloadNotFound, FailedGCPage,
                                             LinkBroken)
 from backend.base.definitions import (BlocklistReason, Constants,
-                                      DownloadSource, DownloadState,
+                                      Download, DownloadSource,
+                                      DownloadState, ExternalDownload,
                                       FailReason, SeedingHandling)
 from backend.base.files import create_folder, delete_file_folder
 from backend.base.helpers import first_of_column
@@ -26,11 +27,10 @@ from backend.features.post_processing import (PostProcesser,
                                               PostProcesserTorrentsComplete,
                                               PostProcesserTorrentsCopy)
 from backend.implementations.blocklist import add_to_blocklist
-from backend.implementations.download_direct_clients import (
-    BaseDirectDownload, Download, MegaDownload)
-from backend.implementations.download_general import ExternalDownload
-from backend.implementations.download_torrent_clients import (TorrentClients,
-                                                              TorrentDownload)
+from backend.implementations.download_clients import (BaseDirectDownload,
+                                                      MegaDownload,
+                                                      TorrentDownload)
+from backend.implementations.external_clients import ExternalClients
 from backend.implementations.getcomics import GetComicsPage
 from backend.internals.db import get_db, iter_commit
 from backend.internals.server import WebSocket
@@ -74,17 +74,19 @@ class DownloadHandler:
         Returns:
             int: The ID of the client
         """
-        torrent_clients = first_of_column(
-            get_db().execute(
-                "SELECT id FROM torrent_clients;"
-            )
+        external_clients = (
+            client["id"]
+            for client in ExternalClients.get_clients()
         )
         queue_ids = [
             d.client.id
             for d in self.queue
             if isinstance(d, TorrentDownload)
         ]
-        sorted_list = sorted(torrent_clients, key=lambda c: queue_ids.count(c))
+        sorted_list = sorted(
+            external_clients,
+            key=lambda c: queue_ids.count(c)
+        )
         return sorted_list[0]
 
     def __run_download(self, download: Download) -> None:
@@ -267,7 +269,7 @@ class DownloadHandler:
                 download.id = cursor.execute(
                     """
                     INSERT INTO download_queue(
-                        client_type, torrent_client_id,
+                        client_type, external_client_id,
                         download_link, filename_body, source,
                         volume_id, issue_id,
                         web_link, web_title, web_sub_title
@@ -295,12 +297,12 @@ class DownloadHandler:
 
             if isinstance(download, TorrentDownload):
                 if download.client is None:
-                    download.client = TorrentClients.get_client(
+                    download.client = ExternalClients.get_client(
                         self.__choose_torrent_client()
                     )
                     cursor.execute("""
                         UPDATE download_queue
-                        SET torrent_client_id = ?
+                        SET external_client_id = ?
                         WHERE id = ?;
                         """,
                         (download.client.id, download.id)
@@ -324,7 +326,7 @@ class DownloadHandler:
             cursor = get_db()
             downloads = cursor.execute("""
                 SELECT
-                    id, client_type, torrent_client_id,
+                    id, client_type, external_client_id,
                     download_link, filename_body, source,
                     volume_id, issue_id,
                     web_link, web_title, web_sub_title
@@ -347,8 +349,8 @@ class DownloadHandler:
                     dl_instance.web_title = download['web_title']
                     dl_instance.web_sub_title = download['web_sub_title']
                     if isinstance(dl_instance, TorrentDownload):
-                        dl_instance.client = TorrentClients.get_client(
-                            download['torrent_client_id']
+                        dl_instance.client = ExternalClients.get_client(
+                            download['external_client_id']
                         )
 
                 except LinkBroken as lb:
