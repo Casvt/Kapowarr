@@ -43,9 +43,9 @@ volume_folder_regex = compile(volume_regex_snippet + r'|^(\d+)$', IGNORECASE)
 issue_regex = compile(r'\(_(\-?' + issue_regex_snippet + r')\)', IGNORECASE)
 issue_regex_2 = compile(r'(?<!\()(?:(?<![a-z])c(?!2c)|issues?|books?)(?:[\s\-\._]?|\s\-\s)(?:#\s*)?(\-?' + issue_regex_snippet + r'(?:[\s\.]?\-[\s\.]?\-?' + issue_regex_snippet + r')?)\b(?!\))', IGNORECASE)
 issue_regex_3 = compile(r'(?<!part[\s\._])(' + issue_regex_snippet + r')[\s\-\._]?\(?[\s\-\._]?of[\s\-\._]?' + issue_regex_snippet + r'\)?', IGNORECASE)
-issue_regex_4 = compile(r'(?<!--)(?:#\s*)?(\-?' + issue_regex_snippet + r'[\s\.]?-[\s\.]?' + issue_regex_snippet + r')(?:\s|\.|_|(?=\()|$)', IGNORECASE)
+issue_regex_4 = compile(r'(?<!--)(?:#\s*)?(\-?' + issue_regex_snippet + r'[\s\.]?-[\s\.]?' + issue_regex_snippet + r')(?=\s|\.|_|(?=\()|$)', IGNORECASE)
 issue_regex_5 = compile(r'#\s*(\-?' + issue_regex_snippet + r')\b(?![\s\.]?\-[\s\.]?' + issue_regex_snippet + r')', IGNORECASE)
-issue_regex_6 = compile(r'(?:(?P<i_start>^)|(?<=(?<!part)[\s\._]))(?P<n_c>n)?(\-?' + issue_regex_snippet + r')(?=(?(n_c)c\d+|(?(i_start)\s\-|))(?:\s|\.|_|(?=\()|$))', IGNORECASE)
+issue_regex_6 = compile(r'(?:(?P<i_start>^)|(?<=(?<!part)[\s\._]))(?P<n_c>n)?(\-?' + issue_regex_snippet + r')(?=(?(n_c)c\d+|(?(i_start)\s\-|))(?=\s|\.|_|(?=\()|$))', IGNORECASE)
 issue_regex_7 = compile(r'^(\-?' + issue_regex_snippet + r')$', IGNORECASE)
 year_regex = compile(r'\((?:[a-z]+\.?\s)?' + year_regex_snippet + r'\)|--' + year_regex_snippet + r'--|__' + year_regex_snippet + r'__|, ' + year_regex_snippet + r'\s{3}|\b(?:(?:\d{2}-){1,2}(\d{4})|(\d{4})(?:-\d{2}){1,2})\b', IGNORECASE)
 series_regex = compile(r'(^(\d+\.)?\s+|^\d+\s{3}|\s(?=\s)|[\s,]+$)')
@@ -137,17 +137,18 @@ def process_issue_number(
         # must've been false, so cancel the idea that the input is a range.
         return _calc_float_issue_number(issue_number)
 
-    start = _calc_float_issue_number(start)
-    end = _calc_float_issue_number(end)
+    calc_start = _calc_float_issue_number(start)
+    calc_end = _calc_float_issue_number(end)
 
-    if start and end:
-        return (start, end)
-    elif start:
-        return start
-    elif end:
-        return end
-    else:
-        return None
+    if calc_start is not None:
+        if calc_end is not None:
+            return (calc_start, calc_end)
+        return calc_start
+
+    elif calc_end is not None:
+        return calc_end
+
+    return None
 
 
 def process_volume_number(
