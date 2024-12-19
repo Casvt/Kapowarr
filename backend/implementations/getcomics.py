@@ -22,7 +22,8 @@ from backend.base.definitions import (BlocklistReason, Constants, Download,
                                       SpecialVersion, download_source_versions)
 from backend.base.file_extraction import extract_filename_data
 from backend.base.helpers import (AsyncSession, check_overlapping_issues,
-                                  create_range, fix_year, get_torrent_info)
+                                  create_range, fix_year,
+                                  get_torrent_info, normalize_year)
 from backend.base.logging import LOGGER
 from backend.implementations.blocklist import (add_to_blocklist,
                                                blocklist_contains)
@@ -197,12 +198,14 @@ def __extract_button_links(
             processed_title["year"] is None
             and "Year :\x00\xa0" in extracted_title
         ):
-            year = int(
+            year = normalize_year(
                 extracted_title
                 .split("Year :\x00\xa0")[1]
                 .split(" |")[0]
+                .split('-')[0]
             )
-            processed_title["year"] = fix_year(year)
+            if year:
+                processed_title["year"] = fix_year(year)
 
         result: DownloadGroup = {
             "web_sub_title": title,
