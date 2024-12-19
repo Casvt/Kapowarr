@@ -14,8 +14,8 @@ from aiohttp import ClientError
 from bencoding import bencode
 from bs4 import BeautifulSoup, Tag
 
-from backend.base.custom_exceptions import (DownloadLimitReached,
-                                            FailedGCPage, LinkBroken)
+from backend.base.custom_exceptions import (DownloadLimitReached, FailedGCPage,
+                                            IssueNotFound, LinkBroken)
 from backend.base.definitions import (BlocklistReason, Constants, Download,
                                       DownloadGroup, FailReason,
                                       GCDownloadSource, SearchResultData,
@@ -590,11 +590,15 @@ async def __purify_download_group(
         limit of a service was reached.
     """
     if rename_downloaded_files:
-        name = generate_issue_name(
-            volume_id,
-            SpecialVersion(group["info"]["special_version"]),
-            group["info"]["issue_number"],
-        )
+        try:
+            name = generate_issue_name(
+                volume_id,
+                SpecialVersion(group["info"]["special_version"]),
+                group["info"]["issue_number"],
+            )
+
+        except IssueNotFound:
+            return None, False
 
     else:
         name = ''

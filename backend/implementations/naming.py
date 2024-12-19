@@ -194,6 +194,9 @@ def generate_issue_name(
         The issue (or issue range) that the file covers. Give volume number
         here in case of VAI.
 
+    Raises:
+        IssueNotFound: No issue found with the given issue number.
+
     Returns:
         str: The issue file name.
     """
