@@ -222,6 +222,7 @@ class LibraryFilters(BaseEnum):
 
 class DownloadState(BaseEnum):
     QUEUED_STATE = 'queued'
+    PAUSED_STATE = 'paused'
     DOWNLOADING_STATE = 'downloading'
     SEEDING_STATE = 'seeding'
     IMPORTING_STATE = 'importing'
@@ -639,6 +640,9 @@ class ExternalDownloadClient(ABC):
             download_name (Union[str, None]): The name of the downloaded folder
             or file. Set to `None` to keep original name.
 
+        Raises:
+            ExternalClientNotWorking: Can't connect to client.
+
         Returns:
             str: The ID/hash of the entry in the download client.
         """
@@ -651,6 +655,9 @@ class ExternalDownloadClient(ABC):
         Args:
             download_id (str): The ID/hash of the download to get info of.
 
+        Raises:
+            ExternalClientNotWorking: Can't connect to client.
+
         Returns:
             Union[dict, None]: The status of the download,
             empty dict if download is not found
@@ -661,6 +668,9 @@ class ExternalDownloadClient(ABC):
     @abstractmethod
     def delete_download(self, download_id: str, delete_files: bool) -> None:
         """Remove the download from the client.
+
+        Raises:
+            ExternalClientNotWorking: Can't connect to client.
 
         Args:
             download_id (str): The ID/hash of the download to delete.
