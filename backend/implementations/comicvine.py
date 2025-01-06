@@ -650,7 +650,12 @@ class ComicVine:
 
         try:
             if query.startswith(('4050-', 'cv:')):
-                query = to_full_string_cv_id((query,))[0]
+                try:
+                    query = to_full_string_cv_id((query,))[0]
+
+                except VolumeNotMatched:
+                    return []
+
                 if not query:
                     return []
 
