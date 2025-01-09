@@ -2,8 +2,9 @@
 
 from asyncio import run
 from glob import glob
-from os.path import abspath, basename, dirname, isfile, join, splitext
-from typing import Dict, Iterator, List, Set, Union
+from itertools import chain
+from os.path import abspath, basename, dirname, isfile, splitext
+from typing import Any, Dict, List, Union
 
 from backend.base.custom_exceptions import InvalidKeyValue, VolumeAlreadyAdded
 from backend.base.definitions import (CONTENT_EXTENSIONS, CVFileMapping,
@@ -12,7 +13,8 @@ from backend.base.definitions import (CONTENT_EXTENSIONS, CVFileMapping,
 from backend.base.file_extraction import extract_filename_data
 from backend.base.files import (delete_empty_parent_folders,
                                 find_common_folder, folder_is_inside_folder,
-                                list_files, rename_file)
+                                list_files, propose_basefolder_change,
+                                rename_file)
 from backend.base.helpers import DictKeyedDict, batched, create_range
 from backend.base.logging import LOGGER
 from backend.implementations.comicvine import ComicVine
@@ -56,11 +58,11 @@ def propose_library_import(
     """
     LOGGER.info('Loading library import')
 
-    # Get all files in all root folders
-    root_folders: Set[str] = set(
+    # Get all files in all root folders (with filter applied if given)
+    root_folders = {
         abspath(r.folder)
         for r in RootFolders().get_all()
-    )
+    }
 
     if folder_filter:
         scan_folders = set(glob(folder_filter, recursive=True))
@@ -68,33 +70,35 @@ def propose_library_import(
             if not any(folder_is_inside_folder(r, f) for r in root_folders):
                 raise InvalidKeyValue('folder_filter', folder_filter)
     else:
-        scan_folders = root_folders
-
-    all_files: List[str] = []
+        scan_folders = root_folders.copy()
 
     try:
-        for f in scan_folders:
-            all_files += list_files(f, CONTENT_EXTENSIONS)
+        all_files = chain.from_iterable(
+            list_files(f, CONTENT_EXTENSIONS)
+            for f in scan_folders
+        )
+
     except NotADirectoryError:
         raise InvalidKeyValue('folder_filter', folder_filter)
 
     # Get imported files
-    imported_files = set(
+    imported_files = {
         f["filepath"]
         for f in FilesDB.fetch()
-    )
+    }
 
     # Filter away imported files and apply limit
-    limited_files = []
     folders = set()
     image_folders = set()
+    # efd to files with that efd
+    unimported_files = DictKeyedDict()
     for f in all_files:
         if f in imported_files:
             continue
 
         d = abspath(dirname(f))
         if d in root_folders:
-            # File directly in root folder not allowed
+            # File directly in root folder is not allowed
             continue
 
         if f.endswith(FileConstants.IMAGE_EXTENSIONS):
@@ -103,60 +107,49 @@ def propose_library_import(
             image_folders.add(d)
             d, f = dirname(d), d
 
-        if limit_parent_folder:
-            folders.add(dirname(d))
-        else:
-            folders.add(d)
+        folders.add(
+            dirname(d)
+            if limit_parent_folder else
+            d
+        )
 
         if len(folders) > limit:
             break
 
-        limited_files.append(f)
-
-    # List with tuples. First entry is efd,
-    # second is all matching files for that efd.
-    unimported_files = DictKeyedDict()
-    for f in limited_files:
         efd = extract_filename_data(f, prefer_folder_year=True)
         del efd['issue_number'] # type: ignore
+        unimported_files.setdefault(efd, []).append(f)
 
-        (unimported_files
-            .setdefault(efd, [])
-            .append(f))
-    LOGGER.debug(f'File groupings: {unimported_files}')
+    LOGGER.debug('File groupings: %s', unimported_files)
 
     # Find a match for the files on CV
     cv = ComicVine()
-    result: List[dict] = []
-    uf: Iterator[FilenameData] = unimported_files.keys()
-    group_number = 1
-    for uf_batch in batched(
-        sorted(uf, key=lambda f: (
-            f['series'],
-            create_range(f['volume_number'] or 0)[0],
-            f['year'] or 0
-        )),
-        10
-    ):
+    result: List[Dict[str, Any]] = []
+    uf: List[FilenameData] = list(unimported_files.keys())
+    uf.sort(key=lambda f: (
+        f['series'],
+        create_range(f['volume_number'] or 0)[0],
+        f['year'] or 0
+    ))
+    for batch_index, uf_batch in enumerate(batched(uf, 10)):
         group_to_cv = run(cv.filenames_to_cvs(
             uf_batch,
             only_english
         ))
-        for group_data, search_result in group_to_cv.items():
-            result += [
-                {
-                    'filepath': f,
-                    'file_title': (
-                        splitext(basename(f))[0]
-                        if isfile(f) else
-                        basename(f)
-                    ),
-                    'cv': search_result,
-                    'group_number': group_number
-                }
-                for f in unimported_files[group_data]
-            ]
-            group_number += 1
+        result += [
+            {
+                'filepath': f,
+                'file_title': (
+                    splitext(basename(f))[0]
+                    if isfile(f) else
+                    basename(f)
+                ),
+                'cv': search_result,
+                'group_number': batch_index * 10 + group_index
+            }
+            for group_index, (group_data, search_result) in enumerate(group_to_cv.items())
+            for f in unimported_files[group_data]
+        ]
 
     result.sort(key=lambda e: (e['group_number'], e['file_title']))
 
@@ -167,47 +160,40 @@ def import_library(
     matches: List[CVFileMapping],
     rename_files: bool = False
 ) -> None:
-    """Add volume to library and import linked files
+    """Add volume to library and import linked files.
 
     Args:
-        matches (List[CVFileMapping]): List of dicts.
-        The key `id` should supply the CV id of the volume
-        and `filepath` the linked file.
+        matches (List[CVFileMapping]): List of file mappings.
 
-        rename_files (bool, optional): Should Kapowarr trigger a rename
-        after importing files?
+        rename_files (bool, optional): Trigger a rename after importing files.
             Defaults to False.
     """
     LOGGER.info('Starting library import')
+
     cvid_to_filepath: Dict[int, List[str]] = {}
-    for match in matches:
-        cvid_to_filepath.setdefault(match['id'], []).append(match['filepath'])
+    for m in matches:
+        cvid_to_filepath.setdefault(m['id'], []).append(m['filepath'])
     LOGGER.debug(f'id_to_filepath: {cvid_to_filepath}')
 
     root_folders = RootFolders().get_all()
-
     library = Library()
-    for cv_id, files in cvid_to_filepath.items():
-        # Find lowest common folder (lcf)
-        if not rename_files:
-            volume_folder = find_common_folder(files)
-        else:
-            volume_folder = None
 
+    for cv_id, files in cvid_to_filepath.items():
         # Find root folder that media is in
         for root_folder in root_folders:
             if folder_is_inside_folder(root_folder.folder, files[0]):
-                root_folder_id = root_folder.id
                 break
         else:
             continue
 
+        lcf = find_common_folder(files)
+
         try:
             volume_id = library.add(
                 comicvine_id=cv_id,
-                root_folder_id=root_folder_id,
+                root_folder_id=root_folder.id,
                 monitor_scheme=MonitorScheme.ALL,
-                volume_folder=volume_folder
+                volume_folder=lcf if not rename_files else None
             )
             commit()
 
@@ -221,24 +207,16 @@ def import_library(
         if rename_files:
             # Put files in volume folder
             vf = Volume(volume_id).vd.folder
-            new_files = []
-            for f in files:
-                if f.endswith(FileConstants.IMAGE_EXTENSIONS):
-                    target_f = join(vf, basename(dirname(f)), basename(f))
-                else:
-                    target_f = join(vf, basename(f))
+            file_changes = propose_basefolder_change(files, lcf, vf)
+            for old, new in file_changes.items():
+                if old != new:
+                    rename_file(old, new)
+                    delete_empty_parent_folders(
+                        dirname(old), root_folder.folder
+                    )
 
-                if folder_is_inside_folder(f, target_f):
-                    new_files.append(f)
-                    continue
-
-                rename_file(f, target_f)
-                new_files.append(target_f)
-                delete_empty_parent_folders(dirname(f), root_folder.folder)
-
-            scan_files(volume_id, filepath_filter=new_files)
-
-            # Trigger rename
+            new_files = list(file_changes.values())
+            scan_files(volume_id)
             mass_rename(volume_id, filepath_filter=new_files)
 
         else:

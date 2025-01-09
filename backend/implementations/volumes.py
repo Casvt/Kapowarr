@@ -953,7 +953,7 @@ class Library:
         """
         from backend.implementations.naming import generate_volume_folder_path
 
-        LOGGER.debug(
+        LOGGER.info(
             'Adding a volume to the library: CV ID %d, RF ID %d, MS %s, VF %s, SV %s',
             comicvine_id,
             root_folder_id,

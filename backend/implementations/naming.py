@@ -754,6 +754,9 @@ def mass_rename(
         volume_id, issue_id,
         filepath_filter
     )
+    if not renames and not new_volume_folder:
+        return []
+
     volume = Volume(volume_id)
     volume_data = volume.get_data()
     root_folder = RootFolders()[volume_data.root_folder]
