@@ -137,7 +137,12 @@ function buildResults(results, api_key) {
 
 	years.forEach(y => {
 		const entry = document.createElement('option');
-		entry.value = entry.innerText = y;
+		if (y === null) {
+			entry.value = y;
+			entry.innerText = '(No Year)';
+		} else {
+			entry.value = entry.innerText = y;
+		};
 		SearchEls.filters.year.appendChild(entry);
 	});
 
