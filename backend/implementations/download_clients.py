@@ -33,6 +33,7 @@ if TYPE_CHECKING:
 
 # autopep8: off
 file_extension_regex = compile(r'(?<=\.|\/)[\w\d]{2,4}(?=$|;|\s|\")', IGNORECASE)
+file_name_regex = compile(r'filename(?:=\"|\*=UTF-8\'\')(.*?)\.[a-z]{2,4}\"?$', IGNORECASE)
 extract_mediafire_regex = compile(r'window.location.href\s?=\s?\'https://download\d+\.mediafire.com/.*?(?=\')', IGNORECASE)
 DOWNLOAD_CHUNK_SIZE = 4194304 # 4MB Chunks
 MEDIAFIRE_FOLDER_LINK = "https://www.mediafire.com/api/1.5/file/zip.php"
@@ -89,6 +90,15 @@ class BaseDirectDownload(Download):
         return self._ssn.get(self.pure_link, stream=True)
 
     def _extract_default_filename_body(self, r: Response) -> str:
+        if r.headers.get('Content-Disposition'):
+            file_result = file_name_regex.search(
+                r.headers['Content-Disposition']
+            )
+            if file_result:
+                return unquote_plus(
+                    file_result.group(1)
+                )
+
         return splitext(unquote_plus(
             self.pure_link.split('/')[-1].split("?")[0]
         ))[0]
