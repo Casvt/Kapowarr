@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Mapping, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Mapping, Tuple, Union
 
 from requests import RequestException
 
@@ -105,7 +105,7 @@ class FlareSolverr(metaclass=Singleton):
         self,
         url: str,
         headers: Mapping[str, str]
-    ) -> None:
+    ) -> Union[None, Dict[str, Any]]:
         """Let FS handle a URL to aquire cleared cookies and UA. These become
         available using `get_ua_cookies()` after this method completes.
 
@@ -113,6 +113,11 @@ class FlareSolverr(metaclass=Singleton):
             url (str): The URL to clear.
             headers (Mapping[str, str]): The response headers from the
             (possibly) blocked request.
+
+        Returns:
+            Union[None, Dict[str, Any]]: None if FlareSolverr wasn't needed or
+            couldn't solve the problem, or a dictionary with the FlareSolverr
+            response.
         """
         if not (self.session_id and self.base_url):
             return
@@ -130,7 +135,6 @@ class FlareSolverr(metaclass=Singleton):
                 json={
                     'cmd': 'request.get',
                     'session': self.session_id,
-                    'returnOnlyCookies': True,
                     'url': url
                 },
                 headers={'Content-Type': 'application/json'}
@@ -142,14 +146,14 @@ class FlareSolverr(metaclass=Singleton):
                 for cookie in result["cookies"]
             }
 
-        return
+        return result
 
     async def handle_cf_block_async(
         self,
         session: AsyncSession,
         url: str,
         headers: Mapping[str, str]
-    ) -> None:
+    ) -> Union[None, Dict[str, Any]]:
         """Let FS handle a URL to aquire cleared cookies and UA. These become
         available using `get_ua_cookies()` after this method completes.
 
@@ -158,6 +162,11 @@ class FlareSolverr(metaclass=Singleton):
             url (str): The URL to clear.
             headers (Mapping[str, str]): The response headers from the
             (possibly) blocked request.
+
+        Returns:
+            Union[None, Dict[str, Any]]: None if FlareSolverr wasn't needed or
+            couldn't solve the problem, or a dictionary with the FlareSolverr
+            response.
         """
         if not (self.session_id and self.base_url):
             return
@@ -174,7 +183,6 @@ class FlareSolverr(metaclass=Singleton):
             json={
                 'cmd': 'request.get',
                 'session': self.session_id,
-                'returnOnlyCookies': True,
                 'url': url
             },
             headers={'Content-Type': 'application/json'}
@@ -186,4 +194,4 @@ class FlareSolverr(metaclass=Singleton):
             for cookie in result["cookies"]
         }
 
-        return
+        return result

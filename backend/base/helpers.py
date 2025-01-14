@@ -17,8 +17,11 @@ from urllib.parse import unquote
 
 from aiohttp import ClientError, ClientSession
 from bencoding import bdecode
+from multidict import CIMultiDict, CIMultiDictProxy
 from requests import Session as RSession
 from requests.adapters import HTTPAdapter, Retry
+from requests.structures import CaseInsensitiveDict
+from yarl import URL
 
 from backend.base.definitions import Constants, T, U
 from backend.base.logging import LOGGER
@@ -513,11 +516,11 @@ class Session(RSession):
         stream=None, verify=None,
         cert=None, json=None
     ):
-        for round in range(1, 3):
-            ua, cf_cookies = self.fs.get_ua_cookies(url)
-            self.headers.update({'User-Agent': ua})
-            self.cookies.update(cf_cookies)
+        ua, cf_cookies = self.fs.get_ua_cookies(url)
+        self.headers.update({'User-Agent': ua})
+        self.cookies.update(cf_cookies)
 
+        for round in range(1, 3):
             result = super().request(
                 method, url, params, data, headers, cookies, files, auth,
                 timeout, allow_redirects, proxies, hooks, stream, verify, cert,
@@ -528,8 +531,17 @@ class Session(RSession):
                 round == 1
                 and result.status_code == 403
             ):
-                self.fs.handle_cf_block(url, result.headers)
-                continue
+                fs_result = self.fs.handle_cf_block(url, result.headers)
+
+                if not fs_result:
+                    # FlareSolverr couldn't solve the problem or it wasn't
+                    # needed
+                    continue
+
+                result.url = fs_result['url']
+                result.status_code = fs_result['status']
+                result._content = fs_result['response'].encode('utf-8')
+                result.headers = CaseInsensitiveDict(fs_result['headers'])
 
             if 400 <= result.status_code < 500:
                 LOGGER.warning(
@@ -561,11 +573,12 @@ class AsyncSession(ClientSession):
 
     async def _request(self, *args, **kwargs):
         sleep_time = Constants.BACKOFF_FACTOR_RETRIES
-        for round in range(1, Constants.TOTAL_RETRIES + 1):
-            ua, cf_cookies = self.fs.get_ua_cookies(args[1])
-            self.headers.update({'User-Agent': ua})
-            self.cookie_jar.update_cookies(cf_cookies)
 
+        ua, cf_cookies = self.fs.get_ua_cookies(args[1])
+        self.headers.update({'User-Agent': ua})
+        self.cookie_jar.update_cookies(cf_cookies)
+
+        for round in range(1, Constants.TOTAL_RETRIES + 1):
             try:
                 response = await super()._request(*args, **kwargs)
 
@@ -589,12 +602,23 @@ class AsyncSession(ClientSession):
                 round == 1
                 and response.status == 403
             ):
-                await self.fs.handle_cf_block_async(
+                fs_result = await self.fs.handle_cf_block_async(
                     self,
                     args[1],
                     response.headers
                 )
-                continue
+
+                if not fs_result:
+                    # FlareSolverr couldn't solve the problem or it wasn't
+                    # needed
+                    continue
+
+                response._url = URL(fs_result['url'])
+                response.status = fs_result['status']
+                response._body = fs_result['response'].encode('utf-8')
+                response._headers = CIMultiDictProxy(CIMultiDict(
+                    fs_result['headers']
+                ))
 
             if response.status >= 400:
                 LOGGER.warning(
