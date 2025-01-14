@@ -36,6 +36,7 @@ from backend.implementations.download_clients import (DirectDownload,
                                                       TorrentDownload,
                                                       WeTransferDownload)
 from backend.implementations.external_clients import ExternalClients
+from backend.implementations.flaresolverr import FlareSolverr
 from backend.implementations.matching import gc_group_filter
 from backend.implementations.naming import generate_issue_name
 from backend.implementations.volumes import Volume
@@ -765,7 +766,17 @@ async def search_getcomics(
         )
         for page in range(2, max_page + 1)
     ]
-    other_htmls = await gather(*other_tasks)
+
+    if FlareSolverr().is_enabled():
+        # FlareSolverr available, run at full speed
+        other_htmls = await gather(*other_tasks)
+    else:
+        # FlareSolverr not available, run at sequencial speed
+        other_htmls = [
+            await task
+            for task in other_tasks
+        ]
+
     other_soups = [
         BeautifulSoup(html, "html.parser")
         for html in other_htmls

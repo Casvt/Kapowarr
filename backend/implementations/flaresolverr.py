@@ -75,6 +75,14 @@ class FlareSolverr(metaclass=Singleton):
         self.session_id = None
         return
 
+    def is_enabled(self) -> bool:
+        """Check if FlareSolverr is enabled.
+
+        Returns:
+            bool: Whether FlareSolverr is enabled.
+        """
+        return bool(self.session_id and self.base_url)
+
     def get_ua_cookies(self, url: str) -> Tuple[str, Dict[str, str]]:
         """Get the user agent and cookies for a certain URL. The UA and cookies
         can be cleared by CF, so use them to avoid challenges. In case the URL
