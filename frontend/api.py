@@ -41,7 +41,7 @@ from backend.features.download_queue import (DownloadHandler,
                                              get_download_history)
 from backend.features.library_import import (import_library,
                                              propose_library_import)
-from backend.features.mass_edit import MassEditorVariables, action_to_func
+from backend.features.mass_edit import run_mass_editor_action
 from backend.features.search import manual_search
 from backend.features.tasks import (Task, TaskHandler,
                                     delete_task_history, get_task_history,
@@ -73,7 +73,6 @@ handler_context = Flask('handler')
 handler_context.teardown_appcontext(close_db)
 download_handler = DownloadHandler(handler_context)
 task_handler = TaskHandler(handler_context, download_handler)
-MassEditorVariables.download_handler = download_handler
 
 
 def return_api(
@@ -1176,10 +1175,10 @@ def api_mass_editor():
     data = request.get_json()
     if not isinstance(data, dict):
         raise InvalidKeyValue('body', data)
-    if 'volume_ids' not in data:
-        raise KeyNotFound('volume_ids')
     if 'action' not in data:
         raise KeyNotFound('action')
+    if 'volume_ids' not in data:
+        raise KeyNotFound('volume_ids')
 
     action: str = data['action']
     volume_ids: Union[List[int], Any] = data['volume_ids']
@@ -1191,20 +1190,16 @@ def api_mass_editor():
     ):
         raise InvalidKeyValue('volume_ids', volume_ids)
 
-    if action not in action_to_func:
-        raise InvalidKeyValue('action', action)
-
     if not isinstance(args, dict):
         raise InvalidKeyValue('args', args)
 
-    action_to_func[action](volume_ids, **args)
+    run_mass_editor_action(action, volume_ids, **args)
     return return_api({})
+
 
 # =====================
 # Files
 # =====================
-
-
 @api.route('/files/<int:id>', methods=['GET', 'DELETE'])
 @error_handler
 @auth

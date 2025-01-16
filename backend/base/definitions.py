@@ -521,6 +521,25 @@ class DBMigrator(ABC):
         ...
 
 
+class MassEditorAction(ABC):
+    identifier: str
+    "The string used in the API to refer to the action."
+
+    def __init__(self, volume_ids: List[int]) -> None:
+        """Ready a mass editor action.
+
+        Args:
+            volume_ids (List[int]): The volume IDs to work on.
+        """
+        self.volume_ids = volume_ids
+        return
+
+    @abstractmethod
+    def run(self, **kwargs) -> None:
+        """Run the mass editor action."""
+        ...
+
+
 class FileConverter(ABC):
     source_format: str
     target_format: str

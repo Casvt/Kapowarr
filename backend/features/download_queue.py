@@ -21,7 +21,7 @@ from backend.base.definitions import (BlocklistReason, Constants,
                                       DownloadState, ExternalDownload,
                                       FailReason, SeedingHandling)
 from backend.base.files import create_folder, delete_file_folder
-from backend.base.helpers import first_of_column
+from backend.base.helpers import Singleton
 from backend.base.logging import LOGGER
 from backend.features.post_processing import (PostProcesser,
                                               PostProcesserTorrentsComplete,
@@ -51,7 +51,7 @@ download_type_to_class: Dict[str, Type[Download]] = {
 }
 
 
-class DownloadHandler:
+class DownloadHandler(metaclass=Singleton):
     queue: List[Download] = []
     downloading_item: Union[Thread, None] = None
 
