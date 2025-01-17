@@ -4,9 +4,15 @@ main > div {
 }
 
 h2 {
-	font-size: 2rem;
-	border-bottom: 1px solid var(--border-color);
 	margin-bottom: 1rem;
+
+	display: flex;
+	gap: 1rem;
+	align-items: center;
+
+	border-bottom: 1px solid var(--border-color);
+
+	font-size: 2rem;
 	font-weight: 500;
 }
 
@@ -17,6 +23,17 @@ section:not(:first-of-type) h2 {
 .container {
 	overflow-x: auto;
 	color: var(--text-color);
+}
+
+#copy-about {
+	width: 4rem;
+	
+	padding: .5rem;
+	border-radius: 4px;
+	color: var(--nav-background-color);
+	background-color: var(--accent-color);
+
+	font-weight: 700;
 }
 
 #about-table {

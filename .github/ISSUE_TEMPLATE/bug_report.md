@@ -33,6 +33,7 @@ assignees: ''
 **Version info**
 
 <!-- All info on the page System -> Status -> About -->
+<!-- You can copy and paste the info using the "Copy" button in the UI -->
 <!-- On top of that, also your OS, browser and whether or not you're using Docker. -->
 
 **Additional context**
