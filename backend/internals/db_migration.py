@@ -955,21 +955,6 @@ class MigrateRemoveUnusedSettings(DBMigrator):
 
     def run(self) -> None:
         # V30 -> V31
-
-        from backend.internals.db import get_db
-        from backend.internals.settings import SettingsValues
-
-        cursor = get_db()
-        cursor.execute("SELECT key FROM config")
-        delete_keys = [
-            key
-            for key in cursor
-            if key[0] not in SettingsValues.__dataclass_fields__
-        ]
-        cursor.executemany(
-            "DELETE FROM config WHERE key = ?;",
-            delete_keys
-        )
         return
 
 
@@ -984,9 +969,9 @@ class MigrateVaiNaming(DBMigrator):
 
         cursor = get_db()
 
-        volume_as_empty = cursor.execute(
+        volume_as_empty = (cursor.execute(
             "SELECT value FROM config WHERE key = 'volume_as_empty' LIMIT 1;"
-        ).fetchone()[0]
+        ).fetchone() or (None,))[0]
         if volume_as_empty:
             cursor.execute(
                 "UPDATE config SET value = ? WHERE key = 'file_naming_vai';",
