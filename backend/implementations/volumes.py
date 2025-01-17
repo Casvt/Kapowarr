@@ -459,6 +459,26 @@ class Volume:
             )
         ]
 
+    def get_open_issues(self) -> List[float]:
+        """Get the issues that are not matched to a file and are monitored.
+
+        Returns:
+            List[float]: The calculated issue numbers of the open issues.
+        """
+        return first_of_column(get_db().execute(
+            """
+            SELECT calculated_issue_number
+            FROM issues i
+            LEFT JOIN issues_files if
+            ON i.id = if.issue_id
+            WHERE
+                file_id IS NULL
+                AND volume_id = ?
+                AND monitored = 1;
+            """,
+            (self.id,)
+        ))
+
     def get_all_files(self) -> List[FileData]:
         """Get the files and general files matched to the volume.
 

@@ -1,43 +1,38 @@
 # -*- coding: utf-8 -*-
 
-"""
-Searching online sources (GC) for downloads
-"""
-
-from asyncio import create_task, gather, run
+from asyncio import gather, run
 from typing import Dict, List, Tuple, Union
 
 from backend.base.definitions import (MatchedSearchResultData,
-                                      SearchResultData, SpecialVersion)
+                                      SearchResultData, SearchSource,
+                                      SpecialVersion, query_formats)
 from backend.base.helpers import (AsyncSession, check_overlapping_issues,
-                                  create_range, extract_year_from_date,
-                                  first_of_column)
+                                  create_range, extract_year_from_date)
 from backend.base.logging import LOGGER
 from backend.implementations.getcomics import search_getcomics
-from backend.implementations.matching import (_match_special_version,
-                                              check_search_result_match)
-from backend.implementations.volumes import Issue, Volume
-from backend.internals.db import get_db
+from backend.implementations.matching import check_search_result_match
+from backend.implementations.volumes import Volume
 
 
-def _sort_search_results(
+def _rank_search_result(
     result: MatchedSearchResultData,
     title: str,
     volume_number: int,
     year: Tuple[Union[int, None], Union[int, None]] = (None, None),
     calculated_issue_number: Union[float, None] = None
 ) -> List[int]:
-    """Sort the search results
+    """Give a search result a rank, based on which you can sort.
 
     Args:
-        result (MatchedSearchResultData): A result from `search.SearchSources.search_all()`.
+        result (MatchedSearchResultData): A search result.
 
-        title (str): Title of volume
+        title (str): Title of volume.
 
-        volume_number (int): The volume number of the volume
+        volume_number (int): The volume number of the volume.
 
         year (Tuple[Union[int, None], Union[int, None]], optional): The year of
-        the volume and the issue.
+        the volume and the year of the issue if searching for an issue and
+        release date is known.
             Defaults to (None, None).
 
         calculated_issue_number (Union[float, None], optional): The
@@ -49,8 +44,8 @@ def _sort_search_results(
     """
     rating = []
 
-    # Prefer matches
-    rating.append(int(not result['match']))
+    # Prefer matches (False == 0 == higher rank)
+    rating.append(not result['match'])
 
     # The more words in the search term that are present in
     # the search results' title, the higher ranked it gets
@@ -90,31 +85,41 @@ def _sort_search_results(
 
     # Sort on issue number fitting
     if calculated_issue_number is not None:
-        if (isinstance(result['issue_number'], float)
-        and calculated_issue_number == result['issue_number']):
+        # Search was for issue
+        if (
+            isinstance(result['issue_number'], float)
+            and calculated_issue_number == result['issue_number']
+        ):
             # Issue number is direct match
             rating.append(0)
 
         elif isinstance(result['issue_number'], tuple):
-            if result['issue_number'][0] <= calculated_issue_number <= result['issue_number'][1]:
+            if (
+                result['issue_number'][0]
+                <= calculated_issue_number
+                <= result['issue_number'][1]
+            ):
                 # Issue number falls between range
                 rating.append(
-                    1 - (1
-                        /
-                        (result['issue_number'][1] - result['issue_number'][0] + 1))
+                    1 - (1 / (
+                        result['issue_number'][1] - result['issue_number'][0] + 1
+                    ))
                 )
+
             else:
-                # Issue number falls outside so release is not usefull
+                # Issue number falls outside so release is not useful
                 rating.append(3)
 
-        elif (result['issue_number'] is None
-        and result['special_version'] is not None):
+        elif result['special_version'] is not None:
             # Issue number not found but is special version
             rating.append(2)
 
         else:
+            # No issue number found and not special version
             rating.append(3)
+
     else:
+        # Search was for volume
         if isinstance(result['issue_number'], tuple):
             rating.append(
                 1.0
@@ -128,45 +133,8 @@ def _sort_search_results(
     return rating
 
 
-class SearchSources:
-    "For getting search results from various sources"
-
-    def __init__(self, query: str):
-        """Prepare a search
-
-        Args:
-            query (str): The search string to search for in the sources
-        """
-        self.query = query
-        self.source_list = [
-            self._get_comics,
-        ]
-
-    async def search_all(self) -> List[SearchResultData]:
-        "Search all sources for the query"
-        result: List[SearchResultData] = []
-
-        async with AsyncSession() as session:
-            tasks = [
-                create_task(source(session))
-                for source in self.source_list
-            ]
-            responses = await gather(*tasks)
-
-        for r in responses:
-            result += r
-
-        return result
-
-    async def _get_comics(
-        self,
-        session: AsyncSession
-    ) -> List[SearchResultData]:
-        """Search for the query in getcomics
-
-        Returns:
-            List[SearchResultData]: The search results.
-        """
+class SearchGetComics(SearchSource):
+    async def search(self, session: AsyncSession) -> List[SearchResultData]:
         return await search_getcomics(session, self.query)
 
 
@@ -177,22 +145,23 @@ async def search_multiple_queries(*queries: str) -> List[SearchResultData]:
         List[SearchResultData]: The search results for all queries together,
         duplicates removed.
     """
-    search_results: List[SearchResultData] = []
-    format_searches = [
-        SearchSources(q)
-        for q in queries
-    ]
-    tasks = [
-        create_task(ss.search_all())
-        for ss in format_searches
-    ]
-    responses = await gather(*tasks)
-    for r in responses:
-        search_results += r
+    async with AsyncSession() as session:
+        searches = [
+            Source(query).search(session)
+            for Source in SearchSource.__subclasses__()
+            for query in queries
+        ]
+        responses = await gather(*searches)
 
-    # Remove duplicates
-    # because multiple formats can return the same result
-    search_results = list({r['link']: r for r in search_results}.values())
+    search_results: List[SearchResultData] = []
+    processed_links = set()
+    for response in responses:
+        for result in response:
+            # Don't add if the link is already in the results
+            # Avoids duplicates, as multiple formats can return the same result
+            if result['link'] not in processed_links:
+                search_results.append(result)
+                processed_links.add(result['link'])
 
     return search_results
 
@@ -201,201 +170,166 @@ def manual_search(
     volume_id: int,
     issue_id: Union[int, None] = None
 ) -> List[MatchedSearchResultData]:
-    """Do a manual search for a volume or issue
+    """Do a manual search for a volume or issue.
 
     Args:
-        volume_id (int): The id of the volume to search for
-        issue_id (Union[int, None], optional): The id of the issue to search for
-        (in the case that you want to search for an issue instead of a volume).
-        Defaults to None.
+        volume_id (int): The id of the volume to search for.
+        issue_id (Union[int, None], optional): The id of the issue to search for,
+        in the case that you want to search for an issue instead of a volume.
+            Defaults to None.
 
     Returns:
         List[MatchedSearchResultData]: List with search results.
     """
     volume = Volume(volume_id)
     volume_data = volume.get_data()
+    volume_issues = volume.get_issues()
+    number_to_year: Dict[float, Union[int, None]] = {
+        i.calculated_issue_number: extract_year_from_date(i.date)
+        for i in volume_issues
+    }
+    issue_number: Union[str, None] = None
+    calculated_issue_number: Union[float, None] = None
 
-    if issue_id and not volume_data.special_version.value:
-        issue_data = Issue(issue_id).get_data()
+    if issue_id and volume_data.special_version.value is None:
+        issue_data = volume.get_issue(issue_id).get_data()
         issue_number = issue_data.issue_number
         calculated_issue_number = issue_data.calculated_issue_number
 
-    else:
-        issue_number = None
-        calculated_issue_number = None
-
     LOGGER.info(
-        f'Starting manual search: {volume_data.title} ({volume_data.year}) {"#" + issue_number if issue_number else ""}'
+        'Starting manual search: %s (%d) %s',
+        volume_data.title, volume_data.year,
+        f'#{issue_number}' if issue_number else ''
     )
 
-    # Prepare query
-    results = []
-    for search_title in (volume_data.title, volume_data.alt_title):
-        if search_title is None:
+    for title in (volume_data.title, volume_data.alt_title):
+        if not title:
             continue
-        title = search_title.replace(':', '')
 
         if volume_data.special_version == SpecialVersion.TPB:
-            query_formats = (
-                '{title} Vol. {volume_number} ({year}) TPB',
-                '{title} ({year}) TPB',
-                '{title} Vol. {volume_number} TPB',
-                '{title} Vol. {volume_number}',
-                '{title}'
-            )
+            formats = query_formats["TPB"]
+
         elif volume_data.special_version == SpecialVersion.VOLUME_AS_ISSUE:
-            query_formats = (
-                '{title} ({year})',
-                '{title}'
-            )
+            formats = query_formats["VAI"]
+
         elif issue_number is None:
-            query_formats = (
-                '{title} Vol. {volume_number} ({year})',
-                '{title} ({year})',
-                '{title} Vol. {volume_number}',
-                '{title}'
-            )
+            formats = query_formats["Volume"]
+
         else:
-            query_formats = (
-                '{title} #{issue_number} ({year})',
-                '{title} Vol. {volume_number} #{issue_number}',
-                '{title} #{issue_number}',
-                '{title}'
-            )
+            formats = query_formats["Issue"]
 
         if volume_data.year is None:
-            query_formats = tuple(
-                f.replace('({year})', '')
-                for f in query_formats
+            formats = tuple(
+                f.replace('({year})', '').strip()
+                for f in formats
             )
 
+        search_title = title.replace(':', '')
         search_results = run(search_multiple_queries(*(
             format.format(
-                title=title, volume_number=volume_data.volume_number,
+                title=search_title, volume_number=volume_data.volume_number,
                 year=volume_data.year, issue_number=issue_number
             )
-            for format in query_formats
+            for format in formats
         )))
         if not search_results:
             continue
 
-        # Decide what is a match and what not
-        volume_issues = volume.get_issues()
-        number_to_year: Dict[float, Union[int, None]] = {
-            i.calculated_issue_number: extract_year_from_date(i.date)
-            for i in volume_issues
-        }
-        results = [
-            MatchedSearchResultData({
+        results: List[MatchedSearchResultData] = [
+            {
                 **result,
                 **check_search_result_match(
                     result, volume_data, volume_issues,
                     number_to_year, calculated_issue_number
                 )
-            })
+            }
             for result in search_results
         ]
 
         # Sort results; put best result at top
-        results.sort(key=lambda r: _sort_search_results(
-            r, title, volume_data.volume_number,
-            (volume_data.year, number_to_year.get(
-                calculated_issue_number)), # type: ignore
+        results.sort(key=lambda r: _rank_search_result(
+            r, search_title, volume_data.volume_number,
+            (
+                volume_data.year,
+                number_to_year.get(calculated_issue_number) # type: ignore
+            ),
             calculated_issue_number
         ))
 
-        break
+        LOGGER.debug('Manual search results: %s', results)
+        return results
 
-    LOGGER.debug(f'Manual search results: {results}')
-    return results
+    return []
 
 
 def auto_search(
     volume_id: int,
     issue_id: Union[int, None] = None
 ) -> List[MatchedSearchResultData]:
-    """Search for a volume or issue and automatically choose a result
+    """Search for a volume or issue and automatically choose a result.
 
     Args:
-        volume_id (int): The id of the volume to search for
-        issue_id (Union[int, None], optional): The id of the issue to search for
-        (in the case that you want to search for an issue instead of a volume).
-        Defaults to None.
+        volume_id (int): The ID of the volume to search for.
+        issue_id (Union[int, None], optional): The id of the issue to search for,
+        in the case that you want to search for an issue instead of a volume.
+            Defaults to None.
 
     Returns:
         List[MatchedSearchResultData]: List with chosen search results.
     """
-    cursor = get_db()
-
     volume = Volume(volume_id)
     volume_data = volume.get_data()
+    special_version = volume_data.special_version
     LOGGER.info(
-        f'Starting auto search for volume {volume_id} {f"issue {issue_id}" if issue_id else ""}'
+        'Starting auto search for volume %d %s',
+        volume_id,
+        f'issue {issue_id}' if issue_id else ''
     )
+
+    searchable_issues: List[float] = []
     if not volume_data.monitored:
-        # Volume is unmonitored so regardless of what to search for, ignore
-        # searching
+        # Volume is unmonitored so don't auto search
+        pass
+
+    elif issue_id is None:
+        # Auto search volume
+        # Get open issues (monitored and no file).
+        searchable_issues = volume.get_open_issues()
+
+    else:
+        # Auto search issue
+        issue = volume.get_issue(issue_id)
+        issue_data = issue.get_data()
+        if issue_data.monitored and not issue.get_files():
+            # Issue is open
+            searchable_issues = [issue_data.calculated_issue_number]
+
+    if not searchable_issues:
+        # No issues to search for
         result = []
         LOGGER.debug(f'Auto search results: {result}')
         return result
 
-    searchable_issues: List[float] = []
-    if issue_id is None:
-        # Auto search volume
-        # Get issue numbers that are open (monitored and no file)
-        searchable_issues: List[float] = first_of_column(cursor.execute(
-            """
-            SELECT calculated_issue_number
-            FROM issues i
-            LEFT JOIN issues_files if
-            ON i.id = if.issue_id
-            WHERE
-                file_id IS NULL
-                AND volume_id = ?
-                AND monitored = 1;
-            """,
-            (volume_id,)
-        ))
-        if not searchable_issues:
-            result = []
-            LOGGER.debug(f'Auto search results: {result}')
-            return result
-
-    else:
-        # Auto search issue
-        issue = Issue(issue_id)
-        if not issue.get_data().monitored:
-            # Auto search for issue but issue is unmonitored
-            result = []
-            LOGGER.debug(f'Auto search results: {result}')
-            return result
-        else:
-            if issue.get_files():
-                # Auto search for issue but issue already has file
-                result = []
-                LOGGER.debug(f'Auto search results: {result}')
-                return result
-
-    results = [r for r in manual_search(volume_id, issue_id) if r['match']]
-    special_version = volume_data.special_version
+    search_results = [
+        r
+        for r in manual_search(volume_id, issue_id)
+        if r['match']
+    ]
 
     if issue_id is not None or (
         special_version.value is not None
         and special_version != SpecialVersion.VOLUME_AS_ISSUE
     ):
-        result = results[:1] if results else []
-        LOGGER.debug(f'Auto search results: {result}')
+        # We're searching for one "item", so just grab first search result.
+        result = search_results[:1] if search_results else []
+        LOGGER.debug('Auto search results: %s', result)
         return result
 
-    volume_parts = []
-    for result in results:
-        if not _match_special_version(
-                special_version,
-                result['special_version'],
-                result['issue_number']
-        ):
-            continue
-
+    # We're searching for a volume, so we might download multiple search results.
+    # Find a combination of search results that download the most issues.
+    chosen_downloads = []
+    for result in search_results:
+        # Determine what issues the result covers
         if result['issue_number'] is not None:
             # Normal issue, VAS with issue number,
             # OS/HC using issue 1
@@ -404,8 +338,10 @@ def auto_search(
                 *create_range(result['issue_number'])
             )
 
-        elif (special_version == SpecialVersion.VOLUME_AS_ISSUE
-        and result['special_version'] == SpecialVersion.TPB):
+        elif (
+            special_version == SpecialVersion.VOLUME_AS_ISSUE
+            and result['special_version'] == SpecialVersion.TPB
+        ):
             # VAS with volume number
             if result['volume_number'] is None:
                 continue
@@ -444,17 +380,18 @@ def auto_search(
             i.calculated_issue_number not in searchable_issues
             for i in covered_issues
         ):
+            # Part or all of what the result covers is already downloaded
             continue
 
         # Check that any other selected download doesn't already cover the issue
-        for part in volume_parts:
+        for part in chosen_downloads:
             if check_overlapping_issues(
                 part['_issue_number'],
                 result['_issue_number']
             ):
                 break
         else:
-            volume_parts.append(result)
+            chosen_downloads.append(result)
 
-    LOGGER.debug(f'Auto search results: {volume_parts}')
-    return volume_parts
+    LOGGER.debug('Auto search results: %s', chosen_downloads)
+    return chosen_downloads

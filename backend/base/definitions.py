@@ -10,8 +10,11 @@ from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass
 from enum import Enum
 from threading import Thread
-from typing import (Any, Dict, List, Mapping, Sequence,
-                    Tuple, TypedDict, TypeVar, Union)
+from typing import (TYPE_CHECKING, Any, Dict, List, Mapping,
+                    Sequence, Tuple, TypedDict, TypeVar, Union)
+
+if TYPE_CHECKING:
+    from backend.base.helpers import AsyncSession
 
 # region Types
 T = TypeVar("T")
@@ -50,6 +53,7 @@ class Constants:
     CV_BRAKE_TIME = 10.0 # seconds
 
     GC_SITE_URL = "https://getcomics.org"
+    GC_SOURCE_TERM = "GetComics"
 
     FS_API_BASE = "/v1"
     CF_CHALLENGE_HEADER = ("cf-mitigated", "challenge")
@@ -315,6 +319,36 @@ class DownloadType(BaseEnum):
     TORRENT = 2
 
 
+query_formats: Dict[str, Tuple[str, ...]] = {
+    "TPB": (
+        '{title} Vol. {volume_number} ({year}) TPB',
+        '{title} ({year}) TPB',
+        '{title} Vol. {volume_number} TPB',
+        '{title} Vol. {volume_number}',
+        '{title}'
+    ),
+    "VAI": (
+        '{title} ({year})',
+        '{title}'
+    ),
+    "Volume": (
+        '{title} Vol. {volume_number} ({year})',
+        '{title} ({year})',
+        '{title} Vol. {volume_number}',
+        '{title}'
+    ),
+    "Issue": (
+        '{title} #{issue_number} ({year})',
+        '{title} Vol. {volume_number} #{issue_number}',
+        '{title} #{issue_number}',
+        '{title}'
+    )
+}
+"""
+Volume Special Version to query formats used when searching
+"""
+
+
 # region TypedDicts
 class FilenameData(TypedDict):
     series: str
@@ -554,6 +588,29 @@ class FileConverter(ABC):
 
         Returns:
             List[str]: The resulting files or directories, in target_format.
+        """
+        ...
+
+
+class SearchSource(ABC):
+    def __init__(self, query: str) -> None:
+        """Prepare the search source.
+
+        Args:
+            query (str): The query to search for.
+        """
+        self.query = query
+        return
+
+    @abstractmethod
+    async def search(self, session: AsyncSession) -> List[SearchResultData]:
+        """Search for the query.
+
+        Args:
+            session (AsyncSession): The session to use for the search.
+
+        Returns:
+            List[SearchResultData]: The search results.
         """
         ...
 
