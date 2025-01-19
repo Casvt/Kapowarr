@@ -1,0 +1,9 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+# Change ownership of /app
+echo "chown /app"
+lsiown -R abc:abc /app
+
+# Start main script as abc
+s6-setuidgid abc python3 /app/Kapowarr.py
