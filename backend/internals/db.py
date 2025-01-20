@@ -125,7 +125,12 @@ class DBConnection(Connection, metaclass=DBConnectionManager):
         if not hasattr(g, 'cursors'):
             g.cursors = []
 
-        if not force_new and g.cursors:
+        if not g.cursors:
+            c = KapowarrCursor(self)
+            c.row_factory = Row
+            g.cursors.append(c)
+
+        if not force_new:
             return g.cursors[0]
         else:
             c = KapowarrCursor(self)
