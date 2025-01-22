@@ -8,6 +8,7 @@ from requests import RequestException
 
 from backend.base.definitions import Constants
 from backend.base.helpers import Session, Singleton
+from backend.base.logging import LOGGER
 
 if TYPE_CHECKING:
     from backend.base.helpers import AsyncSession
@@ -119,14 +120,17 @@ class FlareSolverr(metaclass=Singleton):
             couldn't solve the problem, or a dictionary with the FlareSolverr
             response.
         """
-        if not (self.session_id and self.base_url):
-            return
-
         if (
             headers.get(Constants.CF_CHALLENGE_HEADER[0])
             != Constants.CF_CHALLENGE_HEADER[1]
         ):
             # Request not failed because of CF block
+            return
+
+        if not (self.session_id and self.base_url):
+            LOGGER.warning(
+                "Request blocked by CloudFlare and FlareSolverr not setup"
+            )
             return
 
         with Session() as session:
@@ -168,14 +172,17 @@ class FlareSolverr(metaclass=Singleton):
             couldn't solve the problem, or a dictionary with the FlareSolverr
             response.
         """
-        if not (self.session_id and self.base_url):
-            return
-
         if (
             headers.get(Constants.CF_CHALLENGE_HEADER[0])
             != Constants.CF_CHALLENGE_HEADER[1]
         ):
             # Request not failed because of CF block
+            return
+
+        if not (self.session_id and self.base_url):
+            LOGGER.warning(
+                "Request blocked by CloudFlare and FlareSolverr not setup"
+            )
             return
 
         result = (await (await session.post(
