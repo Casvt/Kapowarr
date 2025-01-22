@@ -459,15 +459,16 @@ class Volume:
             )
         ]
 
-    def get_open_issues(self) -> List[float]:
+    def get_open_issues(self) -> List[Tuple[int, float]]:
         """Get the issues that are not matched to a file and are monitored.
 
         Returns:
-            List[float]: The calculated issue numbers of the open issues.
+            List[Tuple[int, float]]: The id and calculated issue numbers of
+            the open issues.
         """
-        return first_of_column(get_db().execute(
+        return get_db().execute(
             """
-            SELECT calculated_issue_number
+            SELECT i.id, i.calculated_issue_number
             FROM issues i
             LEFT JOIN issues_files if
             ON i.id = if.issue_id
@@ -477,7 +478,7 @@ class Volume:
                 AND monitored = 1;
             """,
             (self.id,)
-        ))
+        ).fetchall()
 
     def get_all_files(self) -> List[FileData]:
         """Get the files and general files matched to the volume.

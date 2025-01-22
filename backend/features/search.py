@@ -286,7 +286,7 @@ def auto_search(
         f'issue {issue_id}' if issue_id else ''
     )
 
-    searchable_issues: List[float] = []
+    searchable_issues: List[Tuple[int, float]] = []
     if not volume_data.monitored:
         # Volume is unmonitored so don't auto search
         pass
@@ -302,7 +302,7 @@ def auto_search(
         issue_data = issue.get_data()
         if issue_data.monitored and not issue.get_files():
             # Issue is open
-            searchable_issues = [issue_data.calculated_issue_number]
+            searchable_issues = [(issue_id, issue_data.calculated_issue_number)]
 
     if not searchable_issues:
         # No issues to search for
@@ -327,7 +327,8 @@ def auto_search(
 
     # We're searching for a volume, so we might download multiple search results.
     # Find a combination of search results that download the most issues.
-    chosen_downloads = []
+    chosen_downloads: List[MatchedSearchResultData] = []
+    searchable_issue_numbers = {i[1] for i in searchable_issues}
     for result in search_results:
         # Determine what issues the result covers
         if result['issue_number'] is not None:
@@ -377,7 +378,7 @@ def auto_search(
             continue
 
         if any(
-            i.calculated_issue_number not in searchable_issues
+            i.calculated_issue_number not in searchable_issue_numbers
             for i in covered_issues
         ):
             # Part or all of what the result covers is already downloaded
@@ -386,12 +387,29 @@ def auto_search(
         # Check that any other selected download doesn't already cover the issue
         for part in chosen_downloads:
             if check_overlapping_issues(
-                part['_issue_number'],
+                part.get('_issue_number', 0.0),
                 result['_issue_number']
             ):
                 break
         else:
             chosen_downloads.append(result)
+
+    # Find issues that have still not been covered. Might've been that the
+    # download for the issue simply did not pop up on volume search, but will
+    # when searching for the individual issue.
+    missing_issues = [
+        i
+        for i in searchable_issues
+        if not any(
+            check_overlapping_issues(
+                i[1], part.get('_issue_number', 0.0)
+            )
+            for part in chosen_downloads
+        )
+    ]
+
+    for missing_issue in missing_issues:
+        chosen_downloads.extend(auto_search(volume_id, missing_issue[0]))
 
     LOGGER.debug('Auto search results: %s', chosen_downloads)
     return chosen_downloads
