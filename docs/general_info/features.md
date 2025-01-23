@@ -6,13 +6,13 @@ The feature 'Library Import' makes it possible to import an existing library int
 
 ### Proposal
 
-When you run Library Import, it will search for files in your root folders that aren't matched to any issues yet. It will then try to find the volume for the file on CV. This list of files and CV matches gets presented to you (a.k.a. Library Import proposal). You can then change the matches, in case Kapowarr guessed incorrectly. You can choose to apply the changed match to only the file, or to all files for the volume.
+When you run Library Import, it will search for files in your root folders that aren't matched to any issues yet. It will then try to find the volume for the file on ComicVine. This list of files and ComicVine matches is presented to you (a.k.a. Library Import proposal). You can then change the matches in case Kapowarr guessed incorrectly. You can choose to apply the changed match to only the file, or to all files for the volume.
 
 On the start screen, there are some settings that change the behaviour of Library Import:
 
 - **Max folders scanned**: Limit the proposal to this amount of folders (roughly equal to the amount of volumes). Setting this to a large amount increases the chance of hitting the [CV rate limit](../other_docs/rate_limiting.md).
-- **Apply limit to parent folder**: Apply the folder limit (prev. bullet) to the parent folder instead of the folder. Enable this when each issue has it's own sub-folder.
-- **Only match english volumes**: When Kapowarr is searching on CV for a match for a file, only allow the match when it's an english release. So it won't allow translations.
+- **Apply limit to parent folder**: Apply the folder limit (see previous bullet) to the parent folder instead of the folder. Enable this when each issue has it's own sub-folder.
+- **Only match english volumes**: When Kapowarr is searching on ComicVine for a match to the file, only allow the match when it's an english release; it won't allow translations.
 - **Folder(s) to scan**: Allows you to supply a specific folder to scan, instead of all root folders. Supports glob patterns (e.g. `/comics-1/Star Wars*`).
 
 ### Importing
@@ -21,7 +21,7 @@ When you are happy with the proposal, you have two options: 'Import' and 'Import
 
 ### Implementation Details
 
-When 'Import' is used, the volume folder that is set is the 'lowest common folder'. This is the lowest folder that still contains all files that are matched to that volume.
+When 'Import' is used, the volume folder that is set is the 'deepest common folder'. This is the deepest folder that still contains all files that are matched to that volume.
 
 If the CV rate limit is reached halfway through the proposal, the unhandled files will have no match. Files that don't have a match linked to them will be ignored when importing, regardless of the state of the checkbox for that file. It's advised to wait a few minutes and then do another run.
 

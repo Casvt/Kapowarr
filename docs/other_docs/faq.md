@@ -1,12 +1,18 @@
 # FAQ
 
-## Does Kapowarr support XYZ?
+## Project
+
+### Does Kapowarr support XYZ?
 
 Look around in the web-UI and this documentation hub first, to see if you find it. Otherwise you can ask on the [Discord server](https://discord.gg/nMNdgG7vsE). If you are sure that it is not available in Kapowarr, you can [report it](./reporting.md).
 
-## When will XYZ be added?
+### When will XYZ be added?
 
 First, check out the [project board](https://github.com/users/Casvt/projects/5) to see if it's already on there and if so, at what stage it is. If it's not, check if a feature request is already made for it on the [issues page](https://github.com/Casvt/Kapowarr/issues) and otherwise [make an issue yourself](./reporting.md).
+
+### What are the alpha releases?
+
+Sometimes, between stable releases, alpha releases are published. These releases contain new features/fixes that need to be tested before being published to the general public. So they contain the latest features and fixes, but possibly also bugs. Once any problems found in the alpha releases are fixed, the stable changes are released in a stable release. The alpha releases can be used by pulling the Docker image from the [`mrcas/kapowarr-alpha`](https://hub.docker.com/r/mrcas/kapowarr-alpha) repository. Any stable releases are also published in the alpha repository, so you do not have to switch to the stable repository in order to get the stable releases.
 
 ## Hosting
 
@@ -68,7 +74,7 @@ There are multiple causes to the file not matching to the volume:
 ??? example "Examples"
     1. If you have 6 issues of a volume, but the "Issues in match" column says 4, then the match must be wrong.
     
-    2. Sometimes a one-shot file matches to the TPB instead (in the rare scenario where a volume has both a TPB and a one-shot). Both volumes only have 1 issue, so both will have 1 as their "Issues in match" value. The only way to check if the match is correct is to click on the match, bringing you to the ComicVine page and checking yourself.
+    2. Sometimes a one shot file matches to the TPB instead (in the rare scenario where a volume has both a TPB and a one shot). Both volumes only have 1 issue, so both will have 1 as their "Issues in match" value. The only way to check if the match is correct is to click on the match, bringing you to the ComicVine page and checking yourself.
 
     3. Sometimes an annual matches to the volume referring to one a year earlier or later. Check the year of the matched volume in such scenarios. 
 
@@ -78,7 +84,7 @@ There are multiple causes to the file not matching to the volume:
 
 ### Why does Kapowarr not grab the links from a GC page even though they work fine?
 
-GetComics pages often contain downloads for more than what is needed, so Kapowarr filters the links based on what it needs and what it doesn't. If Kapowarr did not download anything from a GC page, then it thought the links weren't for any content of interest [that matches the criteria](../general_info/matching.md#gc-groups).
+GetComics pages often contain downloads for more than what is needed, so Kapowarr filters the links based on what it needs and what it doesn't. If Kapowarr did not download anything from a GC page, then it thought the links weren't for any content of interest [that matches the criteria](../general_info/matching.md#getcomics-groups).
 
 There are multiple causes to this:
 
@@ -89,6 +95,8 @@ There are multiple causes to this:
 
 2. Kapowarr correctly thinks that the links do not lead to files that are of interest. For example, Kapowarr will not download a TPB, if the volume that is being searched for is a normal, non-TPB, volume. In this case Kapowarr is correct, and if the TPB is desired, that version of the volume should instead be added to your library.
 
-3. Kapowarr wrongly thinks that the links do not lead to the files that are of interest, because the matching simply fails. For example, it might think 'Tom: His Perspective' and 'The Perspective of Tom' do not refer to the same volume, and thus reject it. A feature is planned to allow you to force Kapowarr to download all content from a GC page, regardless of if it thinks the content is desired or not.
+3. Kapowarr wrongly thinks that the links do not lead to the files that are of interest, because the matching simply fails. For example, it might think 'Tom: His Perspective' and 'The Perspective of Tom' do not refer to the same volume, and thus reject it.
 
-4. The service or service category that the link links to is not supported. For example, Kapowarr can download from Mega, but it can't download Mega folders.
+4. The service or service category that the link links to is not supported. For example, Kapowarr can download from Mega, but it can't download Google Drive folders.
+
+If you still want to download the media, you can click the "Force Download" button in the Manual Search results to force Kapowarr to download all content from the page. No filtering will be done, and the downloaded files will be put in the volume folder, but they will not be renamed.

@@ -89,7 +89,7 @@ Examples:
 3. `John Constantine, Hellblazer 30th Anniversary Celebration Volume 1.cbr`
 4. `John Constantine, Hellblazer 30th Anniversary Celebration Volume 1 Issue 01.cbr`
 
-## GC Search Results
+## GetComics Search Results
 
 When searching for a GC release, Kapowarr determines if the page is a match for the volume or not. The release has to conform with the following rules to pass the filter:
 
@@ -101,7 +101,7 @@ When searching for a GC release, Kapowarr determines if the page is a match for 
 6. If it is for a TPB, it has to follow the first two rules it has for files.
 7. If not a special version, the issue number should match to an issue in the volume.
 
-## GC Groups
+## GetComics Groups
 
 When selecting links from a GC page for downloading, Kapowarr filters the groups so that no irrelevant files are downloaded. See the ['Downloading' page](./downloading.md) for more information. The download group has to conform with the following rules to pass the filter:
 

@@ -4,7 +4,14 @@ On this page, you can find instructions on how to install Kapowarr using Docker 
 
 ### Install Docker
 
-The first step is to install Docker, if you don't have it installed already. The official Docker documentation hub offers great instructions on [how to install docker CLI and Docker Desktop](https://docs.docker.com/engine/install/). Take notice of if you installed the 'Docker CLI' (the Docker documentation also calls this 'Docker CE') or if you installed 'Docker Desktop', for future instructions.
+The first step is to install Docker, if you don't have it installed already. The official Docker documentation hub offers great instructions on [how to install docker CLI and Docker Desktop](https://docs.docker.com/engine/install/). Take notice of whether you installed the 'Docker CLI' (the Docker documentation also calls this 'Docker CE') or 'Docker Desktop', for future instructions.
+
+??? "Quick introduction to Docker"
+	Docker allows you to create little virtual computers, called 'containers'. You can run an application inside these containers. This is useful because you decide how much resources these containers can use, and what access these applications get to "the outside". It makes it safer (e.g. the application only has access to folders on the computer that you explicitly give it access to), and makes installation easier (the developer makes sure that inside the container everything is setup properly, not you).
+	
+	Allowing folders and network connections through the container is done using 'mapping'. For example, you can map the folder `D:\Comics` on the host to the folder `/comics` inside the container. Then everything inside the host folder (`D:\Comics`) is visible to the application via the mapped container folder (`/comics`). Mapping network ports works in a similar manner.
+	
+	When you turn off a container, all file changes inside the container (e.g. folders/files added) are lost. This is so that the environment inside the container when starting up is always the same. So in order to save a file/folder permanently, it has to be stored on the host and then mapped to somewhere inside the container.
 
 ### Create Docker volume or folder
 
@@ -67,9 +74,9 @@ Kapowarr needs a permanent place to put the database file. This can be a [Docker
 
 ### Creating root folder
 
-Everything that Kapowarr does concerning files is done only within [root folders](../settings/mediamanagement.md#root-folders). If you don't already have a folder where all your comics are in, create one. Follow the same instructions as for [creating a local folder for the database](#create-docker-volume-or-folder), but then for your root folder.
+Everything that Kapowarr does concerning media files is done only within [root folders](../settings/mediamanagement.md#root-folders). If you don't already have a folder where all your comics are in, create one. Follow the same instructions as for [creating a local folder for the database](#create-docker-volume-or-folder), but then for your root folder.
 
-You can create multiple root folders (on multiple drives for example). If you desire multiple root folders, repeat the steps.
+You can create multiple root folders (on multiple drives for example). If you want multiple root folders, repeat the steps.
 
 !!! info "Permissions and ownership"
 	Root folders require read and write permissions. More documentation on this subject coming.
@@ -120,19 +127,19 @@ Now we can launch the container.
 
 	A few notes about this command:
 
-	1. If you're using a folder on the host machine instead of a docker volume to store the database file ([reference](#create-docker-volume-or-folder)), replace `kapowarr-db` with the path to the host folder.
+	1. If you're using a folder on the host machine instead of a docker volume to store the database file ([reference](#create-docker-volume-or-folder)), replace `kapowarr-db` with the path to the host folder. It's mapped to `/app/db` inside the container.
 
 	!!! example "Examples"
 		- `"/opt/Kapowarr/db:/app/db"`
 		- `"C:\apps\Kapowarr\db:/app/db"`
 
-	2. Replace `/path/to/download_folder` with the path to the desired download folder, [that you created earlier](#creating-download-folder).
+	2. Replace `/path/to/download_folder` with the path to the desired download folder, [that you created earlier](#creating-download-folder). It's mapped to `/app/temp_downloads` inside the container.
 	
 	!!! example "Examples"
 		- `"/home/my-user/comic-downloads:/app/temp_downloads"`
 		- `"D:\Comic-Downloads:/app/temp_downloads"`
 
-	3. Replace `/path/to/root_folder` with the path to the desired root folder, [that you created earlier](#creating-root-folder). Later, when Kapowarr is running and you need to add a root folder, the mapped folder is what you'll add (e.g. `/comics-1`).
+	3. Replace `/path/to/root_folder` with the path to the desired root folder, [that you created earlier](#creating-root-folder). It's mapped to `/comics-1` inside the container. So later, when Kapowarr is running and you need to add a root folder, the mapped folder is what you'll add (e.g. `/comics-1`).
 
 	!!! example "Examples"
 		- `"/home/my-user/comics:/comics-1"`
@@ -174,19 +181,19 @@ Now we can launch the container.
 
 	A few notes about the `docker-compose.yml` file:
 
-	1.  If you're using a folder on the host machine instead of a docker volume to store the database file ([reference](#create-docker-volume-or-folder)), replace `kapowarr-db` with the path to the host folder.
+	1.  If you're using a folder on the host machine instead of a docker volume to store the database file ([reference](#create-docker-volume-or-folder)), replace `kapowarr-db` with the path to the host folder. It's mapped to `/app/db` inside the container.
 
 	!!! example "Examples"
 		- `"/opt/Kapowarr/db:/app/db"`
 		- `"C:\apps\Kapowarr\db:/app/db"`
 
-	2.  Replace `/path/to/download_folder` with the path to the desired download folder, [that you created earlier](#creating-download-folder).
+	2.  Replace `/path/to/download_folder` with the path to the desired download folder, [that you created earlier](#creating-download-folder). It's mapped to `/app/temp_downloads` inside the container.
 	
 	!!! example "Examples"
 		- `"/home/my-user/comic-downloads:/app/temp_downloads"`
 		- `"D:\Comic-Downloads:/app/temp_downloads"`
 
-	3. Replace `/path/to/root_folder` with the path to the desired root folder, [that you created earlier](#creating-root-folder). Later, when Kapowarr is running and you need to add a root folder, the mapped folder is what you'll add (e.g. `/comics-1`).
+	3. Replace `/path/to/root_folder` with the path to the desired root folder, [that you created earlier](#creating-root-folder). It's mapped to `/comics-1` inside the container. So later, when Kapowarr is running and you need to add a root folder, the mapped folder is what you'll add (e.g. `/comics-1`).
 
 	!!! example "Examples"
 		- `"/home/my-user/comics:/comics-1"`

@@ -149,15 +149,15 @@ Options are:
 
 ## Converting
 
-The "Converting" feature allows you to change the format of your files (e.g. from cbr to cbz). It can also extract archive files.
+The "Converting" feature allows you to change the format of your files (e.g. from cbr to cbz). Extracting archive files also falls under "converting".
 
 ### Convert Downloaded Files
 
-If Kapowarr should automatically convert files after they've been downloaded. Kapowarr will follow the [format preference](#format-preference) set.
+This setting dictates whether Kapowarr should automatically convert downloaded files. As mentioned before, this also covers extracting archive files. Kapowarr will follow the [format preference](#format-preference) set.
 
 ### Extract archives covering multiple issues
 
-If an archive file is downloaded with multiple issues inside, then first extract the files inside and _then_ convert. With the setting disabled, Kapowarr will covert the file as normal. Even when no format preference is set (don't convert), this setting can still be enabled to extract archive files (up to beta-3, this was called 'unzipping').
+If an archive file is downloaded with multiple issues inside, then first extract the files inside and _then_ convert. With the setting disabled, Kapowarr will covert the file as normal. Even when no format preference is set (= don't convert), this setting can still be enabled to extract archive files (up to beta-3, this was called 'unzipping').
 
 _Note: if Kapowarr determines that a file in the archive file is not related to the volume, it will not be extracted and will be deleted when the archive file is finished being unpacked. If you find faulty deletions occurring, please [report](../other_docs/reporting.md) this._
 
@@ -166,7 +166,7 @@ _Note: if Kapowarr determines that a file in the archive file is not related to 
 The formats that Kapowarr should convert the files to. It will try to convert the files to the format at place 1, but if that is not possible, it will fall back to the format at place 2, and so forth. The last place will always be occupied by the format 'No Conversion'. That means that if Kapowarr is not able to convert the file to any of the set formats, it will just keep the current one. If no format preference is set ('No Conversion' is at place 1), no conversion will happen. 
 
 ??? info "The format called 'folder'"
-	The format called 'folder' means extracting archive files. Kapowarr will extract all files inside the archive, delete the original archive file, filter unrelated files and rename the relevant ones. This is different from the ['Extract archives covering multiple issues' setting](#extract-archives-covering-multiple-issues). That setting will extract the files from an archive file covering multiple issues and will then convert those extracted files. If you then add 'folder' to the format preference, it will extract any archive files coming out of the original archive file again. The format 'folder' will most likely lead to a folder with inside of it a series of image files. If you want to recreate the 'unzipping' feature from Kapowarr beta-3 and before, enable the before mentioned setting and do _not_ include 'folder' in the format preference. 
+	The format called 'folder' means extracting archive files containing images that directly cover a single issue. This is different from the ['Extract archives covering multiple issues' setting](#extract-archives-covering-multiple-issues). That setting will extract complete issue files from an archive file containing them. If you then add 'folder' to the format preference, it will extract any archive files coming out of the original archive file again. The format 'folder' will most likely lead to a folder with inside of it a series of image files. If you want to recreate the 'unzipping' feature from Kapowarr beta-3 and before, enable the before mentioned setting and do _not_ include 'folder' in the format preference. 
 
 	_Note: if Kapowarr determines that a file in the archive file is not related to the volume, it will not be extracted and will be deleted when the archive file is finished being unpacked. If you find faulty deletions occurring, please [report](../other_docs/reporting.md) this._
 
@@ -176,5 +176,5 @@ Root folders are the base folders that Kapowarr works in. All content is put in 
 
 When adding a volume (or when editing one), you choose in which root folder all content for that volume is put. Kapowarr will never touch any files outside the root folders (except in the [download folder](#download-location)). You might have multiple root folders because you store your comics on multiple drives or want different access rights to certain volumes, to name a few reasons.
 
-!!! warning Adding root folders on Docker
+!!! warning "Adding root folders on Docker"
 	If you use Docker to run Kapowarr, then the root folder that you enter in the web-UI is the mapped folder, not the folder path on the host machine. That means that if you followed the [installation instructions](../installation/docker.md#launch-container), you would need to enter `/comics-1`, `/comics-2`, etc. as your root folder.

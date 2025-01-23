@@ -19,29 +19,29 @@ See the ['Comic Vine API Key' setting](../settings/general.md#comic-vine-api-key
 
 ## Root folders
 
-Root folders are the base folders that Kapowarr works in. All content is put in these folders. See the ['Root Folders' section of the settings](../settings/mediamanagement.md#root-folders) for more details.
+Root folders are the base folders that Kapowarr works in. All media files are put in these folders. See the ['Root Folders' section of the settings](../settings/mediamanagement.md#root-folders) for more details.
 
 !!! info "You need at least one root folder"
 	At least one root folder must be set before you are able to add any volumes to your library.
 
-!!! warning Adding root folders on Docker
+!!! warning "Adding root folders on Docker"
 	If you use Docker to run Kapowarr, then the root folder that you enter in the web-UI is the mapped folder, not the folder path on the host machine. That means that if you followed the [installation instructions](../installation/docker.md#launch-container), you would need to enter `/comics-1`, `/comics-2`, etc. as your root folder. This mistake is often made.
 
 ## Direct Download Temporary Folder
 
-If you want to, you can change the folder that Kapowarr downloads files to. It's called the ['Direct Download Temporary Folder' setting](../settings/download.md#direct-download-temporary-folder).
+This is only applicable to people _not_ using Docker. If you want to, you can change the folder that Kapowarr downloads files to using the ['Direct Download Temporary Folder' setting](../settings/download.md#direct-download-temporary-folder).
 
 ## Service preference
 
+The ['Service Preference' section of the settings](../settings/download.md#service-preference) dictate which download service Kapowarr should choose when multiple are available to use for a download. 
+
 If you have an account with Mega, set that service as the priority and add a credential for it. The other services will then be used as a fallback option for if a link fails.
 
-For a full explanation, see the ['Service Preference' section of the settings](../settings/download.md#service-preference).  
+For a full explanation, see .  
 
 ## Credentials
 
-This only applies if you have an account with Mega (for now). Kapowarr can take advantage of the higher limits (download speed, daily size limit, etc.) that an account has to offer.
-
-See the ['Credentials' section of the settings](../settings/download.md#credentials) for more info.
+This only applies if you have an account with Mega (for now). Kapowarr can take advantage of the higher limits (download speed, daily size limit, etc.) that an account has to offer. Enter the credentials of the account at Settings -> Download Clients -> Mega. Afterwards, go to Settings -> Download -> Service Preference, and make sure to put Mega at the top. This will make Kapowarr prefer to use Mega when available.
 
 ## Building a library
 

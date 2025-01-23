@@ -4,27 +4,24 @@
 
 Kapowarr is a software to build and manage a comic book library, fitting in the *arr suite of software.
 
-## Workings
-
-Kapowarr allows you to build a digital library of comics. You can add volumes, map them to a folder and start managing! Download issues of the volume (or TPB's), rename them and move them. The whole process is automated and is all customisable in the settings.
-
-Each day, each volume is checked to see if a new issue has come out and if so, it will immediately be downloaded and added to your library.
+Kapowarr allows you to build a digital library of comics. You can add volumes, map them to a folder and start managing! Download, rename, move and convert issues of the volume (including TPB's, One Shots, Hard Covers, and more). The whole process is automated and can be customised in the settings.
 
 ## Features
 
+- Support for all major OS'es
 - Import your current library right into Kapowarr
 - Get loads of metadata about the volumes and issues in your library
 - Run a "Search Monitored" to download whole volumes with one click
 - Or use "Manual Search" to decide yourself what to download
-- Support for downloading directly from servers, via MediaFire, Mega and many other services
+- Support for downloading directly, or via MediaFire, Mega and many other services
 - Downloaded files automatically get moved wherever you want and renamed in the format you desire
-- Zip files can be extracted and it's contents renamed after downloading or with a single click
+- Archive files can be extracted and it's contents renamed after downloading or with a single click
 - The recognisable UI from the *arr suite of software
 
 ## Installation, support and documentation
 
 - For instructions on how to install Kapowarr, see the [installation documentation](https://casvt.github.io/Kapowarr/installation/installation/).
-- For support, a [Discord server](https://discord.gg/nMNdgG7vsE) is available or [make an issue](https://github.com/Casvt/Kapowarr/issues).
+- For support, a [Discord server](https://discord.gg/nMNdgG7vsE) and [subreddit](https://www.reddit.com/r/kapowarr/) are available, or [make an issue](https://github.com/Casvt/Kapowarr/issues).
 - For all documentation, see the [documentation hub](https://casvt.github.io/Kapowarr/).
 
 ## Screenshots
