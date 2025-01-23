@@ -72,7 +72,7 @@ class SettingsValues:
 
 
 about_data = {
-    'version': 'alpha-35',
+    'version': 'v1.1.0',
     'python_version': get_python_version(),
     'database_version': get_latest_db_version(),
     'database_location': None, # Get's filled in by db.set_db_location()
