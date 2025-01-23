@@ -66,7 +66,12 @@ def _get_max_page(
     if not page_links:
         return 1
 
-    return int(page_links[-1].get_text(strip=True))
+    return int(
+        page_links[-1]
+        .get_text(strip=True)
+        .replace(',', '')
+        .replace('.', '')
+    )
 
 
 def _get_articles(
