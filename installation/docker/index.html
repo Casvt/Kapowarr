@@ -1334,7 +1334,13 @@
 <p>On this page, you can find instructions on how to install Kapowarr using Docker and how to update a Docker installation.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <h3 id="install-docker">Install Docker<a class="headerlink" href="#install-docker" title="Permanent link">&para;</a></h3>
-<p>The first step is to install Docker, if you don't have it installed already. The official Docker documentation hub offers great instructions on <a href="https://docs.docker.com/engine/install/">how to install docker CLI and Docker Desktop</a>. Take notice of if you installed the 'Docker CLI' (the Docker documentation also calls this 'Docker CE') or if you installed 'Docker Desktop', for future instructions.</p>
+<p>The first step is to install Docker, if you don't have it installed already. The official Docker documentation hub offers great instructions on <a href="https://docs.docker.com/engine/install/">how to install docker CLI and Docker Desktop</a>. Take notice of whether you installed the 'Docker CLI' (the Docker documentation also calls this 'Docker CE') or 'Docker Desktop', for future instructions.</p>
+<details>
+<summary>Quick introduction to Docker</summary>
+<p>Docker allows you to create little virtual computers, called 'containers'. You can run an application inside these containers. This is useful because you decide how much resources these containers can use, and what access these applications get to "the outside". It makes it safer (e.g. the application only has access to folders on the computer that you explicitly give it access to), and makes installation easier (the developer makes sure that inside the container everything is setup properly, not you).</p>
+<p>Allowing folders and network connections through the container is done using 'mapping'. For example, you can map the folder <code class="highlight">D:\Comics</code> on the host to the folder <code class="highlight">/comics</code> inside the container. Then everything inside the host folder (<code class="highlight">D:\Comics</code>) is visible to the application via the mapped container folder (<code class="highlight">/comics</code>). Mapping network ports works in a similar manner.</p>
+<p>When you turn off a container, all file changes inside the container (e.g. folders/files added) are lost. This is so that the environment inside the container when starting up is always the same. So in order to save a file/folder permanently, it has to be stored on the host and then mapped to somewhere inside the container.</p>
+</details>
 <h3 id="create-docker-volume-or-folder">Create Docker volume or folder<a class="headerlink" href="#create-docker-volume-or-folder" title="Permanent link">&para;</a></h3>
 <p>Kapowarr needs a permanent place to put the database file. This can be a <a href="https://docs.docker.com/storage/volumes/">Docker volume</a>, or a folder on the host machine.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Docker Volume</label><label for="__tabbed_1_2">Local Folder</label></div>
@@ -1399,8 +1405,8 @@
 </div>
 </div>
 <h3 id="creating-root-folder">Creating root folder<a class="headerlink" href="#creating-root-folder" title="Permanent link">&para;</a></h3>
-<p>Everything that Kapowarr does concerning files is done only within <a href="../../settings/mediamanagement/#root-folders">root folders</a>. If you don't already have a folder where all your comics are in, create one. Follow the same instructions as for <a href="#create-docker-volume-or-folder">creating a local folder for the database</a>, but then for your root folder.</p>
-<p>You can create multiple root folders (on multiple drives for example). If you desire multiple root folders, repeat the steps.</p>
+<p>Everything that Kapowarr does concerning media files is done only within <a href="../../settings/mediamanagement/#root-folders">root folders</a>. If you don't already have a folder where all your comics are in, create one. Follow the same instructions as for <a href="#create-docker-volume-or-folder">creating a local folder for the database</a>, but then for your root folder.</p>
+<p>You can create multiple root folders (on multiple drives for example). If you want multiple root folders, repeat the steps.</p>
 <div class="admonition info">
 <p class="admonition-title">Permissions and ownership</p>
 <p>Root folders require read and write permissions. More documentation on this subject coming.</p>
@@ -1447,7 +1453,7 @@
 </div>
 <p>A few notes about this command:</p>
 <ol>
-<li>If you're using a folder on the host machine instead of a docker volume to store the database file (<a href="#create-docker-volume-or-folder">reference</a>), replace <code class="highlight">kapowarr-db</code> with the path to the host folder.</li>
+<li>If you're using a folder on the host machine instead of a docker volume to store the database file (<a href="#create-docker-volume-or-folder">reference</a>), replace <code class="highlight">kapowarr-db</code> with the path to the host folder. It's mapped to <code class="highlight">/app/db</code> inside the container.</li>
 </ol>
 <div class="admonition example">
 <p class="admonition-title">Examples</p>
@@ -1457,7 +1463,7 @@
 </ul>
 </div>
 <ol start="2">
-<li>Replace <code class="highlight"><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">download_folder</span></code> with the path to the desired download folder, <a href="#creating-download-folder">that you created earlier</a>.</li>
+<li>Replace <code class="highlight"><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">download_folder</span></code> with the path to the desired download folder, <a href="#creating-download-folder">that you created earlier</a>. It's mapped to <code class="highlight"><span class="o">/</span><span class="n">app</span><span class="o">/</span><span class="n">temp_downloads</span></code> inside the container.</li>
 </ol>
 <div class="admonition example">
 <p class="admonition-title">Examples</p>
@@ -1467,7 +1473,7 @@
 </ul>
 </div>
 <ol start="3">
-<li>Replace <code class="highlight">/path/to/root_folder</code> with the path to the desired root folder, <a href="#creating-root-folder">that you created earlier</a>. Later, when Kapowarr is running and you need to add a root folder, the mapped folder is what you'll add (e.g. <code class="highlight">/comics-1</code>).</li>
+<li>Replace <code class="highlight">/path/to/root_folder</code> with the path to the desired root folder, <a href="#creating-root-folder">that you created earlier</a>. It's mapped to <code class="highlight">/comics-1</code> inside the container. So later, when Kapowarr is running and you need to add a root folder, the mapped folder is what you'll add (e.g. <code class="highlight">/comics-1</code>).</li>
 </ol>
 <div class="admonition example">
 <p class="admonition-title">Examples</p>
@@ -1512,7 +1518,7 @@
 </code></pre></div>
 <p>A few notes about the <code class="highlight">docker-compose.yml</code> file:</p>
 <ol>
-<li>If you're using a folder on the host machine instead of a docker volume to store the database file (<a href="#create-docker-volume-or-folder">reference</a>), replace <code class="highlight">kapowarr-db</code> with the path to the host folder.</li>
+<li>If you're using a folder on the host machine instead of a docker volume to store the database file (<a href="#create-docker-volume-or-folder">reference</a>), replace <code class="highlight">kapowarr-db</code> with the path to the host folder. It's mapped to <code class="highlight">/app/db</code> inside the container.</li>
 </ol>
 <div class="admonition example">
 <p class="admonition-title">Examples</p>
@@ -1522,7 +1528,7 @@
 </ul>
 </div>
 <ol start="2">
-<li>Replace <code class="highlight"><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">download_folder</span></code> with the path to the desired download folder, <a href="#creating-download-folder">that you created earlier</a>.</li>
+<li>Replace <code class="highlight"><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">download_folder</span></code> with the path to the desired download folder, <a href="#creating-download-folder">that you created earlier</a>. It's mapped to <code class="highlight"><span class="o">/</span><span class="n">app</span><span class="o">/</span><span class="n">temp_downloads</span></code> inside the container.</li>
 </ol>
 <div class="admonition example">
 <p class="admonition-title">Examples</p>
@@ -1532,7 +1538,7 @@
 </ul>
 </div>
 <ol start="3">
-<li>Replace <code class="highlight">/path/to/root_folder</code> with the path to the desired root folder, <a href="#creating-root-folder">that you created earlier</a>. Later, when Kapowarr is running and you need to add a root folder, the mapped folder is what you'll add (e.g. <code class="highlight">/comics-1</code>).</li>
+<li>Replace <code class="highlight">/path/to/root_folder</code> with the path to the desired root folder, <a href="#creating-root-folder">that you created earlier</a>. It's mapped to <code class="highlight">/comics-1</code> inside the container. So later, when Kapowarr is running and you need to add a root folder, the mapped folder is what you'll add (e.g. <code class="highlight">/comics-1</code>).</li>
 </ol>
 <div class="admonition example">
 <p class="admonition-title">Examples</p>
@@ -1669,7 +1675,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2024-10-30T11:43:44+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2024-10-30</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2025-01-23T14:15:51+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2025-01-23</span>
   </span>
 
     

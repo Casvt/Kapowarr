@@ -1403,47 +1403,44 @@
 
 <h1 id="volume-management">Volume Management<a class="headerlink" href="#volume-management" title="Permanent link">&para;</a></h1>
 <h2 id="adding-volumes-to-your-library">Adding Volumes To Your Library<a class="headerlink" href="#adding-volumes-to-your-library" title="Permanent link">&para;</a></h2>
-<p>There are two ways you can add volumes - manually, or by importing.<br />
-See the <a href="../features/#library-import">Library Import documentation</a> for more information on that.<br />
-To add a volume to your library manually, follow the instructions below:</p>
+<p>There are two ways you can add volumes: manually or by importing. To add a volume to your library manually, follow the instructions below. To add a volume by importing files for it, see the <a href="../features/#library-import">Library Import documentation</a>.</p>
+<p>To manually add a volume:</p>
 <ol>
 <li>Make sure that you set a <a href="../../settings/mediamanagement/#root-folders">Root Folder</a>.</li>
 <li>Make sure that you set your ComicVine API Key <a href="../../settings/general/#comic-vine-api-key">in the settings</a>.</li>
 <li>In the web-UI, go to Volumes -&gt; Add Volume.</li>
 <li>Enter a search term (or the CV ID of the volume).</li>
 <li>In the search results, click on the volume that you want to add.</li>
-<li>Choose a root folder to put the volume folder in, set a custom volume folder (instead of the <a href="../../settings/mediamanagement/#volume-folder-naming">generated one</a>) and choose if it should be monitored.</li>
+<li>Choose a root folder to put the volume folder in, change the volume folder if the generated one isn't desired (it's generated based on <a href="../../settings/mediamanagement/#volume-folder-naming">the setting for it</a>) and choose if it should be monitored.</li>
 <li>Click 'Add Volume' to add it to your library. Done!</li>
 </ol>
 <h2 id="managing-files">Managing Files<a class="headerlink" href="#managing-files" title="Permanent link">&para;</a></h2>
 <p>Now that you have a volume in your library, Kapowarr/you can start managing it.  </p>
 <p>When clicking on a volume in your library, you get taken to the volume page. It shows information about the volume and the issues that are in it. You can also click on an issue to get extra specific information about it. At the top, there is a tool bar with multiple options.</p>
 <h3 id="refresh-scan">Refresh &amp; Scan<a class="headerlink" href="#refresh-scan" title="Permanent link">&para;</a></h3>
-<p>The 'Refresh &amp; Scan' button will update the metadata of the volume (= refresh) and scan for files (= scan).<br />
-Under the metadata update falls data like the poster, title, release year and description but also the issue list and their descriptions, issue numbers and release dates.<br />
-The file scanning will look in the volume folder for files and will try to match them to the issues. If Kapowarr is able to match them to an issue, that issue will be marked as downloaded. More information on how Kapowarr matches files to issues can be found on the <a href="../matching/">'Matching' page</a>.</p>
-<p>On the home page (a.k.a. library page/view), the button 'Update All' will trigger a Refresh &amp; Scan for all volumes. The metadata of a volume is automatically updated every 24 hours, but will be forcibly updated if you trigger a Refresh &amp; Scan manually. More information on the risks of doing this too often can be found on the <a href="../../other_docs/rate_limiting/#comicvine">'Rate Limiting' page</a>.</p>
+<p>The 'Refresh &amp; Scan' button will update the metadata of the volume (= refresh) and scan for files (= scan). Under the metadata update falls data like the poster, title, release year and description but also the issue list and their descriptions, issue numbers and release dates. The file scanning will look in the volume folder for files and will try to match them to the issues. If Kapowarr is able to match them to an issue, that issue will be marked as downloaded. The criteria that the file has to meet in order to match to an issue can be found on the <a href="../matching/">'Matching' page</a>.</p>
+<p>On the home page (a.k.a. library page/view), the button 'Update All' will trigger a Refresh &amp; Scan for all volumes. The metadata of a volume is automatically updated every 24 hours by default, but will be forcibly updated if you trigger a Refresh &amp; Scan manually. More information on the risks of doing this too often can be found on the <a href="../../other_docs/rate_limiting/#comicvine">'Rate Limiting' page</a>.</p>
 <h3 id="preview-rename">Preview Rename<a class="headerlink" href="#preview-rename" title="Permanent link">&para;</a></h3>
-<p>Kapowarr has the ability to easily manage your files by (re)naming them all to one consistent format. You can change how Kapowarr should name files and folders <a href="../../settings/mediamanagement/#file-naming">in the settings</a>. The 'Preview Rename' button will show a list of the files for the volume and what Kapowarr will rename them to, if you agree.</p>
+<p>Kapowarr has the ability to easily manage your files by (re)naming them all to one consistent format. You can change how Kapowarr should name files and folders <a href="../../settings/mediamanagement/#file-naming">in the settings</a>. The 'Preview Rename' button will show a list of the files for the volume and what Kapowarr will rename them to. Click the "Rename" button to finalise it.</p>
 <h3 id="preview-convert">Preview Convert<a class="headerlink" href="#preview-convert" title="Permanent link">&para;</a></h3>
-<p>Another feature of Kapowarr is the ability to change the format of files. For example, Kapowarr can convert cbr files to cbz. To what format Kapowarr will change the files is set <a href="../../settings/mediamanagement/#format-preference">in the settings</a>. The 'Convert' button will show a list of the files for the volume and what format Kapowarr will convert them to, if you agree.</p>
+<p>Another feature of Kapowarr is the ability to change the format of files. For example, Kapowarr can convert cbr files to cbz. To what format Kapowarr will change the files is set <a href="../../settings/mediamanagement/#format-preference">in the settings</a>. The 'Preview Convert' button will show a list of the files for the volume and what format Kapowarr will convert them to. Click the "Convert" button to finalise it.</p>
 <div class="admonition info">
 <p class="admonition-title">Extracting Archives</p>
-<p>If you download multiple issues in one go, they often come in a zip file (e.g. <code class="highlight">Issue 1-10.zip</code>). Kapowarr can extract these archive files and put the contents directly in the folder. See the <a href="../../settings/mediamanagement/#extract-archives-covering-multiple-issues">'Extract archives covering multiple issues' setting</a> to enable this.</p>
+<p>If you download multiple issues in one go, they often come in an archive file (e.g. <code class="highlight">Issue 1-10.zip</code>). Kapowarr can extract these archive files and put the contents directly in the folder. This functionality falls under 'Conversion'. See the <a href="../../settings/mediamanagement/#extract-archives-covering-multiple-issues">'Extract archives covering multiple issues' setting</a> to enable this.</p>
 </div>
 <h3 id="root-folder-and-volume-folder">Root folder and Volume folder<a class="headerlink" href="#root-folder-and-volume-folder" title="Permanent link">&para;</a></h3>
-<p>Clicking on the 'Edit' button will show a screen where you can edit the two folders of the volume: the root folder and the volume folder. The root folder is the base folder that the volume folder lives in and the volume folder is the specific folder inside the root folder that is destined for the volume. You can change both, and Kapowarr will move everything to the correct location for you.</p>
+<p>Clicking on the 'Edit' button will show a screen where you can edit the two folders of the volume: the root folder and the volume folder. The root folder is the base folder that the volume folder lives in and the volume folder is the specific folder inside the root folder that is destined for the volume. You can change both, and Kapowarr will move all the files to the new location for you.</p>
 <h2 id="downloading">Downloading<a class="headerlink" href="#downloading" title="Permanent link">&para;</a></h2>
 <p>This section covers the 'downloading' category. Implementation details on how Kapowarr downloads media can be found on the <a href="../downloading/">'Downloading' page</a>.</p>
 <h3 id="monitoring">Monitoring<a class="headerlink" href="#monitoring" title="Permanent link">&para;</a></h3>
 <p>If a volume is monitored, Kapowarr will try to automatically download media for it. If a volume is unmonitored, it won't. The monitored status does not exclude a volume from manual downloads, metadata updates (<a href="#refresh--scan">Refresh &amp; Scan</a>) or file scanning. You can also (un)monitor individual issues of a volume.</p>
 <h3 id="auto-search">Auto Search<a class="headerlink" href="#auto-search" title="Permanent link">&para;</a></h3>
-<p>The button 'Search Monitored' will make Kapowarr try to download media for issues that aren't downloaded yet. This button only does something if the volume is monitored and at least one of it's monitored issues doesn't have a file yet. It uses <a href="https://getcomics.org">GetComics</a> as it's source. It will try to find a download for as many issues as possible, but it isn't guaranteed that it will always find a matching and working download.</p>
-<p>On the home page, the button 'Search All' will trigger a 'Search Monitored' for all monitored volumes. This is done every 24 hours automatically, but you can also trigger it manually.</p>
+<p>The button 'Search Monitored' will make Kapowarr try to download media for issues that aren't downloaded yet. This button only does something if the volume is monitored and at least one of it's monitored issues doesn't have a file yet. It will try to find a download for as many issues as possible, but it isn't guaranteed that it will always find a matching and working download.</p>
+<p>On the home page, the button 'Search All' will trigger a 'Search Monitored' for all monitored volumes. A search is done automatically every 24 hours by default, but you can also trigger it manually.</p>
 <h3 id="manual-search">Manual Search<a class="headerlink" href="#manual-search" title="Permanent link">&para;</a></h3>
 <p>The button 'Manual Search' will show you a list of search results for the volume/issue. From these results, you can choose yourself which one Kapowarr will download. It is possible that the page does not contain any matching and working downloads. In that case, the download button will turn red and the page will be added to the blocklist.</p>
 <h3 id="download-queue-and-post-processing">Download Queue and Post Processing<a class="headerlink" href="#download-queue-and-post-processing" title="Permanent link">&para;</a></h3>
-<p>When a download is added to the queue, you can see it on the Activity -&gt; Queue page. Kapowarr will download the files one by one (except for torrent files, the queue for those is handled by the torrent client). When a download is complete, it will enter post-download processing (a.k.a. post-processing). Entirely depending on your configuration, the file could be renamed, converted to a different format and/or be extracted (if it's an archive file with multiple issues inside). It will always be moved from the <a href="../../settings/download/#direct-download-temporary-folder">download folder</a> to it's final destination inside the volume folder.</p>
+<p>When a download is added to the queue, you can see it on the Activity -&gt; Queue page. When a download is complete, it will enter post-download processing (a.k.a. post-processing). Entirely depending on your configuration, the file could be renamed, converted to a different format and/or be extracted (if it's an archive file with multiple issues inside). It will always be moved from the <a href="../../settings/download/#direct-download-temporary-folder">download folder</a> to it's final destination inside the volume folder.</p>
 <p>When you view the volume after the download, you'll see that the issue now has a check mark on the right, indicating that it has been downloaded.</p>
 
 
@@ -1465,7 +1462,7 @@ The file scanning will look in the volume folder for files and will try to match
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2024-09-05T20:37:23+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2024-09-05</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2025-01-23T14:15:51+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2025-01-23</span>
   </span>
 
     

@@ -1332,23 +1332,23 @@
 <p>Kapowarr uses <a href="https://comicvine.gamespot.com/">ComicVine</a> as it's metadata source. To fetch the metadata from ComicVine, Kapowarr needs access to it's API, which requires an API key.</p>
 <p>See the <a href="../../settings/general/#comic-vine-api-key">'Comic Vine API Key' setting</a> for how to get one. Once you've entered your key and hit 'Save', move on to Root Folders.  </p>
 <h2 id="root-folders">Root folders<a class="headerlink" href="#root-folders" title="Permanent link">&para;</a></h2>
-<p>Root folders are the base folders that Kapowarr works in. All content is put in these folders. See the <a href="../../settings/mediamanagement/#root-folders">'Root Folders' section of the settings</a> for more details.</p>
+<p>Root folders are the base folders that Kapowarr works in. All media files are put in these folders. See the <a href="../../settings/mediamanagement/#root-folders">'Root Folders' section of the settings</a> for more details.</p>
 <div class="admonition info">
 <p class="admonition-title">You need at least one root folder</p>
 <p>At least one root folder must be set before you are able to add any volumes to your library.</p>
 </div>
-<div class="admonition warning adding root folders on docker">
-<p class="admonition-title">Warning</p>
+<div class="admonition warning">
+<p class="admonition-title">Adding root folders on Docker</p>
 <p>If you use Docker to run Kapowarr, then the root folder that you enter in the web-UI is the mapped folder, not the folder path on the host machine. That means that if you followed the <a href="../docker/#launch-container">installation instructions</a>, you would need to enter <code class="highlight">/comics-1</code>, <code class="highlight">/comics-2</code>, etc. as your root folder. This mistake is often made.</p>
 </div>
 <h2 id="direct-download-temporary-folder">Direct Download Temporary Folder<a class="headerlink" href="#direct-download-temporary-folder" title="Permanent link">&para;</a></h2>
-<p>If you want to, you can change the folder that Kapowarr downloads files to. It's called the <a href="../../settings/download/#direct-download-temporary-folder">'Direct Download Temporary Folder' setting</a>.</p>
+<p>This is only applicable to people <em>not</em> using Docker. If you want to, you can change the folder that Kapowarr downloads files to using the <a href="../../settings/download/#direct-download-temporary-folder">'Direct Download Temporary Folder' setting</a>.</p>
 <h2 id="service-preference">Service preference<a class="headerlink" href="#service-preference" title="Permanent link">&para;</a></h2>
+<p>The <a href="../../settings/download/#service-preference">'Service Preference' section of the settings</a> dictate which download service Kapowarr should choose when multiple are available to use for a download. </p>
 <p>If you have an account with Mega, set that service as the priority and add a credential for it. The other services will then be used as a fallback option for if a link fails.</p>
-<p>For a full explanation, see the <a href="../../settings/download/#service-preference">'Service Preference' section of the settings</a>.  </p>
+<p>For a full explanation, see .  </p>
 <h2 id="credentials">Credentials<a class="headerlink" href="#credentials" title="Permanent link">&para;</a></h2>
-<p>This only applies if you have an account with Mega (for now). Kapowarr can take advantage of the higher limits (download speed, daily size limit, etc.) that an account has to offer.</p>
-<p>See the <a href="../../settings/download/#credentials">'Credentials' section of the settings</a> for more info.</p>
+<p>This only applies if you have an account with Mega (for now). Kapowarr can take advantage of the higher limits (download speed, daily size limit, etc.) that an account has to offer. Enter the credentials of the account at Settings -&gt; Download Clients -&gt; Mega. Afterwards, go to Settings -&gt; Download -&gt; Service Preference, and make sure to put Mega at the top. This will make Kapowarr prefer to use Mega when available.</p>
 <h2 id="building-a-library">Building a library<a class="headerlink" href="#building-a-library" title="Permanent link">&para;</a></h2>
 <p>Now that you are ready, you can start <a href="../../general_info/managing_volume/#adding-volumes-to-your-library">adding volumes to your library</a>. If you have an existing library that you want to import into Kapowarr, use the <a href="../../general_info/features/#library-import">Library Import</a> feature found at Volumes -&gt; Library Import.</p>
 
@@ -1371,7 +1371,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2024-10-30T11:43:44+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2024-10-30</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago"><span class="timeago" datetime="2025-01-23T14:15:51+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date">2025-01-23</span>
   </span>
 
     
