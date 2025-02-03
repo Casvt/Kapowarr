@@ -9,7 +9,7 @@ from os import listdir, makedirs, remove, scandir
 from os.path import (abspath, basename, commonpath, dirname, isdir,
                      isfile, join, relpath, samefile, sep, splitext)
 from re import compile
-from shutil import copytree, move, rmtree
+from shutil import copy2, copytree, move, rmtree
 from typing import Deque, Dict, Iterable, List, Sequence, Set
 
 from backend.base.definitions import CharConstants, Constants
@@ -235,6 +235,31 @@ def create_folder(folder: str) -> None:
 
 
 # region Moving
+def __copy2(src, dst, *, follow_symlinks=True):
+    try:
+        return copy2(src, dst, follow_symlinks=follow_symlinks)
+
+    except PermissionError as pe:
+        if pe.errno == 1:
+            # Issue 117
+            # NFS file system doesn't allow/support chmod.
+            # This is done after the file is already copied. So just accept that
+            # it isn't possible to change the permissions. Continue like normal.
+            return dst
+
+        raise
+
+    except OSError as oe:
+        if oe.errno == 524:
+            # Issue 229
+            # NFS file system doesn't allow/support setting extended attributes.
+            # This is done after the file is already copied. So just accept that
+            # it isn't possible to set them. Continue like normal.
+            return dst
+
+        raise
+
+
 def rename_file(
     before: str,
     after: str
@@ -255,14 +280,7 @@ def rename_file(
     create_folder(dirname(after))
 
     # Move file into folder
-    try:
-        move(before, after)
-    except PermissionError:
-        # Happens when moving between an NFS file system.
-        # Raised when chmod is used inside.
-        # Checking the source code, chmod is used at the very end,
-        #     so just skipping it is alright I think.
-        pass
+    move(before, after, copy_function=__copy2)
 
     return
 
@@ -274,15 +292,7 @@ def copy_directory(source: str, target: str) -> None:
         source (str): The path to the source directory.
         target (str): The path to where the directory should be copied.
     """
-    try:
-        copytree(source, target)
-    except PermissionError:
-        # Happens when moving between an NFS file system.
-        # Raised when chmod is used inside.
-        # Checking the source code, chmod is used at the very end,
-        #     so just skipping it is alright I think.
-        pass
-
+    copytree(source, target, copy_function=__copy2)
     return
 
 
