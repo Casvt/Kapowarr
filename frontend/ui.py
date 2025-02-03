@@ -11,7 +11,7 @@ methods = ['GET']
 
 
 def render(filename: str, **kwargs: Any) -> str:
-    return render_template(filename, url_prefix=SERVER.url_base, **kwargs)
+    return render_template(filename, url_base=SERVER.url_base, **kwargs)
 
 
 @ui.route('/login', methods=methods)
