@@ -140,5 +140,4 @@ dmypy.json
 temp_downloads/*
 
 # Project management files
-release.sh
-release_alpha.sh
+release*.sh
