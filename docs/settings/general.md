@@ -42,7 +42,7 @@ You might want to set a password to restrict access to the web-ui (and API). Thi
 
 This is where Kapowarr defines the API key for any queries made to the [Kapowarr API](../other_docs/api.md).
 
-## Comic Vine API
+## External Websites
 
 ### Comic Vine API Key
 
@@ -54,6 +54,10 @@ Kapowarr uses ComicVine as its metadata source. To fetch the metadata from Comic
 4. Copy that API key and set it as the value in the web-UI. Don't forget to save.
 
 On the documentation page about [rate limiting](../other_docs/rate_limiting.md), information can be found about the handling of the ComicVine API rate limit.
+
+### FlareSolverr Base URL
+
+Multiple services are protected by CloudFlare. This means that if Kapowarr makes too many requests too quickly, CloudFlare will block Kapowarr. [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) is a software that can bypass this block. Kapowarr can use FlareSolverr to make requests without getting blocked. If Kapowarr experiences a CloudFlare block and it doesn't have FlareSolverr setup, it will log this. Enter the base URL of your FlareSolverr instance if you want Kapowarr to make use of it. Supply the base URL without the API prefix (`/v1`).
 
 ## UI
 

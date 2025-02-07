@@ -5,7 +5,6 @@ function fillSettings(api_key) {
 		document.querySelector('#torrent-timeout-input').value = ((json.result.failing_torrent_timeout || 0) / 60) || '';
 		document.querySelector('#seeding-handling-input').value = json.result.seeding_handling;
 		document.querySelector('#delete-torrents-input').checked = json.result.delete_completed_torrents;
-		document.querySelector('#flaresolverr-input').value = json.result.flaresolverr_base_url;
 		fillPref(json.result.service_preference);
 	});
 };
@@ -13,13 +12,11 @@ function fillSettings(api_key) {
 function saveSettings(api_key) {
 	document.querySelector("#save-button p").innerText = 'Saving';
 	document.querySelector('#download-folder-input').classList.remove('error-input');
-	document.querySelector("#flaresolverr-input").classList.remove('error-input');
 	const data = {
 		'download_folder': document.querySelector('#download-folder-input').value,
 		'failing_torrent_timeout': parseInt(document.querySelector('#torrent-timeout-input').value || 0) * 60,
 		'seeding_handling': document.querySelector('#seeding-handling-input').value,
 		'delete_completed_torrents': document.querySelector('#delete-torrents-input').checked,
-		'flaresolverr_base_url': document.querySelector('#flaresolverr-input').value,
 		'service_preference': [...document.querySelectorAll('#pref-table select')].map(e => e.value)
 	};
 	sendAPI('PUT', '/settings', api_key, {}, data)
@@ -36,12 +33,6 @@ function saveSettings(api_key) {
                 e.error === "FolderNotFound"
             )
                 document.querySelector('#download-folder-input').classList.add('error-input');
-
-			else if (
-				e.error === "InvalidSettingValue"
-				&& e.result.key === "flaresolverr_base_url"
-			)
-				document.querySelector("#flaresolverr-input").classList.add('error-input');
 
 			else
                 console.log(e);

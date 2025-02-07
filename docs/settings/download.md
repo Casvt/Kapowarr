@@ -27,12 +27,6 @@ When a torrent has completed downloading, it will start to seed depending on the
 
 Whether Kapowarr should delete torrents from the client once they have completed. Otherwise leave them in the queue of the torrent client as 'completed'.
 
-## Requests to Sources
-
-### FlareSolverr Base URL
-
-Multiple services are protected by CloudFlare. This means that if Kapowarr makes too many requests too quickly, CloudFlare will block Kapowarr. [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) is a software that can bypass this block. Kapowarr can use FlareSolverr to make requests without getting blocked. If Kapowarr experiences a CloudFlare block and it doesn't have FlareSolverr setup, it will log this. Enter the base URL of your FlareSolverr instance if you want Kapowarr to make use of it. Supply the base URL without the API prefix (`/v1`).
-
 ## Service preference
 
 Kapowarr has the ability to download directly from the servers of GetComics, but also to download from services like MediaFire and Mega. When an issue is queried on [GetComics](https://getcomics.org/) and found to have multiple possible download sources, this defines which source takes priority. If the first download fails, Kapowarr will try the next service in order.
