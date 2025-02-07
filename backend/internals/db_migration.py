@@ -1096,3 +1096,27 @@ class MigrateExternalDownloadClients(DBMigrator):
         """)
 
         return
+
+
+class MigrateTypeHostingSettings(DBMigrator):
+    start_version = 34
+
+    def run(self) -> None:
+        # V34 -> V35
+
+        from backend.internals.db import get_db
+        from backend.internals.settings import Settings
+
+        cursor = get_db()
+        port = cursor.execute(
+            "SELECT value FROM config WHERE key = 'port' LIMIT 1;"
+        ).fetchone()[0]
+
+        cursor.execute(
+            "UPDATE config SET value=? WHERE key = 'port';",
+            (int(port),)
+        )
+
+        settings = Settings()
+        settings._fetch_settings()
+        settings.backup_hosting_settings()
