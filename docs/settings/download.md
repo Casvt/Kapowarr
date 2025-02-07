@@ -10,7 +10,11 @@ If you run Kapowarr using Docker, leave this set to the default value of `/app/t
 
 This isn't so much of a setting as it is a tool. It will delete all files from the download folder that aren't actively being downloaded. This can be handy if the application crashed while downloading, leading to half-downloaded 'ghost' files in the folder.  
 
-## Completed Download Handling
+## Queue
+
+### Failing Torrent Timeout
+
+If a torrent is stalled (no seeders, no metadata found, etc.) for a long time, you can be pretty confident that it's not going to work. Kapowarr can automatically delete a torrent when it's stalled for a set amount of minutes. So for example, if you set it to 60, then Kapowarr will delete torrents that have been stalled for more than 60 minutes. Make the field empty (or set it to 0) to disable this feature.
 
 ### Seeding Handling
 

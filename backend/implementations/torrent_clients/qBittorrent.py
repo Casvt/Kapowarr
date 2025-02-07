@@ -11,6 +11,7 @@ from backend.base.definitions import Constants, DownloadState, DownloadType
 from backend.base.helpers import Session
 from backend.base.logging import LOGGER
 from backend.implementations.external_clients import BaseExternalClient
+from backend.internals.settings import Settings
 
 filename_magnet_link = compile(r'(?<=&dn=).*?(?=&)', IGNORECASE)
 
@@ -45,6 +46,7 @@ class qBittorrent(BaseExternalClient):
 
         self.ssn: Union[Session, None] = None
         self.torrent_hashes: Dict[str, Union[int, None]] = {}
+        self.settings = Settings()
         return
 
     @staticmethod
@@ -155,8 +157,15 @@ class qBittorrent(BaseExternalClient):
                 self.torrent_hashes[download_id] = round(time())
                 state = DownloadState.DOWNLOADING_STATE
 
-            elif time() - (self.torrent_hashes[download_id] or 0) > 86400:
-                state = DownloadState.FAILED_STATE
+            else:
+                timeout = self.settings.sv.failing_torrent_timeout
+                if timeout and (
+                    time() - (self.torrent_hashes[download_id] or 0)
+                    > timeout
+                ):
+                    state = DownloadState.FAILED_STATE
+        else:
+            self.torrent_hashes[download_id] = None
 
         return {
             'size': result['total_size'],

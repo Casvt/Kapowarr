@@ -36,9 +36,16 @@
 					</tr>
 				</tbody>
 			</table>
-			<h2>Completed Download Handling</h2>
+			<h2>Queue</h2>
 			<table class="fold-table">
 				<tbody>
+					<tr>
+						<th><label for="torrent-timeout-input">Failing Torrent Timeout</label></th>
+						<td>
+							<input type="number" id="torrent-timeout-input" min="0">
+							<p>Time in minutes that the torrent is stalled before it's considered to be failing and is removed from the queue. Set empty to disable.</p>
+						</td>
+					</tr>
 					<tr>
 						<th><label for="seeding-handling-input">Seeding Handling</label></th>
 						<td>

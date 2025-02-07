@@ -54,6 +54,7 @@ class SettingsValues:
         (s.value for s in GCDownloadSource._member_map_.values())
     ))
     download_folder: str = folder_path('temp_downloads')
+    failing_torrent_timeout: int = 0
     seeding_handling: SeedingHandling = SeedingHandling.COPY
     delete_completed_torrents: bool = True
 
@@ -356,6 +357,9 @@ class Settings(metaclass=Singleton):
                     or folder_is_inside_folder(converted_value, rf.folder)
                 ):
                     raise InvalidSettingValue(key, value)
+
+        elif key == 'failing_torrent_timeout' and not 0 <= value:
+            raise InvalidSettingValue(key, value)
 
         elif key == 'volume_padding' and not 1 <= value <= 3:
             raise InvalidSettingValue(key, value)
