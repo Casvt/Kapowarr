@@ -120,8 +120,7 @@ class Server(metaclass=Singleton):
             app,
             path=f'{self.api_prefix}/socket.io',
             cors_allowed_origins='*',
-            async_mode='threading',
-            transports='polling'
+            async_mode='threading'
         )
 
         # Add error handlers

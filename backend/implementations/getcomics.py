@@ -710,8 +710,8 @@ async def _test_paths(
     settings = Settings().get_settings()
     rename_downloaded_files = settings.rename_downloaded_files
 
-    downloads: List[Union[Download, None]] = []
-    limit_reached: List[bool] = []
+    downloads: Tuple[Union[Download, None]] = tuple()
+    limit_reached: Tuple[bool] = tuple()
     for path in link_paths:
         downloads, limit_reached = zip(*(await gather(*(
             __purify_download_group(
