@@ -531,6 +531,7 @@ class ComicVine:
                         f"Waiting {Constants.CV_BRAKE_TIME}s to keep the CV rate limit happy")
                     await sleep(Constants.CV_BRAKE_TIME)
 
+                # Fetch 10 batches of 100 volumes
                 tasks = [
                     self.__call_api(
                         session,
@@ -545,21 +546,27 @@ class ComicVine:
                 ]
                 responses = await gather(*tasks)
 
+                # Format volume responses and prep cover requests
                 cover_map: Dict[int, Any] = {}
+                current_infos: List[VolumeMetadata] = []
                 for batch in responses:
                     for result in batch['results']:
                         volume_info = self.__format_volume_output(result)
-                        volume_infos.append(volume_info)
+                        current_infos.append(volume_info)
 
                         cover_map[volume_info['comicvine_id']] = self.__call_request(
                             session, volume_info['cover_link'])
 
+                # Fetch covers and add them to the volume info
                 cover_responses = dict(zip(
                     cover_map.keys(),
                     await gather(*cover_map.values())
                 ))
-                for vi in volume_infos:
+                for vi in current_infos:
                     vi['cover'] = cover_responses.get(vi['comicvine_id'])
+
+                # Add volume info of this round to total list
+                volume_infos.extend(current_infos)
 
             return volume_infos
 
