@@ -184,7 +184,9 @@ class DownloadHandler(metaclass=Singleton):
                 else:
                     # Queued, downloading or
                     # seeding with files copied or seeding_handling = 'complete'
-                    sleep(Constants.TORRENT_UPDATE_INTERVAL)
+                    download.sleep_event.wait(
+                        timeout=Constants.TORRENT_UPDATE_INTERVAL
+                    )
 
             ws.send_queue_ended(download)
         return

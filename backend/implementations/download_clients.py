@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from os.path import basename, join, sep, splitext
 from re import IGNORECASE, compile
-from threading import Thread
+from threading import Event, Thread
 from time import perf_counter
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union, final
 from urllib.parse import unquote_plus
@@ -173,6 +173,7 @@ class BaseDirectDownload(Download):
         settings = Settings().sv
         volume = Volume(volume_id)
 
+        self.__r = None
         self._download_link = download_link
         self._volume_id = volume_id
         self._issue_id = None
@@ -277,9 +278,11 @@ class BaseDirectDownload(Download):
         ws = WebSocket()
         ws.update_queue_status(self)
 
-        with self._fetch_pure_link() as r, \
+        with \
+            self._fetch_pure_link() as r, \
             open(self.files[0], 'wb') as f:
 
+            self.__r = r
             start_time = perf_counter()
             try:
                 for chunk in r.iter_content(chunk_size=DOWNLOAD_CHUNK_SIZE):
@@ -313,12 +316,21 @@ class BaseDirectDownload(Download):
             except RequestException:
                 self._state = DownloadState.FAILED_STATE
 
+            finally:
+                self.__r = None
+
         return
 
     def stop(self,
         state: DownloadState = DownloadState.CANCELED_STATE
     ) -> None:
         self._state = state
+        if (
+            self.__r
+            and self.__r.raw._fp
+            and not isinstance(self.__r.raw._fp, str)
+        ):
+            self.__r.raw._fp.fp.raw._sock.shutdown(2) # SHUT_RDWR
         return
 
     def todict(self) -> Dict[str, Any]:
@@ -573,7 +585,7 @@ class MegaDownload(BaseDirectDownload):
     def stop(self,
         state: DownloadState = DownloadState.CANCELED_STATE
     ) -> None:
-        super().stop(state)
+        self._state = state
         self._mega.downloading = False
         return
 
@@ -595,6 +607,10 @@ class TorrentDownload(ExternalDownload, BaseDirectDownload):
     @property
     def external_id(self) -> Union[str, None]:
         return self._external_id
+
+    @property
+    def sleep_event(self) -> Event:
+        return self._sleep_event
 
     def __init__(
         self,
@@ -637,6 +653,7 @@ class TorrentDownload(ExternalDownload, BaseDirectDownload):
         self._size = -1
         self._download_thread = None
         self._download_folder = settings.download_folder
+        self._sleep_event = Event()
 
         self._external_id: Union[str, None] = None
         if external_client:
@@ -725,6 +742,7 @@ class TorrentDownload(ExternalDownload, BaseDirectDownload):
         state: DownloadState = DownloadState.CANCELED_STATE
     ) -> None:
         self._state = state
+        self._sleep_event.set()
         return
 
     def todict(self) -> Dict[str, Any]:

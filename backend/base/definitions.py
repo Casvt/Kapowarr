@@ -9,7 +9,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass
 from enum import Enum
-from threading import Thread
+from threading import Event, Thread
 from typing import (TYPE_CHECKING, Any, Dict, List, Mapping,
                     Sequence, Tuple, TypedDict, TypeVar, Union)
 
@@ -1016,6 +1016,12 @@ class ExternalDownload(Download):
     @abstractmethod
     def external_id(self) -> Union[str, None]:
         """The ID/hash of the download in the external client."""
+        ...
+
+    @property
+    @abstractmethod
+    def sleep_event(self) -> Event:
+        """A threading.Event to use for sleeping the download thread."""
         ...
 
     @abstractmethod
