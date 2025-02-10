@@ -191,7 +191,10 @@ def manual_search(
     issue_number: Union[str, None] = None
     calculated_issue_number: Union[float, None] = None
 
-    if issue_id and volume_data.special_version.value is None:
+    if issue_id and volume_data.special_version in (
+        SpecialVersion.NORMAL,
+        SpecialVersion.VOLUME_AS_ISSUE
+    ):
         issue_data = volume.get_issue(issue_id).get_data()
         issue_number = issue_data.issue_number
         calculated_issue_number = issue_data.calculated_issue_number
