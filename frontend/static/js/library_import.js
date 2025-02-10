@@ -112,7 +112,7 @@ function openEditCVMatch(rowid) {
 function editCVMatch(
 	rowid,
 	comicvine_id,
-	comicvine_info,
+	site_url,
 	title,
 	year,
 	issue_count,
@@ -127,7 +127,7 @@ function editCVMatch(
 	target_td.forEach(tr => {
 		rowid_to_filepath[tr.dataset.rowid].cv_id = parseInt(comicvine_id);
 		const link = tr.querySelector('a');
-		link.href = comicvine_info;
+		link.href = site_url;
 		link.innerText = `${title} (${year})`;
 		tr.querySelector('.issue-count').innerText = issue_count;
 	});
@@ -145,7 +145,7 @@ function searchCV() {
 				const entry = LIEls.pre_build.search_result.cloneNode(true);
 
 				const title = entry.querySelector('td:nth-child(1) a');
-				title.href = result.comicvine_info;
+				title.href = result.site_url;
 				title.innerText = `${result.title} (${result.year})`;
 
 				entry.querySelector('td:nth-child(2)').innerText =
@@ -156,7 +156,7 @@ function searchCV() {
 					editCVMatch(
 						LIEls.search.window.dataset.rowid,
 						result.comicvine_id,
-						result.comicvine_info,
+						result.site_url,
 						result.title,
 						result.year,
 						result.issue_count
@@ -172,7 +172,7 @@ function searchCV() {
 					editCVMatch(
 						rowid,
 						result.comicvine_id,
-						result.comicvine_info,
+						result.site_url,
 						result.title,
 						result.year,
 						result.issue_count,
