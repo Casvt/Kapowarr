@@ -363,22 +363,23 @@ def setup_db() -> None:
         );
         CREATE TABLE IF NOT EXISTS download_queue(
             id INTEGER PRIMARY KEY,
+            volume_id INTEGER NOT NULL,
             client_type VARCHAR(255) NOT NULL,
             external_client_id INTEGER,
 
             download_link TEXT NOT NULL,
-            filename_body TEXT NOT NULL,
-            source VARCHAR(25) NOT NULL,
+            covered_issues VARCHAR(255),
+            force_original_name BOOL,
 
-            volume_id INTEGER NOT NULL,
-            issue_id INTEGER,
+            source_type VARCHAR(25) NOT NULL,
+            source_name VARCHAR(255) NOT NULL,
+
             web_link TEXT,
             web_title TEXT,
             web_sub_title TEXT,
 
             FOREIGN KEY (external_client_id) REFERENCES external_download_clients(id),
-            FOREIGN KEY (volume_id) REFERENCES volumes(id),
-            FOREIGN KEY (issue_id) REFERENCES issues(id)
+            FOREIGN KEY (volume_id) REFERENCES volumes(id)
         );
         CREATE TABLE IF NOT EXISTS download_history(
             web_link TEXT,

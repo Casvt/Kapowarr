@@ -1120,3 +1120,38 @@ class MigrateTypeHostingSettings(DBMigrator):
         settings = Settings()
         settings._fetch_settings()
         settings.backup_hosting_settings()
+        return
+
+
+class MigrateDownloadQueueToRefactor(DBMigrator):
+    start_version = 35
+
+    def run(self) -> None:
+        # V35 -> V36
+
+        from backend.internals.db import get_db
+
+        get_db().executescript("""
+            DROP TABLE download_queue;
+            CREATE TABLE IF NOT EXISTS download_queue(
+                id INTEGER PRIMARY KEY,
+                volume_id INTEGER NOT NULL,
+                client_type VARCHAR(255) NOT NULL,
+                external_client_id INTEGER,
+
+                download_link TEXT NOT NULL,
+                covered_issues VARCHAR(255),
+                force_original_name BOOL,
+
+                source_type VARCHAR(25) NOT NULL,
+                source_name VARCHAR(255) NOT NULL,
+
+                web_link TEXT,
+                web_title TEXT,
+                web_sub_title TEXT,
+
+                FOREIGN KEY (external_client_id) REFERENCES external_download_clients(id),
+                FOREIGN KEY (volume_id) REFERENCES volumes(id)
+            );
+        """)
+        return

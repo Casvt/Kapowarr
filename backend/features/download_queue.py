@@ -13,6 +13,8 @@ from threading import Thread
 from time import sleep
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Type, Union
 
+from typing_extensions import assert_never
+
 from backend.base.custom_exceptions import (DownloadLimitReached,
                                             DownloadNotFound, FailedGCPage,
                                             LinkBroken)
@@ -21,7 +23,7 @@ from backend.base.definitions import (BlocklistReason, Constants,
                                       DownloadState, ExternalDownload,
                                       FailReason, SeedingHandling)
 from backend.base.files import create_folder, delete_file_folder
-from backend.base.helpers import Singleton
+from backend.base.helpers import CommaList, Singleton
 from backend.base.logging import LOGGER
 from backend.features.post_processing import (PostProcesser,
                                               PostProcesserTorrentsComplete,
@@ -32,6 +34,7 @@ from backend.implementations.download_clients import (BaseDirectDownload,
                                                       TorrentDownload)
 from backend.implementations.external_clients import ExternalClients
 from backend.implementations.getcomics import GetComicsPage
+from backend.implementations.volumes import Issue
 from backend.internals.db import get_db, iter_commit
 from backend.internals.server import WebSocket
 from backend.internals.settings import Settings
@@ -68,27 +71,6 @@ class DownloadHandler(metaclass=Singleton):
         )
         return
 
-    def __choose_torrent_client(self) -> int:
-        """Get the ID of the torrent client with the least downloads
-
-        Returns:
-            int: The ID of the client
-        """
-        external_clients = (
-            client["id"]
-            for client in ExternalClients.get_clients()
-        )
-        queue_ids = [
-            d.client.id
-            for d in self.queue
-            if isinstance(d, TorrentDownload)
-        ]
-        sorted_list = sorted(
-            external_clients,
-            key=lambda c: queue_ids.count(c)
-        )
-        return sorted_list[0]
-
     def __run_download(self, download: Download) -> None:
         """Start a download. Intended to be run in a thread.
 
@@ -105,11 +87,13 @@ class DownloadHandler(metaclass=Singleton):
 
             except DownloadLimitReached:
                 # Mega download limit reached mid-download
-                download.state = DownloadState.FAILED_STATE
+                download.stop(DownloadState.FAILED_STATE)
                 ws.update_queue_status(download)
                 for d in self.queue:
-                    if (isinstance(d, MegaDownload)
-                    and d != download):
+                    if (
+                        isinstance(d, MegaDownload)
+                        and d != download
+                    ):
                         self.queue.remove(d)
                         ws.send_queue_ended(d)
 
@@ -152,10 +136,12 @@ class DownloadHandler(metaclass=Singleton):
 
             if seeding_handling == SeedingHandling.COMPLETE:
                 post_processer = PostProcesserTorrentsComplete
+
             elif seeding_handling == SeedingHandling.COPY:
                 post_processer = PostProcesserTorrentsCopy
+
             else:
-                raise NotImplementedError
+                assert_never(seeding_handling)
 
             # When seeding_handling is 'copy', keep track if we already copied
             # the files
@@ -217,7 +203,7 @@ class DownloadHandler(metaclass=Singleton):
             (
                 e
                 for e in self.queue
-                if isinstance(e, BaseDirectDownload)
+                if not isinstance(e, ExternalDownload)
             ),
             None
         )
@@ -237,9 +223,7 @@ class DownloadHandler(metaclass=Singleton):
     def __prepare_downloads_for_queue(
         self,
         downloads: List[Download],
-        volume_id: int,
-        issue_id: Union[int, None],
-        page_link: Union[str, None]
+        force_original_name: bool
     ) -> List[Download]:
         """Get download instances ready to be put in the queue.
         Registers them in the db if not already. For torrents,
@@ -248,72 +232,69 @@ class DownloadHandler(metaclass=Singleton):
         Args:
             downloads (List[Download]): The downloads to get ready.
 
-            volume_id (int): The ID of the volume that the downloads are for.
-
-            issue_id (int): The ID of the issue that the downloads are for.
-                Default is None.
-
-            page_link (Union[str, None]): The link to the page where the
-            download was grabbed from.
+            force_original_name (bool): Force the original name of the download.
 
         Returns:
             List[Download]: The downloads, now prepared.
         """
         cursor = get_db()
         for download in downloads:
-            download.volume_id = volume_id
-            download.issue_id = issue_id
-            download.web_link = page_link
-
             if download.id is None:
+                if isinstance(download, ExternalDownload):
+                    external_client_id = download.external_client.id
+                else:
+                    external_client_id = None
+
+                if isinstance(download.covered_issues, tuple):
+                    covered_issues = CommaList(
+                        map(str, download.covered_issues)
+                    ).__str__()
+
+                elif isinstance(download.covered_issues, float):
+                    covered_issues = str(download.covered_issues)
+
+                else:
+                    covered_issues = None
+
                 download.id = cursor.execute(
                     """
                     INSERT INTO download_queue(
-                        client_type, external_client_id,
-                        download_link, filename_body, source,
-                        volume_id, issue_id,
+                        volume_id, client_type, external_client_id,
+                        download_link, covered_issues, force_original_name,
+                        source_type, source_name,
                         web_link, web_title, web_sub_title
                     )
                     VALUES (
-                        ?, ?,
-                        ?, ?, ?,
-                        ?, ?,
-                        ?, ?, ?
+                        :volume_id, :client_type, :external_client_id,
+                        :download_link, :covered_issues, :force_original_name,
+                        :source_type, :source_name,
+                        :web_link, :web_title, :web_sub_title
                     );
                     """,
-                    (
-                        download.type,
-                        None,
-                        download.download_link,
-                        download._filename_body,
-                        download.source.value,
-                        download.volume_id,
-                        download.issue_id,
-                        download.web_link,
-                        download.web_title,
-                        download.web_sub_title
-                    )
+                    {
+                        'volume_id': download.volume_id,
+                        'client_type': download.type,
+                        'external_client_id': external_client_id,
+                        'download_link': download.download_link,
+                        'covered_issues': covered_issues,
+                        'force_original_name': force_original_name,
+                        'source_type': download.source_type.value,
+                        'source_name': download.source_name,
+                        'web_link': download.web_link,
+                        'web_title': download.web_title,
+                        'web_sub_title': download.web_sub_title
+                    }
                 ).lastrowid
 
             if isinstance(download, TorrentDownload):
-                if download.client is None:
-                    download.client = ExternalClients.get_client(
-                        self.__choose_torrent_client()
-                    )
-                    cursor.execute("""
-                        UPDATE download_queue
-                        SET external_client_id = ?
-                        WHERE id = ?;
-                        """,
-                        (download.client.id, download.id)
-                    )
-
-                download._download_thread = Thread(
+                thread = Thread(
                     target=self.__run_torrent_download,
                     args=(download,),
                     name='Torrent Download Handler'
                 )
-                download._download_thread.start()
+                download.download_thread = thread
+                thread.start()
+
             WebSocket().send_queue_added(download)
         return downloads
 
@@ -326,9 +307,9 @@ class DownloadHandler(metaclass=Singleton):
             cursor = get_db()
             downloads = cursor.execute("""
                 SELECT
-                    id, client_type, external_client_id,
-                    download_link, filename_body, source,
-                    volume_id, issue_id,
+                    id, volume_id, client_type, external_client_id,
+                    download_link, covered_issues, force_original_name,
+                    source_type, source_name,
                     web_link, web_title, web_sub_title
                 FROM download_queue;
             """).fetchall()
@@ -339,22 +320,56 @@ class DownloadHandler(metaclass=Singleton):
             for download in iter_commit(downloads):
                 LOGGER.debug(f'Download from database: {dict(download)}')
                 try:
+                    if download['covered_issues'] is None:
+                        covered_issues = None
+
+                    elif ',' in download['covered_issues']:
+                        covered_issues = (
+                            float(download['covered_issues'].split(',')[0]),
+                            float(download['covered_issues'].split(',')[1])
+                        )
+
+                    else:
+                        covered_issues = float(download['covered_issues'])
+
+                    kwargs = {}
+                    if issubclass(
+                        download_type_to_class[download['client_type']],
+                        ExternalDownload
+                    ):
+                        kwargs = {
+                            'external_client': ExternalClients.get_client(
+                                download['external_client_id']
+                            )
+                        }
+
                     dl_instance = download_type_to_class[download['client_type']](
                         download_link=download['download_link'],
-                        filename_body=download['filename_body'],
-                        source=DownloadSource(download['source']),
-                        custom_name=True
+                        volume_id=download['volume_id'],
+                        covered_issues=covered_issues,
+                        source_type=DownloadSource(download['source_type']),
+                        source_name=download['source_name'],
+                        web_link=download['web_link'],
+                        web_title=download['web_title'],
+                        web_sub_title=download['web_sub_title'],
+                        force_original_name=download['force_original_name'],
+                        **kwargs
                     )
                     dl_instance.id = download['id']
-                    dl_instance.web_title = download['web_title']
-                    dl_instance.web_sub_title = download['web_sub_title']
-                    if isinstance(dl_instance, TorrentDownload):
-                        dl_instance.client = ExternalClients.get_client(
-                            download['external_client_id']
-                        )
 
                 except LinkBroken as lb:
                     # Link is broken
+
+                    issue_id = None
+                    if (
+                        download['covered_issues']
+                        and ',' not in download['covered_issues']
+                    ):
+                        issue_id = Issue.from_volume_and_calc_number(
+                            download['volume_id'],
+                            float(download['covered_issues'])
+                        ).id
+
                     add_to_blocklist(
                         web_link=download['web_link'],
                         web_title=download['web_title'],
@@ -362,7 +377,7 @@ class DownloadHandler(metaclass=Singleton):
                         download_link=download['download_link'],
                         source=DownloadSource(download['source']),
                         volume_id=download['volume_id'],
-                        issue_id=download['issue_id'],
+                        issue_id=issue_id,
                         reason=lb.reason
                     )
                     cursor.execute(
@@ -376,9 +391,7 @@ class DownloadHandler(metaclass=Singleton):
 
                 self.queue += self.__prepare_downloads_for_queue(
                     [dl_instance],
-                    download['volume_id'],
-                    download['issue_id'],
-                    download['web_link']
+                    force_original_name=download['force_original_name']
                 )
 
             self._process_queue()
@@ -475,9 +488,7 @@ class DownloadHandler(metaclass=Singleton):
 
         result = self.__prepare_downloads_for_queue(
             downloads,
-            volume_id,
-            issue_id,
-            link if link_type == 'gc' else None
+            force_original_name=force_match
         )
         self.queue += result
 
@@ -497,9 +508,9 @@ class DownloadHandler(metaclass=Singleton):
             self.downloading_item.join()
 
         for e in self.queue:
-            if not isinstance(e, ExternalDownload) or not e._download_thread:
+            if not (isinstance(e, ExternalDownload) and e.download_thread):
                 continue
-            e._download_thread.join()
+            e.download_thread.join()
 
         return
 
@@ -563,7 +574,7 @@ class DownloadHandler(metaclass=Singleton):
                         web_title=download.web_title,
                         web_sub_title=download.web_sub_title,
                         download_link=download.download_link,
-                        source=download.source,
+                        source=download.source_type,
                         volume_id=download.volume_id,
                         issue_id=download.issue_id,
                         reason=BlocklistReason.ADDED_BY_USER
@@ -597,7 +608,11 @@ class DownloadHandler(metaclass=Singleton):
         """
         LOGGER.info(f'Emptying the temporary download folder')
         folder = Settings().sv.download_folder
-        files_in_queue = [basename(download.file) for download in self.queue]
+        files_in_queue = [
+            basename(file)
+            for download in self.queue
+            for file in download.files
+        ]
         files_in_folder = listdir(folder)
         ghost_files = [
             join(folder, f)

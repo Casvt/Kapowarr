@@ -781,54 +781,192 @@ class ExternalDownloadClient(ABC):
 
 
 class Download(ABC):
-    # This block is assigned after initialisation of the object
-    # All types should actually be Union[None, {TYPE}]
-    id: int
-    volume_id: int
-    issue_id: Union[int, None]
-    web_link: Union[str, None]
-    "Link to webpage for download"
-    web_title: Union[str, None]
-    "Title of webpage (or release) for download"
-    web_sub_title: Union[str, None]
-    "Title of sub-section that download falls under (e.g. GC group name)"
-
-    download_link: str
-    "The link to the download or service page (e.g. link to MF page)"
-    pure_link: str
-    "The pure link to download from (e.g. pixeldrain API link or MF folder ID)"
-    source: DownloadSource
     type: str
 
-    _filename_body: str
-    file: str
-    title: str
+    @property
+    @abstractmethod
+    def id(self) -> int:
+        ...
 
-    size: int
-    state: DownloadState
-    progress: float
-    speed: float
+    @id.setter
+    @abstractmethod
+    def id(self, value: int) -> None:
+        ...
+
+    @property
+    @abstractmethod
+    def volume_id(self) -> int:
+        ...
+
+    @property
+    @abstractmethod
+    def issue_id(self) -> Union[int, None]:
+        ...
+
+    @property
+    @abstractmethod
+    def covered_issues(self) -> Union[float, Tuple[float, float], None]:
+        ...
+
+    @property
+    @abstractmethod
+    def web_link(self) -> Union[str, None]:
+        """Link to webpage for download"""
+        ...
+
+    @property
+    @abstractmethod
+    def web_title(self) -> Union[str, None]:
+        """Title of webpage (or release) for download"""
+        ...
+
+    @property
+    @abstractmethod
+    def web_sub_title(self) -> Union[str, None]:
+        """
+        Title of sub-section that download falls under (e.g. GC group name)
+        """
+        ...
+
+    @property
+    @abstractmethod
+    def download_link(self) -> str:
+        """The link to the download or service page (e.g. link to MF page)"""
+        ...
+
+    @property
+    @abstractmethod
+    def pure_link(self) -> str:
+        """
+        The pure link to download from (e.g. pixeldrain API link or MF folder ID)
+        """
+        ...
+
+    @property
+    @abstractmethod
+    def source_type(self) -> DownloadSource:
+        ...
+
+    @property
+    @abstractmethod
+    def source_name(self) -> str:
+        """
+        The display name of the source. E.g. source_type is Torrent,
+        source_name is indexer name.
+        """
+        ...
+
+    @property
+    @abstractmethod
+    def files(self) -> List[str]:
+        """List of folders/files that were 'produced' by this download"""
+        ...
+
+    @files.setter
+    @abstractmethod
+    def files(self, value: List[str]) -> None:
+        ...
+
+    @property
+    @abstractmethod
+    def filename_body(self) -> str:
+        """
+        The body of the file/folder name that the downloaded file(s) should
+        be named as at their (almost) final destination.
+        """
+        ...
+
+    @property
+    @abstractmethod
+    def title(self) -> str:
+        """Display title of download"""
+        ...
+
+    @property
+    @abstractmethod
+    def size(self) -> int:
+        ...
+
+    @property
+    @abstractmethod
+    def state(self) -> DownloadState:
+        ...
+
+    @state.setter
+    @abstractmethod
+    def state(self, value: DownloadState) -> None:
+        ...
+
+    @property
+    @abstractmethod
+    def progress(self) -> float:
+        ...
+
+    @property
+    @abstractmethod
+    def speed(self) -> float:
+        ...
+
+    @property
+    @abstractmethod
+    def download_thread(self) -> Union[Thread, None]:
+        ...
+
+    @download_thread.setter
+    @abstractmethod
+    def download_thread(self, value: Thread) -> None:
+        ...
+
+    @property
+    @abstractmethod
+    def download_folder(self) -> str:
+        ...
 
     @abstractmethod
     def __init__(
         self,
         download_link: str,
-        filename_body: str,
-        source: DownloadSource,
-        custom_name: bool = True
+
+        volume_id: int,
+        covered_issues: Union[float, Tuple[float, float], None],
+
+        source_type: DownloadSource,
+        source_name: str,
+
+        web_link: Union[str, None],
+        web_title: Union[str, None],
+        web_sub_title: Union[str, None],
+
+        force_original_name: bool = False
     ) -> None:
-        """Create the download instance
+        """Create the download instance.
 
         Args:
-            download_link (str): The link to the download
-                (could be direct download link, mega link or magnet link)
+            download_link (str): The link to the download.
+                Could be direct download link, mega link, magnet link, etc.
 
-            filename_body (str): The body of the file to download to
+            volume_id (int): The ID of the volume that the download is for.
 
-            source (DownloadSource): The source of the download
+            covered_issues (Union[float, Tuple[float, float], None]):
+            The calculated issue number (range) that the download covers,
+            or None if download is for special version.
 
-            custom_name (bool, optional): Whether or not to use the filename body
-            or to use the default name of the download. Defaults to True.
+            source_type (DownloadSource): The source type of the download.
+
+            source_name (str): The display name of the source.
+            E.g. indexer name.
+
+            web_link (Union[str, None]): Link to webpage for download.
+
+            web_title (Union[str, None]): Title of webpage (or release) for download.
+
+            web_sub_title (Union[str, None]): Title of sub-section that download
+            falls under (e.g. GC group name).
+
+            force_original_name (bool, optional): Whether to keep the original
+            name of the download instead of possibly generating one (based on
+            the rename_downloaded_files setting).
+                Defaults to False.
 
         Raises:
             LinkBroken: The link doesn't work
@@ -837,8 +975,7 @@ class Download(ABC):
 
     @abstractmethod
     def run(self) -> None:
-        """Start the download
-        """
+        """Start the download."""
         ...
 
     @abstractmethod
@@ -846,7 +983,7 @@ class Download(ABC):
         self,
         state: DownloadState = DownloadState.CANCELED_STATE
     ) -> None:
-        """Interrupt the download
+        """Interrupt the download.
 
         Args:
             state (DownloadState, optional): The state to set for the download.
@@ -855,36 +992,101 @@ class Download(ABC):
         ...
 
     @abstractmethod
-    def todict(self) -> dict:
+    def todict(self) -> Dict[str, Any]:
         """Get a dict representing the download.
 
         Returns:
-            dict: The dict with all information.
+            Dict[str, Any]: The dict with all information.
         """
         ...
 
 
 class ExternalDownload(Download):
-    client: ExternalDownloadClient
-    external_id: Union[str, None]
-    _download_thread: Union[Thread, None]
-    _download_folder: str
-    _resulting_files: List[str]
-    _original_file: str
+    @property
+    @abstractmethod
+    def external_client(self) -> ExternalDownloadClient:
+        ...
+
+    @external_client.setter
+    @abstractmethod
+    def external_client(self, value: ExternalDownloadClient) -> None:
+        ...
+
+    @property
+    @abstractmethod
+    def external_id(self) -> Union[str, None]:
+        """The ID/hash of the download in the external client."""
+        ...
+
+    @abstractmethod
+    def __init__(
+        self,
+        download_link: str,
+
+        volume_id: int,
+        covered_issues: Union[float, Tuple[float, float], None],
+
+        source_type: DownloadSource,
+        source_name: str,
+
+        web_link: Union[str, None],
+        web_title: Union[str, None],
+        web_sub_title: Union[str, None],
+
+        force_original_name: bool = False,
+        external_client: Union[ExternalDownloadClient, None] = None
+    ) -> None:
+        """Create the download instance.
+
+        Args:
+            download_link (str): The link to the download.
+                Could be direct download link, mega link, magnet link, etc.
+
+            volume_id (int): The ID of the volume that the download is for.
+
+            covered_issues (Union[float, Tuple[float, float], None]):
+            The calculated issue number (range) that the download covers,
+            or None if download is for special version.
+
+            source_type (DownloadSource): The source type of the download.
+
+            source_name (str): The display name of the source.
+            E.g. indexer name.
+
+            web_link (Union[str, None]): Link to webpage for download.
+
+            web_title (Union[str, None]): Title of webpage (or release) for download.
+
+            web_sub_title (Union[str, None]): Title of sub-section that download
+            falls under (e.g. GC group name).
+
+            force_original_name (bool, optional): Whether to keep the original
+            name of the download instead of possibly generating one (based on
+            the rename_downloaded_files setting).
+                Defaults to False.
+
+            external_client (Union[ExternalDownloadClient, None], optional):
+            Force an external client instead of letting the download choose one.
+                Defaults to None.
+
+        Raises:
+            LinkBroken: The link doesn't work
+        """
+        ...
 
     @abstractmethod
     def update_status(self) -> None:
         """
         Update the various variables about the state/progress
-        of the torrent download
+        of the torrent download.
         """
         ...
 
     @abstractmethod
     def remove_from_client(self, delete_files: bool) -> None:
-        """Remove the download from the client
+        """Remove the download from the client.
 
         Args:
-            delete_files (bool): Delete downloaded files
+            delete_files (bool): Delete downloaded files.
         """
         ...

@@ -548,8 +548,8 @@ class Session(RSession):
                     f"{result.request.method} request to {result.request.url} returned with code {result.status_code}"
                 )
                 LOGGER.debug(
-                    f"Request response for {result.request.method} {result.request.url}: {result.text}"
-                )
+                    f"Request response for {result.request.method} {result.request.url}: %s",
+                    result.text)
 
             return result
 
@@ -625,7 +625,8 @@ class AsyncSession(ClientSession):
                     f"{args[0]} request to {args[1]} returned with code {response.status}"
                 )
                 LOGGER.debug(
-                    f"Request response for {args[0]} {args[1]}: %s", await response.text()
+                    f"Request response for {args[0]} {args[1]}: %s",
+                    await response.text()
                 )
 
             return response

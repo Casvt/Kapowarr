@@ -14,8 +14,8 @@ from aiohttp import ClientError
 from bencoding import bencode
 from bs4 import BeautifulSoup, Tag
 
-from backend.base.custom_exceptions import (DownloadLimitReached, FailedGCPage,
-                                            IssueNotFound, LinkBroken)
+from backend.base.custom_exceptions import (DownloadLimitReached,
+                                            FailedGCPage, LinkBroken)
 from backend.base.definitions import (BlocklistReason, Constants, Download,
                                       DownloadGroup, FailReason,
                                       GCDownloadSource, SearchResultData,
@@ -38,7 +38,6 @@ from backend.implementations.download_clients import (DirectDownload,
 from backend.implementations.external_clients import ExternalClients
 from backend.implementations.flaresolverr import FlareSolverr
 from backend.implementations.matching import gc_group_filter
-from backend.implementations.naming import generate_issue_name
 from backend.implementations.volumes import Volume
 from backend.internals.db import iter_commit
 from backend.internals.settings import Settings
@@ -580,44 +579,36 @@ async def __purify_download_group(
     issue_id: Union[int, None],
     web_link: str,
     web_title: Union[str, None],
-    rename_downloaded_files: bool
+    force_original_name: bool = False
 ) -> Tuple[Union[Download, None], bool]:
     """Turn a download group into a working link and client for the link.
 
     Args:
         group (DownloadGroup): The download group to convert.
+
         volume_id (int): The ID of the volume that the download group is for.
+
         issue_id (Union[int, None]): The ID of the issue that the download group
         is for.
+
         web_link (str): The link to the web page.
+
         web_title (Union[str, None]): The title of the GC article.
-        rename_downloaded_files (bool): Whether to rename the downloaded files.
+
+        force_original_name (bool, optional): Don't rename the downloaded files,
+        even if the setting for it is enabled.
+            Defaults to False.
 
     Returns:
         Tuple[Union[Download, None], bool]: If successful, the download and
         `False`. If unsuccessful, `None` and whether it failed because the
         limit of a service was reached.
     """
-    if rename_downloaded_files:
-        try:
-            name = generate_issue_name(
-                volume_id,
-                SpecialVersion(group["info"]["special_version"]),
-                group["info"]["issue_number"],
-            )
-
-        except IssueNotFound:
-            return None, False
-
-    else:
-        name = ''
-
-    # Find working link
     limit_reached = False
     for source, links in group['links'].items():
         for link in iter_commit(links):
             try:
-                pure_link, dl_class = await __purify_link(source, link)
+                pure_link, DownloadClass = await __purify_link(source, link)
 
             except LinkBroken as lb:
                 # Link broken, source not supported
@@ -634,15 +625,17 @@ async def __purify_download_group(
                 continue
 
             try:
-                dl_instance: Download = dl_class(
+                dl_instance: Download = DownloadClass(
                     download_link=pure_link,
-                    filename_body=name,
-                    source=source, # type: ignore
-                    custom_name=rename_downloaded_files
+                    volume_id=volume_id,
+                    covered_issues=group["info"]["issue_number"],
+                    source_type=source, # type: ignore
+                    source_name=source.value,
+                    web_link=web_link,
+                    web_title=web_title,
+                    web_sub_title=group['web_sub_title'],
+                    force_original_name=force_original_name
                 )
-                dl_instance.web_link = web_link
-                dl_instance.web_title = web_title
-                dl_instance.web_sub_title = group['web_sub_title']
 
             except LinkBroken as lb:
                 # DL limit reached, link broken
@@ -707,9 +700,6 @@ async def _test_paths(
     Returns:
         List[Download]: A list of downloads.
     """
-    settings = Settings().get_settings()
-    rename_downloaded_files = settings.rename_downloaded_files
-
     downloads: Tuple[Union[Download, None]] = tuple()
     limit_reached: Tuple[bool] = tuple()
     for path in link_paths:
@@ -720,7 +710,7 @@ async def _test_paths(
                 issue_id,
                 web_link,
                 web_title,
-                rename_downloaded_files and not force_original_name
+                force_original_name
             )
             for group in path
         ))))

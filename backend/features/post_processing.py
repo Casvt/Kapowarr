@@ -55,7 +55,7 @@ class PostProcessingActions:
                 download.web_link, download.web_title, download.web_sub_title,
                 download.title,
                 download.volume_id, download.issue_id,
-                download.source.value, round(time())
+                download.source_type.value, round(time())
             )
         )
         return
@@ -63,7 +63,7 @@ class PostProcessingActions:
     @staticmethod
     def move_file(download: Download) -> None:
         "Move file from download folder to final destination"
-        if not exists(download.file):
+        if not exists(download.files[0]):
             return
 
         # If it takes very long to move the file (because of it's size),
@@ -73,7 +73,7 @@ class PostProcessingActions:
         folder = Volume(download.volume_id).vd.folder
         file_dest = join(
             folder,
-            download._filename_body + splitext(download.file)[1]
+            download.filename_body + splitext(download.files[0])[1]
         )
         LOGGER.debug(
             f'Moving download to final destination: {download}, Dest: {file_dest}'
@@ -85,20 +85,21 @@ class PostProcessingActions:
             )
             delete_file_folder(file_dest)
 
-        rename_file(download.file, file_dest)
-        download.file = file_dest
+        rename_file(download.files[0], file_dest)
+        download.files = [file_dest]
         return
 
     @staticmethod
     def delete_file(download: Download) -> None:
         "Delete file from download folder"
-        delete_file_folder(download.file)
+        for f in download.files:
+            delete_file_folder(f)
         return
 
     @staticmethod
     def add_file_to_database(download: Download) -> None:
         "Register file in database and match to a volume/issue"
-        scan_files(download.volume_id, filepath_filter=[download.file])
+        scan_files(download.volume_id, filepath_filter=download.files)
         return
 
     @staticmethod
@@ -107,42 +108,40 @@ class PostProcessingActions:
         if not Settings().sv.convert:
             return
 
-        if isinstance(download, TorrentDownload):
-            mass_convert(
-                download.volume_id,
-                download.issue_id,
-                filepath_filter=download._resulting_files
-            )
-        else:
-            mass_convert(
-                download.volume_id,
-                download.issue_id,
-                filepath_filter=[download.file]
-            )
+        mass_convert(
+            download.volume_id,
+            download.issue_id,
+            filepath_filter=download.files
+        )
         return
 
     @staticmethod
     def move_file_torrent(download: TorrentDownload) -> None:
         """Move file downloaded using torrent from download folder to
         final destination"""
-        if not exists(download.file):
+        if not exists(download.files[0]):
             return
 
         PPA.move_file(download)
 
-        download._resulting_files = extract_files_from_folder(
-            download.file,
+        download.files = extract_files_from_folder(
+            download.files[0],
             download.volume_id
         )
 
-        scan_files(download.volume_id, download._resulting_files)
+        if not download.files:
+            return
+
+        scan_files(
+            download.volume_id,
+            filepath_filter=download.files
+        )
 
         rename_files = Settings().sv.rename_downloaded_files
-
-        if rename_files and download._resulting_files:
+        if rename_files:
             mass_rename(
                 download.volume_id,
-                filepath_filter=download._resulting_files
+                filepath_filter=download.files
             )
 
         return
@@ -152,10 +151,10 @@ class PostProcessingActions:
         """Copy downloaded files to dest. Change download.file to copy.
         Change back using `PPA.reset_file_link()`.
         """
-        download._original_file = download.file
-        if exists(download.file):
+        download._original_files = download.files
+        if exists(download.files[0]):
             folder = Volume(download.volume_id).vd.folder
-            file_dest = join(folder, basename(download.file))
+            file_dest = join(folder, basename(download.files[0]))
             LOGGER.debug(
                 f'Copying download to final destination: {download}, Dest: {file_dest}'
             )
@@ -166,29 +165,34 @@ class PostProcessingActions:
                 )
                 delete_file_folder(file_dest)
 
-            copy_directory(download.file, file_dest)
-            download.file = file_dest
+            copy_directory(download.files[0], file_dest)
 
-            download._resulting_files = extract_files_from_folder(
-                download.file,
+            download.files = extract_files_from_folder(
+                file_dest,
                 download.volume_id
             )
 
-            scan_files(download.volume_id, download._resulting_files)
+            if not download.files:
+                return
+
+            scan_files(
+                download.volume_id,
+                filepath_filter=download.files
+            )
 
             rename_files = Settings().sv.rename_downloaded_files
-
-            if rename_files and download._resulting_files:
+            if rename_files:
                 mass_rename(
                     download.volume_id,
-                    filepath_filter=download._resulting_files
+                    filepath_filter=download.files
                 )
+
         return
 
     @staticmethod
     def reset_file_link(download: TorrentDownload) -> None:
         "Set download.file back to original folder from the copied folder"
-        download.file = download._original_file
+        download.files = download._original_files
         return
 
 

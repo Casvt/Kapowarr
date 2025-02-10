@@ -7,7 +7,8 @@ from backend.base.custom_exceptions import (ClientDownloading,
                                             ExternalClientNotFound,
                                             ExternalClientNotWorking,
                                             InvalidKeyValue, KeyNotFound)
-from backend.base.definitions import ClientTestResult, ExternalDownloadClient
+from backend.base.definitions import (ClientTestResult, DownloadType,
+                                      ExternalDownloadClient)
 from backend.base.helpers import normalize_base_url
 from backend.internals.db import get_db
 
@@ -157,11 +158,11 @@ class BaseExternalClient(ExternalDownloadClient):
 # =====================
 class ExternalClients:
     @staticmethod
-    def get_client_types() -> Dict[str, Type[BaseExternalClient]]:
+    def get_client_types() -> Dict[str, Type[ExternalDownloadClient]]:
         """Get a mapping of the client type strings to their class.
 
         Returns:
-            Dict[str, Type[BaseExternalClient]]: The mapping.
+            Dict[str, Type[ExternalDownloadClient]]: The mapping.
         """
         from backend.implementations.torrent_clients import qBittorrent
         return {
@@ -226,7 +227,7 @@ class ExternalClients:
         username: Union[str, None],
         password: Union[str, None],
         api_token: Union[str, None]
-    ) -> BaseExternalClient:
+    ) -> ExternalDownloadClient:
         """Add an external client.
 
         Args:
@@ -254,7 +255,7 @@ class ExternalClients:
             ExternalClientNotWorking: Failed to connect to the client.
 
         Returns:
-            BaseExternalClient: The new client.
+            ExternalDownloadClient: The new client.
         """
         if title is None:
             raise InvalidKeyValue('title', title)
@@ -334,7 +335,7 @@ class ExternalClients:
         return result
 
     @staticmethod
-    def get_client(client_id: int) -> BaseExternalClient:
+    def get_client(client_id: int) -> ExternalDownloadClient:
         """Get an external client based on it's ID.
 
         Args:
@@ -344,7 +345,7 @@ class ExternalClients:
             ExternalClientNotFound: The ID does not link to any client.
 
         Returns:
-            BaseExternalClient: The client.
+            ExternalDownloadClient: The client.
         """
         client_type = get_db().execute("""
             SELECT client_type
@@ -359,3 +360,50 @@ class ExternalClients:
             raise ExternalClientNotFound
 
         return ExternalClients.get_client_types()[client_type](client_id)
+
+    @staticmethod
+    def get_least_used_client(
+        download_type: DownloadType
+    ) -> ExternalDownloadClient:
+        """Get the least used client of a specific download type.
+
+        Args:
+            download_type (DownloadType): The download type to get the client
+            for.
+
+        Raises:
+            ExternalClientNotFound: No client of the specified type was found.
+
+        Returns:
+            ExternalDownloadClient: The least used client.
+        """
+        cursor = get_db()
+        lu_id = cursor.execute("""
+            SELECT clients.id
+            FROM download_queue queue
+            INNER JOIN external_download_clients clients
+                ON queue.external_client_id = clients.id
+            WHERE clients.download_type = ?
+            GROUP BY clients.id
+            ORDER BY COUNT(queue.id)
+            LIMIT 1;
+            """,
+            (download_type.value,)
+        ).fetchone()
+
+        if lu_id:
+            return ExternalClients.get_client(lu_id[0])
+
+        first_id = cursor.execute("""
+            SELECT id
+            FROM external_download_clients
+            WHERE download_type = ?
+            LIMIT 1;
+            """,
+            (download_type.value,)
+        ).fetchone()
+
+        if first_id:
+            return ExternalClients.get_client(first_id[0])
+
+        raise ExternalClientNotFound

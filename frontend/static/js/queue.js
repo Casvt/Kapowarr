@@ -20,7 +20,7 @@ function addQueueEntry(api_key, obj) {
 
 	const source = entry.querySelector('td:nth-child(3) a')
     source.innerText =
-		obj.source.charAt(0).toUpperCase() + obj.source.slice(1);
+		obj.source_name.charAt(0).toUpperCase() + obj.source_name.slice(1);
     source.href = obj.web_link;
     source.title = `Page Title:\n${obj.web_title}`;
     if (obj.web_sub_title !== null)

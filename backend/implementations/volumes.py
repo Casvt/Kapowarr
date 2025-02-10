@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from asyncio import run
 from datetime import datetime, timedelta
+from functools import lru_cache
 from io import BytesIO
 from os.path import isdir, relpath
 from re import IGNORECASE, compile
@@ -86,6 +87,7 @@ class Issue:
         return
 
     @classmethod
+    @lru_cache(maxsize=3)
     def from_volume_and_calc_number(
         cls,
         volume_id: int,
