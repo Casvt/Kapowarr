@@ -491,6 +491,18 @@ class MegaDownload(BaseDirectDownload):
     def speed(self) -> float:
         return self._mega.speed
 
+    @property
+    def _size(self) -> int:
+        return self._mega.size
+
+    @property
+    def _progress(self) -> float:
+        return self._mega.progress
+
+    @property
+    def _speed(self) -> float:
+        return self._mega.speed
+
     def __init__(
         self,
         download_link: str,
@@ -527,8 +539,6 @@ class MegaDownload(BaseDirectDownload):
 
         self._id = None
         self._state = DownloadState.QUEUED_STATE
-        self._progress = 0.0
-        self._speed = 0.0
         self._download_thread = None
         self._download_folder = settings.download_folder
 
