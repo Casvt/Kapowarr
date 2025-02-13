@@ -462,7 +462,10 @@ def _create_link_paths(
             # a link that already covers this one
             for path in link_paths:
                 for entry in path:
-                    if entry["info"]["special_version"] is not None:
+                    if entry["info"]["special_version"] not in (
+                        SpecialVersion.NORMAL,
+                        SpecialVersion.VOLUME_AS_ISSUE
+                    ):
                         break
 
                     elif check_overlapping_issues(
