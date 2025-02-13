@@ -16,7 +16,7 @@ from urllib.parse import unquote_plus
 from bs4 import BeautifulSoup, Tag
 from requests import RequestException, Response
 
-from backend.base.custom_exceptions import LinkBroken
+from backend.base.custom_exceptions import IssueNotFound, LinkBroken
 from backend.base.definitions import (BlocklistReason, Download,
                                       DownloadSource, DownloadState,
                                       DownloadType, ExternalDownload,
@@ -163,7 +163,7 @@ class BaseDirectDownload(Download):
         web_title: Union[str, None],
         web_sub_title: Union[str, None],
 
-        force_original_name: bool = False
+        forced_match: bool = False
     ) -> None:
         LOGGER.debug(
             'Creating download: %s',
@@ -208,19 +208,25 @@ class BaseDirectDownload(Download):
 
         self._size = int(response.headers.get('Content-Length', -1))
 
-        if isinstance(covered_issues, float):
-            self._issue_id = Issue.from_volume_and_calc_number(
-                volume_id, covered_issues
-            ).id
+        self._filename_body = ''
+        try:
+            if isinstance(covered_issues, float):
+                self._issue_id = Issue.from_volume_and_calc_number(
+                    volume_id, covered_issues
+                ).id
 
-        if settings.rename_downloaded_files and not force_original_name:
-            self._filename_body = generate_issue_name(
-                volume_id,
-                volume.get_data().special_version,
-                covered_issues
-            )
+            if settings.rename_downloaded_files:
+                self._filename_body = generate_issue_name(
+                    volume_id,
+                    volume.get_data().special_version,
+                    covered_issues
+                )
 
-        else:
+        except IssueNotFound as e:
+            if not forced_match:
+                raise e
+
+        if not self._filename_body:
             self._filename_body = self._extract_default_filename_body(response)
 
         self._title = basename(self._filename_body)
@@ -517,7 +523,7 @@ class MegaDownload(BaseDirectDownload):
         web_title: Union[str, None],
         web_sub_title: Union[str, None],
 
-        force_original_name: bool = False
+        forced_match: bool = False
     ) -> None:
         LOGGER.debug(
             'Creating mega download: %s',
@@ -547,19 +553,25 @@ class MegaDownload(BaseDirectDownload):
         except RequestError:
             raise LinkBroken(BlocklistReason.LINK_BROKEN)
 
-        if isinstance(covered_issues, float):
-            self._issue_id = Issue.from_volume_and_calc_number(
-                volume_id, covered_issues
-            ).id
+        self._filename_body = ''
+        try:
+            if isinstance(covered_issues, float):
+                self._issue_id = Issue.from_volume_and_calc_number(
+                    volume_id, covered_issues
+                ).id
 
-        if settings.rename_downloaded_files and not force_original_name:
-            self._filename_body = generate_issue_name(
-                volume_id,
-                volume.get_data().special_version,
-                covered_issues
-            )
+            if settings.rename_downloaded_files:
+                self._filename_body = generate_issue_name(
+                    volume_id,
+                    volume.get_data().special_version,
+                    covered_issues
+                )
 
-        else:
+        except IssueNotFound as e:
+            if not forced_match:
+                raise e
+
+        if not self._filename_body:
             self._filename_body = self._extract_default_filename_body(
                 response=None
             )
@@ -636,7 +648,7 @@ class TorrentDownload(ExternalDownload, BaseDirectDownload):
         web_title: Union[str, None],
         web_sub_title: Union[str, None],
 
-        force_original_name: bool = False,
+        forced_match: bool = False,
         external_client: Union[ExternalDownloadClient, None] = None
     ) -> None:
         LOGGER.debug(
@@ -665,6 +677,7 @@ class TorrentDownload(ExternalDownload, BaseDirectDownload):
         self._download_folder = settings.download_folder
         self._sleep_event = Event()
 
+        self._original_files = []
         self._external_id: Union[str, None] = None
         if external_client:
             self._external_client = external_client
@@ -673,12 +686,15 @@ class TorrentDownload(ExternalDownload, BaseDirectDownload):
                 DownloadType.TORRENT
             )
 
-        self._original_files = []
+        try:
+            if isinstance(covered_issues, float):
+                self._issue_id = Issue.from_volume_and_calc_number(
+                    volume_id, covered_issues
+                ).id
 
-        if isinstance(covered_issues, float):
-            self._issue_id = Issue.from_volume_and_calc_number(
-                volume_id, covered_issues
-            ).id
+        except IssueNotFound as e:
+            if not forced_match:
+                raise e
 
         # Find name of torrent as that becomes folder that media is
         # downloaded in
@@ -698,14 +714,20 @@ class TorrentDownload(ExternalDownload, BaseDirectDownload):
 
         torrent_name = get_torrent_info(response.content)[b'name'].decode()
 
-        if settings.rename_downloaded_files and not force_original_name:
-            self._filename_body = generate_issue_name(
-                volume_id,
-                Volume(volume_id).get_data().special_version,
-                covered_issues
-            )
+        self._filename_body = ''
+        if settings.rename_downloaded_files:
+            try:
+                self._filename_body = generate_issue_name(
+                    volume_id,
+                    Volume(volume_id).get_data().special_version,
+                    covered_issues
+                )
 
-        else:
+            except IssueNotFound as e:
+                if not forced_match:
+                    raise e
+
+        if not self._filename_body:
             self._filename_body = splitext(torrent_name)[0]
 
         self._title = basename(self._filename_body)

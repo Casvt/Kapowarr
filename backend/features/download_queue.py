@@ -17,7 +17,7 @@ from typing_extensions import assert_never
 
 from backend.base.custom_exceptions import (DownloadLimitReached,
                                             DownloadNotFound, FailedGCPage,
-                                            LinkBroken)
+                                            IssueNotFound, LinkBroken)
 from backend.base.definitions import (BlocklistReason, Constants,
                                       Download, DownloadSource,
                                       DownloadState, ExternalDownload,
@@ -225,7 +225,7 @@ class DownloadHandler(metaclass=Singleton):
     def __prepare_downloads_for_queue(
         self,
         downloads: List[Download],
-        force_original_name: bool
+        forced_match: bool
     ) -> List[Download]:
         """Get download instances ready to be put in the queue.
         Registers them in the db if not already. For torrents,
@@ -234,7 +234,7 @@ class DownloadHandler(metaclass=Singleton):
         Args:
             downloads (List[Download]): The downloads to get ready.
 
-            force_original_name (bool): Force the original name of the download.
+            forced_match (bool): The download was forced.
 
         Returns:
             List[Download]: The downloads, now prepared.
@@ -279,7 +279,7 @@ class DownloadHandler(metaclass=Singleton):
                         'external_client_id': external_client_id,
                         'download_link': download.download_link,
                         'covered_issues': covered_issues,
-                        'force_original_name': force_original_name,
+                        'force_original_name': forced_match,
                         'source_type': download.source_type.value,
                         'source_name': download.source_name,
                         'web_link': download.web_link,
@@ -310,7 +310,8 @@ class DownloadHandler(metaclass=Singleton):
             downloads = cursor.execute("""
                 SELECT
                     id, volume_id, client_type, external_client_id,
-                    download_link, covered_issues, force_original_name,
+                    download_link, covered_issues,
+                    force_original_name,
                     source_type, source_name,
                     web_link, web_title, web_sub_title
                 FROM download_queue;
@@ -354,7 +355,7 @@ class DownloadHandler(metaclass=Singleton):
                         web_link=download['web_link'],
                         web_title=download['web_title'],
                         web_sub_title=download['web_sub_title'],
-                        force_original_name=download['force_original_name'],
+                        forced_match=download['force_original_name'],
                         **kwargs
                     )
                     dl_instance.id = download['id']
@@ -391,9 +392,12 @@ class DownloadHandler(metaclass=Singleton):
                 except DownloadLimitReached:
                     continue
 
+                except IssueNotFound:
+                    continue
+
                 self.queue += self.__prepare_downloads_for_queue(
                     [dl_instance],
-                    force_original_name=download['force_original_name']
+                    forced_match=download['force_original_name']
                 )
 
             self._process_queue()
@@ -490,7 +494,7 @@ class DownloadHandler(metaclass=Singleton):
 
         result = self.__prepare_downloads_for_queue(
             downloads,
-            force_original_name=force_match
+            forced_match=force_match
         )
         self.queue += result
 

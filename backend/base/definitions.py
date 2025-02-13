@@ -937,7 +937,7 @@ class Download(ABC):
         web_title: Union[str, None],
         web_sub_title: Union[str, None],
 
-        force_original_name: bool = False
+        forced_match: bool = False
     ) -> None:
         """Create the download instance.
 
@@ -963,13 +963,16 @@ class Download(ABC):
             web_sub_title (Union[str, None]): Title of sub-section that download
             falls under (e.g. GC group name).
 
-            force_original_name (bool, optional): Whether to keep the original
-            name of the download instead of possibly generating one (based on
-            the rename_downloaded_files setting).
+            forced_match (bool, optional): Whether the download was forcefully
+            added by the user. Try renaming (if setting says so), but use
+            default name if file doesn't match to issues.
                 Defaults to False.
 
         Raises:
-            LinkBroken: The link doesn't work
+            LinkBroken: The link doesn't work.
+
+            IssueNotFound: The download refers to issues that don't exist in the
+            volume, and download is not forced.
         """
         ...
 
@@ -1039,7 +1042,7 @@ class ExternalDownload(Download):
         web_title: Union[str, None],
         web_sub_title: Union[str, None],
 
-        force_original_name: bool = False,
+        forced_match: bool = False,
         external_client: Union[ExternalDownloadClient, None] = None
     ) -> None:
         """Create the download instance.
@@ -1066,9 +1069,9 @@ class ExternalDownload(Download):
             web_sub_title (Union[str, None]): Title of sub-section that download
             falls under (e.g. GC group name).
 
-            force_original_name (bool, optional): Whether to keep the original
-            name of the download instead of possibly generating one (based on
-            the rename_downloaded_files setting).
+            forced_match (bool, optional): Whether the download was forcefully
+            added by the user. Try renaming (if setting says so), but use
+            default name if file doesn't match to issues.
                 Defaults to False.
 
             external_client (Union[ExternalDownloadClient, None], optional):
@@ -1077,6 +1080,9 @@ class ExternalDownload(Download):
 
         Raises:
             LinkBroken: The link doesn't work
+
+            IssueNotFound: The download refers to issues that don't exist in the
+            volume, and download is not forced.
         """
         ...
 

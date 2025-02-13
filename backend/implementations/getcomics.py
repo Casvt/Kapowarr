@@ -14,8 +14,8 @@ from aiohttp import ClientError
 from bencoding import bencode
 from bs4 import BeautifulSoup, Tag
 
-from backend.base.custom_exceptions import (DownloadLimitReached,
-                                            FailedGCPage, LinkBroken)
+from backend.base.custom_exceptions import (DownloadLimitReached, FailedGCPage,
+                                            IssueNotFound, LinkBroken)
 from backend.base.definitions import (BlocklistReason, Constants, Download,
                                       DownloadGroup, FailReason,
                                       GCDownloadSource, SearchResultData,
@@ -579,7 +579,7 @@ async def __purify_download_group(
     issue_id: Union[int, None],
     web_link: str,
     web_title: Union[str, None],
-    force_original_name: bool = False
+    forced_match: bool = False
 ) -> Tuple[Union[Download, None], bool]:
     """Turn a download group into a working link and client for the link.
 
@@ -595,7 +595,7 @@ async def __purify_download_group(
 
         web_title (Union[str, None]): The title of the GC article.
 
-        force_original_name (bool, optional): Don't rename the downloaded files,
+        forced_match (bool, optional): Don't rename the downloaded files,
         even if the setting for it is enabled.
             Defaults to False.
 
@@ -634,7 +634,7 @@ async def __purify_download_group(
                     web_link=web_link,
                     web_title=web_title,
                     web_sub_title=group['web_sub_title'],
-                    force_original_name=force_original_name
+                    forced_match=forced_match
                 )
 
             except LinkBroken as lb:
@@ -649,6 +649,11 @@ async def __purify_download_group(
                     issue_id=issue_id,
                     reason=lb.reason
                 )
+
+            except IssueNotFound:
+                # The group refers to issues that don't exist in the
+                # volume, and download is not forced.
+                return None, False
 
             except DownloadLimitReached:
                 # Link works but the download limit for the service is
@@ -667,7 +672,7 @@ async def _test_paths(
     web_title: Union[str, None],
     volume_id: int,
     issue_id: Union[int, None] = None,
-    force_original_name: bool = False
+    forced_match: bool = False
 ) -> List[Download]:
     """Test the links of the paths and determine, based on which links work,
     which path to go for.
@@ -685,7 +690,7 @@ async def _test_paths(
         download is for.
             Defaults to None.
 
-        force_original_name (bool, optional): Don't rename the downloaded files,
+        forced_match (bool, optional): Don't rename the downloaded files,
         even if the setting for it is enabled.
             Defaults to False.
 
@@ -694,7 +699,7 @@ async def _test_paths(
         not a single working link was found on the page.
 
         FailedGCPage: With `.reason = FailReason.LIMIT_REACHED`, it means
-        not a single working link was found, but pat of the links didn't work
+        not a single working link was found, but part of the links didn't work
         because the limit of the service was reached (which will go away).
 
     Returns:
@@ -710,7 +715,7 @@ async def _test_paths(
                 issue_id,
                 web_link,
                 web_title,
-                force_original_name
+                forced_match
             )
             for group in path
         ))))
@@ -877,7 +882,7 @@ class GetComicsPage:
             web_title=self.title,
             volume_id=volume_id,
             issue_id=issue_id,
-            force_original_name=force_match
+            forced_match=force_match
         )
 
         return result
