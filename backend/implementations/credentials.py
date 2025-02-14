@@ -4,7 +4,8 @@ from typing import Any, Dict, List, Tuple
 
 from typing_extensions import assert_never
 
-from backend.base.custom_exceptions import (CredentialInvalid,
+from backend.base.custom_exceptions import (ClientNotWorking,
+                                            CredentialInvalid,
                                             CredentialNotFound)
 from backend.base.definitions import CredentialData, CredentialSource
 from backend.base.logging import LOGGER
@@ -103,17 +104,17 @@ class Credentials:
 
         # Check if it works
         if credential_data.source == CredentialSource.MEGA:
-            from ..lib.mega import Mega, RequestError
+            from backend.implementations.direct_clients.mega import (
+                MegaAccount, MegaAPIClient)
+
             try:
-                Mega(
-                    '',
-                    _only_login=True
-                )._login_user(
+                MegaAccount(
+                    MegaAPIClient(),
                     credential_data.email or '',
                     credential_data.password or ''
                 )
 
-            except RequestError:
+            except ClientNotWorking:
                 raise CredentialInvalid
 
             credential_data.api_key = None

@@ -44,6 +44,7 @@ class Constants:
     }
 
     DEFAULT_USERAGENT = "Kapowarr"
+    BROWSER_USERAGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
     TOTAL_RETRIES = 5
     BACKOFF_FACTOR_RETRIES = 0.1
     STATUS_FORCELIST_RETRIES = (500, 502, 503, 504)
@@ -54,6 +55,8 @@ class Constants:
 
     GC_SITE_URL = "https://getcomics.org"
     GC_SOURCE_TERM = "GetComics"
+
+    MEGA_API_URL = "https://eu.api.mega.co.nz/cs"
 
     FS_API_BASE = "/v1"
     CF_CHALLENGE_HEADER = ("cf-mitigated", "challenge")

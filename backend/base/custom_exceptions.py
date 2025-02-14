@@ -347,6 +347,26 @@ class ClientDownloading(Exception):
         }
 
 
+class ClientNotWorking(Exception):
+    """The client is not working"""
+
+    def __init__(self, description: Union[str, None] = None) -> None:
+        self.desc = description
+        super().__init__(self.desc)
+        LOGGER.warning(
+            f'Client failed with description: {self.desc}'
+        )
+        return
+
+    @property
+    def api_response(self):
+        return {
+            'error': 'ClientNotWorking',
+            'result': {'description': self.desc},
+            'code': 400
+        }
+
+
 class ExternalClientNotWorking(Exception):
     """External client is not working"""
 

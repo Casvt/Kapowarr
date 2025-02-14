@@ -16,20 +16,20 @@ from urllib.parse import unquote_plus
 from bs4 import BeautifulSoup, Tag
 from requests import RequestException, Response
 
-from backend.base.custom_exceptions import IssueNotFound, LinkBroken
+from backend.base.custom_exceptions import (ClientNotWorking,
+                                            IssueNotFound, LinkBroken)
 from backend.base.definitions import (BlocklistReason, Download,
                                       DownloadSource, DownloadState,
                                       DownloadType, ExternalDownload,
                                       ExternalDownloadClient)
 from backend.base.helpers import Session, get_first_of_range, get_torrent_info
 from backend.base.logging import LOGGER
+from backend.implementations.direct_clients.mega import Mega
 from backend.implementations.external_clients import ExternalClients
 from backend.implementations.naming import generate_issue_name
 from backend.implementations.volumes import Issue, Volume
 from backend.internals.server import WebSocket
 from backend.internals.settings import Settings
-
-from ..lib.mega import Mega, RequestError
 
 if TYPE_CHECKING:
     from requests import Response
@@ -509,6 +509,10 @@ class MegaDownload(BaseDirectDownload):
     def _speed(self) -> float:
         return self._mega.speed
 
+    @property
+    def _pure_link(self) -> str:
+        return self._mega.pure_link
+
     def __init__(
         self,
         download_link: str,
@@ -533,7 +537,7 @@ class MegaDownload(BaseDirectDownload):
         settings = Settings().sv
         volume = Volume(volume_id)
 
-        self._download_link = self._pure_link = download_link
+        self._download_link = download_link
         self._volume_id = volume_id
         self._issue_id = None
         self._covered_issues = covered_issues
@@ -550,7 +554,7 @@ class MegaDownload(BaseDirectDownload):
 
         try:
             self._mega = Mega(download_link)
-        except RequestError:
+        except ClientNotWorking:
             raise LinkBroken(BlocklistReason.LINK_BROKEN)
 
         self._filename_body = ''
@@ -598,7 +602,7 @@ class MegaDownload(BaseDirectDownload):
         """
         self._state = DownloadState.DOWNLOADING_STATE
         ws = WebSocket()
-        self._mega.download_url(
+        self._mega.download(
             self.files[0],
             lambda: ws.update_queue_status(self)
         )
@@ -608,7 +612,7 @@ class MegaDownload(BaseDirectDownload):
         state: DownloadState = DownloadState.CANCELED_STATE
     ) -> None:
         self._state = state
-        self._mega.downloading = False
+        self._mega.stop()
         return
 
 
