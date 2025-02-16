@@ -211,13 +211,10 @@ def generate_issue_name(
         formatting_data = _get_volume_naming_keys(volume_id)
         format = sv.file_naming_special_version
 
-    elif (
-        special_version == SpecialVersion.VOLUME_AS_ISSUE
-        and calculated_issue_number is not None # Just to update type checker
-    ):
+    elif special_version == SpecialVersion.VOLUME_AS_ISSUE:
         # Iron-Man Volume 1 - 3
         issue = Issue.from_volume_and_calc_number(
-            volume_id, create_range(calculated_issue_number)[0]
+            volume_id, create_range(calculated_issue_number)[0] # type: ignore
         )
         formatting_data = _get_issue_naming_keys(volume_id, issue.id)
         format = sv.file_naming_vai

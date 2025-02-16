@@ -411,9 +411,6 @@ def _create_link_paths(
         List[List[DownloadGroup]]: The list contains all paths. Each path is
         a list of download groups that don't overlap.
     """
-    if force_match:
-        return [download_groups]
-
     LOGGER.debug('Creating link paths')
 
     # Get info of volume
@@ -423,13 +420,16 @@ def _create_link_paths(
     volume_issues = volume.get_issues()
 
     link_paths: List[List[DownloadGroup]] = []
+    if force_match:
+        link_paths.append([])
+
     for group in download_groups:
-        if not gc_group_filter(
+        if not (force_match or gc_group_filter(
             group['info'],
             volume_data,
             ending_year,
             volume_issues
-        ):
+        )):
             continue
 
         # Group matches/contains what is desired to be downloaded
@@ -447,14 +447,23 @@ def _create_link_paths(
         if (
             group["info"]['special_version'] is not None
             and group["info"]['special_version']
-            != SpecialVersion.VOLUME_AS_ISSUE
-        ):
-            if volume_data.special_version in (
+                != SpecialVersion.VOLUME_AS_ISSUE
+            and volume_data.special_version in (
                 SpecialVersion.HARD_COVER,
                 SpecialVersion.ONE_SHOT
-            ):
-                group["info"]['special_version'] = volume_data.special_version.value
+            )
+        ):
+            group["info"]['special_version'] = volume_data.special_version.value
 
+        if force_match:
+            # Add all to the same group
+            link_paths[0].append(group)
+
+        elif (
+            group["info"]['special_version'] is not None
+            and group["info"]['special_version']
+            != SpecialVersion.VOLUME_AS_ISSUE
+        ):
             link_paths.append([group])
 
         else:
