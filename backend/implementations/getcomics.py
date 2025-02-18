@@ -31,6 +31,7 @@ from backend.implementations.download_clients import (DirectDownload,
                                                       MediaFireDownload,
                                                       MediaFireFolderDownload,
                                                       MegaDownload,
+                                                      MegaFolderDownload,
                                                       PixelDrainDownload,
                                                       PixelDrainFolderDownload,
                                                       TorrentDownload,
@@ -535,8 +536,8 @@ async def __purify_link(
 
     if source == GCDownloadSource.MEGA:
         if "#F!" in url or "/folder/" in url:
-            # Link is not supported (folder)
-            raise LinkBroken(BlocklistReason.SOURCE_NOT_SUPPORTED)
+            # Folder download
+            return url, MegaFolderDownload
 
         # Normal file download
         return url, MegaDownload

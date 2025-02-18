@@ -10,7 +10,7 @@ from os.path import basename, join, sep, splitext
 from re import IGNORECASE, compile
 from threading import Event, Thread
 from time import perf_counter
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union, final
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Type, Union, final
 from urllib.parse import unquote_plus
 
 from bs4 import BeautifulSoup, Tag
@@ -24,7 +24,8 @@ from backend.base.definitions import (BlocklistReason, Download,
                                       ExternalDownloadClient)
 from backend.base.helpers import Session, get_first_of_range, get_torrent_info
 from backend.base.logging import LOGGER
-from backend.implementations.direct_clients.mega import Mega
+from backend.implementations.direct_clients.mega import (Mega, MegaABC,
+                                                         MegaFolder)
 from backend.implementations.external_clients import ExternalClients
 from backend.implementations.naming import generate_issue_name
 from backend.implementations.volumes import Issue, Volume
@@ -479,11 +480,11 @@ class PixelDrainFolderDownload(BaseDirectDownload):
 
 
 # region Mega
-@final
 class MegaDownload(BaseDirectDownload):
     "For downloading a file via Mega"
 
     type = 'mega'
+    _mega_class: Type[MegaABC] = Mega
 
     @property
     def size(self) -> int:
@@ -553,7 +554,7 @@ class MegaDownload(BaseDirectDownload):
         self._download_folder = settings.download_folder
 
         try:
-            self._mega = Mega(download_link)
+            self._mega = self._mega_class(download_link)
         except ClientNotWorking:
             raise LinkBroken(BlocklistReason.LINK_BROKEN)
 
@@ -602,10 +603,15 @@ class MegaDownload(BaseDirectDownload):
         """
         self._state = DownloadState.DOWNLOADING_STATE
         ws = WebSocket()
-        self._mega.download(
-            self.files[0],
-            lambda: ws.update_queue_status(self)
-        )
+        try:
+            self._mega.download(
+                self.files[0],
+                lambda: ws.update_queue_status(self)
+            )
+
+        except ClientNotWorking:
+            self._state = DownloadState.FAILED_STATE
+
         return
 
     def stop(self,
@@ -614,6 +620,14 @@ class MegaDownload(BaseDirectDownload):
         self._state = state
         self._mega.stop()
         return
+
+
+@final
+class MegaFolderDownload(MegaDownload):
+    "For downloading a Mega folder (for Mega file, use MegaDownload)"
+
+    type = 'mega_folder'
+    _mega_class = MegaFolder
 
 
 # region Torrent
