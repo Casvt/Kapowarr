@@ -3,7 +3,7 @@ requests ~= 2.31
 bs4 ~= 0.0.2
 flask ~= 3.0
 waitress ~= 3.0
-cryptography ~= 43.0, >= 43.0.1
+cryptography ~= 44.0, >= 44.0.1
 bencoding ~= 0.2
 aiohttp ~= 3.9
 flask-socketio ~= 5.3
