@@ -1140,6 +1140,10 @@ def determine_special_version(volume_id: int) -> SpecialVersion:
         ):
             return SpecialVersion.ONE_SHOT
 
+    if 'annual' in volume_data.title.lower():
+        # Volume is annual
+        return SpecialVersion.NORMAL
+
     if volume_data.description:
         # Look for Special Version in first sentence of description.
         # Only first sentence as to avoid false hits (e.g. referring in desc
