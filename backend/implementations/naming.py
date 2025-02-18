@@ -200,6 +200,7 @@ def generate_issue_name(
     Returns:
         str: The issue file name.
     """
+    normal_filename = False
     sv = Settings().sv
 
     if special_version in (
@@ -229,6 +230,7 @@ def generate_issue_name(
 
     else:
         # Iron-Man Volume 1 Issue 2 - 3
+        normal_filename = True
         issue = Issue.from_volume_and_calc_number(
             volume_id,
             create_range(calculated_issue_number)[0] # type: ignore
@@ -261,6 +263,31 @@ def generate_issue_name(
         for k, v in formatting_data.__dict__.items()
     })
     save_name = make_filename_safe(name)
+
+    if (
+        normal_filename
+        and format == sv.file_naming
+        and extract_filename_data(save_name)['issue_number']
+            != calculated_issue_number
+    ):
+        # When applying the EFD algorithm to the generated filename, we don't
+        # get back the same issue number(s) as that we originally made the
+        # filename for. This probably means that the title of the issue is
+        # messing up the algorithm. E.g. the title of issue 4 is "Book 1",
+        # then EFD might think the file is for issue 1 instead of 4. Try a name
+        # without the title and see if that fixes it. If so, use it. If not,
+        # then give up and just use the original name.
+        titleless_name = sv.file_naming_empty.format_map({
+            k: v if v is not None else 'Unknown'
+            for k, v in formatting_data.__dict__.items()
+        })
+        titleless_save_name = make_filename_safe(titleless_name)
+        if (
+            extract_filename_data(titleless_save_name)['issue_number']
+                == calculated_issue_number
+        ):
+            save_name = titleless_save_name
+
     return save_name
 
 
