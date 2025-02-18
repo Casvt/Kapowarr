@@ -114,8 +114,8 @@ class Credentials:
                     credential_data.password or ''
                 )
 
-            except ClientNotWorking:
-                raise CredentialInvalid
+            except ClientNotWorking as e:
+                raise CredentialInvalid(e.desc)
 
             credential_data.api_key = None
             credential_data.username = None

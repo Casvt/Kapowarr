@@ -292,7 +292,21 @@ class CredentialNotFound(CustomException):
 
 class CredentialInvalid(Exception):
     """A credential is incorrect (can't login with it)"""
-    api_response = {'error': 'CredentialInvalid', 'result': {}, 'code': 400}
+
+    def __init__(self, description: str) -> None:
+        self.desc = description
+        LOGGER.warning(
+            f"Failed to login with credentials with reason: {self.desc}"
+        )
+        return
+
+    @property
+    def api_response(self):
+        return {
+            'error': 'CredentialInvalid',
+            'result': {'description': self.desc},
+            'code': 400
+        }
 
 
 class DownloadLimitReached(Exception):
@@ -350,7 +364,7 @@ class ClientDownloading(Exception):
 class ClientNotWorking(Exception):
     """The client is not working"""
 
-    def __init__(self, description: Union[str, None] = None) -> None:
+    def __init__(self, description: str = '') -> None:
         self.desc = description
         super().__init__(self.desc)
         LOGGER.warning(

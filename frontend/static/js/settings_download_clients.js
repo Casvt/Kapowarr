@@ -324,7 +324,10 @@ function addCredential() {
 		.then(response => fillCredentials(api_key))
 		.catch(e => {
 			if (e.status === 400)
-				hide([], [document.querySelector('#builtin-window p.error')]);
+				e.json().then(json => {
+					document.querySelector('#builtin-window p.error').innerText = json.result.description;
+					hide([], [document.querySelector('#builtin-window p.error')]);
+				});
 			else
 				console.log(e);
 		});
