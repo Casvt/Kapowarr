@@ -43,9 +43,12 @@
 		<p id="pd-desc" class="description">
 			<a href="https://pixeldrain.com/" target="_blank">Pixeldrain</a> is a cloud storage service from which Kapowarr can
 			download files. These files are uploaded by GetComics, as an alternative way of downloading the file compared
-			to Mega, MediaFire, WeTransfer, torrents or the direct downloads from their own servers.
-			<br><br>
-			Note: Kapowarr does not support downloading content from Pixeldrain using an account, like it can with Mega.
+			to Mega, MediaFire, WeTransfer, torrents or the direct downloads from their own servers. There are paid subscription
+			plans that offer higher transfer limits when downloading. When the transfer limit is reached, the download speed
+			will be reduced to 1MB/s. Kapowarr is able to download files using an account to take advantage of these higher
+			limits (download more than 6GB per day at full speed). If you have a Pixeldrain account, it's advised to
+			enter the credentials below so that Kapowarr can take advantage of it's premium features. Also make sure to set
+			Pixeldrain as the highest service in the service preference, so that Kapowarr will prefer using it.
 		</p>
 		<h2 id="gc-title">GetComics</h2>
 		<p id="gc-desc" class="description">
@@ -63,9 +66,15 @@
 			<p class="error hidden">Failed to add credentials</p>
 			<table>
 				<thead>
-					<th>Email</th>
-					<th>Password</th>
-					<th>Action</th>
+					<tr data-source="mega">
+						<th>Email</th>
+						<th>Password</th>
+						<th>Action</th>
+					</tr>
+					<tr data-source="pixeldrain">
+						<th>Api Key</th>
+						<th>Action</th>
+					</tr>
 				</thead>
 				<tbody class="icon-text-color">
 					<tr data-source="mega" data-id="" class="cred-entry">
@@ -86,6 +95,24 @@
 						</td>
 						<td>
 							<button type="submit" id="submit-mega">
+								<img src="{{url_base}}/static/img/cancel.svg" alt="">
+							</button>
+						</td>
+					</tr>
+					<tr data-source="pixeldrain" data-id="" class="cred-entry">
+						<td class="pixeldrain-key"></td>
+						<td>
+							<button type="button" id="delete-pixeldrain">
+								<img src="{{url_base}}/static/img/delete.svg" alt="">
+							</button>
+						</td>
+					</tr>
+					<tr id="add-pixeldrain">
+						<td class="pixeldrain-key">
+							<input type="text" required>
+						</td>
+						<td>
+							<button type="submit" id="submit-pixeldrain">
 								<img src="{{url_base}}/static/img/cancel.svg" alt="">
 							</button>
 						</td>

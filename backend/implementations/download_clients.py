@@ -6,6 +6,8 @@ All download implementations.
 
 from __future__ import annotations
 
+from base64 import b64encode
+from json import loads
 from os.path import basename, join, sep, splitext
 from re import IGNORECASE, compile
 from threading import Event, Thread
@@ -15,15 +17,19 @@ from urllib.parse import unquote_plus
 
 from bs4 import BeautifulSoup, Tag
 from requests import RequestException, Response
+from websocket import create_connection
+from websocket._exceptions import WebSocketBadStatusException
 
 from backend.base.custom_exceptions import (ClientNotWorking,
                                             IssueNotFound, LinkBroken)
-from backend.base.definitions import (BlocklistReason, Download,
+from backend.base.definitions import (BlocklistReason, Constants,
+                                      CredentialSource, Download,
                                       DownloadSource, DownloadState,
                                       DownloadType, ExternalDownload,
                                       ExternalDownloadClient)
 from backend.base.helpers import Session, get_first_of_range, get_torrent_info
 from backend.base.logging import LOGGER
+from backend.implementations.credentials import Credentials
 from backend.implementations.direct_clients.mega import (Mega, MegaABC,
                                                          MegaFolder)
 from backend.implementations.external_clients import ExternalClients
@@ -43,8 +49,6 @@ extract_mediafire_regex = compile(r'window.location.href\s?=\s?\'https://downloa
 DOWNLOAD_CHUNK_SIZE = 4194304 # 4MB Chunks
 MEDIAFIRE_FOLDER_LINK = "https://www.mediafire.com/api/1.5/file/zip.php"
 WETRANSFER_API_LINK = "https://wetransfer.com/api/v4/transfers/{transfer_id}/download"
-PIXELDRAIN_API_LINK = "https://pixeldrain.com/api/file/{download_id}"
-PIXELDRAIN_FOLDER_API_LINK = "https://pixeldrain.com/api/list/{download_id}/zip"
 # autopep8: on
 
 
@@ -456,27 +460,99 @@ class WeTransferDownload(BaseDirectDownload):
 
 
 # region PixelDrain
-@final
 class PixelDrainDownload(BaseDirectDownload):
     "For downloading a file from PixelDrain"
 
     type = 'pd'
 
+    @staticmethod
+    def login(api_key: str) -> int:
+        LOGGER.debug('Logging into Pixeldrain with user api key')
+        try:
+            with Session() as session:
+                response = session.get(
+                    Constants.PIXELDRAIN_API_URL + '/user/lists',
+                    headers={
+                        "Authorization": "Basic " + b64encode(
+                            f":{api_key}".encode()
+                        ).decode()
+                    }
+                )
+                if response.status_code == 401:
+                    return -1
+
+            ws = create_connection(
+                Constants.PIXELDRAIN_WEBSOCKET_URL + '/file_stats',
+                header=["Cookie: pd_auth_key=" + api_key]
+            )
+
+        except RequestException:
+            raise ClientNotWorking(
+                "An unexpected error occured when making contact with Pixeldrain"
+            )
+
+        except WebSocketBadStatusException as e:
+            if e.status_code == 401:
+                return -1
+
+            raise ClientNotWorking(
+                "An unexpected error occured when making contact with Pixeldrain"
+            )
+
+        ws.send('{"type": "limits"}')
+        response = loads(ws.recv())
+        ws.close()
+
+        LOGGER.debug(
+            f'Pixeldrain account transfer state: {response["limits"]["transfer_limit_used"]}/{response["limits"]["transfer_limit"]}'
+        )
+        return int(
+            response["limits"]["transfer_limit_used"]
+            < response["limits"]["transfer_limit"]
+        )
+
     def _convert_to_pure_link(self) -> str:
+        self._api_key = None
+        self._first_fetch = True
         download_id = self.download_link.rstrip("/").split("/")[-1]
-        return PIXELDRAIN_API_LINK.format(download_id=download_id)
+        return Constants.PIXELDRAIN_API_URL + '/file/' + download_id
+
+    def _fetch_pure_link(self) -> Response:
+        if self._first_fetch:
+            cred = Credentials()
+            for pd_cred in cred.get_from_source(CredentialSource.PIXELDRAIN):
+                if self.login(pd_cred.api_key or '') == 1:
+                    # Key works and has not reached limit
+                    self._api_key = pd_cred.api_key
+                    break
+            self._first_fetch = False
+
+        headers = {}
+        if self._api_key:
+            headers["Authorization"] = "Basic " + b64encode(
+                f":{self._api_key}".encode()
+            ).decode()
+
+        return self._ssn.get(
+            self.pure_link,
+            headers=headers,
+            stream=True
+        )
 
 
 # region PixelDrain Folder
 @final
-class PixelDrainFolderDownload(BaseDirectDownload):
+class PixelDrainFolderDownload(PixelDrainDownload):
     "For downloading a PixelDrain folder (for PD file, use PixelDrainDownload)"
 
     type = 'pd_folder'
 
     def _convert_to_pure_link(self) -> str:
+        self._api_key = None
+        self._first_fetch = True
         download_id = self.download_link.rstrip("/").split("/")[-1]
-        return PIXELDRAIN_FOLDER_API_LINK.format(download_id=download_id)
+        'https://pixeldrain.com/api/list/{download_id}/zip'
+        return Constants.PIXELDRAIN_API_URL + '/list/' + download_id + '/zip'
 
 
 # region Mega

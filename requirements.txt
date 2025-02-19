@@ -7,3 +7,4 @@ cryptography ~= 44.0, >= 44.0.1
 bencoding ~= 0.2
 aiohttp ~= 3.9
 flask-socketio ~= 5.3
+websocket-client ~= 1.3

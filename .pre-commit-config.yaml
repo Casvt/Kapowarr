@@ -13,7 +13,8 @@ repos:
           "cryptography ~= 44.0, >= 44.0.1",
           bencoding ~= 0.2,
           aiohttp ~= 3.9,
-          flask-socketio ~= 5.3
+          flask-socketio ~= 5.3,
+          websocket-client ~= 1.3
         ]
 
 -   repo: local
@@ -33,7 +34,8 @@ repos:
           "cryptography ~= 44.0, >= 44.0.1",
           bencoding ~= 0.2,
           aiohttp ~= 3.9,
-          flask-socketio ~= 5.3
+          flask-socketio ~= 5.3,
+          websocket-client ~= 1.3
         ]
         entry: python -m mypy --explicit-package-bases .
     
@@ -50,7 +52,8 @@ repos:
           "cryptography ~= 44.0, >= 44.0.1",
           bencoding ~= 0.2,
           aiohttp ~= 3.9,
-          flask-socketio ~= 5.3
+          flask-socketio ~= 5.3,
+          websocket-client ~= 1.3
         ]
         entry: python -m unittest discover -s ./tests -p '*.py'
 
@@ -68,6 +71,7 @@ repos:
           "cryptography ~= 44.0, >= 44.0.1",
           bencoding ~= 0.2,
           aiohttp ~= 3.9,
-          flask-socketio ~= 5.3
+          flask-socketio ~= 5.3,
+          websocket-client ~= 1.3
         ]
         

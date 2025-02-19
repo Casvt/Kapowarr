@@ -249,7 +249,7 @@
 	display: block;
 }
 
-#builtin-window[data-tag="pd"] :where(#pd-title, #pd-desc) {
+#builtin-window[data-tag="pd"] :where(#pd-title, #pd-desc, #cred-form) {
 	display: block;
 }
 
@@ -257,9 +257,25 @@
 	display: block;
 }
 
-#builtin-window tbody:has(.cred-entry:not([data-id=""])) #add-mega,
-#builtin-window tbody:has(.cred-entry[data-id=""]) .cred-entry {
+#builtin-window #cred-form tr {
 	display: none;
+}
+
+#builtin-window[data-tag="mega"] #cred-form :where(
+	thead > tr[data-source="mega"],
+	tbody:has(.cred-entry[data-source="mega"][data-id=""]) #add-mega,
+	tbody:has(.cred-entry[data-source="mega"]:not([data-id=""])) .cred-entry[data-source="mega"]
+),
+#builtin-window[data-tag="pd"] #cred-form :where(
+	thead > tr[data-source="pixeldrain"],
+	tbody:has(.cred-entry[data-source="pixeldrain"][data-id=""]) #add-pixeldrain,
+	tbody:has(.cred-entry[data-source="pixeldrain"]:not([data-id=""])) .cred-entry[data-source="pixeldrain"]
+) {
+	display: table-row;
+}
+
+#builtin-window #cred-form tbody td:last-child {
+	width: 4rem;
 }
 
 #builtin-window #cred-form button {

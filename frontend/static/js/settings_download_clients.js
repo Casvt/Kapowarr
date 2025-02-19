@@ -1,3 +1,8 @@
+const tagToSource = {
+	'mega': 'mega',
+	'pd': 'pixeldrain'
+};
+
 function createUsernameInput(id) {
 	const username_row = document.createElement('tr');
 	const username_header = document.createElement('th');
@@ -308,17 +313,36 @@ function fillCredentials(api_key) {
 					e => sendAPI('DELETE', `/credentials/${result.id}`, api_key)
 						.then(response => fillCredentials(api_key));
 			}
+			else if (result.source === 'pixeldrain') {
+				const row = document.querySelector('.cred-entry[data-source="pixeldrain"]');
+				row.dataset.id = result.id;
+				row.querySelector('.pixeldrain-key').innerText = result.api_key;
+				row.querySelector('#delete-pixeldrain').onclick =
+					e => sendAPI('DELETE', `/credentials/${result.id}`, api_key)
+						.then(response => fillCredentials(api_key));
+			};
 		});
 	});
 };
 
 function addCredential() {
 	hide([document.querySelector('#builtin-window p.error')]);
-	const data = {
-		source: 'mega',
-		email: document.querySelector('#add-mega .mega-email input').value,
-		password: document.querySelector('#add-mega .mega-password input').value
-	};
+	
+	const tag = document.querySelector("#builtin-window").dataset.tag;
+	let data;
+	if (tag === 'mega')
+		data = {
+			source: tagToSource[tag],
+			email: document.querySelector('#add-mega .mega-email input').value,
+			password: document.querySelector('#add-mega .mega-password input').value
+		};
+
+	else if (tag === 'pd')
+		data = {
+			source: tagToSource[tag],
+			api_key: document.querySelector('#add-pixeldrain .pixeldrain-key input').value
+		};
+	
 	usingApiKey().then(api_key => {
 		sendAPI('POST', '/credentials', api_key, {}, data)
 		.then(response => fillCredentials(api_key))
@@ -353,6 +377,14 @@ document.querySelectorAll('#builtin-client-list > button').forEach(b => {
 		document.querySelector('#builtin-window').dataset.tag = tag;
 		hide([document.querySelector('#builtin-window p.error')]);
 		document.querySelectorAll('#builtin-window input').forEach(i => i.value = '');
+		
+		document.querySelectorAll('#builtin-window #cred-form input').forEach(i => 
+			i.required = false
+		);
+		document.querySelectorAll(`#builtin-window #add-${tagToSource[tag]} input`).forEach(i => 
+			i.required = true
+		);
+		
 		showWindow('builtin-window');
 	};
 });

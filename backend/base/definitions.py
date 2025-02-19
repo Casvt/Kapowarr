@@ -58,6 +58,9 @@ class Constants:
 
     MEGA_API_URL = "https://eu.api.mega.co.nz/cs"
 
+    PIXELDRAIN_API_URL = "https://pixeldrain.com/api"
+    PIXELDRAIN_WEBSOCKET_URL = "wss://pixeldrain.com/api"
+
     FS_API_BASE = "/v1"
     CF_CHALLENGE_HEADER = ("cf-mitigated", "challenge")
 
@@ -315,6 +318,7 @@ class MonitorScheme(BaseEnum):
 
 class CredentialSource(BaseEnum):
     MEGA = "mega"
+    PIXELDRAIN = "pixeldrain"
 
 
 class DownloadType(BaseEnum):
@@ -542,6 +546,17 @@ class CredentialData:
     email: Union[str, None]
     password: Union[str, None]
     api_key: Union[str, None]
+
+    def __post_init__(self):
+        if isinstance(self.username, str):
+            self.username = self.username.strip() or None
+        if isinstance(self.email, str):
+            self.email = self.email.strip() or None
+        if isinstance(self.password, str):
+            self.password = self.password.strip() or None
+        if isinstance(self.api_key, str):
+            self.api_key = self.api_key.strip() or None
+        return
 
     def as_dict(self) -> Dict[str, Any]:
         result = asdict(self)
