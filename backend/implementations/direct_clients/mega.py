@@ -12,6 +12,7 @@ from zipfile import ZipFile
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
+from urllib3.exceptions import ProtocolError
 
 from backend.base.custom_exceptions import (ClientNotWorking,
                                             DownloadLimitReached, LinkBroken)
@@ -694,7 +695,11 @@ class Mega(MegaABC):
                 if not self.downloading:
                     break
 
-                chunk = r.read(chunk_size)
+                try:
+                    chunk = r.read(chunk_size)
+                except ProtocolError:
+                    break
+
                 if not chunk:
                     # Download limit reached mid download
                     raise DownloadLimitReached('mega')
@@ -716,6 +721,8 @@ class Mega(MegaABC):
         if self.downloading:
             if cbc_mac.digest() != meta_mac:
                 raise ValueError("Mismatched mac")
+
+        self.__r = None
 
         return
 
@@ -866,7 +873,11 @@ class MegaFolder(MegaABC):
                         if not self.downloading:
                             break
 
-                        chunk = r.read(chunk_size)
+                        try:
+                            chunk = r.read(chunk_size)
+                        except ProtocolError:
+                            break
+
                         if not chunk:
                             # Download limit reached mid download
                             raise DownloadLimitReached('mega')
@@ -891,6 +902,8 @@ class MegaFolder(MegaABC):
                         raise ValueError("Mismatched mac")
                 else:
                     break
+
+        self.__r = None
 
         return
 
