@@ -144,7 +144,7 @@ def __check_download_link(
         return
 
     # Check if link is from a service that should be avoided
-    if link.startswith('https://sh.st/'):
+    if link.startswith(('https://sh.st/', 'https://torrentgalaxy.to/')):
         return
 
     # Check if link is from supported source
