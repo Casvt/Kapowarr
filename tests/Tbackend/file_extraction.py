@@ -120,7 +120,10 @@ class extract_filename_data(unittest.TestCase):
                 {'series': 'Here', 'year': 2014, 'volume_number': 1, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
 
             'Batgirls - #007 - One Way or Another, Part 1 of 2 (2022-02-01) [898184]':
-                {'series': 'Batgirls', 'year': 2022, 'volume_number': 1, 'special_version': None, 'issue_number': 7.0, 'annual': False}
+                {'series': 'Batgirls', 'year': 2022, 'volume_number': 1, 'special_version': None, 'issue_number': 7.0, 'annual': False},
+
+            'The Amazing Spider-Man (2022) Volume 06 Issue 065.Deaths.cbz':
+                {'series': 'The Amazing Spider Man', 'year': 2022, 'volume_number': 6, 'special_version': None, 'issue_number': 65.040501200819, 'annual': False}
         }
         self.run_cases(cases)
 
