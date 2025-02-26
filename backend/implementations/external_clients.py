@@ -9,7 +9,7 @@ from backend.base.custom_exceptions import (ClientDownloading,
                                             InvalidKeyValue, KeyNotFound)
 from backend.base.definitions import (ClientTestResult, DownloadType,
                                       ExternalDownloadClient)
-from backend.base.helpers import normalize_base_url
+from backend.base.helpers import get_subclasses, normalize_base_url
 from backend.internals.db import get_db
 
 
@@ -167,7 +167,7 @@ class ExternalClients:
         from backend.implementations.torrent_clients import qBittorrent
         return {
             client.client_type: client
-            for client in BaseExternalClient.__subclasses__()
+            for client in get_subclasses(BaseExternalClient)
         }
 
     @staticmethod

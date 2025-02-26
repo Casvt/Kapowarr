@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Dict, List, Tuple, Type, Union
 
 from backend.base.custom_exceptions import (InvalidComicVineApiKey,
                                             TaskNotDeletable, TaskNotFound)
-from backend.base.helpers import Singleton
+from backend.base.helpers import Singleton, get_subclasses
 from backend.base.logging import LOGGER
 from backend.features.search import auto_search
 from backend.implementations.conversion import mass_convert
@@ -491,7 +491,7 @@ class SearchAll(Task):
 # Only works for classes that directly inherit from Task
 task_library: Dict[str, Type[Task]] = {
     c.action: c
-    for c in Task.__subclasses__()
+    for c in get_subclasses(Task)
 }
 
 

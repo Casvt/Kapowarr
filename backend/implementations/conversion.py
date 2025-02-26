@@ -11,7 +11,7 @@ from typing import Dict, List, Set, Type, Union
 from zipfile import ZipFile
 
 from backend.base.definitions import FileConstants, FileConverter
-from backend.base.helpers import PortablePool, filtered_iter
+from backend.base.helpers import PortablePool, filtered_iter, get_subclasses
 from backend.base.logging import LOGGER
 from backend.implementations.converters import run_rar
 from backend.implementations.volumes import Volume, scan_files
@@ -63,7 +63,7 @@ class FileConversionHandler:
             to target_format to conversion class.
         """
         conversion_methods = {}
-        for fc in FileConverter.__subclasses__():
+        for fc in get_subclasses(FileConverter):
             conversion_methods.setdefault(
                 fc.source_format, {}
             )[fc.target_format] = fc

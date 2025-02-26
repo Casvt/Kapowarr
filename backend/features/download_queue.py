@@ -1,16 +1,11 @@
 # -*- coding: utf-8 -*-
 
-"""
-Handling the download queue and history
-"""
-
 from __future__ import annotations
 
 from asyncio import run
 from os import listdir
 from os.path import basename, join
 from threading import Thread
-from time import sleep
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Type, Union
 
 from typing_extensions import assert_never
@@ -23,7 +18,7 @@ from backend.base.definitions import (BlocklistReason, Constants,
                                       DownloadState, ExternalDownload,
                                       FailReason, SeedingHandling)
 from backend.base.files import create_folder, delete_file_folder
-from backend.base.helpers import CommaList, Singleton
+from backend.base.helpers import CommaList, Singleton, get_subclasses
 from backend.base.logging import LOGGER
 from backend.features.post_processing import (PostProcesser,
                                               PostProcesserTorrentsComplete,
@@ -47,10 +42,7 @@ if TYPE_CHECKING:
 # =====================
 download_type_to_class: Dict[str, Type[Download]] = {
     c.type: c
-    for c in (
-        *BaseDirectDownload.__subclasses__(),
-        *ExternalDownload.__subclasses__()
-    )
+    for c in get_subclasses(BaseDirectDownload)
 }
 
 

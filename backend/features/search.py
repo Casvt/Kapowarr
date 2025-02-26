@@ -7,7 +7,8 @@ from backend.base.definitions import (MatchedSearchResultData,
                                       SearchResultData, SearchSource,
                                       SpecialVersion, query_formats)
 from backend.base.helpers import (AsyncSession, check_overlapping_issues,
-                                  create_range, extract_year_from_date)
+                                  create_range, extract_year_from_date,
+                                  get_subclasses)
 from backend.base.logging import LOGGER
 from backend.implementations.getcomics import search_getcomics
 from backend.implementations.matching import check_search_result_match
@@ -148,7 +149,7 @@ async def search_multiple_queries(*queries: str) -> List[SearchResultData]:
     async with AsyncSession() as session:
         searches = [
             Source(query).search(session)
-            for Source in SearchSource.__subclasses__()
+            for Source in get_subclasses(SearchSource)
             for query in queries
         ]
         responses = await gather(*searches)

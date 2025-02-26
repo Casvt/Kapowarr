@@ -4,6 +4,7 @@ from asyncio import run
 from typing import Dict, List, Type
 
 from backend.base.definitions import DBMigrator
+from backend.base.helpers import get_subclasses
 from backend.base.logging import LOGGER
 
 
@@ -17,7 +18,7 @@ def _load_version_map() -> None:
 
     VersionMappingContainer.version_map = {
         m.start_version: m
-        for m in DBMigrator.__subclasses__()
+        for m in get_subclasses(DBMigrator)
     }
     return
 

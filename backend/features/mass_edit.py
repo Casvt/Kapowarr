@@ -5,6 +5,7 @@ from typing import List
 from backend.base.custom_exceptions import (InvalidKeyValue, KeyNotFound,
                                             VolumeDownloadedFor)
 from backend.base.definitions import MassEditorAction
+from backend.base.helpers import get_subclasses
 from backend.base.logging import LOGGER
 from backend.features.download_queue import DownloadHandler
 from backend.features.search import auto_search
@@ -138,7 +139,7 @@ def run_mass_editor_action(
     Raises:
         InvalidKeyValue: If the action or any argument is not valid.
     """
-    for ActionClass in MassEditorAction.__subclasses__():
+    for ActionClass in get_subclasses(MassEditorAction):
         if ActionClass.identifier == action:
             break
     else:

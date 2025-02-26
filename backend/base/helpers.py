@@ -7,6 +7,7 @@ General "helper" functions and classes
 from __future__ import annotations
 
 from asyncio import sleep
+from collections import deque
 from multiprocessing.pool import Pool
 from os import cpu_count, sep, symlink
 from os.path import exists, join
@@ -81,6 +82,52 @@ def get_python_exe() -> str:
             return python_path
 
     return executable
+
+
+def get_subclasses(
+    *classes: type,
+    include_self: bool = False,
+    recursive: bool = True,
+    only_leafs: bool = False
+) -> List[type]:
+    """Get subclasses of the given classes.
+
+    Args:
+        *classes (type): The classes to get subclasses from.
+        include_self (bool, optional): Whether or not to include the classes
+            themselves. Defaults to False.
+        recursive (bool, optional): Whether or not to get all subclasses
+            recursively. Defaults to True.
+        only_leafs (bool, optional): Whether or not to only return leaf classes.
+            Defaults to False.
+
+    Returns:
+        List[type]: The subclasses.
+    """
+    result: List[type] = []
+    if include_self:
+        result.extend(classes)
+
+    if not recursive:
+        result.extend((
+            subclass
+            for current in classes
+            for subclass in current.__subclasses__()
+        ))
+        return result
+
+    to_do = deque(classes)
+    while to_do:
+        current = to_do.popleft()
+        subclasses = current.__subclasses__()
+        if subclasses:
+            to_do.extend(subclasses)
+            if not only_leafs and current not in classes:
+                result.append(current)
+        else:
+            result.append(current)
+
+    return result
 
 
 def batched(l: Sequence[T], n: int) -> Generator[Sequence[T], Any, Any]:
