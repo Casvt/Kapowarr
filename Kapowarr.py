@@ -187,8 +187,13 @@ if __name__ == "__main__":
                 db_folder=db_folder
             )
 
-        except ValueError:
-            parser.error("The value for -d/--DatabaseFolder is not a folder")
+        except ValueError as e:
+            if e.args and e.args[0] == 'Database location is not a folder':
+                parser.error(
+                    "The value for -d/--DatabaseFolder is not a folder"
+                )
+            else:
+                raise e
 
     else:
         rc = Kapowarr()

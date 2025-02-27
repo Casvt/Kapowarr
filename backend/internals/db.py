@@ -169,7 +169,7 @@ def set_db_location(
 
     if db_folder:
         if exists(db_folder) and not isdir(db_folder):
-            raise ValueError
+            raise ValueError('Database location is not a folder')
 
     db_file_location = join(
         db_folder or folder_path(*Constants.DB_FOLDER),
