@@ -328,6 +328,11 @@ class DownloadLimitReached(Exception):
         }
 
 
+class DownloadUnmovable(CustomException):
+    """The position of the download in the queue can not be changed"""
+    api_response = {'error': 'DownloadUnmovable', 'result': {}, 'code': 400}
+
+
 class ExternalClientNotFound(CustomException):
     """External client with given ID not found"""
     api_response = {

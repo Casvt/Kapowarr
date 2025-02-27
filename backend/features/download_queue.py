@@ -10,8 +10,10 @@ from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Tuple, Type, Union
 from typing_extensions import assert_never
 
 from backend.base.custom_exceptions import (DownloadLimitReached,
-                                            DownloadNotFound, FailedGCPage,
-                                            IssueNotFound, LinkBroken)
+                                            DownloadNotFound,
+                                            DownloadUnmovable, FailedGCPage,
+                                            InvalidKeyValue, IssueNotFound,
+                                            LinkBroken)
 from backend.base.definitions import (BlocklistReason, Constants,
                                       Download, DownloadSource,
                                       DownloadState, ExternalDownload,
@@ -197,6 +199,34 @@ class DownloadHandler(metaclass=Singleton):
                 if active_downloads >= max_downloads:
                     break
 
+        return
+
+    def set_queue_location(
+        self,
+        download_id: int,
+        index: int
+    ) -> None:
+        """Set the location of a download in the queue.
+
+        Args:
+            download_id (int): The ID of the download to move.
+
+            index (int): The new index of the download.
+
+        Raises:
+            DownloadNotFound: The ID doesn't map to any download in the queue.
+            DownloadUnmovable: The download is not allowed to be moved.
+            InvalidKeyValue: The index is out of bounds.
+        """
+        download = self.get_one(download_id)
+        if download.state != DownloadState.QUEUED_STATE:
+            raise DownloadUnmovable
+
+        if index < 0 or index >= len(self.queue):
+            raise InvalidKeyValue('index', index)
+
+        self.queue.remove(download)
+        self.queue.insert(index, download)
         return
 
     def __prepare_downloads_for_queue(

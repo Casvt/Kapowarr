@@ -26,6 +26,13 @@ function addQueueEntry(api_key, obj) {
     if (obj.web_sub_title !== null)
         source.title += `\n\nSub Section:\n${obj.web_sub_title}`;
 
+	const index = [...QEls.queue.children].indexOf(entry);
+	entry.querySelector('.move-up-dl').onclick = e => moveEntry(
+		obj.id, index - 1, api_key
+	);
+	entry.querySelector('.move-down-dl').onclick = e => moveEntry(
+		obj.id, index + 1, api_key
+	);
 	entry.querySelector('.remove-dl').onclick = e => deleteEntry(
         obj.id, api_key
     );
@@ -40,6 +47,7 @@ function addQueueEntry(api_key, obj) {
 
 function updateQueueEntry(obj) {
 	const tr = document.querySelector(`#queue > tr[data-id="${obj.id}"]`);
+	tr.dataset.status = obj.status;
 	tr.querySelector('td:nth-child(1)').innerText =
 		obj.status.charAt(0).toUpperCase() + obj.status.slice(1);
 	tr.querySelector('td:nth-child(4)').innerText =
@@ -70,6 +78,18 @@ function fillQueue(api_key) {
 function deleteAll(api_key) {
    sendAPI('DELETE', '/activity/queue', api_key);
 };
+
+function moveEntry(id, index, api_key) {
+	sendAPI('PUT', `/activity/queue/${id}`, api_key, {
+		index: index
+	}, {})
+	.then(response => {
+		if (!response.ok)
+			return;
+
+		fillQueue(api_key);
+	});
+}
 
 function deleteEntry(id, api_key, blocklist=false) {
 	sendAPI('DELETE', `/activity/queue/${id}`, api_key, {}, {

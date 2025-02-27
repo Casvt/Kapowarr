@@ -21,6 +21,12 @@
 	<td class="number-column"></td>
 	<td class="number-column"></td>
 	<td class="option-column">
+        <button title="Move download up" class="move-up-dl">
+			<img src="{{ url_for('static', filename='img/arrow_up.svg') }}">
+        </button>
+        <button title="Move download down" class="move-down-dl">
+			<img src="{{ url_for('static', filename='img/arrow_down.svg') }}">
+        </button>
 		<button title="Remove download" class="remove-dl">
 			<img src="{{ url_for('static', filename='img/delete.svg') }}">
 		</button>
@@ -53,7 +59,7 @@
                     <th class="number-column">Size</th>
                     <th class="number-column">Speed</th>
                     <th class="number-column">Progress</th>
-                    <th class="option-column">Delete</th>
+                    <th class="option-column">Actions</th>
                 </tr>
             </thead>
             <tbody id="queue"></tbody>

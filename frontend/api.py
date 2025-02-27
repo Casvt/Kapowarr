@@ -165,7 +165,10 @@ def extract_key(request, key: str, check_existence: bool = True) -> Any:
             except KeyError:
                 raise InvalidKeyValue(key, value)
 
-        elif key in ('root_folder_id', 'root_folder', 'offset', 'limit'):
+        elif key in (
+            'root_folder_id', 'root_folder',
+            'offset', 'limit', 'index'
+        ):
             try:
                 value = int(value)
             except (ValueError, TypeError):
@@ -868,7 +871,10 @@ def api_downloads():
         return return_api({})
 
 
-@api.route('/activity/queue/<int:download_id>', methods=['GET', 'DELETE'])
+@api.route(
+    '/activity/queue/<int:download_id>',
+    methods=['GET', 'PUT', 'DELETE']
+)
 @error_handler
 @auth
 def api_delete_download(download_id: int):
@@ -877,6 +883,11 @@ def api_delete_download(download_id: int):
     if request.method == 'GET':
         result = download_handler.get_one(download_id).todict()
         return return_api(result)
+
+    elif request.method == 'PUT':
+        index: int = extract_key(request, 'index')
+        download_handler.set_queue_location(download_id, index)
+        return return_api({})
 
     elif request.method == 'DELETE':
         data: Dict[str, Any] = request.get_json(silent=True) or {}
