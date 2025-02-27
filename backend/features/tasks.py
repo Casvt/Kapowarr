@@ -9,23 +9,21 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from threading import Thread, Timer
 from time import sleep, time
-from typing import TYPE_CHECKING, Dict, List, Tuple, Type, Union
+from typing import Dict, List, Tuple, Type, Union
+
+from flask import Flask
 
 from backend.base.custom_exceptions import (InvalidComicVineApiKey,
                                             TaskNotDeletable, TaskNotFound)
 from backend.base.helpers import Singleton, get_subclasses
 from backend.base.logging import LOGGER
+from backend.features.download_queue import DownloadHandler
 from backend.features.search import auto_search
 from backend.implementations.conversion import mass_convert
 from backend.implementations.naming import mass_rename
 from backend.implementations.volumes import Issue, Volume, refresh_and_scan
-from backend.internals.db import get_db, iter_commit
+from backend.internals.db import close_db, get_db
 from backend.internals.server import WebSocket
-
-if TYPE_CHECKING:
-    from flask import Flask
-
-    from backend.features.download_queue import DownloadHandler
 
 
 class Task(ABC):
@@ -501,21 +499,11 @@ class TaskHandler(metaclass=Singleton):
     queue: List[dict] = []
     task_interval_waiter: Union[Timer, None] = None
 
-    def __init__(
-        self,
-        context: Flask,
-        download_handler: DownloadHandler
-    ) -> None:
-        """Setup the handler
-
-        Args:
-            context (Flask): A Flask app instance
-            download_handler (DownloadHandler): An instance of
-            `download.DownloadHandler`
-            to which any download instructions are sent
-        """
-        self.context = context.app_context
-        self.download_handler = download_handler
+    def __init__(self) -> None:
+        """Setup the handler"""
+        handler_context = Flask('handler')
+        handler_context.teardown_appcontext(close_db)
+        self.context = handler_context.app_context
         return
 
     def __run_task(self, task: Task) -> None:
@@ -539,8 +527,10 @@ class TaskHandler(metaclass=Singleton):
 
                 if not task.stop:
                     if task.category == 'download' and result:
-                        for download in iter_commit(result):
-                            self.download_handler.add(*download)
+                        DownloadHandler().add_multiple(
+                            (link, volume_id, issue_id, False)
+                            for link, volume_id, issue_id in result
+                        )
 
                     LOGGER.info(f'Finished task {task.display_title}')
 

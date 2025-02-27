@@ -6,7 +6,7 @@ from io import BytesIO, StringIO
 from os.path import dirname, exists
 from typing import Any, Dict, List, Tuple, Type, Union
 
-from flask import Blueprint, Flask, request, send_file
+from flask import Blueprint, request, send_file
 
 from backend.base.custom_exceptions import (BlocklistEntryNotFound,
                                             ClientDownloading,
@@ -60,19 +60,12 @@ from backend.implementations.naming import (generate_volume_folder_name,
                                             preview_mass_rename)
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Library
-from backend.internals.db import close_db
 from backend.internals.db_models import FilesDB
 from backend.internals.server import SERVER, diffuse_timers
 from backend.internals.settings import Settings, about_data
 
 api = Blueprint('api', __name__)
 library = Library()
-
-# Create handlers
-handler_context = Flask('handler')
-handler_context.teardown_appcontext(close_db)
-download_handler = DownloadHandler(handler_context)
-task_handler = TaskHandler(handler_context, download_handler)
 
 
 def return_api(
@@ -325,6 +318,8 @@ def api_logs():
 @error_handler
 @auth
 def api_tasks():
+    task_handler = TaskHandler()
+
     if request.method == 'GET':
         tasks = task_handler.get_all()
         return return_api(tasks)
@@ -409,6 +404,8 @@ def api_task_planning():
 @error_handler
 @auth
 def api_task(task_id: int):
+    task_handler = TaskHandler()
+
     if request.method == 'GET':
         task = task_handler.get_one(task_id)
         return return_api(task)
@@ -815,7 +812,7 @@ def api_volume_download(id: int):
     library.get_volume(id)
     link: str = extract_key(request, 'link')
     force_match: bool = extract_key(request, 'force_match')
-    result = download_handler.add(link, id, force_match=force_match)
+    result = run(DownloadHandler().add(link, id, force_match=force_match))
     return return_api(
         {
             'result': (result or (None,))[0],
@@ -844,7 +841,9 @@ def api_issue_download(id: int):
     volume_id = library.get_issue(id).get_data().volume_id
     link = extract_key(request, 'link')
     force_match: bool = extract_key(request, 'force_match')
-    result = download_handler.add(link, volume_id, id, force_match=force_match)
+    result = run(DownloadHandler().add(
+        link, volume_id, id, force_match=force_match
+    ))
     return return_api(
         {
             'result': result[0],
@@ -858,6 +857,8 @@ def api_issue_download(id: int):
 @error_handler
 @auth
 def api_downloads():
+    download_handler = DownloadHandler()
+
     if request.method == 'GET':
         result = download_handler.get_all()
         return return_api(result)
@@ -871,8 +872,10 @@ def api_downloads():
 @error_handler
 @auth
 def api_delete_download(download_id: int):
+    download_handler = DownloadHandler()
+
     if request.method == 'GET':
-        result = download_handler.get_one(download_id)
+        result = download_handler.get_one(download_id).todict()
         return return_api(result)
 
     elif request.method == 'DELETE':
@@ -908,7 +911,7 @@ def api_download_history():
 @error_handler
 @auth
 def api_empty_download_folder():
-    download_handler.empty_download_folder()
+    DownloadHandler().empty_download_folder()
     return return_api({})
 
 # =====================

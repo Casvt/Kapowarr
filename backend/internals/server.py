@@ -7,8 +7,8 @@ Setting up, running and shutting down the API and web-ui
 from __future__ import annotations
 
 from os import urandom
-from threading import Timer, current_thread
-from typing import TYPE_CHECKING, Callable, Union
+from threading import Thread, Timer, current_thread
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Mapping, Union
 
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO
@@ -254,6 +254,49 @@ class Server(metaclass=Singleton):
             settings.update(main_settings)
             self.restart()
         return
+
+    def get_db_thread(
+        self,
+        target: Callable[..., object],
+        name: str,
+        args: Iterable[Any] = (),
+        kwargs: Mapping[str, Any] = {}
+    ) -> Thread:
+        """Create a thread that runs under Flask app context.
+
+        Args:
+            target (Callable[..., object]): The function to run in the thread.
+            name (str): The name of the thread.
+            args (Iterable[Any], optional): The arguments to pass to the function.
+                Defaults to ().
+            kwargs (Mapping[str, Any], optional): The keyword arguments to pass
+            to the function.
+                Defaults to {}.
+
+        Returns:
+            Thread: The thread instance.
+        """
+        def db_thread(*args, **kwargs) -> None:
+            with self.app.app_context():
+                target(*args, **kwargs)
+
+            thread_id = current_thread().native_id or -1
+            if (
+                thread_id in DBConnectionManager.instances
+                and
+                not DBConnectionManager.instances[thread_id].closed
+            ):
+                DBConnectionManager.instances[thread_id].close()
+
+            return
+
+        t = Thread(
+            target=db_thread,
+            name=name,
+            args=args,
+            kwargs=kwargs
+        )
+        return t
 
 
 class WebSocket(SocketIO, metaclass=Singleton):

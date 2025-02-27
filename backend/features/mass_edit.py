@@ -81,13 +81,16 @@ class MassEditorSearch(MassEditorAction):
 
     def run(self, **kwargs) -> None:
         LOGGER.info(
-            f'Using mass editor, auto searching for volumes: {self.volume_ids}')
-        dh = DownloadHandler() # type: ignore ; Is singleton
+            f'Using mass editor, auto searching for volumes: {self.volume_ids}'
+        )
+        download_handler = DownloadHandler()
 
         for volume_id in self.volume_ids:
             search_results = auto_search(volume_id)
-            for result in iter_commit(search_results):
-                dh.add(result['link'], volume_id)
+            download_handler.add_multiple(
+                (result['link'], volume_id, None, False)
+                for result in search_results
+            )
 
         return
 

@@ -13,10 +13,12 @@ from typing import NoReturn, Union
 from backend.base.definitions import Constants, RestartVersion
 from backend.base.helpers import check_python_version, get_python_exe
 from backend.base.logging import LOGGER, setup_logging
+from backend.features.download_queue import DownloadHandler
+from backend.features.tasks import TaskHandler
 from backend.implementations.flaresolverr import FlareSolverr
 from backend.internals.db import close_all_db, set_db_location, setup_db
 from backend.internals.server import SERVER, handle_restart_version
-from frontend.api import Settings, download_handler, task_handler
+from backend.internals.settings import Settings
 
 
 def _main(
@@ -59,13 +61,13 @@ def _main(
         flaresolverr = FlareSolverr()
         SERVER.set_url_base(settings.url_base)
 
-        download_handler.create_download_folder()
-
         if settings.flaresolverr_base_url:
             flaresolverr.enable_flaresolverr(settings.flaresolverr_base_url)
 
-    download_handler.load_download_thread.start()
-    task_handler.handle_intervals()
+        download_handler = DownloadHandler()
+        download_handler.load_downloads()
+        task_handler = TaskHandler()
+        task_handler.handle_intervals()
 
     try:
         # =================

@@ -21,14 +21,14 @@
 			<table class="fold-table">
 				<tbody>
 					<tr>
-						<th><label for="download-folder-input">Direct Download Temporary Folder</label></th>
+						<th><label for="download-folder-input">Direct Download <br>Temporary Folder</label></th>
 						<td>
 							<input type="text" id="download-folder-input" required spellcheck="false">
 							<p>The folder that direct downloads temporarily get downloaded to before being moved to the correct location</p>
 						</td>
 					</tr>
 					<tr>
-						<th><label for="empty-download-folder">Empty Temporary Download Folder</label></th>
+						<th><label for="empty-download-folder">Empty Temporary <br>Download Folder</label></th>
 						<td>
 							<button type="button" id="empty-download-folder">Reset</button>
 							<p>Removes any "ghost" files in the direct download temporary folder (handy if the application crashed while downloading, leading to half-downloaded files in the folder).</p>
@@ -39,6 +39,13 @@
 			<h2>Queue</h2>
 			<table class="fold-table">
 				<tbody>
+					<tr>
+						<th><label for="concurrent-direct-downloads-input">Concurrent <br>Direct Downloads</label></th>
+						<td>
+							<input type="number" id="concurrent-direct-downloads-input" min="1">
+							<p>The amount of direct downloads that are allowed to run at the same time.</p>
+						</td>
+					</tr>
 					<tr>
 						<th><label for="torrent-timeout-input">Failing Torrent Timeout</label></th>
 						<td>

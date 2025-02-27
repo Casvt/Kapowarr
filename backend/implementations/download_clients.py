@@ -371,7 +371,7 @@ class BaseDirectDownload(Download):
         }
 
     def __repr__(self) -> str:
-        return f'<{self.__class__.__name__}, {self.download_link}, {self.files[0]}>'
+        return f'<{self.__class__.__name__}, {self.download_link}, {self.files[0]}, {self.state.value}>'
 
 
 # region Direct
