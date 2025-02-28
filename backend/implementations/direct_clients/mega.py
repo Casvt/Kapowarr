@@ -17,7 +17,8 @@ from urllib3.exceptions import ProtocolError
 from backend.base.custom_exceptions import (ClientNotWorking,
                                             DownloadLimitReached, LinkBroken)
 from backend.base.definitions import (BaseEnum, BlocklistReason, Constants,
-                                      CredentialData, CredentialSource)
+                                      CredentialData, CredentialSource,
+                                      DownloadSource)
 from backend.base.helpers import Session
 from backend.base.logging import LOGGER
 from backend.implementations.credentials import Credentials
@@ -593,7 +594,7 @@ class Mega(MegaABC):
 
         if res.get('tl', 0): # tl = time left
             # Download limit reached
-            raise DownloadLimitReached('mega')
+            raise DownloadLimitReached(DownloadSource.MEGA)
 
         attr = MegaCrypto.decrypt_attr(res["at"], self.__master_key)
         if not attr:
@@ -702,7 +703,7 @@ class Mega(MegaABC):
 
                 if not chunk:
                     # Download limit reached mid download
-                    raise DownloadLimitReached('mega')
+                    raise DownloadLimitReached(DownloadSource.MEGA)
 
                 chunk = decryptor.update(chunk)
                 f.write(chunk)
@@ -858,7 +859,7 @@ class MegaFolder(MegaABC):
 
                 if res.get('tl', 0): # tl = time left
                     # Download limit reached
-                    raise DownloadLimitReached('mega')
+                    raise DownloadLimitReached(DownloadSource.MEGA)
 
                 self.pure_link = res['g']
                 start_time = perf_counter()
@@ -880,7 +881,7 @@ class MegaFolder(MegaABC):
 
                         if not chunk:
                             # Download limit reached mid download
-                            raise DownloadLimitReached('mega')
+                            raise DownloadLimitReached(DownloadSource.MEGA)
 
                         chunk = decryptor.update(chunk)
                         f.write(chunk)

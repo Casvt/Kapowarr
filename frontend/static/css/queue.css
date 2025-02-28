@@ -28,17 +28,17 @@ th, td {
 	border-top: 1px solid var(--border-color);
 }
 
-.queue-entry:nth-child(1 of .queue-entry[data-status="queued"]) .move-up-dl,
-.queue-entry:nth-last-child(1 of .queue-entry[data-status="queued"]) .move-down-dl,
+.queue-entry:nth-child(1 of .queue-entry:not([data-status="downloading"])) .move-up-dl,
+.queue-entry:nth-last-child(1 of .queue-entry:not([data-status="downloading"])) .move-down-dl,
 .queue-entry[data-status="downloading"] :where(.move-up-dl, .move-down-dl) {
 	display: none;
 }
 
-.queue-entry:nth-child(1 of .queue-entry[data-status="queued"]) .move-down-dl {
+.queue-entry:nth-child(1 of .queue-entry:not([data-status="downloading"])) .move-down-dl {
 	margin-left: calc(20px + .75rem);
 }
 
-.queue-entry:nth-last-child(1 of .queue-entry[data-status="queued"]) .move-up-dl {
+.queue-entry:nth-last-child(1 of .queue-entry:not([data-status="downloading"])) .move-up-dl {
 	margin-right: calc(20px + 1.25rem);
 }
 

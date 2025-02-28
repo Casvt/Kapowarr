@@ -9,8 +9,8 @@ Note: Not all CE's inherit from CustomException.
 
 from typing import Any, Union
 
-from backend.base.definitions import (BlocklistReason,
-                                      BlocklistReasonID, FailReason)
+from backend.base.definitions import (BlocklistReason, BlocklistReasonID,
+                                      DownloadSource, FailReason)
 from backend.base.logging import LOGGER
 
 
@@ -310,12 +310,12 @@ class CredentialInvalid(Exception):
 
 
 class DownloadLimitReached(Exception):
-    """The download limit (download quota) for the service is reached"""
+    """The download limit (download quota) of the source is reached"""
 
-    def __init__(self, string: str) -> None:
-        self.string = string
+    def __init__(self, source: DownloadSource) -> None:
+        self.source = source
         LOGGER.warning(
-            f"Credential source {string} has reached it's download limit"
+            f"Download source {source.value} has reached it's download limit"
         )
         return
 
@@ -323,7 +323,7 @@ class DownloadLimitReached(Exception):
     def api_response(self):
         return {
             'error': 'DownloadLimitReached',
-            'result': {'string': self.string},
+            'result': {'source': self.source.value},
             'code': 509
         }
 

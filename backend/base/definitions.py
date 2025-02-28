@@ -996,7 +996,12 @@ class Download(ABC):
 
     @abstractmethod
     def run(self) -> None:
-        """Start the download."""
+        """
+        Start the download.
+
+        Raises:
+            DownloadLimitReached: The source that is downloaded from has reached a rate limit.
+        """
         ...
 
     @abstractmethod

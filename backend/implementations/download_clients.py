@@ -21,6 +21,7 @@ from websocket import create_connection
 from websocket._exceptions import WebSocketBadStatusException
 
 from backend.base.custom_exceptions import (ClientNotWorking,
+                                            DownloadLimitReached,
                                             IssueNotFound, LinkBroken)
 from backend.base.definitions import (BlocklistReason, Constants,
                                       CredentialSource, Download,
@@ -204,11 +205,18 @@ class BaseDirectDownload(Download):
         # link is broken).
         try:
             self._pure_link = self._convert_to_pure_link()
-            response = self._fetch_pure_link()
-            response.raise_for_status()
-            response.close()
+            with self._fetch_pure_link() as response:
+                response.raise_for_status()
 
-        except RequestException:
+        except RequestException as e:
+            if (
+                e.response is not None
+                and e.response.url.startswith(Constants.PIXELDRAIN_API_URL)
+                and e.response.status_code == 403
+            ):
+                # Pixeldrain rate limit because of hotlinking
+                raise DownloadLimitReached(DownloadSource.PIXELDRAIN)
+
             raise LinkBroken(BlocklistReason.LINK_BROKEN)
 
         self._size = int(response.headers.get('Content-Length', -1))
@@ -671,12 +679,6 @@ class MegaDownload(BaseDirectDownload):
         return splitext(self._mega.mega_filename)[1]
 
     def run(self) -> None:
-        """
-        Start the download
-
-        Raises:
-            DownloadLimitReached: The Mega download limit is reached mid-download
-        """
         self._state = DownloadState.DOWNLOADING_STATE
         ws = WebSocket()
         try:

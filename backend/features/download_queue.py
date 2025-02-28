@@ -71,10 +71,10 @@ class DownloadHandler(metaclass=Singleton):
         try:
             download.run()
 
-        except DownloadLimitReached:
-            # Mega download limit reached mid-download
+        except DownloadLimitReached as e:
             download.stop(DownloadState.FAILED_STATE)
-            self._remove_mega(exclude_id=download.id)
+            if e.source == DownloadSource.MEGA:
+                self._remove_mega(exclude_id=download.id)
 
         ws.update_queue_status(download)
         if download.state == DownloadState.SHUTDOWN_STATE:
