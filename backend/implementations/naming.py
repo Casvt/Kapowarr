@@ -26,7 +26,8 @@ from backend.base.files import (delete_empty_child_folders,
 from backend.base.helpers import (create_range, extract_year_from_date,
                                   filtered_iter)
 from backend.base.logging import LOGGER
-from backend.implementations.matching import file_importing_filter
+from backend.implementations.matching import (_match_title,
+                                              file_importing_filter)
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Issue, Volume
 from backend.internals.db_models import FilesDB
@@ -502,9 +503,9 @@ def check_mock_filename(
                         id=0,
                         volume_id=0,
                         comicvine_id=456,
-                        issue_number="3",
+                        issue_number="3b",
                         calculated_issue_number=create_range(
-                            process_issue_number("3") or 0.0
+                            process_issue_number("3b") or 0.0
                         )[0],
                         title="",
                         date="2023-03-04",
@@ -540,9 +541,9 @@ def check_mock_filename(
                         id=0,
                         volume_id=0,
                         comicvine_id=456,
-                        issue_number="4b",
+                        issue_number="8",
                         calculated_issue_number=create_range(
-                            process_issue_number("4b") or 0.0
+                            process_issue_number("8") or 0.0
                         )[0],
                         title="",
                         date="2023-03-04",
@@ -567,11 +568,12 @@ def check_mock_filename(
     for key, value in namings.items():
         filepath = join(vf_naming, value)
         for volume_mock, issue_mock in naming_mocks[key]:
-            if key == 'special_version':
+            if key == 'file_naming_special_version':
                 formatting_data = _get_volume_naming_keys(volume_mock)
             else:
                 formatting_data = _get_issue_naming_keys(
-                    volume_mock, issue_mock[0])
+                    volume_mock, issue_mock[0]
+                )
 
             name = filepath.format_map({
                 k: v if v is not None else 'Unknown'
@@ -583,11 +585,32 @@ def check_mock_filename(
                 i.calculated_issue_number: extract_year_from_date(i.date)
                 for i in issue_mock
             }
-            if not file_importing_filter(
-                extract_filename_data(save_name),
-                volume_mock,
-                issue_mock,
-                number_to_year
+            efd = extract_filename_data(save_name)
+            if not (
+                file_importing_filter(
+                    efd,
+                    volume_mock,
+                    issue_mock,
+                    number_to_year
+                )
+                and _match_title(efd['series'], volume_mock.title)
+                and (
+                    # Special version doesn't need issue matching
+                    key == 'file_naming_special_version'
+                    or (
+                        # Issue number must match
+                        key in (
+                            'file_naming', 'file_naming_empty',
+                            'file_naming_vai'
+                        )
+                        and efd["issue_number"] == issue_mock[0].calculated_issue_number
+                    )
+                    or (
+                        # VAI name has issue number labeled as volume number
+                        key == 'file_naming_vai'
+                        and efd["volume_number"] == issue_mock[0].calculated_issue_number
+                    )
+                )
             ):
                 raise InvalidSettingValue(key, value)
     return
