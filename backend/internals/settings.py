@@ -339,7 +339,7 @@ class Settings(metaclass=Singleton):
         elif key == 'comicvine_api_key':
             from backend.implementations.comicvine import ComicVine
             converted_value = value.strip()
-            if not ComicVine(converted_value).test_token():
+            if converted_value and not ComicVine(converted_value).test_token():
                 raise InvalidSettingValue(key, value)
 
         elif key == 'download_folder':

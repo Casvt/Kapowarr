@@ -630,7 +630,7 @@ async def __purify_download_group(
                     web_title=web_title,
                     web_sub_title=group['web_sub_title'],
                     download_link=link,
-                    source=source, # type: ignore
+                    source=source,
                     volume_id=volume_id,
                     issue_id=issue_id,
                     reason=lb.reason
@@ -657,7 +657,7 @@ async def __purify_download_group(
                     web_title=web_title,
                     web_sub_title=group['web_sub_title'],
                     download_link=pure_link,
-                    source=source, # type: ignore
+                    source=source,
                     volume_id=volume_id,
                     issue_id=issue_id,
                     reason=lb.reason

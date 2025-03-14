@@ -5,7 +5,8 @@ from typing import List, Union
 
 from backend.base.custom_exceptions import BlocklistEntryNotFound
 from backend.base.definitions import (BlocklistEntry, BlocklistReason,
-                                      BlocklistReasonID, DownloadSource)
+                                      BlocklistReasonID, DownloadSource,
+                                      GCDownloadSource)
 from backend.base.logging import LOGGER
 from backend.internals.db import get_db
 
@@ -115,7 +116,7 @@ def add_to_blocklist(
 
     web_sub_title: Union[str, None],
     download_link: Union[str, None],
-    source: Union[DownloadSource, None],
+    source: Union[DownloadSource, GCDownloadSource, None],
 
     volume_id: int,
     issue_id: Union[int, None],
@@ -135,7 +136,8 @@ def add_to_blocklist(
         download_link (str): The link to block. Give `None` to block the whole
         GC page (`web_link`).
 
-        source (Union[DownloadSource, None]): The source of the download.
+        source (Union[DownloadSource, GCDownloadSource, None]): The source of
+        the download.
 
         volume_id (int): The ID of the volume for which this link is
         blocklisted.
