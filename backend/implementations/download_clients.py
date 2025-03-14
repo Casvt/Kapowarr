@@ -773,7 +773,7 @@ class TorrentDownload(ExternalDownload, BaseDirectDownload):
         self._download_folder = settings.download_folder
         self._sleep_event = Event()
 
-        self._original_files = []
+        self._original_files: List[str] = []
         self._external_id: Union[str, None] = None
         if external_client:
             self._external_client = external_client

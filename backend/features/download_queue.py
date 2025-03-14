@@ -139,7 +139,7 @@ class DownloadHandler(metaclass=Singleton):
 
             elif download.state == DownloadState.FAILED_STATE:
                 download.remove_from_client(delete_files=True)
-                post_processer.failed(download)
+                post_processer.perm_failed(download)
                 self.queue.remove(download)
                 break
 

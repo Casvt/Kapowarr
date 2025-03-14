@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-The post-download processing (a.k.a. post-processing or PP) of downloads
+The post-download processing (a.k.a. post-processing or PP) of downloads.
 """
 
 from __future__ import annotations
@@ -10,8 +10,10 @@ from os.path import basename, exists, join, splitext
 from time import time
 from typing import TYPE_CHECKING
 
+from backend.base.definitions import SCANNABLE_EXTENSIONS, BlocklistReason
 from backend.base.files import copy_directory, delete_file_folder, rename_file
 from backend.base.logging import LOGGER
+from backend.implementations.blocklist import add_to_blocklist
 from backend.implementations.conversion import mass_convert
 from backend.implementations.converters import extract_files_from_folder
 from backend.implementations.download_clients import TorrentDownload
@@ -24,208 +26,245 @@ if TYPE_CHECKING:
     from backend.base.definitions import Download
 
 
-class PostProcessingActions:
-    @staticmethod
-    def remove_from_queue(download: Download) -> None:
-        "Delete the download from the queue in the database"
-        get_db().execute(
-            "DELETE FROM download_queue WHERE id = ?",
-            (download.id,)
-        )
-        return
+# region General
+def reset_file_link(download: TorrentDownload) -> None:
+    "Set download.files back to original folder from the copied folder"
+    download.files = download._original_files
+    return
 
-    @staticmethod
-    def add_to_history(download: Download) -> None:
-        "Add the download to history in the database"
-        get_db().execute(
-            """
-            INSERT INTO download_history(
-                web_link, web_title, web_sub_title,
-                file_title,
-                volume_id, issue_id,
-                source, downloaded_at
-            ) VALUES (
-                ?, ?, ?,
-                ?,
-                ?, ?,
-                ?, ?
-            );
-            """,
-            (
-                download.web_link, download.web_title, download.web_sub_title,
-                download.title,
-                download.volume_id, download.issue_id,
-                download.source_type.value, round(time())
-            )
-        )
-        return
 
-    @staticmethod
-    def move_file(download: Download) -> None:
-        "Move file from download folder to final destination"
-        if not exists(download.files[0]):
-            return
+# region Database
+def remove_from_queue(download: Download) -> None:
+    "Delete the download from the queue in the database"
+    get_db().execute(
+        "DELETE FROM download_queue WHERE id = ?",
+        (download.id,)
+    )
+    return
 
-        # If it takes very long to move the file (because of it's size),
-        # the DB is left locked for a long period leading to timeouts.
-        commit()
 
-        folder = Volume(download.volume_id).vd.folder
-        file_dest = join(
-            folder,
-            download.filename_body + splitext(download.files[0])[1]
-        )
-        LOGGER.debug(
-            f'Moving download to final destination: {download}, Dest: {file_dest}'
-        )
-
-        if exists(file_dest):
-            LOGGER.warning(
-                f'The file/folder {file_dest} already exists; replacing with downloaded file'
-            )
-            delete_file_folder(file_dest)
-
-        rename_file(download.files[0], file_dest)
-        download.files = [file_dest]
-        return
-
-    @staticmethod
-    def delete_file(download: Download) -> None:
-        "Delete file from download folder"
-        for f in download.files:
-            delete_file_folder(f)
-        return
-
-    @staticmethod
-    def add_file_to_database(download: Download) -> None:
-        "Register file in database and match to a volume/issue"
-        scan_files(download.volume_id, filepath_filter=download.files)
-        return
-
-    @staticmethod
-    def convert_file(download: Download) -> None:
-        "Convert a file into a different format based on settings"
-        if not Settings().sv.convert:
-            return
-
-        mass_convert(
-            download.volume_id,
-            download.issue_id,
-            filepath_filter=download.files
-        )
-        return
-
-    @staticmethod
-    def move_file_torrent(download: TorrentDownload) -> None:
-        """Move file downloaded using torrent from download folder to
-        final destination"""
-        if not exists(download.files[0]):
-            return
-
-        PPA.move_file(download)
-
-        download.files = extract_files_from_folder(
-            download.files[0],
-            download.volume_id
-        )
-
-        if not download.files:
-            return
-
-        scan_files(
-            download.volume_id,
-            filepath_filter=download.files
-        )
-
-        rename_files = Settings().sv.rename_downloaded_files
-        if rename_files:
-            mass_rename(
-                download.volume_id,
-                filepath_filter=download.files
-            )
-
-        return
-
-    @staticmethod
-    def copy_file_torrent(download: TorrentDownload) -> None:
-        """Copy downloaded files to dest. Change download.file to copy.
-        Change back using `PPA.reset_file_link()`.
+def add_to_history(download: Download) -> None:
+    "Add the download to history in the database"
+    get_db().execute(
         """
-        download._original_files = download.files
-        if exists(download.files[0]):
-            folder = Volume(download.volume_id).vd.folder
-            file_dest = join(folder, basename(download.files[0]))
-            LOGGER.debug(
-                f'Copying download to final destination: {download}, Dest: {file_dest}'
-            )
+        INSERT INTO download_history(
+            web_link, web_title, web_sub_title,
+            file_title,
+            volume_id, issue_id,
+            source, downloaded_at
+        ) VALUES (
+            :web_link, :web_title, :web_sub_title,
+            :file_title,
+            :volume_id, :issue_id,
+            :source, :downloaded_at
+        );
+        """,
+        {
+            'web_link': download.web_link,
+            'web_title': download.web_title,
+            'web_sub_title': download.web_sub_title,
+            'file_title': download.title,
+            'volume_id': download.volume_id,
+            'issue_id': download.issue_id,
+            'source': download.source_type.value,
+            'downloaded_at': round(time())
+        }
+    )
+    return
 
-            if exists(file_dest):
-                LOGGER.warning(
-                    f'The file/folder {file_dest} already exists; replacing with downloaded file'
-                )
-                delete_file_folder(file_dest)
 
-            copy_directory(download.files[0], file_dest)
+def add_file_to_database(download: Download) -> None:
+    "Register files in database and match to a volume/issue"
+    scan_files(download.volume_id, filepath_filter=download.files)
+    return
 
-            download.files = extract_files_from_folder(
-                file_dest,
-                download.volume_id
-            )
 
-            if not download.files:
-                return
+# region Blocklist
+def add_dl_to_blocklist(download: Download) -> None:
+    "Add the download to the blocklist in the database"
+    add_to_blocklist(
+        download.web_link,
+        download.web_title,
+        download.web_sub_title,
+        download.download_link,
+        download.source_type,
+        download.volume_id,
+        download.issue_id,
+        BlocklistReason.LINK_BROKEN
+    )
+    return
 
-            scan_files(
-                download.volume_id,
-                filepath_filter=download.files
-            )
 
-            rename_files = Settings().sv.rename_downloaded_files
-            if rename_files:
-                mass_rename(
-                    download.volume_id,
-                    filepath_filter=download.files
-                )
-
+# region Files
+def move_to_dest(download: Download) -> None:
+    "Move file/fold from download folder to final destination"
+    if not exists(download.files[0]):
         return
 
-    @staticmethod
-    def reset_file_link(download: TorrentDownload) -> None:
-        "Set download.file back to original folder from the copied folder"
-        download.files = download._original_files
+    folder = Volume(download.volume_id).vd.folder
+    extension = splitext(download.files[0])[1].lower()
+    if extension not in SCANNABLE_EXTENSIONS:
+        extension = ''
+
+    file_dest = join(
+        folder,
+        download.filename_body + extension
+    )
+    LOGGER.debug(
+        f'Moving download to final destination: {download}, Dest: {file_dest}'
+    )
+
+    # If it takes very long to delete/move the file/folder (because of it's size),
+    # the DB is left locked for a long period leading to timeouts.
+    commit()
+
+    if exists(file_dest):
+        LOGGER.warning(
+            f'The file/folder {file_dest} already exists; replacing with downloaded file'
+        )
+        delete_file_folder(file_dest)
+
+    rename_file(download.files[0], file_dest)
+    download.files = [file_dest]
+    return
+
+
+def move_torrent_to_dest(download: TorrentDownload) -> None:
+    """
+    Move folder downloaded using torrent from download folder to
+    final destination, extract files, scan them, rename them.
+    """
+    if not exists(download.files[0]):
         return
 
+    move_to_dest(download)
 
-PPA = PostProcessingActions
-"""Rename of PostProcessingActions to make local code less cluttered.
-Advised to use the name `PostProcessingActions` outside of this file."""
+    download.files = extract_files_from_folder(
+        download.files[0],
+        download.volume_id
+    )
+
+    if not download.files:
+        return
+
+    scan_files(
+        download.volume_id,
+        filepath_filter=download.files
+    )
+
+    rename_files = Settings().sv.rename_downloaded_files
+    if rename_files:
+        download.files += mass_rename(
+            download.volume_id,
+            filepath_filter=download.files
+        )
+
+    return
+
+
+def copy_file_torrent(download: TorrentDownload) -> None:
+    """
+    Copy downloaded files to dest. Change download.file to copy.
+    Change back using `PPA.reset_file_link()`.
+    """
+    download._original_files = download.files
+    if not exists(download.files[0]):
+        return
+
+    folder = Volume(download.volume_id).vd.folder
+    file_dest = join(folder, basename(download.files[0]))
+    LOGGER.debug(
+        f'Copying download to final destination: {download}, Dest: {file_dest}'
+    )
+
+    # If it takes very long to delete/copy the folder (because of it's size),
+    # the DB is left locked for a long period leading to timeouts.
+    commit()
+
+    if exists(file_dest):
+        LOGGER.warning(
+            f'The file/folder {file_dest} already exists; replacing with downloaded file'
+        )
+        delete_file_folder(file_dest)
+
+    copy_directory(download.files[0], file_dest)
+
+    download.files = extract_files_from_folder(
+        file_dest,
+        download.volume_id
+    )
+
+    if not download.files:
+        return
+
+    scan_files(
+        download.volume_id,
+        filepath_filter=download.files
+    )
+
+    rename_files = Settings().sv.rename_downloaded_files
+    if rename_files:
+        download.files += mass_rename(
+            download.volume_id,
+            filepath_filter=download.files
+        )
+
+    return
+
+
+def delete_file(download: Download) -> None:
+    "Delete file from download folder"
+    for f in download.files:
+        delete_file_folder(f)
+    return
+
+
+# region Extras
+def convert_file(download: Download) -> None:
+    "Convert a file into a different format based on settings"
+    if not Settings().sv.convert:
+        return
+
+    download.files += mass_convert(
+        download.volume_id,
+        download.issue_id,
+        filepath_filter=download.files
+    )
+    return
 
 
 class PostProcesser:
     actions_success = [
-        PPA.remove_from_queue,
-        PPA.add_to_history,
-        PPA.move_file,
-        PPA.add_file_to_database,
-        PPA.convert_file,
-        PPA.add_file_to_database
+        remove_from_queue,
+        add_to_history,
+        move_to_dest,
+        add_file_to_database,
+        convert_file,
+        add_file_to_database
     ]
 
     actions_seeding = []
 
     actions_canceled = [
-        PPA.delete_file,
-        PPA.remove_from_queue
+        delete_file,
+        remove_from_queue
     ]
 
     actions_shutdown = [
-        PPA.delete_file
+        delete_file
     ]
 
     actions_failed = [
-        PPA.remove_from_queue,
-        PPA.add_to_history,
-        PPA.delete_file
+        remove_from_queue,
+        add_to_history,
+        delete_file
+    ]
+
+    actions_perm_failed = [
+        remove_from_queue,
+        add_to_history,
+        add_dl_to_blocklist,
+        delete_file
     ]
 
     @staticmethod
@@ -264,27 +303,35 @@ class PostProcesser:
         cls._run_actions(cls.actions_failed, download)
         return
 
+    @classmethod
+    def perm_failed(cls, download) -> None:
+        LOGGER.info(
+            f'Postprocessing of permanently failed download: {download.id}'
+        )
+        cls._run_actions(cls.actions_perm_failed, download)
+        return
+
 
 class PostProcesserTorrentsComplete(PostProcesser):
     actions_success = [
-        PPA.remove_from_queue,
-        PPA.add_to_history,
-        PPA.move_file_torrent,
-        PPA.convert_file,
-        PPA.add_file_to_database
+        remove_from_queue,
+        add_to_history,
+        move_torrent_to_dest,
+        convert_file,
+        add_file_to_database
     ]
 
 
 class PostProcesserTorrentsCopy(PostProcesser):
     actions_success = [
-        PPA.remove_from_queue,
-        PPA.delete_file
+        remove_from_queue,
+        delete_file
     ]
 
     actions_seeding = [
-        PPA.add_to_history,
-        PPA.copy_file_torrent,
-        PPA.convert_file,
-        PPA.add_file_to_database,
-        PPA.reset_file_link
+        add_to_history,
+        copy_file_torrent,
+        convert_file,
+        add_file_to_database,
+        reset_file_link
     ]

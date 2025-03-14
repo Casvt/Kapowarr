@@ -191,7 +191,7 @@ def mass_convert(
     issue_id: Union[int, None] = None,
     filepath_filter: List[str] = [],
     update_websocket: bool = False
-) -> None:
+) -> List[str]:
     """Convert files for a volume or issue.
 
     Args:
@@ -207,6 +207,9 @@ def mass_convert(
         update_websocket (bool, optional): Send task progress updates over
         the websocket.
             Defaults to False.
+
+    Returns:
+        List[str]: The new filenames, only of files that have been be converted.
     """
     settings = Settings().get_settings()
     volume = Volume(volume_id)
@@ -244,13 +247,13 @@ def mass_convert(
                 planned_conversions.append(fch)
 
     total_count = len(planned_conversions)
-
-    if total_count == 0:
-        return
+    result = []
+    if not total_count:
+        return result
 
     elif total_count == 1:
         # Avoid mp overhead when we're only converting one file
-        convert_file(planned_conversions[0])
+        result = convert_file(planned_conversions[0])
 
     else:
         # Commit changes because new connections are opened in the processes
@@ -261,19 +264,21 @@ def mass_convert(
                 ws.update_task_status(
                     message=f'Converted 0/{total_count}'
                 )
-                for idx, _ in enumerate(pool.imap_unordered(
+                for idx, iter_result in enumerate(pool.imap_unordered(
                     convert_file,
                     planned_conversions
                 )):
+                    result += iter_result
                     ws.update_task_status(
                         message=f'Converted {idx+1}/{total_count}'
                     )
+
             else:
-                pool.map(
+                result += chain.from_iterable(pool.map(
                     convert_file,
                     planned_conversions
-                )
+                ))
 
     scan_files(volume_id)
 
-    return
+    return result
