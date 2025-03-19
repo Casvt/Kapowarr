@@ -5,6 +5,8 @@ from shutil import disk_usage
 from sqlite3 import IntegrityError
 from typing import Dict, List
 
+from git import Union
+
 from backend.base.custom_exceptions import (FolderNotFound, RootFolderInUse,
                                             RootFolderInvalid,
                                             RootFolderNotFound)
@@ -84,11 +86,19 @@ class RootFolders(metaclass=Singleton):
         self.rename(root_folder_id, new_folder)
         return
 
-    def add(self, folder: str) -> RootFolder:
+    def add(
+        self,
+        folder: str,
+        _exclude_folder_from_check: Union[str, None] = None
+    ) -> RootFolder:
         """Add a rootfolder.
 
         Args:
             folder (str): The folder to add.
+
+            _exclude_folder_from_check (Union[str, None], optional): Don't check
+            whether the added root folder is a parent or child of this folder.
+                Defaults to None.
 
         Raises:
             FolderNotFound: The folder doesn't exist.
@@ -113,6 +123,10 @@ class RootFolders(metaclass=Singleton):
             *(
                 f.folder
                 for f in self.get_all()
+                if (
+                    not _exclude_folder_from_check
+                    or f.folder != _exclude_folder_from_check
+                )
             ),
             Settings().sv.download_folder
         )
@@ -154,15 +168,20 @@ class RootFolders(metaclass=Singleton):
         )
 
         create_folder(new_folder)
+        current_folder = self[root_folder_id]
 
-        if samefile(self[root_folder_id], new_folder):
+        if samefile(current_folder, new_folder):
             # Renaming to itself
             return self.get_one(root_folder_id)
 
         LOGGER.info(
             f'Renaming root folder {self[root_folder_id]} (ID {root_folder_id}) '
             f'to {new_folder}')
-        new_id = self.add(new_folder).id
+
+        new_id = self.add(
+            new_folder,
+            _exclude_folder_from_check=current_folder
+        ).id
 
         cursor = get_db()
         volume_ids: List[int] = first_of_column(cursor.execute(
