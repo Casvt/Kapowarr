@@ -608,15 +608,27 @@ class DownloadHandler(metaclass=Singleton):
         LOGGER.info(f'Removing download with id {download_id} and {blocklist=}')
 
         download = self.get_one(download_id)
+        if not download.download_thread:
+            return
 
         prev_state = download.state
+        was_thread_running = download.download_thread.is_alive()
         download.stop()
         WebSocket().update_queue_status(download)
 
         if (
-            # Download was queued when we stopped it
-            prev_state == DownloadState.QUEUED_STATE
-            and not isinstance(download, ExternalDownload)
+            # Direct download
+            not isinstance(download, ExternalDownload)
+            and (
+                # Download was queued when we stopped it
+                prev_state == DownloadState.QUEUED_STATE
+                or
+                (
+                    # Download errored out without catching it
+                    prev_state == DownloadState.DOWNLOADING_STATE
+                    and not was_thread_running
+                )
+            )
         ):
             self.queue.remove(download)
             PostProcesser.canceled(download)
