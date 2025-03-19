@@ -149,6 +149,10 @@ class RootFolders(metaclass=Singleton):
         """
         from backend.implementations.volumes import Volume
 
+        new_folder = uppercase_drive_letter(
+            force_suffix(abspath(new_folder))
+        )
+
         create_folder(new_folder)
 
         if samefile(self[root_folder_id], new_folder):
@@ -156,10 +160,9 @@ class RootFolders(metaclass=Singleton):
             return self.get_one(root_folder_id)
 
         LOGGER.info(
-            f'Renaming root folder {self[root_folder_id]} ({root_folder_id}) '
-            f'to {new_folder}'
-        )
-        new_id: int = self.add(new_folder).id
+            f'Renaming root folder {self[root_folder_id]} (ID {root_folder_id}) '
+            f'to {new_folder}')
+        new_id = self.add(new_folder).id
 
         cursor = get_db()
         volume_ids: List[int] = first_of_column(cursor.execute(
@@ -168,16 +171,17 @@ class RootFolders(metaclass=Singleton):
         ))
 
         for volume_id in volume_ids:
-            Volume(volume_id)['root_folder'] = new_id
+            Volume(volume_id).change_root_folder(new_id)
 
         get_db().executescript(f"""
-            PRAGMA foreign_keys = OFF;
+            BEGIN TRANSACTION;
+            PRAGMA defer_foreign_keys = ON;
 
             DELETE FROM root_folders WHERE id = {root_folder_id};
             UPDATE root_folders SET id = {root_folder_id} WHERE id = {new_id};
             UPDATE volumes SET root_folder = {root_folder_id} WHERE root_folder = {new_id};
 
-            PRAGMA foreign_keys = ON;
+            COMMIT;
         """)
         self._load_cache()
         return self.get_one(root_folder_id)
