@@ -21,9 +21,9 @@ from backend.base.definitions import (BlocklistReason, Constants,
 from backend.base.files import create_folder, delete_file_folder
 from backend.base.helpers import CommaList, Singleton, get_subclasses
 from backend.base.logging import LOGGER
-from backend.features.post_processing import (PostProcesser,
-                                              PostProcesserTorrentsComplete,
-                                              PostProcesserTorrentsCopy)
+from backend.features.post_processing import (PostProcessor,
+                                              PostProcessorTorrentsComplete,
+                                              PostProcessorTorrentsCopy)
 from backend.implementations.blocklist import add_to_blocklist
 from backend.implementations.download_clients import (BaseDirectDownload,
                                                       MegaDownload,
@@ -78,14 +78,14 @@ class DownloadHandler(metaclass=Singleton):
 
         ws.update_queue_status(download)
         if download.state == DownloadState.SHUTDOWN_STATE:
-            PostProcesser.shutdown(download)
+            PostProcessor.shutdown(download)
             return
 
         elif download.state == DownloadState.CANCELED_STATE:
-            PostProcesser.canceled(download)
+            PostProcessor.canceled(download)
 
         elif download.state == DownloadState.FAILED_STATE:
-            PostProcesser.failed(download)
+            PostProcessor.failed(download)
 
         elif download.state == DownloadState.DOWNLOADING_STATE:
             download.state = DownloadState.IMPORTING_STATE
@@ -94,7 +94,7 @@ class DownloadHandler(metaclass=Singleton):
             # While this download is post-processing, start the next one.
             self._process_queue()
 
-            PostProcesser.success(download)
+            PostProcessor.success(download)
 
         self.queue.remove(download)
         ws.send_queue_ended(download)
@@ -115,10 +115,10 @@ class DownloadHandler(metaclass=Singleton):
         seeding_handling = self.settings.sv.seeding_handling
 
         if seeding_handling == SeedingHandling.COMPLETE:
-            post_processer = PostProcesserTorrentsComplete
+            post_processer = PostProcessorTorrentsComplete
 
         elif seeding_handling == SeedingHandling.COPY:
-            post_processer = PostProcesserTorrentsCopy
+            post_processer = PostProcessorTorrentsCopy
 
         else:
             assert_never(seeding_handling)
@@ -631,7 +631,7 @@ class DownloadHandler(metaclass=Singleton):
             )
         ):
             self.queue.remove(download)
-            PostProcesser.canceled(download)
+            PostProcessor.canceled(download)
             WebSocket().send_queue_ended(download)
 
         if blocklist:

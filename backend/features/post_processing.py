@@ -233,7 +233,7 @@ def convert_file(download: Download) -> None:
     return
 
 
-class PostProcesser:
+class PostProcessor:
     actions_success = [
         remove_from_queue,
         add_to_history,
@@ -312,7 +312,7 @@ class PostProcesser:
         return
 
 
-class PostProcesserTorrentsComplete(PostProcesser):
+class PostProcessorTorrentsComplete(PostProcessor):
     actions_success = [
         remove_from_queue,
         add_to_history,
@@ -322,7 +322,7 @@ class PostProcesserTorrentsComplete(PostProcesser):
     ]
 
 
-class PostProcesserTorrentsCopy(PostProcesser):
+class PostProcessorTorrentsCopy(PostProcessor):
     actions_success = [
         remove_from_queue,
         delete_file
