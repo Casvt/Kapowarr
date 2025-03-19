@@ -251,6 +251,12 @@ class extract_filename_data(unittest.TestCase):
             'Superman Lost Volume 2 OS.cbr':
                 {'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'one-shot', 'issue_number': None, 'annual': False},
 
+            'Superman Lost Volume 2 (OS).cbr':
+                {'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'one-shot', 'issue_number': None, 'annual': False},
+
+            'Superman Lost Volume 2 [OS].cbr':
+                {'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'one-shot', 'issue_number': None, 'annual': False},
+
             'Superman Lost Volume 2 One Shot.cbr':
                 {'series': 'Superman Lost', 'year': None, 'volume_number': 2, 'special_version': 'one-shot', 'issue_number': None, 'annual': False},
 
