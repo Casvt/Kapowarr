@@ -23,7 +23,8 @@ const ViewEls = {
 	vol_edit: {
 		monitor: document.querySelector('#monitored-input'),
 		root_folder: document.querySelector('#root-folder-input'),
-		volume_folder: document.querySelector('#volumefolder-input')
+		volume_folder: document.querySelector('#volumefolder-input'),
+		special_version: document.querySelector('#specialoverride-input')
 	},
 	tool_bar: {
 		refresh: document.querySelector('#refresh-button'),
@@ -141,12 +142,17 @@ function fillTable(issues, api_key) {
 };
 
 function fillPage(data, api_key) {
-	const special_override = document.querySelector('#specialoverride-input');
-
 	if (data.special_version_locked)
-		special_override.value = data.special_version || '';
-	else
-		special_override.value = 'auto';
+		ViewEls.vol_edit.special_version.value = data.special_version || '';
+	else {
+		ViewEls.vol_edit.special_version.value = 'auto';
+		const sv_name = ViewEls.vol_edit.special_version
+			.querySelector(`option[value='${data.special_version || ''}']`)
+			.innerText;
+		ViewEls.vol_edit.special_version
+			.querySelector("option[value='auto']")
+			.innerText += ` (${sv_name})`;
+	};
 
 	// Cover
 	ViewEls.vol_data.cover.src = `${url_base}/api/volumes/${data.id}/cover?api_key=${api_key}`;
