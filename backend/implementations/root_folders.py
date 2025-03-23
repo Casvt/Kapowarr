@@ -3,9 +3,7 @@
 from os.path import abspath, isdir, samefile
 from shutil import disk_usage
 from sqlite3 import IntegrityError
-from typing import Dict, List
-
-from git import Union
+from typing import Dict, List, Union
 
 from backend.base.custom_exceptions import (FolderNotFound, RootFolderInUse,
                                             RootFolderInvalid,
