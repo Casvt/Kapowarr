@@ -126,7 +126,13 @@ class extract_filename_data(unittest.TestCase):
                 {'series': 'The Amazing Spider Man', 'year': 2022, 'volume_number': 6, 'special_version': None, 'issue_number': 65.040501200819, 'annual': False},
 
             '/Comics/Venom (2021) [cv-140084]/Venom (2021) #0021 [Pages 2-19 They Fight] [2023-08-01] [cv-996034].cbz':
-                {'series': 'Venom', 'year': 2021, 'volume_number': 1, 'special_version': None, 'issue_number': 21.0, 'annual': False}
+                {'series': 'Venom', 'year': 2021, 'volume_number': 1, 'special_version': None, 'issue_number': 21.0, 'annual': False},
+
+            'Spider-Man/Spider-Man Volume 2 (2005)/Spider-Man (2005) Volume 2 title (No. 5).cbr':
+                {'series': 'Spider Man', 'year': 2005, 'volume_number': 2, 'special_version': None, 'issue_number': 5.0, 'annual': False},
+
+            'Spider-Man/Spider-Man Volume 2 (2005)/5 - Spider-Man (2005) Volume 2 title.cbr':
+                {'series': 'Spider Man', 'year': 2005, 'volume_number': 2, 'special_version': None, 'issue_number': 5.0, 'annual': False},
         }
         self.run_cases(cases)
 

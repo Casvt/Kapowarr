@@ -41,12 +41,12 @@ special_version_regex = compile(r'(?:(?<!\s{3})\b|\()(?:(?P<tpb>tpb|trade paper 
 volume_regex = compile(volume_regex_snippet, IGNORECASE)
 volume_folder_regex = compile(volume_regex_snippet + r'|^(\d+)$', IGNORECASE)
 issue_regex = compile(r'\(_(\-?' + issue_regex_snippet + r')\)', IGNORECASE)
-issue_regex_2 = compile(r'(?<!\()(?:(?<![a-z])c(?!2c)|\bissues?|\bbooks?|no)(?:[\s\-\._]?|\s\-\s)(?:#\s*)?(\-?' + issue_regex_snippet + r'(?:[\s\.]?\-[\s\.]?\-?' + issue_regex_snippet + r')?)\b(?!\))', IGNORECASE)
+issue_regex_2 = compile(r'(?:(?<!\()(?:(?<![a-z])c(?!2c)|\bissues?|\bbooks?)(?!\))|no)(?:\.?[\s\-_]?|\s\-\s)(?:#\s*)?(\-?' + issue_regex_snippet + r'(?:[\s\.]?\-[\s\.]?\-?' + issue_regex_snippet + r')?)\b', IGNORECASE)
 issue_regex_3 = compile(r'(?<!part[\s\._])(' + issue_regex_snippet + r')[\s\-\._]?\(?[\s\-\._]?of[\s\-\._]?' + issue_regex_snippet + r'\)?', IGNORECASE)
 issue_regex_4 = compile(r'(?<!--)(?<!annual\s)(?<!pages\s)(?:#\s*)?(\-?' + issue_regex_snippet + r'[\s\.]?-[\s\.]?' + issue_regex_snippet + r')(?=\s|\.|_|(?=\()|$)', IGNORECASE)
 issue_regex_5 = compile(r'(?<!page\s)#\s*(\-?' + issue_regex_snippet + r')\b(?![\s\.]?\-[\s\.]?' + issue_regex_snippet + r')', IGNORECASE)
-issue_regex_6 = compile(r'(?:(?P<i_start>^)|(?<=(?<!part)(?<!page)[\s\._]))(?P<n_c>n)?(\-?' + issue_regex_snippet + r')(?=(?(n_c)c\d+|(?(i_start)\s\-|))(?=\s|\.|_|(?=\()|$))', IGNORECASE)
-issue_regex_7 = compile(r'^(\-?' + issue_regex_snippet + r')$', IGNORECASE)
+issue_regex_6 = compile(r'(?:(?P<i_start>^)|(?<=(?<!part)(?<!page)[\s\._])(?P<n_c>n))(\-?' + issue_regex_snippet + r')(?=(?(n_c)c\d+|\s\-)(?=\s|\.|_|(?=\()|$))', IGNORECASE)
+issue_regex_7 = compile(r'(?:(?<=\s|\.|_)|(?<=^))(\-?' + issue_regex_snippet + r')(?=\s|\.|_|\(|$)', IGNORECASE)
 year_regex = compile(r'\((?:[a-z]+\.?\s)?' + year_regex_snippet + r'\)|--' + year_regex_snippet + r'--|__' + year_regex_snippet + r'__|, ' + year_regex_snippet + r'\s{3}|\b(?:(?:\d{2}-){1,2}(\d{4})|(\d{4})(?:-\d{2}){1,2})\b', IGNORECASE)
 series_regex = compile(r'(^(\d+\.)?\s+|^\d+\s{3}|\s(?=\s)|[\s,]+$)')
 annual_regex = compile(r'(?:\+|plus)[\s\._]?annuals?|annuals?[\s\._]?(?:\+|plus)|^((?!annuals?).)*$', IGNORECASE) # If regex matches, it's NOT an annual
@@ -345,22 +345,22 @@ def extract_filename_data(
                 (filename,
                     {'pos': volume_end},
                     (issue_regex, issue_regex_2, issue_regex_3, issue_regex_4,
-                        issue_regex_5, issue_regex_6)),
+                     issue_regex_5, issue_regex_6, issue_regex_7)),
                 (filename,
                     {'endpos': volume_pos},
                     (issue_regex, issue_regex_2, issue_regex_3, issue_regex_4,
-                     issue_regex_5))
+                     issue_regex_5, issue_regex_6))
             )
         else:
             pos_options = (
                 (foldername,
                     {'pos': volume_folderend},
                     (issue_regex, issue_regex_2, issue_regex_3, issue_regex_4,
-                     issue_regex_5, issue_regex_6)),
+                     issue_regex_5, issue_regex_6, issue_regex_7)),
                 (foldername,
                     {'endpos': volume_folderpos},
                     (issue_regex, issue_regex_2, issue_regex_3, issue_regex_4,
-                        issue_regex_5))
+                     issue_regex_5, issue_regex_6))
             )
 
         for file_part_with_issue, pos_option, regex_list in pos_options:
@@ -415,15 +415,6 @@ def extract_filename_data(
             else:
                 continue
             break
-
-        else:
-            if not is_image_file:
-                issue_result = issue_regex_7.search(clean_filename)
-                if issue_result:
-                    # Issue number found. File starts with issue number
-                    # (e.g. Series/Volume N/{issue_number}.ext)
-                    issue_number = issue_result.group(1)
-                    issue_pos = issue_result.start(0)
 
     if not issue_number and not special_version:
         special_version = SpecialVersion.TPB.value
