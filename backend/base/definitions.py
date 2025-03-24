@@ -31,6 +31,7 @@ class Constants:
     DB_FOLDER = ("db",)
     DB_NAME = "Kapowarr.db"
     DB_TIMEOUT = 10.0 # seconds
+    DB_MAX_CONCURRENT_CONNECTIONS = 32
 
     LOGGER_NAME = "Kapowarr"
     LOGGER_FILENAME = "Kapowarr.log"

@@ -18,11 +18,12 @@ from backend.base.custom_exceptions import (InvalidKeyValue, IssueNotFound,
                                             VolumeAlreadyAdded,
                                             VolumeDownloadedFor,
                                             VolumeNotFound)
-from backend.base.definitions import (SCANNABLE_EXTENSIONS, FileData,
-                                      GeneralFileData, GeneralFileType,
-                                      IssueData, LibraryFilters,
-                                      LibrarySorting, MonitorScheme,
-                                      SpecialVersion, VolumeData)
+from backend.base.definitions import (SCANNABLE_EXTENSIONS, Constants,
+                                      FileData, GeneralFileData,
+                                      GeneralFileType, IssueData,
+                                      LibraryFilters, LibrarySorting,
+                                      MonitorScheme, SpecialVersion,
+                                      VolumeData)
 from backend.base.file_extraction import extract_filename_data
 from backend.base.files import (create_folder, delete_empty_child_folders,
                                 delete_empty_parent_folders,
@@ -1530,7 +1531,10 @@ def refresh_and_scan(
         if not total_count:
             return
 
-        with PortablePool(max_processes=total_count) as pool:
+        with PortablePool(max_processes=min(
+            Constants.DB_MAX_CONCURRENT_CONNECTIONS,
+            total_count
+        )) as pool:
             if update_websocket:
                 ws = WebSocket()
                 for idx, _ in enumerate(
