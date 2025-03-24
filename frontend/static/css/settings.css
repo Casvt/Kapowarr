@@ -24,6 +24,10 @@
 	margin-top: 1rem;
 }
 
+.settings-container > label {
+	font-weight: bold;
+}
+
 /*  */
 /* Setting tables */
 /*  */

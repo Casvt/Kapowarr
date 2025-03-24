@@ -151,13 +151,13 @@ Options are:
 
 The "Converting" feature allows you to change the format of your files (e.g. from cbr to cbz). Extracting archive files also falls under "converting".
 
-### Convert Downloaded Files
+### Convert/Extract Downloaded Files
 
 This setting dictates whether Kapowarr should automatically convert downloaded files. As mentioned before, this also covers extracting archive files. Kapowarr will follow the [format preference](#format-preference) set.
 
-### Extract archives covering multiple issues
+### Extract archives containing issues
 
-If an archive file is downloaded with multiple issues inside, then first extract the files inside and _then_ convert. With the setting disabled, Kapowarr will covert the file as normal. Even when no format preference is set (= don't convert), this setting can still be enabled to extract archive files (up to beta-3, this was called 'unzipping').
+If an archive file has (most often multiple) complete issues inside, then extract the files inside and convert those issue files following the format preference. With the setting disabled, Kapowarr will convert the file as normal. Even when no format preference is set (= don't convert), this setting can still be enabled to extract archive files (up to beta-3, this was called 'unzipping').
 
 _Note: if Kapowarr determines that a file in the archive file is not related to the volume, it will not be extracted and will be deleted when the archive file is finished being unpacked. If you find faulty deletions occurring, please [report](../other_docs/reporting.md) this._
 

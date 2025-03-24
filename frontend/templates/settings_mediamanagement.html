@@ -95,25 +95,27 @@
 				</tbody>
 			</table>
 			<h2>Converting</h2>
-			<p>Convert files to a different format. The list below is the desired format, in order of preference.</p>
+			<p>The "Converting" feature allows you to change the format of your files (e.g. from cbr to cbz). Extracting archive files also falls under "converting".</p>
 			<table class="fold-table">
 				<tbody>
 					<tr>
-						<th><label for="convert-input">Convert Downloaded Files</label></th>
+						<th><label for="convert-input">Convert/Extract <br>Downloaded Files</label></th>
 						<td>
 							<input type="checkbox" id="convert-input">
+							<p>After a file is downloaded, automatically convert it (if a format preference is set) and/or extract its contents (if it's an archive and the setting below is enabled).</p>
 						</td>
 					</tr>
 					<tr>
-						<th><label for="extract-input">Extract archives covering multiple issues</label></th>
+						<th><label for="extract-input">Extract archives <br>containing issues</label></th>
 						<td>
 							<input type="checkbox" id="extract-input">
-							<p>Extract the issue files from archives covering multiple issues, then convert those issue files following the format preference.</p>
+							<p>If an archive file has (most often multiple) complete issues inside, then extract the files inside and convert those issue files following the format preference.</p>
 						</td>
 					</tr>
 				</tbody>
 			</table>
-			<p>Format Preference</p>
+			<label for="add-convert-input">Format Preference</label>
+			<p>The list below specifies the desired format, in order of preference.</p>
 			<table id="convert-table" class="short-table icon-text-color">
 				<tbody>
 					<tr>
