@@ -14,52 +14,56 @@
 	{% set builtin_content %}
 		<h2 id="mega-title">Mega</h2>
 		<p id="mega-desc" class="description">
-			<a href="https://mega.io/" target="_blank">Mega</a> is a cloud storage service from which Kapowarr can download files.
-			These files are uploaded by GetComics, as an alternative way of downloading the file compared to MediaFire,
-			WeTransfer, Pixeldrain or the direct downloads from their own servers. An advantage of Mega is that their downloads
-			are end-to-end encrypted, which Kapowarr makes use of. There are free and paid accounts that offer higher
-			bandwidth/limits for downloading files. Kapowarr is able to download files using an account to take advantage
-			of these higher limits (e.g. being able to download more than 5GB per day). If you have a Mega account, it's
-			advised to enter the credentials below so that Kapowarr can take advantage of it's premium features. Also make
-			sure to set Mega as the highest service in the service preference, so that Kapowarr will prefer using it.
+			<a href="https://mega.io/" target="_blank">Mega</a> is a file sharing service that supports end-to-end encrypted
+			downloads, which Kapowarr makes use of.
+			<br><br>
+			By default, you are limited to downloading around 5GB of files per day from Mega. There are no download speed constraints.
+			<br><br>
+			Mega offers free and paid accounts that come with higher limits for downloading files. Kapowarr is able to download
+			files using an account to take advantage of these higher limits (i.e. being able to download more than 5GB per day).
+			If you have a Mega account, it's advised to enter the credentials below so that Kapowarr can take advantage of it's
+			premium features. Also make sure to set Mega high in the service preference list, so that Kapowarr will prefer using it.
 		</p>
 		<h2 id="mf-title">MediaFire</h2>
 		<p id="mf-desc" class="description">
-			<a href="https://www.mediafire.com/" target="_blank">MediaFire</a> is a cloud storage service from which Kapowarr can
-			download files. These files are uploaded by GetComics, as an alternative way of downloading the file compared
-			to Mega, WeTransfer, Pixeldrain, torrents or the direct downloads from their own servers.
+			<a href="https://www.mediafire.com/" target="_blank">MediaFire</a> is a file sharing service from which Kapowarr can
+			download files.
 			<br><br>
-			Note: Kapowarr does not support downloading content from MediaFire using an account, like it can with Mega.
+			MediaFire does not limit how much you can download per day.
 		</p>
 		<h2 id="wt-title">WeTransfer</h2>
 		<p id="wt-desc" class="description">
-			<a href="https://wetransfer.com/" target="_blank">WeTransfer</a> is a cloud storage service from which Kapowarr can
-			download files. These files are uploaded by GetComics, as an alternative way of downloading the file compared
-			to Mega, MediaFire, Pixeldrain, torrents or the direct downloads from their own servers.
+			<a href="https://wetransfer.com/" target="_blank">WeTransfer</a> is a file sharing service from which Kapowarr can
+			download files.
 			<br><br>
-			Note: Kapowarr does not support downloading content from WeTransfer using an account, like it can with Mega.
+			WeTransfer does not limit how much you can download per day.
 		</p>
 		<h2 id="pd-title">Pixeldrain</h2>
 		<p id="pd-desc" class="description">
-			<a href="https://pixeldrain.com/" target="_blank">Pixeldrain</a> is a cloud storage service from which Kapowarr can
-			download files. These files are uploaded by GetComics, as an alternative way of downloading the file compared
-			to Mega, MediaFire, WeTransfer, torrents or the direct downloads from their own servers. There are paid subscription
-			plans that offer higher transfer limits when downloading. When the transfer limit is reached, the download speed
-			will be reduced to 1MB/s. Kapowarr is able to download files using an account to take advantage of these higher
-			limits (download more than 6GB per day at full speed). If you have a Pixeldrain account, it's advised to
-			enter the credentials below so that Kapowarr can take advantage of it's premium features. Also make sure to set
-			Pixeldrain as the highest service in the service preference, so that Kapowarr will prefer using it.
+			<a href="https://pixeldrain.com/" target="_blank">Pixeldrain</a> is a file sharing service from which Kapowarr can
+			download files.
+			<br><br>
+			By default, you can download up to 6GB of files at full speed per day from Pixeldrain. After that limit is reached,
+			download speed is reduced to 1MB/s.
+			<br><br>
+			Pixeldrain offers paid subscription plans that remove this speed limit. Kapowarr is able to download files using
+			an account to take advantage of these higher limits (i.e. download more than 6GB per day at full speed). If you
+			have a Pixeldrain account, it's advised to enter the credentials below so that Kapowarr can take advantage of
+			it's premium features. Also make sure to set Pixeldrain high in the service preference list, so that Kapowarr
+			will prefer using it.
 		</p>
 		<h2 id="gc-title">GetComics</h2>
 		<p id="gc-desc" class="description">
-			<a href="https://getcomics.org" target="_blank">GetComics</a> is a website that offers a vast amount of downloads for comics.
-			Kapowarr can search this website to find downloads for the volumes in the library. The comics can be downloaded
-			via multiple services, for instance: MediaFire, Mega, WeTransfer, Pixeldrain, torrents (magnet links) and direct downloads
-			from their own servers. Kapowarr supports downloading via all the services mentioned before.
+			<a href="https://getcomics.org" target="_blank">GetComics</a> is a website that offers a vast amount of downloads
+			for comics. Kapowarr can search this website to find downloads for the volumes in your library. The comics can
+			be downloaded via multiple services. Kapowarr has built-in support for almost all these services.
 			<br><br>
-			Note: When downloading from the servers of GetComics (instead of using an external service), the download speed
+			When downloading directly from the servers of GetComics (instead of using an external service), the download speed
 			will be significantly reduced 400MB into the download. This behaviour is set up by the owner of the website, is
 			intentional, and is not planned to be removed.
+			<br><br>
+			Also, most often on Wednesday and Thursday, the site is very busy so the downloads speed goes down a lot. Preferring
+			external services in the service preference list is advised in order to avoid this.
 		</p>
 
 		<form id="cred-form">
