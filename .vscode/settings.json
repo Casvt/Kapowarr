@@ -41,5 +41,11 @@
 		"mediamanagement",
 		"TPB's",
 		"traceback"
-	]
+	],
+	"cSpell.languageSettings": [
+		{
+			"languageId": "log",
+			"enabled": false
+		}
+	],
 }
