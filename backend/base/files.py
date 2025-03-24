@@ -211,8 +211,7 @@ def generate_archive_folder(
     """
     return join(
         volume_folder,
-        Constants.ARCHIVE_EXTRACT_FOLDER,
-        splitext(
+        Constants.ARCHIVE_EXTRACT_FOLDER + '_' + splitext(
             '_'.join(
                 relpath(
                     archive_file,

@@ -151,7 +151,6 @@ class ZIPtoRAR(FileConverter):
         delete_file_folder(archive_folder)
         delete_file_folder(file)
         delete_empty_parent_folders(dirname(file), volume_folder)
-        delete_empty_parent_folders(dirname(archive_folder), volume_folder)
 
         return [splitext(file)[0] + '.rar']
 
@@ -198,10 +197,8 @@ class ZIPtoFOLDER(FileConverter):
                 filepath_filter=resulting_files
             )
 
-        delete_file_folder(archive_folder)
         delete_file_folder(file)
         delete_empty_parent_folders(dirname(file), volume_folder)
-        delete_empty_parent_folders(dirname(archive_folder), volume_folder)
 
         return resulting_files
 
@@ -312,7 +309,6 @@ class RARtoZIP(FileConverter):
         delete_file_folder(archive_folder)
         delete_file_folder(file)
         delete_empty_parent_folders(dirname(file), volume_folder)
-        delete_empty_parent_folders(dirname(archive_folder), volume_folder)
 
         return [target_archive]
 
@@ -364,10 +360,8 @@ class RARtoFOLDER(FileConverter):
                 filepath_filter=resulting_files
             )
 
-        delete_file_folder(archive_folder)
         delete_file_folder(file)
         delete_empty_parent_folders(dirname(file), volume_folder)
-        delete_empty_parent_folders(dirname(archive_folder), volume_folder)
 
         return resulting_files
 
