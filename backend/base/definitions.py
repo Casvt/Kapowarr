@@ -97,7 +97,7 @@ class FileConstants:
 
     METADATA_FILES = {
         "cvinfo.xml", "comicinfo.xml",
-        "series.json"
+        "series.json", "metadata.json"
     }
     "Filenames of metadata files, and only lowercase"
 
