@@ -1,8 +1,3 @@
-const tagToSource = {
-	'mega': 'mega',
-	'pd': 'pixeldrain'
-};
-
 function createUsernameInput(id) {
 	const username_row = document.createElement('tr');
 	const username_header = document.createElement('th');
@@ -302,44 +297,50 @@ function loadTorrentClients(api_key) {
 function fillCredentials(api_key) {
 	fetchAPI('/credentials', api_key)
 	.then(json => {
-		document.querySelectorAll('.cred-entry').forEach(e => e.dataset.id = '');
+		document.querySelectorAll('#mega-creds, #pixeldrain-creds').forEach(
+			c => c.innerHTML = ''
+		);
 		json.result.forEach(result => {
 			if (result.source === 'mega') {
-				const row = document.querySelector('.cred-entry[data-source="mega"]');
-				row.dataset.id = result.id;
+				const row = document.querySelector('.pre-build-els .mega-cred-entry').cloneNode(true);
 				row.querySelector('.mega-email').innerText = result.email;
 				row.querySelector('.mega-password').innerText = result.password;
-				row.querySelector('#delete-mega').onclick =
+				row.querySelector('.delete-credential').onclick =
 					e => sendAPI('DELETE', `/credentials/${result.id}`, api_key)
-						.then(response => fillCredentials(api_key));
+						.then(response => row.remove());
+				document.querySelector('#mega-creds').appendChild(row);
 			}
 			else if (result.source === 'pixeldrain') {
-				const row = document.querySelector('.cred-entry[data-source="pixeldrain"]');
-				row.dataset.id = result.id;
+				const row = document.querySelector('.pre-build-els .pixeldrain-cred-entry').cloneNode(true);
 				row.querySelector('.pixeldrain-key').innerText = result.api_key;
-				row.querySelector('#delete-pixeldrain').onclick =
+				row.querySelector('.delete-credential').onclick =
 					e => sendAPI('DELETE', `/credentials/${result.id}`, api_key)
-						.then(response => fillCredentials(api_key));
+						.then(response => row.remove());
+				document.querySelector('#pixeldrain-creds').appendChild(row);
 			};
 		});
 	});
+	
+	document.querySelectorAll('#mega-form input, #pixeldrain-form input').forEach(
+		i => i.value = ''
+	);
 };
 
 function addCredential() {
 	hide([document.querySelector('#builtin-window p.error')]);
-	
-	const tag = document.querySelector("#builtin-window").dataset.tag;
+
+	const source = document.querySelector("#builtin-window").dataset.tag;
 	let data;
-	if (tag === 'mega')
+	if (source === 'mega')
 		data = {
-			source: tagToSource[tag],
+			source: source,
 			email: document.querySelector('#add-mega .mega-email input').value,
 			password: document.querySelector('#add-mega .mega-password input').value
 		};
 
-	else if (tag === 'pd')
+	else if (source === 'pixeldrain')
 		data = {
-			source: tagToSource[tag],
+			source: source,
 			api_key: document.querySelector('#add-pixeldrain .pixeldrain-key input').value
 		};
 	
@@ -370,23 +371,18 @@ usingApiKey()
 	document.querySelector('#add-torrent-client').onclick = e => loadTorrentList(api_key);
 });
 
-document.querySelector('#cred-form').action = 'javascript:addCredential();';
+document.querySelector('#edit-torrent-form').action = 'javascript:saveEditTorrent()';
+document.querySelector('#add-torrent-form').action = 'javascript:saveAddTorrent()';
+document.querySelectorAll('#cred-container > form').forEach(
+	f => f.action = 'javascript:addCredential();'
+);
 document.querySelectorAll('#builtin-client-list > button').forEach(b => {
 	const tag = b.dataset.tag;
 	b.onclick = e => {
 		document.querySelector('#builtin-window').dataset.tag = tag;
 		hide([document.querySelector('#builtin-window p.error')]);
 		document.querySelectorAll('#builtin-window input').forEach(i => i.value = '');
-		
-		document.querySelectorAll('#builtin-window #cred-form input').forEach(i => 
-			i.required = false
-		);
-		document.querySelectorAll(`#builtin-window #add-${tagToSource[tag]} input`).forEach(i => 
-			i.required = true
-		);
-		
+
 		showWindow('builtin-window');
 	};
 });
-document.querySelector('#edit-torrent-form').action = 'javascript:saveEditTorrent()';
-document.querySelector('#add-torrent-form').action = 'javascript:saveAddTorrent()';

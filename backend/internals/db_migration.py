@@ -1156,3 +1156,36 @@ class MigrateDownloadQueueToRefactor(DBMigrator):
             );
         """)
         return
+
+
+class MigrateMultipleCredentials(DBMigrator):
+    start_version = 36
+
+    def run(self) -> None:
+        # V36 -> V37
+
+        from backend.internals.db import get_db
+
+        get_db().executescript("""
+            BEGIN TRANSACTION;
+            PRAGMA defer_foreign_keys = ON;
+
+            CREATE TEMPORARY TABLE temp_credentials_37 AS
+                SELECT * FROM credentials;
+            DROP TABLE credentials;
+
+            CREATE TABLE IF NOT EXISTS credentials(
+                id INTEGER PRIMARY KEY,
+                source VARCHAR(30) NOT NULL,
+                username TEXT,
+                email TEXT,
+                password TEXT,
+                api_key TEXT
+            );
+
+            INSERT INTO credentials
+                SELECT * FROM temp_credentials_37;
+
+            COMMIT;
+        """)
+        return

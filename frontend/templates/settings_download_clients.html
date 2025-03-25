@@ -10,6 +10,26 @@
 	<script src="{{ url_for('static', filename='js/settings_download_clients.js') }}" defer></script>
 {% endblock %}
 
+{% block pre_build_rows %}
+<tr class="mega-cred-entry cred-entry">
+	<td class="mega-email"></td>
+	<td class="mega-password"></td>
+	<td>
+		<button type="button" class="delete-credential" title="Delete credential">
+			<img src="{{ url_for('static', filename='img/delete.svg') }}" alt="">
+		</button>
+	</td>
+</tr>
+<tr class="pixeldrain-cred-entry cred-entry">
+	<td class="pixeldrain-key"></td>
+	<td>
+		<button type="button" class="delete-credential" title="Delete credential">
+			<img src="{{ url_for('static', filename='img/delete.svg') }}" alt="">
+		</button>
+	</td>
+</tr>
+{% endblock pre_build_rows %}
+
 {% block windows %}
 	{% set builtin_content %}
 		<h2 id="mega-title">Mega</h2>
@@ -66,64 +86,53 @@
 			external services in the service preference list is advised in order to avoid this.
 		</p>
 
-		<form id="cred-form">
-			<p class="error hidden">Failed to add credentials</p>
-			<table>
-				<thead>
-					<tr data-source="mega">
-						<th>Email</th>
-						<th>Password</th>
-						<th>Action</th>
-					</tr>
-					<tr data-source="pixeldrain">
-						<th>Api Key</th>
-						<th>Action</th>
-					</tr>
-				</thead>
-				<tbody class="icon-text-color">
-					<tr data-source="mega" data-id="" class="cred-entry">
-						<td class="mega-email"></td>
-						<td class="mega-password"></td>
-						<td>
-							<button type="button" id="delete-mega">
-								<img src="{{url_base}}/static/img/delete.svg" alt="">
-							</button>
-						</td>
-					</tr>
-					<tr id="add-mega">
-						<td class="mega-email">
-							<input type="email" required>
-						</td>
-						<td class="mega-password">
-							<input type="password" required>
-						</td>
-						<td>
-							<button type="submit" id="submit-mega">
-								<img src="{{url_base}}/static/img/cancel.svg" alt="">
-							</button>
-						</td>
-					</tr>
-					<tr data-source="pixeldrain" data-id="" class="cred-entry">
-						<td class="pixeldrain-key"></td>
-						<td>
-							<button type="button" id="delete-pixeldrain">
-								<img src="{{url_base}}/static/img/delete.svg" alt="">
-							</button>
-						</td>
-					</tr>
-					<tr id="add-pixeldrain">
-						<td class="pixeldrain-key">
-							<input type="text" required>
-						</td>
-						<td>
-							<button type="submit" id="submit-pixeldrain">
-								<img src="{{url_base}}/static/img/cancel.svg" alt="">
-							</button>
-						</td>
-					</tr>
-				</tbody>
-			</table>
-		</form>
+		<div id="cred-container">
+			<p id="cred-error" class="error hidden">Failed to add credentials</p>
+			<form id="mega-form" data-source="mega">
+				<table>
+					<thead>
+						<tr>
+							<th>Email</th>
+							<th>Password</th>
+							<th>Action</th>
+						</tr>
+					</thead>
+					<tbody id="mega-creds" class="icon-text-color">
+					</tbody>
+					<tbody id="add-mega" class="icon-text-color">
+						<tr id="add-mega">
+							<td class="mega-email">
+								<input type="email" required>
+							</td>
+							<td class="mega-password">
+								<input type="password" required>
+							</td>
+							<td>{{ icon_button("submit-mega", "Add credential", "cancel.svg", "", True) }}</td>
+						</tr>
+					</tbody>
+				</table>
+			</form>
+			<form id="pixeldrain-form" data-source="pd">
+				<table>
+					<thead>
+						<tr>
+							<th>Api Key</th>
+							<th>Action</th>
+						</tr>
+					</thead>
+					<tbody id="pixeldrain-creds" class="icon-text-color">
+					</tbody>
+					<tbody id="add-pixeldrain" class="icon-text-color">
+						<tr id="add-pixeldrain">
+							<td class="pixeldrain-key">
+								<input type="text" required>
+							</td>
+							<td>{{ icon_button("submit-pixeldrain", "Add credential", "cancel.svg", "", True) }}</td>
+						</tr>
+					</tbody>
+				</table>
+			</form>
+		</div>
 	{% endset %}
 
 	{{ window(False, "builtin-window", "Client Information", builtin_content) }}
@@ -207,10 +216,10 @@
 		<h2>Built-in Clients</h2>
 		<div id="builtin-client-list" class="client-list">
 			<button id="mega-client" data-tag="mega">Mega</button>
-			<button id="mf-client" data-tag="mf">MediaFire</button>
-			<button id="wt-client" data-tag="wt">WeTransfer</button>
-			<button id="pd-client" data-tag="pd">Pixeldrain</button>
-			<button id="gc-client" data-tag="gc">GetComics</button>
+			<button id="mediafire-client" data-tag="mediafire">MediaFire</button>
+			<button id="wetransfer-client" data-tag="wetransfer">WeTransfer</button>
+			<button id="pixeldrain-client" data-tag="pixeldrain">Pixeldrain</button>
+			<button id="getcomics-client" data-tag="getcomics">GetComics</button>
 		</div>
 		<h2>Torrent Clients</h2>
 		<div id="torrent-client-list" class="client-list">

@@ -97,8 +97,11 @@ class Credentials:
             credential_data (CredentialData): The data of the credential to
             store.
 
+        Raises:
+            CredentialInvalid: The credential data is invalid.
+
         Returns:
-            dict: The credential info
+            CredentialData: The credential info
         """
         LOGGER.info(f'Adding credential for {credential_data.source.value}')
 

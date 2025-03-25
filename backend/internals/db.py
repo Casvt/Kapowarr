@@ -430,7 +430,7 @@ def setup_db() -> None:
         );
         CREATE TABLE IF NOT EXISTS credentials(
             id INTEGER PRIMARY KEY,
-            source VARCHAR(30) NOT NULL UNIQUE,
+            source VARCHAR(30) NOT NULL,
             username TEXT,
             email TEXT,
             password TEXT,

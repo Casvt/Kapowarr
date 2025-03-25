@@ -236,58 +236,43 @@
 	justify-content: flex-start;
 }
 
-#builtin-window .window-content > :where(h2, p, form) {
+#builtin-window .window-content > :where(h2, p),
+#builtin-window .window-content form {
 	display: none;
 	width: 100%;
 }
 
-#builtin-window[data-tag="mega"] :where(#mega-title, #mega-desc, #cred-form) {
+#builtin-window[data-tag="mega"] .window-content :where(#mega-title, #mega-desc, #mega-form) {
 	display: block;
 }
 
-#builtin-window[data-tag="mf"] :where(#mf-title, #mf-desc) {
+#builtin-window[data-tag="mediafire"] .window-content :where(#mf-title, #mf-desc) {
 	display: block;
 }
 
-#builtin-window[data-tag="wt"] :where(#wt-title, #wt-desc) {
+#builtin-window[data-tag="wetransfer"] .window-content :where(#wt-title, #wt-desc) {
 	display: block;
 }
 
-#builtin-window[data-tag="pd"] :where(#pd-title, #pd-desc, #cred-form) {
+#builtin-window[data-tag="pixeldrain"] .window-content :where(#pd-title, #pd-desc, #pixeldrain-form) {
 	display: block;
 }
 
-#builtin-window[data-tag="gc"] :where(#gc-title, #gc-desc) {
+#builtin-window[data-tag="getcomics"] .window-content :where(#gc-title, #gc-desc) {
 	display: block;
 }
 
-#builtin-window #cred-form tr {
-	display: none;
-}
-
-#builtin-window[data-tag="mega"] #cred-form :where(
-	thead > tr[data-source="mega"],
-	tbody:has(.cred-entry[data-source="mega"][data-id=""]) #add-mega,
-	tbody:has(.cred-entry[data-source="mega"]:not([data-id=""])) .cred-entry[data-source="mega"]
-),
-#builtin-window[data-tag="pd"] #cred-form :where(
-	thead > tr[data-source="pixeldrain"],
-	tbody:has(.cred-entry[data-source="pixeldrain"][data-id=""]) #add-pixeldrain,
-	tbody:has(.cred-entry[data-source="pixeldrain"]:not([data-id=""])) .cred-entry[data-source="pixeldrain"]
-) {
-	display: table-row;
-}
-
-#builtin-window #cred-form tbody td:last-child {
+#builtin-window #cred-container tbody td:last-child {
 	width: 4rem;
 }
 
-#builtin-window #cred-form button {
+#builtin-window #cred-container button {
 	width: 2rem;
 	padding: .4rem;
 }
 
-#builtin-window #cred-form button[type="submit"] {
+#builtin-window #cred-container button[type="submit"] {
+	width: 1.8rem;
 	transform: rotate(45deg);
 }
 
