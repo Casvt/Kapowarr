@@ -6,7 +6,7 @@ from asyncio import run
 from datetime import datetime, timedelta
 from functools import lru_cache
 from io import BytesIO
-from os.path import isdir, relpath
+from os.path import exists, isdir, relpath
 from re import IGNORECASE, compile
 from time import time
 from typing import Any, Dict, List, Mapping, Set, Tuple, Union
@@ -741,14 +741,15 @@ class Volume:
         if delete_folder:
             vd = self.get_data()
 
-            for f in self.get_all_files():
-                delete_file_folder(f["filepath"])
+            if exists(vd.folder):
+                for f in self.get_all_files():
+                    delete_file_folder(f["filepath"])
 
-            delete_empty_child_folders(vd.folder)
-            delete_empty_parent_folders(
-                vd.folder,
-                RootFolders()[vd.root_folder]
-            )
+                delete_empty_child_folders(vd.folder)
+                delete_empty_parent_folders(
+                    vd.folder,
+                    RootFolders()[vd.root_folder]
+                )
 
         # Delete file entries
         # ON DELETE CASCADE will take care of issues_files
