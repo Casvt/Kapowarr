@@ -265,7 +265,8 @@ class Volume:
                 title, alt_title,
                 year, publisher, volume_number,
                 description, site_url,
-                monitored, root_folder, folder, custom_folder,
+                monitored, monitor_new_issues,
+                root_folder, folder, custom_folder,
                 special_version, special_version_locked,
                 last_cv_fetch
             FROM volumes
@@ -293,7 +294,7 @@ class Volume:
                 volume_number,
                 special_version, special_version_locked,
                 description, site_url,
-                monitored,
+                monitored, monitor_new_issues,
                 v.folder, root_folder,
                 rf.folder AS root_folder_path,
                 (
@@ -509,6 +510,7 @@ class Volume:
         if from_public:
             allowed_keys = (
                 'monitored',
+                'monitor_new_issues',
                 'special_version',
                 'special_version_locked'
             )
@@ -804,7 +806,7 @@ class Library:
                 id, comicvine_id,
                 title, year, publisher,
                 volume_number, description,
-                monitored,
+                monitored, monitor_new_issues,
                 (
                     SELECT COUNT(id) FROM vol_issues
                 ) AS issue_count,
@@ -939,7 +941,9 @@ class Library:
     def add(self,
         comicvine_id: int,
         root_folder_id: int,
+        monitored: bool,
         monitor_scheme: MonitorScheme = MonitorScheme.ALL,
+        monitor_new_issues: bool = True,
         volume_folder: Union[str, None] = None,
         special_version: Union[SpecialVersion, None] = None,
         auto_search: bool = False
@@ -952,8 +956,13 @@ class Library:
             root_folder_id (int): The ID of the rootfolder in which
             the volume folder will be.
 
+            monitored (bool): Whether the volume should be monitored.
+
             monitor_scheme (MonitorScheme, optional): Which issues to monitor.
                 Defaults to `MonitorScheme.ALL`.
+
+            monitor_new_issues (bool, optional): Whether to monitor new issues.
+                Defaults to True.
 
             volume_folder (Union[str, None], optional): Custom volume folder.
                 Defaults to None.
@@ -979,12 +988,16 @@ class Library:
         from backend.implementations.naming import generate_volume_folder_path
 
         LOGGER.info(
-            'Adding a volume to the library: CV ID %d, RF ID %d, MS %s, VF %s, SV %s',
+            'Adding a volume to the library: '
+            'CV ID %d, RF ID %d, M %s, MS %s, MNI %s, VF %s, SV %s',
             comicvine_id,
             root_folder_id,
+            monitored,
             monitor_scheme.value,
+            monitor_new_issues,
             volume_folder,
-            special_version)
+            special_version
+        )
 
         if self._volume_added(comicvine_id):
             raise VolumeAlreadyAdded
@@ -1008,6 +1021,7 @@ class Library:
                 site_url,
                 cover,
                 monitored,
+                monitor_new_issues,
                 root_folder,
                 custom_folder,
                 last_cv_fetch,
@@ -1016,7 +1030,8 @@ class Library:
             ) VALUES (
                 :comicvine_id, :title, :alt_title,
                 :year, :publisher, :volume_number, :description,
-                :site_url, :cover, :monitored, :root_folder, :custom_folder,
+                :site_url, :cover, :monitored, :monitor_new_issues,
+                :root_folder, :custom_folder,
                 :last_cv_fetch, :special_version, :special_version_locked
             );
             """,
@@ -1030,7 +1045,8 @@ class Library:
                 "description": vd["description"],
                 "site_url": vd["site_url"],
                 "cover": vd["cover"],
-                "monitored": True,
+                "monitored": monitored,
+                "monitor_new_issues": monitor_new_issues,
                 "root_folder": root_folder.id,
                 "custom_folder": volume_folder is not None,
                 "last_cv_fetch": round(time()),
@@ -1094,7 +1110,7 @@ class Library:
             commit()
 
             task = AutoSearchVolume(volume_id)
-            TaskHandler().add(task) # type: ignore
+            TaskHandler().add(task)
 
         LOGGER.info(
             f'Added volume with CV ID {comicvine_id} and ID {volume_id}'
@@ -1426,6 +1442,12 @@ def refresh_and_scan(
     issue_datas = run(cv.fetch_issues(tuple(
         v['comicvine_id'] for v in volume_datas
     )))
+    monitor_issues_volume_ids: Set[int] = {
+        v[0]
+        for v in cursor.execute(
+            "SELECT id FROM volumes WHERE monitor_new_issues = 1;"
+        )
+    }
     cursor.executemany(
         """
         INSERT INTO issues(
@@ -1450,14 +1472,18 @@ def refresh_and_scan(
             date = :date,
             description = :description;
         """,
-        ({"volume_id": cv_to_id[isd["volume_id"]],
-          "comicvine_id": isd["comicvine_id"],
-          "issue_number": isd["issue_number"],
-          "calculated_issue_number": isd["calculated_issue_number"] or 0.0,
-          "title": isd["title"],
-          "date": isd["date"],
-          "description": isd["description"],
-          "monitored": True} for isd in issue_datas))
+        ({
+            "volume_id": cv_to_id[isd["volume_id"]],
+            "comicvine_id": isd["comicvine_id"],
+            "issue_number": isd["issue_number"],
+            "calculated_issue_number": isd["calculated_issue_number"] or 0.0,
+            "title": isd["title"],
+            "date": isd["date"],
+            "description": isd["description"],
+            "monitored": cv_to_id[isd["volume_id"]] in monitor_issues_volume_ids
+        }
+            for isd in issue_datas
+        ))
 
     commit()
 

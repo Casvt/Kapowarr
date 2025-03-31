@@ -195,8 +195,8 @@ main > div {
 }
 
 #add-cover {
-	aspect-ratio: 2/3;
 	width: 10rem;
+	height: 15rem;
 }
 
 .window .window-content {
@@ -206,6 +206,10 @@ main > div {
 #add-form {
 	flex-grow: 1;
 	width: 75%;
+}
+
+#add-form tbody {
+	vertical-align: text-top;
 }
 
 #add-volume {

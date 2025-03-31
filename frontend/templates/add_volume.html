@@ -59,13 +59,33 @@
 					</td>
 				</tr>
 				<tr>
-					<th><label for="monitor-input">Monitor</label></th>
+					<th><label for="monitor-volume-input">Monitor Volume</label></th>
 					<td>
-						<select id="monitor-input">
+						<select id="monitor-volume-input">
+							<option value="true" selected>Yes</option>
+							<option value="false">No</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="monitor-issues-input">Monitor New Issues</label></th>
+					<td>
+						<select id="monitor-issues-input">
+							<option value="true" selected>Yes</option>
+							<option value="false">No</option>
+						</select>
+						<p>When new issues come out, automatically monitor them.</p>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="monitoring-scheme-input">Monitoring Scheme</label></th>
+					<td>
+						<select id="monitoring-scheme-input">
 							<option value="all" selected>All</option>
 							<option value="missing">Missing</option>
 							<option value="none">None</option>
 						</select>
+						<p>Choose which issues to monitor that have already been released.</p>
 					</td>
 				</tr>
 				<tr>

@@ -193,6 +193,10 @@ tbody .issue-title:hover {
 	text-align: center;
 }
 
+#edit-window tbody {
+	vertical-align: text-top;
+}
+
 /*  */
 /* Manual search window */
 /*  */

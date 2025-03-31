@@ -27,7 +27,9 @@ const SearchEls = {
 		title: document.querySelector('#add-window h2'),
 		cover: document.querySelector('#add-cover'),
 		cv_input: document.querySelector('#comicvine-input'),
-		monitor_input: document.querySelector('#monitor-input'),
+		monitor_volume_input: document.querySelector('#monitor-volume-input'),
+		monitor_issues_input: document.querySelector('#monitor-issues-input'),
+		monitoring_scheme: document.querySelector('#monitoring-scheme-input'),
 		root_folder_input: document.querySelector('#rootfolder-input'),
 		volume_folder_input: document.querySelector('#volumefolder-input'),
         special_state_input: document.querySelector('#specialoverride-input'),
@@ -397,6 +399,13 @@ function showAddWindow(comicvine_id, api_key) {
 	SearchEls.window.cover.src = volume_data.cover;
 	SearchEls.window.cv_input.value = comicvine_id;
     SearchEls.window.special_state_input.value = "auto";
+	
+	const monitoring_pref = getLocalStorage(
+		'monitor_new_volume', 'monitor_new_issues', 'monitoring_scheme'
+	);
+	SearchEls.window.monitor_volume_input.value = monitoring_pref.monitor_new_volume;
+	SearchEls.window.monitor_issues_input.value = monitoring_pref.monitor_new_issues;
+	SearchEls.window.monitoring_scheme.value = monitoring_pref.monitoring_scheme;
 };
 
 function addVolume() {
@@ -406,7 +415,9 @@ function addVolume() {
 	const data = {
 		'comicvine_id': parseInt(SearchEls.window.cv_input.value),
 		'root_folder_id': parseInt(SearchEls.window.root_folder_input.value),
-		'monitor': SearchEls.window.monitor_input.value,
+		'monitor': SearchEls.window.monitor_volume_input.value === "true",
+		'monitoring_scheme': SearchEls.window.monitoring_scheme.value,
+		'monitor_new_issues': SearchEls.window.monitor_issues_input.value === "true",
 		'volume_folder': '',
         'special_version': SearchEls.window.special_state_input.value || null,
 		'auto_search': SearchEls.window.auto_search_input.checked
@@ -420,6 +431,12 @@ function addVolume() {
 		// Custom volume folder
 		data.volume_folder = volume_folder;
 	};
+	
+	setLocalStorage({
+		'monitor_new_volume': data.monitor,
+		'monitor_new_issues': data.monitor_new_issues,
+		'monitoring_scheme': data.monitoring_scheme
+	});
 
 	usingApiKey()
 	.then(api_key => {

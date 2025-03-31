@@ -1189,3 +1189,18 @@ class MigrateMultipleCredentials(DBMigrator):
             COMMIT;
         """)
         return
+
+
+class MigrateAddMonitorNewIssuesToVolumes(DBMigrator):
+    start_version = 37
+
+    def run(self) -> None:
+        # V37 -> V38
+
+        from backend.internals.db import get_db
+
+        get_db().execute("""
+            ALTER TABLE volumes ADD COLUMN
+                monitor_new_issues BOOL NOT NULL DEFAULT 1;
+        """)
+        return

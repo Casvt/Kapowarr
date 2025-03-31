@@ -22,6 +22,8 @@ const ViewEls = {
 	},
 	vol_edit: {
 		monitor: document.querySelector('#monitored-input'),
+		monitor_new_issues: document.querySelector('#monitor-issues-input'),
+		monitoring_scheme: document.querySelector('#monitoring-scheme-input'),
 		root_folder: document.querySelector('#root-folder-input'),
 		volume_folder: document.querySelector('#volumefolder-input'),
 		special_version: document.querySelector('#specialoverride-input')
@@ -158,6 +160,7 @@ function fillPage(data, api_key) {
 	ViewEls.vol_data.cover.src = `${url_base}/api/volumes/${data.id}/cover?api_key=${api_key}`;
 
 	// Monitored state
+	ViewEls.vol_edit.monitor_new_issues.value = data.monitor_new_issues;
 	const monitor = ViewEls.vol_data.monitor;
 	monitor.dataset.monitored = data.monitored;
 	monitor.onclick = e => toggleMonitored(api_key);
@@ -609,10 +612,9 @@ function convertVolume(api_key, issue_id=null) {
 // Editing
 //
 function showEdit(api_key) {
-	ViewEls.vol_edit.monitor.value = ViewEls.vol_data.monitor.dataset.monitored;
 	const volume_root_folder = parseInt(ViewEls.vol_data.path.dataset.root_folder),
-		volume_folder = ViewEls.vol_data.path.dataset.volume_folder;
-
+	volume_folder = ViewEls.vol_data.path.dataset.volume_folder;
+	
 	fetchAPI('/rootfolder', api_key)
 	.then(json => {
 		ViewEls.vol_edit.root_folder.innerHTML = '';
@@ -627,6 +629,8 @@ function showEdit(api_key) {
 		});
 		showWindow('edit-window');
 	});
+	ViewEls.vol_edit.monitor.value = ViewEls.vol_data.monitor.dataset.monitored;
+	ViewEls.vol_edit.monitoring_scheme.value = '';
 	ViewEls.vol_edit.volume_folder.value = volume_folder;
 };
 
@@ -634,10 +638,14 @@ function editVolume() {
 	showLoadWindow('edit-window');
 
 	const data = {
-		'monitored': ViewEls.vol_edit.monitor.value == 'true',
+		'monitored': ViewEls.vol_edit.monitor.value === 'true',
+		'monitor_new_issues': ViewEls.vol_edit.monitor_new_issues.value === 'true',
 		'root_folder': parseInt(ViewEls.vol_edit.root_folder.value),
 		'volume_folder': ViewEls.vol_edit.volume_folder.value
 	};
+	
+	if (ViewEls.vol_edit.monitoring_scheme.value !== '')
+		data['monitoring_scheme'] = ViewEls.vol_edit.monitoring_scheme.value;
 
 	const so = document.querySelector('#specialoverride-input').value;
 

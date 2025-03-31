@@ -298,6 +298,7 @@ def setup_db() -> None:
             site_url TEXT NOT NULL DEFAULT "",
             cover BLOB,
             monitored BOOL NOT NULL DEFAULT 0,
+            monitor_new_issues BOOL NOT NULL DEFAULT 1,
             root_folder INTEGER NOT NULL,
             folder TEXT,
             custom_folder BOOL NOT NULL DEFAULT 0,

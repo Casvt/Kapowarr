@@ -99,12 +99,34 @@
 		<form id="edit-form">
 			<table class="fold-table">
 				<tr>
-					<th><label for="monitored-input">Monitored</label></th>
+					<th><label for="monitored-input">Monitor Volume</label></th>
 					<td>
 						<select id="monitored-input">
 							<option value="true">Yes</option>
 							<option value="false" selected>No</option>
 						</select>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="monitor-issues-input">Monitor New Issues</label></th>
+					<td>
+						<select id="monitor-issues-input">
+							<option value="true" selected>Yes</option>
+							<option value="false">No</option>
+						</select>
+						<p>When new issues come out, automatically monitor them.</p>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="monitoring-scheme-input">Monitoring Scheme</label></th>
+					<td>
+						<select id="monitoring-scheme-input">
+							<option value="" selected>-- Don't apply --</option>
+							<option value="all">All</option>
+							<option value="missing">Missing</option>
+							<option value="none">None</option>
+						</select>
+						<p>Apply a monitoring scheme once, on save.</p>
 					</td>
 				</tr>
 				<tr>

@@ -531,6 +531,7 @@ class VolumeData:
     description: str
     site_url: str
     monitored: bool
+    monitor_new_issues: bool
     root_folder: int
     folder: str
     custom_folder: bool

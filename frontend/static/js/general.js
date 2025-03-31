@@ -285,7 +285,10 @@ const default_values = {
 	'theme': 'light',
 	'translated_filter': 'all',
 	'api_key': null,
-	'last_login': 0
+	'last_login': 0,
+	'monitor_new_volume': true,
+	'monitor_new_issues': true,
+	'monitoring_scheme': "all"
 };
 
 function setupLocalStorage() {
@@ -310,15 +313,11 @@ function setupLocalStorage() {
 	return;
 };
 
-function getLocalStorage(keys) {
+function getLocalStorage(...keys) {
 	const storage = JSON.parse(localStorage.getItem('kapowarr'));
 	const result = {};
-	if (typeof keys === 'string')
-		result[keys] = storage[keys];
-
-	else if (typeof keys === 'object')
-		for (const key in keys)
-			result[key] = storage[key];
+	for (const key of keys)
+		result[key] = storage[key];
 
 	return result;
 };

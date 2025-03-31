@@ -239,9 +239,11 @@ function runAction(api_key, action, args={}) {
 
 // code run on load
 
-library_els.view_options.sort.value = getLocalStorage('lib_sorting')['lib_sorting'];
-library_els.view_options.view.value = getLocalStorage('lib_view')['lib_view'];
-library_els.view_options.filter.value = getLocalStorage('lib_filter')['lib_filter'];
+const lib_options = getLocalStorage('lib_sorting', 'lib_view', 'lib_filter');
+library_els.view_options.sort.value = lib_options.lib_sorting;
+library_els.view_options.view.value = lib_options.lib_view;
+library_els.view_options.filter.value = lib_options.lib_filter;
+
 usingApiKey()
 .then(api_key => {
 	fetchLibrary(api_key);

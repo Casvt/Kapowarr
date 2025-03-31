@@ -609,6 +609,7 @@ def api_volumes_search():
             description="",
             site_url="",
             monitored=True,
+            monitor_new_issues=True,
             root_folder=1,
             folder="",
             custom_folder=False,
@@ -647,11 +648,19 @@ def api_volumes():
         if root_folder_id is None:
             raise KeyNotFound('root_folder_id')
 
-        monitor = data.get('monitor') or "all"
+        monitor = data.get('monitor') or True
+        if not isinstance(monitor, bool):
+            raise InvalidKeyValue('monitor', monitor)
+
+        monitoring_scheme = data.get('monitoring_scheme') or "all"
         try:
-            monitor_scheme = MonitorScheme(monitor)
+            monitoring_scheme = MonitorScheme(monitoring_scheme)
         except ValueError:
-            raise InvalidKeyValue("monitor", monitor)
+            raise InvalidKeyValue("monitoring_scheme", monitoring_scheme)
+
+        monitor_new_issues = data.get('monitor_new_issues') or True
+        if not isinstance(monitor_new_issues, bool):
+            raise InvalidKeyValue('monitor_new_issues', monitor_new_issues)
 
         volume_folder = data.get('volume_folder') or None
 
@@ -671,7 +680,9 @@ def api_volumes():
         volume_id = library.add(
             comicvine_id,
             root_folder_id,
-            monitor_scheme,
+            monitor,
+            monitoring_scheme,
+            monitor_new_issues,
             volume_folder,
             sv,
             auto_search
@@ -707,10 +718,24 @@ def api_volume(id: int):
         if 'volume_folder' in edit_info:
             volume.change_volume_folder(edit_info['volume_folder'])
 
+        if 'monitoring_scheme' in edit_info:
+            try:
+                monitoring_scheme = MonitorScheme(
+                    edit_info['monitoring_scheme']
+                )
+
+            except ValueError:
+                raise InvalidKeyValue(
+                    'monitoring_scheme',
+                    edit_info['monitoring_scheme']
+                )
+
+            volume.apply_monitor_scheme(monitoring_scheme)
+
         volume.update({
             k: v
             for k, v in edit_info.items()
-            if k not in ('root_folder', 'volume_folder')
+            if k not in ('root_folder', 'volume_folder', 'monitoring_scheme')
         })
         return return_api(None)
 
