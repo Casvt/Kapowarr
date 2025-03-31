@@ -857,32 +857,20 @@ class Library:
 
     def get_stats(self) -> Dict[str, int]:
         result = get_db().execute("""
-            WITH v_stats AS (
-                SELECT
-                    COUNT(*) AS volumes,
-                    SUM(volumes.monitored) AS monitored
+            WITH v AS (
+                SELECT COUNT(*) AS volumes,
+                    SUM(monitored) AS monitored
                 FROM volumes
-            ), i_stats AS (
-                SELECT
-                    COUNT(DISTINCT issues.id) AS issues,
-                    COUNT(DISTINCT issues_files.issue_id) AS downloaded_issues
-                FROM issues
-                LEFT JOIN issues_files
-                ON issues.id = issues_files.issue_id
             )
             SELECT
-                volumes,
-                monitored,
-                volumes - monitored AS unmonitored,
-                issues,
-                downloaded_issues,
-                COUNT(files.id) AS files,
-                IFNULL(SUM(files.size), 0) AS total_file_size
-            FROM
-                v_stats,
-                i_stats
-            LEFT JOIN
-                files;
+                v.volumes,
+                v.monitored,
+                v.volumes - v.monitored AS unmonitored,
+                (SELECT COUNT(*) FROM issues) AS issues,
+                (SELECT COUNT(DISTINCT issue_id) FROM issues_files) AS downloaded_issues,
+                (SELECT COUNT(*) FROM files) AS files,
+                (SELECT IFNULL(SUM(size), 0) FROM files) AS total_file_size
+            FROM v;
         """).fetchonedict() or {}
         return result
 
