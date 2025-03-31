@@ -192,7 +192,9 @@ def import_library(
             volume_id = library.add(
                 comicvine_id=cv_id,
                 root_folder_id=root_folder.id,
+                monitored=True,
                 monitor_scheme=MonitorScheme.ALL,
+                monitor_new_issues=True,
                 volume_folder=lcf if not rename_files else None
             )
             commit()
