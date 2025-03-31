@@ -30,17 +30,28 @@ class RootFolders(metaclass=Singleton):
         root_folders = get_db().execute(
             "SELECT id, folder FROM root_folders;"
         )
-        self.cache = {
-            r['id']: RootFolder(
-                r["id"],
-                r["folder"],
-                SizeData(**dict(zip(
-                    ('total', 'used', 'free'),
-                    disk_usage(r['folder'])
-                )))
-            )
-            for r in root_folders
-        }
+
+        for _ in range(2):
+            try:
+                self.cache = {
+                    r['id']: RootFolder(
+                        r["id"],
+                        r["folder"],
+                        SizeData(**dict(zip(
+                            ('total', 'used', 'free'),
+                            disk_usage(r['folder'])
+                        )))
+                    )
+                    for r in root_folders
+                }
+                break
+
+            except FileNotFoundError:
+                # A root folder is registered in Kapowarr,
+                # but the folder no longer exists.
+                for r in root_folders:
+                    create_folder(r['folder'])
+
         return
 
     def get_all(self) -> List[RootFolder]:
