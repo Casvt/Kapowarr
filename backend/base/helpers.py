@@ -10,7 +10,7 @@ from asyncio import sleep
 from collections import deque
 from multiprocessing.pool import Pool
 from os import cpu_count, sep, symlink
-from os.path import exists, join
+from os.path import dirname, exists, join
 from sys import base_exec_prefix, executable, platform, version_info
 from typing import (TYPE_CHECKING, Any, Callable, Collection, Dict, Generator,
                     Iterable, Iterator, List, Mapping, Sequence, Tuple, Union)
@@ -727,12 +727,16 @@ class AsyncSession(ClientSession):
 
 
 class _ContextKeeper(metaclass=Singleton):
-    def __init__(self, log_level: Union[int, None] = None) -> None:
+    def __init__(
+        self,
+        log_level: Union[int, None] = None,
+        db_folder: Union[str, None] = None
+    ) -> None:
         if not log_level:
             return
 
         from backend.internals.server import setup_process
-        self.ctx = setup_process(log_level)
+        self.ctx = setup_process(log_level, db_folder)
         return
 
 
@@ -766,6 +770,8 @@ class PortablePool(Pool):
             that the pool should manage. Given int is limited to CPU count.
             Give `None` for default which is CPU count. Defaults to None.
         """
+        from backend.internals.db import DBConnection
+
         super().__init__(
             processes=(
                 min(cpu_count() or 1, max_processes)
@@ -773,7 +779,7 @@ class PortablePool(Pool):
                 None
             ),
             initializer=_ContextKeeper,
-            initargs=(LOGGER.root.level,)
+            initargs=(LOGGER.root.level, dirname(DBConnection.file))
         )
         return
 

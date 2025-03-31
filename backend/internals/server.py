@@ -415,10 +415,13 @@ class WebSocket(SocketIO, metaclass=Singleton):
         return
 
 
-def setup_process(log_level: int) -> Callable[[], AppContext]:
-    set_db_location()
+def setup_process(
+    log_level: int,
+    db_folder: Union[str, None]
+) -> Callable[[], AppContext]:
     setup_logging(do_rollover=False)
     set_log_level(log_level)
+    set_db_location(db_folder)
 
     app = Flask(__name__)
     app.teardown_appcontext(close_db)

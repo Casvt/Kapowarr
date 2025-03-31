@@ -150,7 +150,7 @@ class DBConnection(Connection, metaclass=DBConnectionManager):
 
 
 def set_db_location(
-    db_folder: Union[str, None] = None
+    db_folder: Union[str, None]
 ) -> None:
     """Setup database location. Create folder for database and set location for
     `db.DBConnection` and `db.TempDBConnection`.
@@ -159,7 +159,6 @@ def set_db_location(
         db_folder (Union[str, None], optional): The folder in which the database
         will be stored or in which a database is for Kapowarr to use. Give
         `None` for the default location.
-            Defaults to None.
 
     Raises:
         ValueError: Value of `db_folder` exists but is not a folder.
