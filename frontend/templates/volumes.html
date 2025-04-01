@@ -140,6 +140,16 @@
                     <button data-action="monitor">Monitor</button>
 				</div>
 				<div class="action-divider">
+					<div class="option-container">
+						<button data-action="monitoring_scheme">Apply Monitoring Scheme</button>
+						<select name="monitoring_scheme" id="monitoring-scheme-input" aria-label="Apply a monitoring scheme for the selected volumes">
+							<option value="all" selected>All</option>
+							<option value="missing">Missing</option>
+							<option value="none">None</option>
+						</select>
+					</div>
+				</div>
+				<div class="action-divider">
                     <button data-action="update">Refresh & Scan</button>
                     <button data-action="search">Auto Search</button>
 				</div>

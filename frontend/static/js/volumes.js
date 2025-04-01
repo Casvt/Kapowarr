@@ -314,6 +314,16 @@ usingApiKey()
 				).value)
 			}
 		);
+	library_els.mass_edit.bar.querySelector('button[data-action="monitoring_scheme"]').onclick =
+		e => runAction(
+			api_key,
+			e.target.dataset.action,
+			{
+				'monitoring_scheme': document.querySelector(
+					'select[name="monitoring_scheme"]'
+				).value
+			}
+		);
 });
 library_els.search.container.action = 'javascript:searchLibrary();';
 library_els.mass_edit.select_all.onchange =

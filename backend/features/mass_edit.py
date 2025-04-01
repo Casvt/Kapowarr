@@ -4,7 +4,7 @@ from typing import List
 
 from backend.base.custom_exceptions import (InvalidKeyValue, KeyNotFound,
                                             VolumeDownloadedFor)
-from backend.base.definitions import MassEditorAction
+from backend.base.definitions import MassEditorAction, MonitorScheme
 from backend.base.helpers import get_subclasses
 from backend.base.logging import LOGGER
 from backend.features.download_queue import DownloadHandler
@@ -124,6 +124,28 @@ class MassEditorMonitor(MassEditorAction):
         LOGGER.info(f'Using mass editor, monitoring volumes: {self.volume_ids}')
         for volume_id in self.volume_ids:
             Volume(volume_id)['monitored'] = True
+        return
+
+
+class MassEditorMonitoringScheme(MassEditorAction):
+    identifier = 'monitoring_scheme'
+
+    def run(self, **kwargs) -> None:
+        monitoring_scheme = kwargs.get('monitoring_scheme')
+        if monitoring_scheme is None:
+            raise KeyNotFound('monitoring_scheme')
+        try:
+            monitoring_scheme = MonitorScheme(monitoring_scheme)
+        except ValueError:
+            raise InvalidKeyValue('monitoring_scheme', monitoring_scheme)
+
+        LOGGER.info(
+            f'Using mass editor, applying monitoring scheme "{monitoring_scheme.value}" for volumes: {self.volume_ids}'
+        )
+
+        for volume_id in self.volume_ids:
+            Volume(volume_id).apply_monitor_scheme(monitoring_scheme)
+
         return
 
 
