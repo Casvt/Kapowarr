@@ -27,7 +27,8 @@ from backend.features.post_processing import (PostProcessor,
 from backend.implementations.blocklist import add_to_blocklist
 from backend.implementations.download_clients import (BaseDirectDownload,
                                                       MegaDownload,
-                                                      TorrentDownload)
+                                                      TorrentDownload,
+                                                      AirDCPPDownload)
 from backend.implementations.external_clients import ExternalClients
 from backend.implementations.getcomics import GetComicsPage
 from backend.implementations.volumes import Issue
@@ -352,6 +353,8 @@ class DownloadHandler(metaclass=Singleton):
         """
         if link.startswith(Constants.GC_SITE_URL):
             return 'gc'
+        elif link.startswith("airdcpp://"):
+            return 'airdcpp'
         return None
 
     def link_in_queue(self, link: str) -> bool:
@@ -453,6 +456,37 @@ class DownloadHandler(metaclass=Singleton):
                     f'Unable to extract download links from source; fail_reason="{e.reason.value}"'
                 )
                 return [], e.reason
+
+        elif link_type == 'airdcpp':
+            # Create an AirDCPP download
+            from urllib.parse import unquote
+            
+            # Extract filename from URL
+            filename = unquote(link.split('/')[-1])
+            
+            issue_number = None
+            if issue_id is not None:
+                try:
+                    issue = Issue(issue_id)
+                    issue_number = issue.get_data().calculated_issue_number
+                except:
+                    pass
+            
+            try:
+                downloads = [AirDCPPDownload(
+                    download_link=link,
+                    volume_id=volume_id,
+                    covered_issues=issue_number,
+                    source_type=DownloadSource.AIRDCPP,
+                    source_name='AirDC++',
+                    web_link=link,
+                    web_title=filename,
+                    web_sub_title=None,
+                    forced_match=force_match
+                )]
+            except Exception as e:
+                LOGGER.error(f"Failed to create AirDCPP download: {str(e)}")
+                return [], FailReason.NO_WORKING_LINKS
 
         result = self.__prepare_downloads_for_queue(
             downloads,

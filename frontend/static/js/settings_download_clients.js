@@ -297,7 +297,7 @@ function loadTorrentClients(api_key) {
 function fillCredentials(api_key) {
 	fetchAPI('/credentials', api_key)
 	.then(json => {
-		document.querySelectorAll('#mega-creds, #pixeldrain-creds').forEach(
+		document.querySelectorAll('#mega-creds, #pixeldrain-creds, #airdcpp-creds').forEach(
 			c => c.innerHTML = ''
 		);
 		json.result.forEach(result => {
@@ -317,11 +317,20 @@ function fillCredentials(api_key) {
 					e => sendAPI('DELETE', `/credentials/${result.id}`, api_key)
 						.then(response => row.remove());
 				document.querySelector('#pixeldrain-creds').appendChild(row);
-			};
+			}
+			else if (result.source === 'airdcpp') {
+				const row = document.querySelector('.pre-build-els .airdcpp-cred-entry').cloneNode(true);
+				row.querySelector('.airdcpp-url').innerText = result.api_key;
+				row.querySelector('.airdcpp-username').innerText = result.username;
+				row.querySelector('.delete-credential').onclick =
+					e => sendAPI('DELETE', `/credentials/${result.id}`, api_key)
+						.then(response => row.remove());
+				document.querySelector('#airdcpp-creds').appendChild(row);
+			}
 		});
 	});
 	
-	document.querySelectorAll('#mega-form input, #pixeldrain-form input').forEach(
+	document.querySelectorAll('#mega-form input, #pixeldrain-form input, #airdcpp-form input').forEach(
 		i => i.value = ''
 	);
 };
@@ -342,6 +351,14 @@ function addCredential() {
 		data = {
 			source: source,
 			api_key: document.querySelector('#add-pixeldrain .pixeldrain-key input').value
+		};
+	
+	else if (source === 'airdcpp')
+		data = {
+			source: source,
+			api_key: document.querySelector('#add-airdcpp .airdcpp-url input').value,
+			username: document.querySelector('#add-airdcpp .airdcpp-username input').value,
+			password: document.querySelector('#add-airdcpp .airdcpp-password input').value
 		};
 	
 	usingApiKey().then(api_key => {

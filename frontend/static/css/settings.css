@@ -262,6 +262,10 @@
 	display: block;
 }
 
+#builtin-window[data-tag="airdcpp"] .window-content :where(#airdcpp-title, #airdcpp-desc, #airdcpp-form) {
+    display: block;
+}
+
 #builtin-window #cred-container tbody td:last-child {
 	width: 4rem;
 }

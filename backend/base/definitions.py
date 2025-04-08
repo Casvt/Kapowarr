@@ -275,6 +275,7 @@ class GCDownloadSource(BaseEnum):
     PIXELDRAIN = 'Pixeldrain'
     GETCOMICS = 'GetComics'
     GETCOMICS_TORRENT = 'GetComics (torrent)'
+    AIRDCPP = 'airdcpp'
 
 
 download_source_versions: Dict[GCDownloadSource, Tuple[str, ...]] = dict((
@@ -309,6 +310,7 @@ class DownloadSource(BaseEnum):
     PIXELDRAIN = 'Pixeldrain'
     GETCOMICS = 'GetComics'
     GETCOMICS_TORRENT = 'GetComics (torrent)'
+    AIRDCPP = "airdcpp"
 
 
 class MonitorScheme(BaseEnum):
@@ -320,6 +322,8 @@ class MonitorScheme(BaseEnum):
 class CredentialSource(BaseEnum):
     MEGA = "mega"
     PIXELDRAIN = "pixeldrain"
+    # Add the new AirDC++ credential source
+    AIRDCPP = "airdcpp"
 
 
 class DownloadType(BaseEnum):
@@ -369,8 +373,12 @@ class FilenameData(TypedDict):
 
 class SearchResultData(FilenameData):
     link: str
-    display_title: str
+    title: str  # Added this field (can replace display_title)
+    display_title: str  # Keep this for backward compatibility
     source: str
+    size: int    
+    seeders: int
+    details: str
 
 
 class SearchResultMatchData(TypedDict):
@@ -613,6 +621,12 @@ class FileConverter(ABC):
 
 
 class SearchSource(ABC):
+    _subclasses = set()
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls._subclasses.add(cls)
+
     def __init__(self, query: str) -> None:
         """Prepare the search source.
 

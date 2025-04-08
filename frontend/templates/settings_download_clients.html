@@ -28,6 +28,15 @@
 		</button>
 	</td>
 </tr>
+<tr class="airdcpp-cred-entry cred-entry">
+	<td class="airdcpp-url"></td>
+	<td class="airdcpp-username"></td>
+	<td>
+		<button type="button" class="delete-credential" title="Delete credential">
+			<img src="{{ url_for('static', filename='img/delete.svg') }}" alt="">
+		</button>
+	</td>
+</tr>
 {% endblock pre_build_rows %}
 
 {% block windows %}
@@ -85,6 +94,12 @@
 			Also, most often on Wednesday and Thursday, the site is very busy so the downloads speed goes down a lot. Preferring
 			external services in the service preference list is advised in order to avoid this.
 		</p>
+		<h2 id="airdcpp-title">AirDC++</h2>
+		<p id="airdcpp-desc" class="description">
+			<a href="https://www.apexdc.net/" target="_blank">AirDC++</a> is a P2P file-sharing client that Kapowarr can use to search and download files.
+			<br><br>
+			You'll need to provide the Web API URL, username, and password for your AirDC++ client to enable searching and downloading.
+		</p>
 
 		<div id="cred-container">
 			<p id="cred-error" class="error hidden">Failed to add credentials</p>
@@ -128,6 +143,34 @@
 								<input type="text" required>
 							</td>
 							<td>{{ icon_button("submit-pixeldrain", "Add credential", "cancel.svg", "", True) }}</td>
+						</tr>
+					</tbody>
+				</table>
+			</form>
+			<form id="airdcpp-form" data-source="airdcpp">
+				<table>
+					<thead>
+						<tr>
+							<th>Web API URL</th>
+							<th>Username</th>
+							<th>Password</th>
+							<th>Action</th>
+						</tr>
+					</thead>
+					<tbody id="airdcpp-creds" class="icon-text-color">
+					</tbody>
+					<tbody id="add-airdcpp" class="icon-text-color">
+						<tr id="add-airdcpp">
+							<td class="airdcpp-url">
+								<input type="text" placeholder="http://localhost:5600" required>
+							</td>
+							<td class="airdcpp-username">
+								<input type="text" required>
+							</td>
+							<td class="airdcpp-password">
+								<input type="password" required>
+							</td>
+							<td>{{ icon_button("submit-airdcpp", "Add credential", "cancel.svg", "", True) }}</td>
 						</tr>
 					</tbody>
 				</table>
@@ -220,6 +263,7 @@
 			<button id="wetransfer-client" data-tag="wetransfer">WeTransfer</button>
 			<button id="pixeldrain-client" data-tag="pixeldrain">Pixeldrain</button>
 			<button id="getcomics-client" data-tag="getcomics">GetComics</button>
+			<button id="airdcpp-client" data-tag="airdcpp">AirDC++</button>
 		</div>
 		<h2>Torrent Clients</h2>
 		<div id="torrent-client-list" class="client-list">

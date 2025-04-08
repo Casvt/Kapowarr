@@ -141,6 +141,22 @@ class Credentials:
             credential_data.username = None
             credential_data.password = None
 
+        elif credential_data.source == CredentialSource.AIRDCPP:
+            from backend.implementations.direct_clients.airdcpp import AirDCPPClient, AirDCPPAccount
+
+            try:
+                client = AirDCPPClient(credential_data.api_key)  # URL
+                AirDCPPAccount(
+                    client,
+                    credential_data.username or '',
+                    credential_data.password or ''
+                )
+            except ClientNotWorking as e:
+                raise CredentialInvalid(e.desc)
+
+            # Optional: Clear out unnecessary fields
+            credential_data.email = None
+
         else:
             assert_never(credential_data.source)
 
