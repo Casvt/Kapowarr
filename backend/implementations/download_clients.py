@@ -33,6 +33,7 @@ from backend.base.logging import LOGGER
 from backend.implementations.credentials import Credentials
 from backend.implementations.direct_clients.mega import (Mega, MegaABC,
                                                          MegaFolder)
+from backend.implementations.direct_clients.airdcpp import AirDCPP, AirDCPPABC
 from backend.implementations.external_clients import ExternalClients
 from backend.implementations.naming import generate_issue_name
 from backend.implementations.volumes import Issue, Volume
@@ -496,7 +497,7 @@ class PixelDrainDownload(BaseDirectDownload):
 
         except RequestException:
             raise ClientNotWorking(
-                "An unexpected error occured when making contact with Pixeldrain"
+                "An unexpected error occurred when making contact with Pixeldrain"
             )
 
         except WebSocketBadStatusException as e:
@@ -504,7 +505,7 @@ class PixelDrainDownload(BaseDirectDownload):
                 return -1
 
             raise ClientNotWorking(
-                "An unexpected error occured when making contact with Pixeldrain"
+                "An unexpected error occurred when making contact with Pixeldrain"
             )
 
         ws.send('{"type": "limits"}')
@@ -559,7 +560,6 @@ class PixelDrainFolderDownload(PixelDrainDownload):
         self._api_key = None
         self._first_fetch = True
         download_id = self.download_link.rstrip("/").split("/")[-1]
-        'https://pixeldrain.com/api/list/{download_id}/zip'
         return Constants.PIXELDRAIN_API_URL + '/list/' + download_id + '/zip'
 
 
@@ -706,6 +706,163 @@ class MegaFolderDownload(MegaDownload):
 
     type = 'mega_folder'
     _mega_class = MegaFolder
+
+
+# region AirDC++
+@final
+class AirDCPPDownload(BaseDirectDownload):
+    """For downloading a file via AirDC++"""
+
+    type = 'airdcpp'
+    _airdcpp_class: Type[AirDCPPABC] = AirDCPP
+
+    @property
+    def size(self) -> int:
+        return self._airdcpp.size
+
+    @property
+    def progress(self) -> float:
+        return self._airdcpp.progress
+
+    @property
+    def speed(self) -> float:
+        return self._airdcpp.speed
+
+    def __init__(
+        self,
+        download_link: str,
+
+        volume_id: int,
+        covered_issues: Union[float, Tuple[float, float], None],
+
+        source_type: DownloadSource,
+        source_name: str,
+
+        web_link: Union[str, None],
+        web_title: Union[str, None],
+        web_sub_title: Union[str, None],
+
+        forced_match: bool = False
+    ) -> None:
+        LOGGER.debug(
+            'Creating AirDC++ download: %s',
+            download_link
+        )
+
+        settings = Settings().sv
+        volume = Volume(volume_id)
+
+        self._download_link = download_link
+        self._volume_id = volume_id
+        self._issue_id = None
+        self._covered_issues = covered_issues
+        self._source_type = source_type
+        self._source_name = source_name
+        self._web_link = web_link
+        self._web_title = web_title
+        self._web_sub_title = web_sub_title
+
+        self._id = None
+        self._state = DownloadState.QUEUED_STATE
+        self._download_thread = None
+        self._download_folder = settings.download_folder
+        self._size = 0  # Initialize _size to avoid attribute error
+        self._progress = 0.0  # Also initialize _progress
+        self._speed = 0.0  # And _speed
+
+        try:
+            self._airdcpp = self._airdcpp_class(download_link)
+            # Update size from the AirDCPP instance
+            self._size = self._airdcpp.size
+            self._pure_link = self._airdcpp.pure_link
+        except ClientNotWorking:
+            raise LinkBroken(BlocklistReason.LINK_BROKEN)
+
+        self._filename_body = ''
+        try:
+            if isinstance(covered_issues, float):
+                self._issue_id = Issue.from_volume_and_calc_number(
+                    volume_id, covered_issues
+                ).id
+
+            if settings.rename_downloaded_files:
+                self._filename_body = generate_issue_name(
+                    volume_id,
+                    volume.get_data().special_version,
+                    covered_issues
+                )
+
+        except IssueNotFound as e:
+            if not forced_match:
+                raise e
+
+        if not self._filename_body:
+            self._filename_body = splitext(self._airdcpp.file_name)[0]
+
+        self._title = basename(self._filename_body)
+        self._files = [self._build_filename(response=None)]
+        return
+
+    # Add a custom todict method to use the dynamic attributes
+    def todict(self) -> Dict[str, Any]:
+        # Get the current values from the airdcpp instance
+        if hasattr(self, '_airdcpp'):
+            # Only update size if we have a valid size
+            if self._airdcpp.size > 0:
+                self._size = self._airdcpp.size
+            self._progress = self._airdcpp.progress
+            self._speed = self._airdcpp.speed
+            
+        # Call the parent method
+        return super().todict()
+
+
+
+    def _extract_default_filename_body(
+        self,
+        response: Union[Response, None]
+    ) -> str:
+        return splitext(self._airdcpp.file_name)[0]
+
+    def _extract_extension(self, response: Union[Response, None]) -> str:
+        return splitext(self._airdcpp.file_name)[1]
+
+    def run(self) -> None:
+        self._state = DownloadState.DOWNLOADING_STATE
+        ws = WebSocket()
+        try:
+            self._airdcpp.download(
+                self.files[0],
+                lambda: ws.update_queue_status(self)
+            )
+            
+            # Fix the filename to match what AirDC++ actually saved
+            import os
+            from os.path import exists, join, basename
+            
+            if not exists(self.files[0]):
+                # Get the actual filename that AirDC++ used
+                actual_filename = basename(self._airdcpp.file_name)
+                from backend.internals.settings import Settings
+                download_folder = Settings().sv.download_folder
+                actual_path = join(download_folder, actual_filename)
+                
+                if exists(actual_path):
+                    # Update the path to the actual file location
+                    self.files[0] = actual_path
+                    LOGGER.debug(f"Updated file path to match AirDC++ download: {self.files[0]}")
+            
+        except ClientNotWorking:
+            self._state = DownloadState.FAILED_STATE
+        
+        return
+
+    def stop(self,
+        state: DownloadState = DownloadState.CANCELED_STATE
+    ) -> None:
+        self._state = state
+        self._airdcpp.stop()
+        return
 
 
 # region Torrent
