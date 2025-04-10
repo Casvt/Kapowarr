@@ -99,4 +99,4 @@ There are multiple causes to this:
 
 4. The service or service category that the link links to is not supported. For example, Kapowarr can download from Mega, but it can't download Google Drive folders.
 
-If you still want to download the media, you can click the "Force Download" button in the Manual Search results to force Kapowarr to download all content from the page. No filtering will be done, and the downloaded files will be put in the volume folder, but they will not be renamed.
+If you still want to download the media, you can click the "Force Download" button in the Manual Search results to force Kapowarr to download all content from the page without any filtering.
