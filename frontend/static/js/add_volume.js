@@ -66,9 +66,9 @@ function buildResults(results, api_key) {
 		entry.dataset.comicvine_id = result.comicvine_id;
 		entry.dataset._translated = result.translated;
 		entry.dataset._title = result.title;
-		entry.dataset._year = result.year;
+		entry.dataset._year = result.year || '';
 		entry.dataset._volume_number = result.volume_number;
-		entry.dataset._publisher = result.publisher;
+		entry.dataset._publisher = result.publisher || '';
 		entry.dataset._issue_count = result.issue_count;
 
 		// Only allow adding volume if it isn't already added
@@ -382,9 +382,9 @@ function showAddWindow(comicvine_id, api_key) {
 	const body = {
 		'comicvine_id': volume_data.comicvine_id,
 		'title': volume_data._title,
-		'year': volume_data._year,
+		'year': volume_data._year || null,
 		'volume_number': volume_data._volume_number,
-		'publisher': volume_data._publisher
+		'publisher': volume_data._publisher || null
 	};
 
 	sendAPI('POST', '/volumes/search', api_key, {}, body)
