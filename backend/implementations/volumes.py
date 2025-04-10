@@ -1237,16 +1237,24 @@ def scan_files(
             and file_data["issue_number"] is None
         ):
             # Volume cover file
-            file_id = volume_files.get(file, FilesDB.add_file(file))
-            general_bindings.append((file_id, GeneralFileType.COVER.value))
+            if file not in volume_files:
+                volume_files[file] = FilesDB.add_file(file)
+
+            general_bindings.append(
+                (volume_files[file], GeneralFileType.COVER.value)
+            )
 
         elif (
             file_data['special_version'] == SpecialVersion.METADATA
             and file_data["issue_number"] is None
         ):
             # Volume metadata file
-            file_id = volume_files.get(file, FilesDB.add_file(file))
-            general_bindings.append((file_id, GeneralFileType.METADATA.value))
+            if file not in volume_files:
+                volume_files[file] = FilesDB.add_file(file)
+
+            general_bindings.append(
+                (volume_files[file], GeneralFileType.METADATA.value)
+            )
 
         elif (
             volume_data.special_version not in (
@@ -1256,8 +1264,10 @@ def scan_files(
             and file_data['special_version']
         ):
             # Special Version
-            file_id = volume_files.get(file, FilesDB.add_file(file))
-            bindings.append((file_id, volume_issues[0].id))
+            if file not in volume_files:
+                volume_files[file] = FilesDB.add_file(file)
+
+            bindings.append((volume_files[file], volume_issues[0].id))
 
         elif (
             file_data['issue_number'] is not None
@@ -1276,10 +1286,11 @@ def scan_files(
             )
 
             if matching_issues:
-                file_id = volume_files.get(file, FilesDB.add_file(file))
+                if file not in volume_files:
+                    volume_files[file] = FilesDB.add_file(file)
 
                 for issue in matching_issues:
-                    bindings.append((file_id, issue.id))
+                    bindings.append((volume_files[file], issue.id))
 
     cursor = get_db()
 
