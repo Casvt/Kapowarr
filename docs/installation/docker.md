@@ -151,7 +151,12 @@ Now we can launch the container.
 		- `-v "/home/my-user/comics-2:/comics-2" \`
 		- `-v "E:\Comics:/comics-2"`
 
-	5. Information on how to change the port can be found on the [Setup After Installation page](./setup_after_installation.md#port).
+	5. If you want to run Kapowarr on a different port, you can do that by replacing the left `5656` with the desired port. More information on how to change the port can be found on the [Setup After Installation page](./setup_after_installation.md#port).
+	
+	!!! example "Examples"
+		- `-p 8009:5656` to be available on `8009`
+		- `-p 443:5656` to be available on `443`
+		- `-p 5656:5656` to be available on `5656`
 
 === "Docker Compose"
 	The contents of the `docker-compose.yml` file are below. The source file can also be found [on GitHub](https://github.com/Casvt/Kapowarr/blob/development/docker-compose.yml). But before you copy, paste and run it, read the notes below!
@@ -205,7 +210,12 @@ Now we can launch the container.
 		- `- "/home/my-user/comics-2:/comics-2"`
 		- `- "E:\Comics:/comics-2"`
 
-	5. Information on how to change the port can be found on the [Setup After Installation page](./setup_after_installation.md#port).
+	5. If you want to run Kapowarr on a different port, you can do that by replacing the left `5656` with the desired port. More information on how to change the port can be found on the [Setup After Installation page](./setup_after_installation.md#port).
+	
+	!!! example "Examples"
+		- `- 8009:5656` to be available on `8009`
+		- `- 443:5656` to be available on `443`
+		- `- 5656:5656` to be available on `5656`
 
 === "Docker Desktop"
 	1. Click the search bar at the top and search for `mrcas/kapowarr`.
@@ -213,7 +223,7 @@ Now we can launch the container.
 	3. Open `Images`, and on the right, under `Actions` click the play/run button for `mrcas/kapowarr`.
 	4. Expand the 'Optional settings'.
 	5. For the `Container name`, set the value to `kapowarr`.
-	6. For the `Host port`, set the value to `5656`. Information on how to change the port can be found on the [Setup After Installation page](./setup_after_installation.md#port).
+	6. For the `Host port`, set the value to `5656`. Set it to a different value if you want to run Kapowarr on a different port. More information on how to change the port can be found on the [Setup After Installation page](./setup_after_installation.md#port).
 	7. For the `Host path`, set the value to `kapowarr-db` if you are using a Docker volume for the database. Otherwise, set it to the folder where you want to store the database, [that you created earlier](#create-docker-volume-or-folder). Set the accompanying `Container path` to `/app/db`.
 	8. Add another volume mapping using the plus button on the right. Enter your download folder ([that you created earlier](#creating-download-folder)) as the value of `Host path` and set the accompanying `Container path` to `/app/temp_downloads`.
 	9. Add another volume mapping using the plus button on the right. Enter your root folder ([that you created earlier](#creating-root-folder)) as the value of `Host path` and set the accompanying `Container path` to `/comics-1`. Later, when Kapowarr is running and you need to add a root folder, the mapped folder is what you'll add (e.g. `/comics-1`).
