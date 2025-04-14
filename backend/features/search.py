@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 
 from asyncio import gather, run
-from typing import Dict, List, Tuple, Union
+from time import time
+from typing import Dict, List, Tuple, Union, Optional
+import re
+import urllib.parse
 
 from backend.base.definitions import (MatchedSearchResultData,
                                       SearchResultData, SearchSource,
@@ -13,6 +16,12 @@ from backend.base.logging import LOGGER
 from backend.implementations.getcomics import search_getcomics
 from backend.implementations.matching import check_search_result_match
 from backend.implementations.volumes import Volume
+from backend.implementations.credentials import Credentials
+from backend.base.definitions import CredentialSource
+from backend.internals.db import get_db
+
+# Import the AirDC++ client
+from backend.implementations.direct_clients.airdcpp import AirDCPPClient, AirDCPPAccount, AirDCPPSearch, create_airdcpp_link
 
 
 def _rank_search_result(
@@ -139,6 +148,209 @@ class SearchGetComics(SearchSource):
         return await search_getcomics(session, self.query)
 
 
+class SearchAirDCPP(SearchSource):
+    """Search source for AirDC++."""
+    
+    async def search(self, session: AsyncSession) -> List[SearchResultData]:
+        """Search AirDC++ for the query.
+        
+        Args:
+            session (AsyncSession): Async session for HTTP requests
+            
+        Returns:
+            List[SearchResultData]: Search results
+        """
+        # Check if AirDC++ is configured
+        cred = Credentials()
+        airdcpp_creds = cred.get_from_source(CredentialSource.AIRDCPP)
+        
+        if not airdcpp_creds:
+            LOGGER.debug("AirDC++ is not configured, skipping search")
+            return []
+            
+        airdcpp_cred = airdcpp_creds[0]
+        
+        # Initialize AirDC++ client
+        client = AirDCPPClient(airdcpp_cred.api_key)
+        
+        try:
+            # Check for cached auth token
+            auth_token = (
+                cred
+                .auth_tokens.get(CredentialSource.AIRDCPP, {})
+                .get(airdcpp_cred.email or '', (None, 0))
+            )
+            
+            if auth_token[1] > time():
+                client.token = auth_token[0]
+            else:
+                # Authenticate
+                account = AirDCPPAccount(
+                    client,
+                    airdcpp_cred.username,
+                    airdcpp_cred.password
+                )
+                
+                # Update token cache
+                cred.auth_tokens.setdefault(CredentialSource.AIRDCPP, {})[
+                    airdcpp_cred.email or ''
+                ] = (client.token, round(time()) + 3600)
+            
+            # Create search object
+            search = AirDCPPSearch(airdcpp_cred.api_key, client.token)
+            
+            # Perform search
+            results = search.perform_search(self.query)
+
+            LOGGER.debug(f"Raw AirDC++ search results: {results[:2]}")
+            
+            # Convert results to SearchResultData format
+            search_results: List[SearchResultData] = []
+
+            for result in results:
+                # Get the filename directly from the result
+                filename = result["name"]
+                LOGGER.debug(f"AirDC++ result name: {filename}")
+                
+                # Create a download link
+                if search.search_instance_id is not None:
+                    download_link = create_airdcpp_link(
+                        search.search_instance_id,
+                        result["id"],
+                        filename
+                    )
+                else:
+                    # Either skip this result or use a fallback approach
+                    LOGGER.warning("Cannot create AirDC++ link: search_instance_id is None")
+                    continue  # Skip this result
+                
+                # Parse metadata from filename
+                # Extract year
+                year_match = re.search(r'\((\d{4})\)', filename)
+                year = int(year_match.group(1)) if year_match else None
+                
+                # Extract issue number
+                issue_match = re.search(r'(?:^|\s)(\d{1,4})(?:\s|$|\()', filename)
+                issue_number = float(issue_match.group(1)) if issue_match else None
+
+                # Extract volume number - look for patterns like "Vol.1", "Volume 1", "V1"
+                volume_match = re.search(r'(?:Vol(?:ume)?\.?\s*)(\d+)', filename, re.IGNORECASE)
+                if not volume_match:
+                    volume_match = re.search(r'(?:\bV)(\d+)', filename)  # Match V1, V2, etc.
+                    
+                volume_number = int(volume_match.group(1)) if volume_match else None
+                
+                # Remove file extension and cleanup series name
+                series = re.sub(r'\.cb[rz]$', '', filename)
+                series = re.sub(r'\(\d{4}\)', '', series)  # Remove year
+                series = re.sub(r'\(.*?\)', '', series)    # Remove other parentheses content
+                series = re.sub(r'\[.*?\]', '', series)    # Remove bracket content
+                series = re.sub(r'\d{1,4}', '', series)    # Remove issue numbers
+                series = series.strip()
+                
+                search_results.append({
+                    'title': filename,
+                    'display_title': filename,
+                    'series': series,
+                    'link': download_link,
+                    'size': result.get("size", 0),
+                    'seeders': result.get("hits", 0),
+                    'source': 'AirDC++',
+                    'details': '',
+                    'annual': False,
+                    'volume_number': volume_number,
+                    'issue_number': issue_number,
+                    'year': year,
+                    'special_version': None,
+                })
+            
+                LOGGER.debug(f"Final search result: {search_results}")
+
+            LOGGER.debug(f"AirDC++ found {len(search_results)} results")
+            return search_results
+            
+        except Exception as e:
+            LOGGER.error(f"AirDC++ search failed: {str(e)}")
+            return []
+
+class SearchNewznab(SearchSource):
+    """Search source for Newznab indexers."""
+    
+    async def search(self, session: AsyncSession) -> List[SearchResultData]:
+        """Search Newznab indexers for the query."""
+        # Check if Newznab is configured
+        db = get_db()
+        indexers = db.execute(
+            'SELECT name, url, api_key, categories, enabled FROM indexers WHERE type = "newznab" AND enabled = 1'
+        ).fetchall()
+        
+        if not indexers:
+            LOGGER.debug("No Newznab indexers configured, skipping search")
+            return []
+        
+        results: List[SearchResultData] = []
+        
+        # Search each configured Newznab indexer
+        for indexer in indexers:
+            try:
+                from backend.implementations.direct_clients.newznab import NewznabSearch
+                
+                # Create search object using the indexer details
+                search = NewznabSearch(indexer['url'], indexer['api_key'])
+                
+                # Get categories from the indexer or use default
+                categories = indexer['categories'] or '7000,7020'
+                
+                # Perform search
+                indexer_results = search.search(self.query, categories)
+                LOGGER.debug(f"Search results from {indexer['name']}: {len(indexer_results)}")
+
+                for result in indexer_results:                    
+                    # Extract metadata
+                    year_match = re.search(r'\((\d{4})\)', result["title"])
+                    year = int(year_match.group(1)) if year_match else None
+                    
+                    issue_match = re.search(r'#(\d+(\.\d+)?)', result["title"])
+                    if not issue_match:
+                        issue_match = re.search(r'(?:^|\s)(\d{1,3})(?:\s|$|\()', result["title"])
+                    issue_number = float(issue_match.group(1)) if issue_match else None
+                    
+                    volume_match = re.search(r'Vol(?:ume)?\.?\s*(\d+)', result["title"], re.IGNORECASE)
+                    volume_number = int(volume_match.group(1)) if volume_match else None
+                    
+                    # Extract series name
+                    series = result["title"]
+                    if year_match:
+                        series = series[:year_match.start()].strip()
+                    if issue_match:
+                        series = series[:issue_match.start()].strip()
+                    
+                    # Create the search result with type annotation
+                    search_result: SearchResultData = {
+                        'title': result["title"],
+                        'display_title': result["title"],
+                        'series': series,
+                        'link': result["link"],
+                        'size': result["size"],
+                        'seeders': 0,  # Not applicable for Usenet
+                        'source': f"Newznab ({indexer['name'] or 'unnamed'})",
+                        'details': '',
+                        'annual': False,
+                        'volume_number': volume_number,
+                        'issue_number': issue_number,
+                        'year': year,
+                        'special_version': None,
+                    }
+                    
+                    results.append(search_result)
+                        
+            except Exception as e:
+                LOGGER.error(f"Newznab search failed for {indexer['name'] or 'unnamed'}: {str(e)}")
+        
+        LOGGER.debug(f"Newznab found {len(results)} results total (collections excluded)")
+        return results
+
+
 async def search_multiple_queries(*queries: str) -> List[SearchResultData]:
     """Do a manual search for multiple queries asynchronously.
 
@@ -152,12 +364,20 @@ async def search_multiple_queries(*queries: str) -> List[SearchResultData]:
             for Source in get_subclasses(SearchSource)
             for query in queries
         ]
-        responses = await gather(*searches)
+        # Use return_exceptions=True to prevent exceptions from propagating
+        responses = await gather(*searches, return_exceptions=True)
 
     search_results: List[SearchResultData] = []
     processed_links = set()
     for response in responses:
-        for result in response:
+        # Skip responses that are exceptions
+        if isinstance(response, Exception):
+            LOGGER.warning(f"Search source failed: {response}")
+            continue
+            
+        # Add type assertion to help type checker
+        results: List[SearchResultData] = response  # type: ignore
+        for result in results:
             # Don't add if the link is already in the results
             # Avoids duplicates, as multiple formats can return the same result
             if result['link'] not in processed_links:
@@ -165,7 +385,6 @@ async def search_multiple_queries(*queries: str) -> List[SearchResultData]:
                 processed_links.add(result['link'])
 
     return search_results
-
 
 def manual_search(
     volume_id: int,
@@ -417,3 +636,45 @@ def auto_search(
 
     LOGGER.debug('Auto search results: %s', chosen_downloads)
     return chosen_downloads
+
+# Register AirDCPP search source with SearchSource
+def register_airdcpp_search_source():
+    """Register AirDC++ as a search source if configured."""
+    try:
+        # Check if AirDC++ is configured
+        cred = Credentials()
+        airdcpp_creds = cred.get_from_source(CredentialSource.AIRDCPP)
+        
+        if airdcpp_creds:
+            LOGGER.info("AirDC++ is configured, registering as search source")
+            # Add SearchAirDCPP to the list of SearchSource subclasses
+            if SearchAirDCPP not in get_subclasses(SearchSource):
+                SearchSource._subclasses.add(SearchAirDCPP)
+        else:
+            LOGGER.debug("AirDC++ is not configured, not registering as search source")
+    except Exception as e:
+        LOGGER.error(f"Error registering AirDC++ search source: {e}")
+
+# Register Newznab search source with SearchSource
+def register_newznab_search_source():
+    """Register Newznab as a search source if configured."""
+    try:
+        # Check if Newznab is configured
+        cred = Credentials()
+        newznab_creds = cred.get_from_source(CredentialSource.NEWZNAB)
+        
+        if newznab_creds:
+            LOGGER.info("Newznab is configured, registering as search source")
+            # Add SearchNewznab to the list of SearchSource subclasses
+            if SearchNewznab not in get_subclasses(SearchSource):
+                SearchSource._subclasses.add(SearchNewznab)
+        else:
+            LOGGER.debug("Newznab is not configured, not registering as search source")
+    except Exception as e:
+        LOGGER.error(f"Error registering Newznab search source: {e}")
+
+# Call this at startup
+def init_app(app):
+    with app.app_context():
+        register_airdcpp_search_source()
+        register_newznab_search_source()

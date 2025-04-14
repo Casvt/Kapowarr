@@ -6,17 +6,18 @@ The post-download processing (a.k.a. post-processing or PP) of downloads.
 
 from __future__ import annotations
 
-from os.path import basename, exists, join, splitext
+from os.path import basename, exists, join, splitext, dirname
 from time import time
 from typing import TYPE_CHECKING
 
 from backend.base.definitions import SCANNABLE_EXTENSIONS, BlocklistReason
-from backend.base.files import copy_directory, delete_file_folder, rename_file
+from backend.base.files import copy_directory, delete_file_folder, rename_file, delete_empty_parent_folders
 from backend.base.logging import LOGGER
 from backend.implementations.blocklist import add_to_blocklist
 from backend.implementations.conversion import mass_convert
 from backend.implementations.converters import extract_files_from_folder
 from backend.implementations.download_clients import TorrentDownload
+from backend.implementations.download_clients import UsenetDownload
 from backend.implementations.naming import mass_rename
 from backend.implementations.volumes import Volume, scan_files
 from backend.internals.db import commit, get_db
@@ -219,6 +220,29 @@ def delete_file(download: Download) -> None:
     return
 
 
+def cleanup_usenet_folders(download: Download) -> None:
+    """Delete empty parent folders after a Usenet download has been processed"""
+    if not download.files or len(download.files) == 0:
+        return
+
+    if isinstance(download, UsenetDownload) and hasattr(download, '_original_files') and download._original_files:
+        for original_file in download._original_files:
+            # Get the directory of the original file (the download folder)
+            comic_folder = dirname(original_file)
+            
+            # Get the parent directory (kapowarr folder)
+            parent_folder = dirname(comic_folder)
+            
+            if exists(comic_folder):
+                LOGGER.debug(f"Cleaning up original download folder: {comic_folder}")
+                LOGGER.debug(f"Will stop deletion at: {parent_folder}")
+                
+                # This will delete the download folder if empty but won't touch the parent folder
+                delete_empty_parent_folders(comic_folder, parent_folder)
+    
+    return
+
+
 # region Extras
 def convert_file(download: Download) -> None:
     "Convert a file into a different format based on settings"
@@ -319,6 +343,18 @@ class PostProcessorTorrentsComplete(PostProcessor):
         move_torrent_to_dest,
         convert_file,
         add_file_to_database
+    ]
+
+
+class PostProcessorUsenet(PostProcessor):
+    actions_success = [
+        remove_from_queue,
+        add_to_history,
+        move_to_dest,
+        add_file_to_database,
+        convert_file,
+        add_file_to_database,
+        cleanup_usenet_folders
     ]
 
 

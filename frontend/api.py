@@ -6,7 +6,7 @@ from io import BytesIO, StringIO
 from os.path import dirname, exists
 from typing import Any, Dict, List, Tuple, Type, Union
 
-from flask import Blueprint, request, send_file
+from flask import Blueprint, jsonify, request, send_file
 
 from backend.base.custom_exceptions import (BlocklistEntryNotFound,
                                             ClientDownloading,
@@ -868,10 +868,16 @@ def api_issue_manual_search(id: int):
 def api_issue_download(id: int):
     volume_id = library.get_issue(id).get_data().volume_id
     link = extract_key(request, 'link')
+
+    LOGGER.debug(f"Download request received for link: {link}")
+    
     force_match: bool = extract_key(request, 'force_match')
     result = run(DownloadHandler().add(
         link, volume_id, id, force_match=force_match
     ))
+
+    LOGGER.debug(f"Download result: {result}")
+    
     return return_api(
         {
             'result': result[0],
@@ -1126,38 +1132,81 @@ def api_credential(id: int):
 
 
 # =====================
-# Torrent Clients
+# External Clients
 # =====================
 @api.route('/externalclients', methods=['GET', 'POST'])
 @error_handler
 @auth
 def api_external_clients():
     if request.method == 'GET':
-        result = ExternalClients.get_clients()
+        download_type_str = request.args.get('download_type')
+        
+        if download_type_str:
+            try:
+                from backend.base.definitions import DownloadType
+                download_type = DownloadType(int(download_type_str))
+            except (ValueError, TypeError):
+                download_type = None
+        else:
+            download_type = None
+            
+        result = ExternalClients.get_clients(download_type)
         return return_api(result)
-
+    
     elif request.method == 'POST':
-        data: dict = request.get_json()
-        data = {
-            k: data.get(k)
-            for k in (
-                'client_type',
-                'title', 'base_url',
-                'username', 'password', 'api_token'
-            )
-        }
-        result = ExternalClients.add(**data).get_client_data()
-        return return_api(result, code=201)
+        data = request.get_json()
+        if not isinstance(data, dict):
+            raise InvalidKeyValue(value=data)
+            
+        # Extract required parameters
+        client_type = data.get('client_type')
+        title = data.get('title')
+        base_url = data.get('base_url')
+        username = data.get('username')
+        password = data.get('password')
+        api_token = data.get('api_token')
+        
+        # Validate required parameters
+        if not client_type:
+            raise KeyNotFound('client_type')
+        if not title:
+            raise KeyNotFound('title')
+        if not base_url:
+            raise KeyNotFound('base_url')
+        
+        # Add the client
+        client = ExternalClients.add(
+            client_type, title, base_url, 
+            username, password, api_token
+        )
+        
+        return return_api(client.get_client_data(), code=201)
 
 
 @api.route('/externalclients/options', methods=['GET'])
 @error_handler
 @auth
 def api_external_clients_keys():
+    download_type_str = request.args.get('download_type')
+    
+    if download_type_str:
+        try:
+            from backend.base.definitions import DownloadType
+            download_type = DownloadType(int(download_type_str))
+        except (ValueError, TypeError):
+            download_type = None
+    else:
+        download_type = None
+    
+    # Get client types with optional filter
+    client_types = ExternalClients.get_client_types(download_type)
+    
+    # Extract just the required_tokens to make it JSON serializable
     result = {
         k: v.required_tokens
-        for k, v in ExternalClients.get_client_types().items()
+        for k, v in client_types.items()
     }
+    
     return return_api(result)
 
 
@@ -1260,3 +1309,43 @@ def api_files(id: int):
 
         FilesDB.delete_file(id)
         return return_api({})
+
+
+# =====================
+# Newznab
+# =====================
+@api.route('/api/newznab/test', methods=['POST'])
+@error_handler
+@auth
+def test_newznab():
+    """Test a Newznab indexer connection."""
+    data = request.get_json()
+    
+    if not data or 'url' not in data or 'apikey' not in data:
+        return jsonify({
+            'error': 'MissingParameters',
+            'result': {'description': 'URL and API key required'},
+            'code': 400
+        })
+    
+    url = data['url']
+    apikey = data['apikey']
+    
+    # Test connection
+    try:
+        from backend.implementations.direct_clients.newznab import NewznabSearch
+        
+        # Create a search instance and try a basic query
+        search = NewznabSearch(url, apikey)
+        results = search.search("test")
+        
+        # If we got here, the connection worked
+        return jsonify({
+            'success': True,
+            'description': f"Successfully connected to Newznab indexer. Found {len(results)} test results."
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'description': f"Failed to connect to Newznab indexer: {str(e)}"
+        })

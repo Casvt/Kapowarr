@@ -262,6 +262,14 @@
 	display: block;
 }
 
+#builtin-window[data-tag="airdcpp"] .window-content :where(#airdcpp-title, #airdcpp-desc, #airdcpp-form) {
+    display: block;
+}
+
+#builtin-window[data-tag="newznab"] .window-content :where(#newznab-title, #newznab-desc) {
+    display: block;
+}
+
 #builtin-window #cred-container tbody td:last-child {
 	width: 4rem;
 }
@@ -374,4 +382,102 @@
 	font-size: 1rem;
 
 	box-shadow: 0 0 9px 0px #00000075;
+}
+
+#choose-usenet-window > div:nth-child(2) {
+    justify-content: flex-start;
+}
+
+#choose-usenet-list {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+#choose-usenet-list > button {
+    width: 10rem;
+    height: 4rem;
+    border-radius: 4px;
+    padding: 1rem 2rem;
+    background-color: var(--foreground-color);
+    color: var(--text-color);
+    font-size: 1rem;
+    box-shadow: 0 0 9px 0px #00000075;
+}
+
+/* Indexers page styles */
+.indexer-container {
+    margin-bottom: 2rem;
+}
+
+.indexer-list {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+.indexer-list > button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.8rem 1rem;
+    border-radius: 4px;
+    background-color: var(--accent-color);
+    color: var(--nav-background-color);
+    font-weight: 500;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.indexer-list > button.add-button > img {
+    width: 1.2rem;
+    transform: rotate(45deg);
+}
+
+#indexers-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#indexers-table th,
+#indexers-table td {
+    padding: 0.7rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+#indexers-table th {
+    background-color: var(--tool-bar-color);
+    font-weight: 500;
+}
+
+#indexers-table tbody tr:hover {
+    background-color: var(--hover-color);
+}
+
+.status-enabled {
+    color: var(--success-color);
+    font-weight: 500;
+}
+
+.status-disabled {
+    color: var(--error-color);
+    font-weight: 500;
+}
+
+.edit-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.3rem;
+}
+
+.edit-button img {
+    width: 1.2rem;
+    opacity: 0.7;
+}
+
+.edit-button:hover img {
+    opacity: 1;
 }

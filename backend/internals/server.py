@@ -22,6 +22,7 @@ from backend.base.helpers import Singleton
 from backend.base.logging import LOGGER, set_log_level, setup_logging
 from backend.internals.db import DBConnectionManager, close_db, set_db_location
 from backend.internals.settings import Settings
+from backend.routes.indexers import indexers_blueprint
 
 if TYPE_CHECKING:
     from flask.ctx import AppContext
@@ -145,6 +146,7 @@ class Server(metaclass=Singleton):
         # Add endpoints
         app.register_blueprint(ui)
         app.register_blueprint(api, url_prefix=self.api_prefix)
+        app.register_blueprint(indexers_blueprint)
 
         # Setup db handling
         app.teardown_appcontext(close_db)
