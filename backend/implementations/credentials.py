@@ -141,6 +141,49 @@ class Credentials:
             credential_data.username = None
             credential_data.password = None
 
+        elif credential_data.source == CredentialSource.AIRDCPP:
+            from backend.implementations.direct_clients.airdcpp import AirDCPPClient, AirDCPPAccount
+
+            try:
+                client = AirDCPPClient(credential_data.api_key)  # URL
+                AirDCPPAccount(
+                    client,
+                    credential_data.username or '',
+                    credential_data.password or ''
+                )
+            except ClientNotWorking as e:
+                raise CredentialInvalid(e.desc)
+
+            # Optional: Clear out unnecessary fields
+            credential_data.email = None
+
+        elif credential_data.source == CredentialSource.NEWZNAB:
+            from backend.implementations.direct_clients.newznab import NewznabSearch
+
+            try:
+                # username field is used for the API URL
+                # api_key field is used for the API key
+                # email field is used for the indexer name/display name
+                
+                if not credential_data.username:
+                    raise ClientNotWorking("API URL is required")
+                    
+                if not credential_data.api_key:
+                    raise ClientNotWorking("API key is required")
+                    
+                # Test the connection
+                search = NewznabSearch(credential_data.username, credential_data.api_key)
+                test_result = search.search("test", limit=1)  # Just test with a simple query and 1 result
+                
+                # If we get here, connection works
+                LOGGER.info(f"Successfully connected to Newznab indexer: {credential_data.email or 'unnamed'}")
+                
+                # We don't need password for Newznab
+                credential_data.password = None
+                
+            except Exception as e:
+                raise CredentialInvalid(str(e))
+
         else:
             assert_never(credential_data.source)
 
@@ -152,6 +195,7 @@ class Credentials:
         ).lastrowid
 
         return self.get_one(id)
+
 
     def delete(self, cred_id: int) -> None:
         """Delete a credential.

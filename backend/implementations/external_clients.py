@@ -11,6 +11,7 @@ from backend.base.definitions import (ClientTestResult, DownloadType,
                                       ExternalDownloadClient)
 from backend.base.helpers import get_subclasses, normalize_base_url
 from backend.internals.db import get_db
+from backend.base.logging import LOGGER
 
 
 # =====================
@@ -158,17 +159,29 @@ class BaseExternalClient(ExternalDownloadClient):
 # =====================
 class ExternalClients:
     @staticmethod
-    def get_client_types() -> Dict[str, Type[ExternalDownloadClient]]:
+    def get_client_types(download_type=None) -> Dict[str, Type[ExternalDownloadClient]]:
         """Get a mapping of the client type strings to their class.
+
+        Args:
+            download_type (DownloadType, optional): Filter clients by download type.
+                Defaults to None (no filtering).
 
         Returns:
             Dict[str, Type[ExternalDownloadClient]]: The mapping.
         """
         from backend.implementations.torrent_clients import qBittorrent
+        from backend.implementations.usenet_clients.sabnzbd import SABnzbd
+    
+        clients = get_subclasses(BaseExternalClient)
+        
+        if download_type is not None:
+            clients = [client for client in clients if client.download_type == download_type]
+        
         return {
             client.client_type: client
-            for client in get_subclasses(BaseExternalClient)
+            for client in clients
         }
+
 
     @staticmethod
     def test(
@@ -316,22 +329,43 @@ class ExternalClients:
         return ExternalClients.get_client(client_id)
 
     @staticmethod
-    def get_clients() -> List[Dict[str, Any]]:
+    def get_clients(download_type=None) -> List[Dict[str, Any]]:
         """Get a list of all external clients.
+
+        Args:
+            download_type (DownloadType, optional): Filter clients by download type.
+                Defaults to None (no filtering).
 
         Returns:
             List[Dict[str, Any]]: The list with all external clients.
         """
-        result = get_db().execute("""
-            SELECT
-                id, download_type, client_type,
-                title, base_url,
-                username, password,
-                api_token
-            FROM external_download_clients
-            ORDER BY title, id;
-            """
-        ).fetchalldict()
+        cursor = get_db()
+        
+        if download_type is not None:
+            result = cursor.execute("""
+                SELECT
+                    id, download_type, client_type,
+                    title, base_url,
+                    username, password,
+                    api_token
+                FROM external_download_clients
+                WHERE download_type = ?
+                ORDER BY title, id;
+                """,
+                (download_type.value,)
+            ).fetchalldict()
+        else:
+            result = cursor.execute("""
+                SELECT
+                    id, download_type, client_type,
+                    title, base_url,
+                    username, password,
+                    api_token
+                FROM external_download_clients
+                ORDER BY title, id;
+                """
+            ).fetchalldict()
+        
         return result
 
     @staticmethod
@@ -376,7 +410,9 @@ class ExternalClients:
 
         Returns:
             ExternalDownloadClient: The least used client.
-        """
+        """    
+        LOGGER.debug(f"Looking for least used client of type: {download_type.value}")
+        
         cursor = get_db()
         lu_id = cursor.execute("""
             SELECT clients.id
@@ -392,6 +428,7 @@ class ExternalClients:
         ).fetchone()
 
         if lu_id:
+            LOGGER.debug(f"Found least used client with ID: {lu_id[0]}")
             return ExternalClients.get_client(lu_id[0])
 
         first_id = cursor.execute("""
@@ -404,6 +441,8 @@ class ExternalClients:
         ).fetchone()
 
         if first_id:
+            LOGGER.debug(f"No client in use, using first available with ID: {first_id[0]}")
             return ExternalClients.get_client(first_id[0])
 
+        LOGGER.error(f"No client found for download type: {download_type.value}")
         raise ExternalClientNotFound

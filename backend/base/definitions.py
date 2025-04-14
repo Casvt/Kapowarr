@@ -68,6 +68,8 @@ class Constants:
     TORRENT_UPDATE_INTERVAL = 5 # seconds
     TORRENT_TAG = "kapowarr"
 
+    USENET_TAG = "kapowarr"
+
 
 class FileConstants:
     IMAGE_EXTENSIONS = ('.png', '.jpeg', '.jpg', '.webp', '.gif',
@@ -76,7 +78,8 @@ class FileConstants:
 
     CONTAINER_EXTENSIONS = (
         '.cbz', '.zip', '.rar', '.cbr', '.tar.gz',
-        '.7zip', '.7z', '.cb7', '.cbt', '.epub', '.pdf'
+        '.7zip', '.7z', '.cb7', '.cbt', '.cbt', '.cba',
+        '.epub', '.pdf', '.mobi'
     )
     "Archive/container extensions, with dot-prefix, and only lowercase"
 
@@ -275,6 +278,7 @@ class GCDownloadSource(BaseEnum):
     PIXELDRAIN = 'Pixeldrain'
     GETCOMICS = 'GetComics'
     GETCOMICS_TORRENT = 'GetComics (torrent)'
+    AIRDCPP = 'airdcpp'
 
 
 download_source_versions: Dict[GCDownloadSource, Tuple[str, ...]] = dict((
@@ -309,7 +313,8 @@ class DownloadSource(BaseEnum):
     PIXELDRAIN = 'Pixeldrain'
     GETCOMICS = 'GetComics'
     GETCOMICS_TORRENT = 'GetComics (torrent)'
-
+    AIRDCPP = "airdcpp"
+    NEWZNAB = "newznab"
 
 class MonitorScheme(BaseEnum):
     ALL = "all"
@@ -320,11 +325,15 @@ class MonitorScheme(BaseEnum):
 class CredentialSource(BaseEnum):
     MEGA = "mega"
     PIXELDRAIN = "pixeldrain"
+    # Add the new AirDC++ credential source
+    AIRDCPP = "airdcpp"
+    NEWZNAB = "newznab"
 
 
 class DownloadType(BaseEnum):
     DIRECT = 1
     TORRENT = 2
+    USENET = 3
 
 
 query_formats: Dict[str, Tuple[str, ...]] = {
@@ -369,8 +378,12 @@ class FilenameData(TypedDict):
 
 class SearchResultData(FilenameData):
     link: str
-    display_title: str
+    title: str  # Added this field (can replace display_title)
+    display_title: str  # Keep this for backward compatibility
     source: str
+    size: int    
+    seeders: int
+    details: str
 
 
 class SearchResultMatchData(TypedDict):
@@ -613,6 +626,12 @@ class FileConverter(ABC):
 
 
 class SearchSource(ABC):
+    _subclasses = set()
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls._subclasses.add(cls)
+
     def __init__(self, query: str) -> None:
         """Prepare the search source.
 

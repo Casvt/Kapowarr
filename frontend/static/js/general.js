@@ -45,30 +45,32 @@ async function fetchAPI(endpoint, api_key, params={}, json_return=true) {
 	});
 };
 
-async function sendAPI(method, endpoint, api_key, params={}, body={}) {
+async function sendAPI(method, endpoint, api_key, params = {}, body = {}) {
 	let formatted_params = '';
 	if (Object.keys(params).length) {
-		formatted_params = '&' + Object.entries(params).map(p => p.join('=')).join('&');
-	};
+		formatted_params = '&' + Object.entries(params)
+			.map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+			.join('&');
+	}
 
-	return fetch(`${url_base}/api${endpoint}?api_key=${api_key}${formatted_params}`, {
-		'method': method,
-		'headers': {'Content-Type': 'application/json'},
-		'body': JSON.stringify(body)
+	return fetch(`${url_base}/api${endpoint}?api_key=${encodeURIComponent(api_key)}${formatted_params}`, {
+		method: method,
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(body)
 	})
 	.then(response => {
 		if (!response.ok) return Promise.reject(response);
-		return response
+		return response;
 	})
 	.catch(response => {
 		if (response.status === 401) {
-			setLocalStorage({api_key: null})
+			setLocalStorage({ api_key: null });
 			window.location.href = `${url_base}/login?redirect=${window.location.pathname}`;
 		} else {
 			return Promise.reject(response);
-		};
+		}
 	});
-};
+}
 
 //
 // Icons

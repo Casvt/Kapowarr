@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from base64 import b64encode
 from json import loads
-from os.path import basename, join, sep, splitext
+from os.path import basename, join, sep, splitext, dirname
 from re import IGNORECASE, compile
 from threading import Event, Thread
 from time import perf_counter
@@ -33,6 +33,8 @@ from backend.base.logging import LOGGER
 from backend.implementations.credentials import Credentials
 from backend.implementations.direct_clients.mega import (Mega, MegaABC,
                                                          MegaFolder)
+from backend.implementations.direct_clients.airdcpp import AirDCPP, AirDCPPABC
+from backend.implementations.direct_clients.newznab import NewznabClient
 from backend.implementations.external_clients import ExternalClients
 from backend.implementations.naming import generate_issue_name
 from backend.implementations.volumes import Issue, Volume
@@ -496,7 +498,7 @@ class PixelDrainDownload(BaseDirectDownload):
 
         except RequestException:
             raise ClientNotWorking(
-                "An unexpected error occured when making contact with Pixeldrain"
+                "An unexpected error occurred when making contact with Pixeldrain"
             )
 
         except WebSocketBadStatusException as e:
@@ -504,7 +506,7 @@ class PixelDrainDownload(BaseDirectDownload):
                 return -1
 
             raise ClientNotWorking(
-                "An unexpected error occured when making contact with Pixeldrain"
+                "An unexpected error occurred when making contact with Pixeldrain"
             )
 
         ws.send('{"type": "limits"}')
@@ -559,7 +561,6 @@ class PixelDrainFolderDownload(PixelDrainDownload):
         self._api_key = None
         self._first_fetch = True
         download_id = self.download_link.rstrip("/").split("/")[-1]
-        'https://pixeldrain.com/api/list/{download_id}/zip'
         return Constants.PIXELDRAIN_API_URL + '/list/' + download_id + '/zip'
 
 
@@ -708,6 +709,162 @@ class MegaFolderDownload(MegaDownload):
     _mega_class = MegaFolder
 
 
+# region AirDC++
+@final
+class AirDCPPDownload(BaseDirectDownload):
+    """For downloading a file via AirDC++"""
+
+    type = 'airdcpp'
+    _airdcpp_class: Type[AirDCPPABC] = AirDCPP
+
+    @property
+    def size(self) -> int:
+        return self._airdcpp.size
+
+    @property
+    def progress(self) -> float:
+        return self._airdcpp.progress
+
+    @property
+    def speed(self) -> float:
+        return self._airdcpp.speed
+
+    def __init__(
+        self,
+        download_link: str,
+
+        volume_id: int,
+        covered_issues: Union[float, Tuple[float, float], None],
+
+        source_type: DownloadSource,
+        source_name: str,
+
+        web_link: Union[str, None],
+        web_title: Union[str, None],
+        web_sub_title: Union[str, None],
+
+        forced_match: bool = False
+    ) -> None:
+        LOGGER.debug(
+            'Creating AirDC++ download: %s',
+            download_link
+        )
+
+        settings = Settings().sv
+        volume = Volume(volume_id)
+
+        self._download_link = download_link
+        self._volume_id = volume_id
+        self._issue_id = None
+        self._covered_issues = covered_issues
+        self._source_type = source_type
+        self._source_name = source_name
+        self._web_link = web_link
+        self._web_title = web_title
+        self._web_sub_title = web_sub_title
+
+        self._id = None
+        self._state = DownloadState.QUEUED_STATE
+        self._download_thread = None
+        self._download_folder = settings.download_folder
+        self._size = 0
+        self._progress = 0.0
+        self._speed = 0.0
+
+        try:
+            self._airdcpp = self._airdcpp_class(download_link)
+            # Update size from the AirDCPP instance
+            self._size = self._airdcpp.size
+            self._pure_link = self._airdcpp.pure_link
+        except ClientNotWorking:
+            raise LinkBroken(BlocklistReason.LINK_BROKEN)
+
+        self._filename_body = ''
+        try:
+            if isinstance(covered_issues, float):
+                self._issue_id = Issue.from_volume_and_calc_number(
+                    volume_id, covered_issues
+                ).id
+
+            if settings.rename_downloaded_files:
+                self._filename_body = generate_issue_name(
+                    volume_id,
+                    volume.get_data().special_version,
+                    covered_issues
+                )
+
+        except IssueNotFound as e:
+            if not forced_match:
+                raise e
+
+        if not self._filename_body:
+            self._filename_body = splitext(self._airdcpp.file_name)[0]
+
+        self._title = basename(self._filename_body)
+        self._files = [self._build_filename(response=None)]
+        return
+
+    # Add a custom todict method to use the dynamic attributes
+    def todict(self) -> Dict[str, Any]:
+        # Get the current values from the airdcpp instance
+        if hasattr(self, '_airdcpp'):
+            # Only update size if we have a valid size
+            if self._airdcpp.size > 0:
+                self._size = self._airdcpp.size
+            self._progress = self._airdcpp.progress
+            self._speed = self._airdcpp.speed
+            
+        # Call the parent method
+        return super().todict()
+
+
+
+    def _extract_default_filename_body(
+        self,
+        response: Union[Response, None]
+    ) -> str:
+        return splitext(self._airdcpp.file_name)[0]
+
+    def _extract_extension(self, response: Union[Response, None]) -> str:
+        return splitext(self._airdcpp.file_name)[1]
+
+    def run(self) -> None:
+        self._state = DownloadState.DOWNLOADING_STATE
+        ws = WebSocket()
+        try:
+            self._airdcpp.download(
+                self.files[0],
+                lambda: ws.update_queue_status(self)
+            )
+            
+            # Fix the filename to match what AirDC++ actually saved
+            import os
+            from os.path import exists, join, basename
+            
+            if not exists(self.files[0]):
+                # Get the actual filename that AirDC++ used
+                actual_filename = basename(self._airdcpp.file_name)
+                from backend.internals.settings import Settings
+                download_folder = Settings().sv.download_folder
+                actual_path = join(download_folder, actual_filename)
+                
+                if exists(actual_path):
+                    # Update the path to the actual file location
+                    self.files[0] = actual_path
+                    LOGGER.debug(f"Updated file path to match AirDC++ download: {self.files[0]}")
+            
+        except ClientNotWorking:
+            self._state = DownloadState.FAILED_STATE
+        
+        return
+
+    def stop(self,
+        state: DownloadState = DownloadState.CANCELED_STATE
+    ) -> None:
+        self._state = state
+        self._airdcpp.stop()
+        return
+
 # region Torrent
 @final
 class TorrentDownload(ExternalDownload, BaseDirectDownload):
@@ -831,11 +988,13 @@ class TorrentDownload(ExternalDownload, BaseDirectDownload):
         return
 
     def run(self) -> None:
+        LOGGER.debug(f"Starting UsenetDownload.run() for {self.download_link}")
         self._external_id = self.external_client.add_download(
             self.download_link,
             self._download_folder,
             self.title
         )
+        LOGGER.debug(f"Usenet download started with external_id: {self._external_id}")
         return
 
     def update_status(self) -> None:
@@ -881,3 +1040,201 @@ class TorrentDownload(ExternalDownload, BaseDirectDownload):
 
     def __repr__(self) -> str:
         return f'<{self.__class__.__name__}, {self.download_link}, {self.files[0]}>'
+    
+@final
+class UsenetDownload(ExternalDownload, BaseDirectDownload):
+    type = 'newznab'
+
+    @property
+    def external_client(self) -> ExternalDownloadClient:
+        return self._external_client
+
+    @external_client.setter
+    def external_client(self, value: ExternalDownloadClient) -> None:
+        self._external_client = value
+        return
+
+    @property
+    def external_id(self) -> Union[str, None]:
+        return self._external_id
+
+    @property
+    def sleep_event(self) -> Event:
+        return self._sleep_event
+
+    def __init__(
+        self,
+        download_link: str,
+
+        volume_id: int,
+        covered_issues: Union[float, Tuple[float, float], None],
+
+        source_type: DownloadSource,
+        source_name: str,
+
+        web_link: Union[str, None],
+        web_title: Union[str, None],
+        web_sub_title: Union[str, None],
+
+        forced_match: bool = False,
+        external_client: Union[ExternalDownloadClient, None] = None
+    ) -> None:
+        LOGGER.debug(
+            'Creating Usenet download: %s',
+            download_link
+        )
+
+        settings = Settings().sv
+
+        self._download_link = self._pure_link = download_link
+        self._volume_id = volume_id
+        self._issue_id = None
+        self._covered_issues = covered_issues
+        self._source_type = source_type
+        self._source_name = source_name
+        self._web_link = web_link
+        self._web_title = web_title
+        self._web_sub_title = web_sub_title
+
+        self._id = None
+        self._state = DownloadState.QUEUED_STATE
+        self._progress = 0.0
+        self._speed = 0.0
+        self._size = -1
+        self._download_thread = None
+        self._download_folder = settings.download_folder
+        self._sleep_event = Event()
+
+        self.original_download_folder = None    
+        self._original_files: List[str] = []
+        self._external_id: Union[str, None] = None
+        if external_client:
+            self._external_client = external_client
+        else:
+            self._external_client = ExternalClients.get_least_used_client(
+                DownloadType.USENET
+            )
+
+        try:
+            if isinstance(covered_issues, float):
+                self._issue_id = Issue.from_volume_and_calc_number(
+                    volume_id, covered_issues
+                ).id
+
+        except IssueNotFound as e:
+            if not forced_match:
+                raise e
+
+        # For Usenet, we extract the filename from the NZB title or URL
+        nzb_name = self._extract_nzb_name(download_link)
+
+        self._filename_body = ''
+        if settings.rename_downloaded_files:
+            try:
+                self._filename_body = generate_issue_name(
+                    volume_id,
+                    Volume(volume_id).get_data().special_version,
+                    covered_issues
+                )
+
+            except IssueNotFound as e:
+                if not forced_match:
+                    raise e
+
+        if not self._filename_body:
+            self._filename_body = splitext(nzb_name)[0]
+
+        self._title = basename(self._filename_body)
+        self._files = [join(self._download_folder, nzb_name)]
+        return
+
+    def _extract_nzb_name(self, download_link: str) -> str:
+        """Extract a filename from an NZB download link."""
+        base_name = basename(unquote_plus(download_link.split('?')[0]))
+        if not base_name.lower().endswith('.nzb'):
+            base_name += '.nzb'
+        return base_name
+
+    def run(self) -> None:
+        # Make sure we have a client
+        if not hasattr(self, '_external_client') or not self._external_client:
+            self._external_client = ExternalClients.get_least_used_client(DownloadType.USENET)
+            if not self._external_client:
+                self._state = DownloadState.FAILED_STATE
+                LOGGER.error("No usenet client configured")
+                return
+
+        LOGGER.info(f"Sending NZB download to {self._external_client.client_type}: {self.download_link}")
+        
+        try:
+            url_to_send = self.download_link
+            
+            LOGGER.debug(f"Sending complete URL to {self._external_client.client_type}: {url_to_send}")
+            
+            self._external_id = self.external_client.add_download(
+                url_to_send,
+                self._download_folder,
+                self.title
+            )
+            LOGGER.info(f"Successfully added to {self._external_client.client_type} with ID: {self._external_id}")
+            self._state = DownloadState.DOWNLOADING_STATE
+        except Exception as e:
+            LOGGER.error(f"Failed to add download to {self._external_client.client_type}: {str(e)}")
+            self._state = DownloadState.FAILED_STATE
+        return
+
+
+    def update_status(self) -> None:
+        if not self.external_id:
+            return
+
+        usenet_status = self.external_client.get_download(self.external_id)
+        if not usenet_status:
+            if usenet_status is None:
+                self._state = DownloadState.CANCELED_STATE
+            return
+
+        self._progress = usenet_status['progress']
+        self._speed = usenet_status['speed']
+        self._size = usenet_status['size']
+        
+        # Don't override these states if they're already set
+        if self.state not in (
+            DownloadState.CANCELED_STATE,
+            DownloadState.SHUTDOWN_STATE
+        ):
+            # Check if the download is complete in SABnzbd (progress = 100%)
+            # and it's in a "completed" state but still showing as DOWNLOADING_STATE
+            if (usenet_status['state'] == DownloadState.DOWNLOADING_STATE and 
+                self._progress >= 99.9):
+                # Transition to importing state to trigger post-processing
+                LOGGER.info(f"Usenet download complete, transitioning to IMPORTING_STATE: {self.external_id}")
+                self._state = DownloadState.IMPORTING_STATE
+                
+                # Store the original download folder before updating files
+                if 'final_files' in usenet_status and usenet_status['final_files']:
+                    self._original_files = usenet_status['final_files'].copy()
+                    LOGGER.debug(f"Stored original files: {self._original_files}")
+                    
+                    # Update current files list
+                    self._files = usenet_status['final_files']
+            else:
+                # Normal state update
+                self._state = usenet_status['state']
+
+        return
+
+
+    def remove_from_client(self, delete_files: bool) -> None:
+        if not self.external_id:
+            return
+
+        self.external_client.delete_download(self.external_id, delete_files)
+        return
+
+    def stop(self,
+        state: DownloadState = DownloadState.CANCELED_STATE
+    ) -> None:
+        self._state = state
+        self._sleep_event.set()
+        return

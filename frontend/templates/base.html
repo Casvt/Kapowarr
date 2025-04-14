@@ -119,6 +119,10 @@
 						class="{% if request.path == '/settings/download' %}current-nav{% endif %}"
 					>Download</a>
 					<a
+						href="{{url_base}}/settings/indexers"
+						class="{% if request.path == '/settings/indexers' %}current-nav{% endif %}"
+					>Indexers</a>
+					<a
 						href="{{url_base}}/settings/downloadclients"
 						class="{% if request.path == '/settings/downloadclients' %}current-nav{% endif %}"
 					>Download Clients</a>

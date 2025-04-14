@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% from "base.html" import icon_button, window %}
+{% block title %}Indexers{% endblock %}
+{% block css %}
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/window.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+{% endblock %}
+{% block js %}
+	<script src="{{ url_for('static', filename='js/window.js') }}" defer></script>
+	<script src="{{ url_for('static', filename='js/settings_indexers.js') }}" defer></script>
+{% endblock %}
+
+{% block pre_build_rows %}
+<tr class="newznab-indexer-entry index-entry">
+    <td class="newznab-name"></td>
+    <td class="newznab-url"></td>
+    <td class="newznab-apikey"></td>
+    <td>
+        <button type="button" class="delete-indexer" title="Delete indexer">
+            <img src="{{ url_for('static', filename='img/delete.svg') }}" alt="">
+        </button>
+    </td>
+</tr>
+{% endblock pre_build_rows %}
+
+{% block windows %}
+    {% set newznab_content %}
+        <p class="error hidden" id="newznab-error"></p>
+        <p class="description">
+            <a href="https://newznab.readthedocs.io/" target="_blank">Newznab</a> is a standardized API used by Usenet indexers for searching and downloading NZB files. Kapowarr can search and download comics from configured Newznab indexers.
+            <br><br>
+            You'll need to provide the API URL and API key for each Newznab indexer you want to use. You can configure multiple indexers to increase your chances of finding content.
+        </p>
+        <form id="newznab-form">
+            <table>
+                <tr>
+                    <th><label for="newznab-name-input">Name</label></th>
+                    <td>
+                        <input type="text" id="newznab-name-input" placeholder="My Indexer" required>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="newznab-url-input">URL</label></th>
+                    <td>
+                        <input type="text" id="newznab-url-input" placeholder="https://indexer.com/api" required>
+                        <p>The full URL to your indexer's API</p>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="newznab-apikey-input">API Key</label></th>
+                    <td>
+                        <input type="text" id="newznab-apikey-input" required>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="newznab-categories-input">Categories</label></th>
+                    <td>
+                        <input type="text" id="newznab-categories-input" placeholder="7000,7020" value="7000,7020">
+                        <p>Comma-separated list of categories to search (defaults to comic categories)</p>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    {% endset %}
+
+    {% set newznab_submit %}
+        <button id="test-newznab" class="test-button" type="button">
+            <div>Failed</div>
+            <div>Test</div>
+            <div>Success</div>
+        </button>
+        <button id="submit-newznab" type="submit" form="newznab-form">Add</button>
+    {% endset %}
+
+    {{ window(False, "newznab-window", "Add Newznab Indexer", newznab_content, newznab_submit) }}
+
+    {% set edit_content %}
+        <p class="error hidden" id="edit-error"></p>
+        <form id="edit-indexer-form">
+            <table>
+                <tr>
+                    <th><label for="edit-name-input">Name</label></th>
+                    <td>
+                        <input type="text" id="edit-name-input" required>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="edit-url-input">URL</label></th>
+                    <td>
+                        <input type="text" id="edit-url-input" required>
+                        <p>The full URL to your indexer's API</p>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="edit-apikey-input">API Key</label></th>
+                    <td>
+                        <input type="text" id="edit-apikey-input" required>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="edit-categories-input">Categories</label></th>
+                    <td>
+                        <input type="text" id="edit-categories-input" placeholder="7000,7020">
+                        <p>Comma-separated list of categories to search (defaults to comic categories)</p>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    {% endset %}
+
+    {% set edit_submit %}
+        <button id="delete-indexer-edit" type="button">Delete</button>
+        <button id="test-indexer-edit" class="test-button" type="button">
+            <div>Failed</div>
+            <div>Test</div>
+            <div>Success</div>
+        </button>
+        <button id="submit-indexer-edit" type="submit" form="edit-indexer-form">Save</button>
+    {% endset %}
+
+    {{ window(False, "edit-indexer-window", "Edit Indexer", edit_content, edit_submit) }}
+{% endblock windows %}
+
+{% block main %}
+<main>
+    <div class="settings-container">
+        <h2>Indexers</h2>
+        <p>Indexers are used to search for and find comic content to download.</p>
+        
+        <div class="indexer-container">
+            <div id="indexer-list" class="indexer-list">
+                <button id="add-newznab-indexer" class="add-button icon-text-color" title="Add Newznab indexer">
+                    <img src="{{url_base}}/static/img/cancel.svg" alt="">
+                    <span>Add Newznab Indexer</span>
+                </button>
+            </div>
+        </div>
+        
+        <h2>Configured Indexers</h2>
+        <table id="indexers-table" class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>URL</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="indexers-list">
+                <!-- Indexers will be dynamically populated here -->
+            </tbody>
+        </table>
+    </div>
+</main>
+{% endblock main %}

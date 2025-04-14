@@ -688,7 +688,8 @@ class MigrateServicePreferenceToEnumValues(DBMigrator):
             'wetransfer': GCDownloadSource.WETRANSFER.value,
             'pixeldrain': GCDownloadSource.PIXELDRAIN.value,
             'getcomics': GCDownloadSource.GETCOMICS.value,
-            'getcomics (torrent)': GCDownloadSource.GETCOMICS_TORRENT.value
+            'getcomics (torrent)': GCDownloadSource.GETCOMICS_TORRENT.value,
+            'airdcpp': GCDownloadSource.AIRDCPP.value  # New client
         }
 
         new_service_preference = CommaList((
@@ -702,7 +703,6 @@ class MigrateServicePreferenceToEnumValues(DBMigrator):
         )
 
         return
-
 
 class MigrateAddLinksInBlocklist(DBMigrator):
     start_version = 24
@@ -1202,5 +1202,28 @@ class MigrateAddMonitorNewIssuesToVolumes(DBMigrator):
         get_db().execute("""
             ALTER TABLE volumes ADD COLUMN
                 monitor_new_issues BOOL NOT NULL DEFAULT 1;
+        """)
+        return
+
+
+class MigrateAddIndexersTable(DBMigrator):
+    start_version = 38
+
+    def run(self) -> None:
+        """Add indexers table to the database."""
+        from backend.internals.db import get_db
+
+        get_db().executescript("""
+            CREATE TABLE IF NOT EXISTS indexers (
+                id INTEGER PRIMARY KEY,
+                name TEXT NOT NULL,
+                type TEXT NOT NULL,
+                url TEXT NOT NULL,
+                api_key TEXT NOT NULL,
+                categories TEXT DEFAULT '7000,7020',
+                enabled INTEGER DEFAULT 1
+            );
+            
+            CREATE INDEX IF NOT EXISTS idx_indexers_type ON indexers(type);
         """)
         return
