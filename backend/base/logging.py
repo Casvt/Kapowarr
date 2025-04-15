@@ -4,6 +4,7 @@ import logging
 import logging.config
 from logging.handlers import RotatingFileHandler
 from typing import Any, Union
+from os.path import join
 
 from backend.base.definitions import Constants
 
@@ -100,10 +101,18 @@ LOGGING_CONFIG = {
 }
 
 
-def setup_logging(do_rollover: bool = True) -> None:
+def setup_logging(
+    log_folder: str = None,
+    do_rollover: bool = True,
+) -> None:
     "Setup the basic config of the logging module"
 
-    LOGGING_CONFIG["handlers"]["file"]["filename"] = get_log_filepath()
+    if log_folder is None:
+        from backend.base.files import folder_path
+        LOGGING_CONFIG["handlers"]["file"]["filename"] = folder_path(Constants.LOGGER_FILENAME)
+    else:
+        LOGGING_CONFIG["handlers"]["file"]["filename"] = join(log_folder, Constants.LOGGER_FILENAME)
+
     LOGGING_CONFIG["handlers"]["file"]["do_rollover"] = do_rollover
 
     logging.config.dictConfig(LOGGING_CONFIG)
@@ -139,8 +148,7 @@ def get_log_filepath() -> str:
     Get the filepath to the logging file.
     Not in a global variable to avoid unnecessary computation.
     """
-    from backend.base.files import folder_path
-    return folder_path(Constants.LOGGER_FILENAME)
+    return LOGGING_CONFIG["handlers"]["file"]["filename"]
 
 
 def set_log_level(

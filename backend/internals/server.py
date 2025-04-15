@@ -417,9 +417,10 @@ class WebSocket(SocketIO, metaclass=Singleton):
 
 def setup_process(
     log_level: int,
-    db_folder: Union[str, None]
+    db_folder: Union[str, None],
+    log_folder: Union[str, None],
 ) -> Callable[[], AppContext]:
-    setup_logging(do_rollover=False)
+    setup_logging(log_folder=log_folder, do_rollover=False)
     set_log_level(log_level)
     set_db_location(db_folder)
 
