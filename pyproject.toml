@@ -1,3 +1,11 @@
+[project]
+name = "Kapowarr"
+version = "1.1.1"
+description = "Kapowarr is a software to build and manage a comic book library, fitting in the *arr suite of software."
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">= 3.8"
+
 [tool.mypy]
 warn_unused_configs = true
 sqlite_cache = true
