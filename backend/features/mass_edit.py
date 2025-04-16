@@ -51,7 +51,7 @@ class MassEditorRootFolder(MassEditorAction):
         )
 
         for volume_id in iter_commit(self.volume_ids):
-            Volume(volume_id)['root_folder'] = root_folder_id
+            Volume(volume_id).change_root_folder(root_folder_id)
 
         return
 
