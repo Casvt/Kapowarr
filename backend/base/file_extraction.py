@@ -23,7 +23,7 @@ alphabet = {
 
 volume_regex_snippet = r'\b(?:v(?:ol|olume)?)(?:\.\s|[\.\-\s])?(\d+(?:\s?\-\s?\d+)?|(?<!v)I{1,3})'
 year_regex_snippet = r'(?:(\d{4})(?:-\d{2}){0,2}|(\d{4})[\s\.]?[\-\s](?:[\s\.]?\d{4})?|(?:\d{2}-){1,2}(\d{4})|(\d{4})[\s\.\-_]Edition|(\d{4})\-\d{4}\s{3}\d{4})'
-issue_regex_snippet = r'(?!\d+(?:th|rd|st|\s?(?:gb|mb|kb)))(?<!\')(?<!cv[\s\-_])(?:\d+(?:\.\d{1,2}|\.?[a-z0-9]+|[\s\-\._]?[½¼])?|[½¼])'
+issue_regex_snippet = r'(?!\d+(?:p|th|rd|st|\s?(?:gb|mb|kb)))(?<!\')(?<!cv[\s\-_])(?:\d+(?:\.\d{1,2}|\.?[a-z0-9]+|[\s\-\._]?[½¼])?|[½¼])'
 
 # Cleaning the filename
 strip_filename_regex = compile(r'\(.*?\)|\[.*?\]|\{.*?\}', IGNORECASE)
@@ -366,21 +366,9 @@ def extract_filename_data(
         for file_part_with_issue, pos_option, regex_list in pos_options:
             for regex in regex_list:
                 r = list(regex.finditer(file_part_with_issue, **pos_option))
-                group_number = 1 if regex != issue_regex_6 else 3
+                group_number = 1 if regex is not issue_regex_6 else 3
                 if r:
-                    r.sort(key=lambda e: (
-                        int(
-                            e.group(group_number)[-1]
-                            not in CharConstants.DIGITS
-                        ),
-                        (
-                            1 / e.start(0)
-                            if e.start(0) else
-                            0
-                        )
-                    ))
-
-                    for result in r:
+                    for result in reversed(r):
                         if (
                             file_part_with_issue == filename
                             and not any(
