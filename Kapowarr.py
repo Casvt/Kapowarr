@@ -23,7 +23,8 @@ from backend.internals.settings import Settings
 
 def _main(
     restart_version: RestartVersion,
-    db_folder: Union[str, None] = None
+    db_folder: Union[str, None] = None,
+    log_folder: Union[str, None] = None,
 ) -> NoReturn:
     """The main function of the Kapowarr sub-process
 
@@ -35,6 +36,10 @@ def _main(
         `None` for the default location.
             Defaults to None.
 
+        log_folder (Union[str, None], optional): The folder in which the logs from
+        Kapowarr will be stored. Give `None` for the default location.
+            Defaults to None.
+
     Raises:
         ValueError: Value of `db_folder` exists but is not a folder.
 
@@ -43,7 +48,7 @@ def _main(
         Exit code 131 or higher means to restart with possibly special reasons.
     """
     set_start_method('spawn')
-    setup_logging()
+    setup_logging(log_folder=log_folder)
     LOGGER.info('Starting up Kapowarr')
 
     if not check_python_version():
@@ -173,8 +178,12 @@ if __name__ == "__main__":
             type=str,
             help="The folder in which the database will be stored or in which a database is for Kapowarr to use"
         )
+        parser.add_argument(
+            '-l', '--LogFolder',
+            type=str,
+            help="The folder in which the logs from Kapowarr will be stored"
+        )
         args = parser.parse_args()
-        db_folder = args.DatabaseFolder
 
         rv = RestartVersion(int(environ.get(
             "KAPOWARR_RESTART_VERSION",
@@ -184,7 +193,8 @@ if __name__ == "__main__":
         try:
             _main(
                 restart_version=rv,
-                db_folder=db_folder
+                db_folder=args.DatabaseFolder,
+                log_folder=args.LogFolder,
             )
 
         except ValueError as e:
