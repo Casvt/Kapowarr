@@ -371,6 +371,72 @@ def extract_year_from_date(
         return default
 
 
+def to_number_cv_id(ids: Iterable[Union[str, int]]) -> List[int]:
+    """Convert CV ID's into numbers.
+
+    Args:
+        ids (Iterable[Union[str, int]]): CV ID's. Can have any common format,
+        like 123, "123", "4050-123", "cv:123" and "cv:4050-123".
+
+    Raises:
+        ValueError: Invalid CV ID.
+
+    Returns:
+        List[int]: The converted CV ID's, in format `NNNN`
+    """
+    result: List[int] = []
+    for i in ids:
+        if isinstance(i, int):
+            result.append(i)
+            continue
+
+        if i.startswith('cv:'):
+            i = i.partition(':')[2]
+
+        if i.isdigit():
+            result.append(int(i))
+
+        elif i.startswith('4050-') and i.replace('-', '').isdigit():
+            result.append(int(i.split('4050-')[-1]))
+
+        else:
+            raise ValueError
+
+    return result
+
+
+def to_string_cv_id(ids: Iterable[Union[str, int]]) -> List[str]:
+    """Convert CV ID's into short strings.
+
+    Args:
+        ids (Iterable[Union[str, int]]): CV ID's. Same formats supported as
+        `to_number_cv_id()`.
+
+    Raises:
+        ValueError: Invalid CV ID.
+
+    Returns:
+        List[str]: The converted CV ID's, in format `"NNNN"`.
+    """
+    return [str(i) for i in to_number_cv_id(ids)]
+
+
+def to_full_string_cv_id(ids: Iterable[Union[str, int]]) -> List[str]:
+    """Convert CV ID's into long strings.
+
+    Args:
+        ids (Iterable[Union[str, int]]): CV ID's. Same formats supported as
+        `to_number_cv_id()`.
+
+    Raises:
+        ValueError: Invalid CV ID.
+
+    Returns:
+        List[str]: The converted CV ID's, in format `"4050-NNNN"`.
+    """
+    return ["4050-" + str(i) for i in to_number_cv_id(ids)]
+
+
 def check_overlapping_issues(
     issues_1: Union[float, Tuple[float, float]],
     issues_2: Union[float, Tuple[float, float]]

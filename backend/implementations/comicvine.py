@@ -4,10 +4,10 @@
 Search for volumes/issues and fetch metadata for them on ComicVine
 """
 
-from asyncio import create_task, gather, run, sleep
+from asyncio import gather, run, sleep
 from json import JSONDecodeError
 from re import IGNORECASE, compile
-from typing import Any, Dict, Iterable, List, Sequence, Union
+from typing import Any, Dict, List, Sequence, Union
 
 from aiohttp import ContentTypeError
 from aiohttp.client_exceptions import ClientError
@@ -22,7 +22,8 @@ from backend.base.file_extraction import (process_issue_number,
                                           process_volume_number, volume_regex)
 from backend.base.helpers import (AsyncSession, DictKeyedDict, Session,
                                   batched, create_range, force_suffix,
-                                  normalize_string, normalize_year)
+                                  normalize_string, normalize_year,
+                                  to_full_string_cv_id, to_string_cv_id)
 from backend.base.logging import LOGGER
 from backend.implementations.matching import _match_title, _match_year
 from backend.internals.db import get_db
@@ -119,66 +120,6 @@ def _clean_description(description: str, short: bool = False) -> str:
 
     result = str(soup)
     return result
-
-
-def to_number_cv_id(ids: Iterable[Union[str, int]]) -> List[int]:
-    """Convert CV ID's into numbers.
-
-    Args:
-        ids (Iterable[Union[str, int]]): CV ID's. Can have any common format,
-        like 123, "123", "4050-123", "cv:123" and "cv:4050-123".
-
-    Raises:
-        VolumeNotMatched: Invalid CV ID.
-
-    Returns:
-        List[int]: The converted CV ID's, in format `NNNN`
-    """
-    result: List[int] = []
-    for i in ids:
-        if isinstance(i, int):
-            result.append(i)
-            continue
-
-        if i.startswith('cv:'):
-            i = i.partition(':')[2]
-
-        if i.isdigit():
-            result.append(int(i))
-
-        elif i.startswith('4050-') and i.replace('-', '').isdigit():
-            result.append(int(i.split('4050-')[-1]))
-
-        else:
-            raise VolumeNotMatched
-
-    return result
-
-
-def to_string_cv_id(ids: Iterable[Union[str, int]]) -> List[str]:
-    """Convert CV ID's into short strings.
-
-    Args:
-        ids (Iterable[Union[str, int]]): CV ID's. Same formats supported as
-        `to_number_cv_id()`.
-
-    Returns:
-        List[str]: The converted CV ID's, in format `"NNNN"`.
-    """
-    return [str(i) for i in to_number_cv_id(ids)]
-
-
-def to_full_string_cv_id(ids: Iterable[Union[str, int]]) -> List[str]:
-    """Convert CV ID's into long strings.
-
-    Args:
-        ids (Iterable[Union[str, int]]): CV ID's. Same formats supported as
-        `to_number_cv_id()`.
-
-    Returns:
-        List[str]: The converted CV ID's, in format `"4050-NNNN"`.
-    """
-    return ["4050-" + str(i) for i in to_number_cv_id(ids)]
 
 
 class ComicVine:
@@ -482,7 +423,11 @@ class ComicVine:
         Returns:
             VolumeMetadata: The metadata of the volume, including issues.
         """
-        cv_id = to_full_string_cv_id((cv_id,))[0]
+        try:
+            cv_id = to_full_string_cv_id((cv_id,))[0]
+        except ValueError:
+            raise VolumeNotMatched
+
         LOGGER.debug(f'Fetching volume data for {cv_id}')
 
         async with AsyncSession() as session:
@@ -517,7 +462,11 @@ class ComicVine:
         Returns:
             List[VolumeMetadata]: The metadata of the volumes, without issues.
         """
-        formatted_cv_ids = to_string_cv_id(cv_ids)
+        try:
+            formatted_cv_ids = to_string_cv_id(cv_ids)
+        except ValueError:
+            raise VolumeNotMatched
+
         LOGGER.debug(f'Fetching volume data for {formatted_cv_ids}')
 
         volume_infos = []
@@ -583,7 +532,11 @@ class ComicVine:
             List[IssueMetadata]: The metadata of all the issues inside the
             volumes (assuming the rate limit wasn't reached).
         """
-        formatted_cv_ids = to_string_cv_id(cv_ids)
+        try:
+            formatted_cv_ids = to_string_cv_id(cv_ids)
+        except ValueError:
+            raise VolumeNotMatched
+
         LOGGER.debug(f'Fetching issue data for volumes {formatted_cv_ids}')
 
         issue_infos = []
@@ -660,7 +613,7 @@ class ComicVine:
                 try:
                     query = to_full_string_cv_id((query,))[0]
 
-                except VolumeNotMatched:
+                except ValueError:
                     return []
 
                 if not query:

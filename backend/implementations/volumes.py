@@ -32,7 +32,7 @@ from backend.base.files import (create_folder, delete_empty_child_folders,
                                 rename_file)
 from backend.base.helpers import (PortablePool, create_range,
                                   extract_year_from_date, filtered_iter,
-                                  first_of_column)
+                                  first_of_column, to_number_cv_id)
 from backend.base.logging import LOGGER
 from backend.implementations.comicvine import ComicVine
 from backend.implementations.matching import (_match_title,
@@ -773,7 +773,7 @@ class Volume:
 class Library:
     def get_public_volumes(self,
         sort: LibrarySorting = LibrarySorting.TITLE,
-        filter: Union[LibraryFilters, None] = None
+        filter: Union[LibraryFilters, int, None] = None
     ) -> List[dict]:
         """Get all volumes in the library
 
@@ -788,6 +788,13 @@ class Library:
         Returns:
             List[dict]: The list of volumes in the library.
         """
+        if isinstance(filter, LibraryFilters):
+            sql_filter = filter.value
+        elif isinstance(filter, int):
+            sql_filter = f"WHERE comicvine_id = {filter}"
+        else:
+            sql_filter = ''
+
         volumes = get_db().execute(f"""
             WITH
                 vol_issues AS (
@@ -820,7 +827,7 @@ class Library:
                     SELECT COUNT(issue_id) FROM issues_with_files WHERE monitored = 1
                 ) AS issues_downloaded_monitored
             FROM volumes
-            {filter.value if filter is not None else ''}
+            {sql_filter}
             ORDER BY {sort.value};
             """
         ).fetchalldict()
@@ -847,11 +854,20 @@ class Library:
         Returns:
             List[dict]: The resulting list of matching volumes in the library.
         """
-        volumes = [
-            v
-            for v in self.get_public_volumes(sort, filter)
-            if _match_title(v['title'], query, allow_contains=True)
-        ]
+        if query.startswith(('4050-', 'cv:')):
+            try:
+                cv_id = to_number_cv_id((query,))[0]
+                volumes = self.get_public_volumes(sort, cv_id)
+
+            except ValueError:
+                volumes = []
+
+        else:
+            volumes = [
+                v
+                for v in self.get_public_volumes(sort, filter)
+                if _match_title(v['title'], query, allow_contains=True)
+            ]
 
         return volumes
 
