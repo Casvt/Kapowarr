@@ -648,7 +648,7 @@ def api_volumes():
         if root_folder_id is None:
             raise KeyNotFound('root_folder_id')
 
-        monitor = data.get('monitor') or True
+        monitor = data.get('monitor', True)
         if not isinstance(monitor, bool):
             raise InvalidKeyValue('monitor', monitor)
 
@@ -658,13 +658,13 @@ def api_volumes():
         except ValueError:
             raise InvalidKeyValue("monitoring_scheme", monitoring_scheme)
 
-        monitor_new_issues = data.get('monitor_new_issues') or True
+        monitor_new_issues = data.get('monitor_new_issues', True)
         if not isinstance(monitor_new_issues, bool):
             raise InvalidKeyValue('monitor_new_issues', monitor_new_issues)
 
         volume_folder = data.get('volume_folder') or None
 
-        auto_search = data.get('auto_search') or False
+        auto_search = data.get('auto_search', True)
         if not isinstance(auto_search, bool):
             raise InvalidKeyValue('auto_search', auto_search)
 
