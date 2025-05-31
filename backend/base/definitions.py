@@ -7,6 +7,7 @@ Definitions of basic types, abstract classes, enums, etc.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from os import getenv
 from dataclasses import asdict, dataclass
 from enum import Enum
 from threading import Event, Thread
@@ -34,7 +35,7 @@ class Constants:
     DB_MAX_CONCURRENT_CONNECTIONS = 32
 
     LOGGER_NAME = "Kapowarr"
-    LOGGER_FILENAME = "Kapowarr.log"
+    LOGGER_FILENAME = getenv("KAPOWARR_LOGGER_FILENAME", "Kapowarr.log")
 
     ARCHIVE_EXTRACT_FOLDER = '.archive_extract'
     ZIP_MIN_MOD_TIME = 315619200
