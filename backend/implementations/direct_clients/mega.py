@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 
+import time
 from abc import ABC, abstractmethod
 from base64 import b64decode, b64encode
 from hashlib import pbkdf2_hmac
 from json import JSONDecodeError, dumps, loads
-from random import randint
+from random import randint, uniform
 from re import compile, search
 from time import perf_counter, time
-from typing import Any, Callable, Dict, Generator, List, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, Generator, List, Sequence, Tuple, Union, Optional
 from zipfile import ZipFile
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -570,6 +571,9 @@ class Mega(MegaABC):
         self.client.node_id = id
         self.__master_key = MegaCrypto.base64_to_a32(key)
 
+        self.max_retries = 3
+        self.base_delay = 1.0
+
         try:
             res = self.client.api_request(
                 a=MegaCommands.GET_DL_URL.value,
@@ -673,61 +677,47 @@ class Mega(MegaABC):
         filename: str,
         websocket_updater: Callable[[], Any]
     ) -> None:
-        websocket_updater()
-        self.downloading = True
-        size_downloaded = 0
-
-        k, iv, meta_mac = MegaCrypto.get_cipher_key(
-            self.__master_key
-        )
-        decryptor = Cipher(
-            algorithms.AES(MegaCrypto.a32_to_bytes(k)),
-            modes.CTR(MegaCrypto.a32_to_bytes(iv))
-        ).decryptor()
-        cbc_mac = MegaCrypto.Checksum(self.__master_key)
-
-        start_time = perf_counter()
-        with \
-            open(filename, 'wb') as f, \
-            Session().get(self.pure_link, stream=True).raw as r:
-
-            self.__r = r
-            for chunk_start, chunk_size in MegaCrypto.get_chunks(self.size):
-                if not self.downloading:
-                    break
-
+        try:
+            for attempt in range(self.max_retries + 1):
                 try:
-                    chunk = r.read(chunk_size)
-                except ProtocolError:
-                    # Server responded with invalid data, probably
-                    # download limit reached
-                    chunk = None
+                    if attempt > 0:
+                        self.progress = 0.0
+                        self.speed = 0.0
 
-                if not chunk:
-                    # Download limit reached mid download
-                    raise DownloadLimitReached(DownloadSource.MEGA)
+                    self._download_with_verification(filename, websocket_updater)
+                    return
 
-                chunk = decryptor.update(chunk)
-                f.write(chunk)
-                cbc_mac.update(chunk)
+                except ValueError as e:
+                    if "Mismatched mac" in str(e) and attempt < self.max_retries:
+                        delay = self.base_delay * (2 ** attempt) + uniform(0, 1)
 
-                chunk_length = len(chunk)
-                size_downloaded += chunk_length
-                self.speed = round(
-                    chunk_length / (perf_counter() - start_time),
-                    2
+                        LOGGER.warning(
+                            f"MAC verification failed on attempt {attempt + 1}/{self.max_retries + 1}. "
+                            f"Retrying in {delay:.2f} seconds..."
+                        )
+
+                        try:
+                            import os
+                            if os.path.exists(filename):
+                                os.remove(filename)
+                        except:
+                            pass
+
+                        time.sleep(delay)
+                        continue
+                    else:
+                        raise
+
+                except (DownloadLimitReached, ClientNotWorking) as e:
+                    raise
+        except ValueError as e:
+            if "MAC verification failed" in str(e):
+                LOGGER.error(f"Download failed after all retries: {e}")
+                raise ClientNotWorking(
+                    "File download failed due to data corruption. "
+                    "This may be due to network issues or server problems."
                 )
-                self.progress = round(size_downloaded / self.size * 100, 2)
-                start_time = perf_counter()
-                websocket_updater()
-
-        if self.downloading:
-            if cbc_mac.digest() != meta_mac:
-                raise ValueError("Mismatched mac")
-
-        self.__r = None
-
-        return
+            raise
 
     def stop(self) -> None:
         self.downloading = False
@@ -740,6 +730,79 @@ class Mega(MegaABC):
         ):
             self.__r._fp.fp.raw._sock.shutdown(2) # SHUT_RDWR
         return
+
+    def _download_with_verification(
+            self,
+            filename: str,
+            websocket_updater: Callable[[], Any]
+    ) -> None:
+        websocket_updater()
+        self.downloading = True
+        size_downloaded = 0
+
+        k, iv, meta_mac = MegaCrypto.get_cipher_key(self.__master_key)
+        decryptor = Cipher(
+            algorithms.AES(MegaCrypto.a32_to_bytes(k)),
+            modes.CTR(MegaCrypto.a32_to_bytes(iv))
+        ).decryptor()
+        cbc_mac = MegaCrypto.Checksum(self.__master_key)
+
+        start_time = perf_counter()
+
+        try:
+            with open(filename, 'wb') as f, \
+                    Session().get(self.pure_link, stream=True, timeout=30) as response:
+
+                self.__r = response.raw
+
+                for chunk_start, chunk_size in MegaCrypto.get_chunks(self.size):
+                    if not self.downloading:
+                        break
+
+                    chunk = self._read_chunk_safely(response.raw, chunk_size)
+
+                    if not chunk:
+                        raise DownloadLimitReached(DownloadSource.MEGA)
+
+                    expected_size = min(chunk_size, self.size - size_downloaded)
+                    if len(chunk) != expected_size and size_downloaded + len(chunk) != self.size:
+                        raise ValueError(f"Incomplete chunk: expected {expected_size}, got {len(chunk)}")
+
+                    decrypted_chunk = decryptor.update(chunk)
+                    f.write(decrypted_chunk)
+                    cbc_mac.update(decrypted_chunk)
+
+                    chunk_length = len(chunk)
+                    size_downloaded += chunk_length
+                    self.speed = round(
+                        chunk_length / (perf_counter() - start_time), 2
+                    )
+                    self.progress = round(size_downloaded / self.size * 100, 2)
+                    start_time = perf_counter()
+                    websocket_updater()
+
+        finally:
+            self.__r = None
+
+        if self.downloading and size_downloaded == self.size:
+            calculated_mac = cbc_mac.digest()
+            if calculated_mac != meta_mac:
+                raise ValueError(
+                    f"MAC verification failed: calculated {calculated_mac} != expected {meta_mac}"
+                )
+
+    @staticmethod
+    def _read_chunk_safely(raw_response, chunk_size: int, max_retries: int = 3) -> Optional[bytes]:
+        for attempt in range(max_retries):
+            try:
+                chunk = raw_response.read(chunk_size)
+                return chunk
+            except ProtocolError as e:
+                if attempt == max_retries - 1:
+                    return None
+                time.sleep(0.1 * (attempt + 1))
+
+        return None
 
 
 class MegaFolder(MegaABC):
