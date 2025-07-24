@@ -1233,3 +1233,70 @@ class MigrateAddSuccessToDownloadHistory(DBMigrator):
         """)
 
         return
+
+
+class MigrateSeperateCoversTable(DBMigrator):
+    start_version = 42
+
+    def run(self) -> None:
+        # V42 -> V43
+
+        get_db().executescript("""
+			PRAGMA foreign_keys = OFF;
+
+			CREATE TABLE volumes_new (
+				id INTEGER PRIMARY KEY,
+				comicvine_id INTEGER NOT NULL,
+				title VARCHAR(255) NOT NULL,
+				alt_title VARCHAR(255),
+				year INTEGER(5),
+				publisher VARCHAR(255),
+				volume_number INTEGER(8) DEFAULT 1,
+				description TEXT,
+				site_url TEXT NOT NULL DEFAULT "",
+				monitored BOOL NOT NULL DEFAULT 0,
+				monitor_new_issues BOOL NOT NULL DEFAULT 1,
+				root_folder INTEGER NOT NULL,
+				folder TEXT,
+				custom_folder BOOL NOT NULL DEFAULT 0,
+				last_cv_fetch INTEGER(8) DEFAULT 0,
+				special_version VARCHAR(255),
+				special_version_locked BOOL NOT NULL DEFAULT 0,
+				FOREIGN KEY (root_folder) REFERENCES root_folders(id)
+			);
+
+			CREATE TABLE IF NOT EXISTS volumes_covers(
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				volume_id INTEGER NOT NULL,
+				cover BLOB,
+				FOREIGN KEY (volume_id) REFERENCES volumes(id)
+					ON DELETE CASCADE
+			);
+
+			INSERT INTO volumes_new (
+				id, comicvine_id, title, alt_title, year, publisher,
+				volume_number, description, site_url, monitored,
+				monitor_new_issues, root_folder, folder, custom_folder,
+				last_cv_fetch, special_version, special_version_locked
+			)
+			SELECT
+				id, comicvine_id, title, alt_title, year, publisher,
+				volume_number, description, site_url, monitored,
+				monitor_new_issues, root_folder, folder, custom_folder,
+				last_cv_fetch, special_version, special_version_locked
+			FROM volumes;
+
+			INSERT INTO volumes_covers (volume_id, cover)
+			SELECT id, cover
+			FROM volumes;
+
+			DROP TABLE volumes;
+			ALTER TABLE volumes_new RENAME TO volumes;
+
+			CREATE INDEX IF NOT EXISTS volumes_covers_volume_id_index
+				ON volumes_covers(volume_id);
+
+			PRAGMA foreign_keys = ON;
+			PRAGMA foreign_key_check;
+        """)
+        return
