@@ -344,6 +344,8 @@ def setup_db() -> None:
         );
         CREATE INDEX IF NOT EXISTS issues_volume_number_index
             ON issues(volume_id, calculated_issue_number);
+        CREATE INDEX IF NOT EXISTS issues_volume_index
+            ON issues(volume_id);
         CREATE TABLE IF NOT EXISTS files(
             id INTEGER PRIMARY KEY,
             filepath TEXT UNIQUE NOT NULL,
@@ -361,6 +363,8 @@ def setup_db() -> None:
                 issue_id
             )
         );
+        CREATE INDEX IF NOT EXISTS issues_files_issue_id_index
+            ON issues_files(issue_id);
         CREATE TABLE IF NOT EXISTS volume_files(
             file_id INTEGER PRIMARY KEY,
             volume_id INTEGER NOT NULL,

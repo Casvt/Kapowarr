@@ -1300,3 +1300,17 @@ class MigrateSeperateCoversTable(DBMigrator):
 			PRAGMA foreign_key_check;
         """)
         return
+
+class MigrateIssueFilesIndexes(DBMigrator):
+    start_version = 43
+
+    def run(self) -> None:
+        # V43 -> V44
+
+        get_db().executescript("""
+			CREATE INDEX IF NOT EXISTS issues_volume_index
+				ON issues(volume_id);
+			CREATE INDEX IF NOT EXISTS issues_files_issue_id_index
+				ON issues_files(issue_id);
+        """)
+        return
