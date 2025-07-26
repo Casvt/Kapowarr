@@ -42,7 +42,8 @@ const SearchEls = {
 // Searching
 //
 function addAlreadyAdded(entry, id) {
-	entry.onclick = e => window.location.href = `${url_base}/volumes/${id}`;
+	entry.onclick = undefined;
+	entry.href = `${url_base}/volumes/${id}`;
 
 	const title = entry.querySelector('h2');
 	const aa_icon = document.createElement('img');
@@ -53,7 +54,7 @@ function addAlreadyAdded(entry, id) {
 
 function buildResults(results, api_key) {
 	SearchEls.search_results
-        .querySelectorAll('button:not(.filter-bar)')
+        .querySelectorAll('.search-entry:not(.filter-bar)')
         .forEach(e => e.remove());
 	results.forEach(result => {
 		const entry = SearchEls.pre_build.search_entry.cloneNode(true);
@@ -229,7 +230,7 @@ function search(reset_url_params=true) {
 
 			buildResults(json.result, api_key);
 
-			if (!SearchEls.search_results.querySelector('button:not(.filter-bar)'))
+			if (!SearchEls.search_results.querySelector('.search-entry:not(.filter-bar)'))
 				hide([SearchEls.msgs.loading], [SearchEls.msgs.empty]);
 			else
 				hide([SearchEls.msgs.loading], [SearchEls.search_results]);
@@ -252,7 +253,7 @@ function clearSearch(e) {
 		SearchEls.msgs.explain
 	]);
 	SearchEls.search_results
-        .querySelectorAll('button:not(.filter-bar)')
+        .querySelectorAll('.search-entry:not(.filter-bar)')
         .forEach(e => e.remove());
 	SearchEls.search_bar.input.value = '';
     setURLParams();
@@ -287,11 +288,11 @@ function applyFilters() {
 		filter += `[data-_publisher="${publisher}"]`;
 
 	if (filter === '')
-		hide([], SearchEls.search_results.querySelectorAll('button'));
+		hide([], SearchEls.search_results.querySelectorAll('.search-entry'));
 	else
 		hide(
-			SearchEls.search_results.querySelectorAll('button'),
-			SearchEls.search_results.querySelectorAll(`button${filter}`)
+			SearchEls.search_results.querySelectorAll('.search-entry'),
+			SearchEls.search_results.querySelectorAll(`.search-entry${filter}`)
 		);
 
     setURLParams();
@@ -377,7 +378,7 @@ function fillRootFolderInput(api_key) {
 
 function showAddWindow(comicvine_id, api_key) {
 	const volume_data = document.querySelector(
-		`button[data-comicvine_id="${comicvine_id}"]`
+		`.search-entry[data-comicvine_id="${comicvine_id}"]`
 	).dataset;
 	const body = {
 		'comicvine_id': volume_data.comicvine_id,
@@ -425,7 +426,7 @@ function addVolume() {
 	if (
 		volume_folder !== ''
 		&& volume_folder !== document.querySelector(
-			`button[data-comicvine_id="${data.comicvine_id}"]`
+			`.search-entry[data-comicvine_id="${data.comicvine_id}"]`
 		).dataset._volume_folder
 	) {
 		// Custom volume folder
@@ -444,7 +445,7 @@ function addVolume() {
 		.then(response => response.json())
 		.then(json => {
 			const entry = document.querySelector(
-				`button[data-comicvine_id="${data.comicvine_id}"]`
+				`.search-entry[data-comicvine_id="${data.comicvine_id}"]`
 			);
 			addAlreadyAdded(entry, json.result.id);
 			closeWindow();

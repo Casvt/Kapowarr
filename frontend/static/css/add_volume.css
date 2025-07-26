@@ -123,6 +123,8 @@ main > div {
 
 .search-entry:hover {
 	background-color: var(--hover-color);
+	text-decoration: none;
+	cursor: pointer;
 }
 
 .cover-info-container {
