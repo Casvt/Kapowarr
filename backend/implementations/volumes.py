@@ -1321,7 +1321,9 @@ def scan_files(
         ext=SCANNABLE_EXTENSIONS
     )
     for file in filtered_iter(folder_contents, set(filepath_filter)):
-        file_data = extract_filename_data(file)
+        file_data = extract_filename_data(file, assume_title=volume_data.title)
+
+        print(file_data)
 
         # Check if file matches volume
         if not file_importing_filter(

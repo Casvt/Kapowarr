@@ -7,7 +7,7 @@ The string can be a filepath, filename or search result title, etc.
 
 from os.path import basename, dirname, splitext
 from re import IGNORECASE, Pattern, compile
-from typing import Collection, Dict, Tuple, Union
+from typing import Collection, Dict, Tuple, Union, Optional
 
 from backend.base.definitions import (CONTENT_EXTENSIONS, CharConstants,
                                       FileConstants, FilenameData,
@@ -16,6 +16,8 @@ from backend.base.helpers import (check_overlapping_pos,
                                   fix_year as fix_broken_year,
                                   normalise_number, normalise_string)
 from backend.base.logging import LOGGER
+from backend.base.files import (clean_filestring_simple, clean_filestring_smartly)
+
 
 # autopep8: off
 alphabet = {
@@ -250,7 +252,8 @@ def extract_filename_data(
     filepath: str,
     assume_volume_number: bool = True,
     prefer_folder_year: bool = False,
-    fix_year: bool = False
+    fix_year: bool = False,
+    assume_title: Optional[str] = None
 ) -> FilenameData:
     """Extract comic data from a string and generalise it. The string can be a
     filepath, filename or search result title, etc.
@@ -292,6 +295,11 @@ def extract_filename_data(
     series, year, volume_number, special_version, issue_number = (
         None, None, None, None, None
     )
+
+    # Remove title from filepath if present, makes sure we don't get issueNumber from volume title
+    if assume_title:
+        filepath = filepath.replace(clean_filestring_smartly(assume_title), "")
+        filepath = filepath.replace(clean_filestring_simple(assume_title), "")
 
     # Process folder if file is metadata file, as metadata filename contains
     # no useful information.
@@ -499,8 +507,11 @@ def extract_filename_data(
     if fix_year and year is not None:
         year = fix_broken_year(year)
 
+    if assume_title:
+        series = clean_filestring_simple(assume_title)
+
     file_data = FilenameData({
-        'series': series,
+        'series': assume_title or series,
         'year': year,
         'volume_number': volume_number,
         'special_version': special_version,

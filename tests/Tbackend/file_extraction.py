@@ -26,6 +26,17 @@ class extract_filename_data(unittest.TestCase):
             )
         return
 
+    def run_cases_with_title(self, cases: Dict[str, tuple[dict, str]]):
+        self.longMessage = False
+        for input_str, (expected_output, title) in cases.items():
+            result = ef(input_str, assume_title=title)
+            self.assertEqual(
+                result,
+                expected_output,
+                f"The input '{input_str}' with title '{title}' isn't extracted properly:\n"
+                f"Output: {dumps(result, indent=4)}\nExpected: {dumps(expected_output, indent=4)}"
+            )
+
     # autopep8: off
     def test_general(self):
         cases = {
@@ -309,4 +320,22 @@ class extract_filename_data(unittest.TestCase):
                 {'series': 'Iron Man', 'year': 2012, 'volume_number': 2, 'special_version': 'metadata', 'issue_number': 5.0, 'annual': False}
         }
         self.run_cases(cases)
+
+    def test_number_in_title(self):
+        cases = {
+            'Deadpool Max 2 (2012) 003.cbz': (
+                {'series': 'Deadpool Max 2', 'year': 2012, 'volume_number': 1, 'special_version': None, 'issue_number': 3.0, 'annual': False},
+                "Deadpool Max 2"
+            ),
+            'Generation XGen 13 (2 covers) (1997).cbz': (
+                {'series': 'Generation XGen 13', 'year': 1997, 'volume_number': 1, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
+                "Generation X/Gen 13"
+            ),
+            'Generation XGen 13 (1997)/series.json': (
+                {'series': 'Generation XGen 13', 'year': 1997, 'volume_number': 1, 'special_version': 'metadata', 'issue_number': None, 'annual': False},
+                "Generation X/Gen 13"
+            ),
+        }
+        self.run_cases_with_title(cases)
+
     # autopep8: on
