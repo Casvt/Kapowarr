@@ -1241,10 +1241,39 @@ class MigrateSeperateCoversTable(DBMigrator):
     def run(self) -> None:
         # V42 -> V43
 
-        get_db().executescript("""
+        get_db().execute("""
 			PRAGMA foreign_keys = OFF;
+		""")
 
-			CREATE TABLE volumes_new (
+        get_db().executescript("""
+			BEGIN TRANSACTION;
+
+			INSERT INTO volumes_covers (volume_id, cover)
+				SELECT id, cover
+				FROM volumes;
+
+			CREATE TEMPORARY TABLE temp_volumes_43 AS SELECT
+				id,
+				comicvine_id,
+				title,
+				alt_title,
+				year,
+				publisher,
+				volume_number,
+				description,
+				site_url,
+				monitored,
+				monitor_new_issues,
+				root_folder,
+				folder,
+				custom_folder,
+				last_cv_fetch,
+				special_version,
+				special_version_locked
+			FROM volumes;
+			DROP TABLE volumes;
+
+			CREATE TABLE volumes(
 				id INTEGER PRIMARY KEY,
 				comicvine_id INTEGER NOT NULL,
 				title VARCHAR(255) NOT NULL,
@@ -1262,55 +1291,18 @@ class MigrateSeperateCoversTable(DBMigrator):
 				last_cv_fetch INTEGER(8) DEFAULT 0,
 				special_version VARCHAR(255),
 				special_version_locked BOOL NOT NULL DEFAULT 0,
+
 				FOREIGN KEY (root_folder) REFERENCES root_folders(id)
 			);
 
-			CREATE TABLE IF NOT EXISTS volumes_covers(
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				volume_id INTEGER NOT NULL,
-				cover BLOB,
-				FOREIGN KEY (volume_id) REFERENCES volumes(id)
-					ON DELETE CASCADE
-			);
+			INSERT INTO volumes
+				SELECT *
+				FROM temp_volumes_43;
 
-			INSERT INTO volumes_new (
-				id, comicvine_id, title, alt_title, year, publisher,
-				volume_number, description, site_url, monitored,
-				monitor_new_issues, root_folder, folder, custom_folder,
-				last_cv_fetch, special_version, special_version_locked
-			)
-			SELECT
-				id, comicvine_id, title, alt_title, year, publisher,
-				volume_number, description, site_url, monitored,
-				monitor_new_issues, root_folder, folder, custom_folder,
-				last_cv_fetch, special_version, special_version_locked
-			FROM volumes;
+			COMMIT;
+        """)
 
-			INSERT INTO volumes_covers (volume_id, cover)
-			SELECT id, cover
-			FROM volumes;
-
-			DROP TABLE volumes;
-			ALTER TABLE volumes_new RENAME TO volumes;
-
-			CREATE INDEX IF NOT EXISTS volumes_covers_volume_id_index
-				ON volumes_covers(volume_id);
-
+        get_db().execute("""
 			PRAGMA foreign_keys = ON;
-			PRAGMA foreign_key_check;
-        """)
-        return
-
-class MigrateIssueFilesIndexes(DBMigrator):
-    start_version = 43
-
-    def run(self) -> None:
-        # V43 -> V44
-
-        get_db().executescript("""
-			CREATE INDEX IF NOT EXISTS issues_volume_index
-				ON issues(volume_id);
-			CREATE INDEX IF NOT EXISTS issues_files_issue_id_index
-				ON issues_files(issue_id);
-        """)
+		""")
         return
