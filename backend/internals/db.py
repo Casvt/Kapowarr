@@ -319,7 +319,6 @@ def setup_db() -> None:
             FOREIGN KEY (root_folder) REFERENCES root_folders(id)
         );
         CREATE TABLE IF NOT EXISTS volumes_covers(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
             volume_id INTEGER NOT NULL,
             cover BLOB,
             FOREIGN KEY (volume_id) REFERENCES volumes(id)
