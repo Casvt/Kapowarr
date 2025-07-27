@@ -42,8 +42,11 @@ const SearchEls = {
 // Searching
 //
 function addAlreadyAdded(entry, id) {
-	entry.onclick = undefined;
-	entry.href = `${url_base}/volumes/${id}`;
+	const buttonElement = entry.querySelector('button');
+	const anchorElement = document.createElement("a");
+	anchorElement.setAttribute("href", `${url_base}/volumes/${id}`);
+	anchorElement.setAttribute("class", `viewvolume-link`);
+	buttonElement.replaceWith(anchorElement);
 
 	const title = entry.querySelector('h2');
 	const aa_icon = document.createElement('img');
@@ -74,7 +77,7 @@ function buildResults(results, api_key) {
 
 		// Only allow adding volume if it isn't already added
 		if (result.already_added === null)
-			entry.onclick = e => showAddWindow(result.comicvine_id, api_key);
+			entry.querySelector('.addvolume-button').onclick = e => showAddWindow(result.comicvine_id, api_key);
 
 		entry.querySelector('img').src = result.cover_link;
 
