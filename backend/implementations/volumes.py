@@ -1104,17 +1104,16 @@ class Library:
                 }
             ).lastrowid
 
-            if vd.get("cover") is not None:
-                cursor.execute(
-                    """
-                    INSERT INTO volumes_covers(volume_id, cover)
-                    VALUES (:volume_id, :cover);
-                    """,
-                    {
-                    	"volume_id": volume_id,
-                    	"cover": vd["cover"]
-                    }
-                )
+            cursor.execute(
+                """
+                INSERT INTO volumes_covers(volume_id, cover)
+                VALUES (:volume_id, :cover);
+                """,
+                {
+                    "volume_id": volume_id,
+                    "cover": vd["cover"]
+                }
+            )
 
             cursor.executemany("""
                 INSERT INTO issues(
