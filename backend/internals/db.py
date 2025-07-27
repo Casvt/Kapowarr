@@ -307,7 +307,6 @@ def setup_db() -> None:
             volume_number INTEGER(8) DEFAULT 1,
             description TEXT,
             site_url TEXT NOT NULL DEFAULT "",
-            cover BLOB,
             monitored BOOL NOT NULL DEFAULT 0,
             monitor_new_issues BOOL NOT NULL DEFAULT 1,
             root_folder INTEGER NOT NULL,
