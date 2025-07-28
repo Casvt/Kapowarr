@@ -307,7 +307,6 @@ def setup_db() -> None:
             volume_number INTEGER(8) DEFAULT 1,
             description TEXT,
             site_url TEXT NOT NULL DEFAULT "",
-            cover BLOB,
             monitored BOOL NOT NULL DEFAULT 0,
             monitor_new_issues BOOL NOT NULL DEFAULT 1,
             root_folder INTEGER NOT NULL,
@@ -319,6 +318,14 @@ def setup_db() -> None:
 
             FOREIGN KEY (root_folder) REFERENCES root_folders(id)
         );
+        CREATE TABLE IF NOT EXISTS volumes_covers(
+            volume_id INTEGER NOT NULL,
+            cover BLOB,
+            FOREIGN KEY (volume_id) REFERENCES volumes(id)
+            	ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS volumes_covers_volume_id_index
+            ON volumes_covers(volume_id);
         CREATE TABLE IF NOT EXISTS issues(
             id INTEGER PRIMARY KEY,
             volume_id INTEGER NOT NULL,
@@ -335,6 +342,8 @@ def setup_db() -> None:
         );
         CREATE INDEX IF NOT EXISTS issues_volume_number_index
             ON issues(volume_id, calculated_issue_number);
+        CREATE INDEX IF NOT EXISTS issues_volume_index
+            ON issues(volume_id);
         CREATE TABLE IF NOT EXISTS files(
             id INTEGER PRIMARY KEY,
             filepath TEXT UNIQUE NOT NULL,
@@ -352,6 +361,8 @@ def setup_db() -> None:
                 issue_id
             )
         );
+        CREATE INDEX IF NOT EXISTS issues_files_issue_id_index
+            ON issues_files(issue_id);
         CREATE TABLE IF NOT EXISTS volume_files(
             file_id INTEGER PRIMARY KEY,
             volume_id INTEGER NOT NULL,
