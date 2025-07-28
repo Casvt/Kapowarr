@@ -319,10 +319,10 @@ def setup_db() -> None:
             FOREIGN KEY (root_folder) REFERENCES root_folders(id)
         );
         CREATE TABLE IF NOT EXISTS volumes_covers(
-            volume_id INTEGER NOT NULL,
+            volume_id INTEGER UNIQUE NOT NULL,
             cover BLOB,
             FOREIGN KEY (volume_id) REFERENCES volumes(id)
-            	ON DELETE CASCADE
+                ON DELETE CASCADE
         );
         CREATE INDEX IF NOT EXISTS volumes_covers_volume_id_index
             ON volumes_covers(volume_id);

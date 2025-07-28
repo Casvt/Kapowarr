@@ -61,6 +61,7 @@ def migrate_db() -> None:
         db_migration_map[start_version]().run()
         s["database_version"] = start_version + 1
 
+    get_db().execute("VACUUM;")
     s._fetch_settings()
     get_db_migration_map.cache_clear()
 
@@ -1241,68 +1242,65 @@ class MigrateSeperateCoversTable(DBMigrator):
     def run(self) -> None:
         # V42 -> V43
 
-        get_db().execute("""
-			PRAGMA foreign_keys = OFF;
-		""")
+        cursor = get_db()
 
-        get_db().executescript("""
-			BEGIN TRANSACTION;
+        cursor.executescript("""
+            PRAGMA foreign_keys = OFF;
+            BEGIN TRANSACTION;
 
-			INSERT INTO volumes_covers (volume_id, cover)
-				SELECT id, cover
-				FROM volumes;
+            INSERT OR IGNORE INTO volumes_covers(volume_id, cover)
+                SELECT id, cover
+                FROM volumes;
 
-			CREATE TEMPORARY TABLE temp_volumes_43 AS SELECT
-				id,
-				comicvine_id,
-				title,
-				alt_title,
-				year,
-				publisher,
-				volume_number,
-				description,
-				site_url,
-				monitored,
-				monitor_new_issues,
-				root_folder,
-				folder,
-				custom_folder,
-				last_cv_fetch,
-				special_version,
-				special_version_locked
-			FROM volumes;
-			DROP TABLE volumes;
+            CREATE TEMPORARY TABLE temp_volumes_43 AS SELECT
+                id,
+                comicvine_id,
+                title,
+                alt_title,
+                year,
+                publisher,
+                volume_number,
+                description,
+                site_url,
+                monitored,
+                monitor_new_issues,
+                root_folder,
+                folder,
+                custom_folder,
+                last_cv_fetch,
+                special_version,
+                special_version_locked
+            FROM volumes;
+            DROP TABLE volumes;
 
-			CREATE TABLE volumes(
-				id INTEGER PRIMARY KEY,
-				comicvine_id INTEGER NOT NULL,
-				title VARCHAR(255) NOT NULL,
-				alt_title VARCHAR(255),
-				year INTEGER(5),
-				publisher VARCHAR(255),
-				volume_number INTEGER(8) DEFAULT 1,
-				description TEXT,
-				site_url TEXT NOT NULL DEFAULT "",
-				monitored BOOL NOT NULL DEFAULT 0,
-				monitor_new_issues BOOL NOT NULL DEFAULT 1,
-				root_folder INTEGER NOT NULL,
-				folder TEXT,
-				custom_folder BOOL NOT NULL DEFAULT 0,
-				last_cv_fetch INTEGER(8) DEFAULT 0,
-				special_version VARCHAR(255),
-				special_version_locked BOOL NOT NULL DEFAULT 0,
+            CREATE TABLE volumes(
+                id INTEGER PRIMARY KEY,
+                comicvine_id INTEGER NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                alt_title VARCHAR(255),
+                year INTEGER(5),
+                publisher VARCHAR(255),
+                volume_number INTEGER(8) DEFAULT 1,
+                description TEXT,
+                site_url TEXT NOT NULL DEFAULT "",
+                monitored BOOL NOT NULL DEFAULT 0,
+                monitor_new_issues BOOL NOT NULL DEFAULT 1,
+                root_folder INTEGER NOT NULL,
+                folder TEXT,
+                custom_folder BOOL NOT NULL DEFAULT 0,
+                last_cv_fetch INTEGER(8) DEFAULT 0,
+                special_version VARCHAR(255),
+                special_version_locked BOOL NOT NULL DEFAULT 0,
 
-				FOREIGN KEY (root_folder) REFERENCES root_folders(id)
-			);
+                FOREIGN KEY (root_folder) REFERENCES root_folders(id)
+            );
 
-			INSERT INTO volumes
-				SELECT *
-				FROM temp_volumes_43;
+            INSERT INTO volumes
+                SELECT *
+                FROM temp_volumes_43;
 
-			COMMIT;
+            COMMIT;
+            PRAGMA foreign_keys = ON;
         """)
 
-        get_db().execute("""
-			PRAGMA foreign_keys = ON;
-		""")
         return
