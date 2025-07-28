@@ -1642,20 +1642,17 @@ def refresh_and_scan(
 
     cursor.executemany(
         """
-            UPDATE volumes_covers
-            SET
-            	cover = :cover
-            WHERE volume_id = :volume_id;
-            """,
-            (
-            	{
-            	"volume_id": cv_to_id_fetch[vd["comicvine_id"]][0],
-            	"cover": vd["cover"]
-            	}
-
-                for vd in volume_datas
-            )
-        )
+        UPDATE volumes_covers
+        SET
+            cover = :cover
+        WHERE volume_id = :volume_id;
+        """,
+        ({
+            "volume_id": cv_to_id_fetch[vd["comicvine_id"]][0],
+            "cover": vd["cover"]
+        }
+            for vd in volume_datas
+        ))
 
     commit()
 
