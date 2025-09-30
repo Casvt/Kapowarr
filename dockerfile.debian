@@ -1,5 +1,6 @@
 # Use linuxserver's Debian base image
 FROM lsiobase/debian:bookworm
+STOPSIGNAL SIGTERM
 
 # Metadata / labels (optional)  
 LABEL maintainer="you@example.com"
