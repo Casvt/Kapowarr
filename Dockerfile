@@ -11,16 +11,20 @@ RUN \
     python3 \
     py3-pip \
     git \
+    gcompat \
     && pip3 install --break-system-packages --no-cache-dir --upgrade pip
 
 # Set working directory
 WORKDIR /app
 
-# Clone Kapowarr repository
-ARG KAPOWARR_REPO="https://github.com/Casvt/Kapowarr.git"
-ARG KAPOWARR_BRANCH="main"
+# Clone Kapowarr repository for remote build
+#ARG KAPOWARR_REPO="https://github.com/Casvt/Kapowarr.git"
+#ARG KAPOWARR_BRANCH="main"
+#RUN git clone --depth 1 --branch "${KAPOWARR_BRANCH}" "${KAPOWARR_REPO}" .
 
-RUN git clone --depth 1 --branch "${KAPOWARR_BRANCH}" "${KAPOWARR_REPO}" .
+# Clone local files for local build
+COPY requirements.txt requirements.txt
+COPY . .
 
 # Install Python dependencies
 RUN pip3 install --break-system-packages --no-cache-dir -r requirements.txt
