@@ -1,5 +1,6 @@
 # Use linuxserver's base image (alpine + s6 overlay)  
 FROM lsiobase/alpine:3.22
+STOPSIGNAL SIGTERM
 
 # Metadata / labels (optional)  
 LABEL maintainer="you@example.com"
