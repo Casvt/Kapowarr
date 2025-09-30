@@ -1,0 +1,54 @@
+# Use linuxserver's Debian base image
+FROM lsiobase/debian:bookworm
+
+# Metadata / labels (optional)  
+LABEL maintainer="you@example.com"
+ARG VERSION="latest"
+
+# Install build / runtime dependencies  
+RUN \
+  apt-get update \
+  && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-pip \
+    git \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip
+RUN pip3 install --no-cache-dir --upgrade pip --break-system-packages
+
+# Set working directory
+WORKDIR /app
+
+# Clone Kapowarr repository for remote build
+#ARG KAPOWARR_REPO="https://github.com/Casvt/Kapowarr.git"
+#ARG KAPOWARR_BRANCH="main"
+#RUN git clone --depth 1 --branch "${KAPOWARR_BRANCH}" "${KAPOWARR_REPO}" .
+
+# Clone local files for local build
+COPY requirements.txt requirements.txt
+COPY . .
+
+# Install Python dependencies
+RUN pip3 install --break-system-packages --no-cache-dir -r requirements.txt
+
+# Ensure proper permissions for the abc user (linuxserver standard)
+RUN \
+  chown -R abc:abc /app \
+  && chmod -R 755 /app
+
+# Expose the web port (Kapowarr default is 5656)  
+EXPOSE 5656
+
+# Environment variables (PUID / PGID pattern used by linuxserver)  
+ENV PUID=1000 \
+    PGID=1000 \
+    TZ=UTC
+
+# Switch to non-root user (lsio pattern)
+# (the lsiobase/debian provides an 'abc' user/group)
+USER abc
+
+# Entry point / command
+CMD ["python3", "Kapowarr.py"]
