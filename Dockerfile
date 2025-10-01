@@ -29,4 +29,8 @@ ENV PUID=1000 \
     PGID=1000 \
     TZ=UTC
 
-CMD ["s6-setuidgid", "abc", "python3", "/app/Kapowarr.py"]
+RUN \
+    mkdir -p /etc/services.d/kapowarr \
+    && echo "#!/usr/bin/with-contenv bash\nexec s6-setuidgid abc python3 /app/Kapowarr.py" \
+        > /etc/services.d/kapowarr/run \
+    && chmod +x /etc/services.d/kapowarr/run
