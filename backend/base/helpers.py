@@ -350,6 +350,34 @@ def force_range(
     else:
         return (n, n)
 
+def get_list_numbers_concat(line_nums):
+    seq = []
+    final = []
+    last = 0
+
+    for index, val in enumerate(line_nums):
+
+        if last + 1 == val or index == 0:
+            seq.append(val)
+            last = val
+        else:
+            if len(seq) > 1:
+               final.append(str(seq[0]) + '-' + str(seq[len(seq)-1]))
+            else:
+               final.append(str(seq[0]))
+            seq = []
+            seq.append(val)
+            last = val
+
+        if index == len(line_nums) - 1:
+            if len(seq) > 1:
+                final.append(str(seq[0]) + '-' + str(seq[len(seq)-1]))
+            else:
+                final.append(str(seq[0]))
+
+    final_str = ', '.join(map(str, final))
+    return final_str
+
 
 # region Strings
 def force_prefix(source: str, prefix: str = sep) -> str:
