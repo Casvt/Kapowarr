@@ -405,3 +405,484 @@ tbody .issue-title:hover {
 		display: none;
 	}
 }
+
+.loading-container {
+	height: 100%;
+	width: 100%;
+}
+
+#volume-content {
+	display: flex;
+	flex-direction: column;
+	background-color: var(--volume-info-background-color);
+	color: var(--nav-color);
+}
+
+/*  */
+/* Volume info */
+/*  */
+.volume-mobile-description-container {
+	display: flex;
+	flex-direction: column;
+	gap: clamp(1rem, 3.75vw, 2rem);
+	padding: clamp(1rem, 3.75vw, 2rem);
+	backdrop-filter: brightness(70%);
+}
+
+:root.dark-mode .volume-mobile-description-container {
+	backdrop-filter: brightness(85%);
+}
+
+.volume-info {
+	overflow-y: auto;
+	display: flex;
+	align-items: flex-start;
+	gap: clamp(1rem, 3.75vw, 2rem);
+}
+
+	.volume-info > img {
+		aspect-ratio: 2/3;
+		width: clamp(8rem, 16vw, 13.5rem);
+	}
+
+.volume-info-container {
+	display: flex;
+	flex-direction: column;
+	gap: .5rem;
+	font-size: 1.15rem;
+}
+
+/*
+Layout is reversed so that in the tree
+the title comes before the monitor button.
+This flows better for ARIA.
+*/
+.volume-title-monitored {
+	display: flex;
+	flex-direction: row-reverse;
+	justify-content: flex-end;
+	gap: clamp(.6rem, 2.4vw, 1rem);
+}
+
+#volume-monitor {
+	width: clamp(30px, 4vw, 42px);
+}
+
+	#volume-monitor svg {
+		fill: var(--nav-color);
+	}
+
+.volume-title-monitored > h2 {
+	font-size: clamp(2.1rem, 5vw, 3rem);
+	font-weight: 400;
+}
+
+#volume-tags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: clamp(.5rem, 1.8vw, 1rem);
+}
+
+	#volume-tags > :where(p, a) {
+		padding: .3rem;
+		border-radius: 3px;
+		background-color: var(--accent-color);
+		color: var(--nav-background-color);
+		font-size: .9rem;
+	}
+
+#volume-path {
+	white-space: pre-wrap;
+}
+
+#volume-description-mobile {
+	display: none;
+}
+
+/*  */
+/* Issue list */
+/*  */
+.issues-table-container {
+	overflow-x: auto;
+	flex: 1 0 auto;
+	display: flex;
+	background-color: var(--background-color);
+}
+
+.issues-table {
+	height: min-content;
+	width: 100%;
+	min-width: 485px;
+	margin: clamp(.3rem, calc(2.1vw * 2), 1.75rem);
+	border: 2px solid var(--border-color);
+	border-radius: 6px;
+	background-color: var(--background-color);
+	color: var(--text-color);
+}
+
+	.issues-table th {
+		font-size: .8rem;
+		padding-block: .75rem;
+		padding-right: .5rem;
+	}
+
+		.issues-table th > img {
+			width: 15px;
+		}
+
+.issue-monitored {
+	width: 2.5rem;
+}
+
+.issue-number {
+	width: 3.5rem;
+}
+
+.issue-date {
+	width: 6.5rem;
+}
+
+.issue-status {
+	width: 3rem;
+}
+
+.action-column {
+	width: 6rem;
+}
+
+	.action-column > :not(:first-child) {
+		margin-left: .5rem;
+	}
+
+.issue-entry {
+	transition: background-color 400ms linear;
+}
+
+	.issue-entry:hover {
+		background-color: var(--hover-color);
+	}
+
+.issues-table tr > :first-child {
+	padding-left: .75rem;
+}
+
+.issues-table tr > :last-child {
+	padding-right: .75rem;
+}
+
+.issue-entry > td {
+	padding-block: .25rem;
+	border-top: 2px solid var(--border-color);
+}
+
+tbody .issue-title:hover {
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.issue-entry button {
+	height: 18px;
+}
+
+.issue-entry :where(svg, img) {
+	width: 18px;
+	fill: var(--text-color);
+}
+
+/*  */
+/* Windows */
+/*  */
+#delete-form,
+#edit-form {
+	width: 100%;
+	max-width: 30rem;
+}
+
+/*  */
+/* Delete volume window */
+/*  */
+#delete-window .window-content p {
+	text-align: center;
+}
+
+#edit-window tbody {
+	vertical-align: text-top;
+}
+
+/*  */
+/* Manual search window */
+/*  */
+#manual-search-window .window-content {
+	justify-content: flex-start;
+	overflow-x: auto;
+}
+
+#searching-message {
+	text-align: center;
+}
+
+#search-result-table {
+	min-width: 500px;
+}
+
+.search-entry {
+	transition: background-color 400ms linear;
+}
+
+	.search-entry:hover {
+		background-color: var(--hover-color);
+	}
+
+	.search-entry > td {
+		border-top: 1px solid var(--border-color);
+	}
+
+.match-column {
+	width: 4rem;
+}
+
+	.match-column > img {
+		width: 18px;
+	}
+
+.search-entry > td:nth-child(2) {
+	width: 100%;
+}
+
+.source-column {
+	width: 6rem;
+}
+
+.search-action-column {
+	width: 9rem;
+	display: flex;
+	gap: .1rem;
+	flex-wrap: wrap;
+}
+
+	.search-action-column > button {
+		width: 2rem;
+		padding: .40rem;
+	}
+
+/*  */
+/* Rename and convert window */
+/*  */
+#rename-window .window-content,
+#convert-window .window-content {
+	display: block;
+}
+
+.rename-preview {
+	min-width: 40rem;
+}
+
+	.rename-preview tr > td:first-child {
+		padding-right: .5rem;
+	}
+
+	.rename-preview .rename-before > td {
+		padding-top: .75rem;
+		padding-bottom: .25rem;
+	}
+
+	.rename-preview .rename-after > td {
+		padding-bottom: .75rem;
+		padding-top: .25rem;
+	}
+
+	.rename-preview .rename-before:not(:first-child) > td {
+		border-top: 1px solid var(--border-color);
+	}
+
+	.rename-preview td:nth-last-child(2) {
+		text-align: center;
+		padding-right: .5rem;
+	}
+
+	.rename-preview .rename-before > td:nth-last-child(2) {
+		color: var(--error-color);
+	}
+
+	.rename-preview .rename-after > td:nth-last-child(2) {
+		color: var(--success-color);
+	}
+
+	.rename-preview tr > td:last-child {
+		white-space: pre-wrap;
+	}
+
+.empty-rename-message {
+	font-size: 1.2rem;
+	text-align: center;
+}
+
+.rename-preview p:not(.empty-rename-message) {
+	font-size: .9rem;
+}
+
+.rename-preview p:not(:first-child) {
+	margin-top: .2rem;
+}
+
+#convert-preference {
+	margin-bottom: 1rem;
+	text-align: center;
+}
+
+/*  */
+/* Issue info window */
+/*  */
+#issue-info-window .window-content {
+	justify-content: flex-start;
+}
+
+#issue-info-selectors {
+	display: flex;
+	gap: .75rem;
+	flex-wrap: wrap;
+}
+
+	#issue-info-selectors button {
+		padding: .5rem 1rem;
+		border-radius: 6px;
+		background-color: var(--accent-color);
+	}
+
+.f-filepath,
+.gf-filepath {
+	white-space: pre-wrap;
+}
+
+/*  */
+/* (General) files window */
+/*  */
+#files-window:has(tbody tr) p,
+#files-window:not(:has(tbody tr)) table {
+	display: none;
+}
+
+#files-window:has(tbody tr) .window-content {
+	justify-content: flex-start;
+}
+
+:where(#files-window, #issue-files) :where(td, th):first-child {
+	padding-left: 1rem;
+}
+
+:where(#files-window, #issue-files) :where(td, th):last-child {
+	padding-right: 1rem;
+}
+
+:where(.files-entry, .general-files-entry) {
+	transition: background-color 200ms linear;
+}
+
+	:where(.files-entry, .general-files-entry):hover {
+		background-color: var(--hover-color);
+	}
+
+	:where(.files-entry, .general-files-entry) td {
+		border-top: 1px solid var(--border-color);
+		padding: .5rem;
+	}
+
+		:where(.files-entry, .general-files-entry) td:not(:first-child) {
+			width: 6.5rem;
+		}
+
+		:where(.files-entry, .general-files-entry) td:last-child {
+			width: 4.5rem;
+		}
+
+		:where(.files-entry, .general-files-entry) td button {
+			width: 1.5rem;
+		}
+
+@media (max-width: 520px) {
+	#volume-description {
+		display: none;
+	}
+
+	#volume-description-mobile {
+		display: block;
+	}
+}
+
+@media (max-width: 440px) {
+	.volume-info > img {
+		display: none;
+	}
+}
+
+/*  */
+/* Manage Issues windows */
+/*  */
+#manage-window .window-content {
+	display: block;
+}
+
+.manage-preview {
+	min-width: 40rem;
+}
+
+	.manage-preview tr > td:first-child {
+		padding-right: .5rem;
+	}
+
+	.manage-preview .m-filepath > td {
+		padding-top: .75rem;
+		padding-bottom: .25rem;
+	}
+
+	.manage-preview .m-issue > td {
+		padding-bottom: .75rem;
+		padding-top: .25rem;
+	}
+
+	.manage-preview .rename-before:not(:first-child) > td {
+		border-top: 1px solid var(--border-color);
+	}
+
+	.manage-preview td:nth-last-child(2) {
+		text-align: center;
+		padding-right: .5rem;
+	}
+
+
+.empty-manage-message {
+	font-size: 1.2rem;
+	text-align: center;
+}
+
+.manage-preview p:not(.empty-manage-message) {
+	font-size: .9rem;
+}
+
+.manage-preview p:not(:first-child) {
+	margin-top: .2rem;
+}
+
+.manage-preview button {
+	padding: .3rem;
+	color: var(--text-color);
+	background-color: var(--foreground-color);
+}
+
+#cv-window .sub-window-content {
+	display: block;
+}
+
+#filterInput {
+	height: 100%;
+	width: 100%;
+	padding: .5rem;
+	border: 2px solid var(--border-color);
+	border-radius: 4px 0px 0px 4px;
+	background-color: var(--background-color);
+	color: var(--text-color);
+}
+
+.m-button button img {
+	height: 1.5rem;
+}

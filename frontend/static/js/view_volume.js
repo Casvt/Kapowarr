@@ -9,7 +9,9 @@ const ViewEls = {
 		rename_before: document.querySelector('.pre-build-els .rename-before'),
 		rename_after: document.querySelector('.pre-build-els .rename-after'),
 		files_entry: document.querySelector('.pre-build-els .files-entry'),
-		general_files_entry: document.querySelector('.pre-build-els .general-files-entry')
+		general_files_entry: document.querySelector('.pre-build-els .general-files-entry'),
+		manage_issues_entry: document.querySelector('.pre-build-els .manage-issues-entry'),
+		manage_issues_results: document.querySelector('.pre-build-els .manage-issues-results')
 	},
 	vol_data: {
 		monitor: document.querySelector('#volume-monitor'),
@@ -36,10 +38,18 @@ const ViewEls = {
 		convert: document.querySelector('#convert-button'),
 		files: document.querySelector('#files-button'),
 		edit: document.querySelector('#edit-button'),
-		delete: document.querySelector('#delete-button')
+		delete: document.querySelector('#delete-button'),
+		manage_issues: document.querySelector('#manage-button')
+	},
+	manage_issues: {
+		manage_window: document.querySelector('.manage-window'),
+		window: document.querySelector('#cv-window'),
+		table_container: document.querySelector('#cv-window .manage-issues-results-container')
 	},
 	issues_list: document.querySelector('#issues-list')
 };
+
+const rowid_to_filepath = {};
 
 //
 // Filling data
@@ -691,6 +701,229 @@ function deleteVolume() {
 	});
 };
 
+
+//
+// Managing
+//
+function showManage(api_key, issue_id = null) {
+	document.querySelector('#selectall-manage-input').checked = false;
+
+	const manage_button = document.querySelector('#submit-manage');
+	let url;
+
+	url = `/volumes/${volume_id}/files`;
+	manage_button.dataset.volume_id = volume_id;
+
+	fetchAPI(url, api_key)
+		.then(json => {
+			const empty_message = document.querySelector('#manage-window .empty-manage-message'),
+				table_container = document.querySelector('#manage-window .manage-preview'),
+				table = table_container.querySelector('tbody');
+			table.innerHTML = '';
+
+			if (!Object.keys(json.result).length) {
+				hide([table_container, manage_button], [empty_message]);
+			} else {
+				hide([empty_message], [table_container, manage_button]);
+				json.result.forEach((mapping, rowid) => {
+					const manage_issues_entry = ViewEls.pre_build.manage_issues_entry.cloneNode(true);
+					manage_issues_entry.dataset.rowid = rowid;
+					rowid_to_filepath[rowid] = {
+						cv_id: null,
+						filepath: mapping[0]
+					};
+
+					manage_issues_entry.querySelector('.m-filepath').innerText = mapping[0];
+					manage_issues_entry.querySelector('.m-issue').innerText = mapping[1];
+					manage_issues_entry.querySelector('button').onclick = e => showCVIssuesMatch(volume_id, rowid);
+
+					table.appendChild(manage_issues_entry);
+
+				});
+			};
+			document.querySelector('#submit-manage').onclick = e => submitIssues(api_key);
+			showWindow('manage-window');
+		});
+};
+
+function toggleAllImports() {
+	const checked = document.querySelector('#selectall-manage-input').checked;
+	document.querySelectorAll(
+		'#manage-window tbody input[type="checkbox"]'
+	).forEach(e => e.checked = checked);
+};
+
+function showCVIssuesMatch(volume_id, rowid) {
+	document.getElementById('filterInput').value = "";
+	document.querySelector('#selectall-cv-input').checked = false;
+	usingApiKey()
+		.then(api_key => {
+			fetchAPI(`/volumes/${volume_id}/issues`, api_key)
+				.then(json => {
+
+					json.result.sort((a, b) => a.issue_number - b.issue_number);
+
+					table_container = ViewEls.manage_issues.table_container;
+					table = table_container.querySelector('tbody');
+					table.innerHTML = '';
+
+					json.result.forEach(result => {
+						const entry = ViewEls.pre_build.manage_issues_results.cloneNode(true);
+
+						entry.querySelector('td:nth-child(2) a').innerText = result.title;
+
+						entry.querySelector('td:nth-child(3)').innerText = result.issue_number;
+
+						entry.dataset.comicvine_id = result.comicvine_id;
+						entry.dataset.issue_number = result.issue_number;
+
+						document.querySelector('#submit-cv-match').onclick =
+							e => editCVIssueMatch(rowid);
+
+						table.appendChild(entry);
+					});
+				});
+		});
+	showSubWindow('cv-window');
+};
+
+function toggleAllIssues() {
+	const checked = document.querySelector('#selectall-cv-input').checked;
+	document.querySelectorAll(
+		'#cv-window tbody input[type="checkbox"]'
+	).forEach(e => e.checked = checked);
+};
+
+function filterTable() {
+
+	let input = document.getElementById('filterInput');
+	let filter = input.value.toUpperCase();
+
+	let table = document.querySelector('.manage-issues-results-container');
+	let rows = table.querySelectorAll('tr');
+
+	for (let i = 1; i < rows.length; i++) {
+		let cells = rows[i].getElementsByTagName('td');
+		let match = false;
+
+		for (let j = 0; j < cells.length; j++) {
+			if (cells[j].innerText.toUpperCase().includes(filter)) {
+				match = true;
+				break;
+			}
+		}
+
+		rows[i].style.display = match ? "" : "none";
+
+	}
+}
+
+function list_number_concat(line_nums) {
+	seq = [];
+	final = [];
+	last = 0;
+
+	line_nums.forEach((value, index) => {
+
+		if (last + 1 == value || index == 0) {
+			seq.push(value);
+			last = value;
+		}
+		else {
+			if (seq.length > 1) {
+				final.push(seq[0].toString() + '-' + seq[seq.length - 1].toString());
+			}
+			else {
+				final.push(seq[0].toString());
+			}
+			seq = [];
+			seq.push(value);
+			last = value;
+		}
+
+		if (index == line_nums.length - 1) {
+			if (seq.length > 1) {
+				final.push(seq[0].toString() + '-' + seq[seq.length - 1].toString());
+			}
+			else {
+				final.push(seq[0].toString());
+			}
+
+		}
+	});
+
+	final_str = final.map(String).join(', ');
+	return final_str;
+}
+
+function editCVIssueMatch(rowid) {
+	const checkboxes = [...document.querySelectorAll(
+		'#cv-window tbody input[type="checkbox"]'
+	)];
+
+	if (checkboxes.every(e => !e.checked)) {
+		closeSubWindow();
+		return;
+	};
+
+	selected = checkboxes
+		.filter(e => e.checked)
+		.map(e => [e
+			.parentNode
+			.parentNode
+			.dataset
+			.comicvine_id,
+		e
+			.parentNode
+			.parentNode
+			.dataset
+			.issue_number
+		]
+		)
+
+	let target_td;
+	target_tr = document.querySelector(`tr[data-rowid="${rowid}"]`);
+	target_tr.querySelector('.m-issue').innerText = ""
+
+	rowid_to_filepath[target_tr.dataset.rowid]['cv_id'] = [];
+	issues = []
+	selected.forEach((e, issue) => {
+		rowid_to_filepath[target_tr.dataset.rowid]['cv_id'].push(parseInt(e[0]));
+		issues.push(parseInt(e[1]));
+		/*target_tr.querySelector('.m-issue').innerText += e[1]
+		if (issue != selected.length - 1) {
+			target_tr.querySelector('.m-issue').innerText += ','
+		}*/
+	}
+	);
+
+	issue_str = list_number_concat(issues);
+	target_tr.querySelector('.m-issue').innerText = issue_str;
+
+	closeSubWindow();
+};
+
+function submitIssues(api_key, volume_id) {
+	rows = document.querySelectorAll(
+		'.manage-issues-entry:has(input[type="checkbox"]:checked'
+	);
+	data = [];
+	rows.forEach(i => {
+		if (rowid_to_filepath[i.dataset.rowid].cv_id !== null) {
+			for (comic_id in rowid_to_filepath[i.dataset.rowid].cv_id)
+				data.push({
+					'filepath': rowid_to_filepath[i.dataset.rowid].filepath,
+					'cv_id': rowid_to_filepath[i.dataset.rowid].cv_id[comic_id]
+				});
+		}
+	}
+	);
+	if (data.length > 0) {
+		sendAPI('POST', '/filesimport', api_key, {}, data)
+			.then(response => closeWindow());
+	}
+}
+//
 //
 // Issue info
 //
@@ -754,6 +987,7 @@ usingApiKey()
 	ViewEls.tool_bar.rename.onclick = e => showRename(api_key);
 	ViewEls.tool_bar.convert.onclick = e => showConvert(api_key);
 	ViewEls.tool_bar.edit.onclick = e => showEdit(api_key);
+	ViewEls.tool_bar.manage_issues.onclick = e => showManage(api_key);
 
 	document.querySelector('#submit-rename').onclick =
 		e => renameVolume(api_key, parseInt(e.target.dataset.issue_id) || null);
@@ -786,6 +1020,8 @@ document.querySelector('#issue-info-selector').onclick = e => showInfoWindow('is
 document.querySelector('#issue-files-selector').onclick = e => showInfoWindow('issue-files');
 document.querySelector('#selectall-input').onchange = e => toggleAllRenames();
 document.querySelector('#selectall-convert-input').onchange = e => toggleAllConverts();
+document.querySelector('#selectall-manage-input').onchange = e => toggleAllImports();
+document.querySelector('#selectall-cv-input').onchange = e => toggleAllIssues();
 
 document.querySelector('#edit-form').action = 'javascript:editVolume();';
 document.querySelector('#delete-form').action = 'javascript:deleteVolume();';

@@ -151,6 +151,7 @@ noscript {
 	.icon-dark-color,
 	.icon-text-color,
 	.window > section > .window-header,
+.sub-window > section > .sub-window-header,
 	#toggle-nav
 ) img {
 	/* Equal to --dark-color */
@@ -161,7 +162,8 @@ noscript {
 	.icon-light-color,
 	.icon-text-color,
 	.tool-bar,
-	.window > section > .window-header
+	.window > section > .window-header,
+	.window > section > .window-content
 ) img {
 	/* Equal to --light-color */
 	filter: invert(97%) sepia(10%) saturate(337%) hue-rotate(164deg) brightness(94%) contrast(93%);

@@ -1,268 +1,338 @@
 {% extends "base.html" %}
+{% from "base.html" import icon_button, window, loading_window, sub_window %}
 {% from "base.html" import icon_button, window, loading_window %}
 {% block title %}Volume{% endblock %}
 {% block css %}
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/window.css') }}">
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/view_volume.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/window.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/sub_window.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/view_volume.css') }}">
 {% endblock %}
 {% block js %}
-	<script src="{{ url_for('static', filename='js/window.js') }}" defer></script>
-	<script src="{{ url_for('static', filename='js/view_volume.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/window.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/sub_window.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/view_volume.js') }}" defer></script>
 {% endblock %}
 
 {% block pre_build_rows %}
-	<tr data-id="" class="issue-entry" aria-label="">
-		<td class="issue-monitored">
-			<button data-monitored="" data-id="" title=""></button>
-		</td>
-		<td class="issue-number"></td>
-		<td class="issue-title"></td>
-		<td class="issue-date"></td>
-		<td class="issue-status" title="">
-			<img src="" alt="">
-		</td>
-		<td class="action-column" aria-label="Actions">
-			{{ icon_button('', "Auto search for this issue", "search.svg") }}
-			{{ icon_button('', "Manually search for this issue", "manual_search.svg") }}
-			{{ icon_button('', "Convert files for this issue", "convert.svg") }}
-		</td>
-	</tr>
-	<tr class="search-entry">
-		<td class="match-column" title="">
-			<img src="">
-		</td>
-		<td>
-			<a href="" target="_blank"></a>
-		</td>
-		<td class="source-column"></td>
-		<td class="search-action-column action-list" aria-label="Actions">
-			{{ icon_button('', "Download", "download.svg") }}
-			{{ icon_button('', "Force Download", "manual_search.svg") }}
-			{{ icon_button('', "Add to blocklist", "blocklist.svg") }}
-		</td>
-	</tr>
-	<tr class="rename-before">
-		<td rowspan="2">
-			<input type="checkbox" checked>
-		</td>
-		<td>-</td>
-		<td></td>
-	</tr>
-	<tr class="rename-after">
-		<td>+</td>
-		<td></td>
-	</tr>
-	<tr class="files-entry">
-		<td class="f-filepath"></td>
-        <td class="f-size"></td>
-        <td class="f-delete">
-            {{ icon_button('', "Delete", "delete.svg") }}
-        </td>
-	</tr>
-	<tr class="general-files-entry">
-		<td class="gf-filepath"></td>
-		<td class="gf-type"></td>
-        <td class="gf-size"></td>
-        <td class="gf-delete">
-            {{ icon_button('', "Delete", "delete.svg") }}
-        </td>
-	</tr>
+<tr data-id="" class="issue-entry" aria-label="">
+	<td class="issue-monitored">
+		<button data-monitored="" data-id="" title=""></button>
+	</td>
+	<td class="issue-number"></td>
+	<td class="issue-title"></td>
+	<td class="issue-date"></td>
+	<td class="issue-status" title="">
+		<img src="" alt="">
+	</td>
+	<td class="action-column" aria-label="Actions">
+		{{ icon_button('', "Auto search for this issue", "search.svg") }}
+		{{ icon_button('', "Manually search for this issue", "manual_search.svg") }}
+		{{ icon_button('', "Convert files for this issue", "convert.svg") }}
+	</td>
+</tr>
+<tr class="search-entry">
+	<td class="match-column" title="">
+		<img src="">
+	</td>
+	<td>
+		<a href="" target="_blank"></a>
+	</td>
+	<td class="source-column"></td>
+	<td class="search-action-column action-list" aria-label="Actions">
+		{{ icon_button('', "Download", "download.svg") }}
+		{{ icon_button('', "Force Download", "manual_search.svg") }}
+		{{ icon_button('', "Add to blocklist", "blocklist.svg") }}
+	</td>
+</tr>
+<tr class="rename-before">
+	<td rowspan="2">
+		<input type="checkbox" checked>
+	</td>
+	<td>-</td>
+	<td></td>
+</tr>
+<tr class="rename-after">
+	<td>+</td>
+	<td></td>
+</tr>
+<tr class="files-entry">
+	<td class="f-filepath"></td>
+	<td class="f-size"></td>
+	<td class="f-delete">
+		{{ icon_button('', "Delete", "delete.svg") }}
+	</td>
+</tr>
+<tr class="general-files-entry">
+	<td class="gf-filepath"></td>
+	<td class="gf-type"></td>
+	<td class="gf-size"></td>
+	<td class="gf-delete">
+		{{ icon_button('', "Delete", "delete.svg") }}
+	</td>
+</tr>
+<tr class="manage-issues-entry">
+	<td class="m-checkbox"><input type="checkbox" unchecked></td>
+	<td class="m-filepath"></td>
+	<td class="m-issue"></td>
+	<td class="m-button">
+		<button title="Change match">
+			<img src="{{ url_for('static', filename='img/edit.svg') }}" alt="">
+		</button>
+	</td>
+
+</tr>
+<tr class="manage-issues-results">
+	<td><input type="checkbox" unchecked></td>
+	<td>
+		<a target="_blank" href=""></a>
+	</td>
+	<td></td>
+</tr>
+<tr class="cancel-cv-window">
+	<td><button class="cancel-cv-window-button">Cancel</button></td>
+</tr>
 {% endblock pre_build_rows %}
 
 {% block windows %}
-	{{ loading_window("updating-window", "Updating volume...") }}
+{{ loading_window("updating-window", "Updating volume...") }}
 
 	{% set delete_content %}
-		<p>Are you sure you want to delete this volume?</p>
-		<p id="volume-downloading-error" class="error hidden">*There is a download in the queue for this volume</p>
-		<p id="volume-tasking-error" class="error hidden">*There is a task running for this volume</p>
-		<form id="delete-form">
-			<table class="fold-table">
-				<tr>
-					<th><label for="delete-folder-input">Delete folder</label></th>
-					<td>
-						<select id="delete-folder-input">
-							<option value="true">Yes</option>
-							<option value="false" selected>No</option>
-						</select>
-					</td>
-				</tr>
-			</table>
-		</form>
+<p>Are you sure you want to delete this volume?</p>
+<p id="volume-downloading-error" class="error hidden">*There is a download in the queue for this volume</p>
+<p id="volume-tasking-error" class="error hidden">*There is a task running for this volume</p>
+<form id="delete-form">
+	<table class="fold-table">
+		<tr>
+			<th><label for="delete-folder-input">Delete folder</label></th>
+			<td>
+				<select id="delete-folder-input">
+					<option value="true">Yes</option>
+					<option value="false" selected>No</option>
+				</select>
+			</td>
+		</tr>
+	</table>
+</form>
 	{% endset %}
 	{% set delete_submit %}
-		<button id="submit-delete" type="submit" form="delete-form">Delete</button>
+<button id="submit-delete" type="submit" form="delete-form">Delete</button>
 	{% endset %}
-	{{ window(False, "delete-window", "Delete volume", delete_content, delete_submit) }}
+{{ window(False, "delete-window", "Delete volume", delete_content, delete_submit) }}
 
 	{% set edit_content %}
-		<form id="edit-form">
-			<table class="fold-table">
-				<tr>
-					<th><label for="monitored-input">Monitor Volume</label></th>
-					<td>
-						<select id="monitored-input">
-							<option value="true">Yes</option>
-							<option value="false" selected>No</option>
-						</select>
-					</td>
-				</tr>
-				<tr>
-					<th><label for="monitor-issues-input">Monitor New Issues</label></th>
-					<td>
-						<select id="monitor-issues-input">
-							<option value="true" selected>Yes</option>
-							<option value="false">No</option>
-						</select>
-						<p>When new issues come out, automatically monitor them.</p>
-					</td>
-				</tr>
-				<tr>
-					<th><label for="monitoring-scheme-input">Monitoring Scheme</label></th>
-					<td>
-						<select id="monitoring-scheme-input">
-							<option value="" selected>-- Don't apply --</option>
-							<option value="all">All</option>
-							<option value="missing">Missing</option>
-							<option value="none">None</option>
-						</select>
-						<p>Apply a monitoring scheme once, on save.</p>
-					</td>
-				</tr>
-				<tr>
-					<th><label for="root-folder-input">Root folder</label></th>
-					<td>
-						<select id="root-folder-input">
-							<option value="true">Yes</option>
-							<option value="false" selected>No</option>
-						</select>
-					</td>
-				</tr>
-				<tr>
-					<th><label for="volumefolder-input">Volume Folder</label></th>
-					<td>
-						<input type="text" id="volumefolder-input">
-						<p>Make empty to generate the default folder</p>
-					</td>
-				</tr>
-				<tr>
-					<th><label for="specialoverride-input">Special Version</label></th>
-					<td>
-						<select id="specialoverride-input">
-							<option value="auto">Automatic</option>
-							<option value="">Normal Volume</option>
-							<option value="tpb">Trade Paper Back</option>
-							<option value="one-shot">One Shot</option>
-							<option value="hard-cover">Hard Cover</option>
-							<option value="omnibus">Omnibus</option>
-							<option value="volume-as-issue">Volume As Issue</option>
-						</select>
-						<p>Type of volume</p>
-					</td>
-				</tr>
-			</table>
-		</form>
+<form id="edit-form">
+	<table class="fold-table">
+		<tr>
+			<th><label for="monitored-input">Monitor Volume</label></th>
+			<td>
+				<select id="monitored-input">
+					<option value="true">Yes</option>
+					<option value="false" selected>No</option>
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<th><label for="monitor-issues-input">Monitor New Issues</label></th>
+			<td>
+				<select id="monitor-issues-input">
+					<option value="true" selected>Yes</option>
+					<option value="false">No</option>
+				</select>
+				<p>When new issues come out, automatically monitor them.</p>
+			</td>
+		</tr>
+		<tr>
+			<th><label for="monitoring-scheme-input">Monitoring Scheme</label></th>
+			<td>
+				<select id="monitoring-scheme-input">
+					<option value="" selected>-- Don't apply --</option>
+					<option value="all">All</option>
+					<option value="missing">Missing</option>
+					<option value="none">None</option>
+				</select>
+				<p>Apply a monitoring scheme once, on save.</p>
+			</td>
+		</tr>
+		<tr>
+			<th><label for="root-folder-input">Root folder</label></th>
+			<td>
+				<select id="root-folder-input">
+					<option value="true">Yes</option>
+					<option value="false" selected>No</option>
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<th><label for="volumefolder-input">Volume Folder</label></th>
+			<td>
+				<input type="text" id="volumefolder-input">
+				<p>Make empty to generate the default folder</p>
+			</td>
+		</tr>
+		<tr>
+			<th><label for="specialoverride-input">Special Version</label></th>
+			<td>
+				<select id="specialoverride-input">
+					<option value="auto">Automatic</option>
+					<option value="">Normal Volume</option>
+					<option value="tpb">Trade Paper Back</option>
+					<option value="one-shot">One Shot</option>
+					<option value="hard-cover">Hard Cover</option>
+					<option value="omnibus">Omnibus</option>
+					<option value="volume-as-issue">Volume As Issue</option>
+				</select>
+				<p>Type of volume</p>
+			</td>
+		</tr>
+	</table>
+</form>
 	{% endset %}
 	{% set edit_submit %}
-		<button id="submit-edit" type="submit" form="edit-form">Update</button>
+<button id="submit-edit" type="submit" form="edit-form">Update</button>
 	{% endset %}
-	{{ window(False, "edit-window", "Edit volume", edit_content, edit_submit, "updating-window") }}
+{{ window(False, "edit-window", "Edit volume", edit_content, edit_submit, "updating-window") }}
 
 	{% set rename_content %}
-		<p class="empty-rename-message">Nothing to Rename</p>
-		<table class="rename-preview">
-			<thead>
-				<tr>
-                    <th colspan="2" aria-label="Select All">
-                        <input type="checkbox" id="selectall-input" checked>
-                    </th>
-                    <th>Files</th>
-                </tr>
-			</thead>
-			<tbody></tbody>
-		</table>
+<p class="empty-rename-message">Nothing to Rename</p>
+<table class="rename-preview">
+	<thead>
+		<tr>
+			<th colspan="2" aria-label="Select All">
+				<input type="checkbox" id="selectall-input" checked>
+			</th>
+			<th>Files</th>
+		</tr>
+	</thead>
+	<tbody></tbody>
+</table>
 	{% endset %}
 	{% set rename_submit %}
-		<button id="submit-rename" type="submit">Rename</button>
+<button id="submit-rename" type="submit">Rename</button>
 	{% endset %}
-	{{ window(True, "rename-window", "Rename volume files", rename_content, rename_submit) }}
+{{ window(True, "rename-window", "Rename volume files", rename_content, rename_submit) }}
+
+{% set manage_content %}
+<p class="empty-manage-message">Nothing to Manage</p>
+<table class="manage-preview">
+	<thead>
+		<tr>
+			<th aria-label="Select All">
+				<input type="checkbox" id="selectall-manage-input" unchecked>
+			</th>
+			<th>Path</th>
+			<th>Issue</th>
+			<th>Action</th>
+		</tr>
+	</thead>
+	<tbody></tbody>
+</table>
+	{% endset %}
+	{% set manage_submit %}
+<button id="submit-manage" type="submit">Manage</button>
+	{% endset %}
+{{ window(True, "manage-window", "Manage Issues", manage_content, manage_submit) }}
 
 	{% set manual_search_content %}
-		<p id="searching-message">Searching...</p>
-		<table id="search-result-table" class="icon-text-color">
-			<thead>
-				<tr>
-					<th class="match-column">Match</th>
-					<th>Title</th>
-					<th class="source-column">Source</th>
-					<th class="search-action-column">Action</th>
-				</tr>
-			</thead>
-			<tbody></tbody>
-		</table>
+<p id="searching-message">Searching...</p>
+<table id="search-result-table" class="icon-text-color">
+	<thead>
+		<tr>
+			<th class="match-column">Match</th>
+			<th>Title</th>
+			<th class="source-column">Source</th>
+			<th class="search-action-column">Action</th>
+		</tr>
+	</thead>
+	<tbody></tbody>
+</table>
 	{% endset %}
-	{{ window(True, "manual-search-window", "Manual search", manual_search_content, '') }}
+{{ window(True, "manual-search-window", "Manual search", manual_search_content, '') }}
 
 	{% set issue_info_content %}
-		<div id="issue-info-selectors">
-			<button id="issue-info-selector">Info</button>
-			<button id="issue-files-selector">Files</button>
-			<button id="issue-rename-selector">Rename</button>
-		</div>
-		<div id="issue-info">
-			<h3 id="issue-info-title"></h3>
-			<p id="issue-info-desc" class="description"></p>
-		</div>
-		<table id="issue-files" class="icon-text-color hidden">
-            <thead>
-                <tr>
-                    <th>File</th>
-                    <th>Size</th>
-                    <th>Delete</th>
-                </tr>
-            </thead>
-            <tbody id="issue-files-list"></tbody>
-        </table>
+<div id="issue-info-selectors">
+	<button id="issue-info-selector">Info</button>
+	<button id="issue-files-selector">Files</button>
+	<button id="issue-rename-selector">Rename</button>
+</div>
+<div id="issue-info">
+	<h3 id="issue-info-title"></h3>
+	<p id="issue-info-desc" class="description"></p>
+</div>
+<table id="issue-files" class="icon-text-color hidden">
+	<thead>
+		<tr>
+			<th>File</th>
+			<th>Size</th>
+			<th>Delete</th>
+		</tr>
+	</thead>
+	<tbody id="issue-files-list"></tbody>
+</table>
 	{% endset %}
-	{{ window(False, "issue-info-window", "Issue info", issue_info_content, '') }}
+{{ window(False, "issue-info-window", "Issue info", issue_info_content, '') }}
 
 	{% set convert_content %}
-		<p id="convert-preference"></p>
-		<p class="empty-rename-message">Nothing to Convert</p>
-		<table class="rename-preview">
-			<thead>
-				<tr>
-                    <th colspan="2" aria-label="Select All">
-                        <input type="checkbox" id="selectall-convert-input" checked>
-                    </th>
-                    <th>Files</th>
-                </tr>
-			</thead>
-			<tbody></tbody>
-		</table>
+<p id="convert-preference"></p>
+<p class="empty-rename-message">Nothing to Convert</p>
+<table class="rename-preview">
+	<thead>
+		<tr>
+			<th colspan="2" aria-label="Select All">
+				<input type="checkbox" id="selectall-convert-input" checked>
+			</th>
+			<th>Files</th>
+		</tr>
+	</thead>
+	<tbody></tbody>
+</table>
 	{% endset %}
 	{% set convert_submit %}
-		<button id="submit-convert" type="submit">Convert</button>
+<button id="submit-convert" type="submit">Convert</button>
 	{% endset %}
-	{{ window(True, "convert-window", "Convert volume files", convert_content, convert_submit) }}
+{{ window(True, "convert-window", "Convert volume files", convert_content, convert_submit) }}
 
 	{% set files_content %}
-		<p class="empty-rename-message">No general files</p>
-		<table class="icon-text-color">
-			<thead>
-				<tr>
-                    <th>File</th>
-                    <th>Type</th>
-                    <th>Size</th>
-                    <th>Delete</th>
-                </tr>
-			</thead>
-			<tbody></tbody>
-		</table>
+<p class="empty-rename-message">No general files</p>
+<table class="icon-text-color">
+	<thead>
+		<tr>
+			<th>File</th>
+			<th>Type</th>
+			<th>Size</th>
+			<th>Delete</th>
+		</tr>
+	</thead>
+	<tbody></tbody>
+</table>
 	{% endset %}
-	{{ window(False, "files-window", "General volume files", files_content) }}
+{{ window(False, "files-window", "General volume files", files_content) }}
 
 {% endblock windows %}
+
+
+{% block subwindows %}
+
+	{% set choose_cv_content %}
+<div>
+	<input type="text" id="filterInput" onkeyup="filterTable()" placeholder="Filter issues by title or number">
+</div>
+<table class="manage-issues-results-container">
+	<thead>
+	<th aria-label="Select All">
+		<input type="checkbox" id="selectall-cv-input" unchecked>
+	</th>
+	<th>Title</th>
+	<th>Issue Number</th>
+	</thead>
+	<tbody></tbody>
+</table>
+	{% endset %}
+	{% set cv_match_submit %}
+<button id="submit-cv-match" type="submit">Select</button>
+	{% endset %}
+{{ sub_window(False, "cv-window", "Select Issue(s)", choose_cv_content, cv_match_submit) }}
+
+{% endblock subwindows %}
 
 {% block main %}
 <div class="loading-container">
@@ -272,54 +342,78 @@
 	<main class="hidden">
 		<section class="tool-bar-container" aria-label="Tool bar">
 			<div class="tool-bar">
-				{{ icon_button(
+				{{
+ icon_button(
 					"refresh-button",
 					"Trigger a 'refresh and scan' for the volume",
 					"refresh.svg",
 					"Refresh & Scan"
-				) }}
-				{{ icon_button(
+				)
+				}}
+				{{
+ icon_button(
 					"autosearch-button",
 					"Start searching for all monitored issues in the volume",
 					"search.svg",
 					"Search Monitored"
-				) }}
-				{{ icon_button(
+				)
+				}}
+				{{
+ icon_button(
 					"manualsearch-button",
 					"Start a manual search for all issues in the volume",
 					"manual_search.svg",
 					"Manual Search"
-				) }}
-				{{ icon_button(
+				)
+				}}
+				{{
+ icon_button(
 					"rename-button",
 					"Preview how the files of the volume will be renamed",
 					"rename.svg",
 					"Preview Rename"
-				) }}
-				{{ icon_button(
+				)
+				}}
+				{{
+ icon_button(
 					"convert-button",
 					"Preview how the files of the volume will be converted to a different format",
 					"convert.svg",
 					"Preview Convert"
-				) }}
-				{{ icon_button(
+				)
+				}}
+				{{
+ icon_button(
 					"files-button",
 					"View the general files of the volume",
 					"files.svg",
 					"General Files"
-				) }}
-				{{ icon_button(
+				)
+				}}
+				{{
+ icon_button(
 					"edit-button",
 					"Edit the volume",
 					"edit.svg",
 					"Edit"
-				) }}
-				{{ icon_button(
+				)
+				}}
+				{{
+ icon_button(
 					"delete-button",
 					"Delete the volume",
 					"delete.svg",
 					"Delete"
-				) }}
+				)
+				}}
+				{{
+icon_button(
+				"manage-button",
+				"Manage files in the volume",
+				"manage.svg",
+				"Manage Issues"
+			)
+				}}
 			</div>
 		</section>
 		<div id="volume-content">
