@@ -138,6 +138,17 @@ class FilesDB:
             """,
             (filepath,)
         ))
+    @staticmethod
+    def comicvine_ids(volume_id: int) -> int:
+        return get_db().execute("""
+            SELECT comicvine_id
+            FROM volumes
+            WHERE id = ?;
+            """,
+            (volume_id,)
+            ).fetchone()[0]
+
+    
 
     @staticmethod
     def add_file(

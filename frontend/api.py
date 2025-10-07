@@ -14,8 +14,9 @@ from backend.base.definitions import (BlocklistReason,
                                       CredentialSource, DownloadSource,
                                       KapowarrException, LibraryFilter,
                                       LibrarySorting, MonitorScheme,
-                                      SpecialVersion, VolumeData)
-from backend.base.helpers import hash_password
+                                      SpecialVersion, VolumeData, FileConstants)
+from backend.base.files import list_files
+from backend.base.helpers import hash_password, get_list_numbers_concat
 from backend.base.logging import LOGGER, get_log_file_contents
 from backend.features.download_queue import (DownloadHandler,
                                              delete_download_history,
@@ -41,7 +42,7 @@ from backend.implementations.naming import (generate_volume_folder_name,
                                             preview_mass_rename)
 from backend.implementations.remote_mapping import RemoteMappings
 from backend.implementations.root_folders import RootFolders
-from backend.implementations.volumes import Library, delete_issue_file
+from backend.implementations.volumes import Library, delete_issue_file, import_files
 from backend.internals.db_models import FilesDB
 from backend.internals.server import SERVER, diffuse_timers
 from backend.internals.settings import Settings, get_about_data
@@ -623,6 +624,25 @@ def api_library_import():
         import_library(data, rename_files)
         return return_api({}, code=201)
 
+
+@api.route('/filesimport', methods=['POST'])
+@error_handler
+@auth
+def api_files_import():
+        data = request.get_json()
+
+        if (
+            not isinstance(data, list)
+            or not all(
+                isinstance(e, dict) and 'filepath' in e and 'cv_id' in e
+                for e in data
+            )
+        ):
+            raise InvalidKeyValue
+
+        import_files(data)
+        return return_api({}, code=201)
+
 # =====================
 # Library + Volumes
 # =====================
@@ -825,6 +845,33 @@ def api_issues(id: int):
 
         result = issue.get_data()
         return return_api(result)
+
+
+@api.route('/volumes/<int:id>/files', methods=['GET'])
+@error_handler
+@auth
+def api_volume_files(id: int):
+    folder_path = library.get_volume(id).get_data().folder
+    files = list_files(folder_path,FileConstants.CONTAINER_EXTENSIONS)
+    result = []
+    for file in files:
+        issue_number = FilesDB.issues_covered(file)
+        if issue_number:
+            issue_number = [int(i) if int(i) == i else i for i in issue_number ]
+            issues_covered = get_list_numbers_concat(issue_number)
+            result.append((file, issues_covered))
+        else:
+            result.append((file, '--'))
+    return return_api(result)
+
+@api.route('/volumes/<int:id>/issues', methods=['GET'])
+@error_handler
+@auth
+def api_volumes_issues(id: int):
+    comicvine_id = FilesDB.comicvine_ids(id)
+    search_results = run(ComicVine().fetch_issues([comicvine_id]))
+    return return_api(search_results)
+
 
 # =====================
 # Renaming

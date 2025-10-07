@@ -1768,6 +1768,56 @@ def refresh_and_scan(
     return
 
 
+def import_files(
+    data: List[Dict[any]],
+    ) -> None:
+    """Take in List of objects of filepath and comicvine_ids
+        Remove any instance of the file from issue_files table
+        Map the files to the corresponding issues on the issue_files table
+
+    Args:
+
+        data (List[Dict[any]]): {filepath: str, comicvine_id: int}.
+        Array of filepaths and the comicvine_id of the user defined matching issue.
+
+    """
+    cursor = get_db()
+
+    filepaths = [];
+
+    for item in data:
+        if item["filepath"] not in filepaths:
+            filepaths.append(item["filepath"])
+
+    file_ids = []
+    for filepath in filepaths:
+        file_ids.append(FilesDB.fetch(filepath=filepath)[0]["id"])
+    
+    file_list = ', '.join(map(str, file_ids))
+    cursor.execute(f"""
+    DELETE
+    FROM issues_files
+    WHERE file_id IN ({file_list});
+    """)
+
+    for item in data:
+        file_id = FilesDB.add_file(item["filepath"])
+ 
+        issues = cursor.execute("""
+        SELECT i.id
+        FROM issues i
+        WHERE i.comicvine_id = ?;
+        """,
+        (item["cv_id"],)
+        )
+        for row in issues:
+            cursor.execute(
+            "INSERT INTO issues_files(file_id, issue_id) VALUES (?, ?);",
+            (file_id, row["id"])
+            )
+    commit()
+            
+
 def delete_issue_file(file_id: int) -> None:
     """Delete a file from the library and remove it from the filesystem.
 
