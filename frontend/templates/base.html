@@ -48,6 +48,11 @@
 		{% endblock %}
 	</div>
 
+	<div class="sub-window">
+		{% block subwindows %}
+		{% endblock %}
+	</div>
+
 	<header>
 		<div class="menu-title-container">
 			<button id="toggle-nav" aria-label="Toggle menu" aria-hidden="true">
@@ -64,24 +69,18 @@
 	<div class="nav-main">
 		<div id="nav-bar">
 			<nav>
-				<a
-					href="{{url_base}}/"
-					class="{% if request.path == '/' or request.path.startswith('/volumes/') %}current-nav{% endif %}"
-				>
+				<a href="{{url_base}}/"
+				   class="{% if request.path == '/' or request.path.startswith('/volumes/') %}current-nav{% endif %}">
 					<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" style="font-size: 14px;">
 						<path fill="currentColor" d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"></path>
 					</svg>
 					Volumes
 				</a>
 				<div class="sub-nav">
-					<a
-						href="{{url_base}}/add"
-						class="{% if request.path == '/add' %}current-nav{% endif %}"
-					>Add Volume</a>
-					<a
-						href="{{url_base}}/library-import"
-						class="{% if request.path == '/library-import' %}current-nav{% endif %}"
-					>Library Import</a>
+					<a href="{{url_base}}/add"
+					   class="{% if request.path == '/add' %}current-nav{% endif %}">Add Volume</a>
+					<a href="{{url_base}}/library-import"
+					   class="{% if request.path == '/library-import' %}current-nav{% endif %}">Library Import</a>
 				</div>
 				<a href="{{url_base}}/activity/queue">
 					<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="font-size: 14px;">
@@ -90,18 +89,12 @@
 					Activity
 				</a>
 				<div class="sub-nav">
-					<a
-						href="{{url_base}}/activity/queue"
-						class="{% if request.path == '/activity/queue' %}current-nav{% endif %}"
-					>Queue</a>
-					<a
-						href="{{url_base}}/activity/history"
-						class="{% if request.path == '/activity/history' %}current-nav{% endif %}"
-					>History</a>
-					<a
-						href="{{url_base}}/activity/blocklist"
-						class="{% if request.path == '/activity/blocklist' %}current-nav{% endif %}"
-					>Blocklist</a>
+					<a href="{{url_base}}/activity/queue"
+					   class="{% if request.path == '/activity/queue' %}current-nav{% endif %}">Queue</a>
+					<a href="{{url_base}}/activity/history"
+					   class="{% if request.path == '/activity/history' %}current-nav{% endif %}">History</a>
+					<a href="{{url_base}}/activity/blocklist"
+					   class="{% if request.path == '/activity/blocklist' %}current-nav{% endif %}">Blocklist</a>
 				</div>
 				<a href="{{url_base}}/settings">
 					<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" style="font-size: 14px;">
@@ -110,26 +103,16 @@
 					Settings
 				</a>
 				<div class="sub-nav">
-					<a
-						href="{{url_base}}/settings/mediamanagement"
-						class="{% if request.path == '/settings/mediamanagement' %}current-nav{% endif %}"
-					>Media Management</a>
-					<a
-						href="{{url_base}}/settings/download"
-						class="{% if request.path == '/settings/download' %}current-nav{% endif %}"
-					>Download</a>
-					<a
-						href="{{url_base}}/settings/downloadclients"
-						class="{% if request.path == '/settings/downloadclients' %}current-nav{% endif %}"
-					>Download Clients</a>
-					<a
-						href="{{url_base}}/settings/metadata"
-						class="{% if request.path == '/settings/metadata' %}current-nav{% endif %}"
-					>Metadata</a>
-					<a
-						href="{{url_base}}/settings/general"
-						class="{% if request.path == '/settings/general' %}current-nav{% endif %}"
-					>General</a>
+					<a href="{{url_base}}/settings/mediamanagement"
+					   class="{% if request.path == '/settings/mediamanagement' %}current-nav{% endif %}">Media Management</a>
+					<a href="{{url_base}}/settings/download"
+					   class="{% if request.path == '/settings/download' %}current-nav{% endif %}">Download</a>
+					<a href="{{url_base}}/settings/downloadclients"
+					   class="{% if request.path == '/settings/downloadclients' %}current-nav{% endif %}">Download Clients</a>
+					<a href="{{url_base}}/settings/metadata"
+					   class="{% if request.path == '/settings/metadata' %}current-nav{% endif %}">Metadata</a>
+					<a href="{{url_base}}/settings/general"
+					   class="{% if request.path == '/settings/general' %}current-nav{% endif %}">General</a>
 				</div>
 				<a href="{{url_base}}/system/status">
 					<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" style="font-size: 14px;">
@@ -138,14 +121,10 @@
 					System
 				</a>
 				<div class="sub-nav">
-					<a
-						href="{{url_base}}/system/status"
-						class="{% if request.path == '/system/status' %}current-nav{% endif %}"
-					>Status</a>
-					<a
-						href="{{url_base}}/system/tasks"
-						class="{% if request.path == '/system/tasks' %}current-nav{% endif %}"
-					>Tasks</a>
+					<a href="{{url_base}}/system/status"
+					   class="{% if request.path == '/system/status' %}current-nav{% endif %}">Status</a>
+					<a href="{{url_base}}/system/tasks"
+					   class="{% if request.path == '/system/tasks' %}current-nav{% endif %}">Tasks</a>
 				</div>
 			</nav>
 			<div id="task-queue"></div>
@@ -157,54 +136,72 @@
 </html>
 
 {% macro icon_button(id, title, icon, desc='', submit=False) %}
-	<button
-		id="{{ id }}"
+<button id="{{ id }}"
 		title="{{ title }}"
-		type="{{ 'button' if not submit else 'submit' }}"
-	>
-		<img src="{{ url_for('static', filename='img/' + icon) }}" alt="">
-		{% if desc %}
-		<div aria-hidden="true">
-			<p>{{ desc }}</p>
-		</div>
-		{% endif %}
-	</button>
+		type="{{ 'button' if not submit else 'submit' }}">
+	<img src="{{ url_for('static', filename='img/' + icon) }}" alt="">
+	{% if desc %}
+	<div aria-hidden="true">
+		<p>{{ desc }}</p>
+	</div>
+	{% endif %}
+</button>
 {% endmacro %}
 
 {% macro window(wide_window, id, title, content, save_button='', loading_id='', cancel=True) %}
-	<!-- {{ title }} -->
-	<section
-		id="{{ id }}"
-		aria-label="{{ title }}"
-		{% if wide_window == True %}class="wide-window"{% endif %}
-		{% if loading_id %}data-loading_window="{{loading_id}}"{% endif %}
-	>
-		<div class="window-header">
-			<h2>{{ title }}</h2>
-			{{ icon_button('', "Cancel", "cancel.svg") }}
-		</div>
-		<div class="window-content">
-			{{ content }}
-		</div>
-		<div class="window-footer">
-			{% if cancel == True %}
-				<button class="cancel-window">Cancel</button>
-			{% endif %}
-			{{ save_button }}
-		</div>
-	</section>
+<!-- {{ title }} -->
+<section id="{{ id }}"
+		 aria-label="{{ title }}"
+		 {% if wide_window==True %}class="wide-window" {% endif %}
+		 {% if loading_id %}data-loading_window="{{loading_id}}" {% endif %}>
+	<div class="window-header">
+		<h2>{{ title }}</h2>
+		{{ icon_button('', "Cancel", "cancel.svg") }}
+	</div>
+	<div class="window-content">
+		{{ content }}
+	</div>
+	<div class="window-footer">
+		{% if cancel == True %}
+		<button class="cancel-window">Cancel</button>
+		{% endif %}
+		{{ save_button }}
+	</div>
+</section>
+{% endmacro %}
+
+{% macro sub_window(wide_window, id, title, content, save_button='', loading_id='', cancel=True) %}
+<!-- {{ title }} -->
+<section id="{{ id }}"
+		 aria-label="{{ title }}"
+		 {% if wide_window==True %}class="wide-window" {% endif %}
+		 {% if loading_id %}data-loading_window="{{loading_id}}" {% endif %}>
+	<div class="sub-window-header">
+		<h2>{{ title }}</h2>
+		{{ icon_button('', "Cancel", "cancel.svg") }}
+	</div>
+	<div class="sub-window-content">
+		{{ content }}
+	</div>
+	<div class="sub-window-footer">
+		{% if cancel == True %}
+		<button class="cancel-sub-window">Cancel</button>
+		{% endif %}
+		{{ save_button }}
+	</div>
+</section>
 {% endmacro %}
 
 {% macro loading_window(id, msg) %}
-	<section id="{{ id }}" class="loading-window">
-		<p>{{ msg }}</p>
-	</section>
+<section id="{{ id }}" class="loading-window">
+	<p>{{ msg }}</p>
+</section>
 {% endmacro %}
 
 {% macro page_turner() %}
-	<section class="page-turner" aria-label="Page Turner">
-		<button id="previous-page" aria-label="Previous Page"><<</button>
-		<p id="page-number" aria-label="Current Page">Page 1</p>
-		<button id="next-page" aria-label="Next Page">>></button>
-	</section>
+<section class="page-turner" aria-label="Page Turner">
+	<button id="previous-page" aria-label="Previous Page"><<</button>
+	<p id="page-number" aria-label="Current Page">Page 1</p>
+	<button id="next-page" aria-label="Next Page">>></button>
+</section>
 {% endmacro %}
