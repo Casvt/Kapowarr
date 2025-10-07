@@ -1791,7 +1791,10 @@ def import_files(
 
     file_ids = []
     for filepath in filepaths:
-        file_ids.append(FilesDB.fetch(filepath=filepath)[0]["id"])
+        try:
+            file_ids.append(FilesDB.fetch(filepath=filepath)[0]["id"])
+        except:
+            file_ids.append(FilesDB.add_file(filepath=filepath))
     
     file_list = ', '.join(map(str, file_ids))
     cursor.execute(f"""

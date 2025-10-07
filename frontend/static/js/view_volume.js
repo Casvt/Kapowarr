@@ -777,13 +777,14 @@ function showCVIssuesMatch(volume_id, rowid) {
 						entry.dataset.comicvine_id = result.comicvine_id;
 						entry.dataset.issue_number = result.issue_number;
 
-						document.querySelector('#submit-cv-match').onclick =
-							e => editCVIssueMatch(rowid);
 
 						table.appendChild(entry);
 					});
 				});
 		});
+	document.querySelector('#submit-cv-match').onclick =
+		e => editCVIssueMatch(rowid);
+
 	showSubWindow('cv-window');
 };
 
