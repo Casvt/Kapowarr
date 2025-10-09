@@ -188,9 +188,11 @@ def set_db_location(db_folder: Union[str, None]) -> None:
         db_folder or folder_path(*Constants.DB_FOLDER), Constants.DB_NAME
     )
 
+    print("db_file_location:", db_file_location)
     LOGGER.debug(f"Setting database location: {db_file_location}")
 
-    with open("/app/db/Kapowarr.db", "w"):
+    create_folder(dirname(db_file_location))
+    with open(db_file_location, "w"):
         pass
 
     DBConnection.file = db_file_location
@@ -280,15 +282,6 @@ def setup_db() -> None:
     """
     from backend.internals.db_migration import migrate_db
     from backend.internals.settings import Settings, task_intervals
-
-    if is_dev_env := environ["ENV"] == "development":
-        set_log_level(environ["LOG_LEVEL"])
-
-    settings = Settings()
-    settings_values = settings.get_settings()
-
-    if not is_dev_env:
-        set_log_level(settings_values.log_level)
 
     cursor = get_db()
     cursor.execute("PRAGMA journal_mode = wal;")
@@ -479,6 +472,15 @@ def setup_db() -> None:
     cursor.executescript(setup_commands)
 
     migrate_db()
+
+    if is_dev_env := (environ["ENV"] == "development"):
+        set_log_level(environ["LOG_LEVEL"])
+
+    settings = Settings()
+    settings_values = settings.get_settings()
+
+    if not is_dev_env:
+        set_log_level(settings_values.log_level)
 
     # DB Migration might change settings, so update cache just to be sure.
     settings._fetch_settings()

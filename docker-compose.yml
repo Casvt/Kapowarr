@@ -24,7 +24,7 @@ services:
       - ENV=development
       - LOG_LEVEL=DEBUG
     volumes:
-      - "kapowarr-db:/app/db"
+      - "kapowarr-data:/data"
       - "/path/to/download_folder:/app/temp_downloads"
       - "/path/to/comics:/comics"
       - "./backend/:/app/backend"
@@ -33,3 +33,4 @@ services:
       - 5656:5656
 volumes:
   kapowarr-db:
+  kapowarr-data:
