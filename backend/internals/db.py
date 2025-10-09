@@ -188,7 +188,6 @@ def set_db_location(db_folder: Union[str, None]) -> None:
         db_folder or folder_path(*Constants.DB_FOLDER), Constants.DB_NAME
     )
 
-    print("db_file_location:", db_file_location)
     LOGGER.debug(f"Setting database location: {db_file_location}")
 
     create_folder(dirname(db_file_location))
