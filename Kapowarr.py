@@ -20,6 +20,7 @@ from backend.internals.db import set_db_location, setup_db
 from backend.internals.server import SERVER, handle_start_type
 from backend.internals.settings import Settings
 
+import hupper
 
 def _main(
     start_type: StartType,
@@ -205,8 +206,10 @@ def Kapowarr() -> int:
 
     return rc
 
+def main():
+    if environ.get("ENV") == "development":
+        hupper.start_reloader("Kapowarr.main")
 
-if __name__ == "__main__":
     if environ.get("KAPOWARR_RUN_MAIN") == "1":
 
         parser = ArgumentParser(
@@ -315,3 +318,6 @@ if __name__ == "__main__":
     else:
         rc = Kapowarr()
         exit(rc)
+
+if __name__ == "__main__":
+    main()
