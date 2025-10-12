@@ -486,6 +486,9 @@ class Settings(metaclass=Singleton):
             if not isinstance(value, str):
                 raise InvalidKeyValue(key, value)
 
+            if value == "":
+                return
+
             cron_schedule = Cron(value).schedule()
             cron_interval = int(cron_schedule.next().timestamp() - cron_schedule.prev().timestamp())
 

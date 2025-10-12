@@ -24,7 +24,9 @@ function saveSettings(api_key) {
 		'auth_password': document.querySelector('#password-input').value,
 		'comicvine_api_key': document.querySelector('#cv-input').value,
 		'flaresolverr_base_url': document.querySelector('#flaresolverr-input').value,
-		'log_level': parseInt(document.querySelector('#log-level-input').value)
+		'log_level': parseInt(document.querySelector('#log-level-input').value),
+    'update_all': document.querySelector("#update-interval-input").value,
+    'search_all': document.querySelector("#search-interval-input").value
 	};
 	sendAPI('PUT', '/settings', api_key, {}, data)
 	.then(response => response.json())
