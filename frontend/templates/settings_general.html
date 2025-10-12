@@ -61,6 +61,23 @@
 					</td>
 				</tr>
 			</table>
+			<h2>Tasks Scheduling</h2>
+			<table class="fold-table">
+				<tr>
+          <th><label>Update All Interval</label></th>
+          <td>
+						<input type="text" id="update-interval-input" spellcheck="false" placeholder="0 * * * *">
+						<p>When set, it will override the default 1 hour interval of triggering a refresh and scan for all volumes in your library.</p>
+          </td>
+        </tr>
+        <tr>
+          <th><label>Search All Interval</label></th>
+          <td>
+						<input type="text" id="search-interval-input" spellcheck="false" placeholder="0 0 * * *">
+						<p>When set, it will override the default 1 day interval of search for requested volumes in your library.</p>
+          </td>
+				</tr>
+			</table>
 			<h2>External Websites</h2>
 			<table class="fold-table">
 				<tr>
