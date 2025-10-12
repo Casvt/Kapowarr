@@ -23,6 +23,7 @@ services:
       - TZ=Etc/UTC
       - ENV=development
       - LOG_LEVEL=DEBUG
+      - API_KEY=test
     volumes:
       - "kapowarr-data:/data"
       - "/path/to/download_folder:/app/temp_downloads"

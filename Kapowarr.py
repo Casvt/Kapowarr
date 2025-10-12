@@ -4,7 +4,7 @@
 from argparse import ArgumentParser
 from atexit import register
 from multiprocessing import set_start_method
-from os import environ, name
+from os import environ, name, path
 from signal import SIGINT, SIGTERM, signal
 from subprocess import Popen
 from sys import argv
@@ -78,6 +78,7 @@ def _main(
 
     with SERVER.app.app_context():
         handle_start_type(start_type)
+
         setup_db()
 
         s = Settings()

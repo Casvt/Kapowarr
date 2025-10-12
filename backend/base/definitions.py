@@ -275,6 +275,9 @@ class SeedingHandling(BaseEnum):
     and once done delete original files
     """
 
+class TaskIntervals(TypedDict):
+    update_all: int
+    search_all: int
 
 class DateType(BaseEnum):
     "The type of comic date used in the database"

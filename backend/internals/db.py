@@ -191,8 +191,9 @@ def set_db_location(db_folder: Union[str, None]) -> None:
     LOGGER.debug(f"Setting database location: {db_file_location}")
 
     create_folder(dirname(db_file_location))
-    with open(db_file_location, "w"):
-        pass
+    if not exists(db_file_location):
+        with open(db_file_location, "w"):
+            pass
 
     DBConnection.file = db_file_location
 
@@ -488,19 +489,17 @@ def setup_db() -> None:
     if not settings_values.api_key:
         settings.generate_api_key()
 
-    # Add task intervals
     LOGGER.debug(f"Inserting task intervals: {task_intervals}")
     current_time = round(time())
+
+    #INFO: This ensures that the default vals for task_intervals are only inserted at startup
     cursor.executemany(
         """
-        INSERT INTO task_intervals
+        INSERT OR IGNORE INTO task_intervals
         VALUES (?, ?, ?)
-        ON CONFLICT(task_name) DO
-        UPDATE
-        SET
-            interval = ?;
         """,
-        ((k, v, current_time, v) for k, v in task_intervals.items()),
+        ((k, v, current_time) for k, v in task_intervals.items()),
     )
+    commit()
 
     return

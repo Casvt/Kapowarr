@@ -1,28 +1,38 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*
 
 from dataclasses import _MISSING_TYPE, asdict, dataclass, field
 from functools import lru_cache
 from logging import INFO
-from os import urandom
+from os import urandom, environ
 from os.path import abspath, isdir, join, sep
 from secrets import token_bytes
-from typing import Any, Dict, Mapping
+import time
+from typing import Any, Dict, Mapping, Optional, TypedDict
+from types import MappingProxyType
+from cron_converter import Cron
 
 from backend.base.custom_exceptions import (FolderNotFound, InvalidKey,
                                             InvalidKeyValue,
                                             InvalidSettingModification)
 from backend.base.definitions import (BaseEnum, Constants,
                                       DateType, GCDownloadSource,
-                                      SeedingHandling, StartType)
+                                      SeedingHandling, StartType, TaskIntervals)
 from backend.base.files import (folder_is_inside_folder,
                                 folder_path, uppercase_drive_letter)
 from backend.base.helpers import (CommaList, Singleton, force_suffix,
                                   get_python_version, hash_password,
                                   normalise_base_url)
 from backend.base.logging import LOGGER, set_log_level
-from backend.internals.db import DBConnection, commit, get_db
+from backend.internals.db import DBConnection, KapowarrCursor, commit, get_db
 from backend.internals.db_migration import get_latest_db_version
 
+
+task_intervals: TaskIntervals = {
+    # If there are tasks that should be run at the same time,
+    # but per se after each other, put them in that order in the dict.
+    'update_all': 3600, # every hour
+    'search_all': 86400 # every day
+}
 
 @dataclass(frozen=True)
 class SettingsValues:
@@ -31,7 +41,7 @@ class SettingsValues:
     auth_password: str = ''
     auth_salt: bytes = token_bytes()
     comicvine_api_key: str = ''
-    api_key: str = ''
+    api_key: str = environ.get("API_KEY") or ''
     flaresolverr_base_url: str = ''
 
     host: str = '0.0.0.0'
@@ -74,6 +84,10 @@ class SettingsValues:
     delete_completed_downloads: bool = True
 
     date_type: DateType = DateType.COVER_DATE
+
+    #TODO: Support dict-like (object) value type of a key in /settings being dict, currently causes downstream issues if we use a dict as value
+    update_all: str = "0 * * * *" # every hour
+    search_all: str = "0 0 * * *" # every day
 
     def to_dict(self) -> Dict[str, Any]:
         result = {}
@@ -121,13 +135,6 @@ def get_about_data() -> Dict[str, Any]:
         "data_folder": folder_path()
     }
 
-
-task_intervals = {
-    # If there are tasks that should be run at the same time,
-    # but per se after each other, put them in that order in the dict.
-    'update_all': 3600, # every hour
-    'search_all': 86400 # every day
-}
 
 
 class Settings(metaclass=Singleton):
@@ -225,6 +232,7 @@ class Settings(metaclass=Singleton):
         from backend.implementations.naming import (NAMING_MAPPING,
                                                     check_mock_filename)
 
+        db = get_db()
         formatted_data = {}
         for key, value in data.items():
             formatted_data[key] = self.__format_value(key, value)
@@ -245,10 +253,19 @@ class Settings(metaclass=Singleton):
             for s in ('host', 'port', 'url_base')
         )
 
+        task_interval_changes = any(
+            s in data
+            and formatted_data[s] != getattr(self.get_settings(), s)
+            for s in ('update_all', 'search_all')
+        )
+
         if hosting_changes:
             self.backup_hosting_settings()
 
-        get_db().executemany(
+        if task_interval_changes:
+            self._handle_task_interval_change(db, formatted_data)
+
+        db.executemany(
             "UPDATE config SET value = ? WHERE key = ?;",
             ((v, k) for k, v in formatted_data.items())
         )
@@ -465,6 +482,14 @@ class Settings(metaclass=Singleton):
             ):
                 raise InvalidKeyValue(key, value)
 
+        elif key == "update_all" or key == "search_all":
+            if not isinstance(value, str):
+                raise InvalidKeyValue(key, value)
+
+            cron_schedule = Cron(value).schedule()
+            cron_interval = int(cron_schedule.next().timestamp() - cron_schedule.prev().timestamp())
+
+            converted_value = cron_interval
         else:
             from backend.implementations.naming import (NAMING_MAPPING,
                                                         check_format)
@@ -474,3 +499,21 @@ class Settings(metaclass=Singleton):
                     raise InvalidKeyValue(key, value)
 
         return converted_value
+
+    def _handle_task_interval_change(self, db: KapowarrCursor, formatted_data: dict):
+        new_search_task_interval: Optional[int] = formatted_data.get("search_all")
+        new_update_task_interval: Optional[int] = formatted_data.get("update_all")
+        cur_time = time.time()
+
+        entry_data = []
+        if new_search_task_interval:
+            entry_data.append((new_search_task_interval, int(cur_time + new_search_task_interval), "search_all"))
+            formatted_data.pop("search_all")
+        if new_update_task_interval:
+            entry_data.append((new_update_task_interval, int(cur_time + new_update_task_interval), "update_all"))
+            formatted_data.pop("update_all")
+
+        if entry_data:
+            db.executemany("UPDATE task_intervals SET interval = ?, next_run = ? WHERE task_name = ?", entry_data)
+
+
