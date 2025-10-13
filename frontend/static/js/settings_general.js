@@ -9,6 +9,8 @@ function fillSettings(api_key) {
 		document.querySelector('#cv-input').value = json.result.comicvine_api_key;
 		document.querySelector('#flaresolverr-input').value = json.result.flaresolverr_base_url;
 		document.querySelector('#log-level-input').value = json.result.log_level;
+		document.querySelector('#update-interval-input').value = json.result.update_all || '';
+		document.querySelector('#search-interval-input').value = json.result.search_all || '';
 	});
 	document.querySelector('#theme-input').value = getLocalStorage('theme')['theme'];
 };

@@ -7,7 +7,7 @@ from os import urandom, environ
 from os.path import abspath, isdir, join, sep
 from secrets import token_bytes
 import time
-from typing import Any, Dict, Mapping, Optional, TypedDict
+from typing import Any, Dict, Literal, Mapping, Optional, TypedDict
 from types import MappingProxyType
 from cron_converter import Cron
 
@@ -262,8 +262,13 @@ class Settings(metaclass=Singleton):
         if hosting_changes:
             self.backup_hosting_settings()
 
+        print("formatted_data:", formatted_data)
         if task_interval_changes:
-            self._handle_task_interval_change(db, formatted_data)
+            #INFO: Store original cron strings before they're converted to intervals
+            original_cron_strings = {
+                k: data[k] for k in ('update_all', 'search_all') if k in data
+            }
+            self._handle_task_interval_change(db, formatted_data, original_cron_strings)
 
         db.executemany(
             "UPDATE config SET value = ? WHERE key = ?;",
@@ -489,10 +494,7 @@ class Settings(metaclass=Singleton):
             if value == "":
                 return
 
-            cron_schedule = Cron(value).schedule()
-            cron_interval = int(cron_schedule.next().timestamp() - cron_schedule.prev().timestamp())
-
-            converted_value = cron_interval
+            converted_value = value
         else:
             from backend.implementations.naming import (NAMING_MAPPING,
                                                         check_format)
@@ -503,20 +505,25 @@ class Settings(metaclass=Singleton):
 
         return converted_value
 
-    def _handle_task_interval_change(self, db: KapowarrCursor, formatted_data: dict):
+    def _handle_task_interval_change(self, db: KapowarrCursor, formatted_data: dict, original_cron_strings: dict):
         new_search_task_interval: Optional[int] = formatted_data.get("search_all")
         new_update_task_interval: Optional[int] = formatted_data.get("update_all")
         cur_time = time.time()
 
         entry_data = []
         if new_search_task_interval:
-            entry_data.append((new_search_task_interval, int(cur_time + new_search_task_interval), "search_all"))
-            formatted_data.pop("search_all")
+            cron_schedule = original_cron_strings.get("search_all", "")
+            entry_data.append(self._handle_cron_data(cron_schedule, cur_time, "search_all"))
         if new_update_task_interval:
-            entry_data.append((new_update_task_interval, int(cur_time + new_update_task_interval), "update_all"))
-            formatted_data.pop("update_all")
+            cron_schedule = original_cron_strings.get("update_all", "")
+            entry_data.append(self._handle_cron_data(cron_schedule, cur_time, "update_all"))
 
         if entry_data:
             db.executemany("UPDATE task_intervals SET interval = ?, next_run = ? WHERE task_name = ?", entry_data)
+
+    def _handle_cron_data(self, cron_schedule: str, cur_time: float, key: Literal["search_all", "update_all"]):
+        parsed_cron_schedule = Cron(cron_schedule).schedule()
+        cron_interval = int(parsed_cron_schedule.next().timestamp() - parsed_cron_schedule.prev().timestamp())
+        return (cron_interval, int(cur_time + cron_interval), key)
 
 
