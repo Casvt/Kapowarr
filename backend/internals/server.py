@@ -15,6 +15,7 @@ from typing import (TYPE_CHECKING, Any, Callable, Dict,
 from engineio.server import Server as IOServer
 from engineio.socket import Socket as IOSocket
 from flask import Flask, render_template, request
+from flask.json.provider import DefaultJSONProvider
 from flask_socketio import SocketIO
 from socketio import PubSubManager
 from waitress.server import create_server
@@ -174,8 +175,11 @@ class Server(metaclass=Singleton):
             static_url_path='/static'
         )
         app.config['SECRET_KEY'] = urandom(32)
-        app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
-        app.config['JSON_SORT_KEYS'] = False
+
+        json_provider = DefaultJSONProvider(app)
+        json_provider.sort_keys = False
+        json_provider.compact = False
+        app.json = json_provider
 
         _set_websocket_threads_names()
         self.ws = WebSocket()

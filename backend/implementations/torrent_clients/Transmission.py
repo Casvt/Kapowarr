@@ -2,8 +2,9 @@
 
 from re import IGNORECASE, compile
 from time import time
-from typing import TYPE_CHECKING, Any, Dict, List, Union
+from typing import Any, Dict, List, Union
 
+from requests import Response
 from requests.exceptions import RequestException
 
 from backend.base.custom_exceptions import ClientNotWorking, CredentialInvalid
@@ -13,9 +14,6 @@ from backend.base.helpers import Session
 from backend.base.logging import LOGGER
 from backend.implementations.external_clients import BaseExternalClient
 from backend.internals.settings import Settings
-
-if TYPE_CHECKING:
-    from requests import Response
 
 filename_magnet_link = compile(r'(?<=&dn=).*?(?=&)', IGNORECASE)
 

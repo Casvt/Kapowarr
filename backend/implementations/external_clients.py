@@ -164,10 +164,14 @@ class ExternalClients:
         Returns:
             Dict[str, Type[ExternalDownloadClient]]: The mapping.
         """
-        from backend.implementations.torrent_clients import qBittorrent, Transmission
+        from backend.implementations.torrent_clients import (Transmission,
+                                                             qBittorrent)
         return {
             client.client_type: client
-            for client in get_subclasses(BaseExternalClient)
+            for client in sorted(
+                get_subclasses(BaseExternalClient),
+                key=lambda c: c.client_type.lower()
+            )
         }
 
     @staticmethod
