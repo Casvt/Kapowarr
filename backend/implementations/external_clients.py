@@ -164,7 +164,7 @@ class ExternalClients:
         Returns:
             Dict[str, Type[ExternalDownloadClient]]: The mapping.
         """
-        from backend.implementations.torrent_clients import qBittorrent
+        from backend.implementations.torrent_clients import qBittorrent, Transmission
         return {
             client.client_type: client
             for client in get_subclasses(BaseExternalClient)
