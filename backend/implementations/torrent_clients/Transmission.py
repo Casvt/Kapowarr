@@ -65,11 +65,11 @@ class Transmission(BaseExternalClient):
                 Defaults to False.
 
         Raises:
-            ClientNotWorking: _description_
-            ClientNotWorking: _description_
+            ClientNotWorking: Can't connect to client or client returned
+                unexpected result.
 
         Returns:
-            Response: _description_
+            Response: The server response to the request.
         """
         try:
             response = ssn.post(
