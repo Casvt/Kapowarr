@@ -153,7 +153,10 @@ class extract_filename_data(unittest.TestCase):
                 {'series': 'Blacksad', 'year': None, 'volume_number': 1, 'special_version': None, 'issue_number': 6.1, 'annual': False},
 
             'Absolute Moebius 07 - Il fallico folle (2012) [c2c Lux73 pipulus] 2.0.cbr':
-                {'series': 'Absolute Moebius', 'year': 2012, 'volume_number': 1, 'special_version': None, 'issue_number': 7.0, 'annual': False}
+                {'series': 'Absolute Moebius', 'year': 2012, 'volume_number': 1, 'special_version': None, 'issue_number': 7.0, 'annual': False},
+
+            'L\'Uomo Ragno 219 - Il demone devastatore (Corno 1978-09-18) [c2c Jedi-Italia] 1.0.cbr':
+                {'series': "L'Uomo Ragno", 'year': 1978, 'volume_number': 1, 'special_version': None, 'issue_number': 219.0, 'annual': False}
         }
         self.run_cases(cases)
 
