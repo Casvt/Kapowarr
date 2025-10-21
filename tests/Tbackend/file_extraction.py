@@ -1,5 +1,4 @@
 import unittest
-from json import dumps
 from typing import Dict
 
 from backend.base.file_extraction import extract_filename_data as ef
@@ -8,21 +7,27 @@ from backend.base.file_extraction import extract_filename_data as ef
 class extract_filename_data(unittest.TestCase):
     def run_cases(self, cases: Dict[str, dict]):
         self.longMessage = False
-        for input, output in cases.items():
+        for input, expected in cases.items():
+            output = ef(input)
             self.assertEqual(
-                ef(input),
                 output,
-                f"The input '{input}' isn't extracted properly:\nOutput: {dumps(ef(input), indent=4)}\nExpected: {dumps(output, indent=4)}"
+                expected,
+                f"The input '{input}' isn't extracted properly:\n"
+                f"Output:   {output}\n"
+                f"Expected: {expected}"
             )
         return
 
     def run_cases_folder_year(self, cases: Dict[str, dict]):
         self.longMessage = False
-        for input, output in cases.items():
+        for input, expected in cases.items():
+            output = ef(input, prefer_folder_year=True)
             self.assertEqual(
-                ef(input, prefer_folder_year=True),
                 output,
-                f"The input '{input}' isn't extracted properly:\nOutput: {dumps(ef(input), indent=4)}\nExpected: {dumps(output, indent=4)}"
+                expected,
+                f"The input '{input}' isn't extracted properly:\n"
+                f"Output: {output}\n"
+                f"Expected: {expected}"
             )
         return
 
