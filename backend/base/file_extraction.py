@@ -55,6 +55,7 @@ annual_regex = compile(r'(?:\+|plus)[\s\._]?annuals?|annuals?[\s\._]?(?:\+|plus)
 cover_regex = compile(r'\b(?<!no[ \-_])(?<!hard[ \-_])(?<!\d[ \-_]covers)cover\b|n\d+c(\d+)|(?:\b|\d)i?fc\b|^folder$', IGNORECASE)
 page_regex = compile(r'^(\d+(?:[a-f]|_\d+)?)$|\b(?i:page|pg)[\s\.\-_]?(\d+(?:[a-f]|_\d+)?)|n?\d+[_\-p](\d+(?:[a-f]|_\d+)?)')
 page_regex_2 = compile(r'(\d+)')
+revision_regex = compile(r'[1-3]\.\d')
 # autopep8: on
 
 
@@ -280,6 +281,13 @@ def _find_issue_numbers(
             )
             if not regex_result:
                 continue
+
+            if regex == issue_regex_7:
+                # Disprefer potential revision numbers at the end
+                regex_result.sort(key=lambda r: bool(
+                    r.endpos == len(file_part_with_issue)
+                    and revision_regex.fullmatch(r.group(0))
+                ))
 
             group_number = 1 if regex is not issue_regex_6 else 3
             for result in regex_result:

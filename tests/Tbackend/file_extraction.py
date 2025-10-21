@@ -150,7 +150,10 @@ class extract_filename_data(unittest.TestCase):
                 {'series': 'DC vs. Vampires World War V', 'year': 2024, 'volume_number': 1, 'special_version': None, 'issue_number': 2.0, 'annual': False},
 
             '/Blacksad/Blacksad 6.1 - They All Fall Down Part 1.cbz':
-                {'series': 'Blacksad', 'year': None, 'volume_number': 1, 'special_version': None, 'issue_number': 6.1, 'annual': False}
+                {'series': 'Blacksad', 'year': None, 'volume_number': 1, 'special_version': None, 'issue_number': 6.1, 'annual': False},
+
+            'Absolute Moebius 07 - Il fallico folle (2012) [c2c Lux73 pipulus] 2.0.cbr':
+                {'series': 'Absolute Moebius', 'year': 2012, 'volume_number': 1, 'special_version': None, 'issue_number': 7.0, 'annual': False}
         }
         self.run_cases(cases)
 
