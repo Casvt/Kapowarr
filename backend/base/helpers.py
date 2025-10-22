@@ -666,8 +666,16 @@ def fix_year(year: int) -> int:
         return year
 
     year_str = list(str(year))
-    if len(year_str) != 4:
-        return year
+
+    if len(year_str) == 3:
+        year_str.insert(1, '0')
+
+    if year_str[0] in ('8', '9') and year_str[1] == '1':
+        year_str[0], year_str[1] = year_str[1], year_str[0]
+
+    result = int(''.join(year_str))
+    if 1900 <= result < 2100:
+        return result
 
     return int(year_str[0] + year_str[2] + year_str[1] + year_str[3])
 
