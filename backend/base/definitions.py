@@ -755,14 +755,6 @@ class KapowarrException(Exception, ABC):
         ...
 
 
-class DBMigrator(ABC):
-    start_version: int
-
-    @abstractmethod
-    def run(self) -> None:
-        ...
-
-
 class MassEditorAction(ABC):
     identifier: str
     "The string used in the API to refer to the action"

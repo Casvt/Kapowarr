@@ -293,7 +293,7 @@ def setup_db_adapters_and_converters() -> None:
 
 def setup_db() -> None:
     """Setup the default config and database connection and tables"""
-    from backend.internals.db_migration import migrate_db
+    from backend.internals.db_migration import DatabaseMigrationHandler
     from backend.internals.settings import Settings, task_intervals
 
     cursor = get_db()
@@ -307,11 +307,7 @@ def setup_db() -> None:
 
     set_log_level(settings_values.log_level)
 
-    migrate_db()
-
-    # DB Migration might change settings directly in database,
-    # so update cache just to be sure.
-    settings._fetch_settings()
+    DatabaseMigrationHandler.migrate()
 
     # Generate api key
     if not settings_values.api_key:

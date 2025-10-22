@@ -21,12 +21,12 @@ from backend.base.helpers import (CommaList, Singleton, force_suffix,
                                   normalise_base_url)
 from backend.base.logging import LOGGER, set_log_level
 from backend.internals.db import DBConnection, commit, get_db
-from backend.internals.db_migration import get_latest_db_version
+from backend.internals.db_migration import DatabaseMigrationHandler
 
 
 @dataclass(frozen=True)
 class SettingsValues:
-    database_version: int = get_latest_db_version()
+    database_version: int = DatabaseMigrationHandler.latest_db_version()
     log_level: int = INFO
     auth_password: str = ''
     auth_salt: bytes = token_bytes()
@@ -116,7 +116,7 @@ def get_about_data() -> Dict[str, Any]:
     return {
         "version": version,
         "python_version": get_python_version(),
-        "database_version": get_latest_db_version(),
+        "database_version": DatabaseMigrationHandler.latest_db_version(),
         "database_location": DBConnection.file,
         "data_folder": folder_path()
     }
