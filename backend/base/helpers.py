@@ -15,6 +15,7 @@ from multiprocessing.pool import Pool
 from os import cpu_count, sep, symlink
 from os.path import basename, dirname, exists, isfile, join
 from sys import base_exec_prefix, executable, platform, version_info
+from threading import current_thread
 from typing import (TYPE_CHECKING, Any, Callable, Collection, Dict, Iterable,
                     Iterator, List, Mapping, Sequence, Tuple, Union)
 from urllib.parse import unquote
@@ -38,7 +39,16 @@ if TYPE_CHECKING:
     from flask.ctx import AppContext
 
 
-# region Python
+# region System
+def current_thread_id() -> int:
+    """Get the ID of the current thread.
+
+    Returns:
+        int: The ID.
+    """
+    return current_thread().native_id or -1
+
+
 def get_python_version() -> str:
     """Get python version as string. E.g. `"3.8.10.final.0"`
 
