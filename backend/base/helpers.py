@@ -135,6 +135,26 @@ def get_python_exe() -> Union[str, None]:
     return filepath
 
 
+def get_version_from_pyproject(filepath: str) -> str:
+    """Get the application version from the `pyproject.toml` file.
+
+    Args:
+        filepath (str): The path to the `pyproject.toml` file.
+
+    Raises:
+        RuntimeError: Version not found in file.
+
+    Returns:
+        str: The version string.
+    """
+    with open(filepath, "r") as f:
+        for line in f:
+            if line.startswith("version = "):
+                return "V" + line.split('"')[1]
+        else:
+            raise RuntimeError("Version not found in pyproject.toml")
+
+
 # region Helpers
 def get_subclasses(
     *classes: type,

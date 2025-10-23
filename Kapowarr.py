@@ -80,7 +80,6 @@ def _main(
         setup_db()
 
         s = Settings()
-        s.restart_on_hosting_changes = False
 
         if host:
             try:
@@ -100,7 +99,6 @@ def _main(
             except InvalidKeyValue:
                 raise ValueError("Invalid url base value")
 
-        s.restart_on_hosting_changes = True
         settings = s.get_settings()
         SERVER.set_url_base(settings.url_base)
 

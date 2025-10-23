@@ -8,28 +8,47 @@ from os.path import abspath, isdir, join, sep
 from secrets import token_bytes
 from typing import Any, Dict, Mapping
 
-from backend.base.custom_exceptions import (FolderNotFound, InvalidKey,
-                                            InvalidKeyValue,
-                                            InvalidSettingModification)
-from backend.base.definitions import (BaseEnum, Constants,
-                                      DateType, GCDownloadSource,
-                                      SeedingHandling, StartType)
+from backend.base.custom_exceptions import (FolderNotFound, InvalidKeyValue,
+                                            InvalidSettingModification,
+                                            KeyNotFound)
+from backend.base.definitions import (BaseEnum, Constants, DateType,
+                                      GCDownloadSource, SeedingHandling)
 from backend.base.files import (folder_is_inside_folder,
                                 folder_path, uppercase_drive_letter)
 from backend.base.helpers import (CommaList, Singleton, force_suffix,
-                                  get_python_version, hash_password,
+                                  get_python_version,
+                                  get_version_from_pyproject, hash_password,
                                   normalise_base_url)
 from backend.base.logging import LOGGER, set_log_level
 from backend.internals.db import DBConnection, commit, get_db
 from backend.internals.db_migration import DatabaseMigrationHandler
 
 
+@lru_cache(1)
+def get_about_data() -> Dict[str, Any]:
+    """Get data about the application and its environment.
+
+    Raises:
+        RuntimeError: Application version not found in pyproject file.
+
+    Returns:
+        Dict[str, Any]: The information.
+    """
+    return {
+        "version": get_version_from_pyproject(folder_path("pyproject.toml")),
+        "python_version": get_python_version(),
+        "database_version": DatabaseMigrationHandler.latest_db_version(),
+        "database_location": DBConnection.file,
+        "data_folder": folder_path()
+    }
+
+
 @dataclass(frozen=True)
-class SettingsValues:
-    database_version: int = DatabaseMigrationHandler.latest_db_version()
+class PublicSettingsValues:
+    """All settings that are exposed to the user"""
     log_level: int = INFO
     auth_password: str = ''
-    auth_salt: bytes = token_bytes()
+
     comicvine_api_key: str = ''
     api_key: str = ''
     flaresolverr_base_url: str = ''
@@ -37,9 +56,6 @@ class SettingsValues:
     host: str = '0.0.0.0'
     port: int = 5656
     url_base: str = ''
-    backup_host: str = '0.0.0.0'
-    backup_port: int = 5656
-    backup_url_base: str = ''
 
     rename_downloaded_files: bool = True
     replace_illegal_characters: bool = True
@@ -75,51 +91,41 @@ class SettingsValues:
 
     date_type: DateType = DateType.COVER_DATE
 
-    def to_dict(self) -> Dict[str, Any]:
-        result = {}
-        for k, v in self.__dict__.items():
-            if k.startswith('backup_'):
-                continue
+    def todict(self, to_public: bool = True) -> Dict[str, Any]:
+        """Convert the dataclass to a dictionary.
 
-            if k == 'auth_salt':
-                continue
+        Args:
+            to_public (bool, optional): Whether to prepare the values to be
+                shown to the public.
+                Defaults to True.
 
-            if k == 'auth_password' and v:
-                v = Constants.PASSWORD_REPLACEMENT
+        Returns:
+            Dict[str, Any]: The keys and values.
+        """
+        result = asdict(self)
+
+        if not to_public:
+            return result
+
+        for k, v in result.items():
+            if k == "auth_password" and v:
+                result[k] = Constants.PASSWORD_REPLACEMENT
 
             if isinstance(v, BaseEnum):
                 result[k] = v.value
-            else:
-                result[k] = v
 
         return result
 
 
-@lru_cache(1)
-def get_about_data() -> Dict[str, Any]:
-    """Get data about the application and it's environment.
+@dataclass(frozen=True)
+class SettingsValues(PublicSettingsValues):
+    """All settings including privates"""
+    database_version: int = DatabaseMigrationHandler.latest_db_version()
+    auth_salt: bytes = token_bytes()
 
-    Raises:
-        RuntimeError: If the version is not found in the pyproject.toml file.
-
-    Returns:
-        Dict[str, Any]: The information.
-    """
-    with open(folder_path("pyproject.toml"), "r") as f:
-        for line in f:
-            if line.startswith("version = "):
-                version = "v" + line.split('"')[1]
-                break
-        else:
-            raise RuntimeError("Version not found in pyproject.toml")
-
-    return {
-        "version": version,
-        "python_version": get_python_version(),
-        "database_version": DatabaseMigrationHandler.latest_db_version(),
-        "database_location": DBConnection.file,
-        "data_folder": folder_path()
-    }
+    backup_host: str = '0.0.0.0'
+    backup_port: int = 5656
+    backup_url_base: str = ''
 
 
 task_intervals = {
@@ -131,25 +137,26 @@ task_intervals = {
 
 
 class Settings(metaclass=Singleton):
-    restart_on_hosting_changes: bool = True
-    "Override this to disable the server restart on hosting changes."
-
     def __init__(self) -> None:
         self._insert_missing_settings()
-        self._fetch_settings()
         return
 
     def _insert_missing_settings(self) -> None:
-        "Insert any missing keys from the settings into the database."
+        """Insert any missing keys from the settings into the database"""
         get_db().executemany(
             "INSERT OR IGNORE INTO config(key, value) VALUES (?, ?);",
-            asdict(SettingsValues()).items()
+            SettingsValues().todict(to_public=False).items()
         )
         commit()
         return
 
-    def _fetch_settings(self) -> None:
-        "Load the settings from the database into the cache."
+    @lru_cache(1)
+    def get_settings(self) -> SettingsValues:
+        """Get the settings, including internal ones.
+
+        Returns:
+            SettingsValues: The settings.
+        """
         db_values = {
             k: v
             for k, v in get_db().execute(
@@ -158,66 +165,69 @@ class Settings(metaclass=Singleton):
             if k in SettingsValues.__dataclass_fields__
         }
 
+        # Database type for value is BLOB,
+        # so manually convert types
         for key, value in db_values.items():
-            if SettingsValues.__dataclass_fields__[key].type is bool:
+            key_type = SettingsValues.__dataclass_fields__[key].type
+            if key_type is bool:
                 db_values[key] = bool(value)
 
-        for cl_key in ('format_preference', 'service_preference'):
-            db_values[cl_key] = CommaList(db_values[cl_key])
+            if key_type is CommaList:
+                db_values[key] = CommaList(db_values[key])
 
-        for en_key, en in (
-            ('seeding_handling', SeedingHandling),
-            ('date_type', DateType),
-        ):
-            db_values[en_key] = en[db_values[en_key].upper()]
+            if issubclass(key_type, BaseEnum):
+                db_values[key] = key_type[value.upper()]
 
-        self.__cached_values = SettingsValues(**db_values)
-        return
+        return SettingsValues(**db_values)
 
-    def get_settings(self) -> SettingsValues:
-        """Get the settings from the cache.
+    @lru_cache(1)
+    def get_public_settings(self) -> PublicSettingsValues:
+        """Get the public settings, so excluding internal ones.
 
         Returns:
-            SettingsValues: The settings.
+            PublicSettingsValues: The public settings.
         """
-        return self.__cached_values
+        return PublicSettingsValues(
+            **{
+                k: v
+                for k, v in self.get_settings().todict().items()
+                if k in PublicSettingsValues.__dataclass_fields__
+            }
+        )
+
+    def clear_cache(self) -> None:
+        """Clear the cache of the settings"""
+        self.get_settings.cache_clear()
+        self.get_public_settings.cache_clear()
+        return
 
     # Alias, better in one-liners
     # sv = Settings Values
     @property
     def sv(self) -> SettingsValues:
-        """Get the settings from the cache.
+        """Get the settings, including internal ones.
 
         Returns:
             SettingsValues: The settings.
         """
-        return self.__cached_values
-
-    def __getitem__(self, __name: str) -> Any:
-        """Get the value of the given setting key.
-
-        Args:
-            __name (str): The key of the setting.
-
-        Raises:
-            AttributeError: Key is not a setting key.
-
-        Returns:
-            Any: The value of the setting.
-        """
-        return getattr(self.__cached_values, __name)
+        return self.get_settings()
 
     def update(
         self,
-        data: Mapping[str, Any]
+        data: Mapping[str, Any],
+        from_public: bool = False
     ) -> None:
         """Change the settings, in a `dict.update()` type of way.
 
         Args:
             data (Mapping[str, Any]): The keys and their new values.
 
+            from_public (bool, optional): If True, only allow public settings to
+                be changed.
+                Defaults to False.
+
         Raises:
-            InvalidKey: Key is not allowed or unknown.
+            KeyNotFound: Key is not a setting.
             InvalidKeyValue: Value of the key is not allowed.
             InvalidSettingModification: Key can not be modified this way.
             FolderNotFound: Folder not found.
@@ -227,7 +237,7 @@ class Settings(metaclass=Singleton):
 
         formatted_data = {}
         for key, value in data.items():
-            formatted_data[key] = self.__format_value(key, value)
+            formatted_data[key] = self.__format_value(key, value, from_public)
 
         if any(
             key in formatted_data
@@ -239,14 +249,7 @@ class Settings(metaclass=Singleton):
                 for key in NAMING_MAPPING
             })
 
-        hosting_changes = any(
-            s in data
-            and formatted_data[s] != getattr(self.get_settings(), s)
-            for s in ('host', 'port', 'url_base')
-        )
-
-        if hosting_changes:
-            self.backup_hosting_settings()
+        old_settings = self.get_settings()
 
         get_db().executemany(
             "UPDATE config SET value = ? WHERE key = ?;",
@@ -255,78 +258,65 @@ class Settings(metaclass=Singleton):
 
         if (
             'log_level' in data
-            and formatted_data['log_level'] != getattr(
-                self.get_settings(), 'log_level'
-            )
+            and formatted_data['log_level'] != old_settings.log_level
         ):
             set_log_level(formatted_data['log_level'])
 
-        self._fetch_settings()
+        self.clear_cache()
 
         LOGGER.info(f'Settings changed: {formatted_data}')
 
-        if hosting_changes and self.restart_on_hosting_changes:
-            from backend.internals.server import SERVER
-            SERVER.restart(
-                StartType.RESTART_HOSTING_CHANGES
-            )
-
         return
 
-    def __setitem__(self, __name: str, __value: Any) -> None:
-        """Change the value of a setting.
+    def get_default_value(self, key: str) -> Any:
+        """Get the default value of a setting.
 
         Args:
-            __name (str): The key of the setting.
-            __value (Any): The new value.
+            key (str): The key of the setting.
 
-        Raises:
-            InvalidKey: Key is not allowed or unknown.
-            InvalidKeyValue: Value of the key is not allowed.
-            InvalidSettingModification: Key can not be modified this way.
-            FolderNotFound: Folder not found.
+        Returns:
+            Any: The default value.
         """
-        self.update({__name: __value})
-        return
-
-    def reset(self, key: str) -> None:
-        """Reset the value of the key to the default value.
-
-        Args:
-            key (str): The key of which to reset the value.
-
-        Raises:
-            InvalidKey: The key is not valid or unknown.
-        """
-        LOGGER.debug(f'Setting reset: {key}')
-
         if not isinstance(
             SettingsValues.__dataclass_fields__[key].default_factory,
             _MISSING_TYPE
         ):
-            self[key] = SettingsValues.__dataclass_fields__[
-                key].default_factory()
+            return SettingsValues.__dataclass_fields__[key].default_factory()
+
         else:
-            self[key] = SettingsValues.__dataclass_fields__[key].default
+            return SettingsValues.__dataclass_fields__[key].default
+
+    def reset(self, key: str, from_public: bool) -> None:
+        """Reset the value of the key to the default value.
+
+        Args:
+            key (str): The key of which to reset the value.
+            from_public (bool): If True, only allow public settings to
+                be reset.
+
+        Raises:
+            KeyNotFound: Key is not a setting.
+            InvalidSettingModification: Key can not be modified this way.
+        """
+        LOGGER.debug(f'Setting reset: {key}')
+
+        self.update({key: self.get_default_value(key)}, from_public=from_public)
 
         return
 
     def generate_api_key(self) -> None:
-        "Generate a new api key"
+        """Generate a new api key"""
         LOGGER.debug('Generating new api key')
 
         api_key = urandom(16).hex()
-        get_db().execute(
-            "UPDATE config SET value = ? WHERE key = 'api_key';",
-            (api_key,)
-        )
-        self._fetch_settings()
+        self.update({"api_key": api_key}, from_public=False)
+        self.clear_cache()
 
         LOGGER.info(f'Setting api key regenerated: {api_key}')
         return
 
     def backup_hosting_settings(self) -> None:
-        "Backup the hosting settings in the database."
+        """Backup the hosting settings in the database"""
         s = self.get_settings()
         backup_settings = {
             'backup_host': s.host,
@@ -336,16 +326,29 @@ class Settings(metaclass=Singleton):
         self.update(backup_settings)
         return
 
-    def __format_value(self, key: str, value: Any) -> Any:
+    def restore_hosting_settings(self) -> None:
+        """Restore the hosting settings from the database"""
+        s = self.get_settings()
+        restore_settings = {
+            'host': s.backup_host,
+            'port': s.backup_port,
+            'url_prefix': s.backup_url_base
+        }
+        self.update(restore_settings)
+        return
+
+    def __format_value(self, key: str, value: Any, from_public: bool) -> Any:
         """Check if the value of a setting is allowed and convert if needed.
 
         Args:
             key (str): Key of setting.
             value (Any): Value of setting.
+            from_public (bool): If True, only allow public settings
+                to be changed.
 
         Raises:
-            InvalidKey: Key is invalid or unknown.
-            InvalidKeyValue: Value is not allowed.
+            KeyNotFound: Key is not a setting.
+            InvalidKeyValue: Value of the key is not allowed.
             InvalidSettingModification: Key can not be modified this way.
             FolderNotFound: Folder not found.
 
@@ -354,26 +357,35 @@ class Settings(metaclass=Singleton):
         """
         converted_value = value
 
-        if key not in SettingsValues.__dataclass_fields__:
-            raise InvalidKey(key)
+        KeyCollection = PublicSettingsValues if from_public else SettingsValues
+
+        # Confirm that key exists
+        if key not in KeyCollection.__dataclass_fields__:
+            raise KeyNotFound(key)
 
         if key == 'api_key':
+            # Request generation of new key instead of setting value
             raise InvalidSettingModification(key, 'POST /settings/api_key')
 
-        if (
-            SettingsValues.__dataclass_fields__[key].type is CommaList
-            and isinstance(value, list)
-        ):
+        key_data = KeyCollection.__dataclass_fields__[key]
+
+        # Convert type to special type
+        if key_data.type is CommaList and isinstance(value, list):
+            # Convert list to CommaList
             value = CommaList(value)
 
-        if issubclass(SettingsValues.__dataclass_fields__[key].type, BaseEnum):
+        elif issubclass(key_data.type, BaseEnum):
+            # Convert string to Enum value
             try:
-                value = SettingsValues.__dataclass_fields__[key].type(value)
+                value = key_data.type(value)
             except ValueError:
                 raise InvalidKeyValue(key, value)
 
-        if not isinstance(value, SettingsValues.__dataclass_fields__[key].type):
+        # Confirm data type of submitted value
+        if not isinstance(value, key_data.type):
             raise InvalidKeyValue(key, value)
+
+        # Do key-specific checks and formatting
 
         if key == 'auth_password':
             if value == Constants.PASSWORD_REPLACEMENT:
@@ -385,7 +397,7 @@ class Settings(metaclass=Singleton):
                     value
                 )
 
-        if key == 'port' and not 0 < value <= 65_535:
+        elif key == 'port' and not 0 < value <= 65_535:
             raise InvalidKeyValue(key, value)
 
         elif key == 'url_base':
@@ -443,9 +455,11 @@ class Settings(metaclass=Singleton):
                 s.value
                 for s in GCDownloadSource._member_map_.values()
             ]
+
             for entry in value:
                 if entry not in available:
                     raise InvalidKeyValue(key, value)
+
             for entry in available:
                 if entry not in value:
                     raise InvalidKeyValue(key, value)
@@ -469,6 +483,7 @@ class Settings(metaclass=Singleton):
             from backend.implementations.naming import (NAMING_MAPPING,
                                                         check_format)
             if key in NAMING_MAPPING:
+                # Check naming formats
                 converted_value = value.strip().strip(sep)
                 if not check_format(converted_value, key):
                     raise InvalidKeyValue(key, value)

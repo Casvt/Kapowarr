@@ -85,7 +85,7 @@ class DatabaseMigrationHandler:
             s.update({"database_version": start_version + 1})
 
         get_db().execute("VACUUM;")
-        s._fetch_settings()
+        s.clear_cache()
 
         return
 
@@ -475,7 +475,7 @@ def _migrate_log_level_to_int():
 
     s = Settings()
     log_number = 20 if s.sv.log_level == 'info' else 10
-    s["log_level"] = log_number
+    s.update({"log_level": log_number})
 
     return
 
@@ -968,7 +968,7 @@ def _migrate_type_hosting_settings():
     )
 
     settings = Settings()
-    settings._fetch_settings()
+    settings.clear_cache()
     settings.backup_hosting_settings()
     return
 
