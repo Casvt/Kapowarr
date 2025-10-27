@@ -363,7 +363,7 @@ class Settings(metaclass=Singleton):
         if key not in KeyCollection.__dataclass_fields__:
             raise KeyNotFound(key)
 
-        if key == 'api_key':
+        if key == 'api_key' and from_public:
             # Request generation of new key instead of setting value
             raise InvalidSettingModification(key, 'POST /settings/api_key')
 
