@@ -713,6 +713,7 @@ class ComicVine:
                     results[file] = {
                         'id': None,
                         'title': None,
+                        'publisher': None,
                         'issue_count': None,
                         'link': None
                     }
@@ -735,6 +736,7 @@ class ComicVine:
                 results[file] = {
                     'id': matched_result['comicvine_id'],
                     'title': f"{matched_result['title']} ({matched_result['year']})",
+                    'publisher': matched_result.get('publisher'),
                     'issue_count': matched_result['issue_count'],
                     'link': matched_result['site_url']}
 

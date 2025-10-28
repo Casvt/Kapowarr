@@ -64,7 +64,9 @@ function loadProposal(api_key) {
 
 			const CV_link = entry.querySelector('a');
 			CV_link.href = result.cv.link || '';
-			CV_link.innerText = result.cv.title || '';
+			const cv_display = result.cv.title || '';
+			const publisher = result.cv.publisher ? ` [${result.cv.publisher}]` : '';
+			CV_link.innerText = cv_display + publisher;
 
 			entry.querySelector('.issue-count').innerText = result.cv.issue_count;
 
@@ -146,7 +148,8 @@ function searchCV() {
 
 				const title = entry.querySelector('td:nth-child(1) a');
 				title.href = result.site_url;
-				title.innerText = `${result.title} (${result.year})`;
+				const publisher_text = result.publisher ? ` [${result.publisher}]` : '';
+				title.innerText = `${result.title} (${result.year})${publisher_text}`;
 
 				entry.querySelector('td:nth-child(2)').innerText =
 					result.issue_count;
