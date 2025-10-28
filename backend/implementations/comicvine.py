@@ -656,7 +656,9 @@ class ComicVine:
 
     async def filenames_to_cvs(self,
         file_datas: Sequence[FilenameData],
-        only_english: bool
+        only_english: bool,
+        group_key_to_count: dict = None,
+        group_key_to_max_issue: dict = None
     ) -> DictKeyedDict:
         """Match filenames to CV volumes.
 
@@ -702,6 +704,10 @@ class ComicVine:
 
         for title, files in titles_to_files.items():
             for file in files:
+                # Get file count and max issue from passed mappings using group key
+                group_key = (file['series'], file.get('year'), file.get('volume_number'))
+                files_in_group = group_key_to_count.get(group_key, 1) if group_key_to_count else 1
+                max_issue_in_group = group_key_to_max_issue.get(group_key) if group_key_to_max_issue else None
                 # Filter: SV - issue_count
                 filtered_results = [
                     r for r in titles_to_results[title]
@@ -719,18 +725,88 @@ class ComicVine:
                     }
                     continue
 
-                # Pref: exact year (1 point, also matches fuzzy year),
-                #       fuzzy year (1 point),
-                #       volume number (2 points)
-                filtered_results.sort(key=lambda r:
-                    int(r['year'] == file['year'])
-                    + int(_match_year(r['year'], file['year']))
-                    + int(
-                        file['volume_number'] is not None
-                        and r['volume_number'] == file['volume_number']
-                    ) * 2,
-                    reverse=True
-                )
+                # Major English-language publishers
+                ENGLISH_PUBLISHERS = {
+                    'marvel', 'marvel comics', 'marvel digital comics unlimited',
+                    'dc comics', 'dc', 'vertigo', 'vertigo comics',
+                    'image comics', 'image', 'dark horse comics', 'dark horse',
+                    'idw publishing', 'idw', 'boom! studios', 'boom studios',
+                    'dynamite entertainment', 'dynamite',
+                    'max comics', 'wildstorm', 'aftershock comics',
+                    'valiant entertainment', 'valiant', 'oni press',
+                    'vault comics', 'scout comics', 'zenescope entertainment',
+                    'top cow', 'avatar press', 'aspen comics'
+                }
+
+                # Scoring with wider spread so year proximity dominates:
+                #   - Exact year: 10 points (huge boost)
+                #   - Year proximity: scales down (10 -> 5 -> 2 -> 0)
+                #   - English publisher: 5 points (important)
+                #   - Volume number: 2 points BUT only if year is close (within 3 years)
+                #   - Translation penalty: -5 points (strong penalty)
+                def score_result(r):
+                    publisher_bonus = (
+                        5 if only_english and (r.get('publisher') or '').lower() in ENGLISH_PUBLISHERS
+                        else 0
+                    )
+                    # Penalize volumes that are likely TPBs/collections or translations
+                    # Look for keywords in title that indicate collections when we have single issues
+                    collection_keywords = ['omnibus', 'tpb', 'trade paperback', 'collection', 'compendium']
+                    is_collection = any(keyword in r.get('title', '').lower() for keyword in collection_keywords)
+
+                    # Check for TPB mismatch using file count vs issue count
+                    # If we have 4 files but volume has 1 issue, it's likely a TPB
+                    # This works even with legacy numbering since file count still matches
+                    issue_count_mismatch = (
+                        r.get('issue_count') is not None
+                        and r['issue_count'] < 5  # Only for very low issue counts (TPBs)
+                        and files_in_group > r['issue_count']  # We have more files than volume has issues
+                    )
+
+                    tpb_penalty = 0
+                    if only_english:
+                        if r.get('translated'):
+                            tpb_penalty = -5  # Translation penalty
+                        elif issue_count_mismatch:
+                            tpb_penalty = -10  # Huge penalty - issue number impossible for this volume
+                        elif is_collection and file.get('issue_number'):
+                            tpb_penalty = -3  # Collection keyword penalty when we have single issue files
+                    # Year proximity scoring - wider spread so year matters more
+                    year_diff = 999  # Default to huge difference if no years
+                    if file['year'] and r['year']:
+                        year_diff = abs(file['year'] - r['year'])
+                        if year_diff == 0:
+                            year_score = 10  # Exact match - huge boost
+                        elif year_diff == 1:
+                            year_score = 8  # Off by 1 - still great
+                        elif year_diff <= 3:
+                            year_score = 5  # Off by 2-3 - acceptable
+                        elif year_diff <= 5:
+                            year_score = 2  # Off by 4-5 - getting sketchy
+                        else:
+                            year_score = 0  # Too far off - no points
+                    else:
+                        year_score = 0
+
+                    # Volume number only matters if year is reasonably close
+                    volume_bonus = (
+                        2 if (
+                            file['volume_number'] is not None
+                            and r['volume_number'] == file['volume_number']
+                            and year_diff <= 3  # Only count volume if year is close
+                        )
+                        else 0
+                    )
+
+                    return (
+                        year_score
+                        + volume_bonus
+                        + publisher_bonus
+                        + tpb_penalty
+                    )
+
+                filtered_results.sort(key=score_result, reverse=True)
+
 
                 matched_result = filtered_results[0]
                 results[file] = {

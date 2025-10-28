@@ -92,6 +92,8 @@ def propose_library_import(
     image_folders = set()
     # efd to files with that efd
     unimported_files = DictKeyedDict()
+    # Track max issue number per group for better matching
+    group_max_issues = {}
     for f in all_files:
         if f in imported_files:
             continue
@@ -102,7 +104,13 @@ def propose_library_import(
             continue
 
         efd = extract_filename_data(f, prefer_folder_year=True)
+        issue_num = efd.get('issue_number')  # Save before deleting
         del efd['issue_number'] # type: ignore
+
+        # Track max issue number for this group (for TPB detection)
+        if issue_num is not None:
+            group_key = (efd['series'], efd.get('year'), efd.get('volume_number'))
+            group_max_issues[group_key] = max(group_max_issues.get(group_key, 0), issue_num)
 
         if (
             f.endswith(FileConstants.IMAGE_EXTENSIONS)
@@ -130,6 +138,13 @@ def propose_library_import(
     cv = ComicVine()
     result: List[Dict[str, Any]] = []
     uf: List[FilenameData] = list(unimported_files.keys())
+
+    # Create mapping using tuple keys (series, year, volume) -> file count
+    group_key_to_count = {}
+    for efd in uf:
+        key = (efd['series'], efd.get('year'), efd.get('volume_number'))
+        group_key_to_count[key] = len(unimported_files[efd])
+
     uf.sort(key=lambda f: (
         f['series'],
         force_range(f['volume_number'] or 0)[0],
@@ -138,7 +153,9 @@ def propose_library_import(
     for batch_index, uf_batch in enumerate(batched(uf, 10)):
         group_to_cv = run(cv.filenames_to_cvs(
             uf_batch,
-            only_english
+            only_english,
+            group_key_to_count,  # Pass file counts by group key
+            group_max_issues  # Pass max issues by group key
         ))
         result += [
             {
