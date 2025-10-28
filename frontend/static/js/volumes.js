@@ -170,6 +170,10 @@ function populateLibrary(volumes, api_key) {
 		table_entry.querySelector('.table-volume').innerText =
 			`Volume ${volume.volume_number}`;
 
+		// Publisher
+		table_entry.querySelector('.table-publisher').innerText =
+			volume.publisher || '';
+
 		// Monitored
 		const library_entry = new LibraryEntry(volume.id, api_key);
 		library_entry.list_entry = list_entry;
