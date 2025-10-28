@@ -1244,14 +1244,13 @@ def determine_special_version(volume_id: int) -> SpecialVersion:
         if hc_regex.search(first_sentence):
             return SpecialVersion.HARD_COVER
 
-    if one_issue and issues[0].date:
-        thirty_plus_days_ago = (
-            datetime.now() - datetime.strptime(issues[0].date, "%Y-%m-%d")
-            > THIRTY_DAYS
-        )
+    # Check for TPB keywords in title or description
+    tpb_keywords = ['tpb', 'trade paperback', 'collection']
+    title_lower = volume_data.title.lower()
+    desc_lower = (volume_data.description or '').lower()
 
-        if thirty_plus_days_ago:
-            return SpecialVersion.TPB
+    if any(keyword in title_lower or keyword in desc_lower for keyword in tpb_keywords):
+        return SpecialVersion.TPB
 
     return SpecialVersion.NORMAL
 

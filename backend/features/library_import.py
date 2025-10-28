@@ -21,7 +21,7 @@ from backend.implementations.comicvine import ComicVine
 from backend.implementations.naming import mass_rename
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Library, Volume, scan_files
-from backend.internals.db import commit
+from backend.internals.db import commit, get_db
 from backend.internals.db_models import FilesDB
 
 
@@ -221,11 +221,37 @@ def import_library(
             commit()
 
         except VolumeAlreadyAdded:
-            # The volume is already added but the file is not matched to it
-            # (it isn't because otherwise it wouldn't pop up in LI).
-            # That would mean that the file is actually not
-            # for that volume so skip.
-            continue
+            # Volume exists but files aren't linked - attempt self-healing
+            LOGGER.info(f'Volume CV ID {cv_id} already exists. Rescanning to link orphaned files.')
+
+            # Get existing volume ID
+            cursor = get_db()
+            result = cursor.execute(
+                "SELECT id FROM volumes WHERE comicvine_id = ? LIMIT 1;",
+                (cv_id,)
+            ).fetchone()
+
+            if not result:
+                LOGGER.warning(f'VolumeAlreadyAdded but CV ID {cv_id} not in DB. Skipping.')
+                continue
+
+            volume_id = result[0]
+            LOGGER.info(f'Found volume ID {volume_id}. Checking for broken special_version.')
+
+            # Check if volume is marked as TPB with only 1 issue - likely a one-shot, not a TPB
+            volume = Volume(volume_id)
+            volume_data = volume.get_data()
+            issue_count = len(volume.get_issues(_skip_files=True))
+
+            if volume_data.special_version == SpecialVersion.TPB and issue_count == 1:
+                LOGGER.info(f'Volume marked as TPB but has only 1 issue. Fixing to NORMAL (one-shot).')
+                cursor.execute(
+                    "UPDATE volumes SET special_version = ? WHERE id = ?;",
+                    (None, volume_id)
+                )
+                commit()
+
+            LOGGER.info(f'Scanning files for volume ID {volume_id}.')
 
         if rename_files:
             # Put files in volume folder
