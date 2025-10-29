@@ -72,6 +72,11 @@ function loadProposal(api_key) {
 
 			entry.querySelector('button').onclick = e => openEditCVMatch(rowid);
 
+			// Uncheck items with no ComicVine match
+			if (!result.cv.id) {
+				entry.querySelector('input[type="checkbox"]').checked = false;
+			}
+
 			LIEls.proposal_list.appendChild(entry);
 		});
 
