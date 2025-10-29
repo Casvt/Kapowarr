@@ -238,18 +238,31 @@ def import_library(
             volume_id = result[0]
             LOGGER.info(f'Found volume ID {volume_id}. Checking for broken special_version.')
 
-            # Check if volume is marked as TPB with only 1 issue - likely a one-shot, not a TPB
+            # Check if volume is incorrectly marked as TPB
+            # Old buggy logic marked any volume >30 days old as TPB
             volume = Volume(volume_id)
             volume_data = volume.get_data()
             issue_count = len(volume.get_issues(_skip_files=True))
 
-            if volume_data.special_version == SpecialVersion.TPB and issue_count == 1:
-                LOGGER.info(f'Volume marked as TPB but has only 1 issue. Fixing to NORMAL (one-shot).')
-                cursor.execute(
-                    "UPDATE volumes SET special_version = ? WHERE id = ?;",
-                    (None, volume_id)
+            if volume_data.special_version == SpecialVersion.TPB:
+                # Check if title/description actually indicates it's a TPB
+                tpb_keywords_title = ['tpb', 'trade paperback', 'collection']
+                tpb_keywords_desc = ['tpb', 'trade paperback']
+                title_lower = volume_data.title.lower()
+                desc_lower = (volume_data.description or '').lower()
+
+                is_actually_tpb = (
+                    any(kw in title_lower for kw in tpb_keywords_title) or
+                    any(kw in desc_lower for kw in tpb_keywords_desc)
                 )
-                commit()
+
+                if not is_actually_tpb:
+                    LOGGER.info(f'Volume incorrectly marked as TPB (no keywords found). Fixing to NORMAL.')
+                    cursor.execute(
+                        "UPDATE volumes SET special_version = ? WHERE id = ?;",
+                        (None, volume_id)
+                    )
+                    commit()
 
             LOGGER.info(f'Scanning files for volume ID {volume_id}.')
 

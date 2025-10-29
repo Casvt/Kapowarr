@@ -1245,11 +1245,15 @@ def determine_special_version(volume_id: int) -> SpecialVersion:
             return SpecialVersion.HARD_COVER
 
     # Check for TPB keywords in title or description
-    tpb_keywords = ['tpb', 'trade paperback', 'collection']
+    # Avoid false positives like "Collected in..." which refers to a different volume
+    tpb_keywords_title = ['tpb', 'trade paperback', 'collection']
+    tpb_keywords_desc = ['tpb', 'trade paperback']  # Exclude 'collection' from desc check
     title_lower = volume_data.title.lower()
     desc_lower = (volume_data.description or '').lower()
 
-    if any(keyword in title_lower or keyword in desc_lower for keyword in tpb_keywords):
+    if any(keyword in title_lower for keyword in tpb_keywords_title):
+        return SpecialVersion.TPB
+    if any(keyword in desc_lower for keyword in tpb_keywords_desc):
         return SpecialVersion.TPB
 
     return SpecialVersion.NORMAL
