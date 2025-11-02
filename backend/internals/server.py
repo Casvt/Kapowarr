@@ -1,27 +1,28 @@
 # -*- coding: utf-8 -*-
 
 """
-Setting up, running and shutting down the API and web-ui
+Setting up, running and shutting down the webserver.
+Also handling startup types.
 """
 
 from __future__ import annotations
 
 from multiprocessing import SimpleQueue
 from os import urandom
-from threading import Thread, Timer, current_thread
+from threading import Thread, Timer
 from typing import (TYPE_CHECKING, Any, Callable, Dict,
                     Iterable, List, Mapping, Union)
 
-from engineio.server import Server as IOServer
-from engineio.socket import Socket as IOSocket
 from flask import Flask, render_template, request
+from flask.json.provider import DefaultJSONProvider
 from flask_socketio import SocketIO
 from socketio import PubSubManager
 from waitress.server import create_server
 from waitress.task import ThreadedTaskDispatcher as TTD
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
-from backend.base.definitions import Constants, SocketEvent, StartType
+from backend.base.definitions import (Constants, SocketEvent,
+                                      StartType, StartTypeHandler)
 from backend.base.files import folder_path
 from backend.base.helpers import Singleton
 from backend.base.logging import LOGGER, setup_logging
@@ -32,138 +33,56 @@ from backend.internals.settings import Settings
 
 if TYPE_CHECKING:
     from flask.ctx import AppContext
-    from waitress.server import BaseWSGIServer, MultiSocketServer
 
     from backend.base.definitions import Download
     from backend.features.tasks import Task
 
 
+# region Thread Manager
 class ThreadedTaskDispatcher(TTD):
-    def handler_thread(self, thread_no: int) -> None:
-        # Most of this method's content is copied straight from waitress
-        # except for the the part marked. The thread is considered to be
-        # stopped when it's removed from self.threads, so we need to close
-        # the database connection before it.
-        while True:
-            with self.lock:
-                while not self.queue and self.stop_count == 0:
-                    # Mark ourselves as idle before waiting to be
-                    # woken up, then we will once again be active
-                    self.active_count -= 1
-                    self.queue_cv.wait()
-                    self.active_count += 1
+    def __init__(self) -> None:
+        super().__init__()
 
-                if self.stop_count > 0:
-                    self.active_count -= 1
-                    self.stop_count -= 1
+        # The DB connection should be closed when the thread is ending, but
+        # right before it actually has. Waitress will consider a thread closed
+        # once it's not in the self.threads set anymore, regardless of whether
+        # the thread has actually ended/joined, so anything we do after that
+        # could be cut short by the main thread ending. So we need to close
+        # the DB connection before the thread is discarded from the set.
+        class TDDSet(set):
+            def discard(self, element: Any) -> None:
+                DBConnectionManager.close_connection_of_thread()
+                return super().discard(element)
 
-                    # =================
-                    # Kapowarr part
-                    thread_id = current_thread().native_id or -1
-                    if (
-                        thread_id in DBConnectionManager.instances
-                        and not DBConnectionManager.instances[thread_id].closed
-                    ):
-                        DBConnectionManager.instances[thread_id].close()
-                    # =================
-
-                    self.threads.discard(thread_no)
-                    self.thread_exit_cv.notify()
-                    break
-
-                task = self.queue.popleft()
-            try:
-                task.service()
-            except BaseException:
-                self.logger.exception("Exception when servicing %r", task)
+        self.threads = TDDSet()
         return
 
-    def shutdown(self,
-        cancel_pending: bool = True,
-        timeout: int = 5
-    ) -> bool:
+    def shutdown(self, cancel_pending: bool = True, timeout: int = 5) -> bool:
         print()
-        LOGGER.info('Shutting down Kapowarr...')
+        LOGGER.info('Shutting down Kapowarr')
 
-        ws = WebSocket()
-        if '/' in ws.server.manager.rooms: # type: ignore
-            for sid in tuple(ws.server.manager.rooms['/'][None]): # type: ignore
-                ws.server.disconnect(sid) # type: ignore
+        WebSocket().disconnect_all()
 
         result = super().shutdown(cancel_pending, timeout)
         return result
 
 
-def handle_start_type(start_type: StartType) -> None:
-    """Do special actions needed based on the type of start.
-
-    Args:
-        start_type (StartType): The start type.
-    """
-    if start_type == StartType.RESTART_HOSTING_CHANGES:
-        LOGGER.info("Starting timer for hosting changes")
-        SERVER.revert_hosting_timer.start()
-
-    return
-
-
-def diffuse_timers() -> None:
-    """Stop any timers running after doing a special restart.
-    """
-    if SERVER.revert_hosting_timer.is_alive():
-        LOGGER.info("Timer for hosting changes diffused")
-        SERVER.revert_hosting_timer.cancel()
-
-    return
-
-
-def _set_websocket_threads_names() -> None:
-    """Monkey patch some websocket methods to give the resulting threads
-    a better name. Helps to identify threads when debugging.
-    """
-    if hasattr(IOSocket, 'schedule_ping'):
-        def schedule_ping(self):
-            t = self.server.start_background_task(self._send_ping)
-            t.name = "WebSocketPingerThread"
-
-        IOSocket.schedule_ping = schedule_ping
-
-    if hasattr(IOServer, '_handle_connect'):
-        original_handle_connect = IOServer._handle_connect
-
-        def _handle_connect(
-            self, environ, start_response, transport, jsonp_index=None
-        ):
-            result = original_handle_connect(
-                self, environ, start_response, transport, jsonp_index
-            )
-            if self.service_task_handle is not None:
-                self.service_task_handle.name = "WebSocketConnectThread"
-            return result
-
-        IOServer._handle_connect = _handle_connect
-
-    return
-
-
+# region Server
 class Server(metaclass=Singleton):
-    api_prefix = "/api"
+    url_base = ''
 
     def __init__(self) -> None:
-        self.start_type = None
-        self.url_base = ''
-
-        self.revert_hosting_timer = Timer(
-            Constants.HOSTING_TIMER_DURATION,
-            lambda: Settings().restore_hosting_settings()
-        )
-        self.revert_hosting_timer.name = "HostingHandler"
-
+        self.__start_type = None
+        self.app = self._create_app()
         return
 
-    def create_app(self) -> None:
-        """Creates an flask app instance that can be used to start a web server"""
+    @staticmethod
+    def _create_app() -> Flask:
+        """Creates a flask app instance that can be used to start a web server.
 
+        Returns:
+            Flask: The instance.
+        """
         from frontend.api import api
         from frontend.ui import ui
 
@@ -174,29 +93,31 @@ class Server(metaclass=Singleton):
             static_url_path='/static'
         )
         app.config['SECRET_KEY'] = urandom(32)
-        app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
-        app.config['JSON_SORT_KEYS'] = False
 
-        _set_websocket_threads_names()
-        self.ws = WebSocket()
-        self.ws.init_app(
+        json_provider = DefaultJSONProvider(app)
+        json_provider.sort_keys = False
+        json_provider.compact = False
+        app.json = json_provider
+
+        ws = WebSocket()
+        ws.init_app(
             app,
-            path=f'{self.api_prefix}/socket.io',
+            path=f'{Constants.API_PREFIX}/socket.io',
             cors_allowed_origins='*',
             async_mode='threading',
             client_manager=MPWebSocketQueue(SimpleQueue(), write_only=False)
         )
 
         # Add error handlers
-        @app.errorhandler(404)
-        def not_found(e):
-            if request.path.startswith(self.api_prefix):
-                return {'error': 'NotFound', 'result': {}}, 404
-            return render_template('page_not_found.html')
-
         @app.errorhandler(400)
         def bad_request(e):
             return {'error': 'BadRequest', 'result': {}}, 400
+
+        @app.errorhandler(404)
+        def not_found(e):
+            if request.path.startswith(Constants.API_PREFIX):
+                return {'error': 'NotFound', 'result': {}}, 404
+            return render_template('page_not_found.html')
 
         @app.errorhandler(405)
         def method_not_allowed(e):
@@ -208,71 +129,55 @@ class Server(metaclass=Singleton):
 
         # Add endpoints
         app.register_blueprint(ui)
-        app.register_blueprint(api, url_prefix=self.api_prefix)
+        app.register_blueprint(api, url_prefix=Constants.API_PREFIX)
 
         # Setup db handling
         app.teardown_appcontext(close_db)
 
-        self.app = app
-        return
+        return app
 
-    def set_url_base(self, url_base: str) -> None:
-        """Change the URL base of the server.
+    def run(
+        self,
+        host: str,
+        port: int,
+        url_base: str
+    ) -> Union[StartType, None]:
+        """Start the webserver.
 
         Args:
-            url_base (str): The desired URL base to set it to.
+            host (str): IP address to bind to, or `0.0.0.0` for all.
+            port (int): The port to listen on.
+            url_base (str): The url prefix/base to host the endpoints on, or
+                an empty string for no prefix.
+
+        Returns:
+            Union[StartType, None]: `None` on shutdown, `StartType` on restart.
         """
-        self.app.config['APPLICATION_ROOT'] = url_base
+        self.app.config["APPLICATION_ROOT"] = url_base
         self.app.wsgi_app = DispatcherMiddleware( # type: ignore
             Flask(__name__),
             {url_base: self.app.wsgi_app}
         )
-        self.url_base = url_base
-        return
+        self.__class__.url_base = url_base
 
-    def __create_waitress_server(
-        self,
-        host: str,
-        port: int
-    ) -> Union[MultiSocketServer, BaseWSGIServer]:
-        """From the `Flask` instance created in `self.create_app()`, create
-        a waitress server instance.
-
-        Args:
-            host (str): Where to host the server on (e.g. `0.0.0.0`).
-            port (int): The port to host the server on (e.g. `5656`).
-
-        Returns:
-            Union[MultiSocketServer, BaseWSGIServer]: The waitress server instance.
-        """
         dispatcher = ThreadedTaskDispatcher()
         dispatcher.set_thread_count(Constants.HOSTING_THREADS)
 
-        server = create_server(
+        self.server = create_server(
             self.app,
             _dispatcher=dispatcher,
             host=host,
             port=port,
             threads=Constants.HOSTING_THREADS
         )
-        return server
 
-    def run(self, host: str, port: int) -> None:
-        """Start the webserver.
-
-        Args:
-            host (str): The host to bind to.
-            port (int): The port to listen on.
-        """
-        self.server = self.__create_waitress_server(host, port)
         LOGGER.info(f'Kapowarr running on http://{host}:{port}{self.url_base}')
         self.server.run()
 
-        return
+        return self.__start_type
 
-    def __shutdown_thread_function(self) -> None:
-        """Shutdown waitress server. Intended to be run in a thread.
-        """
+    def __trigger_server_shutdown(self) -> None:
+        """Shutdown waitress server. Intended to be run in a thread."""
         if not hasattr(self, 'server'):
             return
 
@@ -282,12 +187,15 @@ class Server(metaclass=Singleton):
         return
 
     def shutdown(self) -> None:
-        """Stop the waitress server. Starts a thread that
-        shuts down the server.
         """
-        t = Timer(1.0, self.__shutdown_thread_function)
-        t.name = "InternalStateHandler"
-        t.start()
+        Stop the waitress server. Starts a thread that will trigger the server
+        shutdown after one second.
+        """
+        self.get_db_timer_thread(
+            interval=1.0,
+            target=self.__trigger_server_shutdown,
+            name="InternalStateHandler"
+        ).start()
         return
 
     def restart(
@@ -297,17 +205,16 @@ class Server(metaclass=Singleton):
         """Same as `self.shutdown()`, but restart instead of shutting down.
 
         Args:
-            start_type (StartType, optional): Why Kapowarr should
-            restart.
+            start_type (StartType, optional): Why Kapowarr should restart.
                 Defaults to StartType.RESTART.
         """
-        self.start_type = start_type
+        self.__start_type = start_type
         self.shutdown()
         return
 
     def get_db_thread(
         self,
-        target: Callable[..., object],
+        target: Callable,
         name: str,
         args: Iterable[Any] = (),
         kwargs: Mapping[str, Any] = {}
@@ -315,29 +222,23 @@ class Server(metaclass=Singleton):
         """Create a thread that runs under Flask app context.
 
         Args:
-            target (Callable[..., object]): The function to run in the thread.
+            target (Callable): The function to run in the thread.
+
             name (str): The name of the thread.
+
             args (Iterable[Any], optional): The arguments to pass to the function.
                 Defaults to ().
+
             kwargs (Mapping[str, Any], optional): The keyword arguments to pass
-            to the function.
+                to the function.
                 Defaults to {}.
 
         Returns:
-            Thread: The thread instance.
+            Thread: The Thread instance.
         """
         def db_thread(*args, **kwargs) -> None:
             with self.app.app_context():
                 target(*args, **kwargs)
-
-            thread_id = current_thread().native_id or -1
-            if (
-                thread_id in DBConnectionManager.instances
-                and
-                not DBConnectionManager.instances[thread_id].closed
-            ):
-                DBConnectionManager.instances[thread_id].close()
-
             return
 
         t = Thread(
@@ -348,7 +249,51 @@ class Server(metaclass=Singleton):
         )
         return t
 
+    def get_db_timer_thread(
+        self,
+        interval: float,
+        target: Callable,
+        name: Union[str, None] = None,
+        args: Iterable[Any] = (),
+        kwargs: Mapping[str, Any] = {}
+    ) -> Timer:
+        """Create a timer thread that runs under Flask app context.
 
+        Args:
+            interval (float): The time to wait before running the target.
+
+            target (Callable): The function to run in the thread.
+
+            name (Union[str, None], optional): The name of the thread.
+                Defaults to None.
+
+            args (Iterable[Any], optional): The arguments to pass to the function.
+                Defaults to ().
+
+            kwargs (Mapping[str, Any], optional): The keyword arguments to pass
+                to the function.
+                Defaults to {}.
+
+        Returns:
+            Timer: The timer thread instance.
+        """
+        def db_thread(*args, **kwargs) -> None:
+            with self.app.app_context():
+                target(*args, **kwargs)
+            return
+
+        t = Timer(
+            interval=interval,
+            function=db_thread,
+            args=args,
+            kwargs=kwargs
+        )
+        if name:
+            t.name = name
+        return t
+
+
+# region Websocket
 class MPWebSocketQueue(PubSubManager):
     name = 'mp_queue'
 
@@ -385,6 +330,34 @@ class WebSocket(SocketIO, metaclass=Singleton):
     def client_manager(self) -> MPWebSocketQueue:
         return self.server_options['client_manager']
 
+    def disconnect_all(self) -> None:
+        """Disconnect all clients from the default namespace"""
+        for sid, _ in self.client_manager.get_participants('/', None):
+            self.client_manager.disconnect(sid, '/')
+        return
+
+    def emit( # type: ignore
+        self,
+        event: SocketEvent,
+        data: Dict[str, Any]
+    ) -> None:
+        cm = self.client_manager
+
+        if not cm.write_only:
+            super().emit(event.value, data)
+        else:
+            message = {
+                'method': 'emit',
+                'event': event.value,
+                'data': data,
+                'namespace': '/',
+                'host_id': cm.host_id
+            }
+            cm._handle_emit(message)
+            cm._publish(message)
+
+        return
+
     def send_task_added(self, task: Task) -> None:
         """Send a message stating a task that has been added
         to the queue.
@@ -393,35 +366,13 @@ class WebSocket(SocketIO, metaclass=Singleton):
             task (Task): The task that has been added.
         """
         self.emit(
-            SocketEvent.TASK_ADDED.value,
+            SocketEvent.TASK_ADDED,
             {
                 'action': task.action,
                 'volume_id': task.volume_id,
                 'issue_id': task.issue_id
             }
         )
-        return
-
-    def emit( # type: ignore
-        self,
-        event: str,
-        data: Dict[str, Any]
-    ) -> None:
-        cm = self.client_manager
-
-        if not cm.write_only:
-            super().emit(event, data)
-        else:
-            message = {
-                'method': 'emit',
-                'event': event,
-                'data': data,
-                'namespace': '/',
-                'host_id': cm.host_id
-            }
-            cm._handle_emit(message)
-            cm._publish(message)
-
         return
 
     def send_task_ended(self, task: Task) -> None:
@@ -432,7 +383,7 @@ class WebSocket(SocketIO, metaclass=Singleton):
             task (Task): The task that has been removed.
         """
         self.emit(
-            SocketEvent.TASK_ENDED.value,
+            SocketEvent.TASK_ENDED,
             {
                 'action': task.action,
                 'volume_id': task.volume_id,
@@ -459,7 +410,7 @@ class WebSocket(SocketIO, metaclass=Singleton):
         """
         if task is not None:
             self.emit(
-                SocketEvent.TASK_STATUS.value,
+                SocketEvent.TASK_STATUS,
                 {
                     'message': task.message
                 }
@@ -467,7 +418,7 @@ class WebSocket(SocketIO, metaclass=Singleton):
 
         elif message is not None:
             self.emit(
-                SocketEvent.TASK_STATUS.value,
+                SocketEvent.TASK_STATUS,
                 {
                     'message': message
                 }
@@ -483,7 +434,7 @@ class WebSocket(SocketIO, metaclass=Singleton):
             download (Download): The download that has been added.
         """
         self.emit(
-            SocketEvent.QUEUE_ADDED.value,
+            SocketEvent.QUEUE_ADDED,
             download.as_dict()
         )
         return
@@ -496,7 +447,7 @@ class WebSocket(SocketIO, metaclass=Singleton):
             download (Download): The download that has been removed.
         """
         self.emit(
-            SocketEvent.QUEUE_ENDED.value,
+            SocketEvent.QUEUE_ENDED,
             {
                 'id': download.id
             }
@@ -510,7 +461,7 @@ class WebSocket(SocketIO, metaclass=Singleton):
             download (Download): The download instance to send the status of.
         """
         self.emit(
-            SocketEvent.QUEUE_STATUS.value,
+            SocketEvent.QUEUE_STATUS,
             {
                 'id': download.id,
                 'status': download.state.value,
@@ -535,7 +486,7 @@ class WebSocket(SocketIO, metaclass=Singleton):
             total_items (int): The total number of items that will be worked on.
         """
         self.emit(
-            SocketEvent.MASS_EDITOR_STATUS.value,
+            SocketEvent.MASS_EDITOR_STATUS,
             {
                 'identifier': identifier,
                 'current_item': current_item,
@@ -565,7 +516,7 @@ class WebSocket(SocketIO, metaclass=Singleton):
                 Defaults to [].
         """
         self.emit(
-            SocketEvent.DOWNLOADED_STATUS.value,
+            SocketEvent.DOWNLOADED_STATUS,
             {
                 'volume_id': volume_id,
                 'not_downloaded_issues': not_downloaded_issues,
@@ -575,6 +526,110 @@ class WebSocket(SocketIO, metaclass=Singleton):
         return
 
 
+# region StartType Handling
+class StartTypeHandlers:
+    handlers: dict[StartType, StartTypeHandler] = {}
+    timeout_thread: Union[Timer, None] = None
+    running_handler: Union[StartType, None] = None
+
+    @classmethod
+    def register_handler(cls, start_type: StartType):
+        """Register a handler for a certain start type.
+
+        ```
+        @StartTypeHandlers.register_handler(example_type)
+        class ExampleHandler(StartTypeHandler):
+            ...
+        ```
+
+        Args:
+            start_type (StartType): The start type that the handler is for.
+        """
+        def wrapper(
+            handler_class: type[StartTypeHandler]
+        ) -> type[StartTypeHandler]:
+            cls.handlers[start_type] = handler_class()
+            return handler_class
+        return wrapper
+
+    @staticmethod
+    def _on_timeout_wrapper(
+        on_timeout: Callable[[], None],
+        restart_on_timeout: bool
+    ) -> None:
+        on_timeout()
+        if restart_on_timeout:
+            Server().restart()
+        return
+
+    @classmethod
+    def start_timer(cls, start_type: StartType) -> None:
+        """Start the timer for a start type.
+
+        Args:
+            start_type (StartType): The start type to start the timer for.
+        """
+        if start_type not in cls.handlers:
+            return
+
+        if cls.timeout_thread and cls.timeout_thread.is_alive():
+            cls.timeout_thread.cancel()
+
+        handler = cls.handlers[start_type]
+        cls.running_handler = start_type
+        cls.timeout_thread = Server().get_db_timer_thread(
+            interval=handler.timeout,
+            target=cls._on_timeout_wrapper,
+            name=f"StartTypeHandler.{start_type.name}",
+            args=(handler.on_timeout, handler.restart_on_timeout)
+        )
+        cls.timeout_thread.start()
+        LOGGER.info(
+            "Starting timer for %s (%d seconds)",
+            handler.description, handler.timeout
+        )
+        return
+
+    @classmethod
+    def diffuse_timer(cls, start_type: StartType) -> None:
+        """Stop/Diffuse the timer for a start type.
+
+        Args:
+            start_type (StartType): The start type to stop the timer for.
+        """
+        if cls.running_handler != start_type:
+            return
+
+        if not (cls.timeout_thread and cls.timeout_thread.is_alive()):
+            return
+
+        handler = cls.handlers[start_type]
+        LOGGER.info(
+            "Timer for %s diffused",
+            handler.description
+        )
+        cls.timeout_thread.cancel()
+        cls.timeout_thread = None
+        cls.running_handler = None
+        handler.on_diffuse()
+        return
+
+
+@StartTypeHandlers.register_handler(StartType.RESTART_HOSTING_CHANGES)
+class HostingChangesHandler(StartTypeHandler):
+    description = "hosting changes"
+    timeout = Constants.HOSTING_REVERT_TIME
+    restart_on_timeout = True
+
+    def on_timeout(self) -> None:
+        Settings().restore_hosting_settings()
+        return
+
+    def on_diffuse(self) -> None:
+        return
+
+
+# region Subprocess Handling
 def setup_process(
     log_level: int,
     log_folder: Union[str, None],
@@ -591,6 +646,3 @@ def setup_process(
     app = Flask(__name__)
     app.teardown_appcontext(close_db)
     return app.app_context
-
-
-SERVER = Server()

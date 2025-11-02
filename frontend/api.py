@@ -43,7 +43,7 @@ from backend.implementations.remote_mapping import RemoteMappings
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Library, delete_issue_file
 from backend.internals.db_models import FilesDB
-from backend.internals.server import SERVER, diffuse_timers
+from backend.internals.server import Server, StartTypeHandlers
 from backend.internals.settings import Settings, get_about_data
 
 api = Blueprint('api', __name__)
@@ -204,7 +204,7 @@ def auth(method):
             LOGGER.warning(f'Unauthorised request from {ip}')
             return return_api({}, 'ApiKeyInvalid', 401)
 
-        diffuse_timers()
+        StartTypeHandlers.diffuse_timer(StartType.RESTART_HOSTING_CHANGES)
 
         result = method(*args, **kwargs)
 
@@ -377,7 +377,7 @@ def api_task(task_id: int):
 @error_handler
 @auth
 def api_shutdown():
-    SERVER.shutdown()
+    Server().shutdown()
     return return_api({})
 
 
@@ -385,7 +385,7 @@ def api_shutdown():
 @error_handler
 @auth
 def api_restart():
-    SERVER.restart()
+    Server().restart()
     return return_api({})
 
 # =====================
@@ -425,7 +425,7 @@ def api_settings():
         )
 
         if hosting_changes:
-            SERVER.restart(StartType.RESTART_HOSTING_CHANGES)
+            Server().restart(StartType.RESTART_HOSTING_CHANGES)
 
         return return_api(settings.get_public_settings().todict())
 
@@ -455,7 +455,7 @@ def api_settings():
             settings.reset(reset_key, from_public=True)
 
         if hosting_changes:
-            SERVER.restart(StartType.RESTART_HOSTING_CHANGES)
+            Server().restart(StartType.RESTART_HOSTING_CHANGES)
 
         return return_api(settings.get_public_settings().todict())
 

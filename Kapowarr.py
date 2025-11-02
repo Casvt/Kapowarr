@@ -17,7 +17,7 @@ from backend.base.logging import LOGGER, setup_logging
 from backend.features.download_queue import DownloadHandler
 from backend.features.tasks import TaskHandler
 from backend.internals.db import set_db_location, setup_db
-from backend.internals.server import SERVER, handle_start_type
+from backend.internals.server import Server, StartTypeHandlers
 from backend.internals.settings import Settings
 
 
@@ -73,10 +73,9 @@ def _main(
 
     set_db_location(db_folder)
 
-    SERVER.create_app()
-
+    SERVER = Server()
     with SERVER.app.app_context():
-        handle_start_type(start_type)
+        StartTypeHandlers.start_timer(start_type)
         setup_db()
 
         s = Settings()
@@ -100,25 +99,27 @@ def _main(
                 raise ValueError("Invalid url base value")
 
         settings = s.get_settings()
-        SERVER.set_url_base(settings.url_base)
 
         download_handler = DownloadHandler()
         download_handler.load_downloads()
         task_handler = TaskHandler()
         task_handler.handle_intervals()
 
+    restart_type = None
     try:
         # =================
-        SERVER.run(settings.host, settings.port)
+        restart_type = SERVER.run(
+            settings.host, settings.port, settings.url_base
+        )
         # =================
 
     finally:
         download_handler.stop_handle()
         task_handler.stop_handle()
 
-        if SERVER.start_type is not None:
+        if restart_type is not None:
             LOGGER.info('Restarting Kapowarr')
-            exit(SERVER.start_type.value)
+            exit(restart_type.value)
 
         exit(0)
 

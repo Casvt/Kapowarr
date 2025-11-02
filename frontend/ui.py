@@ -6,14 +6,14 @@ from typing import Any
 
 from flask import Blueprint, redirect, render_template, send_file
 
-from backend.internals.server import SERVER
+from backend.internals.server import Server
 
 ui = Blueprint('ui', __name__)
 methods = ['GET']
 
 
 def render(filename: str, **kwargs: Any) -> str:
-    return render_template(filename, url_base=SERVER.url_base, **kwargs)
+    return render_template(filename, url_base=Server.url_base, **kwargs)
 
 
 @ui.route('/manifest.json', methods=methods)
@@ -26,14 +26,14 @@ def ui_manifest():
                 "description": "Kapowarr is a software to build and manage a comic book library, fitting in the *arr suite of software.",
                 "display": "standalone",
                 "orientation": "portrait-primary",
-                "start_url": f"{SERVER.url_base}/",
-                "scope": f"{SERVER.url_base}/",
-                "id": f"{SERVER.url_base}/",
+                "start_url": f"{Server.url_base}/",
+                "scope": f"{Server.url_base}/",
+                "id": f"{Server.url_base}/",
                 "background_color": "#464b51",
                 "theme_color": "#ebc700",
                 "icons": [
                     {
-                        "src": f"{SERVER.url_base}/static/img/favicon.svg",
+                        "src": f"{Server.url_base}/static/img/favicon.svg",
                         "type": "image/svg+xml",
                         "sizes": "any"
                     }
@@ -98,7 +98,7 @@ def ui_tasks():
 
 @ui.route('/settings', methods=methods)
 def ui_settings():
-    return redirect(f'{SERVER.url_base}/settings/mediamanagement')
+    return redirect(f'{Server.url_base}/settings/mediamanagement')
 
 
 @ui.route('/settings/mediamanagement', methods=methods)

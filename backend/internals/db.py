@@ -112,6 +112,18 @@ class DBConnectionManager(type):
 
         return cls.instances[thread_id]
 
+    @classmethod
+    def close_connection_of_thread(cls) -> None:
+        """Close the DB connection of the current thread"""
+        thread_id = current_thread_id()
+        if (
+            thread_id in cls.instances
+            and not cls.instances[thread_id].closed
+        ):
+            cls.instances[thread_id].close()
+            del cls.instances[thread_id]
+        return
+
 
 class DBConnection(Connection, metaclass=DBConnectionManager):
     file = ''
@@ -272,7 +284,7 @@ def close_db(e: Union[BaseException, None] = None) -> None:
         delattr(g, 'cursors')
         db.commit()
         if not current_thread().name.startswith('waitress-'):
-            db.close()
+            DBConnectionManager.close_connection_of_thread()
 
     except ProgrammingError:
         pass

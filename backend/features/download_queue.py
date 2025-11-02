@@ -34,7 +34,7 @@ from backend.implementations.external_clients import ExternalClients
 from backend.implementations.getcomics import GetComicsPage
 from backend.implementations.volumes import Issue
 from backend.internals.db import get_db, iter_commit
-from backend.internals.server import SERVER, WebSocket
+from backend.internals.server import Server, WebSocket
 from backend.internals.settings import Settings
 
 if TYPE_CHECKING:
@@ -298,14 +298,14 @@ class DownloadHandler(metaclass=Singleton):
                 ).lastrowid
 
             if not isinstance(download, ExternalDownload):
-                download.download_thread = SERVER.get_db_thread(
+                download.download_thread = Server().get_db_thread(
                     target=self.__run_download,
                     args=(download,),
                     name=f'DownloadThread-{download.id}'
                 )
 
             if isinstance(download, TorrentDownload):
-                thread = SERVER.get_db_thread(
+                thread = Server().get_db_thread(
                     target=self.__run_torrent_download,
                     args=(download,),
                     name=f'TorrentDownloadThread-{download.id}'
@@ -585,7 +585,7 @@ class DownloadHandler(metaclass=Singleton):
         Returns:
             Thread: The thread that is loading the downloads.
         """
-        result = SERVER.get_db_thread(
+        result = Server().get_db_thread(
             target=self.__load_downloads,
             name="DownloadImportThread"
         )

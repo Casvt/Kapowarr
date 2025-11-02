@@ -33,11 +33,14 @@ class Constants:
     HOSTING_THREADS = 10
     "Amount of threads for the webserver"
 
-    HOSTING_TIMER_DURATION = 60.0 # seconds
+    HOSTING_REVERT_TIME = 60.0 # seconds
     """
     Seconds to wait after restarting from hosting changes
     until they are reverted
     """
+
+    API_PREFIX = "/api"
+    "The URL prefix that all API endpoints bind to"
 
     DB_FOLDER = ("db",)
     "Subfolder of application folder to put database in"
@@ -752,6 +755,31 @@ class KapowarrException(Exception, ABC):
     @property
     @abstractmethod
     def api_response(self) -> ApiResponse:
+        ...
+
+
+class StartTypeHandler(ABC):
+    description: str
+    """A short description of what the start type is for"""
+
+    timeout: float
+    """The amount of time in seconds before reverting"""
+
+    restart_on_timeout: bool
+    """Whether the application should restart once the timeout is reached"""
+
+    @abstractmethod
+    def on_timeout(self) -> None:
+        """
+        Called when the timeout is reached. Generally reverts changes.
+        """
+        ...
+
+    @abstractmethod
+    def on_diffuse(self) -> None:
+        """
+        Called when the timer is diffused. Generally finalises changes.
+        """
         ...
 
 
