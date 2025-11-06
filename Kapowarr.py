@@ -7,7 +7,7 @@ from multiprocessing import set_start_method
 from os import environ, name
 from signal import SIGINT, SIGTERM, signal
 from subprocess import Popen
-from sys import argv
+from sys import argv, executable
 from typing import NoReturn, Union
 
 from backend.base.custom_exceptions import InvalidKeyValue
@@ -170,10 +170,15 @@ def _run_sub_process(
         "KAPOWARR_START_TYPE": str(start_type.value)
     }
 
-    py_exe = get_python_exe()
+    # Use sys.executable to ensure we use the same Python (venv) that started this script
+    # This fixes issue where get_python_exe() returns system Python instead of venv Python
+    py_exe = executable
     if not py_exe:
-        print("ERROR: Python executable not found")
-        return 1
+        # Fallback to get_python_exe() if sys.executable is not available
+        py_exe = get_python_exe()
+        if not py_exe:
+            print("ERROR: Python executable not found")
+            return 1
 
     comm = [py_exe, "-u", __file__] + argv[1:]
     proc = Popen(
