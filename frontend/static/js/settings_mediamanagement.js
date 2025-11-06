@@ -19,6 +19,27 @@ const inputs = {
 //
 // Settings
 //
+function getCurrentValues() {
+	return {
+		rename_downloaded_files: inputs.renaming_input.checked,
+		replace_illegal_characters: inputs.replace_illegal_characters.checked,
+		volume_folder_naming: inputs.volume_folder_naming_input.value,
+		file_naming: inputs.file_naming_input.value,
+		file_naming_empty: inputs.file_naming_empty_input.value,
+		file_naming_special_version: inputs.file_naming_sv_input.value,
+		file_naming_vai: inputs.file_naming_vai_input.value,
+		long_special_version: inputs.long_sv_input.checked,
+		issue_padding: parseInt(inputs.issue_padding_input.value),
+		volume_padding: parseInt(inputs.volume_padding_input.value),
+		create_empty_volume_folders: inputs.create_empty_volume_folders_input.checked,
+		delete_empty_folders: inputs.delete_empty_folders_input.checked,
+		unmonitor_deleted_issues: inputs.unmonitor_deleted_input.checked,
+		convert: inputs.convert_input.checked,
+		extract_issue_ranges: inputs.extract_input.checked,
+		format_preference: convert_preference
+	};
+}
+
 function fillSettings(api_key) {
 	fetchAPI('/settings', api_key)
 	.then(json => {
@@ -39,6 +60,9 @@ function fillSettings(api_key) {
 		inputs.extract_input.checked = json.result.extract_issue_ranges;
 
 		fillConvert(api_key, json.result.format_preference);
+		
+		// Initialize unsaved changes tracking after settings are loaded
+		initUnsavedChangesTracking(getCurrentValues);
 	});
 };
 
@@ -68,9 +92,10 @@ function saveSettings(api_key) {
 		'format_preference': convert_preference,
 	};
 	sendAPI('PUT', '/settings', api_key, {}, data)
-	.then(response => 
-		document.querySelector("#save-button p").innerText = 'Saved'
-	)
+	.then(response => {
+		document.querySelector("#save-button p").innerText = 'Saved';
+		markAsSaved(getCurrentValues);
+	})
 	.catch(e => {
 		document.querySelector("#save-button p").innerText = 'Failed';
 		e.json().then(e => {
@@ -155,6 +180,8 @@ function updateConvertList() {
 			other_el.value = missing_value;
 
 			convert_preference = getConvertList();
+			// Convert preference change triggers unsaved changes check
+			checkForChanges(getCurrentValues);
 		};
 		select_container.appendChild(select);
 		entry.appendChild(select_container);
@@ -167,6 +194,8 @@ function updateConvertList() {
 			entry.remove();
 			convert_preference = getConvertList();
 			updateConvertList();
+			// Convert preference change triggers unsaved changes check
+			checkForChanges(getCurrentValues);
 		};
 		const delete_button_icon = document.createElement('img');
 		delete_button_icon.src = `${url_base}/static/img/delete.svg`;
@@ -358,5 +387,7 @@ document.querySelector('#add-convert-input').onchange = e => {
 	if (value !== 'No Conversion') {
 		convert_preference.push(value);
 		updateConvertList();
+		// Convert preference change triggers unsaved changes check
+		checkForChanges(getCurrentValues);
 	};
 };

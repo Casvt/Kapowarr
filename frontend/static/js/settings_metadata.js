@@ -1,7 +1,16 @@
+function getCurrentValues() {
+	return {
+		date_type: document.querySelector('#date-type-input').value
+	};
+}
+
 function fillSettings(api_key) {
 	fetchAPI('/settings', api_key)
 	.then(json => {
 		document.querySelector('#date-type-input').value = json.result.date_type;
+		
+		// Initialize unsaved changes tracking after settings are loaded
+		initUnsavedChangesTracking(getCurrentValues);
 	});
 };
 
@@ -15,6 +24,7 @@ function saveSettings(api_key) {
 	.then(json => {
 		if (json.error !== null) return Promise.reject(json);
 		document.querySelector("#save-button p").innerText = 'Saved';
+		markAsSaved(getCurrentValues);
 	})
 	.catch(e => {
 		document.querySelector("#save-button p").innerText = 'Failed';
