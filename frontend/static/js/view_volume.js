@@ -41,6 +41,9 @@ const ViewEls = {
 	issues_list: document.querySelector('#issues-list')
 };
 
+let currentIssueSort = 'DATE'; // 'DATE' or 'ISSUE_NUMBER'
+let currentSortDirection = 'asc'; // 'asc' or 'desc'
+
 //
 // Filling data
 //
@@ -105,11 +108,90 @@ class IssueEntry {
 	};
 };
 
+function loadVolume(volume_id, api_key, sortOverride = null, directionOverride = null) {
+	// Use provided sort override, or load from localStorage, or use default
+	let sortToUse = sortOverride;
+	let directionToUse = directionOverride;
+	
+	if (!sortToUse) {
+		const savedSort = localStorage.getItem('issueSort');
+		if (savedSort === 'ISSUE_NUMBER' || savedSort === 'DATE') {
+			sortToUse = savedSort;
+		} else {
+			sortToUse = 'DATE';
+		}
+	}
+	
+	if (!directionToUse) {
+		const savedDirection = localStorage.getItem('issueSortDirection');
+		if (savedDirection === 'asc' || savedDirection === 'desc') {
+			directionToUse = savedDirection;
+		} else {
+			directionToUse = 'asc';
+		}
+	}
+	
+	currentIssueSort = sortToUse;
+	currentSortDirection = directionToUse;
+	
+	fetchAPI(`/volumes/${volume_id}`, api_key, {issue_sort: currentIssueSort})
+	.then(json => fillPage(json.result, api_key))
+	.catch(e => {
+		if (e.status === 404)
+			window.location.href = `${url_base}/`
+		else
+			console.log(e);
+	});
+}
+
+function updateSortIndicator() {
+	// Get headers dynamically in case DOM wasn't ready when script loaded
+	// Use 'thead th' to specifically target header cells, not body cells
+	const issue_number_header = document.querySelector('thead th.issue-number');
+	const issue_date_header = document.querySelector('thead th.issue-date');
+	
+	// Remove sort indicators from both headers
+	if (issue_number_header) {
+		issue_number_header.classList.remove('sort-active');
+		issue_number_header.classList.remove('sort-asc');
+		issue_number_header.classList.remove('sort-desc');
+	}
+	if (issue_date_header) {
+		issue_date_header.classList.remove('sort-active');
+		issue_date_header.classList.remove('sort-asc');
+		issue_date_header.classList.remove('sort-desc');
+	}
+	
+	// Add sort indicator to active header
+	const activeHeader = currentIssueSort === 'ISSUE_NUMBER' ? issue_number_header : issue_date_header;
+	if (activeHeader) {
+		activeHeader.classList.add('sort-active');
+		activeHeader.classList.add(currentSortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
+	}
+}
+
+function setIssueSort(sort, api_key) {
+	// If clicking the same column, toggle direction; otherwise switch column and reset to asc
+	if (currentIssueSort === sort) {
+		currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+	} else {
+		currentIssueSort = sort;
+		currentSortDirection = 'asc';
+	}
+	localStorage.setItem('issueSort', currentIssueSort);
+	localStorage.setItem('issueSortDirection', currentSortDirection);
+	updateSortIndicator();
+	loadVolume(volume_id, api_key, currentIssueSort, currentSortDirection); // Pass sort to avoid localStorage override
+}
+
 function fillTable(issues, api_key) {
 	ViewEls.issues_list.innerHTML = '';
 
-	for (i = issues.length - 1; i >= 0; i--) {
-		const obj = issues[i];
+	// Reverse the array if sorting descending, otherwise keep as-is (already sorted ascending)
+	const issuesToDisplay = currentSortDirection === 'desc' ? [...issues].reverse() : issues;
+
+	for (i = 0; i < issuesToDisplay.length; i++) {
+		const obj = issuesToDisplay[i];
 
 		const entry = ViewEls.pre_build.issue_entry.cloneNode(true);
 		entry.dataset.id = obj.id;
@@ -177,8 +259,9 @@ function fillPage(data, api_key) {
 	// Title
 	ViewEls.vol_data.title.innerText = data.title;
 
-	// Tags
+	// Tags - clear first to avoid duplication
 	const tags = ViewEls.vol_data.tags;
+	tags.innerHTML = ''; // Clear existing tags before adding new ones
 	if (data.year !== null) {
 		const year = document.createElement('p');
 		year.innerText = data.year;
@@ -212,6 +295,9 @@ function fillPage(data, api_key) {
 
 	// fill issue lists
 	fillTable(data.issues, api_key);
+	
+	// Update sort indicators
+	updateSortIndicator();
 
 	mapButtons(volume_id);
 
@@ -739,14 +825,32 @@ function showInfoWindow(window) {
 
 usingApiKey()
 .then(api_key => {
-	fetchAPI(`/volumes/${volume_id}`, api_key)
-	.then(json => fillPage(json.result, api_key))
-	.catch(e => {
-		if (e.status === 404)
-			window.location.href = `${url_base}/`
-		else
-			console.log(e);
-	});
+	// Load sort preference from localStorage or use default
+	const savedSort = localStorage.getItem('issueSort');
+	const savedDirection = localStorage.getItem('issueSortDirection');
+	if (savedSort === 'ISSUE_NUMBER' || savedSort === 'DATE') {
+		currentIssueSort = savedSort;
+	}
+	if (savedDirection === 'asc' || savedDirection === 'desc') {
+		currentSortDirection = savedDirection;
+	}
+	loadVolume(volume_id, api_key);
+
+	// Set up sortable headers (get them dynamically in case DOM wasn't ready)
+	// Use 'thead th' to specifically target header cells, not body cells
+	const issue_number_header = document.querySelector('thead th.issue-number');
+	const issue_date_header = document.querySelector('thead th.issue-date');
+	
+	if (issue_number_header) {
+		issue_number_header.style.cursor = 'pointer';
+		issue_number_header.title = 'Click to sort by issue number';
+		issue_number_header.onclick = e => setIssueSort('ISSUE_NUMBER', api_key);
+	}
+	if (issue_date_header) {
+		issue_date_header.style.cursor = 'pointer';
+		issue_date_header.title = 'Click to sort by release date';
+		issue_date_header.onclick = e => setIssueSort('DATE', api_key);
+	}
 
 	ViewEls.tool_bar.refresh.onclick = e => refreshVolume(api_key);
 	ViewEls.tool_bar.auto_search.onclick = e => autosearchVolume(api_key);

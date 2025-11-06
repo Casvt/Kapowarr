@@ -11,10 +11,10 @@ from backend.base.custom_exceptions import (InvalidKeyValue,
                                             KeyNotFound, TaskNotFound)
 from backend.base.definitions import (BlocklistReason, BlocklistReasonID,
                                       CredentialData, CredentialSource,
-                                      DownloadSource, KapowarrException,
-                                      LibraryFilter, LibrarySorting,
-                                      MonitorScheme, SpecialVersion,
-                                      StartType, VolumeData)
+                                      DownloadSource, IssueSorting,
+                                      KapowarrException, LibraryFilter,
+                                      LibrarySorting, MonitorScheme,
+                                      SpecialVersion, StartType, VolumeData)
 from backend.base.helpers import hash_password
 from backend.base.logging import LOGGER, get_log_file_contents
 from backend.features.download_queue import (DownloadHandler,
@@ -117,6 +117,12 @@ def extract_key(request, key: str, check_existence: bool = True) -> Any:
         elif key == 'sort':
             try:
                 value = LibrarySorting[value.upper()]
+            except KeyError:
+                raise InvalidKeyValue(key, value)
+
+        elif key == 'issue_sort':
+            try:
+                value = IssueSorting[value.upper()]
             except KeyError:
                 raise InvalidKeyValue(key, value)
 
@@ -804,7 +810,10 @@ def api_volume(id: int):
     volume = library.get_volume(id)
 
     if request.method == 'GET':
-        volume_info = volume.get_public_keys()
+        issue_sort = extract_key(request, 'issue_sort', False)
+        if issue_sort is None:
+            issue_sort = IssueSorting.DATE
+        volume_info = volume.get_public_keys(issue_sort=issue_sort)
         return return_api(volume_info)
 
     elif request.method == 'PUT':

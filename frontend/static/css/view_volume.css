@@ -135,6 +135,31 @@ This flows better for ARIA.
 .issue-date {
 	width: 6.5rem;
 }
+
+.issue-number.sort-active,
+.issue-date.sort-active {
+	position: relative;
+	color: var(--text-color);
+}
+
+.issue-number.sort-active.sort-asc::after,
+.issue-date.sort-active.sort-asc::after {
+	content: ' ▲';
+	font-size: 0.7em;
+	opacity: 0.8;
+}
+
+.issue-number.sort-active.sort-desc::after,
+.issue-date.sort-active.sort-desc::after {
+	content: ' ▼';
+	font-size: 0.7em;
+	opacity: 0.8;
+}
+
+.issue-number:hover,
+.issue-date:hover {
+	opacity: 0.8;
+}
 .issue-status {
 	width: 3rem;
 }
