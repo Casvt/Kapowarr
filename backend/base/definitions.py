@@ -675,7 +675,7 @@ class IssueNamingKeys(SVNamingKeys):
     issue_comicvine_id: int
     issue_number: Union[str, None]
     issue_title: Union[str, None]
-    issue_release_date: Union[str, None]
+    issue_release_date: Union['DateFormatter', str, None]  # Can be DateFormatter or str for compatibility
     issue_release_year: Union[int, None]
 
 
