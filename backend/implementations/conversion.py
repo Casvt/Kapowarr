@@ -17,7 +17,7 @@ from backend.implementations.converters import run_rar
 from backend.implementations.volumes import Volume, scan_files
 from backend.internals.db import commit
 from backend.internals.db_models import FilesDB
-from backend.internals.server import WebSocket
+from backend.internals.server import TaskStatusEvent, WebSocket
 from backend.internals.settings import Settings
 
 
@@ -284,17 +284,17 @@ def mass_convert(
         with PortablePool(max_processes=total_count) as pool:
             if update_websocket_progress:
                 ws = WebSocket()
-                ws.update_task_status(
-                    message=f'Converted 0/{total_count}'
-                )
+                ws.emit(TaskStatusEvent(
+                    f'Converted 0/{total_count}'
+                ))
                 for idx, iter_result in enumerate(pool.imap_unordered(
                     convert_file,
                     planned_conversions
                 )):
                     result += iter_result
-                    ws.update_task_status(
-                        message=f'Converted {idx+1}/{total_count}'
-                    )
+                    ws.emit(TaskStatusEvent(
+                        f'Converted {idx+1}/{total_count}'
+                    ))
 
             else:
                 result += chain.from_iterable(pool.map(

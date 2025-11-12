@@ -112,12 +112,9 @@ def get_python_exe() -> Union[str, None]:
     Returns:
         Union[str, None]: The python executable path, or `None` if not found.
     """
-    # Always prefer sys.executable first, as it points to the actual Python
-    # that's running (including venv Python), ensuring subprocess uses same Python
     filepath = executable or None
-    
-    # If sys.executable is not available or doesn't exist, fall back to bundle path on macOS
-    if (not filepath or not isfile(filepath)) and platform.startswith('darwin'):
+
+    if platform.startswith('darwin') and not isfile(filepath or ''):
         bundle_path = join(
             base_exec_prefix,
             "Resources",

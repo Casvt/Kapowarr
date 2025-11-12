@@ -34,7 +34,7 @@ from backend.implementations.matching import (_match_title,
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Issue, Volume
 from backend.internals.db_models import FilesDB
-from backend.internals.server import WebSocket
+from backend.internals.server import TaskStatusEvent, WebSocket
 from backend.internals.settings import Settings
 
 remove_year_in_image_regex = compile(r'(?:19|20)\d{2}')
@@ -867,9 +867,9 @@ def mass_rename(
         ws = WebSocket()
         total_renames = len(renames)
         for idx, (before, after) in enumerate(renames.items()):
-            ws.update_task_status(
-                message=f'Renaming file {idx+1}/{total_renames}'
-            )
+            ws.emit(TaskStatusEvent(
+                f'Renaming file {idx+1}/{total_renames}'
+            ))
             rename_file(before, after)
 
     else:

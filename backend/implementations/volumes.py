@@ -40,7 +40,8 @@ from backend.implementations.matching import (_match_title,
 from backend.implementations.root_folders import RootFolders
 from backend.internals.db import commit, get_db
 from backend.internals.db_models import FilesDB, GeneralFilesDB
-from backend.internals.server import WebSocket
+from backend.internals.server import (DownloadedStatusEvent,
+                                      TaskStatusEvent, WebSocket)
 from backend.internals.settings import Settings
 
 # autopep8: off
@@ -1453,17 +1454,17 @@ def scan_files(
         if not filepath_filter and (
             deleted_downloaded_issues or newly_downloaded_issues
         ):
-            WebSocket().update_downloaded_status(
+            WebSocket().emit(DownloadedStatusEvent(
                 volume_id,
                 not_downloaded_issues=deleted_downloaded_issues,
                 downloaded_issues=newly_downloaded_issues
-            )
+            ))
 
         elif filepath_filter and newly_downloaded_issues:
-            WebSocket().update_downloaded_status(
+            WebSocket().emit(DownloadedStatusEvent(
                 volume_id,
                 downloaded_issues=newly_downloaded_issues
-            )
+            ))
 
     # Delete bindings for general files that aren't in new bindings
     if not filepath_filter:
@@ -1758,8 +1759,9 @@ def refresh_and_scan(
                 for idx, _ in enumerate(
                     pool.istarmap_unordered(scan_files, v_ids)
                 ):
-                    ws.update_task_status(
-                        message=f'Scanned files for volume {idx+1}/{total_count}')
+                    ws.emit(TaskStatusEvent(
+                        f'Scanned files for volume {idx+1}/{total_count}'
+                    ))
 
             else:
                 pool.starmap(scan_files, v_ids)
@@ -1808,10 +1810,10 @@ def delete_issue_file(file_id: int) -> None:
     ))
 
     if volume_id:
-        WebSocket().update_downloaded_status(
+        WebSocket().emit(DownloadedStatusEvent(
             volume_id,
             not_downloaded_issues=not_downloaded_issues
-        )
+        ))
 
     if unmonitor_deleted_issues:
         cursor.executemany(

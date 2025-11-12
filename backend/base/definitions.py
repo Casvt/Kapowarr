@@ -234,8 +234,8 @@ class BaseEnum(Enum):
         return id(self.value)
 
 
-class SocketEvent(BaseEnum):
-    "The websocket event"
+class WebSocketEventType(BaseEnum):
+    "The type of websocket event"
 
     TASK_ADDED = "task_added"
     TASK_STATUS = "task_status"
@@ -779,6 +779,26 @@ class StartTypeHandler(ABC):
     def on_diffuse(self) -> None:
         """
         Called when the timer is diffused. Generally finalises changes.
+        """
+        ...
+
+
+class WebSocketEvent(ABC):
+    @abstractmethod
+    def get_type(self) -> WebSocketEventType:
+        """Get the type of event.
+
+        Returns:
+            WebSocketEventType: The event type.
+        """
+        ...
+
+    @abstractmethod
+    def get_body(self) -> Dict[str, Any]:
+        """Get the body/data/arguments of the event.
+
+        Returns:
+            Dict[str, Any]: The body.
         """
         ...
 

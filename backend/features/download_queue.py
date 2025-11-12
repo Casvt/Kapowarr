@@ -34,7 +34,8 @@ from backend.implementations.external_clients import ExternalClients
 from backend.implementations.getcomics import GetComicsPage
 from backend.implementations.volumes import Issue
 from backend.internals.db import get_db, iter_commit
-from backend.internals.server import Server, WebSocket
+from backend.internals.server import (AddedToQueueEvent, QueueStatusEvent,
+                                      RemovedFromQueueEvent, Server, WebSocket)
 from backend.internals.settings import Settings
 
 if TYPE_CHECKING:
@@ -70,6 +71,7 @@ class DownloadHandler(metaclass=Singleton):
         LOGGER.info(f'Starting download: {download.id}')
 
         ws = WebSocket()
+        status_event = QueueStatusEvent(download)
         try:
             download.run()
 
@@ -78,7 +80,7 @@ class DownloadHandler(metaclass=Singleton):
             if e.source == DownloadSource.MEGA:
                 self._remove_mega(exclude_id=download.id)
 
-        ws.update_queue_status(download)
+        ws.emit(status_event)
         if download.state == DownloadState.SHUTDOWN_STATE:
             PostProcessor.shutdown(download)
             return
@@ -91,7 +93,7 @@ class DownloadHandler(metaclass=Singleton):
 
         elif download.state == DownloadState.DOWNLOADING_STATE:
             download.state = DownloadState.IMPORTING_STATE
-            ws.update_queue_status(download)
+            ws.emit(status_event)
 
             # While this download is post-processing, start the next one.
             self._process_queue()
@@ -99,7 +101,7 @@ class DownloadHandler(metaclass=Singleton):
             PostProcessor.success(download)
 
         self.queue.remove(download)
-        ws.send_queue_ended(download)
+        ws.emit(RemovedFromQueueEvent(download))
 
         self._process_queue()
         return
@@ -114,6 +116,7 @@ class DownloadHandler(metaclass=Singleton):
         download.run()
 
         ws = WebSocket()
+        status_event = QueueStatusEvent(download)
         seeding_handling = self.settings.sv.seeding_handling
 
         if seeding_handling == SeedingHandling.COMPLETE:
@@ -131,7 +134,7 @@ class DownloadHandler(metaclass=Singleton):
 
         while True:
             download.update_status()
-            ws.update_queue_status(download)
+            ws.emit(status_event)
 
             if download.state == DownloadState.CANCELED_STATE:
                 download.remove_from_client(delete_files=True)
@@ -172,7 +175,7 @@ class DownloadHandler(metaclass=Singleton):
                     timeout=Constants.TORRENT_UPDATE_INTERVAL
                 )
 
-        ws.send_queue_ended(download)
+        ws.emit(RemovedFromQueueEvent(download))
         return
 
     # region Queue Management
@@ -313,7 +316,7 @@ class DownloadHandler(metaclass=Singleton):
                 download.download_thread = thread
                 thread.start()
 
-            WebSocket().send_queue_added(download)
+            WebSocket().emit(AddedToQueueEvent(download))
         return downloads
 
     # region Getting
@@ -614,7 +617,7 @@ class DownloadHandler(metaclass=Singleton):
         prev_state = download.state
         was_thread_running = download.download_thread.is_alive()
         download.stop()
-        WebSocket().update_queue_status(download)
+        WebSocket().emit(QueueStatusEvent(download))
 
         if (
             # Direct download
@@ -632,7 +635,7 @@ class DownloadHandler(metaclass=Singleton):
         ):
             self.queue.remove(download)
             PostProcessor.canceled(download)
-            WebSocket().send_queue_ended(download)
+            WebSocket().emit(RemovedFromQueueEvent(download))
 
         if blocklist:
             add_to_blocklist(
