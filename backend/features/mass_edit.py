@@ -14,7 +14,7 @@ from backend.implementations.naming import mass_rename
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Volume, refresh_and_scan
 from backend.internals.db import iter_commit
-from backend.internals.server import WebSocket
+from backend.internals.server import MassEditorStatusEvent, WebSocket
 
 
 class MassEditorDelete(MassEditorAction):
@@ -31,11 +31,11 @@ class MassEditorDelete(MassEditorAction):
         total_items = len(self.volume_ids)
 
         for item_index, volume_id in enumerate(iter_commit(self.volume_ids)):
-            ws.update_mass_editor_status(
+            ws.emit(MassEditorStatusEvent(
                 self.identifier,
                 item_index + 1,
                 total_items
-            )
+            ))
 
             try:
                 Volume(volume_id).delete(delete_volume_folder)
@@ -65,11 +65,11 @@ class MassEditorRootFolder(MassEditorAction):
         total_items = len(self.volume_ids)
 
         for item_index, volume_id in enumerate(iter_commit(self.volume_ids)):
-            ws.update_mass_editor_status(
+            ws.emit(MassEditorStatusEvent(
                 self.identifier,
                 item_index + 1,
                 total_items
-            )
+            ))
 
             Volume(volume_id).change_root_folder(root_folder_id)
 
@@ -86,11 +86,11 @@ class MassEditorRename(MassEditorAction):
         total_items = len(self.volume_ids)
 
         for item_index, volume_id in enumerate(iter_commit(self.volume_ids)):
-            ws.update_mass_editor_status(
+            ws.emit(MassEditorStatusEvent(
                 self.identifier,
                 item_index + 1,
                 total_items
-            )
+            ))
 
             mass_rename(volume_id)
 
@@ -107,11 +107,11 @@ class MassEditorUpdate(MassEditorAction):
         total_items = len(self.volume_ids)
 
         for item_index, volume_id in enumerate(iter_commit(self.volume_ids)):
-            ws.update_mass_editor_status(
+            ws.emit(MassEditorStatusEvent(
                 self.identifier,
                 item_index + 1,
                 total_items
-            )
+            ))
 
             refresh_and_scan(volume_id)
 
@@ -131,11 +131,11 @@ class MassEditorSearch(MassEditorAction):
         total_items = len(self.volume_ids)
 
         for item_index, volume_id in enumerate(iter_commit(self.volume_ids)):
-            ws.update_mass_editor_status(
+            ws.emit(MassEditorStatusEvent(
                 self.identifier,
                 item_index + 1,
                 total_items
-            )
+            ))
 
             search_results = auto_search(volume_id)
             download_handler.add_multiple(
@@ -158,11 +158,11 @@ class MassEditorConvert(MassEditorAction):
         total_items = len(self.volume_ids)
 
         for item_index, volume_id in enumerate(iter_commit(self.volume_ids)):
-            ws.update_mass_editor_status(
+            ws.emit(MassEditorStatusEvent(
                 self.identifier,
                 item_index + 1,
                 total_items
-            )
+            ))
 
             mass_convert(volume_id)
         return

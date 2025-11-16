@@ -1,5 +1,4 @@
 import unittest
-from json import dumps
 from typing import Dict
 
 from backend.base.file_extraction import extract_filename_data as ef
@@ -8,21 +7,27 @@ from backend.base.file_extraction import extract_filename_data as ef
 class extract_filename_data(unittest.TestCase):
     def run_cases(self, cases: Dict[str, dict]):
         self.longMessage = False
-        for input, output in cases.items():
+        for input, expected in cases.items():
+            output = ef(input)
             self.assertEqual(
-                ef(input),
                 output,
-                f"The input '{input}' isn't extracted properly:\nOutput: {dumps(ef(input), indent=4)}\nExpected: {dumps(output, indent=4)}"
+                expected,
+                f"The input '{input}' isn't extracted properly:\n"
+                f"Output:   {output}\n"
+                f"Expected: {expected}"
             )
         return
 
     def run_cases_folder_year(self, cases: Dict[str, dict]):
         self.longMessage = False
-        for input, output in cases.items():
+        for input, expected in cases.items():
+            output = ef(input, prefer_folder_year=True)
             self.assertEqual(
-                ef(input, prefer_folder_year=True),
                 output,
-                f"The input '{input}' isn't extracted properly:\nOutput: {dumps(ef(input), indent=4)}\nExpected: {dumps(output, indent=4)}"
+                expected,
+                f"The input '{input}' isn't extracted properly:\n"
+                f"Output: {output}\n"
+                f"Expected: {expected}"
             )
         return
 
@@ -150,7 +155,13 @@ class extract_filename_data(unittest.TestCase):
                 {'series': 'DC vs. Vampires World War V', 'year': 2024, 'volume_number': 1, 'special_version': None, 'issue_number': 2.0, 'annual': False},
 
             '/Blacksad/Blacksad 6.1 - They All Fall Down Part 1.cbz':
-                {'series': 'Blacksad', 'year': None, 'volume_number': 1, 'special_version': None, 'issue_number': 6.1, 'annual': False}
+                {'series': 'Blacksad', 'year': None, 'volume_number': 1, 'special_version': None, 'issue_number': 6.1, 'annual': False},
+
+            'Absolute Moebius 07 - Il fallico folle (2012) [c2c Lux73 pipulus] 2.0.cbr':
+                {'series': 'Absolute Moebius', 'year': 2012, 'volume_number': 1, 'special_version': None, 'issue_number': 7.0, 'annual': False},
+
+            'L\'Uomo Ragno 219 - Il demone devastatore (Corno 1978-09-18) [c2c Jedi-Italia] 1.0.cbr':
+                {'series': "L'Uomo Ragno", 'year': 1978, 'volume_number': 1, 'special_version': None, 'issue_number': 219.0, 'annual': False}
         }
         self.run_cases(cases)
 

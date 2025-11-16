@@ -9,12 +9,12 @@ from flask import Blueprint, request, send_file
 
 from backend.base.custom_exceptions import (InvalidKeyValue,
                                             KeyNotFound, TaskNotFound)
-from backend.base.definitions import (BlocklistReason,
-                                      BlocklistReasonID, CredentialData,
-                                      CredentialSource, DownloadSource,
-                                      KapowarrException, LibraryFilter,
-                                      LibrarySorting, MonitorScheme,
-                                      SpecialVersion, VolumeData)
+from backend.base.definitions import (BlocklistReason, BlocklistReasonID,
+                                      CredentialData, CredentialSource,
+                                      DownloadSource, KapowarrException,
+                                      LibraryFilter, LibrarySorting,
+                                      MonitorScheme, SpecialVersion,
+                                      StartType, VolumeData)
 from backend.base.helpers import hash_password
 from backend.base.logging import LOGGER, get_log_file_contents
 from backend.features.download_queue import (DownloadHandler,
@@ -43,7 +43,7 @@ from backend.implementations.remote_mapping import RemoteMappings
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Library, delete_issue_file
 from backend.internals.db_models import FilesDB
-from backend.internals.server import SERVER, diffuse_timers
+from backend.internals.server import Server, StartTypeHandlers
 from backend.internals.settings import Settings, get_about_data
 
 api = Blueprint('api', __name__)
@@ -204,7 +204,7 @@ def auth(method):
             LOGGER.warning(f'Unauthorised request from {ip}')
             return return_api({}, 'ApiKeyInvalid', 401)
 
-        diffuse_timers()
+        StartTypeHandlers.diffuse_timer(StartType.RESTART_HOSTING_CHANGES)
 
         result = method(*args, **kwargs)
 
@@ -377,7 +377,7 @@ def api_task(task_id: int):
 @error_handler
 @auth
 def api_shutdown():
-    SERVER.shutdown()
+    Server().shutdown()
     return return_api({})
 
 
@@ -385,7 +385,7 @@ def api_shutdown():
 @error_handler
 @auth
 def api_restart():
-    SERVER.restart()
+    Server().restart()
     return return_api({})
 
 # =====================
@@ -399,18 +399,65 @@ def api_restart():
 def api_settings():
     settings = Settings()
     if request.method == 'GET':
-        result = settings.get_settings().to_dict()
+        result = settings.get_public_settings().todict()
         return return_api(result)
 
     elif request.method == 'PUT':
         data = request.get_json()
-        settings.update(data)
-        return return_api(settings.get_settings().to_dict())
+
+        hosting_changes = any(
+            s in data
+            and data[s] is not None
+            and data[s] != getattr(settings.sv, s)
+            for s in ('host', 'port', 'url_base')
+        )
+
+        if hosting_changes:
+            settings.backup_hosting_settings()
+
+        settings.update(
+            {
+                k: v
+                for k, v in data.items()
+                if v is not None
+            },
+            from_public=True
+        )
+
+        if hosting_changes:
+            Server().restart(StartType.RESTART_HOSTING_CHANGES)
+
+        return return_api(settings.get_public_settings().todict())
 
     elif request.method == 'DELETE':
-        key = extract_key(request, 'key')
-        settings.reset(key)
-        return return_api(settings.get_settings().to_dict())
+        data = request.get_json()
+
+        reset_keys = data.get('reset_keys')
+        if not (
+            isinstance(reset_keys, list)
+            and all((
+                isinstance(k, str)
+                for k in reset_keys
+            ))
+        ):
+            raise InvalidKeyValue('reset_keys', reset_keys)
+
+        hosting_changes = any(
+            s in reset_keys
+            and settings.get_default_value(s) != getattr(settings.sv, s)
+            for s in ('host', 'port', 'url_prefix')
+        )
+
+        if hosting_changes:
+            settings.backup_hosting_settings()
+
+        for reset_key in reset_keys:
+            settings.reset(reset_key, from_public=True)
+
+        if hosting_changes:
+            Server().restart(StartType.RESTART_HOSTING_CHANGES)
+
+        return return_api(settings.get_public_settings().todict())
 
 
 @api.route('/settings/api_key', methods=['POST'])
@@ -419,7 +466,7 @@ def api_settings():
 def api_settings_api_key():
     settings = Settings()
     settings.generate_api_key()
-    return return_api(settings.get_settings().to_dict())
+    return return_api(settings.get_public_settings().todict())
 
 
 @api.route('/settings/availableformats', methods=['GET'])

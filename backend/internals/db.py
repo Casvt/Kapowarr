@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Setting up the database and handling connections
+Setting up the database, handling connections, using it and closing it.
 """
 
 from __future__ import annotations
@@ -11,37 +11,44 @@ from sqlite3 import (PARSE_DECLTYPES, Connection, Cursor, ProgrammingError,
                      Row, register_adapter, register_converter)
 from threading import current_thread
 from time import time
-from typing import Any, Dict, Generator, Iterable, List, Union
+from typing import Any, Dict, Iterable, Iterator, List, Type, Union
 
 from flask import g
 
 from backend.base.definitions import (Constants, DateType,
                                       SeedingHandling, SpecialVersion, T)
 from backend.base.files import create_folder, folder_path
-from backend.base.helpers import CommaList
+from backend.base.helpers import CommaList, current_thread_id
 from backend.base.logging import LOGGER, set_log_level
 
 
 class KapowarrCursor(Cursor):
-
     row_factory: Union[Type[Row], None] # type: ignore
 
     @property
     def lastrowid(self) -> int:
         return super().lastrowid or 1
 
-    def fetchonedict(self) -> Union[dict, None]:
+    @property
+    def connection(self) -> DBConnection:
+        return super().connection # type: ignore
+
+    def __init__(self, cursor: DBConnection, /) -> None:
+        super().__init__(cursor)
+        return
+
+    def fetchonedict(self) -> Union[Dict[str, Any], None]:
         """Same as `fetchone` but convert the Row object to a dict.
 
         Returns:
-            Union[dict, None]: The dict or None i.c.o. no result.
+            Union[Dict[str, Any], None]: The dict or None in case of no result.
         """
         r = self.fetchone()
         if r is None:
             return r
         return dict(r)
 
-    def fetchmanydict(self, size: Union[int, None] = 1) -> List[dict]:
+    def fetchmanydict(self, size: Union[int, None] = 1) -> List[Dict[str, Any]]:
         """Same as `fetchmany` but convert the Row object to a dict.
 
         Args:
@@ -49,15 +56,15 @@ class KapowarrCursor(Cursor):
                 Defaults to 1.
 
         Returns:
-            List[dict]: The rows.
+            List[Dict[str, Any]]: The rows.
         """
         return [dict(e) for e in self.fetchmany(size)]
 
-    def fetchalldict(self) -> List[dict]:
+    def fetchalldict(self) -> List[Dict[str, Any]]:
         """Same as `fetchall` but convert the Row object to a dict.
 
         Returns:
-            List[dict]: The results.
+            List[Dict[str, Any]]: The results.
         """
         return [dict(e) for e in self]
 
@@ -66,7 +73,7 @@ class KapowarrCursor(Cursor):
 
         Returns:
             Union[Any, None]: The value of the first column of the first row,
-            or `None` if not found.
+                or `None` if not found.
         """
         r = self.fetchone()
         if r is None:
@@ -74,11 +81,13 @@ class KapowarrCursor(Cursor):
         return r[0]
 
     def __enter__(self):
+        """Start a transaction"""
         self.connection.isolation_level = None
         self.execute("BEGIN TRANSACTION;")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        """Commit the transaction or rollback if an exception occurred"""
         if self.connection.in_transaction:
             if exc_type is not None:
                 self.execute("ROLLBACK;")
@@ -92,27 +101,45 @@ class KapowarrCursor(Cursor):
 class DBConnectionManager(type):
     instances: Dict[int, DBConnection] = {}
 
-    def __call__(cls, *args: Any, **kwargs: Any) -> DBConnection:
-        thread_id = current_thread().native_id or -1
+    def __call__(cls, **kwargs: Any) -> DBConnection:
+        thread_id = current_thread_id()
 
         if (
             not thread_id in cls.instances
             or cls.instances[thread_id].closed
         ):
-            cls.instances[thread_id] = super().__call__(*args, **kwargs)
+            cls.instances[thread_id] = super().__call__(**kwargs)
 
         return cls.instances[thread_id]
+
+    @classmethod
+    def close_connection_of_thread(cls) -> None:
+        """Close the DB connection of the current thread"""
+        thread_id = current_thread_id()
+        if (
+            thread_id in cls.instances
+            and not cls.instances[thread_id].closed
+        ):
+            cls.instances[thread_id].close()
+            del cls.instances[thread_id]
+        return
 
 
 class DBConnection(Connection, metaclass=DBConnectionManager):
     file = ''
 
-    def __init__(self, timeout: float) -> None:
+    def __init__(
+        self, *,
+        timeout: float = Constants.DB_TIMEOUT
+    ) -> None:
         """Create a connection with a database
 
         Args:
-            timeout (float): How long to wait before giving up on a command
+            timeout (float, optional): How long to wait before giving up
+                on a command.
+                Defaults to Constants.DB_TIMEOUT.
         """
+        self.closed = False
         LOGGER.debug(f'Creating connection {self}')
         super().__init__(
             self.file,
@@ -120,7 +147,6 @@ class DBConnection(Connection, metaclass=DBConnectionManager):
             detect_types=PARSE_DECLTYPES
         )
         super().cursor().execute("PRAGMA foreign_keys = ON;")
-        self.closed = False
         return
 
     def cursor( # type: ignore
@@ -131,7 +157,7 @@ class DBConnection(Connection, metaclass=DBConnectionManager):
 
         Args:
             force_new (bool, optional): Get a new cursor instead of the cached
-            one.
+                one.
                 Defaults to False.
 
         Returns:
@@ -161,19 +187,19 @@ class DBConnection(Connection, metaclass=DBConnectionManager):
         return
 
     def __repr__(self) -> str:
-        return f'<{self.__class__.__name__}; {current_thread().name}; {id(self)}>'
+        return f'<{self.__class__.__name__}; {current_thread().name}; {id(self)}; closed={self.closed}>'
 
 
 def set_db_location(
     db_folder: Union[str, None]
 ) -> None:
     """Setup database location. Create folder for database and set location for
-    `db.DBConnection` and `db.TempDBConnection`.
+    `db.DBConnection`.
 
     Args:
         db_folder (Union[str, None], optional): The folder in which the database
-        will be stored or in which a database is for Kapowarr to use. Give
-        `None` for the default location.
+            will be stored or in which a database is for Kapowarr to use. Give
+            `None` for the default location.
 
     Raises:
         ValueError: Value of `db_folder` exists but is not a folder.
@@ -197,39 +223,41 @@ def set_db_location(
 
 
 def get_db(force_new: bool = False) -> KapowarrCursor:
-    """
-    Get a database cursor instance or create a new one if needed
+    """Get a database cursor instance or create a new one if needed.
 
     Args:
-        force_new (bool, optional): Decides if a new cursor is
-        returned instead of the standard one.
+        force_new (bool, optional): Decides whether a new cursor is
+            returned instead of the standard one.
             Defaults to False.
 
     Returns:
         KapowarrCursor: Database cursor instance that outputs Row objects.
     """
-    cursor = (
-        DBConnection(timeout=Constants.DB_TIMEOUT)
-        .cursor(force_new=force_new)
-    )
-    return cursor
+    return DBConnection().cursor(force_new=force_new)
 
 
 def commit() -> None:
-    """Commit the database"""
+    """Commit the database changes"""
     get_db().connection.commit()
     return
 
 
-def iter_commit(iterable: Iterable[T]) -> Generator[T, Any, Any]:
-    """Commit the database after each iteration. Also commits just before the
-    first iteration starts.
+def iter_commit(iterable: Iterable[T]) -> Iterator[T]:
+    """Commit the database after yielding each value in the iterable. Also
+    commits just before the first iteration starts.
+
+    ```
+    # commits
+    for i in iter_commit(iterable):
+        ...
+        # commits
+    ```
 
     Args:
         iterable (Iterable[T]): Iterable that will be iterated over like normal.
 
     Yields:
-        Generator[T, Any, Any]: Items of iterable.
+        Iterator[T]: Items of iterable.
     """
     commit = get_db().connection.commit
     commit()
@@ -239,11 +267,11 @@ def iter_commit(iterable: Iterable[T]) -> Generator[T, Any, Any]:
     return
 
 
-def close_db(e: Union[None, BaseException] = None):
+def close_db(e: Union[BaseException, None] = None) -> None:
     """Close database cursor, commit database and close database.
 
     Args:
-        e (Union[None, BaseException], optional): Error. Defaults to None.
+        e (Union[BaseException, None], optional): Error. Defaults to None.
     """
     if not hasattr(g, 'cursors'):
         return
@@ -256,7 +284,7 @@ def close_db(e: Union[None, BaseException] = None):
         delattr(g, 'cursors')
         db.commit()
         if not current_thread().name.startswith('waitress-'):
-            db.close()
+            DBConnectionManager.close_connection_of_thread()
 
     except ProgrammingError:
         pass
@@ -276,209 +304,22 @@ def setup_db_adapters_and_converters() -> None:
 
 
 def setup_db() -> None:
-    """
-    Setup the database tables and default config when they aren't setup yet
-    """
-    from backend.internals.db_migration import migrate_db
+    """Setup the default config and database connection and tables"""
+    from backend.internals.db_migration import DatabaseMigrationHandler
     from backend.internals.settings import Settings, task_intervals
 
     cursor = get_db()
     cursor.execute("PRAGMA journal_mode = wal;")
     setup_db_adapters_and_converters()
 
-    setup_commands = """
-        CREATE TABLE IF NOT EXISTS config(
-            key VARCHAR(100) PRIMARY KEY,
-            value BLOB
-        );
-        CREATE TABLE IF NOT EXISTS root_folders(
-            id INTEGER PRIMARY KEY,
-            folder VARCHAR(254) UNIQUE NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS volumes(
-            id INTEGER PRIMARY KEY,
-            comicvine_id INTEGER NOT NULL,
-            title VARCHAR(255) NOT NULL,
-            alt_title VARCHAR(255),
-            year INTEGER(5),
-            publisher VARCHAR(255),
-            volume_number INTEGER(8) DEFAULT 1,
-            description TEXT,
-            site_url TEXT NOT NULL DEFAULT "",
-            monitored BOOL NOT NULL DEFAULT 0,
-            monitor_new_issues BOOL NOT NULL DEFAULT 1,
-            root_folder INTEGER NOT NULL,
-            folder TEXT,
-            custom_folder BOOL NOT NULL DEFAULT 0,
-            last_cv_fetch INTEGER(8) DEFAULT 0,
-            special_version VARCHAR(255),
-            special_version_locked BOOL NOT NULL DEFAULT 0,
-
-            FOREIGN KEY (root_folder) REFERENCES root_folders(id)
-        );
-        CREATE TABLE IF NOT EXISTS volumes_covers(
-            volume_id INTEGER UNIQUE NOT NULL,
-            cover BLOB,
-            FOREIGN KEY (volume_id) REFERENCES volumes(id)
-                ON DELETE CASCADE
-        );
-        CREATE INDEX IF NOT EXISTS volumes_covers_volume_id_index
-            ON volumes_covers(volume_id);
-        CREATE TABLE IF NOT EXISTS issues(
-            id INTEGER PRIMARY KEY,
-            volume_id INTEGER NOT NULL,
-            comicvine_id INTEGER NOT NULL UNIQUE,
-            issue_number VARCHAR(20) NOT NULL,
-            calculated_issue_number FLOAT(20) NOT NULL,
-            title VARCHAR(255),
-            date VARCHAR(10),
-            description TEXT,
-            monitored BOOL NOT NULL DEFAULT 1,
-
-            FOREIGN KEY (volume_id) REFERENCES volumes(id)
-                ON DELETE CASCADE
-        );
-        CREATE INDEX IF NOT EXISTS issues_volume_number_index
-            ON issues(volume_id, calculated_issue_number);
-        CREATE INDEX IF NOT EXISTS issues_volume_index
-            ON issues(volume_id);
-        CREATE TABLE IF NOT EXISTS files(
-            id INTEGER PRIMARY KEY,
-            filepath TEXT UNIQUE NOT NULL,
-            size INTEGER
-        );
-        CREATE TABLE IF NOT EXISTS issues_files(
-            file_id INTEGER NOT NULL,
-            issue_id INTEGER NOT NULL,
-
-            FOREIGN KEY (file_id) REFERENCES files(id)
-                ON DELETE CASCADE,
-            FOREIGN KEY (issue_id) REFERENCES issues(id),
-            CONSTRAINT PK_issues_files PRIMARY KEY (
-                file_id,
-                issue_id
-            )
-        );
-        CREATE INDEX IF NOT EXISTS issues_files_issue_id_index
-            ON issues_files(issue_id);
-        CREATE TABLE IF NOT EXISTS volume_files(
-            file_id INTEGER PRIMARY KEY,
-            volume_id INTEGER NOT NULL,
-            file_type VARCHAR(15) NOT NULL,
-
-            FOREIGN KEY (volume_id) REFERENCES volumes(id)
-                ON DELETE CASCADE,
-            FOREIGN KEY (file_id) REFERENCES files(id)
-                ON DELETE CASCADE
-        );
-        CREATE TABLE IF NOT EXISTS external_download_clients(
-            id INTEGER PRIMARY KEY,
-            download_type INTEGER NOT NULL,
-            client_type VARCHAR(255) NOT NULL,
-            title VARCHAR(255) NOT NULL,
-            base_url TEXT NOT NULL,
-            username VARCHAR(255),
-            password VARCHAR(255),
-            api_token VARCHAR(255)
-        );
-        CREATE TABLE IF NOT EXISTS download_queue(
-            id INTEGER PRIMARY KEY,
-            volume_id INTEGER NOT NULL,
-            client_type VARCHAR(255) NOT NULL,
-            external_client_id INTEGER,
-
-            download_link TEXT NOT NULL,
-            covered_issues VARCHAR(255),
-            force_original_name BOOL,
-
-            source_type VARCHAR(25) NOT NULL,
-            source_name VARCHAR(255) NOT NULL,
-
-            web_link TEXT,
-            web_title TEXT,
-            web_sub_title TEXT,
-
-            FOREIGN KEY (external_client_id) REFERENCES external_download_clients(id),
-            FOREIGN KEY (volume_id) REFERENCES volumes(id)
-        );
-        CREATE TABLE IF NOT EXISTS download_history(
-            web_link TEXT,
-            web_title TEXT,
-            web_sub_title TEXT,
-            file_title TEXT,
-
-            volume_id INTEGER,
-            issue_id INTEGER,
-
-            source VARCHAR(25),
-            downloaded_at INTEGER NOT NULL CHECK (downloaded_at > 0),
-            success BOOL,
-
-            FOREIGN KEY (volume_id) REFERENCES volumes(id)
-                ON DELETE SET NULL,
-            FOREIGN KEY (issue_id) REFERENCES issues(id)
-                ON DELETE SET NULL
-        );
-        CREATE TABLE IF NOT EXISTS task_history(
-            task_name NOT NULL,
-            display_title NOT NULL,
-            run_at INTEGER NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS task_intervals(
-            task_name PRIMARY KEY,
-            interval INTEGER NOT NULL,
-            next_run INTEGER NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS blocklist(
-            id INTEGER PRIMARY KEY,
-            volume_id INTEGER,
-            issue_id INTEGER,
-
-            web_link TEXT,
-            web_title TEXT,
-            web_sub_title TEXT,
-
-            download_link TEXT UNIQUE,
-            source VARCHAR(30),
-
-            reason INTEGER NOT NULL CHECK (reason > 0),
-            added_at INTEGER NOT NULL CHECK (added_at > 0),
-
-            FOREIGN KEY (volume_id) REFERENCES volumes(id)
-                ON DELETE SET NULL,
-            FOREIGN KEY (issue_id) REFERENCES issues(id)
-                ON DELETE SET NULL
-        );
-        CREATE TABLE IF NOT EXISTS credentials(
-            id INTEGER PRIMARY KEY,
-            source VARCHAR(30) NOT NULL,
-            username TEXT,
-            email TEXT,
-            password TEXT,
-            api_key TEXT
-        );
-        CREATE TABLE IF NOT EXISTS remote_mappings(
-            id INTEGER PRIMARY KEY,
-            external_download_client_id INTEGER NOT NULL,
-            remote_path TEXT NOT NULL,
-            local_path TEXT NOT NULL,
-
-            FOREIGN KEY (external_download_client_id)
-                REFERENCES external_download_clients(id)
-                ON DELETE CASCADE
-        );
-    """
-    cursor.executescript(setup_commands)
+    cursor.executescript(DB_SCHEMA)
 
     settings = Settings()
     settings_values = settings.get_settings()
 
     set_log_level(settings_values.log_level)
 
-    migrate_db()
-
-    # DB Migration might change settings, so update cache just to be sure.
-    settings._fetch_settings()
+    DatabaseMigrationHandler.migrate()
 
     # Generate api key
     if not settings_values.api_key:
@@ -500,3 +341,187 @@ def setup_db() -> None:
     )
 
     return
+
+
+DB_SCHEMA = """
+CREATE TABLE IF NOT EXISTS config(
+    key VARCHAR(100) PRIMARY KEY,
+    value BLOB
+);
+CREATE TABLE IF NOT EXISTS root_folders(
+    id INTEGER PRIMARY KEY,
+    folder VARCHAR(254) UNIQUE NOT NULL
+);
+CREATE TABLE IF NOT EXISTS volumes(
+    id INTEGER PRIMARY KEY,
+    comicvine_id INTEGER NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    alt_title VARCHAR(255),
+    year INTEGER(5),
+    publisher VARCHAR(255),
+    volume_number INTEGER(8) DEFAULT 1,
+    description TEXT,
+    site_url TEXT NOT NULL DEFAULT "",
+    monitored BOOL NOT NULL DEFAULT 0,
+    monitor_new_issues BOOL NOT NULL DEFAULT 1,
+    root_folder INTEGER NOT NULL,
+    folder TEXT,
+    custom_folder BOOL NOT NULL DEFAULT 0,
+    last_cv_fetch INTEGER(8) DEFAULT 0,
+    special_version VARCHAR(255),
+    special_version_locked BOOL NOT NULL DEFAULT 0,
+
+    FOREIGN KEY (root_folder) REFERENCES root_folders(id)
+);
+CREATE TABLE IF NOT EXISTS volumes_covers(
+    volume_id INTEGER UNIQUE NOT NULL,
+    cover BLOB,
+    FOREIGN KEY (volume_id) REFERENCES volumes(id)
+        ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS volumes_covers_volume_id_index
+    ON volumes_covers(volume_id);
+CREATE TABLE IF NOT EXISTS issues(
+    id INTEGER PRIMARY KEY,
+    volume_id INTEGER NOT NULL,
+    comicvine_id INTEGER NOT NULL UNIQUE,
+    issue_number VARCHAR(20) NOT NULL,
+    calculated_issue_number FLOAT(20) NOT NULL,
+    title VARCHAR(255),
+    date VARCHAR(10),
+    description TEXT,
+    monitored BOOL NOT NULL DEFAULT 1,
+
+    FOREIGN KEY (volume_id) REFERENCES volumes(id)
+        ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS issues_volume_number_index
+    ON issues(volume_id, calculated_issue_number);
+CREATE INDEX IF NOT EXISTS issues_volume_index
+    ON issues(volume_id);
+CREATE TABLE IF NOT EXISTS files(
+    id INTEGER PRIMARY KEY,
+    filepath TEXT UNIQUE NOT NULL,
+    size INTEGER
+);
+CREATE TABLE IF NOT EXISTS issues_files(
+    file_id INTEGER NOT NULL,
+    issue_id INTEGER NOT NULL,
+
+    FOREIGN KEY (file_id) REFERENCES files(id)
+        ON DELETE CASCADE,
+    FOREIGN KEY (issue_id) REFERENCES issues(id),
+    CONSTRAINT PK_issues_files PRIMARY KEY (
+        file_id,
+        issue_id
+    )
+);
+CREATE INDEX IF NOT EXISTS issues_files_issue_id_index
+    ON issues_files(issue_id);
+CREATE TABLE IF NOT EXISTS volume_files(
+    file_id INTEGER PRIMARY KEY,
+    volume_id INTEGER NOT NULL,
+    file_type VARCHAR(15) NOT NULL,
+
+    FOREIGN KEY (volume_id) REFERENCES volumes(id)
+        ON DELETE CASCADE,
+    FOREIGN KEY (file_id) REFERENCES files(id)
+        ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS external_download_clients(
+    id INTEGER PRIMARY KEY,
+    download_type INTEGER NOT NULL,
+    client_type VARCHAR(255) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    base_url TEXT NOT NULL,
+    username VARCHAR(255),
+    password VARCHAR(255),
+    api_token VARCHAR(255)
+);
+CREATE TABLE IF NOT EXISTS download_queue(
+    id INTEGER PRIMARY KEY,
+    volume_id INTEGER NOT NULL,
+    client_type VARCHAR(255) NOT NULL,
+    external_client_id INTEGER,
+
+    download_link TEXT NOT NULL,
+    covered_issues VARCHAR(255),
+    force_original_name BOOL,
+
+    source_type VARCHAR(25) NOT NULL,
+    source_name VARCHAR(255) NOT NULL,
+
+    web_link TEXT,
+    web_title TEXT,
+    web_sub_title TEXT,
+
+    FOREIGN KEY (external_client_id) REFERENCES external_download_clients(id),
+    FOREIGN KEY (volume_id) REFERENCES volumes(id)
+);
+CREATE TABLE IF NOT EXISTS download_history(
+    web_link TEXT,
+    web_title TEXT,
+    web_sub_title TEXT,
+    file_title TEXT,
+
+    volume_id INTEGER,
+    issue_id INTEGER,
+
+    source VARCHAR(25),
+    downloaded_at INTEGER NOT NULL CHECK (downloaded_at > 0),
+    success BOOL,
+
+    FOREIGN KEY (volume_id) REFERENCES volumes(id)
+        ON DELETE SET NULL,
+    FOREIGN KEY (issue_id) REFERENCES issues(id)
+        ON DELETE SET NULL
+);
+CREATE TABLE IF NOT EXISTS task_history(
+    task_name NOT NULL,
+    display_title NOT NULL,
+    run_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS task_intervals(
+    task_name PRIMARY KEY,
+    interval INTEGER NOT NULL,
+    next_run INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS blocklist(
+    id INTEGER PRIMARY KEY,
+    volume_id INTEGER,
+    issue_id INTEGER,
+
+    web_link TEXT,
+    web_title TEXT,
+    web_sub_title TEXT,
+
+    download_link TEXT UNIQUE,
+    source VARCHAR(30),
+
+    reason INTEGER NOT NULL CHECK (reason > 0),
+    added_at INTEGER NOT NULL CHECK (added_at > 0),
+
+    FOREIGN KEY (volume_id) REFERENCES volumes(id)
+        ON DELETE SET NULL,
+    FOREIGN KEY (issue_id) REFERENCES issues(id)
+        ON DELETE SET NULL
+);
+CREATE TABLE IF NOT EXISTS credentials(
+    id INTEGER PRIMARY KEY,
+    source VARCHAR(30) NOT NULL,
+    username TEXT,
+    email TEXT,
+    password TEXT,
+    api_key TEXT
+);
+CREATE TABLE IF NOT EXISTS remote_mappings(
+    id INTEGER PRIMARY KEY,
+    external_download_client_id INTEGER NOT NULL,
+    remote_path TEXT NOT NULL,
+    local_path TEXT NOT NULL,
+
+    FOREIGN KEY (external_download_client_id)
+        REFERENCES external_download_clients(id)
+        ON DELETE CASCADE
+);
+"""

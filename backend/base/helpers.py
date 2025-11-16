@@ -15,6 +15,7 @@ from multiprocessing.pool import Pool
 from os import cpu_count, sep, symlink
 from os.path import basename, dirname, exists, isfile, join
 from sys import base_exec_prefix, executable, platform, version_info
+from threading import current_thread
 from typing import (TYPE_CHECKING, Any, Callable, Collection, Dict, Iterable,
                     Iterator, List, Mapping, Sequence, Tuple, Union)
 from urllib.parse import unquote
@@ -38,7 +39,16 @@ if TYPE_CHECKING:
     from flask.ctx import AppContext
 
 
-# region Python
+# region System
+def current_thread_id() -> int:
+    """Get the ID of the current thread.
+
+    Returns:
+        int: The ID.
+    """
+    return current_thread().native_id or -1
+
+
 def get_python_version() -> str:
     """Get python version as string. E.g. `"3.8.10.final.0"`
 
@@ -102,8 +112,9 @@ def get_python_exe() -> Union[str, None]:
     Returns:
         Union[str, None]: The python executable path, or `None` if not found.
     """
-    if platform.startswith('darwin'):
-        filepath = None
+    filepath = executable or None
+
+    if platform.startswith('darwin') and not isfile(filepath or ''):
         bundle_path = join(
             base_exec_prefix,
             "Resources",
@@ -116,13 +127,31 @@ def get_python_exe() -> Union[str, None]:
             from tempfile import mkdtemp
             filepath = join(mkdtemp(), "python")
             symlink(bundle_path, filepath)
-    else:
-        filepath = executable or None
 
     if filepath and not isfile(filepath):
         filepath = None
 
     return filepath
+
+
+def get_version_from_pyproject(filepath: str) -> str:
+    """Get the application version from the `pyproject.toml` file.
+
+    Args:
+        filepath (str): The path to the `pyproject.toml` file.
+
+    Raises:
+        RuntimeError: Version not found in file.
+
+    Returns:
+        str: The version string.
+    """
+    with open(filepath, "r") as f:
+        for line in f:
+            if line.startswith("version = "):
+                return "V" + line.split('"')[1]
+        else:
+            raise RuntimeError("Version not found in pyproject.toml")
 
 
 # region Helpers
@@ -666,8 +695,16 @@ def fix_year(year: int) -> int:
         return year
 
     year_str = list(str(year))
-    if len(year_str) != 4:
-        return year
+
+    if len(year_str) == 3:
+        year_str.insert(1, '0')
+
+    if year_str[0] in ('8', '9') and year_str[1] == '1':
+        year_str[0], year_str[1] = year_str[1], year_str[0]
+
+    result = int(''.join(year_str))
+    if 1900 <= result < 2100:
+        return result
 
     return int(year_str[0] + year_str[2] + year_str[1] + year_str[3])
 

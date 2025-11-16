@@ -33,11 +33,14 @@ class Constants:
     HOSTING_THREADS = 10
     "Amount of threads for the webserver"
 
-    HOSTING_TIMER_DURATION = 60.0 # seconds
+    HOSTING_REVERT_TIME = 60.0 # seconds
     """
     Seconds to wait after restarting from hosting changes
     until they are reverted
     """
+
+    API_PREFIX = "/api"
+    "The URL prefix that all API endpoints bind to"
 
     DB_FOLDER = ("db",)
     "Subfolder of application folder to put database in"
@@ -231,8 +234,8 @@ class BaseEnum(Enum):
         return id(self.value)
 
 
-class SocketEvent(BaseEnum):
-    "The websocket event"
+class WebSocketEventType(BaseEnum):
+    "The type of websocket event"
 
     TASK_ADDED = "task_added"
     TASK_STATUS = "task_status"
@@ -755,11 +758,48 @@ class KapowarrException(Exception, ABC):
         ...
 
 
-class DBMigrator(ABC):
-    start_version: int
+class StartTypeHandler(ABC):
+    description: str
+    """A short description of what the start type is for"""
+
+    timeout: float
+    """The amount of time in seconds before reverting"""
+
+    restart_on_timeout: bool
+    """Whether the application should restart once the timeout is reached"""
 
     @abstractmethod
-    def run(self) -> None:
+    def on_timeout(self) -> None:
+        """
+        Called when the timeout is reached. Generally reverts changes.
+        """
+        ...
+
+    @abstractmethod
+    def on_diffuse(self) -> None:
+        """
+        Called when the timer is diffused. Generally finalises changes.
+        """
+        ...
+
+
+class WebSocketEvent(ABC):
+    @abstractmethod
+    def get_type(self) -> WebSocketEventType:
+        """Get the type of event.
+
+        Returns:
+            WebSocketEventType: The event type.
+        """
+        ...
+
+    @abstractmethod
+    def get_body(self) -> Dict[str, Any]:
+        """Get the body/data/arguments of the event.
+
+        Returns:
+            Dict[str, Any]: The body.
+        """
         ...
 
 
