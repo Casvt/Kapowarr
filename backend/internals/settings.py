@@ -6,7 +6,7 @@ from logging import INFO
 from os import urandom
 from os.path import abspath, isdir, join, sep
 from secrets import token_bytes
-from typing import Any, Dict, Mapping, cast
+from typing import Any, Dict, Mapping
 
 from backend.base.custom_exceptions import (FolderNotFound, InvalidKeyValue,
                                             InvalidSettingModification,
@@ -178,7 +178,7 @@ class Settings(metaclass=Singleton):
             if issubclass(key_type, BaseEnum):
                 db_values[key] = key_type[value.upper()]
 
-        return cast(SettingsValues, db_values)
+        return SettingsValues(**db_values)
 
     @lru_cache(1)
     def get_public_settings(self) -> PublicSettingsValues:

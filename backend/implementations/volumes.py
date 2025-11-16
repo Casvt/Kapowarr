@@ -9,7 +9,7 @@ from io import BytesIO
 from os.path import dirname, exists, isdir, relpath
 from re import IGNORECASE, compile
 from time import time
-from typing import Any, Dict, List, Mapping, Set, Tuple, Union, cast
+from typing import Any, Dict, List, Mapping, Set, Tuple, Union
 
 from typing_extensions import assert_never
 
@@ -279,7 +279,7 @@ class Volume:
             (self.id,)
         ).fetchonedict() or {}
 
-        return cast(VolumeData, {
+        return VolumeData(**{
             **data,
             "special_version": SpecialVersion(data["special_version"])
         })

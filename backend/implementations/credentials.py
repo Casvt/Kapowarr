@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from typing import Any, Dict, List, Tuple, cast
+from typing import Any, Dict, List, Tuple
 
 from typing_extensions import assert_never
 
@@ -26,7 +26,7 @@ class Credentials:
             List[CredentialData]: The list of credentials.
         """
         return [
-            cast(CredentialData, {
+            CredentialData(**{
                 **dict(c),
                 'source': CredentialSource[c["source"].upper()]
             })
@@ -66,7 +66,7 @@ class Credentials:
         if result is None:
             raise CredentialNotFound(id)
 
-        return cast(CredentialData, {
+        return CredentialData(**{
             **dict(result),
             'source': CredentialSource(result["source"])
         })
