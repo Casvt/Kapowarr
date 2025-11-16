@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from functools import lru_cache
 from os.path import abspath, isdir, samefile
 from shutil import disk_usage
 from sqlite3 import IntegrityError
@@ -9,7 +10,7 @@ from backend.base.custom_exceptions import (FolderNotFound, RootFolderInUse,
                                             RootFolderInvalid,
                                             RootFolderNotFound)
 from backend.base.definitions import RootFolder, SizeData
-from backend.base.files import (create_folder, folder_is_inside_folder,
+from backend.base.files import (are_folders_colliding, create_folder,
                                 uppercase_drive_letter)
 from backend.base.helpers import Singleton, first_of_subarrays, force_suffix
 from backend.base.logging import LOGGER
@@ -18,95 +19,108 @@ from backend.internals.settings import Settings
 
 
 class RootFolders(metaclass=Singleton):
-    cache: Dict[int, RootFolder] = {}
+    @lru_cache(1)
+    def __get_folder_mapping(self) -> Dict[int, str]:
+        """Get a mapping of all IDs to folders.
 
-    def __init__(self) -> None:
-        if not self.cache:
-            self._load_cache()
-        return
-
-    def _load_cache(self) -> None:
-        """Update the cache."""
-        root_folders = get_db().execute(
+        Returns:
+            Dict[int, str]: The mapping.
+        """
+        result = dict(get_db().execute(
             "SELECT id, folder FROM root_folders;"
-        ).fetchall()
+        ))
+        return result
 
-        for _ in range(2):
-            try:
-                self.cache = {
-                    r['id']: RootFolder(
-                        r["id"],
-                        r["folder"],
-                        SizeData(**dict(zip(
-                            ('total', 'used', 'free'),
-                            disk_usage(r['folder'])
-                        )))
-                    )
-                    for r in root_folders
-                }
-                break
+    def __gather_extra_data(
+        self,
+        root_folder_id: int,
+        root_folder_path: str
+    ) -> RootFolder:
+        if not isdir(root_folder_path):
+            create_folder(root_folder_path)
 
-            except FileNotFoundError:
-                # A root folder is registered in Kapowarr,
-                # but the folder no longer exists.
-                for r in root_folders:
-                    create_folder(r['folder'])
+        try:
+            d_usage = SizeData(**dict(zip(
+                ("total", "used", "free"),
+                disk_usage(root_folder_path)
+            )))
 
-        return
+        except (FileNotFoundError, PermissionError, OSError):
+            d_usage = None
+
+        return RootFolder(root_folder_id, root_folder_path, d_usage)
+
+    def is_id_valid(self, root_folder_id: int) -> bool:
+        return root_folder_id in self.__get_folder_mapping()
+
+    def get_folder_list(self) -> List[str]:
+        """Get a list of all rootfolders.
+
+        Returns:
+            List[str]: The list.
+        """
+        return list(self.__get_folder_mapping().values())
 
     def get_all(self) -> List[RootFolder]:
-        """Get all rootfolders.
+        """Get info on all rootfolders.
 
         Returns:
             List[RootFolder]: The list of rootfolders.
         """
-        return list(self.cache.values())
+        return [
+            self.__gather_extra_data(id, folder)
+            for id, folder in self.__get_folder_mapping().items()
+        ]
 
     def get_one(self, root_folder_id: int) -> RootFolder:
-        """Get a rootfolder based on it's id.
+        """Get a rootfolder based on its ID.
 
         Args:
-            root_folder_id (int): The id of the rootfolder to get.
+            root_folder_id (int): The ID of the rootfolder to get.
 
         Raises:
-            RootFolderNotFound: The id doesn't map to any rootfolder.
-                Could also be because of cache being behind database.
+            RootFolderNotFound: The ID doesn't map to any rootfolder.
 
         Returns:
             RootFolder: The rootfolder info.
         """
-        root_folder = self.cache.get(root_folder_id)
-
-        if not root_folder:
+        if not self.is_id_valid(root_folder_id):
             raise RootFolderNotFound(root_folder_id)
 
-        return root_folder
+        return self.__gather_extra_data(
+            root_folder_id,
+            self.__get_folder_mapping()[root_folder_id]
+        )
 
     def __getitem__(self, root_folder_id: int) -> str:
-        """
-        Get folder based on ID. Assumes folder with given ID exists.
-        """
-        return self.get_one(root_folder_id).folder
+        """Get the folder based on the ID.
 
-    def __setitem__(self, root_folder_id: int, new_folder: str) -> None:
+        Args:
+            root_folder_id (int): The ID to get the folder of.
+
+        Raises:
+            RootFolderNotFound: The ID doesn't map to any rootfolder.
+
+        Returns:
+            str: The folderpath.
         """
-        Rename root folder to given value. Assumes folder with given ID exists.
-        """
-        self.rename(root_folder_id, new_folder)
-        return
+        if not self.is_id_valid(root_folder_id):
+            raise RootFolderNotFound(root_folder_id)
+
+        return self.__get_folder_mapping()[root_folder_id]
 
     def add(
         self,
         folder: str,
-        _exclude_folder_from_check: Union[str, None] = None
+        _folder_to_skip_check: Union[str, None] = None
     ) -> RootFolder:
         """Add a rootfolder.
 
         Args:
             folder (str): The folder to add.
 
-            _exclude_folder_from_check (Union[str, None], optional): Don't check
-            whether the added root folder is a parent or child of this folder.
+            _folder_to_skip_check (Union[str, None], optional): Don't check
+                whether the added rootfolder is a parent or child of this folder.
                 Defaults to None.
 
         Raises:
@@ -126,43 +140,32 @@ class RootFolders(metaclass=Singleton):
             force_suffix(abspath(folder))
         )
 
-        # New root folder can not be in, or be a parent of,
-        # other root folders or the download folder.
-        other_folders = (
-            *(
-                f.folder
-                for f in self.get_all()
-                if (
-                    not _exclude_folder_from_check
-                    or f.folder != _exclude_folder_from_check
-                )
-            ),
-            Settings().sv.download_folder
-        )
-        for other_folder in other_folders:
-            if (
-                folder_is_inside_folder(other_folder, folder)
-                or folder_is_inside_folder(folder, other_folder)
-            ):
-                raise RootFolderInvalid(folder)
+        # New rootfolder can't be child or parent of other root folders
+        # or the download folder.
+        if are_folders_colliding(
+            folder,
+            (Settings().sv.download_folder, *self.get_folder_list()),
+            _folder_to_skip_check
+        ):
+            raise RootFolderInvalid(folder)
 
         root_folder_id = get_db().execute(
             "INSERT INTO root_folders(folder) VALUES (?)",
             (folder,)
         ).lastrowid
 
-        self._load_cache()
+        self.__get_folder_mapping.cache_clear()
         root_folder = self.get_one(root_folder_id)
 
         LOGGER.debug(f'Adding rootfolder result: {root_folder_id}')
         return root_folder
 
     def rename(self, root_folder_id: int, new_folder: str) -> RootFolder:
-        """Rename a root folder.
+        """Rename a rootfolder.
 
         Args:
-            root_folder_id (int): The ID of the current root folder, to rename.
-            new_folder (str): The new folderpath for the root folder.
+            root_folder_id (int): The ID of the rootfolder to rename.
+            new_folder (str): The new folderpath for the rootfolder.
 
         Raises:
             RootFolderInvalid: The folder is not allowed.
@@ -184,12 +187,13 @@ class RootFolders(metaclass=Singleton):
             return self.get_one(root_folder_id)
 
         LOGGER.info(
-            f'Renaming root folder {self[root_folder_id]} (ID {root_folder_id}) '
-            f'to {new_folder}')
+            f'Renaming rootfolder {current_folder} (ID {root_folder_id}) '
+            f'to {new_folder}'
+        )
 
         new_id = self.add(
             new_folder,
-            _exclude_folder_from_check=current_folder
+            _folder_to_skip_check=current_folder
         ).id
 
         cursor = get_db()
@@ -211,31 +215,32 @@ class RootFolders(metaclass=Singleton):
 
             COMMIT;
         """)
-        self._load_cache()
+        self.__get_folder_mapping.cache_clear()
         return self.get_one(root_folder_id)
 
     def delete(self, root_folder_id: int) -> None:
-        """Delete a rootfolder
+        """Delete a rootfolder.
 
         Args:
-            root_folder_idd (int): The id of the rootfolder to delete
+            root_folder_id (int): The ID of the rootfolder to delete.
 
         Raises:
-            RootFolderNotFound: The id doesn't map to any rootfolder
-            RootFolderInUse: The rootfolder is still in use by a volume
+            RootFolderNotFound: The ID doesn't map to any rootfolder.
+            RootFolderInUse: The rootfolder is still in use by a volume.
         """
         LOGGER.info(f'Deleting rootfolder {root_folder_id}')
-
-        # Remove from database
         cursor = get_db()
+
         try:
             cursor.execute(
-                "DELETE FROM root_folders WHERE id = ?", (root_folder_id,)
+                "DELETE FROM root_folders WHERE id = ?;",
+                (root_folder_id,)
             )
             if not cursor.rowcount:
                 raise RootFolderNotFound(root_folder_id)
+
         except IntegrityError:
             raise RootFolderInUse(root_folder_id)
 
-        self._load_cache()
+        self.__get_folder_mapping.cache_clear()
         return

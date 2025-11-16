@@ -244,12 +244,12 @@ function fillRootFolder(api_key) {
 
 			const free_space = document.createElement('td');
 			free_space.classList.add('number-column');
-			free_space.innerText = convertSize(root_folder.size.free);
+			free_space.innerText = convertSize(root_folder.size?.free);
 			entry.appendChild(free_space);
 
 			const total_space = document.createElement('td');
 			total_space.classList.add('number-column');
-			total_space.innerText = convertSize(root_folder.size.total);
+			total_space.innerText = convertSize(root_folder.size?.total);
 			entry.appendChild(total_space);
 
 			const root_folder_action_container = document.createElement('td');

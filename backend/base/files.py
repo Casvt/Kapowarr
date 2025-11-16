@@ -140,6 +140,51 @@ def folder_is_inside_folder(
     )
 
 
+def are_folders_colliding(
+    check_folder: str,
+    existing_folders: Iterable[str],
+    folder_to_skip: Union[str, None] = None
+) -> bool:
+    """Check whether the folder is the parent or child of any folder
+    in the iterable.
+
+    ```
+    >>> are_folders_colliding('/foo/bar', ['/foo/quux', '/foo/baz'])
+    False
+    >>> are_folders_colliding('/foo/bar', [])
+    False
+    >>> are_folders_colliding('/foo/bar', ['/foo/bar', '/foo/quux'])
+    True
+    >>> are_folders_colliding('/foo/bar', ['/foo/bar/baz'])
+    True
+    >>> are_folders_colliding('/foo/bar', ['/foo'])
+    True
+    ```
+
+    Args:
+        check_folder (str): The folder to check for.
+        existing_folders (Iterable[str]): The folders to check against.
+        folder_to_skip (Union[str, None], optional): If given, a folder in the
+            `existing_folders` iterable that should be skipped.
+            Defaults to None.
+
+    Returns:
+        bool: Whether `check_folder` is the parent or child of any of the folders
+            inside `existing_folders` excluding `folder_to_skip` (if not `None`).
+    """
+    for existing_folder in existing_folders:
+        if existing_folder == folder_to_skip:
+            continue
+
+        if (
+            folder_is_inside_folder(check_folder, existing_folder)
+            or folder_is_inside_folder(existing_folder, check_folder)
+        ):
+            return True
+
+    return False
+
+
 # region Conversion
 def uppercase_drive_letter(path: str) -> str:
     """Return the input, but if it's a Windows path that starts with a drive

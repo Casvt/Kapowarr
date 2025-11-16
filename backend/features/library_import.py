@@ -60,8 +60,8 @@ def propose_library_import(
 
     # Get all files in all root folders (with filter applied if given)
     root_folders = {
-        abspath(r.folder)
-        for r in RootFolders().get_all()
+        abspath(r)
+        for r in RootFolders().get_folder_list()
     }
 
     if folder_filter:

@@ -13,8 +13,8 @@ from backend.base.custom_exceptions import (FolderNotFound, InvalidKeyValue,
                                             KeyNotFound)
 from backend.base.definitions import (BaseEnum, Constants, DateType,
                                       GCDownloadSource, SeedingHandling)
-from backend.base.files import (folder_is_inside_folder,
-                                folder_path, uppercase_drive_letter)
+from backend.base.files import (are_folders_colliding, folder_path,
+                                uppercase_drive_letter)
 from backend.base.helpers import (CommaList, Singleton, force_suffix,
                                   get_python_version,
                                   get_version_from_pyproject, hash_password,
@@ -420,12 +420,11 @@ class Settings(metaclass=Singleton):
                 force_suffix(abspath(value))
             )
 
-            for rf in RootFolders().get_all():
-                if (
-                    folder_is_inside_folder(rf.folder, converted_value)
-                    or folder_is_inside_folder(converted_value, rf.folder)
-                ):
-                    raise InvalidKeyValue(key, value)
+            if are_folders_colliding(
+                converted_value,
+                RootFolders().get_folder_list()
+            ):
+                raise InvalidKeyValue(key, value)
 
         elif key == 'concurrent_direct_downloads' and value <= 0:
             raise InvalidKeyValue(key, value)

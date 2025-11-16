@@ -3,6 +3,7 @@
 from typing import List
 
 from backend.base.custom_exceptions import (InvalidKeyValue, KeyNotFound,
+                                            RootFolderNotFound,
                                             VolumeDownloadedFor)
 from backend.base.definitions import MassEditorAction, MonitorScheme
 from backend.base.helpers import get_subclasses
@@ -55,7 +56,8 @@ class MassEditorRootFolder(MassEditorAction):
         if not isinstance(root_folder_id, int):
             raise InvalidKeyValue('root_folder_id', root_folder_id)
         # Raises RootFolderNotFound if ID is invalid
-        RootFolders().get_one(root_folder_id)
+        if not RootFolders().is_id_valid(root_folder_id):
+            raise RootFolderNotFound(root_folder_id)
 
         LOGGER.info(
             f'Using mass editor, settings root folder to {root_folder_id} for volumes: {self.volume_ids}'

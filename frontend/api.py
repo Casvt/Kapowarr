@@ -513,7 +513,7 @@ def api_rootfolder_id(id: int):
         folder: Union[str, None] = request.get_json().get('folder')
         if not folder:
             raise KeyNotFound('folder')
-        root_folders[id] = folder
+        root_folders.rename(id, folder)
         return return_api({})
 
     elif request.method == 'DELETE':

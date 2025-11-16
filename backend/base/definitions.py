@@ -649,7 +649,7 @@ class BlocklistEntry:
 class RootFolder:
     id: int
     folder: str
-    size: SizeData
+    size: Union[SizeData, None]
 
     def todict(self) -> Dict[str, Any]:
         return asdict(self)
