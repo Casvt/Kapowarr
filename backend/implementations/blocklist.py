@@ -18,7 +18,6 @@ def get_blocklist(offset: int = 0) -> List[BlocklistEntry]:
     Args:
         offset (int, optional): The offset of the list.
             The higher the number, the deeper into the list you go.
-
             Defaults to 0.
 
     Returns:
@@ -55,10 +54,10 @@ def get_blocklist_entry(id: int) -> BlocklistEntry:
     """Get info about a blocklist entry.
 
     Args:
-        id (int): The id of the blocklist entry.
+        id (int): The ID of the blocklist entry.
 
     Raises:
-        BlocklistEntryNotFound: The id doesn't map to any blocklist entry.
+        BlocklistEntryNotFound: The ID doesn't map to any blocklist entry.
 
     Returns:
         BlocklistEntry: The info of the blocklist entry.
@@ -95,17 +94,19 @@ def blocklist_contains(link: str) -> Union[int, None]:
         link (str): The link to check for.
 
     Returns:
-        Union[int, None]: The ID of the blocklist entry, if found. Otherwise
-        `None`.
+        Union[int, None]: The ID of the blocklist entry, if found.
+            Otherwise `None`.
     """
     result = get_db().execute("""
         SELECT id
         FROM blocklist
-        WHERE download_link = ?
-            OR (web_link = ? AND download_link IS NULL)
+        WHERE download_link = :link
+            OR (web_link = :link AND download_link IS NULL)
         LIMIT 1;
         """,
-        (link, link)
+        {
+            "link": link
+        }
     ).exists()
     return result
 
@@ -131,22 +132,20 @@ def add_to_blocklist(
         web_title (Union[str, None]): The title of the GC release.
 
         web_sub_title (Union[str, None]): The name of the download group on the
-        GC page.
+            GC page.
 
         download_link (str): The link to block. Give `None` to block the whole
-        GC page (`web_link`).
+            GC page (`web_link`).
 
         source (Union[DownloadSource, GCDownloadSource, None]): The source of
-        the download.
+            the download.
 
-        volume_id (int): The ID of the volume for which this link is
-        blocklisted.
+        volume_id (int): The ID of the volume for which this link is blocklisted.
 
         issue_id (Union[int, None]): The ID of the issue for which this link is
-        blocklisted, if the link is for a specific issue.
+            blocklisted, if the link is for a specific issue.
 
         reason (BlocklistReasons): The reason why the link is blocklisted.
-            See `backend.enums.BlocklistReason`.
 
     Raises:
         ValueError: No page link or download link supplied.
@@ -203,7 +202,7 @@ def add_to_blocklist(
 
 # region Delete
 def delete_blocklist() -> None:
-    """Delete all blocklist entries."""
+    """Delete all blocklist entries"""
     LOGGER.info('Deleting blocklist')
     get_db().execute(
         "DELETE FROM blocklist;"
@@ -215,10 +214,10 @@ def delete_blocklist_entry(id: int) -> None:
     """Delete a blocklist entry.
 
     Args:
-        id (int): The id of the blocklist entry.
+        id (int): The ID of the blocklist entry.
 
     Raises:
-        BlocklistEntryNotFound: The id doesn't map to any blocklist entry.
+        BlocklistEntryNotFound: The ID doesn't map to any blocklist entry.
     """
     LOGGER.debug(f'Deleting blocklist entry {id}')
 
