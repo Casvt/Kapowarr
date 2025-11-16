@@ -24,6 +24,30 @@ class FlareSolverr:
         return
 
     @staticmethod
+    def __api_request(
+        base_url: str,
+        session: Session,
+        data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        return session.post(
+            base_url + Constants.FS_API_BASE,
+            json=data,
+            headers={'Content-Type': 'application/json'}
+        ).json()
+
+    @staticmethod
+    async def __async_api_request(
+        base_url: str,
+        session: AsyncSession,
+        data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        return await (await session.post(
+            base_url + Constants.FS_API_BASE,
+            json=data,
+            headers={'Content-Type': 'application/json'}
+        )).json()
+
+    @staticmethod
     def test_flaresolverr(base_url: str) -> bool:
         """Test the connection to a FlareSolverr instance.
 
@@ -107,29 +131,35 @@ class FlareSolverr:
             return
 
         with Session() as session:
-            session_id = session.post(
-                self.base_url + Constants.FS_API_BASE,
-                json={'cmd': 'sessions.create'},
-                headers={'Content-Type': 'application/json'}
-            ).json()["session"]
+            # The reason we manually create and close a session for one request
+            # is that it's way faster than making just the request and letting
+            # FS make the temporary session itself. Why it's so much faster to
+            # make a session ourselves compared to FlareSolverr making it for
+            # one request, I don't know. It's orders of magnitude faster.
 
-            result = session.post(
-                self.base_url + Constants.FS_API_BASE,
-                json={
+            # Start session
+            session_id = self.__api_request(
+                self.base_url, session,
+                {'cmd': 'sessions.create'}
+            )["session"]
+
+            # Get result
+            result = self.__api_request(
+                self.base_url, session,
+                {
                     'cmd': 'request.get',
                     'session': session_id,
                     'url': url
-                },
-                headers={'Content-Type': 'application/json'}
-            ).json()['solution']
+                }
+            )["solution"]
 
-            session.post(
-                self.base_url + Constants.FS_API_BASE,
-                json={
+            # Close session
+            self.__api_request(
+                self.base_url, session,
+                {
                     'cmd': 'sessions.destroy',
                     'session': session_id
-                },
-                headers={'Content-Type': 'application/json'}
+                }
             )
 
             self.ua_mapping[url] = result["userAgent"]
@@ -173,29 +203,29 @@ class FlareSolverr:
             )
             return
 
-        session_id = (await (await session.post(
-            self.base_url + Constants.FS_API_BASE,
-            json={'cmd': 'sessions.create'},
-            headers={'Content-Type': 'application/json'}
-        )).json())["session"]
+        # Start session
+        session_id = (await self.__async_api_request(
+            self.base_url, session,
+            {'cmd': 'sessions.create'}
+        ))["session"]
 
-        result = (await (await session.post(
-            self.base_url + Constants.FS_API_BASE,
-            json={
+        # Get result
+        result = (await self.__async_api_request(
+            self.base_url, session,
+            {
                 'cmd': 'request.get',
                 'session': session_id,
                 'url': url
-            },
-            headers={'Content-Type': 'application/json'}
-        )).json())["solution"]
+            }
+        ))["solution"]
 
-        await session.post(
-            self.base_url + Constants.FS_API_BASE,
-            json={
+        # Close session
+        await self.__async_api_request(
+            self.base_url, session,
+            {
                 'cmd': 'sessions.destroy',
                 'session': session_id
-            },
-            headers={'Content-Type': 'application/json'}
+            }
         )
 
         self.ua_mapping[url] = result["userAgent"]
