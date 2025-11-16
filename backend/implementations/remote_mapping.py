@@ -9,7 +9,7 @@ from backend.base.custom_exceptions import (ExternalClientNotFound,
                                             RemoteMappingInvalid,
                                             RemoteMappingNotFound)
 from backend.base.definitions import RemoteMappingData
-from backend.base.files import folder_is_inside_folder, uppercase_drive_letter
+from backend.base.files import are_folders_colliding, uppercase_drive_letter
 from backend.base.helpers import force_suffix
 from backend.base.logging import LOGGER
 from backend.internals.db import get_db
@@ -46,13 +46,9 @@ def _local_folder_is_valid(
         if entry['id'] == (skip_mapping_id or -1):
             continue
 
-        if (
-            folder_is_inside_folder(
-                local_path, entry['local_path']
-            )
-            or folder_is_inside_folder(
-                entry['local_path'], local_path
-            )
+        if are_folders_colliding(
+            local_path,
+            (entry['local_path'],)
         ):
             return False
 
@@ -90,13 +86,9 @@ def _remote_folder_is_valid(
         if entry['id'] == (skip_mapping_id or -1):
             continue
 
-        if (
-            folder_is_inside_folder(
-                remote_path, entry['remote_path']
-            )
-            or folder_is_inside_folder(
-                entry['remote_path'], remote_path
-            )
+        if are_folders_colliding(
+            remote_path,
+            (entry['remote_path'],)
         ):
             return False
 
