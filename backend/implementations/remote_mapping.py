@@ -2,7 +2,7 @@
 
 from os.path import abspath, isdir
 from sqlite3 import IntegrityError
-from typing import List, Union
+from typing import List, Union, cast
 
 from backend.base.custom_exceptions import (ExternalClientNotFound,
                                             FolderNotFound,
@@ -135,14 +135,14 @@ class RemoteMapping:
         Returns:
             RemoteMappingData: The data.
         """
-        return get_db().execute("""
+        return cast(RemoteMappingData, get_db().execute("""
             SELECT id, external_download_client_id, remote_path, local_path
             FROM remote_mappings
             WHERE id = ?
             LIMIT 1;
             """,
             (self.id,)
-        ).fetchonedict() # type: ignore
+        ).fetchonedict())
 
     def update(
         self,
@@ -257,7 +257,7 @@ class RemoteMappings:
             List[RemoteMappingData]: A list of the data of all mappings.
         """
         result: List[RemoteMappingData] = [
-            RemoteMappingData(**m)
+            cast(RemoteMappingData, m)
             for m in get_db().execute("""
                 SELECT id, external_download_client_id, remote_path, local_path
                 FROM remote_mappings;

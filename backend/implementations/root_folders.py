@@ -4,7 +4,7 @@ from functools import lru_cache
 from os.path import abspath, isdir, samefile
 from shutil import disk_usage
 from sqlite3 import IntegrityError
-from typing import Dict, List, Union
+from typing import Dict, List, Union, cast
 
 from backend.base.custom_exceptions import (FolderNotFound, RootFolderInUse,
                                             RootFolderInvalid,
@@ -40,7 +40,7 @@ class RootFolders(metaclass=Singleton):
             create_folder(root_folder_path)
 
         try:
-            d_usage = SizeData(**dict(zip(
+            d_usage = cast(SizeData, dict(zip(
                 ("total", "used", "free"),
                 disk_usage(root_folder_path)
             )))

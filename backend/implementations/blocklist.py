@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from time import time
-from typing import List, Union
+from typing import List, Union, cast
 
 from backend.base.custom_exceptions import BlocklistEntryNotFound
 from backend.base.definitions import (BlocklistEntry, BlocklistReason,
@@ -38,7 +38,7 @@ def get_blocklist(offset: int = 0) -> List[BlocklistEntry]:
     ).fetchalldict()
 
     result = [
-        BlocklistEntry(**{
+        cast(BlocklistEntry, {
             **entry,
             "reason": BlocklistReason[
                 BlocklistReasonID(entry["reason"]).name
@@ -78,7 +78,7 @@ def get_blocklist_entry(id: int) -> BlocklistEntry:
     if not entry:
         raise BlocklistEntryNotFound(id)
 
-    return BlocklistEntry(**{
+    return cast(BlocklistEntry, {
         **entry,
         "reason": BlocklistReason[
             BlocklistReasonID(entry["reason"]).name
