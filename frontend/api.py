@@ -33,8 +33,8 @@ from backend.implementations.blocklist import (add_to_blocklist,
                                                get_blocklist,
                                                get_blocklist_entry)
 from backend.implementations.comicvine import ComicVine
-from backend.implementations.conversion import (FileConversionHandler,
-                                                preview_mass_convert)
+from backend.implementations.conversion import preview_mass_convert
+from backend.implementations.converters import ConvertersManager
 from backend.implementations.credentials import Credentials
 from backend.implementations.external_clients import ExternalClients
 from backend.implementations.naming import (generate_volume_folder_name,
@@ -473,7 +473,7 @@ def api_settings_api_key():
 @error_handler
 @auth
 def api_settings_available_formats():
-    result = list(FileConversionHandler.get_available_formats())
+    result = list(ConvertersManager.get_available_formats())
     return return_api(result)
 
 

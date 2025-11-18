@@ -13,7 +13,8 @@ from typing import Dict, Iterable, List, Sequence, Set, Union
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from backend.base.definitions import CharConstants, Constants, FileConstants
-from backend.base.helpers import check_filter, force_prefix, force_suffix
+from backend.base.helpers import (check_filter, force_prefix,
+                                  force_suffix, run_rar)
 from backend.base.logging import LOGGER
 
 filepath_cleaner = compile(
@@ -183,6 +184,38 @@ def are_folders_colliding(
             return True
 
     return False
+
+
+def archive_contains_issues(archive_file: str) -> bool:
+    """Check whether an archive file contains complete issues or is one single
+    issue.
+
+    Args:
+        archive_file (str): The archive file to check. Must have the zip or rar
+            extension.
+
+    Returns:
+        bool: Whether the archive file contains complete issue files.
+    """
+    ext = splitext(archive_file)[1].lower()
+
+    if ext == '.zip':
+        with ZipFile(archive_file, "r") as zip:
+            namelist = zip.namelist()
+
+    elif ext == '.rar':
+        namelist = run_rar([
+            "lb", # List archive contents bare
+            archive_file # Archive to list contents of
+        ]).stdout.split("\n")[:-1]
+
+    else:
+        return False
+
+    return any(
+        splitext(f)[1].lower() in FileConstants.CONTAINER_EXTENSIONS
+        for f in namelist
+    )
 
 
 # region Conversion

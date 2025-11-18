@@ -14,6 +14,7 @@ from hashlib import pbkdf2_hmac
 from multiprocessing.pool import Pool
 from os import cpu_count, sep, symlink
 from os.path import basename, dirname, exists, isfile, join
+from subprocess import run
 from sys import base_exec_prefix, executable, platform, version_info
 from threading import current_thread
 from typing import (TYPE_CHECKING, Any, Callable, Collection, Dict, Iterable,
@@ -35,6 +36,7 @@ from backend.base.logging import LOGGER, get_log_filepath
 if TYPE_CHECKING:
     from multiprocessing import SimpleQueue
     from multiprocessing.pool import IMapIterator
+    from subprocess import CompletedProcess
 
     from flask.ctx import AppContext
 
@@ -152,6 +154,24 @@ def get_version_from_pyproject(filepath: str) -> str:
                 return "V" + line.split('"')[1]
         else:
             raise RuntimeError("Version not found in pyproject.toml")
+
+
+def run_rar(args: List[str]) -> CompletedProcess[str]:
+    """Run rar executable. Platform is taken care of inside function.
+
+    Args:
+        args (List[str]): The arguments to give to the executable.
+
+    Raises:
+        KeyError: Platform not supported.
+
+    Returns:
+        CompletedProcess[str]: The result of the process.
+    """
+    from backend.base.files import folder_path
+
+    exe = folder_path('backend', 'lib', Constants.RAR_EXECUTABLES[platform])
+    return run([exe, *args], capture_output=True, text=True)
 
 
 # region Helpers

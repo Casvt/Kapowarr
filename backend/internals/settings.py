@@ -439,10 +439,9 @@ class Settings(metaclass=Singleton):
             raise InvalidKeyValue(key, value)
 
         elif key == 'format_preference':
-            from backend.implementations.conversion import \
-                FileConversionHandler
+            from backend.implementations.converters import ConvertersManager
 
-            available = FileConversionHandler.get_available_formats()
+            available = ConvertersManager.get_available_formats()
             for entry in value:
                 if entry not in available:
                     raise InvalidKeyValue(key, value)
