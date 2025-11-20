@@ -1,44 +1,57 @@
 # -*- coding: utf-8 -*-
 
 """
-Converting files to a different format.
+Handling of converting files to a different format.
 """
 
 from itertools import chain
-from os.path import splitext
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Dict, Iterator, List, Union
 
 from backend.base.helpers import PortablePool, filtered_iter
-from backend.base.logging import LOGGER
-from backend.implementations.converters import ConvertersManager
+from backend.implementations.converters import (ConvertersManager,
+                                                ProposedConversion)
 from backend.implementations.volumes import Volume, scan_files
 from backend.internals.db import commit
 from backend.internals.db_models import FilesDB
 from backend.internals.server import TaskStatusEvent, WebSocket
 
 
-def convert_file(
-    filepath: str,
-    source_format: str,
-    target_format: str,
-    converter: Callable[[str], List[str]]
-) -> List[str]:
-    """Convert a file.
+def _get_convertable_files(
+    volume_id: int,
+    issue_id: Union[int, None] = None,
+    filepath_filter: List[str] = []
+) -> Iterator[ProposedConversion]:
+    """Get the files of a volume or issue that can be converted to a format that
+    is more desired according to the format preference and extraction settings.
 
     Args:
-        filepath (str): The path to the file.
-        source_format (str): The format that it currently is.
-        target_format (str): The format that it will become.
-        converter (Callable[[str], List[str]]): The function that will convert
-            the file.
+        volume_id (int): The ID of the volume.
+        issue_id (Union[int, None], optional): The ID of the issue.
+            Defaults to None.
+        filepath_filter (List[str], optional): Only convert files mentioned in
+            this list.
+            Defaults to [].
 
-    Returns:
-        List[str]: The resulting files from the conversion.
+    Yields:
+        Iterator[ProposedConversion]: The proposed conversions of files to
+            another format.
     """
-    LOGGER.info(
-        f"Converting file from {source_format} to {target_format}: {filepath}"
-    )
-    return converter(filepath)
+    if issue_id:
+        file_list = Volume(volume_id).get_issue(issue_id).get_files()
+    else:
+        file_list = Volume(volume_id).get_all_files()
+
+    for file in sorted(filtered_iter(
+        (f["filepath"] for f in file_list),
+        set(filepath_filter)
+    )):
+        conversion_proposal = ConvertersManager.select_converter(file)
+        if conversion_proposal is None:
+            continue
+
+        yield conversion_proposal
+
+    return
 
 
 def preview_mass_convert(
@@ -55,28 +68,12 @@ def preview_mass_convert(
     Returns:
         Dict[str, str]: Mapping of filename before to after conversion.
     """
-    volume = Volume(volume_id)
-    volume_folder = volume.vd.folder
+    volume_folder = Volume(volume_id).vd.folder
 
-    result = {}
-    for f in sorted((
-        f["filepath"]
-        for f in (
-            volume.get_all_files()
-            if not issue_id else
-            volume.get_issue(issue_id).get_files()
-        )
-    )):
-        converter = ConvertersManager.select_converter(f)
-        if converter is None:
-            continue
-
-        if converter[1] == 'folder':
-            result[f] = volume_folder
-        else:
-            result[f] = splitext(f)[0] + '.' + converter[1]
-
-    return result
+    return {
+        p.filepath: p.new_filepath or volume_folder
+        for p in _get_convertable_files(volume_id, issue_id)
+    }
 
 
 def mass_convert(
@@ -94,83 +91,65 @@ def mass_convert(
         issue_id (Union[int, None], optional): The ID of the issue to convert for.
             Defaults to None.
 
-        filepath_filter (List[str], optional): Only convert files
-        mentioned in this list.
+        filepath_filter (List[str], optional): Only convert files mentioned in
+            this list.
             Defaults to [].
 
         update_websocket_progress (bool, optional): Send task progress updates
-        over the websocket.
+            over the websocket.
             Defaults to False.
 
         update_websocket_files (bool, optional): Send updates on the download
-        status of issues over the websocket.
+            status of issues over the websocket.
             Defaults to False.
 
     Returns:
         List[str]: The new filenames, only of files that have been be converted.
     """
-    volume = Volume(volume_id)
-
-    planned_conversions: List[Tuple[str, str,
-        str, Callable[[str], List[str]]]] = []
-    for f in filtered_iter(
-        (f["filepath"]
-        for f in (
-            volume.get_all_files()
-            if not issue_id else
-            volume.get_issue(issue_id).get_files()
-        )),
-        set(filepath_filter)
+    planned_conversions: List[ProposedConversion] = []
+    for proposed_convertion in _get_convertable_files(
+        volume_id, issue_id, filepath_filter
     ):
-        converter = ConvertersManager.select_converter(f)
-        if converter is None:
-            continue
-
-        if converter[1] == 'folder':
-            resulting_files = convert_file(f, *converter)
-            for file in resulting_files:
-                converter = ConvertersManager.select_converter(file)
-                if converter is not None:
-                    planned_conversions.append((file, *converter))
+        if proposed_convertion.target_format == 'folder':
+            resulting_files = proposed_convertion.perform_conversion()
+            for filepath in resulting_files:
+                sub_conversion = ConvertersManager.select_converter(filepath)
+                if sub_conversion is not None:
+                    planned_conversions.append(sub_conversion)
 
         else:
-            planned_conversions.append((f, *converter))
+            planned_conversions.append(proposed_convertion)
 
     total_count = len(planned_conversions)
-    result = []
     if not total_count:
-        return result
+        return []
 
-    elif total_count == 1:
-        # Avoid mp overhead when we're only converting one file
-        result = convert_file(*planned_conversions[0])
-
-    else:
-        # Commit changes because new connections are opened in the processes
-        commit()
-        with PortablePool(max_processes=total_count) as pool:
-            if update_websocket_progress:
-                ws = WebSocket()
+    # Commit changes because new connections are opened in the processes
+    commit()
+    result = []
+    with PortablePool(max_processes=total_count) as pool:
+        if update_websocket_progress:
+            ws = WebSocket()
+            ws.emit(TaskStatusEvent(
+                f'Converted 0/{total_count}'
+            ))
+            for idx, iter_result in enumerate(pool.imap_unordered(
+                lambda c: c.perform_conversion(),
+                planned_conversions
+            )):
+                result += iter_result
                 ws.emit(TaskStatusEvent(
-                    f'Converted 0/{total_count}'
+                    f'Converted {idx+1}/{total_count}'
                 ))
-                for idx, iter_result in enumerate(pool.istarmap_unordered(
-                    convert_file,
-                    planned_conversions
-                )):
-                    result += iter_result
-                    ws.emit(TaskStatusEvent(
-                        f'Converted {idx+1}/{total_count}'
-                    ))
 
-            else:
-                result += chain.from_iterable(pool.starmap(
-                    convert_file,
-                    planned_conversions
-                ))
+        else:
+            result += chain.from_iterable(pool.map(
+                lambda c: c.perform_conversion(),
+                planned_conversions
+            ))
 
     FilesDB.delete_filepaths((
-        f[0] for f in planned_conversions
+        f.filepath for f in planned_conversions
     ))
     scan_files(
         volume_id,

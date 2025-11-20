@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass
 from enum import Enum
 from threading import Event, Thread
-from typing import (TYPE_CHECKING, Any, Dict, List, Mapping,
+from typing import (TYPE_CHECKING, Any, Callable, Dict, List, Mapping,
                     Sequence, Tuple, TypedDict, TypeVar, Union)
 
 if TYPE_CHECKING:
@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 # region Types
 T = TypeVar("T")
 U = TypeVar("U")
+FileConverter = Callable[[str], List[str]]
 
 
 # region Constants
@@ -823,24 +824,6 @@ class MassEditorAction(ABC):
 
     def __repr__(self) -> str:
         return f'<{self.__class__.__name__}(action={self.identifier}; ids={self.volume_ids}); {id(self)}>'
-
-
-class FileConverter(ABC):
-    source_format: str
-    target_format: str
-
-    @staticmethod
-    @abstractmethod
-    def convert(file: str) -> List[str]:
-        """Convert a file from `source_format` to `target_format`.
-
-        Args:
-            file (str): Filepath to the source file, should be in `source_format`.
-
-        Returns:
-            List[str]: The resulting files or directories, in `target_format`.
-        """
-        ...
 
 
 class SearchSource(ABC):
