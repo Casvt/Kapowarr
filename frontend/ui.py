@@ -124,3 +124,8 @@ def ui_metadata():
 @ui.route('/settings/general', methods=methods)
 def ui_general():
     return render('settings_general.html')
+
+
+@ui.route('/settings/indexers', methods=methods)
+def ui_indexers():
+    return render('settings_indexers.html')
