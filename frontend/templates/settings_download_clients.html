@@ -98,6 +98,18 @@
 			Also, most often on Wednesday and Thursday, the site is very busy so the downloads speed goes down a lot. Preferring
 			external services in the service preference list is advised in order to avoid this.
 		</p>
+		<h2 id="sabnzbd-title">SABnzbd</h2>
+		<p id="sabnzbd-desc" class="description">
+			<a href="https://sabnzbd.org/" target="_blank">SABnzbd</a> is an open-source binary newsreader that makes
+			downloading from usenet easy. Kapowarr can use SABnzbd to download comics from usenet indexers.
+			<br><br>
+			To use SABnzbd with Kapowarr, you need to have SABnzbd installed and configured with your usenet provider.
+			You'll need to provide the base URL of your SABnzbd instance and an API key, which can be found in the
+			SABnzbd web interface under Config > General > Security.
+			<br><br>
+			Make sure to add SABnzbd as a download client in the "Download Clients" section below with the correct
+			base URL (e.g., 'http://192.168.1.100:8080') and API key.
+		</p>
 
 		<div id="cred-container">
 			<p id="cred-error" class="error hidden">Failed to add credentials</p>
@@ -154,7 +166,7 @@
 		<div id="choose-torrent-list"></div>
 	{% endset %}
 
-	{{ window(False, "choose-torrent-window", "Choose Torrent Client", choose_content) }}
+	{{ window(False, "choose-torrent-window", "Choose Download Client", choose_content) }}
 
 	{% set add_content %}
 		<p class="error hidden" id="add-error"></p>
@@ -170,7 +182,7 @@
 					<th><label for="add-baseurl-input">Base URL</label></th>
 					<td>
 						<input type="text" id="add-baseurl-input" required>
-						<p>E.g. 'http://192.168.2.15:8008/torrent_client'</p>
+						<p>E.g. 'http://192.168.2.15:8080' for SABnzbd or 'http://192.168.2.15:9091' for Transmission</p>
 					</td>
 				</tr>
 			</table>
@@ -186,7 +198,7 @@
 		<button id="submit-torrent-add" type="submit" form="add-torrent-form">Add</button>
 	{% endset %}
 
-	{{ window(False, "add-torrent-window", "Add Torrent Client", add_content, add_submit) }}
+	{{ window(False, "add-torrent-window", "Add Download Client", add_content, add_submit) }}
 
 	{% set edit_content %}
 		<p class="error hidden" id="edit-error"></p>
@@ -202,7 +214,7 @@
 					<th><label for="edit-baseurl-input">Base URL</label></th>
 					<td>
 						<input type="text" id="edit-baseurl-input" required>
-						<p>E.g. 'http://192.168.2.15:8008/torrent_client'</p>
+						<p>E.g. 'http://192.168.2.15:8080' for SABnzbd or 'http://192.168.2.15:9091' for Transmission</p>
 					</td>
 				</tr>
 			</table>
@@ -219,7 +231,7 @@
 		<button id="submit-torrent-edit" type="submit" form="edit-torrent-form">Save</button>
 	{% endset %}
 
-	{{ window(False, "edit-torrent-window", "Edit Torrent Client", edit_content, edit_submit) }}
+	{{ window(False, "edit-torrent-window", "Edit Download Client", edit_content, edit_submit) }}
 
 	{% set add_remote_mapping_content %}
 		<p class="error hidden" id="add-mapping-error"></p>
@@ -301,10 +313,11 @@
 			<button id="wetransfer-client" data-tag="wetransfer">WeTransfer</button>
 			<button id="pixeldrain-client" data-tag="pixeldrain">Pixeldrain</button>
 			<button id="getcomics-client" data-tag="getcomics">GetComics</button>
+			<button id="sabnzbd-client" data-tag="sabnzbd">SABnzbd</button>
 		</div>
-		<h2>Torrent Clients</h2>
+		<h2>Download Clients</h2>
 		<div id="torrent-client-list" class="client-list">
-			<button id="add-torrent-client" class="add-button icon-text-color" title="Add torrent client">
+			<button id="add-torrent-client" class="add-button icon-text-color" title="Add download client">
 				<img src="{{url_base}}/static/img/cancel.svg" alt="">
 			</button>
 		</div>
