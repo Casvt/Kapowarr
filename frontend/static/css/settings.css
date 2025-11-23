@@ -262,6 +262,10 @@
 	display: block;
 }
 
+#builtin-window[data-tag="sabnzbd"] .window-content :where(#sabnzbd-title, #sabnzbd-desc) {
+	display: block;
+}
+
 #builtin-window #cred-container tbody td:last-child {
 	width: 4rem;
 }
