@@ -85,8 +85,9 @@ class ProwlarrClient:
                     return True
                 else:
                     LOGGER.warning(
-                        f"Prowlarr connection failed with status {
-                            response.status}")
+                        "Prowlarr connection failed with "
+                        f"status {response.status}"
+                    )
                     return False
 
         except ClientError as e:
@@ -111,8 +112,9 @@ class ProwlarrClient:
 
                 if not response.ok:
                     LOGGER.warning(
-                        f"Failed to fetch indexers from Prowlarr: {
-                            response.status}")
+                        "Failed to fetch indexers from Prowlarr: "
+                        f"{response.status}"
+                    )
                     return []
 
                 indexers = await response.json()
@@ -171,8 +173,9 @@ class ProwlarrClient:
                     })
 
                 LOGGER.info(
-                    f"Found {
-                        len(parsed_indexers)} comic-capable indexers in Prowlarr")
+                    f"Found {len(parsed_indexers)} comic-capable "
+                    "indexers in Prowlarr"
+                )
                 return parsed_indexers
 
         except ClientError as e:

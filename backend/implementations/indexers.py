@@ -365,7 +365,7 @@ async def search_all_indexers(
                 seen_links.add(result['link'])
 
     LOGGER.info(
-        f"Found {
-            len(all_results)} results from {
-            len(indexers)} indexers")
+        f"Found {len(all_results)} results from "
+        f"{len(indexers)} indexers"
+    )
     return all_results

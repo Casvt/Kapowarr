@@ -1398,7 +1398,8 @@ def api_indexers_id(id: int):
             'api_key',
             'indexer_type',
             'categories',
-                'enabled'):
+            'enabled'
+        ):
             value = extract_key(request, key, check_existence=False)
             if value is not None:
                 if key == 'enabled':
