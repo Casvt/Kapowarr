@@ -428,6 +428,7 @@ class DownloadType(BaseEnum):
 
     DIRECT = 1
     TORRENT = 2
+    USENET = 3
 
 
 class GCDownloadSource(BaseEnum):
@@ -823,7 +824,11 @@ class MassEditorAction(ABC):
         ...
 
     def __repr__(self) -> str:
-        return f'<{self.__class__.__name__}(action={self.identifier}; ids={self.volume_ids}); {id(self)}>'
+        return f'<{
+            self.__class__.__name__} (action={
+            self.identifier} ; ids={
+            self.volume_ids}); {
+            id(self)} >'
 
 
 class SearchSource(ABC):
@@ -1021,7 +1026,11 @@ class ExternalDownloadClient(ABC):
         ...
 
     def __repr__(self) -> str:
-        return f'<{self.__class__.__name__}(id={self.id}; title={self.title}); {id(self)}>'
+        return f'<{
+            self.__class__.__name__} (id={
+            self.id} ; title={
+            self.title}); {
+            id(self)} >'
 
 
 class Download(ABC):
@@ -1263,7 +1272,12 @@ class Download(ABC):
         ...
 
     def __repr__(self) -> str:
-        return f'<{self.__class__.__name__}(download_link={self.download_link}; file={self.files[0]}; state={self.state.value}); {id(self)}>'
+        return f'<{
+            self.__class__.__name__} (download_link={
+            self.download_link} ; file={
+            self.files[0]} ; state={
+            self.state.value}); {
+            id(self)} >'
 
 
 class ExternalDownload(Download):
@@ -1401,4 +1415,9 @@ class ExternalDownload(Download):
         ...
 
     def __repr__(self) -> str:
-        return f'<{self.__class__.__name__}(download_link={self.download_link}; file={self.files[0]}; state={self.state.value}); {id(self)}>'
+        return f'<{
+            self.__class__.__name__} (download_link={
+            self.download_link} ; file={
+            self.files[0]} ; state={
+            self.state.value}); {
+            id(self)} >'
