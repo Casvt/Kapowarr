@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% from "base.html" import icon_button, window %}
+{% block title %}Indexers{% endblock %}
+{% block css %}
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/window.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+{% endblock %}
+{% block js %}
+	<script src="{{ url_for('static', filename='js/window.js') }}" defer></script>
+	<script src="{{ url_for('static', filename='js/settings_indexers.js') }}" defer></script>
+{% endblock %}
+
+{% block windows %}
+	{% set add_content %}
+		<p class="error hidden" id="add-error"></p>
+		<form id="add-indexer-form">
+			<table>
+				<tr>
+					<th><label for="add-name-input">Name</label></th>
+					<td>
+						<input type="text" id="add-name-input" required>
+						<p>Display name for the indexer</p>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="add-baseurl-input">Base URL</label></th>
+					<td>
+						<input type="text" id="add-baseurl-input" required>
+						<p>E.g. 'http://192.168.1.100:9696' for Prowlarr or the base URL of your indexer</p>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="add-apikey-input">API Key</label></th>
+					<td>
+						<input type="text" id="add-apikey-input" required>
+						<p>API key for accessing the indexer</p>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="add-type-input">Indexer Type</label></th>
+					<td>
+						<select id="add-type-input" required>
+							<option value="newznab">Newznab (Usenet)</option>
+							<option value="torznab">Torznab (Torrent)</option>
+						</select>
+						<p>Type of indexer protocol</p>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="add-categories-input">Categories</label></th>
+					<td>
+						<input type="text" id="add-categories-input" value="7030">
+						<p>Comma-separated category IDs (7030 is for comics)</p>
+					</td>
+				</tr>
+			</table>
+		</form>
+	{% endset %}
+
+	{% set add_submit %}
+		<button id="submit-indexer-add" type="submit" form="add-indexer-form">Add</button>
+	{% endset %}
+
+	{{ window(False, "add-indexer-window", "Add Indexer", add_content, add_submit) }}
+
+	{% set edit_content %}
+		<p class="error hidden" id="edit-error"></p>
+		<form id="edit-indexer-form">
+			<table>
+				<tr>
+					<th><label for="edit-name-input">Name</label></th>
+					<td>
+						<input type="text" id="edit-name-input" required>
+						<p>Display name for the indexer</p>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="edit-baseurl-input">Base URL</label></th>
+					<td>
+						<input type="text" id="edit-baseurl-input" required>
+						<p>E.g. 'http://192.168.1.100:9696' for Prowlarr or the base URL of your indexer</p>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="edit-apikey-input">API Key</label></th>
+					<td>
+						<input type="text" id="edit-apikey-input" required>
+						<p>API key for accessing the indexer</p>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="edit-type-input">Indexer Type</label></th>
+					<td>
+						<select id="edit-type-input" required>
+							<option value="newznab">Newznab (Usenet)</option>
+							<option value="torznab">Torznab (Torrent)</option>
+						</select>
+						<p>Type of indexer protocol</p>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="edit-categories-input">Categories</label></th>
+					<td>
+						<input type="text" id="edit-categories-input" value="7030">
+						<p>Comma-separated category IDs (7030 is for comics)</p>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="edit-enabled-input">Enabled</label></th>
+					<td>
+						<input type="checkbox" id="edit-enabled-input">
+						<p>Enable or disable this indexer</p>
+					</td>
+				</tr>
+			</table>
+		</form>
+	{% endset %}
+
+	{% set edit_submit %}
+		<button id="delete-indexer-edit" type="button">Delete</button>
+		<button id="submit-indexer-edit" type="submit" form="edit-indexer-form">Save</button>
+	{% endset %}
+
+	{{ window(False, "edit-indexer-window", "Edit Indexer", edit_content, edit_submit) }}
+
+{% endblock windows %}
+
+{% block main %}
+<main>
+	<div class="settings-container">
+		<h2>Usenet/Torrent Indexers</h2>
+		<p class="description">
+			Configure Newznab/Torznab indexers like Prowlarr to search for comics. 
+			These indexers allow Kapowarr to find and download comics from Usenet or torrent sources.
+			<br><br>
+			For Prowlarr, use the base URL (e.g., 'http://192.168.1.100:9696') and API key from Settings > General in Prowlarr.
+		</p>
+		<div id="indexer-list" class="client-list">
+			<button id="add-indexer" class="add-button icon-text-color" title="Add indexer">
+				<img src="{{url_base}}/static/img/cancel.svg" alt="">
+			</button>
+		</div>
+	</div>
+</main>
+{% endblock main %}
