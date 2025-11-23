@@ -138,11 +138,11 @@ function loadIndexers(api_key) {
 				
 				// Show name and type, with visual indicator if disabled
 				const typeLabel = indexer.indexer_type === 'newznab' ? 'Newznab' : 'Torznab';
-				const statusIndicator = indexer.enabled === 1 ? '' : ' (Disabled)';
+				const statusIndicator = indexer.enabled ? '' : ' (Disabled)';
 				entry.innerText = `${indexer.name} (${typeLabel})${statusIndicator}`;
 				
 				// Add visual styling for disabled indexers
-				if (indexer.enabled !== 1) {
+				if (!indexer.enabled) {
 					entry.style.opacity = '0.5';
 				}
 				
