@@ -37,8 +37,11 @@ from backend.implementations.conversion import preview_mass_convert
 from backend.implementations.converters import ConvertersManager
 from backend.implementations.credentials import Credentials
 from backend.implementations.external_clients import ExternalClients
+from backend.implementations.indexers import IndexerDB
 from backend.implementations.naming import (generate_volume_folder_name,
                                             preview_mass_rename)
+from backend.implementations.prowlarr import (ProwlarrClient, ProwlarrDB,
+                                              sync_prowlarr_indexers)
 from backend.implementations.remote_mapping import RemoteMappings
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Library, delete_issue_file
@@ -1348,3 +1351,105 @@ def api_files(f_id: int):
     elif request.method == 'DELETE':
         delete_issue_file(f_id)
         return return_api({})
+
+
+# Indexer endpoints
+@api.route('/indexers', methods=['GET', 'POST'])
+@error_handler
+@auth
+def api_indexers():
+    if request.method == 'GET':
+        result = IndexerDB.get_all()
+        return return_api(result)
+
+    elif request.method == 'POST':
+        name = extract_key(request, 'name')
+        base_url = extract_key(request, 'base_url')
+        api_key = extract_key(request, 'api_key')
+        indexer_type = extract_key(
+            request,
+            'indexer_type',
+            check_existence=False) or 'newznab'
+        categories = extract_key(
+            request,
+            'categories',
+            check_existence=False) or '7030'
+
+        indexer_id = IndexerDB.add(
+            name, base_url, api_key, indexer_type, categories)
+        return return_api({'id': indexer_id})
+
+
+@api.route('/indexers/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+@error_handler
+@auth
+def api_indexers_id(id: int):
+    if request.method == 'GET':
+        result = IndexerDB.get_by_id(id)
+        if not result:
+            raise InvalidKeyValue('Indexer not found')
+        return return_api(result)
+
+    elif request.method == 'PUT':
+        update_fields = {}
+        for key in (
+            'name',
+            'base_url',
+            'api_key',
+            'indexer_type',
+            'categories',
+                'enabled'):
+            value = extract_key(request, key, check_existence=False)
+            if value is not None:
+                if key == 'enabled':
+                    update_fields[key] = int(value)
+                else:
+                    update_fields[key] = value
+
+        IndexerDB.update(id, **update_fields)
+        return return_api({})
+
+    elif request.method == 'DELETE':
+        IndexerDB.delete(id)
+        return return_api({})
+
+
+# Prowlarr endpoints
+@api.route('/prowlarr/config', methods=['GET', 'POST', 'DELETE'])
+@error_handler
+@auth
+def api_prowlarr_config():
+    if request.method == 'GET':
+        result = ProwlarrDB.get_config()
+        return return_api(result or {})
+
+    elif request.method == 'POST':
+        base_url = extract_key(request, 'base_url')
+        api_key = extract_key(request, 'api_key')
+        ProwlarrDB.set_config(base_url, api_key)
+        return return_api({})
+
+    elif request.method == 'DELETE':
+        ProwlarrDB.clear_config()
+        return return_api({})
+
+
+@api.route('/prowlarr/test', methods=['POST'])
+@error_handler
+@auth
+def api_prowlarr_test():
+    base_url = extract_key(request, 'base_url')
+    api_key = extract_key(request, 'api_key')
+
+    client = ProwlarrClient(base_url, api_key)
+    success = run(client.test_connection())
+
+    return return_api({'success': success})
+
+
+@api.route('/prowlarr/sync', methods=['POST'])
+@error_handler
+@auth
+def api_prowlarr_sync():
+    stats = run(sync_prowlarr_indexers())
+    return return_api(stats)

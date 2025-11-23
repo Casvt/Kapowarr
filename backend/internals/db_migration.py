@@ -1171,3 +1171,25 @@ def _migrate_remove_unsupported_source_blocklist_entries():
         (2,) # Source not supported
     )
     return
+
+
+@DatabaseMigrationHandler.register_handler(44)
+def _migrate_add_indexers_table():
+    """Add tables for indexer and Prowlarr support."""
+    get_db().executescript("""
+        CREATE TABLE IF NOT EXISTS indexers(
+            id INTEGER PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            base_url TEXT NOT NULL,
+            api_key TEXT NOT NULL,
+            indexer_type VARCHAR(20) NOT NULL DEFAULT 'newznab',
+            categories TEXT DEFAULT '7030',
+            enabled BOOL NOT NULL DEFAULT 1
+        );
+
+        CREATE TABLE IF NOT EXISTS prowlarr_config(
+            base_url TEXT NOT NULL,
+            api_key TEXT NOT NULL
+        );
+    """)
+    return
