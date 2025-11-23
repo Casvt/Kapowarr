@@ -986,8 +986,15 @@ class NZBDownload(ExternalDownload, BaseDirectDownload):
                 raise e
 
         # Extract NZB name from the link or use default
-        nzb_name = download_link.split('/')[-1].split('?')[0]
-        if not nzb_name or nzb_name == download_link:
+        # Try to get filename from URL path
+        if '/' in download_link:
+            nzb_name = download_link.split('/')[-1].split('?')[0]
+            # If we got an empty string or the name has no extension, use
+            # default
+            if not nzb_name or '.' not in nzb_name:
+                nzb_name = 'download.nzb'
+        else:
+            # No path separator, likely a direct URL or ID
             nzb_name = 'download.nzb'
 
         self._filename_body = ''

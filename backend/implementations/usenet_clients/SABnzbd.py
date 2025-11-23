@@ -87,20 +87,22 @@ class SABnzbd(BaseExternalClient):
             result = response.json()
         except Exception:
             LOGGER.error(
-                f"Not connected to SABnzbd instance: Invalid JSON response"
+                "Not connected to SABnzbd instance: Invalid JSON response"
             )
             raise ClientNotWorking(
                 BrokenClientReason.FAILED_PROCESSING_RESPONSE)
 
         if result.get('error'):
-            if 'API Key Incorrect' in result.get('error', ''):
+            error_msg = result.get('error', '')
+            if 'API Key Incorrect' in error_msg:
                 LOGGER.error(
-                    f"Failed to authenticate for SABnzbd instance: {
-                        result.get('error')}")
+                    "Failed to authenticate for SABnzbd instance: %s",
+                    error_msg
+                )
                 raise CredentialInvalid
             else:
                 LOGGER.error(
-                    f"Not connected to SABnzbd instance: {result.get('error')}"
+                    "Not connected to SABnzbd instance: %s", error_msg
                 )
                 raise ClientNotWorking(BrokenClientReason.NOT_CLIENT_INSTANCE)
 
@@ -134,11 +136,10 @@ class SABnzbd(BaseExternalClient):
             result = response.json()
 
             if result.get('status') is False:
+                error_msg = result.get('error', 'Unknown error')
                 LOGGER.error(
-                    f"Failed to add NZB to SABnzbd: {
-                        result.get(
-                            'error',
-                            'Unknown error')}")
+                    "Failed to add NZB to SABnzbd: %s", error_msg
+                )
                 raise ClientNotWorking(
                     BrokenClientReason.FAILED_PROCESSING_RESPONSE)
 
