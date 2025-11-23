@@ -524,4 +524,17 @@ CREATE TABLE IF NOT EXISTS remote_mappings(
         REFERENCES external_download_clients(id)
         ON DELETE CASCADE
 );
+CREATE TABLE IF NOT EXISTS indexers(
+    id INTEGER PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    base_url TEXT NOT NULL,
+    api_key TEXT NOT NULL,
+    indexer_type VARCHAR(20) NOT NULL DEFAULT 'newznab',
+    categories TEXT DEFAULT '7030',
+    enabled BOOL NOT NULL DEFAULT 1
+);
+CREATE TABLE IF NOT EXISTS prowlarr_config(
+    base_url TEXT NOT NULL,
+    api_key TEXT NOT NULL
+);
 """
