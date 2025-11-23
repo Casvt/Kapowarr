@@ -1363,17 +1363,15 @@ def api_indexers():
         return return_api(result)
 
     elif request.method == 'POST':
-        name = extract_key(request, 'name')
-        base_url = extract_key(request, 'base_url')
-        api_key = extract_key(request, 'api_key')
-        indexer_type = extract_key(
-            request,
-            'indexer_type',
-            check_existence=False) or 'newznab'
-        categories = extract_key(
-            request,
-            'categories',
-            check_existence=False) or '7030'
+        data: dict = request.get_json()
+        name = data.get('name')
+        base_url = data.get('base_url')
+        api_key = data.get('api_key')
+        indexer_type = data.get('indexer_type', 'newznab')
+        categories = data.get('categories', '7030')
+
+        if not name or not base_url or not api_key:
+            raise KeyNotFound('name, base_url, or api_key')
 
         indexer_id = IndexerDB.add(
             name, base_url, api_key, indexer_type, categories)
@@ -1391,6 +1389,7 @@ def api_indexers_id(id: int):
         return return_api(result)
 
     elif request.method == 'PUT':
+        data: dict = request.get_json()
         update_fields = {}
         for key in (
             'name',
@@ -1400,7 +1399,7 @@ def api_indexers_id(id: int):
             'categories',
             'enabled'
         ):
-            value = extract_key(request, key, check_existence=False)
+            value = data.get(key)
             if value is not None:
                 if key == 'enabled':
                     update_fields[key] = int(value)

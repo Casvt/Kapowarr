@@ -1,5 +1,3 @@
-const url_base = document.querySelector('#url_base').dataset.value;
-
 function loadAddIndexer() {
 	const form = document.querySelector('#add-indexer-form');
 	hide([document.querySelector('#add-error')]);
