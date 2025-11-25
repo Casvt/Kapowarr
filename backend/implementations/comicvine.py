@@ -45,16 +45,17 @@ lists = {'ul', 'ol'}
 
 
 def _clean_description(description: str, short: bool = False) -> str:
-    """Reduce size of description (written in html) to only essential
-    information.
+    """Reduce the size of the volume/issue description (written in html) to only
+    essential information. Removes images, lists (e.g. of authors), and fixes
+    links that have a relative URL.
 
     Args:
-        description (str): The description (written in html) to clean.
+        description (str): The description to clean.
         short (bool, optional): Only remove images and fix links.
             Defaults to False.
 
     Returns:
-        str: The cleaned description (written in html).
+        str: The cleaned description.
     """
     if not description:
         return description
@@ -71,17 +72,17 @@ def _clean_description(description: str, short: bool = False) -> str:
         for el in soup:
             if not isinstance(el, Tag):
                 continue
-            if el.name is None:
+
+            elif el.name is None:
                 continue
 
-            if (
+            elif (
                 removed_elements
                 or el.name in headers
             ):
                 removed_elements.append(el)
-                continue
 
-            if el.name in lists:
+            elif el.name in lists:
                 removed_elements.append(el)
                 prev_sib = el.previous_sibling
                 if (
@@ -89,9 +90,8 @@ def _clean_description(description: str, short: bool = False) -> str:
                     and prev_sib.text.endswith(':')
                 ):
                     removed_elements.append(prev_sib)
-                continue
 
-            if el.name == 'p':
+            elif el.name == 'p':
                 children = list(getattr(el, 'children', []))
                 if (
                     1 <= len(children) <= 2
@@ -107,15 +107,15 @@ def _clean_description(description: str, short: bool = False) -> str:
     for link in soup.find_all('a'):
         link: Tag
         link.attrs = {
-            k: v for k, v in link.attrs.items() if not k.startswith('data-')
+            k: v
+            for k, v in link.attrs.items()
+            if not k.startswith('data-')
         }
         link['target'] = '_blank'
         link['href'] = link.attrs.get('href', '').lstrip('.').lstrip('/')
         if not link.attrs.get('href', 'http').startswith('http'):
             link['href'] = (
-                Constants.CV_SITE_URL
-                + '/'
-                + link.attrs.get('href', '')
+                Constants.CV_SITE_URL + '/' + link.attrs.get('href', '')
             )
 
     result = str(soup)
@@ -123,7 +123,6 @@ def _clean_description(description: str, short: bool = False) -> str:
 
 
 class ComicVine:
-
     volume_field_list = ','.join((
         'aliases',
         'count_of_issues',
