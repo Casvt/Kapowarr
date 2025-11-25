@@ -709,6 +709,51 @@ class InvalidComicVineApiKey(KapowarrException):
         }
 
 
+# region Indexers
+class IndexerRateLimitReached(KapowarrException):
+    "Indexer rate limit has been reached"
+
+    def __init__(self, indexer_name: str) -> None:
+        self.indexer_name = indexer_name
+        LOGGER.warning(
+            f"Reached the rate limit of indexer: {indexer_name}"
+        )
+        return
+
+    @property
+    def api_response(self) -> ApiResponse:
+        return {
+            "code": 509,
+            "error": self.__class__.__name__,
+            "result": {
+                "indexer_name": self.indexer_name
+            }
+        }
+
+
+class IndexerTemporarilyBlocked(KapowarrException):
+    "Indexer is temporarily blocked due to repeated failures"
+
+    def __init__(self, indexer_name: str, retry_time: int) -> None:
+        self.indexer_name = indexer_name
+        self.retry_time = retry_time
+        LOGGER.info(
+            f"Indexer {indexer_name} is temporarily blocked until {retry_time}"
+        )
+        return
+
+    @property
+    def api_response(self) -> ApiResponse:
+        return {
+            "code": 503,
+            "error": self.__class__.__name__,
+            "result": {
+                "indexer_name": self.indexer_name,
+                "retry_time": self.retry_time
+            }
+        }
+
+
 # region Blocklist
 class BlocklistEntryNotFound(KapowarrException):
     "Blocklist entry with given ID not found"

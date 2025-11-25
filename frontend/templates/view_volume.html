@@ -24,6 +24,7 @@
 		<td class="action-column" aria-label="Actions">
 			{{ icon_button('', "Auto search for this issue", "search.svg") }}
 			{{ icon_button('', "Manually search for this issue", "manual_search.svg") }}
+			{{ icon_button('', "Quick search and download best match", "download.svg") }}
 			{{ icon_button('', "Convert files for this issue", "convert.svg") }}
 		</td>
 	</tr>
@@ -189,6 +190,10 @@
 
 	{% set manual_search_content %}
 		<p id="searching-message">Searching...</p>
+		<div id="search-errors" class="warning hidden">
+			<strong>⚠ Indexer Errors:</strong>
+			<ul id="search-errors-list"></ul>
+		</div>
 		<table id="search-result-table" class="icon-text-color">
 			<thead>
 				<tr>
@@ -289,6 +294,12 @@
 					"Start a manual search for all issues in the volume",
 					"manual_search.svg",
 					"Manual Search"
+				) }}
+				{{ icon_button(
+					"quicksearch-monitored-button",
+					"Quick search and download best match for all monitored missing issues",
+					"download.svg",
+					"Quick Search All"
 				) }}
 				{{ icon_button(
 					"rename-button",

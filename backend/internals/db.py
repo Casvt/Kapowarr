@@ -531,7 +531,16 @@ CREATE TABLE IF NOT EXISTS indexers(
     api_key TEXT NOT NULL,
     indexer_type VARCHAR(20) NOT NULL DEFAULT 'newznab',
     categories TEXT DEFAULT '7030',
+    protocol VARCHAR(20) NOT NULL DEFAULT 'usenet',
     enabled BOOL NOT NULL DEFAULT 1
+);
+CREATE TABLE IF NOT EXISTS indexer_failures(
+    indexer_id INTEGER PRIMARY KEY,
+    last_failure INTEGER,
+    failure_count INTEGER NOT NULL DEFAULT 0,
+    next_retry INTEGER,
+    FOREIGN KEY (indexer_id) REFERENCES indexers(id)
+        ON DELETE CASCADE
 );
 CREATE TABLE IF NOT EXISTS prowlarr_config(
     base_url TEXT NOT NULL,

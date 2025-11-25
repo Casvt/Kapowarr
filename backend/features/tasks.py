@@ -275,6 +275,47 @@ class AutoSearchVolume(Task):
         return []
 
 
+class QuickSearchMonitored(Task):
+    "Quick search all monitored missing issues for a volume"
+
+    stop = False
+    message = ''
+    action = 'quick_search_monitored'
+    display_title = 'Quick Search Monitored'
+    category = 'download'
+
+    @property
+    def volume_id(self) -> int:
+        return self._volume_id
+
+    @property
+    def issue_id(self) -> None:
+        return None
+
+    def __init__(self, volume_id: int) -> None:
+        """Create the task
+
+        Args:
+            volume_id (int): The id of the volume to quick search monitored issues for
+        """
+        self._volume_id = volume_id
+        return
+
+    def run(self) -> None:
+        from backend.features.search import quick_search_monitored
+        
+        volume_title = Volume(self._volume_id).vd.title
+        self.message = f'Quick searching monitored issues for {volume_title}'
+        WebSocket().emit(TaskStatusEvent(self.message))
+
+        result = quick_search_monitored(self._volume_id)
+        
+        self.message = result['message']
+        WebSocket().emit(TaskStatusEvent(self.message))
+        
+        return
+
+
 class RefreshAndScanVolume(Task):
     "Trigger a refresh and scan for a volume"
 

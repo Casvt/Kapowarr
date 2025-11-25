@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from asyncio import gather, run
-from typing import Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 from backend.base.definitions import (QUERY_FORMATS, MatchedSearchResultData,
                                       SearchResultData, SearchSource,
@@ -142,16 +142,24 @@ class SearchGetComics(SearchSource):
 
 class SearchIndexers(SearchSource):
     async def search(self, session: AsyncSession) -> List[SearchResultData]:
-        return await search_all_indexers(session, self.query)
+        results, errors = await search_all_indexers(session, self.query)
+        # Store errors for later retrieval
+        if not hasattr(self, '_indexer_errors'):
+            self.__class__._indexer_errors = []
+        self.__class__._indexer_errors.extend(errors)
+        return results
 
 
-async def search_multiple_queries(*queries: str) -> List[SearchResultData]:
+async def search_multiple_queries(*queries: str) -> Tuple[List[SearchResultData], List[Dict[str, Any]]]:
     """Do a manual search for multiple queries asynchronously.
 
     Returns:
-        List[SearchResultData]: The search results for all queries together,
-        duplicates removed.
+        Tuple[List[SearchResultData], List[Dict[str, Any]]]: 
+            (search_results, indexer_errors)
     """
+    # Clear previous errors
+    SearchIndexers._indexer_errors = []
+    
     async with AsyncSession() as session:
         searches = [
             Source(query).search(session)
@@ -170,13 +178,16 @@ async def search_multiple_queries(*queries: str) -> List[SearchResultData]:
                 search_results.append(result)
                 processed_links.add(result['link'])
 
-    return search_results
+    # Get indexer errors
+    indexer_errors = getattr(SearchIndexers, '_indexer_errors', [])
+    
+    return search_results, indexer_errors
 
 
 def manual_search(
     volume_id: int,
     issue_id: Union[int, None] = None
-) -> List[MatchedSearchResultData]:
+) -> Tuple[List[MatchedSearchResultData], Dict[str, Any]]:
     """Do a manual search for a volume or issue.
 
     Args:
@@ -186,7 +197,9 @@ def manual_search(
             Defaults to None.
 
     Returns:
-        List[MatchedSearchResultData]: List with search results.
+        Tuple[List[MatchedSearchResultData], Dict[str, Any]]: 
+            (search_results, metadata)
+            metadata contains: indexer_errors, sources_searched, total_results
     """
     volume = Volume(volume_id)
     volume_data = volume.get_data()
@@ -212,6 +225,10 @@ def manual_search(
         f'#{issue_number}' if issue_number else ''
     )
 
+    # Metadata to track errors and stats
+    all_indexer_errors: List[Dict[str, Any]] = []
+    sources_count = 0
+
     for title in (volume_data.title, volume_data.alt_title):
         if not title:
             continue
@@ -235,15 +252,22 @@ def manual_search(
             )
 
         search_title = title.replace(':', '')
-        search_results = run(search_multiple_queries(*(
+        search_results, indexer_errors = run(search_multiple_queries(*(
             format.format(
                 title=search_title, volume_number=volume_data.volume_number,
                 year=volume_data.year, issue_number=issue_number
             )
             for format in formats
         )))
+        
+        # Collect errors from this search
+        all_indexer_errors.extend(indexer_errors)
+        
         if not search_results:
             continue
+
+        # Count unique sources
+        sources_count = len(set(r['source'] for r in search_results))
 
         results: List[MatchedSearchResultData] = [
             {
@@ -267,9 +291,128 @@ def manual_search(
         ))
 
         LOGGER.debug('Manual search results: %s', results)
-        return results
+        
+        metadata = {
+            "indexer_errors": all_indexer_errors,
+            "sources_searched": sources_count,
+            "total_results": len(results)
+        }
+        
+        return results, metadata
 
-    return []
+    metadata = {
+        "indexer_errors": all_indexer_errors,
+        "sources_searched": 0,
+        "total_results": 0
+    }
+    
+    return [], metadata
+
+
+def quick_search(
+    volume_id: int,
+    issue_id: Union[int, None] = None
+) -> Dict[str, Any]:
+    """Perform quick search and automatically download best match.
+
+    Args:
+        volume_id (int): The ID of the volume to search for
+        issue_id (Union[int, None], optional): The ID of the issue to search for.
+            Defaults to None.
+
+    Returns:
+        Dict[str, Any]: Result dict with keys:
+            - success (bool): Whether download was queued
+            - message (str): Status message
+            - grabbed_title (str|None): Title of grabbed release
+            - download_ids (List[int]): IDs of queued downloads
+            - metadata (Dict): Search metadata with errors
+    """
+    from backend.features.download_queue import DownloadHandler
+    
+    LOGGER.info(
+        f"Quick search: volume_id={volume_id}, issue_id={issue_id}"
+    )
+    
+    # Perform manual search
+    results, metadata = manual_search(volume_id, issue_id)
+    
+    if not results:
+        return {
+            "success": False,
+            "message": "No search results found",
+            "grabbed_title": None,
+            "download_ids": [],
+            "metadata": metadata
+        }
+    
+    # Take the best result (first in sorted list)
+    best_result = results[0]
+    
+    # Check if it's at least a partial match
+    if not best_result.get('match', False):
+        LOGGER.warning(
+            f"Quick search: best result is not a match for "
+            f"volume {volume_id}, issue {issue_id}"
+        )
+        return {
+            "success": False,
+            "message": f"Best result is not a match: {best_result.get('match_issue', 'unknown reason')}",
+            "grabbed_title": best_result.get('display_title'),
+            "download_ids": [],
+            "metadata": metadata
+        }
+    
+    # Download it
+    try:
+        link = best_result['link']
+        source_name = best_result.get('source', 'Unknown')
+        protocol = best_result.get('protocol', 'direct')
+        
+        downloads, fail_reason = run(
+            DownloadHandler().add(
+                link=link,
+                volume_id=volume_id,
+                issue_id=issue_id,
+                force_match=False,
+                source_name=source_name,
+                protocol=protocol
+            )
+        )
+        
+        if fail_reason:
+            return {
+                "success": False,
+                "message": f"Failed to queue download: {fail_reason.value}",
+                "grabbed_title": best_result.get('display_title'),
+                "download_ids": [],
+                "metadata": metadata
+            }
+        
+        download_ids = [d['id'] for d in downloads]
+        
+        LOGGER.info(
+            f"Quick search grabbed: {best_result.get('display_title')} "
+            f"(download IDs: {download_ids})"
+        )
+        
+        return {
+            "success": True,
+            "message": f"Grabbed: {best_result.get('display_title')}",
+            "grabbed_title": best_result.get('display_title'),
+            "download_ids": download_ids,
+            "metadata": metadata
+        }
+        
+    except Exception as e:
+        LOGGER.error(f"Quick search error: {e}")
+        return {
+            "success": False,
+            "message": f"Error: {str(e)}",
+            "grabbed_title": best_result.get('display_title'),
+            "download_ids": [],
+            "metadata": metadata
+        }
 
 
 def auto_search(
@@ -424,3 +567,51 @@ def auto_search(
 
     LOGGER.debug('Auto search results: %s', chosen_downloads)
     return chosen_downloads
+
+
+def quick_search_monitored(volume_id: int) -> Dict[str, Any]:
+    """Quick search all monitored missing issues for a volume.
+    
+    Runs quick_search on each monitored missing issue sequentially.
+    
+    Args:
+        volume_id (int): The ID of the volume.
+    
+    Returns:
+        Dict[str, Any]: Summary with total/successful/failed/skipped counts,
+        list of errors, and list of grabbed titles.
+    """
+    from backend.implementations.volumes import Volume
+    
+    volume = Volume(volume_id)
+    open_issues = volume.get_open_issues()
+    
+    total = len(open_issues)
+    successful = 0
+    failed = 0
+    skipped = 0
+    errors: List[str] = []
+    grabbed_titles: List[str] = []
+    
+    for issue_id, _ in open_issues:
+        try:
+            result = quick_search(volume_id, issue_id)
+            if result['success']:
+                successful += 1
+                grabbed_titles.append(result['grabbed_title'])
+            else:
+                failed += 1
+                errors.append(f"Issue {issue_id}: {result['message']}")
+        except Exception as e:
+            failed += 1
+            errors.append(f"Issue {issue_id}: {str(e)}")
+    
+    return {
+        'total': total,
+        'successful': successful,
+        'failed': failed,
+        'skipped': skipped,
+        'errors': errors,
+        'grabbed_titles': grabbed_titles,
+        'message': f"Quick search completed: {successful}/{total} successful"
+    }

@@ -122,6 +122,58 @@ function deleteIndexer() {
 	});
 }
 
+function testIndexer(formId, resultId) {
+	usingApiKey()
+	.then(api_key => {
+		const form = document.querySelector(`#${formId}`);
+		const resultEl = document.querySelector(`#${resultId}`);
+		const button = formId === 'add-indexer-form' 
+			? document.querySelector('#test-add-indexer')
+			: document.querySelector('#test-edit-indexer');
+		
+		// Get form values
+		const data = {
+			base_url: form.querySelector(`#${formId === 'add-indexer-form' ? 'add' : 'edit'}-baseurl-input`).value,
+			api_key: form.querySelector(`#${formId === 'add-indexer-form' ? 'add' : 'edit'}-apikey-input`).value,
+			indexer_type: form.querySelector(`#${formId === 'add-indexer-form' ? 'add' : 'edit'}-type-input`).value,
+			categories: form.querySelector(`#${formId === 'add-indexer-form' ? 'add' : 'edit'}-categories-input`).value || '7030'
+		};
+		
+		// Show testing state
+		button.disabled = true;
+		button.innerText = 'Testing...';
+		resultEl.innerText = '';
+		resultEl.classList.add('hidden');
+		
+		// Perform test
+		sendAPI('POST', '/indexers/test', api_key, {}, data)
+		.then(response => response.json())
+		.then(json => {
+			button.disabled = false;
+			button.innerText = 'Test Connection';
+			
+			if (json.result && json.result.success) {
+				resultEl.innerText = `✓ ${json.result.message} (${json.result.response_time_ms}ms)`;
+				resultEl.classList.remove('error');
+				resultEl.classList.add('success');
+			} else {
+				resultEl.innerText = `✗ ${json.result ? json.result.message : 'Test failed'}`;
+				resultEl.classList.remove('success');
+				resultEl.classList.add('error');
+			}
+			resultEl.classList.remove('hidden');
+		})
+		.catch(e => {
+			button.disabled = false;
+			button.innerText = 'Test Connection';
+			resultEl.innerText = `✗ Test failed: ${e.message || 'Unknown error'}`;
+			resultEl.classList.remove('success');
+			resultEl.classList.add('error');
+			resultEl.classList.remove('hidden');
+		});
+	});
+}
+
 function loadIndexers(api_key) {
 	fetchAPI('/indexers', api_key)
 	.then(json => {
@@ -165,4 +217,6 @@ usingApiKey()
 	document.querySelector('#submit-indexer-add').onclick = saveAddIndexer;
 	document.querySelector('#submit-indexer-edit').onclick = saveEditIndexer;
 	document.querySelector('#delete-indexer-edit').onclick = deleteIndexer;
+	document.querySelector('#test-add-indexer').onclick = () => testIndexer('add-indexer-form', 'add-test-result');
+	document.querySelector('#test-edit-indexer').onclick = () => testIndexer('edit-indexer-form', 'edit-test-result');
 });

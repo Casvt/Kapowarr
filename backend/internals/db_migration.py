@@ -1219,3 +1219,28 @@ def _migrate_add_indexer_protocol():
             END;
         """)
     return
+
+
+@DatabaseMigrationHandler.register_handler(46)
+def _migrate_create_indexer_failures_table():
+    """Create indexer_failures table for tracking rate limits and temporary blocks."""
+    cursor = get_db()
+    
+    # Check if table already exists
+    table_exists = cursor.execute("""
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name='indexer_failures';
+    """).fetchone()
+    
+    if not table_exists:
+        cursor.execute("""
+            CREATE TABLE indexer_failures(
+                indexer_id INTEGER PRIMARY KEY,
+                last_failure INTEGER,
+                failure_count INTEGER NOT NULL DEFAULT 0,
+                next_retry INTEGER,
+                FOREIGN KEY (indexer_id) REFERENCES indexers(id)
+                    ON DELETE CASCADE
+            );
+        """)
+    return

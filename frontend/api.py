@@ -23,7 +23,7 @@ from backend.features.download_queue import (DownloadHandler,
 from backend.features.library_import import (import_library,
                                              propose_library_import)
 from backend.features.mass_edit import run_mass_editor_action
-from backend.features.search import manual_search
+from backend.features.search import manual_search, quick_search
 from backend.features.tasks import (Task, TaskHandler,
                                     delete_task_history, get_task_history,
                                     get_task_planning, task_library)
@@ -930,8 +930,28 @@ def api_convert_issue(id: int):
 @auth
 def api_volume_manual_search(id: int):
     library.get_volume(id)
-    result = manual_search(id)
+    results, metadata = manual_search(id)
+    return return_api({"results": results, "metadata": metadata})
+
+
+@api.route('/volumes/<int:id>/quicksearch', methods=['POST'])
+@error_handler
+@auth
+def api_volume_quick_search(id: int):
+    library.get_volume(id)
+    result = quick_search(id)
     return return_api(result)
+
+
+@api.route('/volumes/<int:id>/quicksearch/monitored', methods=['POST'])
+@error_handler
+@auth
+def api_volume_quick_search_monitored(id: int):
+    library.get_volume(id)
+    # Spawn task for background processing
+    from backend.features.tasks import TaskHandler
+    TaskHandler().add('quick_search_monitored', volume_id=id)
+    return return_api({'message': 'Quick search task started for all monitored issues'})
 
 
 @api.route('/volumes/<int:id>/download', methods=['POST'])
@@ -961,10 +981,19 @@ def api_volume_download(id: int):
 @auth
 def api_issue_manual_search(id: int):
     volume_id = library.get_issue(id).get_data().volume_id
-    result = manual_search(
+    results, metadata = manual_search(
         volume_id,
         id
     )
+    return return_api({"results": results, "metadata": metadata})
+
+
+@api.route('/issues/<int:id>/quicksearch', methods=['POST'])
+@error_handler
+@auth
+def api_issue_quick_search(id: int):
+    volume_id = library.get_issue(id).get_data().volume_id
+    result = quick_search(volume_id, id)
     return return_api(result)
 
 
@@ -1385,6 +1414,51 @@ def api_indexers():
         indexer_id = IndexerDB.add(
             name, base_url, api_key, indexer_type, categories, protocol)
         return return_api({'id': indexer_id})
+
+
+@api.route('/indexers/test', methods=['POST'])
+@error_handler
+@auth
+def api_indexers_test():
+    """Test an indexer configuration before saving."""
+    from backend.implementations.indexers import search_indexer
+    from time import time as get_time
+    
+    data: dict = request.get_json()
+    base_url: str = extract_key(request, 'base_url')
+    api_key: str = extract_key(request, 'api_key')
+    indexer_type: str = extract_key(request, 'indexer_type')
+    categories_str: str = extract_key(request, 'categories', check_existence=False) or ''
+    
+    # Parse categories
+    categories = [int(c.strip()) for c in categories_str.split(',') if c.strip().isdigit()]
+    
+    # Perform test search with "batman" as test query
+    start_time = get_time()
+    try:
+        results = search_indexer(
+            base_url=base_url,
+            api_key=api_key,
+            indexer_type=indexer_type,
+            categories=categories,
+            query='batman',
+            indexer_id=None  # No indexer ID for test searches
+        )
+        response_time = round((get_time() - start_time) * 1000)  # Convert to ms
+        
+        return return_api({
+            'success': True,
+            'message': f'Connection successful! Found {len(results)} results.',
+            'result_count': len(results),
+            'response_time_ms': response_time
+        })
+    except Exception as e:
+        return return_api({
+            'success': False,
+            'message': f'Connection failed: {str(e)}',
+            'result_count': 0,
+            'response_time_ms': 0
+        })
 
 
 @api.route('/indexers/<int:id>', methods=['GET', 'PUT', 'DELETE'])

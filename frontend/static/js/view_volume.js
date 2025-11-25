@@ -32,6 +32,7 @@ const ViewEls = {
 		refresh: document.querySelector('#refresh-button'),
 		auto_search: document.querySelector('#autosearch-button'),
 		manual_search: document.querySelector('#manualsearch-button'),
+		quick_search_monitored: document.querySelector('#quicksearch-monitored-button'),
 		rename: document.querySelector('#rename-button'),
 		convert: document.querySelector('#convert-button'),
 		files: document.querySelector('#files-button'),
@@ -60,7 +61,8 @@ class IssueEntry {
 		this.status = this.entry.querySelector('.issue-status');
 		this.auto_search = this.entry.querySelector('.action-column :nth-child(1)');
 		this.manual_search = this.entry.querySelector('.action-column :nth-child(2)');
-		this.convert = this.entry.querySelector('.action-column :nth-child(3)');
+		this.quick_search = this.entry.querySelector('.action-column :nth-child(3)');
+		this.convert = this.entry.querySelector('.action-column :nth-child(4)');
 	};
 
 	setMonitorIcon() {
@@ -142,6 +144,7 @@ function fillTable(issues, api_key) {
 		// Actions
 		inst.auto_search.onclick = e => autosearchIssue(obj.id, api_key);
 		inst.manual_search.onclick = e => showManualSearch(api_key, obj.id);
+		inst.quick_search.onclick = e => quickSearchIssue(obj.id, api_key);
 		inst.convert.onclick = e => showConvert(api_key, obj.id);
 	};
 };
@@ -306,29 +309,112 @@ function autosearchIssue(issue_id, api_key) {
 	});
 };
 
+function quickSearchIssue(issue_id, api_key) {
+	const button_info = task_to_button[`quick_search_issue#${volume_id}#${issue_id}`];
+	const icon = button_info.button.querySelector('img');
+	icon.src = button_info.loading_icon;
+	icon.classList.add('spinning');
+
+	sendAPI('POST', `/issues/${issue_id}/quicksearch`, api_key)
+	.then(response => response.json())
+	.then(json => {
+		icon.classList.remove('spinning');
+		if (json.result.success) {
+			icon.src = `${url_base}/static/img/check.svg`;
+			button_info.button.title = `Downloaded: ${json.result.grabbed_title}`;
+			setTimeout(() => {
+				icon.src = button_info.icon;
+				button_info.button.title = 'Quick search and download best match';
+			}, 2000);
+		} else {
+			icon.src = button_info.icon;
+			button_info.button.title = json.result.message;
+			button_info.button.classList.add('error');
+		}
+	})
+	.catch(error => {
+		icon.classList.remove('spinning');
+		icon.src = button_info.icon;
+		button_info.button.title = 'Quick search failed';
+		button_info.button.classList.add('error');
+	});
+};
+
+function quickSearchVolume(api_key) {
+	const button_info = task_to_button[`quick_search#${volume_id}`];
+	const icon = button_info.button.querySelector('img');
+	icon.src = button_info.loading_icon;
+	icon.classList.add('spinning');
+
+	sendAPI('POST', `/volumes/${volume_id}/quicksearch`, api_key)
+	.then(response => response.json())
+	.then(json => {
+		icon.classList.remove('spinning');
+		if (json.result.success) {
+			icon.src = `${url_base}/static/img/check.svg`;
+			button_info.button.title = `Downloaded: ${json.result.grabbed_title}`;
+			setTimeout(() => {
+				icon.src = button_info.icon;
+				button_info.button.title = 'Quick search and download best match';
+			}, 2000);
+		} else {
+			icon.src = button_info.icon;
+			button_info.button.title = json.result.message;
+			button_info.button.classList.add('error');
+		}
+	})
+	.catch(error => {
+		icon.classList.remove('spinning');
+		icon.src = button_info.icon;
+		button_info.button.title = 'Quick search failed';
+		button_info.button.classList.add('error');
+	});
+};
+
 //
 // Manual search
 //
 function showManualSearch(api_key, issue_id=null) {
 	// Display searching message
 	const message = document.querySelector('#searching-message');
+	const errorsDiv = document.querySelector('#search-errors');
+	const errorsList = document.querySelector('#search-errors-list');
 	const table = document.querySelector('#search-result-table');
 	const tbody = table.querySelector('tbody');
 
-	hide([table], [message]);
+	hide([table, errorsDiv], [message]);
 
 	// Show window
 	showWindow('manual-search-window');
 
 	// Start search
 	tbody.innerHTML = '';
+	errorsList.innerHTML = '';
 	const url = issue_id
 			? `/issues/${issue_id}/manualsearch`
 			: `/volumes/${volume_id}/manualsearch`;
 
 	fetchAPI(url, api_key)
 	.then(json => {
-		json.result.forEach(result => {
+		const results = json.result.results || json.result;
+		const metadata = json.result.metadata || {};
+		
+		// Display indexer errors if any
+		if (metadata.indexer_errors && metadata.indexer_errors.length > 0) {
+			metadata.indexer_errors.forEach(error => {
+				const li = document.createElement('li');
+				if (error.blocked_until) {
+					const retryDate = new Date(error.blocked_until * 1000);
+					li.innerText = `${error.indexer}: ${error.error} (retry at ${retryDate.toLocaleTimeString()})`;
+				} else {
+					li.innerText = `${error.indexer}: ${error.error}`;
+				}
+				errorsList.appendChild(li);
+			});
+			hide([], [errorsDiv]);
+		}
+		
+		results.forEach(result => {
 			const entry = ViewEls.pre_build.manual_search.cloneNode(true);
 			tbody.appendChild(entry);
 
@@ -751,6 +837,7 @@ usingApiKey()
 	ViewEls.tool_bar.refresh.onclick = e => refreshVolume(api_key);
 	ViewEls.tool_bar.auto_search.onclick = e => autosearchVolume(api_key);
 	ViewEls.tool_bar.manual_search.onclick = e => showManualSearch(api_key);
+	ViewEls.tool_bar.quick_search_monitored.onclick = e => quickSearchMonitored(api_key);
 	ViewEls.tool_bar.rename.onclick = e => showRename(api_key);
 	ViewEls.tool_bar.convert.onclick = e => showConvert(api_key);
 	ViewEls.tool_bar.edit.onclick = e => showEdit(api_key);

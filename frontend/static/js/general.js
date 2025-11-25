@@ -120,6 +120,11 @@ function mapButtons(id) {
 			'icon': `${url_base}/static/img/search.svg`,
 			'loading_icon': `${url_base}/static/img/loading.svg`
 		};
+		task_to_button[`quick_search_monitored#${id}`] = {
+			'button': document.querySelector('#quicksearch-monitored-button'),
+			'icon': `${url_base}/static/img/download.svg`,
+			'loading_icon': `${url_base}/static/img/loading.svg`
+		};
 		task_to_button[`mass_rename#${id}`] = {
 			'button': document.querySelector('#rename-button'),
 			'icon': `${url_base}/static/img/rename.svg`,
@@ -135,6 +140,11 @@ function mapButtons(id) {
 			task_to_button[`auto_search_issue#${id}#${entry.dataset.id}`] = {
 				'button': entry.querySelector('.action-column > button:first-child'),
 				'icon': `${url_base}/static/img/search.svg`,
+				'loading_icon': `${url_base}/static/img/loading.svg`
+			};
+			task_to_button[`quick_search_issue#${id}#${entry.dataset.id}`] = {
+				'button': entry.querySelector('.action-column > button:nth-child(3)'),
+				'icon': `${url_base}/static/img/download.svg`,
 				'loading_icon': `${url_base}/static/img/loading.svg`
 			};
 			task_to_button[`mass_convert_issue#${id}#${entry.dataset.id}`] = {

@@ -119,6 +119,18 @@ class Constants:
     PIXELDRAIN_API_URL = "https://pixeldrain.com/api"
     "The base URL of the Pixeldrain API"
 
+    INDEXER_RETRY_ATTEMPTS = 3
+    "Number of retry attempts for indexer API calls before giving up"
+
+    INDEXER_RETRY_BACKOFF = 2.0 # seconds
+    "Backoff factor for exponential retry delays on indexer failures"
+
+    INDEXER_TEMP_BLOCK_DURATION = 300 # seconds (5 minutes)
+    "Duration to temporarily block an indexer after repeated failures"
+
+    INDEXER_FAILURE_THRESHOLD = 3
+    "Number of failures within 10 minutes before temporarily blocking indexer"
+
     FS_API_BASE = "/v1"
     "The base endpoint of the FlareSolverr API"
 
