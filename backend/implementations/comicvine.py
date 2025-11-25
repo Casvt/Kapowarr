@@ -16,8 +16,8 @@ from bs4 import BeautifulSoup, Tag
 from backend.base.custom_exceptions import (CVRateLimitReached,
                                             InvalidComicVineApiKey,
                                             VolumeNotMatched)
-from backend.base.definitions import (Constants, FilenameData, IssueMetadata,
-                                      SpecialVersion, T, VolumeMetadata)
+from backend.base.definitions import (Constants, FilenameData,
+                                      IssueMetadata, T, VolumeMetadata)
 from backend.base.file_extraction import (extract_issue_number,
                                           extract_volume_number, volume_regex)
 from backend.base.helpers import (AsyncSession, DictKeyedDict, Session,
@@ -25,7 +25,8 @@ from backend.base.helpers import (AsyncSession, DictKeyedDict, Session,
                                   normalise_string, normalise_year,
                                   to_full_string_cv_id, to_string_cv_id)
 from backend.base.logging import LOGGER
-from backend.implementations.matching import match_title, match_year
+from backend.implementations.matching import (
+    match_title, select_best_volume_result_for_file)
 from backend.internals.db import get_db
 from backend.internals.settings import Settings
 
@@ -157,17 +158,6 @@ class ComicVine:
         'site_detail_url',
         'start_year'
     ))
-
-    one_issue_match = (
-        SpecialVersion.TPB,
-        SpecialVersion.ONE_SHOT,
-        SpecialVersion.HARD_COVER,
-        SpecialVersion.OMNIBUS
-    )
-    """
-    If a volume is one of these types, it can only match to CV search results
-    with one issue.
-    """
 
     def __init__(self, comicvine_api_key: Union[str, None] = None) -> None:
         """Start interacting with ComicVine.
@@ -667,7 +657,7 @@ class ComicVine:
         Returns:
             DictKeyedDict: A map of the filename to it's CV match.
         """
-        results = DictKeyedDict()
+        matches = DictKeyedDict()
 
         # If multiple filenames have the same series title, avoid searching for
         # it multiple times. Instead search for all unique titles and then later
@@ -701,40 +691,24 @@ class ComicVine:
 
         for title, files in titles_to_files.items():
             for file in files:
-                # Filter: SV - issue_count
-                filtered_results = [
-                    r for r in titles_to_results[title]
-                    if file['special_version'] not in self.one_issue_match
-                    or r['issue_count'] == 1
-                ]
+                result = select_best_volume_result_for_file(
+                    file, titles_to_results[title]
+                )
 
-                if not filtered_results:
-                    results[file] = {
+                if result is None:
+                    matches[file] = {
                         'id': None,
                         'title': None,
                         'issue_count': None,
                         'link': None
                     }
-                    continue
 
-                # Pref: exact year (1 point, also matches fuzzy year),
-                #       fuzzy year (1 point),
-                #       volume number (2 points)
-                filtered_results.sort(key=lambda r:
-                    int(r['year'] == file['year'])
-                    + int(match_year(r['year'], file['year']))
-                    + int(
-                        file['volume_number'] is not None
-                        and r['volume_number'] == file['volume_number']
-                    ) * 2,
-                    reverse=True
-                )
+                else:
+                    matches[file] = {
+                        'id': result['comicvine_id'],
+                        'title': f"{result['title']} ({result['year']})",
+                        'issue_count': result['issue_count'],
+                        'link': result['site_url']
+                    }
 
-                matched_result = filtered_results[0]
-                results[file] = {
-                    'id': matched_result['comicvine_id'],
-                    'title': f"{matched_result['title']} ({matched_result['year']})",
-                    'issue_count': matched_result['issue_count'],
-                    'link': matched_result['site_url']}
-
-        return results
+        return matches

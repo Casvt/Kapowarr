@@ -10,7 +10,7 @@ from __future__ import annotations
 from re import compile
 from typing import TYPE_CHECKING, List, Mapping, Tuple, Union
 
-from backend.base.definitions import IssueData, SpecialVersion
+from backend.base.definitions import IssueData, SpecialVersion, VolumeMetadata
 from backend.base.helpers import force_range
 from backend.implementations.blocklist import blocklist_contains
 
@@ -491,3 +491,58 @@ def check_search_result_match(
             return {'match': False, 'match_issue': "Issue numbers don't match"}
 
     return {'match': True, 'match_issue': None}
+
+
+ONE_ISSUE_MATCH = (
+    SpecialVersion.TPB,
+    SpecialVersion.ONE_SHOT,
+    SpecialVersion.HARD_COVER,
+    SpecialVersion.OMNIBUS
+)
+"""
+If a volume is one of these types, it can only match to search results
+with one issue.
+"""
+
+
+def select_best_volume_result_for_file(
+    file: FilenameData,
+    search_results: List[VolumeMetadata]
+) -> Union[VolumeMetadata, None]:
+    """Out of the search results based on the file, choose the volume that
+    matches best (if any).
+
+    Args:
+        file (FilenameData): The file that the volume is matched against.
+        search_results (List[VolumeMetadata]): The list of search results from
+            which can be chosen. This list should already be filtered by titles
+            matching and translation allowance.
+
+    Returns:
+        Union[VolumeMetadata, None]: The match, or `None` if nothing could
+            possibly match.
+    """
+    # Filter: SV - issue_count
+    filtered_results = [
+        r for r in search_results
+        if file['special_version'] not in ONE_ISSUE_MATCH
+        or r['issue_count'] == 1
+    ]
+
+    if not filtered_results:
+        return None
+
+    # Pref: exact year (1 point, also matches fuzzy year),
+    #       fuzzy year (1 point),
+    #       volume number (2 points)
+    filtered_results.sort(key=lambda r:
+        int(r['year'] == file['year'])
+        + int(match_year(r['year'], file['year']))
+        + int(
+            file['volume_number'] is not None
+            and r['volume_number'] == file['volume_number']
+        ) * 2,
+        reverse=True
+    )
+
+    return filtered_results[0]
