@@ -76,6 +76,10 @@ def preview_mass_convert(
     }
 
 
+def _trigger_conversion(conversion: ProposedConversion) -> List[str]:
+    return conversion.perform_conversion()
+
+
 def mass_convert(
     volume_id: int,
     issue_id: Union[int, None] = None,
@@ -112,6 +116,7 @@ def mass_convert(
     ):
         if proposed_convertion.target_format == 'folder':
             resulting_files = proposed_convertion.perform_conversion()
+            FilesDB.delete_filepath(proposed_convertion.filepath)
             for filepath in resulting_files:
                 sub_conversion = ConvertersManager.select_converter(filepath)
                 if sub_conversion is not None:
@@ -134,8 +139,8 @@ def mass_convert(
                 f'Converted 0/{total_count}'
             ))
             for idx, iter_result in enumerate(pool.imap_unordered(
-                lambda c: c.perform_conversion(),
-                planned_conversions
+                _trigger_conversion,
+                (planned_conversions)
             )):
                 result += iter_result
                 ws.emit(TaskStatusEvent(
@@ -144,7 +149,7 @@ def mass_convert(
 
         else:
             result += chain.from_iterable(pool.map(
-                lambda c: c.perform_conversion(),
+                _trigger_conversion,
                 planned_conversions
             ))
 

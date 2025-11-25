@@ -676,16 +676,15 @@ def same_name_indexing(
     planned_renames: Dict[str, str]
 ) -> Dict[str, str]:
     """Add a number at the end the filenames if the suggested filename already
-    exists.
+    exists to avoid files with the same filename.
 
     Args:
         volume_folder (str): The volume folder that the files will be in.
-        planned_renames (Dict[str, str]): The currently planned renames (key
-        is before, value is after).
+        planned_renames (Dict[str, str]): The currently planned renames
+            (key is before, value is after).
 
     Returns:
-        Dict[str, str]: The planned renamed, now updated with numbers i.c.o.
-        duplicate filenames.
+        Dict[str, str]: The planned renames, now updated with numbers if needed.
     """
     if not isdir(volume_folder):
         return planned_renames
@@ -702,11 +701,7 @@ def same_name_indexing(
         final_names.add(new_after)
         planned_renames[before] = new_after
 
-    return {
-        k: v
-        for k, v in planned_renames.items()
-        if k != v
-    }
+    return planned_renames
 
 
 def preview_mass_rename(
@@ -721,18 +716,19 @@ def preview_mass_rename(
         volume_id (int): The ID of the volume for which to check the renaming.
 
         issue_id (Union[int, None], optional): The ID of the issue for which to
-        check the renaming.
+            check the renaming.
             Defaults to None.
 
         filepath_filter (Union[List[str], None], optional): Only process files
-        that are in the list.
+            that are in the list.
             Defaults to None.
 
     Returns:
         Tuple[Dict[str, str], Union[str, None]]: The renaming proposals where
-        the key is the "before" and the value is the "after", and the new volume
-        folder if it is not the same as the current folder. Otherwise, it's
-        `None`.
+            the key is the "before" and the value is the "after" (including
+            files that are already named correctly; their key and value are
+            equal), and the new volume folder if it is not the same as the
+            current folder. Otherwise, it's `None`.
     """
     result = {}
     volume = Volume(volume_id)
@@ -810,10 +806,10 @@ def preview_mass_rename(
             gen_filename_body + splitext(file)[1].lower()
         )
 
+        result[file] = suggested_name
         LOGGER.debug(f'Renaming: suggested filename: {suggested_name}')
         if file != suggested_name:
             LOGGER.debug(f'Renaming: added rename')
-            result[file] = suggested_name
 
     result = same_name_indexing(volume_folder, result)
 
@@ -835,26 +831,32 @@ def mass_rename(
         volume_id (int): The ID of the volume for which to rename.
 
         issue_id (Union[int, None], optional): The ID of the issue for which
-        to rename.
+            to rename.
             Defaults to None.
 
         filepath_filter (Union[List[str], None], optional): Only rename files
-        that are in the list.
+            that are in the list.
             Defaults to None.
 
         update_websocket (bool, optional): Send task progress updates over
-        the websocket.
+            the websocket.
             Defaults to False.
 
     Returns:
-        List[str]: The new filenames, only of files that have been be renamed.
+        List[str]: The new filenames of all files, even files that haven't been
+            renamed.
     """
-    renames, new_volume_folder = preview_mass_rename(
+    all_namings, new_volume_folder = preview_mass_rename(
         volume_id, issue_id,
         filepath_filter
     )
+    renames = {
+        before: after
+        for before, after in all_namings.items()
+        if before != after
+    }
     if not renames and not new_volume_folder:
-        return []
+        return list(all_namings.values())
 
     volume = Volume(volume_id)
     volume_data = volume.get_data()
@@ -885,4 +887,4 @@ def mass_rename(
     LOGGER.info(
         f'Renamed volume {volume_id} {f"issue {issue_id}" if issue_id else ""}'
     )
-    return list(renames.values())
+    return list(all_namings.values())

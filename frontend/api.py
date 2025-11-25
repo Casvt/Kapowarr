@@ -883,8 +883,13 @@ def api_issues(id: int):
 @auth
 def api_rename(id: int):
     library.get_volume(id)
-    result = preview_mass_rename(id)[0]
-    return return_api(result)
+    all_namings = preview_mass_rename(id)[0]
+    only_renamings = {
+        before: after
+        for before, after in all_namings.items()
+        if before != after
+    }
+    return return_api(only_renamings)
 
 
 @api.route('/issues/<int:id>/rename', methods=['GET'])
@@ -892,8 +897,13 @@ def api_rename(id: int):
 @auth
 def api_rename_issue(id: int):
     volume_id = library.get_issue(id).get_data().volume_id
-    result = preview_mass_rename(volume_id, id)[0]
-    return return_api(result)
+    all_namings = preview_mass_rename(volume_id, id)[0]
+    only_renamings = {
+        before: after
+        for before, after in all_namings.items()
+        if before != after
+    }
+    return return_api(only_renamings)
 
 # =====================
 # File Conversion
