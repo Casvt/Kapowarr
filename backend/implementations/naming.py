@@ -29,8 +29,7 @@ from backend.base.files import (clean_filepath_simple, clean_filepath_smartly,
 from backend.base.helpers import (extract_year_from_date,
                                   filtered_iter, force_range)
 from backend.base.logging import LOGGER
-from backend.implementations.matching import (_match_title,
-                                              file_importing_filter)
+from backend.implementations.matching import file_importing_filter, match_title
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Issue, Volume
 from backend.internals.db_models import FilesDB
@@ -645,7 +644,7 @@ def check_mock_filename(
                     issue_mock,
                     number_to_year
                 )
-                and _match_title(efd['series'], volume_mock.title)
+                and match_title(efd['series'], volume_mock.title)
                 and (
                     # Special version doesn't need issue matching
                     key == 'file_naming_special_version'

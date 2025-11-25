@@ -40,7 +40,7 @@ from backend.implementations.download_clients import (DirectDownload,
                                                       TorrentDownload,
                                                       WeTransferDownload)
 from backend.implementations.external_clients import ExternalClients
-from backend.implementations.matching import gc_group_filter
+from backend.implementations.matching import download_group_filter
 from backend.implementations.volumes import Volume
 from backend.internals.db import iter_commit
 from backend.internals.settings import Settings
@@ -430,7 +430,7 @@ def _create_link_paths(
         link_paths.append([])
 
     for group in download_groups:
-        if not (force_match or gc_group_filter(
+        if not (force_match or download_group_filter(
             group['info'],
             volume_data,
             ending_year,

@@ -25,7 +25,7 @@ from backend.base.helpers import (AsyncSession, DictKeyedDict, Session,
                                   normalise_string, normalise_year,
                                   to_full_string_cv_id, to_string_cv_id)
 from backend.base.logging import LOGGER
-from backend.implementations.matching import _match_title, _match_year
+from backend.implementations.matching import match_title, match_year
 from backend.internals.db import get_db
 from backend.internals.settings import Settings
 
@@ -692,7 +692,7 @@ class ComicVine:
         for title, response in zip(titles_to_files, responses):
             titles_to_results[title] = [
                 r for r in response
-                if _match_title(title, r['title'])
+                if match_title(title, r['title'])
                 and (
                     only_english and not r['translated']
                     or
@@ -723,7 +723,7 @@ class ComicVine:
                 #       volume number (2 points)
                 filtered_results.sort(key=lambda r:
                     int(r['year'] == file['year'])
-                    + int(_match_year(r['year'], file['year']))
+                    + int(match_year(r['year'], file['year']))
                     + int(
                         file['volume_number'] is not None
                         and r['volume_number'] == file['volume_number']
