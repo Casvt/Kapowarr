@@ -832,7 +832,8 @@ async def search_getcomics(
             ),
             "link": article[0],
             "display_title": article[1],
-            "source": Constants.GC_SOURCE_TERM
+            "source": Constants.GC_SOURCE_TERM,
+            "protocol": "direct"
         }
         for soup in (first_soup, *other_soups)
         for article in _get_articles(soup)

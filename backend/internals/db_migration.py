@@ -1193,3 +1193,29 @@ def _migrate_add_indexers_table():
         );
     """)
     return
+
+
+@DatabaseMigrationHandler.register_handler(45)
+def _migrate_add_indexer_protocol():
+    """Add protocol field to indexers table to distinguish usenet vs torrent."""
+    cursor = get_db()
+    
+    # Check if protocol column already exists
+    columns = cursor.execute("PRAGMA table_info(indexers);").fetchall()
+    column_names = [col[1] for col in columns]
+    
+    if 'protocol' not in column_names:
+        cursor.execute("""
+            ALTER TABLE indexers
+            ADD COLUMN protocol VARCHAR(20) NOT NULL DEFAULT 'usenet';
+        """)
+        
+        # Set protocol based on indexer_type for existing entries
+        cursor.execute("""
+            UPDATE indexers
+            SET protocol = CASE
+                WHEN indexer_type = 'torznab' THEN 'torrent'
+                ELSE 'usenet'
+            END;
+        """)
+    return

@@ -941,7 +941,12 @@ def api_volume_download(id: int):
     library.get_volume(id)
     link: str = extract_key(request, 'link')
     force_match: bool = extract_key(request, 'force_match')
-    result = run(DownloadHandler().add(link, id, force_match=force_match))
+    source_name: str = extract_key(request, 'source_name', check_existence=False) or 'Unknown'
+    protocol: str = extract_key(request, 'protocol', check_existence=False) or 'direct'
+    result = run(DownloadHandler().add(
+        link, id, force_match=force_match,
+        source_name=source_name, protocol=protocol
+    ))
     return return_api(
         {
             'result': (result or (None,))[0],
@@ -970,8 +975,11 @@ def api_issue_download(id: int):
     volume_id = library.get_issue(id).get_data().volume_id
     link = extract_key(request, 'link')
     force_match: bool = extract_key(request, 'force_match')
+    source_name: str = extract_key(request, 'source_name', check_existence=False) or 'Unknown'
+    protocol: str = extract_key(request, 'protocol', check_existence=False) or 'direct'
     result = run(DownloadHandler().add(
-        link, volume_id, id, force_match=force_match
+        link, volume_id, id, force_match=force_match,
+        source_name=source_name, protocol=protocol
     ))
     return return_api(
         {
@@ -1369,12 +1377,13 @@ def api_indexers():
         api_key = data.get('api_key')
         indexer_type = data.get('indexer_type', 'newznab')
         categories = data.get('categories', '7030')
+        protocol = data.get('protocol', 'usenet')
 
         if not name or not base_url or not api_key:
             raise KeyNotFound('name, base_url, or api_key')
 
         indexer_id = IndexerDB.add(
-            name, base_url, api_key, indexer_type, categories)
+            name, base_url, api_key, indexer_type, categories, protocol)
         return return_api({'id': indexer_id})
 
 
@@ -1397,6 +1406,7 @@ def api_indexers_id(id: int):
             'api_key',
             'indexer_type',
             'categories',
+            'protocol',
             'enabled'
         ):
             value = data.get(key)

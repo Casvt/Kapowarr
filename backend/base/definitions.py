@@ -550,6 +550,7 @@ class SearchResultData(FilenameData):
     link: str
     display_title: str
     source: str
+    protocol: str
 
 
 class SearchResultMatchData(TypedDict):
@@ -824,11 +825,11 @@ class MassEditorAction(ABC):
         ...
 
     def __repr__(self) -> str:
-        return f'<{
-            self.__class__.__name__} (action={
-            self.identifier} ; ids={
-            self.volume_ids}); {
-            id(self)} >'
+        return (
+            f'<{self.__class__.__name__} '
+            f'(action={self.identifier} ; ids={self.volume_ids}); '
+            f'{id(self)} >'
+        )
 
 
 class SearchSource(ABC):
@@ -1026,11 +1027,11 @@ class ExternalDownloadClient(ABC):
         ...
 
     def __repr__(self) -> str:
-        return f'<{
-            self.__class__.__name__} (id={
-            self.id} ; title={
-            self.title}); {
-            id(self)} >'
+        return (
+            f'<{self.__class__.__name__} '
+            f'(id={self.id} ; title={self.title}); '
+            f'{id(self)} >'
+        )
 
 
 class Download(ABC):
@@ -1272,12 +1273,12 @@ class Download(ABC):
         ...
 
     def __repr__(self) -> str:
-        return f'<{
-            self.__class__.__name__} (download_link={
-            self.download_link} ; file={
-            self.files[0]} ; state={
-            self.state.value}); {
-            id(self)} >'
+        return (
+            f'<{self.__class__.__name__} '
+            f'(download_link={self.download_link} ; file={self.files[0]} ; '
+            f'state={self.state.value}); '
+            f'{id(self)} >'
+        )
 
 
 class ExternalDownload(Download):
@@ -1415,9 +1416,9 @@ class ExternalDownload(Download):
         ...
 
     def __repr__(self) -> str:
-        return f'<{
-            self.__class__.__name__} (download_link={
-            self.download_link} ; file={
-            self.files[0]} ; state={
-            self.state.value}); {
-            id(self)} >'
+        return (
+            f'<{self.__class__.__name__} '
+            f'(download_link={self.download_link} ; file={self.files[0]} ; '
+            f'state={self.state.value}); '
+            f'{id(self)} >'
+        )

@@ -27,7 +27,8 @@ class IndexerDB:
         base_url: str,
         api_key: str,
         indexer_type: str = "newznab",
-        categories: str = "7030"
+        categories: str = "7030",
+        protocol: str = "usenet"
     ) -> int:
         """Add a new indexer.
 
@@ -37,6 +38,7 @@ class IndexerDB:
             api_key (str): API key for the indexer
             indexer_type (str): Type of indexer (newznab or torznab)
             categories (str): Comma-separated category IDs (default: 7030 for comics)
+            protocol (str): Protocol type ('usenet' or 'torrent')
 
         Returns:
             int: The ID of the created indexer
@@ -44,10 +46,10 @@ class IndexerDB:
         cursor = get_db()
         cursor.execute(
             """
-            INSERT INTO indexers (name, base_url, api_key, indexer_type, categories, enabled)
-            VALUES (?, ?, ?, ?, ?, 1);
+            INSERT INTO indexers (name, base_url, api_key, indexer_type, categories, protocol, enabled)
+            VALUES (?, ?, ?, ?, ?, ?, 1);
             """,
-            (name, base_url, api_key, indexer_type, categories)
+            (name, base_url, api_key, indexer_type, categories, protocol)
         )
         return cursor.lastrowid
 
@@ -65,6 +67,7 @@ class IndexerDB:
             'api_key',
             'indexer_type',
             'categories',
+            'protocol',
             'enabled'}
         fields_to_update = {k: v for k, v in kwargs.items()
                             if k in allowed_fields}
@@ -99,7 +102,7 @@ class IndexerDB:
         cursor = get_db()
         cursor.execute(
             """
-            SELECT id, name, base_url, api_key, indexer_type, categories, enabled
+            SELECT id, name, base_url, api_key, indexer_type, categories, protocol, enabled
             FROM indexers
             ORDER BY name;
             """
@@ -116,7 +119,7 @@ class IndexerDB:
         cursor = get_db()
         cursor.execute(
             """
-            SELECT id, name, base_url, api_key, indexer_type, categories, enabled
+            SELECT id, name, base_url, api_key, indexer_type, categories, protocol, enabled
             FROM indexers
             WHERE enabled = 1
             ORDER BY name;
@@ -137,7 +140,7 @@ class IndexerDB:
         cursor = get_db()
         cursor.execute(
             """
-            SELECT id, name, base_url, api_key, indexer_type, categories, enabled
+            SELECT id, name, base_url, api_key, indexer_type, categories, protocol, enabled
             FROM indexers
             WHERE id = ?
             LIMIT 1;
@@ -166,6 +169,7 @@ async def search_indexer(
     base_url = indexer['base_url'].rstrip('/')
     api_key = indexer['api_key']
     categories = indexer.get('categories', '7030')
+    protocol = indexer.get('protocol', 'usenet')
 
     # Newznab/Torznab API parameters
     params = {
@@ -191,11 +195,11 @@ async def search_indexer(
         # Try JSON first
         try:
             data = await response.json()
-            return _parse_newznab_json(data, indexer['name'])
+            return _parse_newznab_json(data, indexer['name'], protocol)
         except Exception:
             # Fallback to XML
             text = await response.text()
-            return _parse_newznab_xml(text, indexer['name'])
+            return _parse_newznab_xml(text, indexer['name'], protocol)
 
     except ClientError as e:
         LOGGER.warning(f"Failed to search indexer {indexer['name']}: {e}")
@@ -207,12 +211,14 @@ async def search_indexer(
 
 def _parse_newznab_json(
     data: Dict,
-    indexer_name: str) -> List[SearchResultData]:
+    indexer_name: str,
+    protocol: str = 'usenet') -> List[SearchResultData]:
     """Parse Newznab/Torznab JSON response.
 
     Args:
         data (Dict): JSON response data
         indexer_name (str): Name of the indexer
+        protocol (str): Protocol type ('usenet' or 'torrent')
 
     Returns:
         List[SearchResultData]: Parsed search results
@@ -252,7 +258,8 @@ def _parse_newznab_json(
                 **extracted,
                 "link": download_link,
                 "display_title": title,
-                "source": indexer_name
+                "source": indexer_name,
+                "protocol": protocol
             }
 
             results.append(result)
@@ -266,12 +273,14 @@ def _parse_newznab_json(
 
 def _parse_newznab_xml(
     xml_text: str,
-    indexer_name: str) -> List[SearchResultData]:
+    indexer_name: str,
+    protocol: str = 'usenet') -> List[SearchResultData]:
     """Parse Newznab/Torznab XML response.
 
     Args:
         xml_text (str): XML response text
         indexer_name (str): Name of the indexer
+        protocol (str): Protocol type ('usenet' or 'torrent')
 
     Returns:
         List[SearchResultData]: Parsed search results
@@ -312,7 +321,8 @@ def _parse_newznab_xml(
                     **extracted,
                     "link": download_link,
                     "display_title": title,
-                    "source": indexer_name
+                    "source": indexer_name,
+                    "protocol": protocol
                 }
 
                 results.append(result)

@@ -168,6 +168,7 @@ class ProwlarrClient:
                         'base_url': base_url,
                         'api_key': api_key,
                         'indexer_type': indexer_type,
+                        'protocol': protocol,
                         'categories': '7030',  # Comics category
                         'prowlarr_id': indexer.get('id')
                     })
@@ -235,6 +236,7 @@ async def sync_prowlarr_indexers() -> Dict[str, int]:
                 base_url=p_indexer['base_url'],
                 api_key=p_indexer['api_key'],
                 indexer_type=p_indexer['indexer_type'],
+                protocol=p_indexer['protocol'],
                 categories=p_indexer['categories']
             )
             stats['updated'] += 1
@@ -246,6 +248,7 @@ async def sync_prowlarr_indexers() -> Dict[str, int]:
                 base_url=p_indexer['base_url'],
                 api_key=p_indexer['api_key'],
                 indexer_type=p_indexer['indexer_type'],
+                protocol=p_indexer['protocol'],
                 categories=p_indexer['categories']
             )
             stats['added'] += 1

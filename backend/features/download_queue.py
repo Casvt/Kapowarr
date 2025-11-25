@@ -357,6 +357,13 @@ class DownloadHandler(metaclass=Singleton):
         """
         if link.startswith(Constants.GC_SITE_URL):
             return 'gc'
+        elif link.startswith('magnet:?'):
+            return 'magnet'
+        elif link.endswith('.nzb') or ('/api' in link and 't=' in link):
+            # NZB file or Newznab/Torznab API link
+            return 'nzb'
+        elif link.endswith('.torrent'):
+            return 'torrent'
         return None
 
     def link_in_queue(self, link: str) -> bool:
@@ -374,17 +381,93 @@ class DownloadHandler(metaclass=Singleton):
             if link in (d.web_link, d.download_link)
         )
 
+    def __create_indexer_download(
+        self,
+        link: str,
+        link_type: str,
+        volume_id: int,
+        issue_id: Union[int, None],
+        source_name: str,
+        protocol: str,
+        force_match: bool = False
+    ) -> Download:
+        """Create a TorrentDownload or NZBDownload directly from an indexer link.
+
+        Args:
+            link (str): The download link (magnet, .torrent, or .nzb)
+            link_type (str): Type of link ('magnet', 'torrent', 'nzb')
+            volume_id (int): The volume ID
+            issue_id (Union[int, None]): The issue ID if searching for specific issue
+            source_name (str): Name of the indexer
+            protocol (str): Protocol type ('usenet' or 'torrent')
+            force_match (bool): Whether to force match without filtering
+
+        Returns:
+            Download: The created download object
+        """
+        from backend.implementations.download_clients import (
+            NZBDownload, TorrentDownload
+        )
+        from backend.implementations.volumes import Issue, Volume
+
+        # Determine covered issues from the issue_id or assume single issue
+        covered_issues: Union[float, Tuple[float, float], None] = None
+        if issue_id:
+            try:
+                issue = Issue(issue_id)
+                covered_issues = issue.get_data().calculated_issue_number
+            except Exception:
+                covered_issues = None
+
+        # Determine source type based on protocol
+        if protocol == 'torrent':
+            source_type = DownloadSource.GETCOMICS_TORRENT
+        else:
+            source_type = DownloadSource.GETCOMICS  # Use as generic placeholder
+
+        # Create appropriate download object
+        if link_type in ('magnet', 'torrent'):
+            # Create torrent download
+            download = TorrentDownload(
+                download_link=link,
+                volume_id=volume_id,
+                covered_issues=covered_issues,
+                source_type=source_type,
+                source_name=source_name,
+                web_link=link,
+                web_title=source_name,
+                web_sub_title=None,
+                forced_match=force_match
+            )
+        else:
+            # Create NZB download
+            download = NZBDownload(
+                download_link=link,
+                volume_id=volume_id,
+                covered_issues=covered_issues,
+                source_type=source_type,
+                source_name=source_name,
+                web_link=link,
+                web_title=source_name,
+                web_sub_title=None,
+                forced_match=force_match
+            )
+
+        return download
+
     async def add(
         self,
         link: str,
         volume_id: int,
         issue_id: Union[int, None] = None,
-        force_match: bool = False
+        force_match: bool = False,
+        source_name: str = "Unknown",
+        protocol: str = "direct"
     ) -> Tuple[List[dict], Union[EnqueuingDownloadFailureReason, None]]:
         """Add a download to the queue.
 
         Args:
-            link (str): A getcomics link to download from.
+            link (str): A link to download from (GetComics, magnet, torrent, or NZB).
 
             volume_id (int): The id of the volume for which the download is
             intended.
@@ -396,6 +479,12 @@ class DownloadHandler(metaclass=Singleton):
             force_match (bool, optional): On sources where downloads are
             filtered, skip this and instead download everything.
                 Defaults to False.
+
+            source_name (str, optional): Name of the source (indexer name).
+                Defaults to "Unknown".
+
+            protocol (str, optional): Protocol type ('direct', 'usenet', 'torrent').
+                Defaults to "direct".
 
         Returns:
             Tuple[List[dict], Union[FailReason, None]]:
@@ -414,6 +503,7 @@ class DownloadHandler(metaclass=Singleton):
 
         link_type = self.__determine_link_type(link)
         downloads: List[Download] = []
+        
         if link_type == 'gc':
             gcp = GetComicsPage(link)
 
@@ -459,6 +549,29 @@ class DownloadHandler(metaclass=Singleton):
                 )
                 return [], e.reason
 
+        elif link_type in ('magnet', 'torrent', 'nzb'):
+            # Direct download from indexer - no webpage parsing needed
+            LOGGER.info(
+                f'Creating direct {link_type} download from {source_name}'
+            )
+            try:
+                download = self.__create_indexer_download(
+                    link, link_type, volume_id, issue_id,
+                    source_name, protocol, force_match
+                )
+                downloads = [download]
+            except Exception as e:
+                LOGGER.error(
+                    f'Failed to create indexer download: {e}',
+                    exc_info=True
+                )
+                return [], None
+
+        else:
+            # Unknown link type
+            LOGGER.warning(f'Unknown link type for: {link}')
+            return [], None
+
         result = self.__prepare_downloads_for_queue(
             downloads,
             forced_match=force_match
@@ -470,8 +583,14 @@ class DownloadHandler(metaclass=Singleton):
 
     def add_multiple(
         self,
-        add_args: Iterable[Tuple[str, int, Union[int, None], bool]]
+        add_args: Iterable[Tuple[str, int, Union[int, None], bool, str, str]]
     ) -> None:
+        """Add multiple downloads to the queue.
+
+        Args:
+            add_args: Iterable of tuples containing:
+                (link, volume_id, issue_id, force_match, source_name, protocol)
+        """
         async def add_wrapper():
             await gather(
                 *(self.add(*entry)
