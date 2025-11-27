@@ -21,7 +21,7 @@ from backend.base.custom_exceptions import (InvalidKey, InvalidKeyValue,
                                             VolumeNotFound)
 from backend.base.definitions import (Constants, FileConstants, FileData,
                                       GeneralFileData, GeneralFileType,
-                                      IssueData, LibraryFilter,
+                                      IssueData, IssueSorting, LibraryFilter,
                                       LibrarySorting, MonitorScheme,
                                       SpecialVersion, VolumeData)
 from backend.base.file_extraction import extract_filename_data
@@ -283,8 +283,15 @@ class Volume:
             "special_version": SpecialVersion(data["special_version"])
         })
 
-    def get_public_keys(self) -> dict:
+    def get_public_keys(
+        self,
+        issue_sort: IssueSorting = IssueSorting.DATE
+    ) -> dict:
         """Get data about the volume for the public to see (the API).
+
+        Args:
+            issue_sort (IssueSorting, optional): How to sort the issues.
+                Defaults to IssueSorting.DATE.
 
         Returns:
             dict: The data.
@@ -335,7 +342,7 @@ class Volume:
             volume_info['root_folder_path']
         )
         del volume_info['root_folder_path']
-        volume_info['issues'] = [i.todict() for i in self.get_issues()]
+        volume_info['issues'] = [i.todict() for i in self.get_issues(sort=issue_sort)]
         volume_info['general_files'] = self.get_general_files()
 
         return volume_info
@@ -379,7 +386,8 @@ class Volume:
 
     def get_issues(
         self,
-        _skip_files: bool = False
+        _skip_files: bool = False,
+        sort: IssueSorting = IssueSorting.DATE
     ) -> List[IssueData]:
         """Get list of issues that are in the volume.
 
@@ -388,11 +396,14 @@ class Volume:
             each issue. Saves quite a bit of time.
                 Defaults to False.
 
+            sort (IssueSorting, optional): How to sort the issues.
+                Defaults to IssueSorting.DATE.
+
         Returns:
             List[IssueData]: The list of issues.
         """
         cursor = get_db()
-        issues = cursor.execute("""
+        issues = cursor.execute(f"""
             SELECT
                 id, volume_id, comicvine_id,
                 issue_number, calculated_issue_number,
@@ -400,7 +411,7 @@ class Volume:
                 monitored
             FROM issues
             WHERE volume_id = ?
-            ORDER BY date, calculated_issue_number
+            ORDER BY {sort.value}
             """,
             (self.id,)
         ).fetchalldict()

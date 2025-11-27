@@ -358,6 +358,15 @@ class LibrarySorting(BaseEnum):
                          "title, year, volume_number")
 
 
+class IssueSorting(BaseEnum):
+    """
+    The way to order issues within a volume
+    """
+
+    DATE = "date, calculated_issue_number"
+    ISSUE_NUMBER = "calculated_issue_number"
+
+
 class LibraryFilter(BaseEnum):
     """
     The filter to apply to the library, where the key value is the entire
