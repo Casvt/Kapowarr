@@ -67,6 +67,11 @@ def _clean_description(description: str, short: bool = False) -> str:
     for el in soup.find_all(["figure", "img"]):
         el.decompose()
 
+    # Remove practically empty paragraphs
+    for el in soup.find_all(["p"]):
+        if not el.text.lstrip('.').strip():
+            el.decompose()
+
     if not short:
         # Remove everything after the first title with list
         removed_elements = []
