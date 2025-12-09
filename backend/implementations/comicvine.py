@@ -170,45 +170,25 @@ class ComicVine:
         """Start interacting with ComicVine.
 
         Args:
-            comicvine_api_key (Union[str, None], optional): Override the API key
-            that is used.
+            comicvine_api_key (Union[str, None], optional): Instead of using the
+                CV API key set in the settings, use the supplied one.
                 Defaults to None.
 
         Raises:
-            InvalidComicVineApiKey: No ComicVine API key is set in the settings.
+            InvalidComicVineApiKey: No ComicVine API key is set in the settings
+                and no key is given.
         """
         settings = Settings().get_settings()
-        self.api_url = Constants.CV_API_URL
+
+        self.date_type = settings.date_type.value
         api_key = comicvine_api_key or settings.comicvine_api_key
         if not api_key:
             raise InvalidComicVineApiKey
-
-        self.date_type = settings.date_type.value
 
         self.ssn = Session()
         self._params = {'format': 'json', 'api_key': api_key}
         self.ssn.params.update(self._params) # type: ignore
         return
-
-    async def __call_request(
-        self,
-        session: AsyncSession,
-        url: str
-    ) -> Union[bytes, None]:
-        """Fetch a URL and get it's content async (with error handling).
-
-        Args:
-            session (AsyncSession): The aiohttp session to make the request with.
-            url (str): The URL to make the request to.
-
-        Returns:
-            Union[bytes, None]: The content in bytes.
-                `None` in case of error.
-        """
-        try:
-            return await session.get_content(url)
-        except ClientError:
-            return None
 
     async def __call_api(
         self,
@@ -217,38 +197,38 @@ class ComicVine:
         params: Dict[str, Any] = {},
         default: Union[T, None] = None
     ) -> Union[Dict[str, Any], T]:
-        """Make an CV API call asynchronously (with error handling).
+        """Make an API call asynchronously (with error handling).
 
         Args:
-            session (AsyncSession): The aiohttp session to make the request with.
+            session (AsyncSession): The session to make the request with.
 
-            url_path (str): The path of the url to make the call to (e.g.
-            '/volumes').
+            url_path (str): The API endpoint to make the call to.
+                For example: '/volumes'.
 
-            params (Dict[str, Any], optional): The URL params that should go
-            with the request. Standard params (api key, format, etc.) not
-            needed.
+            params (Dict[str, Any], optional): The URL parameters that should go
+                with the request. The standard parameters (api_key and format)
+                are already included.
                 Defaults to {}.
 
-            default (Union[T, None], optional): Return value in case of error,
-            instead of raising error.
+            default (Union[T, None], optional): Return given value in case of
+                exception, instead of raising exception.
                 Defaults to None.
 
         Raises:
-            CVRateLimitReached: The CV rate limit for this endpoint has been
-            reached, and no `default` was supplied.
-            InvalidComicVineApiKey: The CV api key is not valid.
-            VolumeNotMatched: The volume with the given ID is not found.
+            CVRateLimitReached: The rate limit for this endpoint has been
+                reached, and no `default` was supplied.
+            InvalidComicVineApiKey: The API key is not valid.
+            VolumeNotMatched: The ID doesn't map to any volume.
 
         Returns:
             Union[Dict[str, Any], T]: The raw API response or the value of
-            `default` on error.
+                `default` on error.
         """
         url_path = force_suffix('/' + url_path.lstrip('/'), '/')
 
         try:
             response = await session.get(
-                self.api_url + url_path,
+                Constants.CV_API_URL + url_path,
                 params={**self._params, **params}
             )
             result: Dict[str, Any] = await response.json()
@@ -271,23 +251,41 @@ class ComicVine:
         self,
         volume_data: Dict[str, Any]
     ) -> VolumeMetadata:
-        """Format the ComicVine API output containing the info
-        about the volume.
+        """Format the API output containing the metadata of a volume.
 
         Args:
-            volume_data (Dict[str, Any]): The ComicVine API output.
+            volume_data (Dict[str, Any]): The API output.
 
         Returns:
-            VolumeMetadata: The formatted version.
+            VolumeMetadata: The formatted data.
         """
+        # Determine volume number
+        volume_result = volume_regex.search(volume_data['deck'] or '')
+        if volume_result:
+            volume_number = force_range(extract_volume_number(
+                volume_result.group(1)
+            ))[0]
+            if volume_number is None:
+                volume_number = 1
+        else:
+            volume_number = 1
+
+        # Determine description
+        description = _clean_description(volume_data['description'])
+
+        # Determine translation value
+        translated = translation_regex.match(
+            description or ''
+        ) is not None
+
         result: VolumeMetadata = {
             'comicvine_id': int(volume_data['id']),
             'title': normalise_string(volume_data['name'] or ''),
             'year': normalise_year(volume_data.get('start_year', '')),
-            'volume_number': 1,
+            'volume_number': volume_number,
             'cover_link': volume_data['image']['small_url'],
             'cover': None,
-            'description': _clean_description(volume_data['description']),
+            'description': description,
             'site_url': volume_data['site_detail_url'],
 
             'aliases': [
@@ -302,21 +300,10 @@ class ComicVine:
 
             'issue_count': int(volume_data['count_of_issues']),
 
-            'translated': False,
+            'translated': translated,
             'already_added': None, # Only used when searching
             'issues': None # Only used for certain fetches
         }
-
-        if translation_regex.match(
-            result['description'] or ''
-        ) is not None:
-            result['translated'] = True
-
-        volume_result = volume_regex.search(volume_data['deck'] or '')
-        if volume_result:
-            result['volume_number'] = force_range(extract_volume_number(
-                volume_result.group(1)
-            ))[0] or 1
 
         return result
 
@@ -324,24 +311,25 @@ class ComicVine:
         self,
         issue_data: Dict[str, Any]
     ) -> IssueMetadata:
-        """Format the ComicVine API output containing the info
-        about the issue.
+        """Format the API output containing the metadata of the issue.
 
         Args:
-            issue_data (Dict[str, Any]): The ComicVine API output.
+            issue_data (Dict[str, Any]): The API output.
 
         Returns:
-            VolumeMetadata: The formatted version.
+            IssueMetadata: The formatted data.
         """
-        cin = force_range(extract_issue_number(
+        calculated_issue_number = force_range(extract_issue_number(
             issue_data['issue_number']
         ))[0]
+        if calculated_issue_number is None:
+            calculated_issue_number = 0.0
 
         result: IssueMetadata = {
             'comicvine_id': int(issue_data['id']),
             'volume_id': int(issue_data['volume']['id']),
             'issue_number': issue_data['issue_number'].replace('/', '-').strip(),
-            'calculated_issue_number': cin if cin is not None else 0.0,
+            'calculated_issue_number': calculated_issue_number,
             'title': normalise_string(issue_data['name'] or '') or None,
             'date': issue_data[self.date_type] or None,
             'description': _clean_description(
@@ -349,20 +337,20 @@ class ComicVine:
                 short=True
             )
         }
+
         return result
 
     def __format_search_output(
         self,
         search_results: List[Dict[str, Any]]
     ) -> List[VolumeMetadata]:
-        """Format the search results from the ComicVine API.
+        """Format the API output containing volume search results.
 
         Args:
-            search_results (List[Dict[str, Any]]): The unformatted search
-            results.
+            search_results (List[Dict[str, Any]]): The API output.
 
         Returns:
-            List[VolumeMetadata]: The formatted search results.
+            List[VolumeMetadata]: The formatted data.
         """
         cursor = get_db()
 
@@ -375,29 +363,34 @@ class ComicVine:
         volume_ids: Dict[int, int] = dict(cursor.execute(f"""
             SELECT comicvine_id, id
             FROM volumes
-            WHERE {' OR '.join(
-                'comicvine_id = ' + str(r['comicvine_id'])
-                for r in formatted_results
-            )}
+            WHERE comicvine_id IN ({','.join('?' for _ in formatted_results)})
             LIMIT 50;
-        """))
+            """,
+            tuple(r["comicvine_id"] for r in formatted_results)
+        ))
 
         for r in formatted_results:
             r['already_added'] = volume_ids.get(r["comicvine_id"])
 
         LOGGER.debug(
-            f'Searching for volumes with query result: {formatted_results}')
+            'Searching for volumes with query result: %s',
+            formatted_results
+        )
         return formatted_results
 
-    def test_token(self) -> bool:
-        """Test if the token works.
+    def test_key(self) -> bool:
+        """Test if the API key works.
 
         Returns:
-            bool: Whether the token works.
+            bool: Whether the key works.
         """
-        async def _test_token():
+        async def _test_key():
             try:
                 async with AsyncSession() as session:
+                    # Simply make a call to any endpoint to check. This endpoint
+                    # isn't used by Kapowarr so by using it now we don't
+                    # unnecessarily get closer to the rate limit of
+                    # important endpoints.
                     await self.__call_api(
                         session,
                         '/publisher/4010-31',
@@ -409,17 +402,18 @@ class ComicVine:
 
             return True
 
-        return run(_test_token())
+        return run(_test_key())
 
     async def fetch_volume(self, cv_id: Union[str, int]) -> VolumeMetadata:
-        """Get the metadata of a volume from ComicVine, including it's issues.
+        """Get the metadata of a volume, including its issues.
 
         Args:
             cv_id (Union[str, int]): The CV ID of the volume.
 
         Raises:
-            VolumeNotMatched: No volume found with given ID in CV DB.
+            VolumeNotMatched: The ID doesn't map to any volume.
             CVRateLimitReached: The ComicVine rate limit is reached.
+            InvalidComicVineApiKey: The API key is not valid.
 
         Returns:
             VolumeMetadata: The metadata of the volume, including issues.
@@ -439,29 +433,34 @@ class ComicVine:
             )
 
             volume_info = self.__format_volume_output(result['results'])
-
-            LOGGER.debug(f'Fetching issue data for volume {cv_id}')
             volume_info['issues'] = await self.fetch_issues((cv_id,))
 
-            LOGGER.debug(f'Fetching volume data result: {volume_info}')
+            LOGGER.debug('Fetching volume data result: %s', volume_info)
 
-            volume_info['cover'] = await self.__call_request(
-                session,
-                volume_info['cover_link']
-            )
+            volume_info['cover'] = await session.get_content(
+                volume_info['cover_link'],
+                quiet_fail=True
+            ) or None
+
             return volume_info
 
     async def fetch_volumes(
         self,
         cv_ids: Sequence[Union[str, int]]
     ) -> List[VolumeMetadata]:
-        """Get the metadata of the volumes from ComicVine, without their issues.
+        """Get the metadata of the volumes, without their issues.
 
         Args:
-            cv_ids (Sequence[Union[str, int]]): The CV ID's of the volumes.
+            cv_ids (Sequence[Union[str, int]]): The CV IDs of the volumes.
+
+        Raises:
+            VolumeNotMatched: An ID doesn't map to any volume.
+            InvalidComicVineApiKey: The API key is not valid.
 
         Returns:
             List[VolumeMetadata]: The metadata of the volumes, without issues.
+                The list of volumes could be incomplete if the rate limit was
+                reached.
         """
         try:
             formatted_cv_ids = to_string_cv_id(cv_ids)
@@ -470,20 +469,22 @@ class ComicVine:
 
         LOGGER.debug(f'Fetching volume data for {formatted_cv_ids}')
 
+        # Each request to CV can return 100 volumes. Make 10 requests at the
+        # same time (one batch). Wait/cooldown in between batches. Spending time
+        # fetching covers immediately after each batch increases cooldown.
         volume_infos = []
         batch_brake_time = Constants.CV_BRAKE_TIME * 10
         async with AsyncSession() as session:
-            # 10 requests of 100 vol per round
-            for request_batch in batched(formatted_cv_ids, 1000):
+            for i, request_batch in enumerate(batched(formatted_cv_ids, 1000)):
 
-                if request_batch[0] != formatted_cv_ids[0]:
-                    # From second round on
+                if i:
                     LOGGER.debug(
-                        f"Waiting {batch_brake_time}s to keep the CV rate limit happy")
+                        "Waiting %ss to keep the CV rate limit happy",
+                        batch_brake_time
+                    )
                     await sleep(batch_brake_time)
 
-                # Fetch 10 batches of 100 volumes
-                tasks = [
+                tasks = (
                     self.__call_api(
                         session,
                         '/volumes',
@@ -494,30 +495,34 @@ class ComicVine:
                         {'results': []}
                     )
                     for id_batch in batched(request_batch, 100)
-                ]
+                )
                 responses = await gather(*tasks)
 
                 # Format volume responses and prep cover requests
-                cover_map: Dict[int, Any] = {}
-                current_infos: List[VolumeMetadata] = []
-                for batch in responses:
-                    for result in batch['results']:
-                        volume_info = self.__format_volume_output(result)
-                        current_infos.append(volume_info)
-
-                        cover_map[volume_info['comicvine_id']] = self.__call_request(
-                            session, volume_info['cover_link'])
+                batch_volumes: List[VolumeMetadata] = [
+                    self.__format_volume_output(result)
+                    for batch in responses
+                    for result in batch['results']
+                ]
+                cover_map: Dict[int, Any] = {
+                    volume['comicvine_id']: session.get_content(
+                        volume['cover_link'],
+                        quiet_fail=True
+                    )
+                    for volume in batch_volumes
+                }
 
                 # Fetch covers and add them to the volume info
                 cover_responses = dict(zip(
                     cover_map.keys(),
                     await gather(*cover_map.values())
                 ))
-                for vi in current_infos:
-                    vi['cover'] = cover_responses.get(vi['comicvine_id'])
+                for volume in batch_volumes:
+                    volume['cover'] = cover_responses.get(
+                        volume['comicvine_id']
+                    ) or None
 
-                # Add volume info of this round to total list
-                volume_infos.extend(current_infos)
+                volume_infos.extend(batch_volumes)
 
             return volume_infos
 
@@ -525,14 +530,19 @@ class ComicVine:
         self,
         cv_ids: Sequence[Union[str, int]]
     ) -> List[IssueMetadata]:
-        """Get the metadata of the issues of volumes from ComicVine.
+        """Get the metadata of the issues of volumes.
 
         Args:
-            ids (Sequence[Union[str, int]]): The CV ID's of the volumes.
+            cv_ids (Sequence[Union[str, int]]): The CV IDs of the volumes.
+
+        Raises:
+            VolumeNotMatched: An ID doesn't map to any volume.
+            InvalidComicVineApiKey: The API key is not valid.
 
         Returns:
             List[IssueMetadata]: The metadata of all the issues inside the
-            volumes (assuming the rate limit wasn't reached).
+                volumes. The list of issues could be incomplete if the rate
+                limit was reached.
         """
         try:
             formatted_cv_ids = to_string_cv_id(cv_ids)
@@ -545,107 +555,124 @@ class ComicVine:
         batch_brake_time = Constants.CV_BRAKE_TIME * 10
         async with AsyncSession() as session:
             for id_batch in batched(formatted_cv_ids, 50):
+                batch_filter = "|".join(id_batch)
                 try:
                     results = await self.__call_api(
                         session,
                         '/issues',
-                        {'field_list': self.issue_field_list,
-                        'filter': f'volume:{"|".join(id_batch)}'}
+                        {
+                            'field_list': self.issue_field_list,
+                            'filter': f'volume:{batch_filter}'
+                        }
                     )
 
                 except CVRateLimitReached:
                     break
 
-                issue_infos += [
+                issue_infos.extend((
                     self.__format_issue_output(r)
                     for r in results['results']
-                ]
+                ))
 
                 if results['number_of_total_results'] > 100:
 
-                    for offset_batch in batched(
+                    for i, offset_batch in enumerate(batched(
                         range(100, results['number_of_total_results'], 100),
                         10
-                    ):
+                    )):
 
-                        if offset_batch[0] != 100:
-                            # From second round on
+                        if i:
                             LOGGER.debug(
-                                f"Waiting {batch_brake_time}s to keep the CV rate limit happy")
+                                "Waiting %ss to keep the CV rate limit happy",
+                                batch_brake_time
+                            )
                             await sleep(batch_brake_time)
 
-                        tasks = [
+                        tasks = (
                             self.__call_api(
                                 session,
                                 '/issues',
                                 {
                                     'field_list': self.issue_field_list,
-                                    'filter': f'volume:{"|".join(id_batch)}',
+                                    'filter': f'volume:{batch_filter}',
                                     'offset': offset
                                 },
                                 {'results': []}
                             )
                             for offset in offset_batch
-                        ]
+                        )
                         responses = await gather(*tasks)
 
                         for batch in responses:
-                            issue_infos += [
+                            issue_infos.extend((
                                 self.__format_issue_output(r)
                                 for r in batch['results']
-                            ]
+                            ))
 
             return issue_infos
+
+    async def __search_volume(
+        self, query: str
+    ) -> List[Dict[str, Any]]:
+        try:
+            query = to_full_string_cv_id((query,))[0]
+
+        except ValueError:
+            return []
+
+        async with AsyncSession() as session:
+            result = await self.__call_api(
+                session,
+                f'/volume/{query}',
+                {'field_list': self.search_field_list}
+            )
+            return [result['results']]
+
+    async def __search_query(
+        self, query: str
+    ) -> List[Dict[str, Any]]:
+        async with AsyncSession() as session:
+            results = await self.__call_api(
+                session,
+                '/search',
+                {
+                    'query': query,
+                    'resources': 'volume',
+                    'limit': 50,
+                    'field_list': self.search_field_list
+                },
+                {'results': []}
+            )
+            return results['results']
 
     async def search_volumes(
         self,
         query: str
     ) -> List[VolumeMetadata]:
-        """Search for volumes in CV.
+        """Search for volumes.
 
         Args:
             query (str): The query to use when searching.
 
+        Raises:
+            CVRateLimitReached: The rate limit for this endpoint has been reached.
+            InvalidComicVineApiKey: The API key is not valid.
+
         Returns:
-            List[VolumeMetadata]: A list with search results.
+            List[VolumeMetadata]: The search results.
         """
         LOGGER.debug(f'Searching for volumes with the query {query}')
 
         try:
             if query.startswith(('4050-', 'cv:')):
-                try:
-                    query = to_full_string_cv_id((query,))[0]
-
-                except ValueError:
-                    return []
-
-                if not query:
-                    return []
-
-                async with AsyncSession() as session:
-                    results = [(await self.__call_api(
-                        session,
-                        f'/volume/{query}',
-                        {'field_list': self.search_field_list}
-                    ))['results']]
-
+                results = await self.__search_volume(query)
             else:
-                async with AsyncSession() as session:
-                    results = (await self.__call_api(
-                        session,
-                        '/search',
-                        {
-                            'query': query,
-                            'resources': 'volume',
-                            'limit': 50,
-                            'field_list': self.search_field_list
-                        }
-                    ))['results']
+                results = await self.__search_query(query)
 
-        except CVRateLimitReached:
+        except VolumeNotMatched:
             return []
 
-        if not results or results == [[]]:
+        if not results:
             return []
 
         return self.__format_search_output(results)
@@ -657,12 +684,12 @@ class ComicVine:
         """Match filenames to CV volumes.
 
         Args:
-            file_datas (Sequence[FilenameData]): The filename data's to find CV
-            volumes for.
+            file_datas (Sequence[FilenameData]): The filename data to find CV
+                volumes for.
             only_english (bool): Only match to english volumes.
 
         Returns:
-            DictKeyedDict: A map of the filename to it's CV match.
+            DictKeyedDict: A map of the filename to its CV match.
         """
         matches = DictKeyedDict()
 
@@ -678,14 +705,24 @@ class ComicVine:
             )
 
         # Titles to search results
-        responses = await gather(*(
-            self.search_volumes(title)
-            for title in titles_to_files
-        ))
+        responses = await gather(
+            *(
+                self.search_volumes(title)
+                for title in titles_to_files
+            ),
+            return_exceptions=True
+        )
 
         # Filter for each title: title, only_english
         titles_to_results: Dict[str, List[VolumeMetadata]] = {}
         for title, response in zip(titles_to_files, responses):
+            if isinstance(response, CVRateLimitReached):
+                # Rate limit
+                continue
+
+            elif isinstance(response, BaseException):
+                raise response
+
             titles_to_results[title] = [
                 r for r in response
                 if match_title(title, r['title'])
