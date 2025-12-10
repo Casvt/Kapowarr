@@ -31,16 +31,16 @@ from backend.internals.db import get_db
 from backend.internals.settings import Settings
 
 translation_regex = compile(
-    r'^<p>\s*\w+ publication(\.?</p>$|,\s| \(in the \w+ language\)|, translates )|' +
-    r'^<p>\s*published by the \w+ wing of|' +
-    r'^<p>\s*\w+ translations? of|' +
-    r'.*from \w+\.?</p>$|' +
-    r'^<p>\s*publishes in \w+|' +
-    r'^<p>\s*\w+ language|' +
-    r'^<p>\s*\w+ edition of|' +
-    r'^<p>\s*\w+ reprint of|' +
-    r'^<p>\s*\w+ trade collection of|' +
-    r'^<p>\s*Series of \w+ collections\.?</p>$|' +
+    r'^<p>\s*\w+(?<!English) publication(\.?</p>$|,\s| \(in the \w+(?<!English) language\)|, translates )|' +
+    r'^<p>\s*published by the \w+(?<!English) wing of|' +
+    r'^<p>\s*\w+(?<!English) translations? of|' +
+    r'.*from \w+(?<!English)\.?</p>$|' +
+    r'^<p>\s*publishes in \w+(?<!English)|' +
+    r'^<p>\s*\w+(?<!English) language|' +
+    r'^<p>\s*\w+(?<!English) edition of|' +
+    r'^<p>\s*\w+(?<!English) reprint of|' +
+    r'^<p>\s*\w+(?<!English) trade collection of|' +
+    r'^<p>\s*Series of \w+(?<!English) collections\.?</p>$|' +
     r'.*reprints\.?</p>$',
     IGNORECASE)
 headers = {'h2', 'h3', 'h4', 'h5', 'h6'}
