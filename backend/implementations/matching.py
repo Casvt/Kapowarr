@@ -7,10 +7,13 @@ issues and volumes.
 
 from __future__ import annotations
 
+from itertools import chain
+from math import floor
 from re import compile
-from typing import TYPE_CHECKING, List, Mapping, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Mapping, Tuple, Union
 
 from backend.base.definitions import IssueData, SpecialVersion, VolumeMetadata
+from backend.base.file_extraction import special_version_regex
 from backend.base.helpers import force_range
 from backend.implementations.blocklist import blocklist_contains
 
@@ -506,43 +509,148 @@ with one issue.
 
 
 def select_best_volume_result_for_file(
-    file: FilenameData,
-    search_results: List[VolumeMetadata]
+    group: Dict[str, FilenameData],
+    search_results: List[VolumeMetadata],
+    only_english: bool
 ) -> Union[VolumeMetadata, None]:
-    """Out of the search results based on the file, choose the volume that
+    """Out of the search results for the group of files, choose the volume that
     matches best (if any).
 
     Args:
-        file (FilenameData): The file that the volume is matched against.
+        group (Dict[str, FilenameData]): The group of files that the volume is
+            matched against. The value is a mapping from the filenames in the
+            group to their filename data.
         search_results (List[VolumeMetadata]): The list of search results from
-            which can be chosen. This list should already be filtered by titles
-            matching and translation allowance.
+            which can be chosen.
+        only_english (bool): Only match to English volumes.
 
     Returns:
         Union[VolumeMetadata, None]: The match, or `None` if nothing could
             possibly match.
     """
-    # Filter: SV - issue_count
-    filtered_results = [
-        r for r in search_results
-        if file['special_version'] not in ONE_ISSUE_MATCH
-        or r['issue_count'] == 1
-    ]
+    first_file = next(iter(group.values()))
+    series = first_file['series']
+    volume_number = first_file['volume_number']
+    special_version = first_file['special_version']
+
+    _years = [f['year'] for f in group.values() if f['year'] is not None]
+    start_year = min(_years, default=None)
+    end_year = max(_years, default=None)
+
+    highest_issue_number = max(chain.from_iterable(
+        force_range(f['issue_number'])
+        for f in group.values()
+        if f['issue_number'] is not None
+    ), default=None)
+
+    # Find out how many issues the files in the group AT LEAST cover. The issue
+    # count is equal to or lower than the truth. If all issues have round issue
+    # numbers, then the number is equal. But if a file covers a range like 3a-4b,
+    # then without knowing what the issues of the volume exactly are (which we
+    # don't) we won't know how many issues it covers. Is the last 3* issue b? c?
+    # z? We consider such a range to cover AT LEAST 2 issues. This gives a
+    # bottom limit to filter with.
+    covered_issues = set()
+    min_issue_count = 0
+    for file in group.values():
+        if file['issue_number'] is None:
+            continue
+
+        issue_range = force_range(file['issue_number'])
+
+        if issue_range[0] in covered_issues:
+            continue
+        covered_issues.add(issue_range[0])
+
+        min_issue_count += (
+            floor(issue_range[1]) - floor(issue_range[0]) + 1
+        )
+
+    filtered_results: List[VolumeMetadata] = []
+    for result in search_results:
+        # Filter series titles
+        title_matches = match_title(series, result['title'])
+        if not title_matches:
+            continue
+
+        # Filter non-english languages
+        language_allowed = not (only_english and result['translated'])
+        if not language_allowed:
+            continue
+
+        # Filter based on SV
+        # - Skip impossible SVs (e.g. 'one-shot' title vs 'hard-cover' file).
+        regex_result = special_version_regex.search(result['title'])
+        result_special_version = None
+        if regex_result:
+            result_special_version = [
+                k for k, v in regex_result.groupdict().items()
+                if v is not None
+            ][0].replace('_', '-')
+
+        special_version_possible = not (
+            special_version in ONE_ISSUE_MATCH
+            and result_special_version in ONE_ISSUE_MATCH
+            and special_version != result_special_version
+        )
+        if not special_version_possible:
+            continue
+
+        # Filter based on issue count
+        # - If the file is for a one-issue SV while the result has more than one
+        #   issue, then it can't be a match.
+        # - If miminum amount of issues covered by group is already more than
+        #   result's issue count, then it can't be a match.
+        sv_issue_count_allowed = (
+            first_file['special_version'] not in ONE_ISSUE_MATCH
+            or result['issue_count'] == 1
+        )
+        if not sv_issue_count_allowed:
+            continue
+
+        atleast_min_covered_issues = result['issue_count'] >= min_issue_count
+        if not atleast_min_covered_issues:
+            continue
+
+        # Search result passed the filters
+        filtered_results.append(result)
 
     if not filtered_results:
         return None
 
-    # Pref: exact year (1 point, also matches fuzzy year),
-    #       fuzzy year (1 point),
-    #       volume number (2 points)
-    filtered_results.sort(key=lambda r:
-        int(r['year'] == file['year'])
-        + int(match_year(r['year'], file['year']))
-        + int(
-            file['volume_number'] is not None
-            and r['volume_number'] == file['volume_number']
-        ) * 2,
-        reverse=True
-    )
+    def rate_search_result(search_result: VolumeMetadata) -> int:
+        rating = 0
+
+        if search_result['year'] == start_year:
+            # Years exactly match. Will also match fuzzy year.
+            rating += 1
+
+        if match_year(start_year, search_result['year'], end_year):
+            # Years roughly match
+            rating += 1
+
+        if (
+            volume_number is not None
+            and search_result['volume_number'] == volume_number
+        ):
+            # Volume numbers match
+            rating += 2
+
+        if search_result['issue_count'] == min_issue_count:
+            # Files cover exactly the issue count that the search result has.
+            rating += 1
+
+        if (
+            highest_issue_number is not None
+            and highest_issue_number > search_result['issue_count']
+        ):
+            # Disprefer because there's a file with an issue number that's
+            # higher than the issue count of the search result. E.g. a file with
+            # issue 6 but the search result only has 4 issues.
+            rating -= 1
+
+        return rating
+
+    filtered_results.sort(key=rate_search_result, reverse=True)
 
     return filtered_results[0]

@@ -7,7 +7,7 @@ Search for volumes/issues and fetch metadata for them on ComicVine
 from asyncio import gather, run, sleep
 from json import JSONDecodeError
 from re import IGNORECASE, compile
-from typing import Any, Dict, List, Sequence, Union
+from typing import Any, AsyncGenerator, Dict, Iterable, List, Sequence, Union
 
 from aiohttp import ContentTypeError
 from aiohttp.client_exceptions import ClientError
@@ -20,13 +20,12 @@ from backend.base.definitions import (Constants, FilenameData,
                                       IssueMetadata, T, VolumeMetadata)
 from backend.base.file_extraction import (extract_issue_number,
                                           extract_volume_number, volume_regex)
-from backend.base.helpers import (AsyncSession, DictKeyedDict, Session,
-                                  batched, force_range, force_suffix,
-                                  normalise_string, normalise_year,
-                                  to_full_string_cv_id, to_string_cv_id)
+from backend.base.helpers import (AsyncSession, Session, batched, force_range,
+                                  force_suffix, normalise_string,
+                                  normalise_year, to_full_string_cv_id,
+                                  to_string_cv_id)
 from backend.base.logging import LOGGER
-from backend.implementations.matching import (
-    match_title, select_best_volume_result_for_file)
+from backend.implementations.matching import select_best_volume_result_for_file
 from backend.internals.db import get_db
 from backend.internals.settings import Settings
 
@@ -378,6 +377,35 @@ class ComicVine:
         )
         return formatted_results
 
+    async def __sleep_iter(
+        self,
+        iterable: Iterable[T],
+        batch_size: int
+    ) -> AsyncGenerator[T, None]:
+        """Iterate over the given iterable, but sleep in between. The duration
+        is based on how large the batch is that each iteration is yielded. Acts
+        as a cooldown between batches of requests to the API.
+
+        Args:
+            iterable (Iterable[T]): The batches to iterate over and yield.
+            batch_size (int): The size of each batch.
+
+        Yields:
+            AsyncGenerator[T, None]: The batch, with a sleep done before if
+                required.
+        """
+        batch_brake_time = Constants.CV_BRAKE_TIME * batch_size
+        for index, batch in enumerate(iterable):
+            if index:
+                LOGGER.debug(
+                    "Waiting %ss to keep the CV rate limit happy",
+                    batch_brake_time
+                )
+                await sleep(batch_brake_time)
+
+            yield batch
+        return
+
     def test_key(self) -> bool:
         """Test if the API key works.
 
@@ -473,17 +501,10 @@ class ComicVine:
         # same time (one batch). Wait/cooldown in between batches. Spending time
         # fetching covers immediately after each batch increases cooldown.
         volume_infos = []
-        batch_brake_time = Constants.CV_BRAKE_TIME * 10
         async with AsyncSession() as session:
-            for i, request_batch in enumerate(batched(formatted_cv_ids, 1000)):
-
-                if i:
-                    LOGGER.debug(
-                        "Waiting %ss to keep the CV rate limit happy",
-                        batch_brake_time
-                    )
-                    await sleep(batch_brake_time)
-
+            async for request_batch in self.__sleep_iter(
+                batched(formatted_cv_ids, 1000), 10
+            ):
                 tasks = (
                     self.__call_api(
                         session,
@@ -552,7 +573,6 @@ class ComicVine:
         LOGGER.debug(f'Fetching issue data for volumes {formatted_cv_ids}')
 
         issue_infos = []
-        batch_brake_time = Constants.CV_BRAKE_TIME * 10
         async with AsyncSession() as session:
             for id_batch in batched(formatted_cv_ids, 50):
                 batch_filter = "|".join(id_batch)
@@ -576,17 +596,9 @@ class ComicVine:
 
                 if results['number_of_total_results'] > 100:
 
-                    for i, offset_batch in enumerate(batched(
-                        range(100, results['number_of_total_results'], 100),
-                        10
-                    )):
-
-                        if i:
-                            LOGGER.debug(
-                                "Waiting %ss to keep the CV rate limit happy",
-                                batch_brake_time
-                            )
-                            await sleep(batch_brake_time)
+                    async for offset_batch in self.__sleep_iter(batched(
+                        range(100, results['number_of_total_results'], 100), 10
+                    ), 10):
 
                         tasks = (
                             self.__call_api(
@@ -647,12 +659,16 @@ class ComicVine:
 
     async def search_volumes(
         self,
-        query: str
+        query: str,
+        allow_rate_limit_reached: bool = False
     ) -> List[VolumeMetadata]:
         """Search for volumes.
 
         Args:
             query (str): The query to use when searching.
+            allow_rate_limit_reached (bool, optional): Instead of a
+                CVRateLimitReached exception being thrown, return an empty list.
+                Defaults to False.
 
         Raises:
             CVRateLimitReached: The rate limit for this endpoint has been reached.
@@ -672,75 +688,64 @@ class ComicVine:
         except VolumeNotMatched:
             return []
 
+        except CVRateLimitReached:
+            if allow_rate_limit_reached:
+                return []
+            raise
+
         if not results:
             return []
 
         return self.__format_search_output(results)
 
-    async def filenames_to_cvs(self,
-        file_datas: Sequence[FilenameData],
+    async def filenames_to_cvs(
+        self,
+        file_groups: Dict[int, Dict[str, FilenameData]],
         only_english: bool
-    ) -> DictKeyedDict:
-        """Match filenames to CV volumes.
+    ) -> Dict[int, Dict[str, Any]]:
+        """Match groups of filenames to CV volumes.
 
         Args:
-            file_datas (Sequence[FilenameData]): The filename data to find CV
-                volumes for.
+            file_groups (Dict[int, Dict[str, FilenameData]]): The file groups.
+                Is a mapping from group number to a mapping of filename to
+                filename data for all files in that group.
             only_english (bool): Only match to english volumes.
 
         Returns:
-            DictKeyedDict: A map of the filename to its CV match.
+            Dict[int, Dict[str, Any]]: A mapping from the group number to its CV
+                match.
         """
-        matches = DictKeyedDict()
+        # All files in a group share a series title. Searching is done by series
+        # title, so search for every title/group instead of for every file.
+        titles_to_groups: Dict[str, List[int]] = {}
+        for group_numbers, file_group in file_groups.items():
+            series_name = next(iter(file_group.values()))['series'].lower()
+            titles_to_groups.setdefault(series_name, []).append(group_numbers)
 
-        # If multiple filenames have the same series title, avoid searching for
-        # it multiple times. Instead search for all unique titles and then later
-        # match the filename back to the title's search results. This makes it
-        # one search PER SERIES TITLE instead of one search PER FILENAME.
-        titles_to_files: Dict[str, List[FilenameData]] = {}
-        for file_data in file_datas:
-            (titles_to_files
-                .setdefault(file_data['series'].lower(), [])
-                .append(file_data)
-            )
-
-        # Titles to search results
-        responses = await gather(
-            *(
-                self.search_volumes(title)
-                for title in titles_to_files
-            ),
-            return_exceptions=True
-        )
-
-        # Filter for each title: title, only_english
+        # Search for each title in batches
         titles_to_results: Dict[str, List[VolumeMetadata]] = {}
-        for title, response in zip(titles_to_files, responses):
-            if isinstance(response, CVRateLimitReached):
-                # Rate limit
-                continue
+        async for title_batch in self.__sleep_iter(
+            batched(list(titles_to_groups), 10), 10
+        ):
+            titles_to_results.update(dict(zip(
+                title_batch,
+                await gather(*(
+                    self.search_volumes(title, allow_rate_limit_reached=True)
+                    for title in title_batch
+                ))
+            )))
 
-            elif isinstance(response, BaseException):
-                raise response
-
-            titles_to_results[title] = [
-                r for r in response
-                if match_title(title, r['title'])
-                and (
-                    only_english and not r['translated']
-                    or
-                    not only_english
-                )
-            ]
-
-        for title, files in titles_to_files.items():
-            for file in files:
+        matches: Dict[int, Dict[str, Any]] = {}
+        for title, group_numbers in titles_to_groups.items():
+            for group_number in group_numbers:
                 result = select_best_volume_result_for_file(
-                    file, titles_to_results[title]
+                    file_groups[group_number],
+                    titles_to_results[title],
+                    only_english=only_english
                 )
 
                 if result is None:
-                    matches[file] = {
+                    matches[group_number] = {
                         'id': None,
                         'title': None,
                         'issue_count': None,
@@ -748,7 +753,7 @@ class ComicVine:
                     }
 
                 else:
-                    matches[file] = {
+                    matches[group_number] = {
                         'id': result['comicvine_id'],
                         'title': f"{result['title']} ({result['year']})",
                         'issue_count': result['issue_count'],
