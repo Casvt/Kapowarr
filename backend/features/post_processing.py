@@ -19,8 +19,9 @@ from backend.implementations.blocklist import add_to_blocklist
 from backend.implementations.conversion import mass_convert
 from backend.implementations.converters import extract_files_from_folder
 from backend.implementations.download_clients import TorrentDownload
+from backend.implementations.file_matching import scan_files
 from backend.implementations.naming import mass_rename
-from backend.implementations.volumes import Volume, scan_files
+from backend.implementations.volumes import Volume
 from backend.internals.db import commit, get_db
 from backend.internals.db_models import FilesDB
 from backend.internals.settings import Settings

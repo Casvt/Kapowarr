@@ -10,7 +10,8 @@ from typing import Dict, Iterator, List, Union
 from backend.base.helpers import PortablePool, filtered_iter
 from backend.implementations.converters import (ConvertersManager,
                                                 ProposedConversion)
-from backend.implementations.volumes import Volume, scan_files
+from backend.implementations.file_matching import scan_files
+from backend.implementations.volumes import Volume
 from backend.internals.db import commit
 from backend.internals.db_models import FilesDB
 from backend.internals.server import TaskStatusEvent, WebSocket

@@ -17,9 +17,10 @@ from backend.base.files import (change_basefolder, common_folder,
                                 list_files, rename_file)
 from backend.base.logging import LOGGER
 from backend.implementations.comicvine import ComicVine
+from backend.implementations.file_matching import scan_files
 from backend.implementations.naming import mass_rename
 from backend.implementations.root_folders import RootFolders
-from backend.implementations.volumes import Library, Volume, scan_files
+from backend.implementations.volumes import Library, Volume
 from backend.internals.db import commit
 from backend.internals.db_models import FilesDB
 
