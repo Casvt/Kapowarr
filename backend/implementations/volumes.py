@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Mapping, Set, Tuple, Union
 from typing_extensions import assert_never
 
 from backend.base.custom_exceptions import (InvalidKey, InvalidKeyValue,
-                                            IssueNotFound,
+                                            IssueNotFound, KeyNotFound,
                                             TaskForVolumeRunning,
                                             VolumeAlreadyAdded,
                                             VolumeDownloadedFor,
@@ -59,23 +59,20 @@ vol_regex = compile(r'^v(?:ol(?:ume)?)?\.?\s(?:\d+|(?:(?:one|two|three|four|five
 
 # region Issue
 class Issue:
-    def __init__(
-        self,
-        id: int,
-        check_existence: bool = False
-    ) -> None:
-        """Create instance of issue.
+    def __init__(self, issue_id: int, check_existence: bool = False) -> None:
+        """Create an instance.
 
         Args:
-            id (int): The ID of the issue.
-            check_existence (bool, optional): Check if issue exists based on ID.
+            issue_id (int): The ID of the issue.
+            check_existence (bool, optional): Check whether the issue exists
+                based on its ID.
                 Defaults to False.
 
         Raises:
-            IssueNotFound: The issue was not found.
-                Can only be raised when check_existence is `True`.
+            IssueNotFound: The issue was not found. Can only be raised when
+                check_existence is `True`.
         """
-        self.id = id
+        self.id = issue_id
 
         if not check_existence:
             return
@@ -86,7 +83,7 @@ class Issue:
         ).fetchone()
 
         if issue_id is None:
-            raise IssueNotFound(id)
+            raise IssueNotFound(issue_id)
         return
 
     @classmethod
@@ -96,19 +93,19 @@ class Issue:
         volume_id: int,
         calculated_issue_number: float
     ) -> Issue:
-        """Create instance of issue based on volume ID and calculated issue
-        number of issue.
+        """Create an instance based on the volume ID and calculated issue number
+        of the issue. The existance of the volume is checked.
 
         Args:
             volume_id (int): The ID of the volume that the issue is in.
             calculated_issue_number (float): The calculated issue number of
-            the issue.
+                the issue.
 
         Raises:
             IssueNotFound: No issue found with the given arguments.
 
         Returns:
-            Issue: The issue instance.
+            Issue: The instance.
         """
         issue_id: Union[int, None] = get_db().execute("""
             SELECT id
@@ -129,7 +126,7 @@ class Issue:
         """Get data about the issue.
 
         Returns:
-            dict: The data.
+            IssueData: The data.
         """
         data = get_db().execute(
             """
@@ -154,16 +151,31 @@ class Issue:
         """Get all files linked to the issue.
 
         Returns:
-            List[FileData]: List of file datas.
+            List[FileData]: List of file data.
         """
         return FilesDB.fetch(issue_id=self.id)
 
-    def __format_value(
-        self,
-        key: str,
-        value: Any
-    ) -> Any:
+    def __format_value(self, key: str, value: Any, from_public: bool) -> Any:
+        """Check whether the value of an attribute is allowed and convert if
+        needed.
+
+        Args:
+            key (str): Key of attribute.
+            value (Any): Value of attribute.
+            from_public (bool): If True, only allow attributes to be changed
+                that are allowed to be changed by the user.
+
+        Raises:
+            KeyNotFound: Key doesn't exist or can't be changed.
+            InvalidKeyValue: Value of the key is not allowed.
+
+        Returns:
+            Any: (Converted) Attribute value.
+        """
         converted_value = value
+
+        if from_public and key not in ('monitored',):
+            raise KeyNotFound(key)
 
         if key == 'monitored' and not isinstance(converted_value, bool):
             raise InvalidKeyValue(key, value)
@@ -172,22 +184,25 @@ class Issue:
 
     def update(
         self,
-        data: Mapping[str, Any]
+        data: Mapping[str, Any],
+        from_public: bool = False
     ) -> None:
-        """Change aspects of the issue, in a `dict.update()` type of way.
+        """Change attributes of the issue, in a `dict.update()` type of way.
 
         Args:
             data (Mapping[str, Any]): The keys and their new values.
 
+            from_public (bool, optional): If True, only allow attributes to be
+                changed that are allowed to be changed by the user.
+                Defaults to False.
+
         Raises:
-            InvalidKey: Key is not allowed.
-            InvalidKeyValue: Value of key is not allowed.
+            KeyNotFound: Key doesn't exist or can't be changed.
+            InvalidKeyValue: Value of the key is not allowed.
         """
         formatted_data = {}
         for key, value in data.items():
-            if key != 'monitored':
-                raise InvalidKey(key)
-            formatted_data[key] = self.__format_value(key, value)
+            formatted_data[key] = self.__format_value(key, value, from_public)
 
         cursor = get_db()
         for key, value in formatted_data.items():
@@ -201,22 +216,8 @@ class Issue:
         )
         return
 
-    def __setitem__(self, __name: str, __value: Any) -> None:
-        """Change an aspect of the issue.
-
-        Args:
-            __name (str): The key of the aspect.
-            __value (Any): The new value of the aspect.
-
-        Raises:
-            KeyError: Key is not allowed.
-            InvalidKeyValue: Value of key is not allowed.
-        """
-        self.update({__name: __value})
-        return
-
     def delete(self) -> None:
-        """Delete the issue from the database."""
+        """Delete the issue from the database"""
         FilesDB.delete_issue_linked_files(self.id)
         get_db().execute(
             "DELETE FROM issues WHERE id = ?;",

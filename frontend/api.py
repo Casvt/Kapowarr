@@ -868,7 +868,7 @@ def api_issues(id: int):
         edit_info: dict = request.get_json()
         monitored = edit_info.get('monitored')
         if monitored is not None:
-            issue['monitored'] = bool(monitored)
+            issue.update({'monitored': monitored})
 
         result = issue.get_data()
         return return_api(result)
