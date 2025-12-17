@@ -212,8 +212,6 @@ def import_library(
     LOGGER.debug(f'id_to_filepath: {cvid_to_filepath}')
 
     root_folders = RootFolders().get_all()
-    library = Library()
-
     for cv_id, files in cvid_to_filepath.items():
         # Find root folder that media is in
         for root_folder in root_folders:
@@ -225,7 +223,7 @@ def import_library(
         lcf = common_folder(files)
 
         try:
-            volume_id = library.add(
+            volume_id = Library.add(
                 comicvine_id=cv_id,
                 root_folder_id=root_folder.id,
                 monitored=True,
@@ -244,7 +242,7 @@ def import_library(
 
         if rename_files:
             # Put files in volume folder
-            vf = library.get_volume(volume_id).vd.folder
+            vf = Library.get_volume(volume_id).vd.folder
             file_changes = change_basefolder(files, lcf, vf)
             for old, new in file_changes.items():
                 if old != new:

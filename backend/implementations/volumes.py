@@ -905,22 +905,24 @@ class Volume:
 
 # region Library
 class Library:
-    def get_public_volumes(self,
+    @classmethod
+    def get_public_volumes(
+        cls,
         sort: LibrarySorting = LibrarySorting.TITLE,
         filter: Union[LibraryFilter, int, None] = None
-    ) -> List[dict]:
-        """Get all volumes in the library
+    ) -> List[Dict[str, Any]]:
+        """Get all the volumes in the library.
 
         Args:
             sort (LibrarySorting, optional): How to sort the list.
                 Defaults to LibrarySorting.TITLE.
 
             filter (Union[LibraryFilter, None], optional): Apply a filter to
-            the list if not `None`.
+                the list if not `None`.
                 Defaults to None.
 
         Returns:
-            List[dict]: The list of volumes in the library.
+            List[Dict[str, Any]]: The list of volumes in the library.
         """
         if isinstance(filter, LibraryFilter):
             sql_filter = filter.value
@@ -974,11 +976,13 @@ class Library:
 
         return volumes
 
-    def search(self,
+    @classmethod
+    def search(
+        cls,
         query: str,
         sort: LibrarySorting = LibrarySorting.TITLE,
         filter: Union[LibraryFilter, None] = None
-    ) -> List[dict]:
+    ) -> List[Dict[str, Any]]:
         """Search in the library with a query.
 
         Args:
@@ -988,16 +992,17 @@ class Library:
                 Defaults to LibrarySorting.TITLE.
 
             filter (Union[LibraryFilters, None], optional): Apply a filter to
-            the list if not `None`.
+                the list if not `None`.
                 Defaults to None.
 
         Returns:
-            List[dict]: The resulting list of matching volumes in the library.
+            List[Dict[str, Any]]: The resulting list of matching volumes
+                in the library.
         """
         if query.startswith(('4050-', 'cv:')):
             try:
                 cv_id = to_number_cv_id((query,))[0]
-                volumes = self.get_public_volumes(sort, cv_id)
+                volumes = cls.get_public_volumes(sort, cv_id)
 
             except ValueError:
                 volumes = []
@@ -1005,13 +1010,19 @@ class Library:
         else:
             volumes = [
                 v
-                for v in self.get_public_volumes(sort, filter)
+                for v in cls.get_public_volumes(sort, filter)
                 if match_title(v['title'], query, allow_contains=True)
             ]
 
         return volumes
 
-    def get_stats(self) -> Dict[str, int]:
+    @classmethod
+    def get_stats(cls) -> Dict[str, int]:
+        """Get library statistics.
+
+        Returns:
+            Dict[str, int]: The statistics.
+        """
         result = get_db().execute("""
             WITH v AS (
                 SELECT COUNT(*) AS volumes,
@@ -1030,17 +1041,19 @@ class Library:
         """).fetchonedict() or {}
         return result
 
-    def get_volumes(self) -> List[int]:
-        """Get a list of the ID's of all the volumes.
+    @classmethod
+    def get_volumes(cls) -> List[int]:
+        """Get a list of the IDs of all the volumes.
 
         Returns:
-            List[int]: The list of ID's.
+            List[int]: The list of IDs.
         """
         return first_of_subarrays(get_db().execute(
             "SELECT id FROM volumes;"
         ))
 
-    def get_volume(self, volume_id: int) -> Volume:
+    @classmethod
+    def get_volume(cls, volume_id: int) -> Volume:
         """Get a volume from the library.
 
         Args:
@@ -1054,7 +1067,8 @@ class Library:
         """
         return Volume(volume_id, check_existence=True)
 
-    def get_issue(self, issue_id: int) -> Issue:
+    @classmethod
+    def get_issue(cls, issue_id: int) -> Issue:
         """Get an issue from the library.
 
         Args:
@@ -1068,8 +1082,9 @@ class Library:
         """
         return Issue(issue_id, check_existence=True)
 
-    def _volume_added(self, comicvine_id: int) -> bool:
-        """Check if a volume is in the library.
+    @classmethod
+    def _volume_added(cls, comicvine_id: int) -> bool:
+        """Check whether a volume is in the library.
 
         Args:
             comicvine_id (int): The CV ID of the volume to check for.
@@ -1082,7 +1097,9 @@ class Library:
             (comicvine_id,)
         ).exists() is not None
 
-    def add(self,
+    @classmethod
+    def add(
+        cls,
         comicvine_id: int,
         root_folder_id: int,
         monitored: bool,
@@ -1098,7 +1115,7 @@ class Library:
             comicvine_id (int): The CV ID of the volume.
 
             root_folder_id (int): The ID of the rootfolder in which
-            the volume folder will be.
+                the volume folder will be.
 
             monitored (bool): Whether the volume should be monitored.
 
@@ -1112,24 +1129,25 @@ class Library:
                 Defaults to None.
 
             special_version (Union[SpecialVersion, None], optional): Give `None`
-            to let Kapowarr determine the special version ('auto'). Otherwise,
-            give a `SpecialVersion` to override and lock the special version
-            state.
+                to let Kapowarr determine the special version ('auto').
+                Otherwise, give a `SpecialVersion` to override and lock the
+                special version state.
+
                 Defaults to None.
 
-            auto_search (bool, optional): Start an auto search for the volume after
-            adding it.
+            auto_search (bool, optional): Start an auto search for the volume
+                after adding it.
                 Defaults to False.
 
         Raises:
             RootFolderNotFound: The root folder with the given ID was not found.
             VolumeFolderInvalid: The volume folder is the parent or child of
-            another volume folder.
+                another volume folder.
             VolumeAlreadyAdded: The volume already exists in the library.
             CVRateLimitReached: The ComicVine API rate limit is reached.
 
         Returns:
-            int: The new ID of the volume.
+            int: The ID of the new volume.
         """
         from backend.implementations.naming import generate_volume_folder_path
 
@@ -1145,7 +1163,7 @@ class Library:
             special_version
         )
 
-        if self._volume_added(comicvine_id):
+        if cls._volume_added(comicvine_id):
             raise VolumeAlreadyAdded(comicvine_id)
 
         # Raises RootFolderNotFound when ID is invalid
@@ -1627,7 +1645,7 @@ def delete_issue_file(file_id: int) -> None:
     unmonitor_deleted_issues = Settings().sv.unmonitor_deleted_issues and volume_id
 
     if volume_id:
-        vf = Library().get_volume(volume_id).vd.folder
+        vf = Library.get_volume(volume_id).vd.folder
         delete_file_folder(file_data["filepath"])
         delete_empty_parent_folders(dirname(file_data["filepath"]), vf)
     else:
