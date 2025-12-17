@@ -355,8 +355,6 @@ class Settings(metaclass=Singleton):
         Returns:
             Any: (Converted) Setting value.
         """
-        converted_value = value
-
         KeyCollection = PublicSettingsValues if from_public else SettingsValues
 
         # Confirm that key exists
@@ -386,6 +384,7 @@ class Settings(metaclass=Singleton):
             raise InvalidKeyValue(key, value)
 
         # Do key-specific checks and formatting
+        converted_value = value
 
         if key == 'auth_password':
             if value == Constants.PASSWORD_REPLACEMENT:

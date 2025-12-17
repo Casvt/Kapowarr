@@ -5,8 +5,6 @@ Definitions of types, constants, enums, typed dicts, dataclasses
 and abstract classes.
 """
 
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass
 from enum import Enum
@@ -564,6 +562,16 @@ class MatchedSearchResultData(
     _issue_number: Union[float, Tuple[float, float]]
 
 
+class IssueMetadata(TypedDict):
+    comicvine_id: int
+    volume_id: int
+    issue_number: str
+    calculated_issue_number: float
+    title: Union[str, None]
+    date: Union[str, None]
+    description: str
+
+
 class VolumeMetadata(TypedDict):
     comicvine_id: int
     title: str
@@ -578,17 +586,7 @@ class VolumeMetadata(TypedDict):
     issue_count: int
     translated: bool
     already_added: Union[int, None]
-    issues: Union[List[IssueMetadata], None]
-
-
-class IssueMetadata(TypedDict):
-    comicvine_id: int
-    volume_id: int
-    issue_number: str
-    calculated_issue_number: float
-    title: Union[str, None]
-    date: Union[str, None]
-    description: str
+    issues: Union[List['IssueMetadata'], None]
 
 
 class CVFileMapping(TypedDict):
@@ -837,7 +835,7 @@ class SearchSource(ABC):
         return
 
     @abstractmethod
-    async def search(self, session: AsyncSession) -> List[SearchResultData]:
+    async def search(self, session: 'AsyncSession') -> List[SearchResultData]:
         """Search for the query.
 
         Args:

@@ -20,7 +20,7 @@ from backend.implementations.comicvine import ComicVine
 from backend.implementations.file_matching import scan_files
 from backend.implementations.naming import mass_rename
 from backend.implementations.root_folders import RootFolders
-from backend.implementations.volumes import Library, Volume
+from backend.implementations.volumes import Library
 from backend.internals.db import commit
 from backend.internals.db_models import FilesDB
 
@@ -244,7 +244,7 @@ def import_library(
 
         if rename_files:
             # Put files in volume folder
-            vf = Volume(volume_id).vd.folder
+            vf = library.get_volume(volume_id).vd.folder
             file_changes = change_basefolder(files, lcf, vf)
             for old, new in file_changes.items():
                 if old != new:

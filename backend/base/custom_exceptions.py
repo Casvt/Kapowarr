@@ -38,27 +38,6 @@ class KeyNotFound(KapowarrException):
         }
 
 
-class InvalidKey(KapowarrException):
-    "The given key is not recognised. E.g. an invalid setting key."
-
-    def __init__(self, key: str) -> None:
-        self.key = key
-        LOGGER.warning(
-            f"The given key is not recognised: {key}"
-        )
-        return
-
-    @property
-    def api_response(self) -> ApiResponse:
-        return {
-            "code": 400,
-            "error": self.__class__.__name__,
-            "result": {
-                "key": self.key
-            }
-        }
-
-
 class InvalidKeyValue(KapowarrException):
     "The value of a key is invalid"
 

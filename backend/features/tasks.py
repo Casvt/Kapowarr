@@ -21,7 +21,7 @@ from backend.features.download_queue import DownloadHandler
 from backend.features.search import auto_search
 from backend.implementations.conversion import mass_convert
 from backend.implementations.naming import mass_rename
-from backend.implementations.volumes import Issue, Volume, refresh_and_scan
+from backend.implementations.volumes import Volume, refresh_and_scan
 from backend.internals.db import close_db, get_db
 from backend.internals.server import (TaskAddedEvent, TaskEndedEvent,
                                       TaskStatusEvent, WebSocket)
@@ -94,8 +94,9 @@ class AutoSearchIssue(Task):
         return
 
     def run(self) -> List[Tuple[str, int, Union[int, None]]]:
-        volume_title = Volume(self._volume_id).vd.title
-        issue_number = Issue(self._issue_id).get_data().issue_number
+        volume = Volume(self._volume_id)
+        volume_title = volume.vd.title
+        issue_number = volume.get_issue(self._issue_id).get_data().issue_number
         self.message = f'Searching for {volume_title} #{issue_number}'
         WebSocket().emit(TaskStatusEvent(self.message))
 
@@ -147,8 +148,9 @@ class MassRenameIssue(Task):
         return
 
     def run(self) -> None:
-        volume_title = Volume(self._volume_id).vd.title
-        issue_number = Issue(self._issue_id).get_data().issue_number
+        volume = Volume(self._volume_id)
+        volume_title = volume.vd.title
+        issue_number = volume.get_issue(self._issue_id).get_data().issue_number
         self.message = f'Renaming files for {volume_title} #{issue_number}'
         WebSocket().emit(TaskStatusEvent(self.message))
 
@@ -200,8 +202,9 @@ class MassConvertIssue(Task):
         return
 
     def run(self) -> None:
-        volume_title = Volume(self._volume_id).vd.title
-        issue_number = Issue(self._issue_id).get_data().issue_number
+        volume = Volume(self._volume_id)
+        volume_title = volume.vd.title
+        issue_number = volume.get_issue(self._issue_id).get_data().issue_number
         self.message = f'Converting files for {volume_title} #{issue_number}'
         WebSocket().emit(TaskStatusEvent(self.message))
 

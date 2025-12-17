@@ -179,7 +179,7 @@ class MassEditorUnmonitor(MassEditorAction):
         )
 
         for volume_id in self.volume_ids:
-            Volume(volume_id)['monitored'] = False
+            Volume(volume_id).update({'monitored': False})
 
         return
 
@@ -191,7 +191,7 @@ class MassEditorMonitor(MassEditorAction):
         LOGGER.info(f'Using mass editor, monitoring volumes: {self.volume_ids}')
 
         for volume_id in self.volume_ids:
-            Volume(volume_id)['monitored'] = True
+            Volume(volume_id).update({'monitored': True})
 
         return
 

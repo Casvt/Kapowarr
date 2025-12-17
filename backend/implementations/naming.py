@@ -812,7 +812,7 @@ def preview_mass_rename(
 
     result = same_name_indexing(volume_folder, result)
 
-    if volume_folder != volume.get_data().folder:
+    if volume_folder != volume.vd.folder:
         return result, volume_folder
     else:
         return result, None
@@ -862,7 +862,7 @@ def mass_rename(
     root_folder = RootFolders()[volume_data.root_folder]
 
     if new_volume_folder:
-        volume['folder'] = new_volume_folder
+        volume.update({'folder': new_volume_folder})
 
     if update_websocket:
         ws = WebSocket()

@@ -369,9 +369,22 @@ class DownloadHandler(metaclass=Singleton):
             bool: Whether the link is in the queue.
         """
         return any(
-            d
+            link in (d.web_link, d.download_link)
             for d in self.queue
-            if link in (d.web_link, d.download_link)
+        )
+
+    def download_for_volume_queued(self, volume_id: int) -> bool:
+        """Check whether there is a download in the queue for a given volume.
+
+        Args:
+            volume_id (int): The ID of the volume to check for.
+
+        Returns:
+            bool: Whether there is a download in the queue for the given volume.
+        """
+        return any(
+            d.volume_id == volume_id
+            for d in self.queue
         )
 
     async def add(
