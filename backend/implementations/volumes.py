@@ -1582,19 +1582,22 @@ def refresh_and_scan(
                 commit()
 
     # Refresh Special Version
-    cursor.executemany("""
-        UPDATE volumes
-        SET special_version = :special_version
-        WHERE id = :id AND special_version_locked = 0;
-        """,
-        ({
+    updated_special_versions = tuple(
+        {
             "special_version": determine_special_version(
                 cv_to_id_fetch[vd["comicvine_id"]][0]
             ),
             "id": cv_to_id_fetch[vd["comicvine_id"]][0]
         }
-            for vd in volume_datas
-        ))
+        for vd in volume_datas
+    )
+    cursor.executemany("""
+        UPDATE volumes
+        SET special_version = :special_version
+        WHERE id = :id AND special_version_locked = 0;
+        """,
+        updated_special_versions
+    )
 
     commit()
 
