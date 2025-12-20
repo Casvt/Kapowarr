@@ -49,6 +49,21 @@ The naming format for the file itself.
 	| {issue_release_date} | 1963-03-01 |
 	| {issue_release_year} | 1963 |
 
+??? info "Date Formatting"
+	The `{issue_release_date}` variable supports strftime format codes for flexible date formatting.
+	
+	| Format Code | Meaning | Example |
+	| ----------- | ------- | ------- |
+	| {issue_release_date:%Y} | Year (4 digits) | 1963 |
+	| {issue_release_date:%m} | Month (zero-padded) | 03 |
+	| {issue_release_date:%d} | Day (zero-padded) | 01 |
+	| {issue_release_date:%B} | Full month name | March |
+	| {issue_release_date:%b} | Abbreviated month name | Mar |
+	| {issue_release_date:%Y-%m} | Year-Month | 1963-03 |
+	| {issue_release_date:%B %Y} | Month Year | March 1963 |
+	
+	For a complete list of format codes, see [Python's strftime documentation](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes).
+
 | Example Value | Example Resulting Name |
 | ------------- | -------------- |
 | {series_name} ({year}) Volume {volume_number} Issue \{issue_number\} | Deadpool (1994) Volume 01 Issue 002 |
@@ -73,6 +88,10 @@ If the value of the setting [File Naming](#file-naming_1) uses the issue title, 
 	| {issue_number} | 001 |
 	| {issue_release_date} | 1963-03-01 |
 	| {issue_release_year} | 1963 |
+
+??? info "Date Formatting"
+	The `{issue_release_date}` variable supports strftime format codes for flexible date formatting.
+	See [Date Formatting section above](#file-naming) for details.
 
 | Example Value | Example Resulting Name |
 | ------- | -------------- |
@@ -116,6 +135,10 @@ The naming format for the file itself (if it's a Volume As Issue, so an issue na
 	| {issue_title} | Spider-Man; Spider-Man Vs. The Chameleon |
 	| {issue_release_date} | 1963-03-01 |
 	| {issue_release_year} | 1963 |
+
+??? info "Date Formatting"
+	The `{issue_release_date}` variable supports strftime format codes for flexible date formatting.
+	See [Date Formatting section above](#file-naming) for details.
 
 | Example Value | Example Resulting Name |
 | ------------- | -------------- |

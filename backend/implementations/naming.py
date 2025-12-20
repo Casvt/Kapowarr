@@ -6,6 +6,7 @@ The (re)naming of folders and media
 
 from __future__ import annotations
 
+from datetime import datetime
 from os.path import abspath, basename, isdir, isfile, join, splitext
 from re import compile
 from string import Formatter
@@ -38,6 +39,67 @@ from backend.internals.settings import Settings
 
 remove_year_in_image_regex = compile(r'(?:19|20)\d{2}')
 extra_spaces_regex = compile(r'(?<=\s)(\s+)')
+
+
+# =====================
+# region Date Formatting
+# =====================
+
+class DateFormatter:
+    """Wrapper for date strings that supports strftime formatting.
+    
+    This class enables users to format date variables using strftime format codes
+    in their filename templates. For example:
+    - {issue_release_date} → "1963-03-01" (default)
+    - {issue_release_date:%Y} → "1963" (year)
+    - {issue_release_date:%m} → "03" (month number)
+    - {issue_release_date:%B} → "March" (full month name)
+    - {issue_release_date:%b} → "Mar" (abbreviated month name)
+    - {issue_release_date:%Y-%m} → "1963-03" (year-month)
+    """
+    
+    def __init__(self, date_string: Union[str, None]):
+        """Initialize with a date string in YYYY-MM-DD format.
+        
+        Args:
+            date_string: Date string in YYYY-MM-DD format or None
+        """
+        self.date_string = date_string
+        self._date_obj = None
+        if date_string:
+            try:
+                # Parse YYYY-MM-DD format
+                self._date_obj = datetime.strptime(date_string, '%Y-%m-%d')
+            except (ValueError, TypeError):
+                pass
+    
+    def __str__(self):
+        """Default string representation (full date in YYYY-MM-DD format)."""
+        return self.date_string if self.date_string else 'Unknown'
+    
+    def __format__(self, format_spec):
+        """Handle format specifications using strftime format codes.
+        
+        Args:
+            format_spec: strftime format string (e.g., '%Y', '%B', '%Y-%m')
+        
+        Returns:
+            Formatted date string or 'Unknown' if date cannot be formatted
+        """
+        if not format_spec:
+            # No format spec, return default YYYY-MM-DD
+            return str(self)
+        
+        if not self._date_obj:
+            # Can't parse date, return as-is or Unknown
+            return str(self)
+        
+        try:
+            # Treat format spec as strftime format
+            return self._date_obj.strftime(format_spec)
+        except (ValueError, TypeError):
+            # Invalid format spec, return default
+            return str(self)
 
 
 # =====================
@@ -163,7 +225,7 @@ def _get_issue_naming_keys(
             or None
         ),
         issue_title=clean_filestring(issue_data.title or '') or None,
-        issue_release_date=issue_data.date,
+        issue_release_date=DateFormatter(issue_data.date),
         issue_release_year=extract_year_from_date(issue_data.date)
     )
 
@@ -406,7 +468,7 @@ def check_format(format: str, type: str) -> bool:
         return False
 
     keys = [
-        fn
+        fn.split(':')[0]  # Extract field name before format spec (e.g., 'issue_release_date' from 'issue_release_date:%Y')
         for _, fn, _, _ in Formatter().parse(format)
         if fn is not None
     ]
