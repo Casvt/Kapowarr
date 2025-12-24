@@ -29,5 +29,19 @@
 			"${TM_SELECTED_TEXT/^([ \\t]*)[\\s\\S]*$/$1/}Stats(pr).dump_stats('stats.prof')",
 			""
 		],
+	},
+	"Time Selected Code": {
+		"scope": "python",
+		"description": "Time the selected code using perf_counter",
+		"prefix": "time",
+		"body": [
+			"${TM_SELECTED_TEXT/^([ \\t]*)[\\s\\S]*$/$1/}from time import perf_counter",
+			"${TM_SELECTED_TEXT/^([ \\t]*)[\\s\\S]*$/$1/}start_time = perf_counter()",
+			"",
+			"${TM_SELECTED_TEXT/^(.+?)$(\\r?\\n)?/${1:pass}$2/gm}$0",
+			"",
+			"${TM_SELECTED_TEXT/^([ \\t]*)[\\s\\S]*$/$1/}print(f'Time: {perf_counter() - start_time}s')",
+			""
+		],
 	}
 }
