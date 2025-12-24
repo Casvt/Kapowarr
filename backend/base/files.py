@@ -4,12 +4,13 @@
 Handling folders, files and filenames.
 """
 
+from collections import deque
 from os import listdir, makedirs, remove, scandir
 from os.path import (abspath, basename, commonpath, dirname, isdir,
                      isfile, join, relpath, samefile, sep, splitext)
 from re import compile
 from shutil import copy2, copytree, move, rmtree
-from typing import Dict, Iterable, List, Sequence, Set, Union
+from typing import Dict, Iterable, List, Sequence, Union
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from backend.base.definitions import CharConstants, Constants, FileConstants
@@ -56,19 +57,14 @@ def list_files(folder: str, ext: Iterable[str] = []) -> List[str]:
         List[str]: The absolute paths of the files in the folder.
     """
     files: List[str] = []
+    to_dos = deque((folder,))
+    ext = {force_prefix(e.lower(), '.') for e in ext}
 
-    def _list_files(folder: str, ext: Set[str] = set()):
-        """Internal function to add all files in a folder to the files list.
-
-        Args:
-            folder (str): The base folder to search through.
-            ext (Set[str], optional): A set of lowercase dot-prefixed
-                extensions to filter for, or empty for no filter.
-                Defaults to set().
-        """
-        for f in scandir(folder):
+    while to_dos:
+        to_do = to_dos.popleft()
+        for f in scandir(to_do):
             if f.is_dir():
-                _list_files(f.path, ext)
+                to_dos.append(f.path)
 
             elif (
                 f.is_file()
@@ -80,9 +76,7 @@ def list_files(folder: str, ext: Iterable[str] = []) -> List[str]:
             ):
                 files.append(f.path)
 
-    ext = {force_prefix(e.lower(), '.') for e in ext}
-    _list_files(folder, ext)
-    return list(files)
+    return files
 
 
 def get_archive_mimetype(filepath: str) -> Union[str, None]:
