@@ -4,8 +4,9 @@
 The matching of files to issues in a volume
 """
 
+from collections import Counter
 from os.path import isdir
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Union
 
 from backend.base.definitions import (FileConstants, GeneralFileType,
                                       SpecialVersion)
@@ -35,15 +36,15 @@ def scan_files(
         volume_id (int): The ID of the volume to scan for.
 
         filepath_filter (List[str], optional): Only scan specific files.
-        Intended for adding files to a volume only.
+            Intended for adding files to a volume only.
             Defaults to [].
 
         del_unmatched_files (bool, optional): Delete file entries in the DB
-        that aren't linked to anything anymore.
+            that aren't linked to anything anymore.
             Defaults to True.
 
         update_websocket (bool, optional): Send websocket messages on changes
-        about the download status of the issues.
+            about the download status of the issues.
             Defaults to False.
     """
     from backend.implementations.volumes import Volume
@@ -61,21 +62,18 @@ def scan_files(
             return
 
     volume_issues = volume.get_issues(_skip_files=True)
-    general_files = tuple(
-        (gf['id'], gf['file_type'])
-        for gf in volume.get_general_files()
-    )
-    volume_files = {
-        f['filepath']: f['id']
-        for f in volume.get_all_files()
-    }
+    volume_issues.sort(key=lambda i: i.calculated_issue_number)
     number_to_year: Dict[float, Union[int, None]] = {
         i.calculated_issue_number: extract_year_from_date(i.date)
         for i in volume_issues
     }
+    current_issue_files = {
+        f['filepath']: f['id']
+        for f in volume.get_all_files()
+    }
 
-    bindings: List[Tuple[int, int]] = []
-    general_bindings: List[Tuple[int, str]] = []
+    new_issue_bindings: Dict[int, int] = {}
+    new_general_bindings: Dict[int, str] = {}
     folder_contents = list_files(
         folder=volume_data.folder,
         ext=FileConstants.SCANNABLE_EXTENSIONS
@@ -97,11 +95,11 @@ def scan_files(
             and file_data["issue_number"] is None
         ):
             # Volume cover file
-            if file not in volume_files:
-                volume_files[file] = FilesDB.add_file(file)
+            if file not in current_issue_files:
+                current_issue_files[file] = FilesDB.add_file(file)
 
-            general_bindings.append(
-                (volume_files[file], GeneralFileType.COVER.value)
+            new_general_bindings[current_issue_files[file]] = (
+                GeneralFileType.COVER.value
             )
 
         elif (
@@ -109,11 +107,11 @@ def scan_files(
             and file_data["issue_number"] is None
         ):
             # Volume metadata file
-            if file not in volume_files:
-                volume_files[file] = FilesDB.add_file(file)
+            if file not in current_issue_files:
+                current_issue_files[file] = FilesDB.add_file(file)
 
-            general_bindings.append(
-                (volume_files[file], GeneralFileType.METADATA.value)
+            new_general_bindings[current_issue_files[file]] = (
+                GeneralFileType.METADATA.value
             )
 
         elif (
@@ -124,10 +122,10 @@ def scan_files(
             and file_data['special_version']
         ):
             # Special Version
-            if file not in volume_files:
-                volume_files[file] = FilesDB.add_file(file)
+            if file not in current_issue_files:
+                current_issue_files[file] = FilesDB.add_file(file)
 
-            bindings.append((volume_files[file], volume_issues[0].id))
+            new_issue_bindings[current_issue_files[file]] = volume_issues[0].id
 
         elif (
             file_data['issue_number'] is not None
@@ -141,70 +139,71 @@ def scan_files(
             ):
                 issue_range = file_data['volume_number']
 
-            matching_issues = volume.get_issues_in_range(
-                *force_range(issue_range) # type: ignore
-            )
+            if issue_range is None:
+                continue
+            if not isinstance(issue_range, tuple):
+                issue_range = force_range(issue_range)
+
+            matching_issues = [
+                issue.id
+                for issue in volume_issues
+                if (
+                    issue_range[0]
+                    <= issue.calculated_issue_number
+                    <= issue_range[1]
+                )
+            ]
 
             if matching_issues:
-                if file not in volume_files:
-                    volume_files[file] = FilesDB.add_file(file)
+                if file not in current_issue_files:
+                    current_issue_files[file] = FilesDB.add_file(file)
 
                 for issue in matching_issues:
-                    bindings.append((volume_files[file], issue.id))
+                    new_issue_bindings[current_issue_files[file]] = issue
 
     cursor = get_db()
 
-    # Find out what exactly is deleted, added, which issues are now downloaded,
-    # and which are now not downloaded
-    current_bindings: List[Tuple[int, int]] = [
-        tuple(b)
-        for b in cursor.execute("""
-            SELECT if.file_id, if.issue_id
-            FROM issues_files if
-            INNER JOIN issues i
-            ON if.issue_id = i.id
-            WHERE i.volume_id = ?;
-            """,
-            (volume_id,)
-        )
+    # Determine old and new bindings, and which issues change in
+    # their marking of being downloaded because of the new bindings
+    current_bindings: Dict[int, int] = dict(cursor.execute("""
+        SELECT if.file_id, if.issue_id
+        FROM issues_files if
+        INNER JOIN issues i
+        ON if.issue_id = i.id
+        WHERE i.volume_id = ?;
+        """,
+        (volume_id,)
+    ))
+    delete_bindings = {
+        bf: bi
+        for bf, bi in current_bindings.items()
+        if new_issue_bindings.get(bf) != bi
+    }
+    add_bindings = {
+        bf: bi
+        for bf, bi in new_issue_bindings.items()
+        if current_bindings.get(bf) != bi
+    }
+
+    issue_binding_count = Counter(current_bindings.values())
+
+    new_binding_count = Counter(add_bindings.values())
+    issue_binding_count.update(new_binding_count)
+    newly_downloaded_issues = list(new_binding_count)
+
+    delete_binding_count = Counter(delete_bindings.values())
+    issue_binding_count.subtract(delete_binding_count)
+    deleted_downloaded_issues = [
+        k
+        for k, v in issue_binding_count.items()
+        if not v
     ]
-    delete_bindings = tuple(
-        b
-        for b in current_bindings
-        if b not in bindings
-    )
-    add_bindings = tuple(
-        b
-        for b in bindings
-        if b not in current_bindings
-    )
-    issue_binding_count = {}
-    for file_id, issue_id in current_bindings:
-        issue_binding_count[issue_id] = (
-            issue_binding_count.setdefault(issue_id, 0) + 1
-        )
 
-    newly_downloaded_issues: List[int] = []
-    for file_id, issue_id in add_bindings:
-        if issue_binding_count.setdefault(issue_id, 0) == 0:
-            newly_downloaded_issues.append(issue_id)
-        issue_binding_count[issue_id] += 1
-
-    # This list is only valid if there isn't a filepath_filter
-    deleted_downloaded_issues: List[int] = []
-    for file_id, issue_id in delete_bindings:
-        issue_binding_count[issue_id] -= 1
-        if issue_binding_count[issue_id] == 0:
-            deleted_downloaded_issues.append(issue_id)
-
-    del current_bindings
-    del issue_binding_count
-
+    # Delete bindings that aren't in new bindings
     if not filepath_filter:
-        # Delete bindings that aren't in new bindings
         cursor.executemany(
             "DELETE FROM issues_files WHERE file_id = ? AND issue_id = ?;",
-            delete_bindings
+            delete_bindings.items()
         )
 
         if settings.unmonitor_deleted_issues:
@@ -216,8 +215,48 @@ def scan_files(
     # Add bindings that aren't in current bindings
     cursor.executemany(
         "INSERT INTO issues_files(file_id, issue_id) VALUES (?, ?);",
-        add_bindings
+        add_bindings.items()
     )
+
+    # Delete bindings for general files that aren't in new bindings
+    if not filepath_filter:
+        current_general_bindings = {
+            gf['id']: gf['file_type']
+            for gf in volume.get_general_files()
+        }
+        delete_general_bindings = (
+            (b,)
+            for b in current_general_bindings
+            if b not in new_general_bindings
+        )
+        cursor.executemany(
+            "DELETE FROM volume_files WHERE file_id = ?;",
+            delete_general_bindings
+        )
+
+    # Add bindings for general files that aren't in current bindings
+    cursor.executemany("""
+        INSERT INTO volume_files(
+            file_id, volume_id, file_type
+        ) VALUES (
+            ?, ?, ?
+        )
+        ON CONFLICT(file_id) DO
+        UPDATE SET
+            file_type = ?;
+        """,
+        (
+            (file_id, volume_id, file_type, file_type)
+            for file_id, file_type in new_general_bindings.items()
+        )
+    )
+
+    # Remove files from the database that aren't matched to anything anymore
+    if del_unmatched_files:
+        FilesDB.delete_unmatched_files()
+
+    commit()
+
     if update_websocket:
         if not filepath_filter and (
             deleted_downloaded_issues or newly_downloaded_issues
@@ -233,32 +272,6 @@ def scan_files(
                 volume_id,
                 downloaded_issues=newly_downloaded_issues
             ))
-
-    # Delete bindings for general files that aren't in new bindings
-    if not filepath_filter:
-        delete_general_bindings = (
-            (b[0],)
-            for b in general_files
-            if b not in general_bindings
-        )
-        cursor.executemany(
-            "DELETE FROM volume_files WHERE file_id = ?;",
-            delete_general_bindings
-        )
-
-    # Add bindings for general files that aren't in current bindings
-    cursor.executemany("""
-        INSERT OR IGNORE INTO volume_files(
-            file_id, file_type, volume_id
-        ) VALUES (?, ?, ?);
-        """,
-        ((b[0], b[1], volume_id) for b in general_bindings)
-    )
-
-    if del_unmatched_files:
-        FilesDB.delete_unmatched_files()
-
-    commit()
 
     if settings.delete_empty_folders:
         delete_empty_child_folders(volume_data.folder, skip_hidden_folders=True)
