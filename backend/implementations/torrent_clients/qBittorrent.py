@@ -71,44 +71,70 @@ class qBittorrent(BaseExternalClient):
             Session: Request session that is logged in.
         """
         ssn = Session()
-        if username and password:
+
+        if username or password:
             params = {
-                'username': username,
-                'password': password
+                'username': username or '',
+                'password': password or ''
             }
-        else:
-            params = {}
+
+            try:
+                auth_request = ssn.post(
+                    f'{base_url}/api/v2/auth/login',
+                    data=params
+                )
+
+            except RequestException:
+                LOGGER.exception("Can't connect to qBittorrent instance: ")
+                raise ClientNotWorking(BrokenClientReason.CONNECTION_ERROR)
+
+            if auth_request.status_code == 404:
+                LOGGER.error(
+                    f"Can't connect or version too low of qBittorrent instance: {auth_request.text}"
+                )
+                # Should be at least v4.1
+                raise ClientNotWorking(BrokenClientReason.VERSION_NOT_SUPPORTED)
+
+            if not auth_request.ok:
+                LOGGER.error(
+                    f"Not connected to qBittorrent instance: {auth_request.text}"
+                )
+                raise ClientNotWorking(BrokenClientReason.NOT_CLIENT_INSTANCE)
+
+            auth_success = auth_request.headers.get('set-cookie') is not None
+
+            if not auth_success:
+                LOGGER.error(
+                    f"Failed to authenticate for qBittorrent instance: {auth_request.text}"
+                )
+                raise CredentialInvalid
+
+            return ssn
 
         try:
-            auth_request = ssn.post(
-                f'{base_url}/api/v2/auth/login',
-                data=params
-            )
+            version_request = ssn.get(f'{base_url}/api/v2/app/version')
 
         except RequestException:
             LOGGER.exception("Can't connect to qBittorrent instance: ")
             raise ClientNotWorking(BrokenClientReason.CONNECTION_ERROR)
 
-        if auth_request.status_code == 404:
+        if version_request.status_code == 404:
             LOGGER.error(
-                f"Can't connect or version too low of qBittorrent instance: {auth_request.text}"
+                f"Can't connect or version too low of qBittorrent instance: {version_request.text}"
             )
-            # Should be at least v4.1
             raise ClientNotWorking(BrokenClientReason.VERSION_NOT_SUPPORTED)
 
-        if not auth_request.ok:
+        if version_request.status_code in (401, 403):
             LOGGER.error(
-                f"Not connected to qBittorrent instance: {auth_request.text}"
-            )
-            raise ClientNotWorking(BrokenClientReason.NOT_CLIENT_INSTANCE)
-
-        auth_success = auth_request.headers.get('set-cookie') is not None
-
-        if not auth_success:
-            LOGGER.error(
-                f"Failed to authenticate for qBittorrent instance: {auth_request.text}"
+                f"Authentication required for qBittorrent instance: {version_request.text}"
             )
             raise CredentialInvalid
+
+        if not version_request.ok:
+            LOGGER.error(
+                f"Not connected to qBittorrent instance: {version_request.text}"
+            )
+            raise ClientNotWorking(BrokenClientReason.NOT_CLIENT_INSTANCE)
 
         return ssn
 
