@@ -13,6 +13,28 @@
                 "reveal": "silent",
                 "clear": true
             }
+        },
+        {
+            "label": "Create Memory Profile Data",
+            "hide": true,
+            "type": "shell",
+            "command": "memray flamegraph -f ${workspaceFolder}/mem_prof.bin -o ${workspaceFolder}/mem_prof.html && rm ${workspaceFolder}/mem_prof.bin",
+            "group": "none",
+            "presentation": {
+                "reveal": "silent",
+                "clear": true
+            }
+        },
+        {
+            "label": "Show Profile Data",
+            "hide": true,
+            "type": "shell",
+            "command": "snakeviz ${workspaceFolder}/stats.prof && rm ${workspaceFolder}/stats.prof",
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "clear": true
+            }
         }
     ]
 }

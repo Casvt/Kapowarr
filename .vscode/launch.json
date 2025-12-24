@@ -1,18 +1,40 @@
 {
 	"configurations": [
 		{
+			"name": "Main File",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}/Kapowarr.py",
+			"justMyCode": true
+		},
+		{
+			"name": "Profile Memory",
+			"type": "debugpy",
+			"request": "launch",
+			"module": "memray",
+			"args": [
+				"run",
+				"--follow-fork",
+				"--no-compress",
+				"-f",
+				"-o", "${workspaceFolder}/mem_prof.bin",
+				"${workspaceFolder}/Kapowarr.py"
+			],
+			"postDebugTask": "Create Memory Profile Data"
+		},
+		{
+			"name": "Profile CPU",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}/Kapowarr.py",
+			"justMyCode": true,
+			"postDebugTask": "Show Profile Data"
+		},
+		{
 			"name": "Current File",
 			"type": "debugpy",
 			"request": "launch",
 			"program": "${file}",
-			"justMyCode": true
-		},
-		{
-			"name": "Main File",
-			"type": "debugpy",
-			"request": "launch",
-			"python": "/bin/python3",
-			"program": "${workspaceFolder}/Kapowarr.py",
 			"justMyCode": true
 		}
 	]
