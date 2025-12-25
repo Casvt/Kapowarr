@@ -474,36 +474,6 @@ class Volume:
         ]
         return result
 
-    def get_issues_in_range(
-        self,
-        calculated_issue_number_start: Union[float, int],
-        calculated_issue_number_end: Union[float, int]
-    ) -> List[IssueData]:
-        """Return a list of issues that are between two calculated issue numbers.
-        Files of the issues are not fetched.
-
-        Args:
-            calculated_issue_number_start (Union[float, int]): The start of the
-                range.
-            calculated_issue_number_end (Union[float, int]): The end of the
-                range.
-
-        Returns:
-            List[IssueData]: The list of issues in the range.
-        """
-        return [
-            issue
-            for issue in sorted(
-                self.get_issues(_skip_files=True),
-                key=lambda i: i.calculated_issue_number
-            )
-            if (
-                calculated_issue_number_start
-                <= issue.calculated_issue_number
-                <= calculated_issue_number_end
-            )
-        ]
-
     def get_open_issues(self) -> List[Tuple[int, float]]:
         """Get the issues that are not matched to a file and are monitored.
 

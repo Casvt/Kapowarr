@@ -10,7 +10,8 @@ from typing import Dict, List, Union
 
 from backend.base.definitions import (FileConstants, GeneralFileType,
                                       SpecialVersion)
-from backend.base.file_extraction import extract_filename_data
+from backend.base.file_extraction import (extract_filename_data,
+                                          refine_special_version)
 from backend.base.files import (create_folder, delete_empty_child_folders,
                                 delete_empty_parent_folders, list_files)
 from backend.base.helpers import (extract_year_from_date,
@@ -90,6 +91,8 @@ def scan_files(
         ):
             continue
 
+        file_data = refine_special_version(volume_data, file_data)
+
         if (
             file_data['special_version'] == SpecialVersion.COVER
             and file_data["issue_number"] is None
@@ -127,31 +130,17 @@ def scan_files(
 
             new_issue_bindings[current_issue_files[file]] = volume_issues[0].id
 
-        elif (
-            file_data['issue_number'] is not None
-            or volume_data.special_version == SpecialVersion.VOLUME_AS_ISSUE
-        ):
+        elif file_data["issue_number"] is not None:
             # Normal issue
-            issue_range = file_data["issue_number"]
-            if (
-                volume_data.special_version == SpecialVersion.VOLUME_AS_ISSUE
-                and file_data["issue_number"] is None
-            ):
-                issue_range = file_data['volume_number']
-
-            if issue_range is None:
-                continue
-            if not isinstance(issue_range, tuple):
-                issue_range = force_range(issue_range)
+            if isinstance(file_data["issue_number"], tuple):
+                n_start, n_end = file_data["issue_number"]
+            else:
+                n_start, n_end = force_range(file_data["issue_number"])
 
             matching_issues = [
                 issue.id
                 for issue in volume_issues
-                if (
-                    issue_range[0]
-                    <= issue.calculated_issue_number
-                    <= issue_range[1]
-                )
+                if n_start <= issue.calculated_issue_number <= n_end
             ]
 
             if matching_issues:

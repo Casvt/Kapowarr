@@ -7,10 +7,10 @@ generalising it. The string can be a filepath, filename, search result title, et
 
 from os.path import basename, dirname, splitext
 from re import IGNORECASE, Pattern, compile
-from typing import Collection, Dict, Tuple, Union
+from typing import Collection, Dict, Tuple, TypeVar, Union
 
 from backend.base.definitions import (CharConstants, FileConstants,
-                                      FilenameData, SpecialVersion)
+                                      FilenameData, SpecialVersion, VolumeData)
 from backend.base.helpers import (check_overlapping_pos,
                                   fix_year as fix_broken_year,
                                   normalise_number, normalise_string)
@@ -585,5 +585,66 @@ def extract_filename_data(
     })
 
     LOGGER.debug(f'Extracting filename data: {file_data}')
+
+    return file_data
+
+
+FilenameDataOrSubclass = TypeVar("FilenameDataOrSubclass", bound="FilenameData")
+
+
+def refine_special_version(
+    volume_data: VolumeData,
+    file_data: FilenameDataOrSubclass
+) -> FilenameDataOrSubclass:
+    """Refine the determined special version, issue number and volume number
+    with volume data. For example if the file is "Iron-Man Volume 2" then the
+    extracted special version is TPB. But if the volume turns out to be a OS,
+    then the SV is set to OS. If the volume is a VAI, then the volume number
+    is moved to the issue number and the SV is set to Normal.
+
+    Args:
+        volume_data (VolumeData): The data of the volume the file is for.
+        file_data (FilenameDataOrSubclass): The file data.
+
+    Returns:
+        FilenameDataOrSubclass: The refined file data.
+    """
+    if (
+        volume_data.special_version == SpecialVersion.VOLUME_AS_ISSUE
+        and (
+            file_data['special_version'] in (
+                SpecialVersion.TPB, SpecialVersion.OMNIBUS
+            )
+            or isinstance(file_data['volume_number'], tuple)
+        )
+    ):
+        # Volume N file for VAI volume
+        # Also, sometimes you have One-Shot Volume 2-3 which is just a normal
+        # volume where each issue is considered a VAI one-shot.
+        if isinstance(file_data["volume_number"], tuple):
+            file_data["issue_number"] = (
+                float(file_data["volume_number"][0]),
+                float(file_data["volume_number"][1])
+            )
+
+        elif isinstance(file_data["volume_number"], int):
+            file_data["issue_number"] = float(
+                file_data["volume_number"]
+            )
+
+        file_data["volume_number"] = volume_data.volume_number
+        file_data["special_version"] = SpecialVersion.NORMAL.value
+
+    if (
+        file_data['special_version'] == SpecialVersion.TPB
+        and volume_data.special_version in (
+            SpecialVersion.HARD_COVER,
+            SpecialVersion.ONE_SHOT,
+            SpecialVersion.OMNIBUS
+        )
+    ):
+        # File is marked as TPB but is actually other SV. Like Volume 2 gets
+        # marked as TPB but could actually be a OS.
+        file_data['special_version'] = volume_data.special_version.value
 
     return file_data
