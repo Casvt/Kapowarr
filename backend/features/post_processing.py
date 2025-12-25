@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from os.path import basename, exists, isfile, join, splitext
 from time import time
-from typing import TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING, Dict
 
 from backend.base.definitions import (BlocklistReason,
                                       DownloadState, FileConstants)
@@ -236,7 +236,7 @@ def rename_with_proper_extension(download: Download) -> None:
     Rename a file with the proper extension based on mimetype. Rescan files
     in case a rename is done.
     """
-    renamed_files: List[Tuple[str, str]] = []
+    renamed_files: Dict[str, str] = {}
     for idx, file in enumerate(download.files):
         if not isfile(file):
             continue
@@ -245,10 +245,10 @@ def rename_with_proper_extension(download: Download) -> None:
         if new_file != file:
             rename_file(file, new_file)
             download.files[idx] = new_file
-            renamed_files.append((file, new_file))
+            renamed_files[file] = new_file
 
     if renamed_files:
-        FilesDB.update_filepaths(*zip(*renamed_files))
+        FilesDB.update_filepaths(renamed_files)
         commit()
 
     return

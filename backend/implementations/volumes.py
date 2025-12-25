@@ -715,10 +715,7 @@ class Volume:
             delete_empty_child_folders(volume_data.folder)
 
         # Update filepaths in database
-        FilesDB.update_filepaths(
-            file_changes.keys(),
-            file_changes.values()
-        )
+        FilesDB.update_filepaths(file_changes)
 
         # Update volume data in database
         new_folder = change_basefolder(
@@ -761,7 +758,7 @@ class Volume:
         root_folder = RootFolders()[volume_data.root_folder]
         current_volume_folder = volume_data.folder
         new_volume_folder = generate_volume_folder_path(
-            root_folder, new_volume_folder or self.id
+            root_folder, volume_data, new_volume_folder
         )
 
         if current_volume_folder == new_volume_folder:
@@ -787,10 +784,7 @@ class Volume:
             delete_empty_child_folders(current_volume_folder)
 
         # Update filepaths in database
-        FilesDB.update_filepaths(
-            file_changes.keys(),
-            file_changes.values()
-        )
+        FilesDB.update_filepaths(file_changes)
 
         # Update volume data in database
         self.update({
@@ -1243,7 +1237,8 @@ class Library:
 
             folder = generate_volume_folder_path(
                 root_folder.folder,
-                volume_folder or volume_id
+                volume.get_data(),
+                volume_folder
             )
             volume.update({'folder': folder})
 

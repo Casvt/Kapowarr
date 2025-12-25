@@ -228,8 +228,7 @@ class BaseDirectDownload(Download):
 
             if settings.rename_downloaded_files:
                 self._filename_body = generate_issue_name(
-                    volume_id,
-                    volume.vd.special_version,
+                    volume.get_data(),
                     covered_issues
                 )
 
@@ -664,8 +663,7 @@ class MegaDownload(BaseDirectDownload):
 
             if settings.rename_downloaded_files:
                 self._filename_body = generate_issue_name(
-                    volume_id,
-                    volume.vd.special_version,
+                    volume.get_data(),
                     covered_issues
                 )
 
@@ -828,8 +826,7 @@ class TorrentDownload(ExternalDownload, BaseDirectDownload):
         if settings.rename_downloaded_files:
             try:
                 self._filename_body = generate_issue_name(
-                    volume_id,
-                    volume.vd.special_version,
+                    volume.get_data(),
                     covered_issues
                 )
 

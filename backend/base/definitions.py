@@ -318,7 +318,9 @@ SV_TO_SHORT_TERM = {
     SpecialVersion.ONE_SHOT: "OS",
     SpecialVersion.TPB: "TPB",
     SpecialVersion.OMNIBUS: "Omnibus",
-    SpecialVersion.COVER: "Cover"
+    SpecialVersion.COVER: "Cover",
+    SpecialVersion.VOLUME_AS_ISSUE: "",
+    SpecialVersion.NORMAL: ""
 }
 """
 A mapping from a SpecialVersion to a short string representing it.
@@ -331,7 +333,9 @@ SV_TO_FULL_TERM = {
     SpecialVersion.ONE_SHOT: "One-Shot",
     SpecialVersion.TPB: "TPB",
     SpecialVersion.OMNIBUS: "Omnibus",
-    SpecialVersion.COVER: "Cover"
+    SpecialVersion.COVER: "Cover",
+    SpecialVersion.VOLUME_AS_ISSUE: "",
+    SpecialVersion.NORMAL: ""
 }
 """
 A mapping from a SpecialVersion to a full string representing it.
@@ -665,17 +669,21 @@ class BaseNamingKeys:
 
 
 @dataclass
-class SVNamingKeys(BaseNamingKeys):
+class VolumeNamingKeys(BaseNamingKeys):
     special_version: Union[str, None]
 
 
 @dataclass
-class IssueNamingKeys(SVNamingKeys):
+class TitlelessIssueNamingKeys(BaseNamingKeys):
     issue_comicvine_id: int
     issue_number: Union[str, None]
-    issue_title: Union[str, None]
     issue_release_date: Union[str, None]
     issue_release_year: Union[int, None]
+
+
+@dataclass
+class IssueNamingKeys(TitlelessIssueNamingKeys):
+    issue_title: Union[str, None]
 
 
 @dataclass

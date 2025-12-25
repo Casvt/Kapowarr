@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-The (re)naming of folders and media
+The (re)naming of folders and media files
 """
 
 from __future__ import annotations
@@ -12,11 +12,12 @@ from string import Formatter
 from sys import platform
 from typing import Dict, List, Tuple, Type, Union
 
-from backend.base.custom_exceptions import InvalidKeyValue
+from backend.base.custom_exceptions import InvalidKeyValue, IssueNotFound
 from backend.base.definitions import (SV_TO_FULL_TERM, SV_TO_SHORT_TERM,
                                       BaseNamingKeys, Constants, FileConstants,
                                       IssueData, IssueNamingKeys,
-                                      SpecialVersion, SVNamingKeys, VolumeData)
+                                      SpecialVersion, TitlelessIssueNamingKeys,
+                                      VolumeData, VolumeNamingKeys)
 from backend.base.file_extraction import (cover_regex, extract_filename_data,
                                           extract_issue_number, page_regex,
                                           page_regex_2)
@@ -40,12 +41,10 @@ remove_year_in_image_regex = compile(r'(?:19|20)\d{2}')
 extra_spaces_regex = compile(r'(?<=\s)(\s+)')
 
 
-# =====================
 # region Cleaning names
-# =====================
 def clean_filestring(filestring: str) -> str:
-    """Clean a part of a filename (so no path separators) by removing
-    illegal characters or replacing them smartly (depending on the settings).
+    """Clean a part of a filename (so no path separators) by removing illegal
+    characters or replacing them smartly (depending on the settings).
 
     Args:
         filestring (str): The string to clean.
@@ -62,8 +61,8 @@ def clean_filestring(filestring: str) -> str:
 
 
 def clean_filepath(filepath: str) -> str:
-    """Clean a filepath by removing illegal characters or replacing them
-    smartly (depending on the settings).
+    """Clean a filepath by removing illegal characters or replacing them smartly
+    (depending on the settings).
 
     Args:
         filepath (str): The filepath to clean.
@@ -79,36 +78,41 @@ def clean_filepath(filepath: str) -> str:
     return extra_spaces_regex.sub('', result).strip()
 
 
-# =====================
 # region Name generation
-# =====================
-def _get_volume_naming_keys(
-    volume: Union[int, VolumeData],
-    _special_version: Union[SpecialVersion, None] = None
-) -> SVNamingKeys:
-    """Generate the values of the naming keys for a volume.
+def _fill_format(
+    naming_format: str,
+    formatting_data: BaseNamingKeys
+) -> str:
+    """Fill in a naming format using the given values for the formatting keys.
+    Also makes the resulting filename safe for filesystems.
 
     Args:
-        volume (Union[int, VolumeData]): The ID of the volume to fetch the data
-        for or manually supplied volume data to work with.
-        _special_version (Union[SpecialVersion, None], optional): Override the
-        Special Version used.
-            Defaults to None.
+        naming_format (str): The format to fill in.
+        formatting_data (BaseNamingKeys): The values for the formatting keys.
 
     Returns:
-        SVNamingKeys: The values of the naming keys for a volume.
+        str: The resulting filename.
     """
-    if isinstance(volume, int):
-        volume_data = Volume(volume, check_existence=True).get_data()
-    else:
-        volume_data = volume
+    filled_format = naming_format.format_map({
+        k: v if v is not None else 'Unknown'
+        for k, v in formatting_data.__dict__.items()
+    })
+    save_filled_format = clean_filepath(filled_format)
+    return save_filled_format
 
-    if _special_version is not None:
-        volume_data.__dict__["special_version"] = _special_version
 
+def _get_base_naming_keys(volume_data: VolumeData) -> BaseNamingKeys:
+    """Generate the values of the base naming keys for any type of naming.
+
+    Args:
+        volume_data (VolumeData): The data of the volume to base the values on.
+
+    Returns:
+        BaseNamingKeys: The values of the base naming keys.
+    """
     settings = Settings().get_settings()
-    long_special_version = settings.long_special_version
     volume_padding = settings.volume_padding
+
     series_name = clean_filestring(volume_data.title)
 
     for prefix in ('The ', 'A '):
@@ -118,115 +122,226 @@ def _get_volume_naming_keys(
     else:
         clean_title = series_name
 
-    sv_mapping = SV_TO_FULL_TERM if long_special_version else SV_TO_SHORT_TERM
-
-    return SVNamingKeys(
+    return BaseNamingKeys(
         series_name=series_name,
         clean_series_name=clean_title,
         volume_number=str(volume_data.volume_number).zfill(volume_padding),
         comicvine_id=volume_data.comicvine_id,
         year=volume_data.year,
-        publisher=clean_filestring(volume_data.publisher),
+        publisher=clean_filestring(volume_data.publisher)
+    )
+
+
+def get_volume_naming_keys(volume_data: VolumeData) -> VolumeNamingKeys:
+    """Generate the values of the naming keys for a volume.
+
+    Args:
+        volume_data (VolumeData): The data of the volume to base the values on.
+
+    Returns:
+        VolumeNamingKeys: The values of the naming keys for a volume.
+    """
+    if Settings().sv.long_special_version:
+        sv_mapping = SV_TO_FULL_TERM
+    else:
+        sv_mapping = SV_TO_SHORT_TERM
+
+    return VolumeNamingKeys(
+        **_get_base_naming_keys(volume_data).__dict__,
+
         special_version=sv_mapping.get(volume_data.special_version)
     )
 
 
-def _get_issue_naming_keys(
-    volume: Union[int, VolumeData],
-    issue: Union[int, IssueData]
+def get_special_version_naming_keys(
+    volume_data: VolumeData,
+    is_volume_cover: bool = False
+) -> VolumeNamingKeys:
+    """Generate the values of the naming keys for a Special Version file, like
+    an OS, HC, etc.
+
+    Args:
+        volume_data (VolumeData): The data of the volume to base the values on.
+        is_volume_cover (bool, optional): Whether the special version key should
+            be given a value for covers.
+            Defaults to False.
+
+    Returns:
+        VolumeNamingKeys: The values of the naming keys for a Special Version file.
+    """
+    if Settings().sv.long_special_version:
+        sv_mapping = SV_TO_FULL_TERM
+    else:
+        sv_mapping = SV_TO_SHORT_TERM
+
+    if is_volume_cover:
+        special_version = SpecialVersion.COVER
+    else:
+        special_version = volume_data.special_version
+
+    result = get_volume_naming_keys(volume_data)
+    result.special_version = sv_mapping.get(special_version)
+    return result
+
+
+def get_issue_naming_keys(
+    volume_data: VolumeData,
+    issue_data: IssueData
 ) -> IssueNamingKeys:
     """Generate the values of the naming keys for an issue.
 
     Args:
-        volume (Union[int, VolumeData]): The ID of the volume to fetch the data
-        for or manually supplied volume data to work with.
-        issue (Union[int, IssueData]): The ID of the issue to fetch the data
-        for or manually supplied issue data to work with.
+        volume_data (VolumeData): The data of the volume to base the values on.
+        issue_data (IssueData): The data of the volume to base the values on.
 
     Returns:
         IssueNamingKeys: The values of the naming keys for an issue.
     """
     issue_padding = Settings().sv.issue_padding
 
-    if isinstance(issue, int):
-        issue_data = Issue(
-            issue, check_existence=True
-        ).get_data()
+    if issue_data.issue_number:
+        issue_number = str(issue_data.issue_number).zfill(issue_padding)
     else:
-        issue_data = issue
+        issue_number = None
 
     return IssueNamingKeys(
-        **_get_volume_naming_keys(volume).__dict__,
+        **_get_base_naming_keys(volume_data).__dict__,
+
         issue_comicvine_id=issue_data.comicvine_id,
-        issue_number=(
-            str(issue_data.issue_number or '').zfill(issue_padding)
-            or None
-        ),
-        issue_title=clean_filestring(issue_data.title or '') or None,
+        issue_number=issue_number,
         issue_release_date=issue_data.date,
-        issue_release_year=extract_year_from_date(issue_data.date)
+        issue_release_year=extract_year_from_date(issue_data.date),
+        issue_title=clean_filestring(issue_data.title or '') or None
     )
 
 
-def generate_volume_folder_name(
-    volume: Union[int, VolumeData]
-) -> str:
+def generate_volume_folder_name(volume_data: VolumeData) -> str:
     """Generate a volume folder name based on the format string.
 
     Args:
-        volume (Union[int, VolumeData]): The ID of the volume to generate the
-        name for or manually supplied volume data to generate a name with.
+        volume_data (VolumeData): The data of the volume to generate a name with.
 
     Returns:
         str: The volume folder name.
     """
-    formatting_data = _get_volume_naming_keys(volume)
+    formatting_data = get_volume_naming_keys(volume_data)
     format = Settings().sv.volume_folder_naming
 
-    name = format.format_map({
-        k: v if v is not None else 'Unknown'
-        for k, v in formatting_data.__dict__.items()
-    })
-    save_name = clean_filepath(name)
-    return save_name
+    name = _fill_format(format, formatting_data)
+    return name
 
 
 def generate_volume_folder_path(
     root_folder: str,
-    volume: Union[int, str]
+    volume_data: VolumeData,
+    custom_folder: Union[str, None] = None
 ) -> str:
     """Generate an absolute path to a volume folder.
 
     Args:
         root_folder (str): The root folder that the volume is in.
-        volume (Union[int, str]): Either the ID of the volume when the folder
-        name needs to be generated, or the path of the custom volume folder.
+        volume_data (VolumeData): The data of the volume to generate a name with.
+        custom_folder (Union[str, None], optional): Instead of generating a
+            volume folder, use the given custom path.
+            Defaults to None.
 
     Returns:
         str: The absolute path to the volume folder, allowing custom folders.
     """
-    if isinstance(volume, str):
-        vf = volume
+    if custom_folder:
+        vf = custom_folder
     else:
-        vf = generate_volume_folder_name(volume)
+        vf = generate_volume_folder_name(volume_data)
 
     return clean_filepath(abspath(join(root_folder, vf)))
 
 
+def _determine_format(
+    volume_data: VolumeData,
+    calculated_issue_number: Union[float, Tuple[float, float], None],
+    is_volume_cover: bool = False
+) -> Tuple[str, BaseNamingKeys]:
+    """Determine which naming format should be used and prepare the formatting
+    key values for it.
+
+    Args:
+        volume_data (VolumeData): The data of the volume the file is for.
+        calculated_issue_number (Union[float, Tuple[float, float], None]):
+            The issue (or issue range) that the file covers. Give volume number
+            here in case of VAI.
+        is_volume_cover (bool, optional): Whether the special version key should
+            be given a value for volume covers.
+            Defaults to False.
+
+    Raises:
+        IssueNotFound: No issue found with the given issue number.
+
+    Returns:
+        Tuple[str, BaseNamingKeys]: The selected naming format and the
+            formatting keys.
+    """
+    sv = Settings().sv
+
+    if is_volume_cover:
+        # Iron-Man Volume 2 Cover
+        formatting_data = get_special_version_naming_keys(
+            volume_data,
+            is_volume_cover=True
+        )
+        format = sv.file_naming_special_version
+
+    elif volume_data.special_version in (
+        SpecialVersion.TPB,
+        SpecialVersion.ONE_SHOT,
+        SpecialVersion.HARD_COVER,
+        SpecialVersion.OMNIBUS
+    ):
+        # Iron-Man Volume 2 One-Shot
+        formatting_data = get_special_version_naming_keys(volume_data)
+        format = sv.file_naming_special_version
+
+    elif calculated_issue_number is None:
+        raise IssueNotFound(-1)
+
+    elif volume_data.special_version == SpecialVersion.VOLUME_AS_ISSUE:
+        # Iron-Man Volume 1 - 3
+        issue = Issue.from_volume_and_calc_number(
+            volume_data.id, force_range(calculated_issue_number)[0]
+        )
+        formatting_data = get_issue_naming_keys(volume_data, issue.get_data())
+        format = sv.file_naming_vai
+
+    else:
+        # Iron-Man Volume 1 Issue 2 - 3
+        issue = Issue.from_volume_and_calc_number(
+            volume_data.id,
+            force_range(calculated_issue_number)[0]
+        )
+        formatting_data = get_issue_naming_keys(volume_data, issue.get_data())
+
+        if formatting_data.issue_title is None:
+            format = sv.file_naming_empty
+        else:
+            format = sv.file_naming
+
+    return format, formatting_data
+
+
 def generate_issue_name(
-    volume_id: int,
-    special_version: SpecialVersion,
-    calculated_issue_number: Union[float, Tuple[float, float], None]
+    volume_data: VolumeData,
+    calculated_issue_number: Union[float, Tuple[float, float], None],
+    is_volume_cover: bool = False
 ) -> str:
-    """Generate an issue file name based on the format string for the issue
-    type.
+    """Generate an issue filename based on the format string for the issue type.
 
     Args:
         volume_id (int): The ID of the volume that the file is for.
-        special_version (SpecialVersion): The Special Version of the volume.
         calculated_issue_number (Union[float, Tuple[float, float], None]):
-        The issue (or issue range) that the file covers. Give volume number
-        here in case of VAI.
+            The issue (or issue range) that the file covers. Give volume number
+            here in case of VAI.
+        is_volume_cover (bool, optional): Whether the name is for a volume cover
+            instead of an issue file.
+            Defaults to False.
 
     Raises:
         IssueNotFound: No issue found with the given issue number.
@@ -234,57 +349,22 @@ def generate_issue_name(
     Returns:
         str: The issue file name.
     """
-    normal_filename = False
     sv = Settings().sv
 
-    if special_version in (
-        SpecialVersion.TPB,
-        SpecialVersion.ONE_SHOT,
-        SpecialVersion.HARD_COVER,
-        SpecialVersion.OMNIBUS
-    ):
-        # Iron-Man Volume 2 One-Shot
-        formatting_data = _get_volume_naming_keys(volume_id)
-        format = sv.file_naming_special_version
-
-    elif special_version == SpecialVersion.VOLUME_AS_ISSUE:
-        # Iron-Man Volume 1 - 3
-        issue = Issue.from_volume_and_calc_number(
-            volume_id, force_range(calculated_issue_number)[0] # type: ignore
-        )
-        formatting_data = _get_issue_naming_keys(volume_id, issue.id)
-        format = sv.file_naming_vai
-
-    elif special_version != SpecialVersion.NORMAL:
-        # Iron-Man Volume 2 Cover
-        formatting_data = _get_volume_naming_keys(
-            volume_id,
-            _special_version=special_version
-        )
-        format = sv.file_naming_special_version
-
-    else:
-        # Iron-Man Volume 1 Issue 2 - 3
-        normal_filename = True
-        issue = Issue.from_volume_and_calc_number(
-            volume_id,
-            force_range(calculated_issue_number)[0] # type: ignore
-        )
-        formatting_data = _get_issue_naming_keys(volume_id, issue.id)
-
-        if formatting_data.issue_title is None:
-            format = sv.file_naming_empty
-        else:
-            format = sv.file_naming
+    naming_format, formatting_data = _determine_format(
+        volume_data, calculated_issue_number, is_volume_cover
+    )
 
     if (
         isinstance(calculated_issue_number, tuple)
         and isinstance(formatting_data, IssueNamingKeys)
     ):
+        # Update issue number value to range
         issue_number_end = Issue.from_volume_and_calc_number(
-            volume_id,
+            volume_data.id,
             calculated_issue_number[1]
         ).get_data().issue_number
+
         formatting_data.issue_number = (
             str(formatting_data.issue_number)
             .zfill(sv.issue_padding)
@@ -293,63 +373,46 @@ def generate_issue_name(
             .zfill(sv.issue_padding)
         )
 
-    name = format.format_map({
-        k: v if v is not None else 'Unknown'
-        for k, v in formatting_data.__dict__.items()
-    })
-    save_name = clean_filepath(name)
+    # Fill in variables into format
+    resulting_name = _fill_format(naming_format, formatting_data)
 
-    if (
-        normal_filename
-        and format == sv.file_naming
-    ):
-        if len(save_name) > Constants.MAX_FILENAME_LENGTH:
-            # Filename too long, so generate without issue title and see if that
-            # fixes it.
-            titleless_name = sv.file_naming_empty.format_map({
-                k: v if v is not None else 'Unknown'
-                for k, v in formatting_data.__dict__.items()
-            })
-            titleless_save_name = clean_filepath(titleless_name)
-            if len(titleless_save_name) <= Constants.MAX_FILENAME_LENGTH:
-                save_name = titleless_save_name
+    if naming_format != sv.file_naming:
+        return resulting_name
 
-        elif (
-            extract_filename_data(save_name)['issue_number']
-            != calculated_issue_number
-        ):
-            # When applying the EFD algorithm to the generated filename, we don't
-            # get back the same issue number(s) as that we originally made the
-            # filename for. This probably means that the title of the issue is
-            # messing up the algorithm. E.g. the title of issue 4 is "Book 1",
-            # then EFD might think the file is for issue 1 instead of 4. Try a name
-            # without the title and see if that fixes it. If so, use it. If not,
-            # then give up and just use the original name.
-            titleless_name = sv.file_naming_empty.format_map({
-                k: v if v is not None else 'Unknown'
-                for k, v in formatting_data.__dict__.items()
-            })
-            titleless_save_name = clean_filepath(titleless_name)
-            if (
-                extract_filename_data(titleless_save_name)['issue_number']
-                    == calculated_issue_number
-            ):
-                save_name = titleless_save_name
+    # Format is standard issue naming, so we have to do some extra checks.
 
-    return save_name
+    if len(resulting_name) > Constants.MAX_FILENAME_LENGTH:
+        # Filename too long, so generate without issue title
+        # and see if that fixes it.
+        titleless_name = _fill_format(sv.file_naming_empty, formatting_data)
+        if len(titleless_name) <= Constants.MAX_FILENAME_LENGTH:
+            resulting_name = titleless_name
+
+    elif extract_filename_data(resulting_name)['issue_number'] != calculated_issue_number:
+        # When applying the EFD algorithm to the generated filename, we don't
+        # get back the same issue number(s) as that we originally made the
+        # filename for. This probably means that the title of the issue is
+        # messing up the algorithm. E.g. the title of issue 4 is "Book 1",
+        # then EFD might think the file is for issue 1 instead of 4. Try a name
+        # without the title and see if that fixes it. If so, use it. If not,
+        # then give up and just use the original name.
+        titleless_name = _fill_format(sv.file_naming_empty, formatting_data)
+        efd_check = extract_filename_data(titleless_name)
+        if efd_check['issue_number'] == calculated_issue_number:
+            resulting_name = titleless_name
+
+    return resulting_name
 
 
-def generate_image_name(
-    filename: str
-) -> str:
-    """Generate an image file name based on what the current filename suggests
+def generate_image_name(filename: str) -> str:
+    """Generate an image filename based on what the current filename suggests
     is the cover or page covered.
 
     Args:
         filename (str): The current filename of the image file.
 
     Returns:
-        str: The image file name.
+        str: The image filename.
     """
     file_body = remove_year_in_image_regex.sub(
         '',
@@ -374,14 +437,12 @@ def generate_image_name(
     return '1'
 
 
-# =====================
 # region Checking formats
-# =====================
 NAMING_MAPPING: Dict[str, Type[BaseNamingKeys]] = {
-    'volume_folder_naming': BaseNamingKeys,
+    'volume_folder_naming': VolumeNamingKeys,
     'file_naming': IssueNamingKeys,
-    'file_naming_empty': IssueNamingKeys,
-    'file_naming_special_version': SVNamingKeys,
+    'file_naming_empty': TitlelessIssueNamingKeys,
+    'file_naming_special_version': VolumeNamingKeys,
     'file_naming_vai': IssueNamingKeys
 }
 
@@ -392,7 +453,7 @@ def check_format(format: str, type: str) -> bool:
     Args:
         format (str): The format string to check.
         type (str): What type of format string it is, specified by their
-        settings key. E.g. 'file_naming'.
+            settings key. E.g. 'file_naming'.
 
     Returns:
         bool: Whether the format is allowed.
@@ -426,183 +487,109 @@ def check_mock_filename(
     file_naming_special_version: Union[str, None],
     file_naming_vai: Union[str, None]
 ) -> None:
-    """Check if the supplied naming formats are supported by Kapowarr. This is
-    checked by creating a filename using the format, and seeing if it matches
-    to a fake volume and issue. If it does not match, then the filename must be
+    """Check if the supplied naming formats are supported. This is checked by
+    creating a filename using the format, and seeing if it matches to a mock
+    volume and issue. If it does not match, then the filename must be
     insufficient.
 
     Args:
         volume_folder_naming (Union[str, None]): The new naming format for the
-        volume folder, or `None` if the current one should be used.
+            volume folder, or `None` if the current one should be used.
 
         file_naming (Union[str, None]): The new naming format for a standard
-        file, or `None` if the current one should be used.
+            file, or `None` if the current one should be used.
 
         file_naming_empty (Union[str, None]): The new naming format for an issue
-        without title, or `None` if the current one should be used.
+            without title, or `None` if the current one should be used.
 
         file_naming_special_version (Union[str, None]): The new naming format
-        for a Special Version, or `None` if the current one should be used.
+            for a Special Version, or `None` if the current one should be used.
 
         file_naming_vai (Union[str, None]): The new naming format for a VAI,
-        or `None` if the current one should be used.
+            or `None` if the current one should be used.
 
     Raises:
         InvalidKeyValue: One of the formats is insufficient.
     """
+    mock_volume = VolumeData(
+        id=0,
+        comicvine_id=123,
+        title="Spider-Man",
+        alt_title="Spiderman",
+        year=2023,
+        publisher="Marvel",
+        volume_number=2,
+        description="",
+        site_url="",
+        monitored=True,
+        monitor_new_issues=True,
+        root_folder=1,
+        folder="",
+        custom_folder=False,
+        special_version=SpecialVersion.ONE_SHOT,
+        special_version_locked=False,
+        last_cv_fetch=0
+    )
+    mock_issue = IssueData(
+        id=0,
+        volume_id=0,
+        comicvine_id=456,
+        issue_number="1",
+        calculated_issue_number=force_range(
+            extract_issue_number("1") or 0.0
+        )[0],
+        title="One Shot",
+        date="2023-03-04",
+        description="",
+        monitored=True,
+        files=[]
+    )
+
     naming_mocks = {
         "file_naming_special_version": [
             (
-                VolumeData(
-                    id=0,
-                    comicvine_id=123,
-                    title="Spider-Man",
-                    alt_title="Spiderman",
-                    year=2023,
-                    publisher="Marvel",
-                    volume_number=2,
-                    description="",
-                    site_url="",
-                    monitored=True,
-                    monitor_new_issues=True,
-                    root_folder=1,
-                    folder="",
-                    custom_folder=False,
-                    special_version=SpecialVersion.ONE_SHOT,
-                    special_version_locked=False,
-                    last_cv_fetch=0
-                ),
-                [
-                    IssueData(
-                        id=0,
-                        volume_id=0,
-                        comicvine_id=456,
-                        issue_number="1",
-                        calculated_issue_number=force_range(
+                {"special_version": SpecialVersion.ONE_SHOT},
+                {
+                    "issue_number": "1",
+                    "calculated_issue_number": force_range(
                             extract_issue_number("1") or 0.0
-                        )[0],
-                        title="One Shot",
-                        date="2023-03-04",
-                        description="",
-                        monitored=True,
-                        files=[]
-                    )
-                ]
+                    )[0],
+                    "title": "One Shot"
+                }
             ),
             (
-                VolumeData(
-                    id=0,
-                    comicvine_id=123,
-                    title="Spider-Man",
-                    alt_title="Spiderman",
-                    year=2023,
-                    publisher="Marvel",
-                    volume_number=2,
-                    description="",
-                    site_url="",
-                    monitored=True,
-                    monitor_new_issues=True,
-                    root_folder=1,
-                    folder="",
-                    custom_folder=False,
-                    special_version=SpecialVersion.TPB,
-                    special_version_locked=False,
-                    last_cv_fetch=0
-                ),
-                [
-                    IssueData(
-                        id=0,
-                        volume_id=0,
-                        comicvine_id=456,
-                        issue_number="1",
-                        calculated_issue_number=force_range(
+                {"special_version": SpecialVersion.TPB},
+                {
+                    "issue_number": "1",
+                    "calculated_issue_number": force_range(
                             extract_issue_number("1") or 0.0
-                        )[0],
-                        title="",
-                        date="2023-03-04",
-                        description="",
-                        monitored=True,
-                        files=[]
-                    )
-                ]
+                    )[0],
+                    "title": ""
+                }
             )
         ],
         "file_naming": [
             (
-                VolumeData(
-                    id=0,
-                    comicvine_id=123,
-                    title="Spider-Man",
-                    alt_title="Spiderman",
-                    year=2023,
-                    publisher="Marvel",
-                    volume_number=2,
-                    description="",
-                    site_url="",
-                    monitored=True,
-                    monitor_new_issues=True,
-                    root_folder=1,
-                    folder="",
-                    custom_folder=False,
-                    special_version=SpecialVersion.NORMAL,
-                    special_version_locked=False,
-                    last_cv_fetch=0
-                ),
-                [
-                    IssueData(
-                        id=0,
-                        volume_id=0,
-                        comicvine_id=456,
-                        issue_number="3b",
-                        calculated_issue_number=force_range(
+                {"special_version": SpecialVersion.NORMAL},
+                {
+                    "issue_number": "3b",
+                    "calculated_issue_number": force_range(
                             extract_issue_number("3b") or 0.0
-                        )[0],
-                        title="",
-                        date="2023-03-04",
-                        description="",
-                        monitored=True,
-                        files=[]
-                    )
-                ]
+                    )[0],
+                    "title": ""
+                }
             )
         ],
         "file_naming_vai": [
             (
-                VolumeData(
-                    id=0,
-                    comicvine_id=123,
-                    title="Spider-Man",
-                    alt_title="Spiderman",
-                    year=2023,
-                    publisher="Marvel",
-                    volume_number=2,
-                    description="",
-                    site_url="",
-                    monitored=True,
-                    monitor_new_issues=True,
-                    root_folder=1,
-                    folder="",
-                    custom_folder=False,
-                    special_version=SpecialVersion.VOLUME_AS_ISSUE,
-                    special_version_locked=False,
-                    last_cv_fetch=0
-                ),
-                [
-                    IssueData(
-                        id=0,
-                        volume_id=0,
-                        comicvine_id=456,
-                        issue_number="8",
-                        calculated_issue_number=force_range(
+                {"special_version": SpecialVersion.VOLUME_AS_ISSUE},
+                {
+                    "issue_number": "8",
+                    "calculated_issue_number": force_range(
                             extract_issue_number("8") or 0.0
-                        )[0],
-                        title="",
-                        date="2023-03-04",
-                        description="",
-                        monitored=True,
-                        files=[]
-                    )
-                ]
+                    )[0],
+                    "title": ""
+                }
             )
         ]
     }
@@ -617,34 +604,38 @@ def check_mock_filename(
         'file_naming_vai': file_naming_vai or settings.file_naming_vai}
 
     for key, value in namings.items():
-        filepath = join(vf_naming, value)
-        for volume_mock, issue_mock in naming_mocks[key]:
+        for volume_entry, issue_entry in naming_mocks[key]:
+            mock_volume.__dict__.update(volume_entry)
+            mock_issue.__dict__.update(issue_entry)
+
+            volume_formatting_data = get_volume_naming_keys(mock_volume)
+
             if key == 'file_naming_special_version':
-                formatting_data = _get_volume_naming_keys(volume_mock)
+                formatting_data = get_special_version_naming_keys(mock_volume)
             else:
-                formatting_data = _get_issue_naming_keys(
-                    volume_mock, issue_mock[0]
+                formatting_data = get_issue_naming_keys(
+                    mock_volume, mock_issue
                 )
 
-            name = filepath.format_map({
-                k: v if v is not None else 'Unknown'
-                for k, v in formatting_data.__dict__.items()
-            })
-            save_name = clean_filepath(name)
+            resulting_folder = _fill_format(vf_naming, volume_formatting_data)
+            resulting_name = _fill_format(
+                join(resulting_folder, value), formatting_data
+            )
 
-            number_to_year: Dict[float, Union[int, None]] = {
-                i.calculated_issue_number: extract_year_from_date(i.date)
-                for i in issue_mock
+            number_to_year = {
+                mock_issue.calculated_issue_number: extract_year_from_date(
+                    mock_issue.date
+                )
             }
-            efd = extract_filename_data(save_name)
+            efd = extract_filename_data(resulting_name)
             if not (
                 file_importing_filter(
                     efd,
-                    volume_mock,
-                    issue_mock,
+                    mock_volume,
+                    [mock_issue],
                     number_to_year
                 )
-                and match_title(efd['series'], volume_mock.title)
+                and match_title(efd['series'], mock_volume.title)
                 and (
                     # Special version doesn't need issue matching
                     key == 'file_naming_special_version'
@@ -654,12 +645,12 @@ def check_mock_filename(
                             'file_naming', 'file_naming_empty',
                             'file_naming_vai'
                         )
-                        and efd["issue_number"] == issue_mock[0].calculated_issue_number
+                        and efd["issue_number"] == mock_issue.calculated_issue_number
                     )
                     or (
                         # VAI name has issue number labeled as volume number
                         key == 'file_naming_vai'
-                        and efd["volume_number"] == issue_mock[0].calculated_issue_number
+                        and efd["volume_number"] == mock_issue.calculated_issue_number
                     )
                 )
             ):
@@ -667,9 +658,7 @@ def check_mock_filename(
     return
 
 
-# =====================
 # region Renaming
-# =====================
 def same_name_indexing(
     volume_folder: str,
     planned_renames: Dict[str, str]
@@ -690,11 +679,11 @@ def same_name_indexing(
 
     final_names = set(list_files(volume_folder))
     for before, after in planned_renames.items():
-
         new_after = after
         index = 1
         while before != new_after and new_after in final_names:
-            new_after = splitext(after)[0] + f' ({index})' + splitext(after)[1]
+            st = splitext(after)
+            new_after = st[0] + f' ({index})' + st[1]
             index += 1
 
         final_names.add(new_after)
@@ -729,33 +718,32 @@ def preview_mass_rename(
             equal), and the new volume folder if it is not the same as the
             current folder. Otherwise, it's `None`.
     """
-    result = {}
     volume = Volume(volume_id)
     volume_data = volume.get_data()
     volume_folder = volume_data.folder
 
-    files = tuple(filtered_iter(
-        sorted(
-            f["filepath"] for f in (
-                volume.get_all_files()
-                if not issue_id else
-                volume.get_issue(issue_id).get_files()
-            )
-        ),
-        set(filepath_filter or [])
-    ))
-
     if not issue_id:
-        if not files:
-            return result, None
+        # Rename for volume
+        files = volume.get_all_files()
 
         if not volume_data.custom_folder:
             root_folder = RootFolders()[volume_data.root_folder]
             volume_folder = generate_volume_folder_path(
-                root_folder,
-                volume_id
+                root_folder, volume_data
             )
 
+    else:
+        # Rename for issue
+        files = volume.get_issue(issue_id).get_files()
+
+    if not files and volume_folder == volume_data.folder:
+        return {}, None
+
+    files = sorted(filtered_iter(
+        (f["filepath"] for f in files),
+        set(filepath_filter or [])
+    ))
+    renames = {}
     for file in files:
         if not isfile(file):
             continue
@@ -764,16 +752,16 @@ def preview_mass_rename(
 
         issues = FilesDB.issues_covered(file)
         if len(issues) > 1:
+            # Issue range
             gen_filename_body = generate_issue_name(
-                volume_id,
-                volume_data.special_version,
+                volume_data,
                 (issues[0], issues[-1]),
             )
 
         elif issues:
+            # One issue
             gen_filename_body = generate_issue_name(
-                volume_id,
-                volume_data.special_version,
+                volume_data,
                 issues[0],
             )
 
@@ -781,11 +769,11 @@ def preview_mass_rename(
                 gen_filename_body += ' ' + splitext(basename(file))[0]
 
         elif file.endswith(FileConstants.IMAGE_EXTENSIONS):
-            # Cover
+            # Volume Cover
             gen_filename_body = generate_issue_name(
-                volume_id,
-                SpecialVersion.COVER,
-                calculated_issue_number=None
+                volume_data,
+                calculated_issue_number=None,
+                is_volume_cover=True
             )
 
         else:
@@ -793,7 +781,7 @@ def preview_mass_rename(
             gen_filename_body = splitext(basename(file))[0]
 
         if issues and file.endswith(FileConstants.IMAGE_EXTENSIONS):
-            # Image file is page of issue, so put it in it's own
+            # Image file is page of issue, so put it in its own
             # folder together with the other images.
             gen_filename_body = join(
                 gen_filename_body,
@@ -805,17 +793,24 @@ def preview_mass_rename(
             gen_filename_body + splitext(file)[1].lower()
         )
 
-        result[file] = suggested_name
-        LOGGER.debug(f'Renaming: suggested filename: {suggested_name}')
+        renames[file] = suggested_name
         if file != suggested_name:
-            LOGGER.debug(f'Renaming: added rename')
+            LOGGER.debug(
+                'Renaming: added suggested filename: %s',
+                suggested_name
+            )
+        else:
+            LOGGER.debug(
+                'Renaming: suggested filename: %s',
+                suggested_name
+            )
 
-    result = same_name_indexing(volume_folder, result)
+    renames = same_name_indexing(volume_folder, renames)
 
-    if volume_folder != volume.vd.folder:
-        return result, volume_folder
+    if volume_folder != volume_data.folder:
+        return renames, volume_folder
     else:
-        return result, None
+        return renames, None
 
 
 def mass_rename(
@@ -862,6 +857,8 @@ def mass_rename(
     root_folder = RootFolders()[volume_data.root_folder]
 
     if new_volume_folder:
+        # No need to run the volume.change_volume_folder method as we do the
+        # moving to the new folder below.
         volume.update({'folder': new_volume_folder})
 
     if update_websocket:
@@ -877,13 +874,14 @@ def mass_rename(
         for before, after in renames.items():
             rename_file(before, after)
 
-    FilesDB.update_filepaths(*zip(*renames.items()))
+    FilesDB.update_filepaths(renames)
 
     if renames:
         delete_empty_child_folders(volume_data.folder, skip_hidden_folders=True)
         delete_empty_parent_folders(volume_data.folder, root_folder)
 
     LOGGER.info(
-        f'Renamed volume {volume_id} {f"issue {issue_id}" if issue_id else ""}'
+        "Renamed volume %d %s",
+        volume_id, f"issue {issue_id}" if issue_id else ""
     )
     return list(all_namings.values())
