@@ -305,6 +305,7 @@ class BaseDirectDownload(Download):
 
         start_time = perf_counter()
         tries_left = Constants.TOTAL_RETRIES
+        is_stopped = False
         with open(self.files[0], 'wb') as f:
             while tries_left > 0:
                 tries_left -= 1
@@ -321,6 +322,7 @@ class BaseDirectDownload(Download):
                                 DownloadState.CANCELED_STATE,
                                 DownloadState.SHUTDOWN_STATE
                             ):
+                                is_stopped = True
                                 break
 
                             f.write(chunk)
@@ -348,10 +350,7 @@ class BaseDirectDownload(Download):
                             # Success
                             break
 
-                        if self.state in (
-                            DownloadState.CANCELED_STATE,
-                            DownloadState.SHUTDOWN_STATE
-                        ):
+                        if is_stopped:
                             # Stopping download
                             break
 
@@ -365,7 +364,11 @@ class BaseDirectDownload(Download):
                 # Failed to download file
                 self._state = DownloadState.FAILED_STATE
 
-        if self.size != -1 and size_downloaded != self.size:
+        if (
+            not is_stopped
+            and self.size != -1
+            and size_downloaded != self.size
+        ):
             # Download completed, but downloaded size is not equal
             # to reported size of file
             self._state = DownloadState.FAILED_STATE
