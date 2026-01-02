@@ -220,6 +220,9 @@ class BaseDirectDownload(Download):
             raise LinkBroken(download_link)
 
         self._size = int(response.headers.get('Content-Length', -1))
+        self._supports_range_header = (
+            response.headers.get('Accept-Ranges') == 'bytes'
+        )
 
         self._filename_body = ''
         try:
@@ -246,8 +249,12 @@ class BaseDirectDownload(Download):
     def _convert_to_pure_link(self) -> str:
         return self.download_link
 
-    def _fetch_pure_link(self) -> Response:
-        return self._ssn.get(self.pure_link, stream=True)
+    def _fetch_pure_link(self, start_byte: Union[int, None] = None) -> Response:
+        headers = {}
+        if start_byte is not None and self._supports_range_header:
+            headers["Range"] = f"bytes={start_byte}-"
+
+        return self._ssn.get(self.pure_link, headers=headers, stream=True)
 
     def _extract_default_filename_body(
         self,
@@ -291,50 +298,72 @@ class BaseDirectDownload(Download):
     def run(self) -> None:
         self._state = DownloadState.DOWNLOADING_STATE
         size_downloaded = 0
+
         ws = WebSocket()
         status_event = QueueStatusEvent(self)
         ws.emit(status_event)
 
-        with \
-            self._fetch_pure_link() as r, \
-            open(self.files[0], 'wb') as f:
+        start_time = perf_counter()
+        tries_left = Constants.TOTAL_RETRIES
+        with open(self.files[0], 'wb') as f:
+            while tries_left > 0:
+                tries_left -= 1
+                if not self._supports_range_header:
+                    size_downloaded = 0
 
-            self.__r = r
-            start_time = perf_counter()
-            try:
-                for chunk in r.iter_content(chunk_size=DOWNLOAD_CHUNK_SIZE):
-                    if self.state in (
-                        DownloadState.CANCELED_STATE,
-                        DownloadState.SHUTDOWN_STATE
-                    ):
-                        break
+                with self._fetch_pure_link(start_byte=size_downloaded) as r:
+                    self.__r = r
+                    try:
+                        for chunk in r.iter_content(
+                            chunk_size=DOWNLOAD_CHUNK_SIZE
+                        ):
+                            if self.state in (
+                                DownloadState.CANCELED_STATE,
+                                DownloadState.SHUTDOWN_STATE
+                            ):
+                                break
 
-                    f.write(chunk)
+                            f.write(chunk)
 
-                    # Update progress
-                    chunk_size = len(chunk)
-                    size_downloaded += chunk_size
-                    self._speed = round(
-                        chunk_size / (perf_counter() - start_time),
-                        2
-                    )
-                    if self.size == -1:
-                        # No file size so progress is amount downloaded
-                        self._progress = size_downloaded
-                    else:
-                        self._progress = round(
-                            size_downloaded / self.size * 100,
-                            2
-                        )
+                            # Update progress
+                            chunk_size = len(chunk)
+                            size_downloaded += chunk_size
+                            self._speed = round(
+                                chunk_size / (perf_counter() - start_time),
+                                2
+                            )
+                            if self.size == -1:
+                                # No file size so progress is amount downloaded
+                                self._progress = size_downloaded
+                            else:
+                                self._progress = round(
+                                    size_downloaded / self.size * 100,
+                                    2
+                                )
 
-                    start_time = perf_counter()
-                    ws.emit(status_event)
+                            start_time = perf_counter()
+                            ws.emit(status_event)
 
-            except RequestException:
+                        else:
+                            # Success
+                            break
+
+                        if self.state in (
+                            DownloadState.CANCELED_STATE,
+                            DownloadState.SHUTDOWN_STATE
+                        ):
+                            # Stopping download
+                            break
+
+                    except RequestException:
+                        # Connection error, packet loss, etc. Just try again
+                        pass
+
+                    finally:
+                        self.__r = None
+            else:
+                # Failed to download file
                 self._state = DownloadState.FAILED_STATE
-
-            finally:
-                self.__r = None
 
         if self.size != -1 and size_downloaded != self.size:
             # Download completed, but downloaded size is not equal
@@ -431,7 +460,11 @@ class MediaFireFolderDownload(BaseDirectDownload):
     def _convert_to_pure_link(self) -> str:
         return self.download_link.split("/folder/")[1].split("/")[0]
 
-    def _fetch_pure_link(self) -> Response:
+    def _fetch_pure_link(self, start_byte: Union[int, None] = None) -> Response:
+        headers = {}
+        if start_byte is not None and self._supports_range_header:
+            headers["Range"] = f"bytes={start_byte}-"
+
         return self._ssn.post(
             MEDIAFIRE_FOLDER_LINK,
             files={
@@ -440,6 +473,7 @@ class MediaFireFolderDownload(BaseDirectDownload):
                 "allow_large_download": (None, "yes"),
                 "response_format": (None, "json")
             },
+            headers=headers,
             stream=True
         )
 
@@ -533,7 +567,7 @@ class PixelDrainDownload(BaseDirectDownload):
         download_id = self.download_link.rstrip("/").split("/")[-1]
         return Constants.PIXELDRAIN_API_URL + '/file/' + download_id
 
-    def _fetch_pure_link(self) -> Response:
+    def _fetch_pure_link(self, start_byte: Union[int, None] = None) -> Response:
         if self._first_fetch:
             cred = Credentials()
             for pd_cred in cred.get_from_source(CredentialSource.PIXELDRAIN):
@@ -552,6 +586,10 @@ class PixelDrainDownload(BaseDirectDownload):
             self._first_fetch = False
 
         headers = {}
+
+        if start_byte is not None and self._supports_range_header:
+            headers["Range"] = f"bytes={start_byte}-"
+
         if self._api_key:
             headers["Authorization"] = "Basic " + b64encode(
                 f":{self._api_key}".encode()
