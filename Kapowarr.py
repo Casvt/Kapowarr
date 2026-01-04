@@ -24,6 +24,7 @@ from backend.internals.settings import Settings
 def _main(
     start_type: StartType,
     db_folder: Union[str, None] = None,
+    td_folder: Union[str, None] = None,
     log_folder: Union[str, None] = None,
     log_file: Union[str, None] = None,
     host: Union[str, None] = None,
@@ -38,6 +39,10 @@ def _main(
         db_folder (Union[str, None], optional): The folder in which the database
         will be stored or in which a database is for Kapowarr to use.
             Defaults to None.
+
+        td_folder (Union[str, None], optional): The folder that direct downloads 
+        temporarily get downloaded to before being moved to the correct location.
+            Defaults to None.              
 
         log_folder (Union[str, None], optional): The folder in which the logs
         from Kapowarr will be stored.
@@ -97,6 +102,12 @@ def _main(
                 s.update({"url_base": url_base})
             except InvalidKeyValue:
                 raise ValueError("Invalid url base value")
+
+        if td_folder is not None:
+            try:
+                s.update({"download_folder": td_folder})
+            except InvalidKeyValue:
+                raise ValueError("Invalid temp downloads folder value")
 
         settings = s.get_settings()
 
@@ -218,6 +229,11 @@ if __name__ == "__main__":
             help="The folder in which the database will be stored or in which a database is for Kapowarr to use"
         )
         fs.add_argument(
+            '-t', '--TempDownloadFolder',
+            type=str,
+            help="The folder that direct downloads temporarily get downloaded to before being moved to the correct location"
+        )          
+        fs.add_argument(
             '-l', '--LogFolder',
             type=str,
             help="The folder in which the logs from Kapowarr will be stored"
@@ -253,6 +269,7 @@ if __name__ == "__main__":
         )))
 
         db_folder: Union[str, None] = args.DatabaseFolder
+        td_folder: Union[str, None] = args.TempDownloadFolder
         log_folder: Union[str, None] = args.LogFolder
         log_file: Union[str, None] = args.LogFile
         host: Union[str, None] = None
@@ -267,6 +284,7 @@ if __name__ == "__main__":
             _main(
                 start_type=st,
                 db_folder=db_folder,
+                td_folder=td_folder,
                 log_folder=log_folder,
                 log_file=log_file,
                 host=host,
