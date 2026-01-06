@@ -100,9 +100,14 @@ def propose_library_import(
     }
 
     if folder_filter:
-        scan_folders = set(glob(folder_filter, recursive=True))
+        scan_folders = set((
+            f
+            for f in glob(folder_filter, recursive=True)
+            if not isfile(f) # Glob pattern could match to a file
+        ))
         for f in scan_folders:
             if not any(folder_is_inside_folder(r, f) for r in root_folders):
+                # Folder is not inside a root folder
                 raise InvalidKeyValue('folder_filter', folder_filter)
     else:
         scan_folders = root_folders.copy()
