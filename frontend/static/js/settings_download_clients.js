@@ -122,12 +122,21 @@ function saveEditTorrent() {
 				closeWindow();
 			})
 			.catch(e => {
-				if (e.status === 400) {
-					// Client is downloading
+				e.json().then(json => {
 					const error = document.querySelector('#edit-error');
-					error.innerText = '*Client is downloading';
-					hide([], [error]);
-				};
+					if (json.error === "ExternalClientDownloading") {
+						// Client is downloading
+						error.innerText = '*Client is downloading';
+						hide([], [error]);
+
+					} else if (
+						json.error === "InvalidKeyValue"
+						&& json.result.key === "password"
+					) {
+						error.innerText = "*Username given but no password";
+						hide([], [error]);
+					};
+				});
 			});
 		});
 	});
@@ -246,6 +255,18 @@ function saveAddTorrent() {
 			.then(response => {
 				loadTorrentClients(api_key);
 				closeWindow();
+			})
+			.catch(e => {
+				e.json().then(json => {
+					if (
+						json.error === "InvalidKeyValue"
+						&& json.result.key === "password"
+					) {
+						const error = document.querySelector('#add-error');
+						error.innerText = "*Username given but no password";
+						hide([], [error]);
+					};
+				});
 			});
 		});
 	});
