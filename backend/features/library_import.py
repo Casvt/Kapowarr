@@ -6,7 +6,9 @@ from itertools import chain
 from os.path import abspath, basename, dirname, isfile, join, splitext
 from typing import Any, Dict, List, Union
 
-from backend.base.custom_exceptions import InvalidKeyValue, VolumeAlreadyAdded
+from backend.base.custom_exceptions import (CVRateLimitReached,
+                                            InvalidKeyValue,
+                                            VolumeAlreadyAdded)
 from backend.base.definitions import (CVFileMapping, FileConstants,
                                       FilenameData, MonitorScheme,
                                       SpecialVersion)
@@ -257,6 +259,10 @@ def import_library(
             # and rename if that was chosen.
             volume_already_added = True
             volume_id = e.volume_id
+
+        except CVRateLimitReached:
+            # Hit rate limit so can't add any volumes anymore
+            break
 
         if rename_files or volume_already_added:
             # Move files not already in the volume folder into the volume folder
