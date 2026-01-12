@@ -3,8 +3,8 @@
 from asyncio import run
 from glob import glob
 from itertools import chain
-from os.path import abspath, basename, dirname, isfile, splitext
-from typing import Dict, List, Union
+from os.path import abspath, basename, dirname, isfile, join, splitext
+from typing import Any, Dict, List, Union
 
 from backend.base.custom_exceptions import InvalidKeyValue, VolumeAlreadyAdded
 from backend.base.definitions import (CVFileMapping, FileConstants,
@@ -65,20 +65,20 @@ def propose_library_import(
     limit: int = 20,
     limit_parent_folder: bool = False,
     only_english: bool = True
-) -> List[dict]:
-    """Get list of unimported files
-    and their suggestion for a matching volume on CV.
+) -> List[Dict[str, Any]]:
+    """Get list of unimported files and their suggestion for a matching volume
+    on CV.
 
     Args:
         folder_filter (Union[str, None], optional): Only scan the folders that
-        match the given value. Can either be a folder or a glob pattern.
+            match the given value. Can either be a folder or a glob pattern.
             Defaults to None.
 
         limit (int, optional): The max amount of folders to scan.
             Defaults to 20.
 
-        limit_parent_folder (bool, optional): Base the folder limit on
-        parent folder, not folder. Useful if each issue has their own sub-folder.
+        limit_parent_folder (bool, optional): Base the folder limit on parent
+            folder, not folder. Useful if each issue has their own sub-folder.
             Defaults to False.
 
         only_english (bool, optional): Only match with english releases.
@@ -86,10 +86,10 @@ def propose_library_import(
 
     Raises:
         InvalidKeyValue: The file filter matches to folders outside
-        the root folders.
+            the root folders.
 
     Returns:
-        List[dict]: The list of files and their matches.
+        List[Dict[str, Any]]: The list of files and their matches.
     """
     LOGGER.info('Loading library import')
 
@@ -226,6 +226,7 @@ def import_library(
             continue
 
         lcf = common_folder(files)
+        volume_already_added = False
 
         try:
             volume_id = Library.add(
@@ -238,17 +239,42 @@ def import_library(
             )
             commit()
 
-        except VolumeAlreadyAdded:
-            # The volume is already added but the file is not matched to it
-            # (it isn't because otherwise it wouldn't pop up in LI).
-            # That would mean that the file is actually not
-            # for that volume so skip.
-            continue
+        except VolumeAlreadyAdded as e:
+            # The volume that the files are for is already in the library, while
+            # the files aren't matched to it. This has two reasons:
+            # 1. The files are for an existing volume but in a common folder.
+            #    Like some users that download files externally and put them all
+            #    in a to-be-imported folder. Their idea is that they use LI to
+            #    move and rename the files to the proper volume folder because
+            #    they don't want to move it themselves, even though the volume
+            #    is already in their library.
+            # 2. The files matched to the wrong volume, and the wrong volume
+            #    happens to already be in the library.
+            # The propability of bullet 1 happening is quite low, so moving the
+            # files into the volume folder is worth more to users of bullet 1
+            # than it is a bad thing for the users that experience bullet 2. So
+            # solution is to move the file to the volume folder of the match,
+            # and rename if that was chosen.
+            volume_already_added = True
+            volume_id = e.volume_id
 
-        if rename_files:
-            # Put files in volume folder
+        if rename_files or volume_already_added:
+            # Move files not already in the volume folder into the volume folder
             vf = Library.get_volume(volume_id).vd.folder
-            file_changes = change_basefolder(files, lcf, vf)
+
+            if volume_already_added or folder_is_inside_folder(vf, lcf):
+                file_changes = {
+                    f: (
+                        join(vf, basename(f))
+                        if not folder_is_inside_folder(vf, f) else
+                        f
+                    )
+                    for f in files
+                }
+
+            else:
+                file_changes = change_basefolder(files, lcf, vf)
+
             for old, new in file_changes.items():
                 if old != new:
                     rename_file(old, new)
@@ -256,11 +282,12 @@ def import_library(
                         dirname(old), root_folder.folder
                     )
 
-            new_files = list(file_changes.values())
-            scan_files(volume_id)
-            mass_rename(volume_id, filepath_filter=new_files)
+            files = list(file_changes.values())
 
-        else:
-            scan_files(volume_id, filepath_filter=files)
+        scan_files(volume_id, filepath_filter=files)
+
+        if rename_files:
+            # Rename the filenames themselves
+            mass_rename(volume_id, filepath_filter=files)
 
     return

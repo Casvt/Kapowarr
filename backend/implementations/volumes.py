@@ -1051,19 +1051,19 @@ class Library:
         return Issue(issue_id, check_existence=True)
 
     @classmethod
-    def _volume_added(cls, comicvine_id: int) -> bool:
-        """Check whether a volume is in the library.
+    def _cv_to_id(cls, comicvine_id: int) -> Union[int, None]:
+        """Find the volume ID based on the CV ID.
 
         Args:
             comicvine_id (int): The CV ID of the volume to check for.
 
         Returns:
-            bool: Whether a volume with the given CV ID is in the library.
+            bool: The volume ID with the given CV ID, or `None` if not found.
         """
         return get_db().execute(
-            "SELECT 1 FROM volumes WHERE comicvine_id = ? LIMIT 1;",
+            "SELECT id FROM volumes WHERE comicvine_id = ? LIMIT 1;",
             (comicvine_id,)
-        ).exists() is not None
+        ).exists()
 
     @classmethod
     def add(
@@ -1131,8 +1131,9 @@ class Library:
             special_version
         )
 
-        if cls._volume_added(comicvine_id):
-            raise VolumeAlreadyAdded(comicvine_id)
+        potential_volume_id = cls._cv_to_id(comicvine_id)
+        if potential_volume_id:
+            raise VolumeAlreadyAdded(comicvine_id, potential_volume_id)
 
         # Raises RootFolderNotFound when ID is invalid
         root_folder = RootFolders().get_one(root_folder_id)
