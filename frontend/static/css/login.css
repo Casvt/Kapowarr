@@ -32,7 +32,7 @@ body {
 	gap: 1rem;
 }
 
-#password-input {
+input {
 	margin-bottom: .3rem;
 
 	padding: .6rem;
@@ -46,17 +46,17 @@ body {
 	transition: border .3s ease-in;
 }
 
-#password-input:focus {
+input:focus {
 	border: 1px solid var(--accent-color);
 }
 
-#password-input::placeholder {
+input::placeholder {
 	font-size: .6rem;
 	text-align: right;
 	transition: color .3s ease-out;
 }
 
-#password-input:focus::placeholder {
+input:focus::placeholder {
 	color: transparent;
 }
 

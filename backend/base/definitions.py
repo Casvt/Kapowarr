@@ -59,8 +59,11 @@ class Constants:
     LOGGER_FILENAME = "Kapowarr.log"
     "Filename that the logs are put in"
 
-    PASSWORD_REPLACEMENT: str = "********"
-    "What passwords are replaced with when shared as a string"
+    CREDENTIAL_REPLACEMENT: str = "********"
+    """
+    What sensitive data like usernames and passwords are replaced with when
+    shared as a string
+    """
 
     MAX_FILENAME_LENGTH = 255
     "The maximum amount of characters that a filename is allowed to be"
@@ -760,7 +763,7 @@ class CredentialData:
 
         result['source'] = self.source.value
         if result['password'] is not None:
-            result['password'] = Constants.PASSWORD_REPLACEMENT
+            result['password'] = Constants.CREDENTIAL_REPLACEMENT
 
         return result
 

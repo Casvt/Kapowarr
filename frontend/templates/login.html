@@ -23,10 +23,13 @@
 	<noscript>
 		WARNING: This web-UI does not work without JavaScript.
 	</noscript>
-	<form id="login-form">
+	<form id="login-form" class="hidden">
+		<p id="error-message" class="error hidden">*Credentials invalid</p>
 		<div class="input-container">
-			<input type="password" id="password-input" autocomplete="current-password" placeholder="Password" autofocus>
-			<p id="error-message" class="error hidden">*Password invalid</p>
+			<input type="text" id="username-input" autocomplete="username" placeholder="Username" autofocus required>
+		</div>
+		<div class="input-container">
+			<input type="password" id="password-input" autocomplete="current-password" placeholder="Password" required>
 		</div>
 		<button>Login</button>
 	</form>

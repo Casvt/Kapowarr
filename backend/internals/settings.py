@@ -18,7 +18,7 @@ from backend.base.files import (are_folders_colliding, folder_path,
 from backend.base.helpers import (CommaList, Singleton,
                                   can_run_64bit_executable, force_suffix,
                                   get_os_type, get_python_version,
-                                  get_version_from_pyproject, hash_password,
+                                  get_version_from_pyproject, hash_credential,
                                   normalise_base_url)
 from backend.base.logging import LOGGER, set_log_level
 from backend.internals.db import DBConnection, commit, get_db
@@ -58,6 +58,7 @@ def get_about_data() -> Dict[str, Any]:
 class PublicSettingsValues:
     """All settings that are exposed to the user"""
     log_level: int = INFO
+    auth_username: str = ''
     auth_password: str = ''
 
     comicvine_api_key: str = ''
@@ -119,8 +120,8 @@ class PublicSettingsValues:
             return result
 
         for k, v in result.items():
-            if k == "auth_password" and v:
-                result[k] = Constants.PASSWORD_REPLACEMENT
+            if k in ("auth_username", "auth_password") and v:
+                result[k] = Constants.CREDENTIAL_REPLACEMENT
 
             if isinstance(v, BaseEnum):
                 result[k] = v.value
@@ -397,12 +398,22 @@ class Settings(metaclass=Singleton):
         # Do key-specific checks and formatting
         converted_value = value
 
-        if key == 'auth_password':
-            if value == Constants.PASSWORD_REPLACEMENT:
+        if key == 'auth_username':
+            if value == Constants.CREDENTIAL_REPLACEMENT:
+                converted_value = self.sv.auth_username
+
+            elif value:
+                converted_value = hash_credential(
+                    self.sv.auth_salt,
+                    value
+                )
+
+        elif key == 'auth_password':
+            if value == Constants.CREDENTIAL_REPLACEMENT:
                 converted_value = self.sv.auth_password
 
             elif value:
-                converted_value = hash_password(
+                converted_value = hash_credential(
                     self.sv.auth_salt,
                     value
                 )

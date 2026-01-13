@@ -168,6 +168,18 @@
 }
 
 /*  */
+/* Authentication Selection */
+/*  */
+#settings-form:has(#auth-toggle > option:checked[value="password"]) #username-input-row {
+	display: none;
+}
+
+#settings-form:has(#auth-toggle > option:checked[value=""]) :where(#username-input-row, #password-input-row) {
+	display: none;
+}
+
+
+/*  */
 /* Api key bar */
 /*  */
 #api-container {

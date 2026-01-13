@@ -4,11 +4,18 @@ function fillSettings(api_key) {
 		document.querySelector('#bind-address-input').value = json.result.host;
 		document.querySelector('#port-input').value = json.result.port;
 		document.querySelector('#url-base-input').value = json.result.url_base;
+		document.querySelector('#username-input').value = json.result.auth_username;
 		document.querySelector('#password-input').value = json.result.auth_password;
 		document.querySelector('#api-input').value = api_key;
 		document.querySelector('#cv-input').value = json.result.comicvine_api_key;
 		document.querySelector('#flaresolverr-input').value = json.result.flaresolverr_base_url;
 		document.querySelector('#log-level-input').value = json.result.log_level;
+		
+		if (json.result.auth_username && json.result.auth_password) {
+			document.querySelector('#auth-toggle').value = 'username-password';
+		} else if (json.result.auth_password) {
+			document.querySelector('#auth-toggle').value = 'password';
+		};
 	});
 	document.querySelector('#theme-input').value = getLocalStorage('theme')['theme'];
 };
@@ -21,11 +28,20 @@ function saveSettings(api_key) {
 		'host': document.querySelector('#bind-address-input').value,
 		'port': parseInt(document.querySelector('#port-input').value),
 		'url_base': document.querySelector('#url-base-input').value,
-		'auth_password': document.querySelector('#password-input').value,
+		'auth_username': '',
+		'auth_password': '',
 		'comicvine_api_key': document.querySelector('#cv-input').value,
 		'flaresolverr_base_url': document.querySelector('#flaresolverr-input').value,
 		'log_level': parseInt(document.querySelector('#log-level-input').value)
 	};
+	
+	const auth_toggle = document.querySelector('#auth-toggle');
+	if (auth_toggle.value === 'username-password')
+		data.auth_username = document.querySelector('#username-input').value;
+
+	if (auth_toggle.value === 'username-password' || auth_toggle.value === 'password')
+		data.auth_password = document.querySelector('#password-input').value;
+
 	sendAPI('PUT', '/settings', api_key, {}, data)
 	.then(response => response.json())
 	.then(json => {

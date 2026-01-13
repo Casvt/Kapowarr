@@ -45,10 +45,27 @@
 			<h2>Security</h2>
 			<table class="fold-table">
 				<tr>
-					<th><label for="password-input">Login Password</label></th>
+					<th><label for="auth-toggle">Authentication</label></th>
+					<td>
+						<select id="auth-toggle">
+							<option value="">None</option>
+							<option value="password">Password</option>
+							<option value="username-password">Username And Password</option>
+						</select>
+					</td>
+				</tr>
+				<tr id="username-input-row">
+					<th><label for="username-input">Username</label></th>
+					<td>
+						<input id="username-input" required spellcheck="false" autocomplete="username">
+						<p>The username that is required to be entered to get access to web-UI and API.</p>
+					</td>
+				</tr>
+				<tr id="password-input-row">
+					<th><label for="password-input">Password</label></th>
 					<td>
 						<input type="password" id="password-input" required spellcheck="false" autocomplete="new-password">
-						<p>When set, a password is required to be entered to get access to web-UI and API.</p>
+						<p>The password that is required to be entered to get access to web-UI and API.</p>
 					</td>
 				</tr>
 				<tr>

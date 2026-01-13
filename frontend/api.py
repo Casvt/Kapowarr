@@ -15,7 +15,7 @@ from backend.base.definitions import (BlocklistReason, BlocklistReasonID,
                                       LibraryFilter, LibrarySorting,
                                       MonitorScheme, SpecialVersion,
                                       StartType, VolumeData)
-from backend.base.helpers import hash_password
+from backend.base.helpers import hash_credential
 from backend.base.logging import LOGGER, get_log_file_contents
 from backend.features.download_queue import (DownloadHandler,
                                              delete_download_history,
@@ -224,16 +224,23 @@ def api_auth():
     ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
 
     if settings.auth_password:
-        given_password = request.get_json().get('password') or None
-        if given_password is None:
-            LOGGER.warning(f'Login attempt failed from {ip}')
-            return return_api({}, 'PasswordInvalid', 401)
+        username_correct = True
+        if settings.auth_username:
+            given_username = request.get_json().get('username') or ''
+            hashed_username = hash_credential(
+                settings.auth_salt,
+                given_username
+            )
+            username_correct = hashed_username == settings.auth_username
 
-        hashed_attempt = hash_password(
+        given_password = request.get_json().get('password') or ''
+        hashed_password = hash_credential(
             settings.auth_salt,
             given_password
         )
-        if hashed_attempt != settings.auth_password:
+        password_correct = hashed_password == settings.auth_password
+
+        if not (username_correct and password_correct):
             LOGGER.warning(f'Login attempt failed from {ip}')
             return return_api({}, 'PasswordInvalid', 401)
 
@@ -246,6 +253,25 @@ def api_auth():
 @auth
 def api_auth_check():
     return return_api({})
+
+
+@api.route('/public', methods=['GET'])
+@error_handler
+def api_public():
+    settings = Settings().get_settings()
+
+    if settings.auth_username and settings.auth_password:
+        authentication_method = 2
+    elif settings.auth_password:
+        authentication_method = 1
+    else:
+        authentication_method = 0
+
+    result = {
+        'authentication_method': authentication_method
+    }
+
+    return return_api(result)
 
 
 # =====================

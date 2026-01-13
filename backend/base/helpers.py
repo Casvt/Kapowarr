@@ -324,18 +324,18 @@ def filtered_iter(
         return
 
 
-def hash_password(salt: bytes, password: str) -> str:
-    """Hash a password.
+def hash_credential(salt: bytes, credential: str) -> str:
+    """Hash a credential, like a password or username.
 
     Args:
         salt (bytes): The salt to use with the hash.
-        password (str): The password the hash.
+        credential (str): The data to hash.
 
     Returns:
         str: The resulting hash.
     """
     return urlsafe_b64encode(
-        pbkdf2_hmac("sha256", password.encode(), salt, 100_000)
+        pbkdf2_hmac("sha256", credential.encode(), salt, 100_000)
     ).decode()
 
 
