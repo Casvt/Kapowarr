@@ -12,10 +12,10 @@ from collections import deque
 from functools import lru_cache
 from hashlib import pbkdf2_hmac
 from multiprocessing.pool import Pool
-from os import cpu_count, sep, symlink
+from os import cpu_count, environ, sep
 from os.path import basename, dirname, exists, isfile, join
 from subprocess import run
-from sys import base_exec_prefix, executable, platform, version_info
+from sys import base_exec_prefix, executable, maxsize, platform, version_info
 from threading import current_thread
 from typing import (TYPE_CHECKING, Any, Callable, Collection, Dict, Iterable,
                     Iterator, List, Mapping, Sequence, Tuple, Union)
@@ -30,7 +30,7 @@ from requests.structures import CaseInsensitiveDict
 from urllib3 import __version__ as urllib3_version
 from yarl import URL
 
-from backend.base.definitions import Constants, T, U
+from backend.base.definitions import RAR_EXECUTABLES, Constants, OSType, T, U
 from backend.base.logging import LOGGER, get_log_filepath
 
 if TYPE_CHECKING:
@@ -42,6 +42,43 @@ if TYPE_CHECKING:
 
 
 # region System
+@lru_cache(1)
+def get_os_type() -> OSType:
+    """Determine what the OS of the system is.
+
+    Returns:
+        OSType: The determined OS.
+    """
+    if platform.startswith("linux"):
+        return OSType.LINUX
+
+    elif platform.startswith("win"):
+        return OSType.WINDOWS
+
+    elif platform == "darwin":
+        return OSType.MACOS
+
+    return OSType.OTHER
+
+
+def can_run_64bit_executable() -> bool:
+    """Determine whether an external 64bit executable can be run.
+
+    Returns:
+        bool: Whether a 64bit executable can be run.
+    """
+    # Python must be 64-bit
+    if maxsize <= 2**32:
+        return False
+
+    # Windows-specific OS check
+    if get_os_type() == OSType.WINDOWS:
+        return "PROGRAMFILES(X86)" in environ
+
+    # Linux + macOS + Other
+    return True
+
+
 def current_thread_id() -> int:
     """Get the ID of the current thread.
 
@@ -116,7 +153,7 @@ def get_python_exe() -> Union[str, None]:
     """
     filepath = executable or None
 
-    if platform.startswith('darwin') and not isfile(filepath or ''):
+    if get_os_type() == OSType.MACOS and not isfile(filepath or ''):
         bundle_path = join(
             base_exec_prefix,
             "Resources",
@@ -126,6 +163,7 @@ def get_python_exe() -> Union[str, None]:
             "Python"
         )
         if exists(bundle_path):
+            from os import symlink
             from tempfile import mkdtemp
             filepath = join(mkdtemp(), "python")
             symlink(bundle_path, filepath)
@@ -170,7 +208,7 @@ def run_rar(args: List[str]) -> CompletedProcess[str]:
     """
     from backend.base.files import folder_path
 
-    exe = folder_path('backend', 'lib', Constants.RAR_EXECUTABLES[platform])
+    exe = folder_path('backend', 'lib', RAR_EXECUTABLES[get_os_type()])
     return run([exe, *args], capture_output=True, text=True)
 
 

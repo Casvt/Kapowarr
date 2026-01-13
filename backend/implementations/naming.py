@@ -9,13 +9,12 @@ from __future__ import annotations
 from os.path import abspath, basename, isdir, isfile, join, splitext
 from re import compile
 from string import Formatter
-from sys import platform
 from typing import Dict, List, Tuple, Type, Union
 
 from backend.base.custom_exceptions import InvalidKeyValue, IssueNotFound
 from backend.base.definitions import (SV_TO_FULL_TERM, SV_TO_SHORT_TERM,
                                       BaseNamingKeys, Constants, FileConstants,
-                                      IssueData, IssueNamingKeys,
+                                      IssueData, IssueNamingKeys, OSType,
                                       SpecialVersion, TitlelessIssueNamingKeys,
                                       VolumeData, VolumeNamingKeys)
 from backend.base.file_extraction import (cover_regex, extract_filename_data,
@@ -35,7 +34,7 @@ from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Issue, Volume
 from backend.internals.db_models import FilesDB
 from backend.internals.server import TaskStatusEvent, WebSocket
-from backend.internals.settings import Settings
+from backend.internals.settings import Settings, System
 
 remove_year_in_image_regex = compile(r'(?:19|20)\d{2}')
 extra_spaces_regex = compile(r'(?<=\s)(\s+)')
@@ -458,7 +457,7 @@ def check_format(format: str, type: str) -> bool:
     Returns:
         bool: Whether the format is allowed.
     """
-    if platform.startswith('win32'):
+    if System.os_type == OSType.WINDOWS:
         disallowed_sep = '/'
     else:
         disallowed_sep = '\\'

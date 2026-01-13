@@ -15,13 +15,22 @@ from backend.base.definitions import (BaseEnum, Constants, DateType,
                                       GCDownloadSource, SeedingHandling)
 from backend.base.files import (are_folders_colliding, folder_path,
                                 uppercase_drive_letter)
-from backend.base.helpers import (CommaList, Singleton, force_suffix,
-                                  get_python_version,
+from backend.base.helpers import (CommaList, Singleton,
+                                  can_run_64bit_executable, force_suffix,
+                                  get_os_type, get_python_version,
                                   get_version_from_pyproject, hash_password,
                                   normalise_base_url)
 from backend.base.logging import LOGGER, set_log_level
 from backend.internals.db import DBConnection, commit, get_db
 from backend.internals.db_migration import DatabaseMigrationHandler
+
+
+class System:
+    os_type = get_os_type()
+    "What the OS of the system is"
+
+    runs_64bit = can_run_64bit_executable()
+    "Whether an external 64bit executable can be run"
 
 
 @lru_cache(1)
@@ -39,7 +48,9 @@ def get_about_data() -> Dict[str, Any]:
         "python_version": get_python_version(),
         "database_version": DatabaseMigrationHandler.latest_db_version(),
         "database_location": DBConnection.file,
-        "data_folder": folder_path()
+        "data_folder": folder_path(),
+        "os": System.os_type.value,
+        "runs_64bit": System.runs_64bit
     }
 
 

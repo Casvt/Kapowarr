@@ -4,6 +4,8 @@ const StatEls = {
 	database_version: document.querySelector('#database-version'),
 	database_location: document.querySelector('#database-location'),
 	data_folder: document.querySelector('#data-folder'),
+	os: document.querySelector('#os'),
+	runs_64bit: document.querySelector('#runs-64bit'),
 	buttons: {
 		copy: document.querySelector('#copy-about'),
 		restart: document.querySelector('#restart-button'),
@@ -19,6 +21,8 @@ const about_table = `
 | Database version | {d_version} |
 | Database location | {d_loc} |
 | Data folder | {folder} |
+| OS | {os} |
+| Can run 64bit | {runs_64bit} |
 
 `;
 
@@ -33,6 +37,8 @@ usingApiKey()
 		StatEls.database_version.innerText = json.result.database_version;
 		StatEls.database_location.innerText = json.result.database_location;
 		StatEls.data_folder.innerText = json.result.data_folder;
+		StatEls.os.innerText = json.result.os;
+		StatEls.runs_64bit.innerText = json.result.runs_64bit ? 'Yes' : 'No';
 		
 		StatEls.buttons.copy.onclick = e => {
 			copy(about_table
@@ -41,6 +47,8 @@ usingApiKey()
 				.replace('{d_version}', json.result.database_version)
 				.replace('{d_loc}', json.result.database_location)
 				.replace('{folder}', json.result.data_folder)
+				.replace('{os}', json.result.os)
+				.replace('{runs_64bit}', json.result.runs_64bit)
 			);
 		};
 	});
