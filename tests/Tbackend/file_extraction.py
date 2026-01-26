@@ -202,7 +202,10 @@ class extract_filename_data(unittest.TestCase):
                 {'series': 'Avengers Annuals', 'year': 1996, 'volume_number': 3, 'special_version': None, 'issue_number': 6.0, 'annual': True},
 
             'Avengers + Annuals (1996) v3/c #6-7 ½ + annual.cbr':
-                {'series': 'Avengers Annuals', 'year': 1996, 'volume_number': 3, 'special_version': None, 'issue_number': (6.0, 7.5), 'annual': False}
+                {'series': 'Avengers Annuals', 'year': 1996, 'volume_number': 3, 'special_version': None, 'issue_number': (6.0, 7.5), 'annual': False},
+
+            'Batman Vol. 2 #0 - 48 + Annual #1 - 4':
+                {'series': 'Batman', 'year': None, 'volume_number': 2, 'special_version': None, 'issue_number': (0.0, 48.0), 'annual': False}
         }
         self.run_cases(cases)
 

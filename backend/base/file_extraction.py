@@ -44,14 +44,15 @@ volume_regex = compile(volume_regex_snippet, IGNORECASE)
 volume_folder_regex = compile(volume_regex_snippet + r'|^(\d+)$', IGNORECASE)
 issue_regex = compile(r'\(_(\-?' + issue_regex_snippet + r')\)', IGNORECASE)
 issue_regex_2 = compile(r'(?:(?<!\()(?:(?<![a-z])c(?!2c)|\bissues?|\bbooks?)(?!\))|\bno)(?:\.?[\s\-_]?|\s\-\s)(?:#\s*)?(\-?' + issue_regex_snippet + r'(?:(?:\-|\s\-\s|\.\-\.)\-?' + issue_regex_snippet + r')?)\b', IGNORECASE)
-issue_regex_3 = compile(r'(?<!part[\s\._])(' + issue_regex_snippet + r')[\s\-\._]?\(?[\s\-\._]?of[\s\-\._]?' + issue_regex_snippet + r'(?![\s\-\._]covers)\)?(?=\s|\.|_|(?=\()|$)', IGNORECASE)
-issue_regex_4 = compile(r'(?<!--)(?<!annual\s)(?<!pages\s)(?:#\s*)?(\-?' + issue_regex_snippet + r'(?:\-|\s\-\s|\.\-\.)' + issue_regex_snippet + r')(?=\s|\.|_|(?=\()|$)', IGNORECASE)
-issue_regex_5 = compile(r'(?<!page\s)#\s*(\-?' + issue_regex_snippet + r')\b(?!(?:\-|\s\-\s|\.\-\.)' + issue_regex_snippet + r')', IGNORECASE)
+issue_regex_3 = compile(r'(?:annuals?[\s\._])?(?<!part[\s\._])(' + issue_regex_snippet + r')[\s\-\._]?\(?[\s\-\._]?of[\s\-\._]?' + issue_regex_snippet + r'(?![\s\-\._]covers)\)?(?=\s|\.|_|(?=\()|$)', IGNORECASE)
+issue_regex_4 = compile(r'(?<!--)(?:annuals?[\s\._])?(?<!pages\s)(?:#\s*)?(\-?' + issue_regex_snippet + r'(?:\-|\s\-\s|\.\-\.)' + issue_regex_snippet + r')(?=\s|\.|_|(?=\()|$)', IGNORECASE)
+issue_regex_5 = compile(r'(?<!page\s)(?:annuals?[\s\._])?#\s*(\-?' + issue_regex_snippet + r')\b(?!(?:\-|\s\-\s|\.\-\.)' + issue_regex_snippet + r')', IGNORECASE)
 issue_regex_6 = compile(r'(?:(?P<i_start>^)|(?<=(?<!part)(?<!page)[\s\._])(?P<n_c>n))(\-?' + issue_regex_snippet + r')(?=(?(n_c)c\d+|\s\-)(?=\s|\.|_|(?=\()|$))', IGNORECASE)
-issue_regex_7 = compile(r'(?:part[\s\._]|(?<=[\s\._])|^)(\-?' + issue_regex_snippet + r')(?![\s\-\._]covers?)(?![\s\-\._]of[\s\-\._]\d+[\s\-\._]covers?)(?=\s|\.|_|\(|$)', IGNORECASE)
+issue_regex_7 = compile(r'(?:part[\s\._]|annuals?[\s\._]|(?<=[\s\._])|^)(\-?' + issue_regex_snippet + r')(?![\s\-\._]covers?)(?![\s\-\._]of[\s\-\._]\d+[\s\-\._]covers?)(?=\s|\.|_|\(|$)', IGNORECASE)
 year_regex = compile(r'\((?:[a-z]+\.?\s)?' + year_regex_snippet + r'\)|--' + year_regex_snippet + r'--|__' + year_regex_snippet + r'__|, ' + year_regex_snippet + r'\s{3}|\b(?:(?:\d{2}-){1,2}(\d{4})|(\d{4})(?:-\d{2}){1,2})\b', IGNORECASE)
 series_regex = compile(r'(^(\d+\.)?\s+|^\d+\s{3}|\s(?=\s)|[\s,]+$)')
 annual_regex = compile(r'(?:\+|plus)[\s\._]?annuals?|annuals?[\s\._]?(?:\+|plus)|^((?!annuals?).)*$', IGNORECASE) # If regex matches, it's NOT an annual
+annual_prefix_regex = compile(r'annuals?[\s\._]', IGNORECASE)
 cover_regex = compile(r'\b(?<!no[ \-_])(?<!hard[ \-_])(?<!\d[ \-_]covers)cover\b|n\d+c(\d+)|(?:\b|\d)i?fc\b|^folder$', IGNORECASE)
 page_regex = compile(r'^(\d+(?:[a-f]|_\d+)?)$|\b(?i:page|pg)[\s\.\-_]?(\d+(?:[a-f]|_\d+)?)|n?\d+[_\-p](\d+(?:[a-f]|_\d+)?)')
 page_regex_2 = compile(r'(\d+)')
@@ -268,7 +269,8 @@ def _extensionless_filename(filepath: str) -> str:
 
 
 def _find_issue_numbers(
-    pos_options: Collection[Tuple[str, Dict[str, int], Tuple[Pattern, ...]]]
+    pos_options: Collection[Tuple[str, Dict[str, int], Tuple[Pattern, ...]]],
+    is_annual: bool
 ):
     for file_part_with_issue, pos_option, regex_list in pos_options:
         for regex in regex_list:
@@ -291,10 +293,24 @@ def _find_issue_numbers(
 
             group_number = 1 if regex is not issue_regex_6 else 3
             for result in regex_result:
-                yield (
-                    result.group(group_number),
-                    result.start(0), result.end(0)
-                )
+                complete_match = result.group(0).lower()
+
+                start = result.start(0)
+                end = result.end(0)
+
+                if complete_match.startswith("annual"):
+                    if not is_annual:
+                        # If annuals are included in the filename, but it's not
+                        # the priority, then skip issue numbers of the annuals
+                        continue
+
+                    else:
+                        prefix = annual_prefix_regex.match(complete_match)
+                        if not prefix:
+                            continue
+                        start += prefix.end(0)
+
+                yield (result.group(group_number), start, end)
 
 
 def extract_filename_data(
@@ -503,7 +519,7 @@ def extract_filename_data(
         )
 
         for extracted_number, result_start, result_end in _find_issue_numbers(
-            pos_options
+            pos_options, is_annual=annual
         ):
             if not check_overlapping_pos(
                 all_year_pos + [(special_pos, special_end)],
@@ -526,7 +542,7 @@ def extract_filename_data(
         )
 
         for extracted_number, result_start, result_end in _find_issue_numbers(
-            pos_options
+            pos_options, is_annual=annual
         ):
             if not check_overlapping_pos(
                 all_year_folderpos,
