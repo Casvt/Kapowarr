@@ -25,8 +25,8 @@ RUN \
 
 EXPOSE 5656
 
-ENV PUID=1000 \
-    PGID=1000 \
+ENV PUID=0 \
+    PGID=0 \
     TZ=UTC
 
 RUN \
