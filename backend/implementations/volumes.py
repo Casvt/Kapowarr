@@ -37,6 +37,7 @@ from backend.base.helpers import (PortablePool, extract_year_from_date,
 from backend.base.logging import LOGGER
 from backend.implementations.comicvine import ComicVine
 from backend.implementations.file_matching import scan_files
+from backend.implementations.file_processing import mass_process_files
 from backend.implementations.matching import match_title
 from backend.implementations.root_folders import RootFolders
 from backend.internals.db import commit, get_db
@@ -739,6 +740,8 @@ class Volume:
         if Settings().sv.create_empty_volume_folders:
             create_folder(new_folder)
 
+        mass_process_files(self.id)
+
         return
 
     def change_volume_folder(
@@ -815,6 +818,8 @@ class Volume:
                 current_volume_folder,
                 root_folder
             )
+
+        mass_process_files(self.id)
 
         return
 
@@ -1248,6 +1253,8 @@ class Library:
                 scan_files(volume_id)
 
             volume.apply_monitor_scheme(monitor_scheme)
+
+            mass_process_files(volume_id)
 
         if auto_search:
             from backend.features.tasks import AutoSearchVolume, TaskHandler

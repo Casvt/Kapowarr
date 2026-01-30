@@ -11,6 +11,7 @@ from backend.base.helpers import PortablePool, filtered_iter
 from backend.implementations.converters import (ConvertersManager,
                                                 ProposedConversion)
 from backend.implementations.file_matching import scan_files
+from backend.implementations.file_processing import mass_process_files
 from backend.implementations.volumes import Volume
 from backend.internals.db import commit
 from backend.internals.db_models import FilesDB
@@ -86,7 +87,8 @@ def mass_convert(
     issue_id: Union[int, None] = None,
     filepath_filter: List[str] = [],
     update_websocket_progress: bool = False,
-    update_websocket_files: bool = False
+    update_websocket_files: bool = False,
+    process_individual_files: bool = True
 ) -> List[str]:
     """Convert files for a volume or issue.
 
@@ -107,6 +109,10 @@ def mass_convert(
         update_websocket_files (bool, optional): Send updates on the download
             status of issues over the websocket.
             Defaults to False.
+
+        process_individual_files (bool, optional): Set the ownership,
+            permissions and date for all folders and/or files after converting.
+            Defaults to True.
 
     Returns:
         List[str]: The new filenames, only of files that have been be converted.
@@ -162,5 +168,8 @@ def mass_convert(
         filepath_filter=result,
         update_websocket=update_websocket_files
     )
+
+    if process_individual_files:
+        mass_process_files(volume_id)
 
     return result

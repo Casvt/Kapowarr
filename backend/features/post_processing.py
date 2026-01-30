@@ -20,6 +20,7 @@ from backend.implementations.conversion import mass_convert
 from backend.implementations.converters import extract_files_from_folder
 from backend.implementations.download_clients import TorrentDownload
 from backend.implementations.file_matching import scan_files
+from backend.implementations.file_processing import mass_process_files
 from backend.implementations.naming import mass_rename
 from backend.implementations.volumes import Volume
 from backend.internals.db import commit, get_db
@@ -104,7 +105,7 @@ def add_dl_to_blocklist(download: Download) -> None:
     return
 
 
-# region Files
+# region Moving
 def move_to_dest(download: Download) -> None:
     "Move file/fold from download folder to final destination"
     if not exists(download.files[0]):
@@ -166,7 +167,8 @@ def move_torrent_to_dest(download: TorrentDownload) -> None:
     if rename_files:
         download.files = mass_rename(
             download.volume_id,
-            filepath_filter=download.files
+            filepath_filter=download.files,
+            process_individual_files=False
         )
 
     return
@@ -217,12 +219,14 @@ def copy_file_torrent(download: TorrentDownload) -> None:
     if rename_files:
         download.files = mass_rename(
             download.volume_id,
-            filepath_filter=download.files
+            filepath_filter=download.files,
+            process_individual_files=False
         )
 
     return
 
 
+# region Extras
 def delete_file(download: Download) -> None:
     "Delete file from download folder"
     for f in download.files:
@@ -230,7 +234,6 @@ def delete_file(download: Download) -> None:
     return
 
 
-# region Extras
 def rename_with_proper_extension(download: Download) -> None:
     """
     Rename a file with the proper extension based on mimetype. Rescan files
@@ -263,7 +266,18 @@ def convert_file(download: Download) -> None:
         download.volume_id,
         download.issue_id,
         filepath_filter=download.files,
-        update_websocket_files=True
+        update_websocket_files=True,
+        process_individual_files=False
+    )
+    return
+
+
+def set_file_properties(download: Download) -> None:
+    "Process the file to set ownership, permissions and file date"
+
+    mass_process_files(
+        download.volume_id,
+        download.issue_id
     )
     return
 
@@ -276,7 +290,8 @@ class PostProcessor:
         move_to_dest,
         rename_with_proper_extension,
         add_file_to_database,
-        convert_file
+        convert_file,
+        set_file_properties
     ]
 
     actions_seeding = []
@@ -353,7 +368,8 @@ class PostProcessorTorrentsComplete(PostProcessor):
         remove_from_queue,
         add_to_history,
         move_torrent_to_dest,
-        convert_file
+        convert_file,
+        set_file_properties
     ]
 
 
@@ -367,5 +383,6 @@ class PostProcessorTorrentsCopy(PostProcessor):
         add_to_history,
         copy_file_torrent,
         convert_file,
+        set_file_properties,
         reset_file_link
     ]

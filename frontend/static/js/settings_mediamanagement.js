@@ -12,6 +12,7 @@ const inputs = {
 	'create_empty_volume_folders_input': document.querySelector('#create-vf-input'),
 	'delete_empty_folders_input': document.querySelector('#delete-empty-folders-input'),
 	'unmonitor_deleted_input': document.querySelector('#unmonitor-deleted-input'),
+	'change_file_date': document.querySelector('#change-file-date-input'),
 	'convert_input': document.querySelector('#convert-input'),
 	'extract_input': document.querySelector('#extract-input')
 };
@@ -35,6 +36,7 @@ function fillSettings(api_key) {
 		inputs.create_empty_volume_folders_input.checked = json.result.create_empty_volume_folders;
 		inputs.delete_empty_folders_input.checked = json.result.delete_empty_folders;
 		inputs.unmonitor_deleted_input.checked = json.result.unmonitor_deleted_issues;
+		inputs.change_file_date.value = json.result.change_file_date || '';
 		inputs.convert_input.checked = json.result.convert;
 		inputs.extract_input.checked = json.result.extract_issue_ranges;
 
@@ -63,6 +65,7 @@ function saveSettings(api_key) {
 		'create_empty_volume_folders': inputs.create_empty_volume_folders_input.checked,
 		'delete_empty_folders': inputs.delete_empty_folders_input.checked,
 		'unmonitor_deleted_issues': inputs.unmonitor_deleted_input.checked,
+		'change_file_date': inputs.change_file_date.value || null,
 		'convert': inputs.convert_input.checked,
 		'extract_issue_ranges': inputs.extract_input.checked,
 		'format_preference': convert_preference,

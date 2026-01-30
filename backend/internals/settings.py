@@ -11,7 +11,7 @@ from typing import Any, Dict, Mapping
 from backend.base.custom_exceptions import (FolderNotFound, InvalidKeyValue,
                                             InvalidSettingModification,
                                             KeyNotFound)
-from backend.base.definitions import (BaseEnum, Constants, DateType,
+from backend.base.definitions import (BaseEnum, Constants, DateType, FileDate,
                                       GCDownloadSource, SeedingHandling)
 from backend.base.files import (are_folders_colliding, folder_path,
                                 uppercase_drive_letter)
@@ -87,6 +87,7 @@ class PublicSettingsValues:
     delete_empty_folders: bool = False
 
     unmonitor_deleted_issues: bool = False
+    change_file_date: FileDate = FileDate.NONE
 
     convert: bool = False
     extract_issue_ranges: bool = False
@@ -188,7 +189,7 @@ class Settings(metaclass=Singleton):
                 db_values[key] = CommaList(db_values[key])
 
             if issubclass(key_type, BaseEnum):
-                db_values[key] = key_type[value.upper()]
+                db_values[key] = key_type(value)
 
         return SettingsValues(**db_values)
 
