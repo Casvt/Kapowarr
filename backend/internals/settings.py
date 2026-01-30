@@ -88,6 +88,7 @@ class PublicSettingsValues:
 
     unmonitor_deleted_issues: bool = False
     change_file_date: FileDate = FileDate.NONE
+    chmod_folder: str = ''
 
     convert: bool = False
     extract_issue_ranges: bool = False
@@ -459,6 +460,25 @@ class Settings(metaclass=Singleton):
 
         elif key == 'issue_padding' and not 1 <= value <= 4:
             raise InvalidKeyValue(key, value)
+
+        elif key == 'chmod_folder':
+            if value.startswith('0'):
+                converted_value = value[1:]
+
+            if converted_value and len(converted_value) != 3:
+                raise InvalidKeyValue(key, value)
+
+            for permission_target in converted_value:
+                if permission_target not in (
+                    '0', '1', '2', '3', '4', '5', '6', '7'
+                ):
+                    raise InvalidKeyValue(key, value)
+
+            converted_value = (converted_value
+                .replace('2', '3')
+                .replace('4', '5')
+                .replace('6', '7')
+            )
 
         elif key == 'format_preference':
             from backend.implementations.converters import ConvertersManager

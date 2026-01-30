@@ -46,6 +46,31 @@ def folder_path(*folders: str) -> str:
     return join(dirname(dirname(dirname(abspath(__file__)))), *folders)
 
 
+def list_folders(base_folder: str) -> List[str]:
+    """List all folders in a base folder recursively with absolute paths. Hidden
+    folders (folders starting with `.`) are ignored.
+
+    Args:
+        base_folder (str): The base folder to list sub-folders for.
+
+    Returns:
+        List[str]: The list of folders that are recursively in the base folder.
+            Intermediary folders are included (e.g. if `/foo/bar/quux` is in the
+            list, then so is `/foo/bar`). The base folder itself is not included.
+    """
+    folders: List[str] = []
+    to_dos = deque((base_folder,))
+
+    while to_dos:
+        to_do = to_dos.popleft()
+        for f in scandir(to_do):
+            if f.is_dir() and not f.name.startswith('.'):
+                folders.append(f.path)
+                to_dos.append(f.path)
+
+    return folders
+
+
 def list_files(folder: str, ext: Iterable[str] = []) -> List[str]:
     """List all files in a folder recursively with absolute paths. Hidden files
     (files starting with `.`) are ignored.
@@ -631,6 +656,61 @@ def set_file_date(filepath: str, file_date: str) -> None:
 
     elif os_type == OSType.MACOS:
         __set_macos_times(filepath, timestamp)
+
+    return
+
+
+def set_volume_folder_permissions(
+    volume_folder: str,
+    root_folder: str,
+    folder_permissions: str
+) -> None:
+    """Set the (chmod) permissions of a volume folder, folders between the root
+    folder and the volume folder, its sub-folders and its files. The folders are
+    set to have the given permissions. The files are set to have the given
+    permissions but without the execution bit (e.g. the folders are set to
+    `'755'` and the files to `'644'`). This function will (safely) not perform
+    anything unless the OS is Linux or MacOS.
+
+    Args:
+        volume_folder (str): The path to the volume folder.
+
+        root_folder (str): The path to the root folder that the volume folder is
+            in.
+
+        folder_permissions (str): The permissions that should be applied to the
+            folders, in string form. E.g.: `'755'`. The same permissions, but
+            without the execution bit, are applied to the files.
+    """
+    # We can't set the permissions if we don't own the file as the user. This
+    # doesn't happen in Kapowarr, as we only change the owner group, but the
+    # user could manually change it.
+
+    if get_os_type() not in (OSType.LINUX, OSType.MACOS):
+        # Only Linux and MacOS support chmod-type permissions
+        return
+
+    # Set folders leading up to, and including, the volume folder
+    octal_folder_permissions = int(folder_permissions, 8)
+    towards_volume_folder = relpath(volume_folder, root_folder).split(sep)
+    for i in range(len(towards_volume_folder)):
+        chmod(
+            join(root_folder, *towards_volume_folder[:i + 1]),
+            octal_folder_permissions
+        )
+
+    # Set all sub-folders
+    for folder in list_folders(volume_folder):
+        chmod(folder, octal_folder_permissions)
+
+    # Set all files in the folder
+    file_permissions = ''.join((
+        str(int(p) - 1) if int(p) % 2 == 1 else p
+        for p in folder_permissions
+    ))
+    octal_file_permissions = int(file_permissions, 8)
+    for file in list_files(volume_folder):
+        chmod(file, octal_file_permissions)
 
     return
 
