@@ -7,7 +7,8 @@ Processing/Altering individual files with permissions, ownership, file date, etc
 from typing import List, Union
 
 from backend.base.definitions import FileDate
-from backend.base.files import set_file_date, set_volume_folder_permissions
+from backend.base.files import (set_file_date, set_volume_folder_owner_group,
+                                set_volume_folder_permissions)
 from backend.implementations.root_folders import RootFolders
 from backend.internals.db import get_db
 from backend.internals.settings import Settings
@@ -96,6 +97,32 @@ def mass_set_permissions(volume_id: int) -> None:
     return
 
 
+def mass_set_ownership(volume_id: int) -> None:
+    """Set the (chown) group owner of the volume folder, folders between the root
+    folder and the volume folder, its sub-folders and its files.
+
+    Args:
+        volume_id (int): The ID of the volume for which to set the ownership.
+    """
+    group = Settings().sv.chown_group
+    if not group:
+        # Setting disabled
+        return
+
+    volume_folder, root_folder_id = get_db().execute(
+        "SELECT folder, root_folder FROM volumes WHERE id = ?",
+        (volume_id,)
+    ).fetchone()
+
+    set_volume_folder_owner_group(
+        volume_folder,
+        RootFolders()[root_folder_id],
+        group
+    )
+
+    return
+
+
 def mass_process_files(
     volume_id: int,
     issue_id: Union[int, None] = None,
@@ -117,4 +144,5 @@ def mass_process_files(
     """
     mass_set_file_date(volume_id, issue_id, filepath_filter)
     mass_set_permissions(volume_id)
+    mass_set_ownership(volume_id)
     return

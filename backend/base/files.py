@@ -12,7 +12,7 @@ from os import chmod, listdir, makedirs, remove, scandir, utime
 from os.path import (abspath, basename, commonpath, dirname, isdir,
                      isfile, join, relpath, samefile, sep, splitext)
 from re import compile
-from shutil import copy2, copytree, move, rmtree
+from shutil import chown, copy2, copytree, move, rmtree
 from typing import Dict, Iterable, List, Sequence, Union
 from zipfile import ZIP_DEFLATED, ZipFile
 
@@ -711,6 +711,52 @@ def set_volume_folder_permissions(
     octal_file_permissions = int(file_permissions, 8)
     for file in list_files(volume_folder):
         chmod(file, octal_file_permissions)
+
+    return
+
+
+def set_volume_folder_owner_group(
+    volume_folder: str,
+    root_folder: str,
+    owner_group: str
+) -> None:
+    """Set the (chown) group owner of a volume folder, folders between the root
+    folder and the volume folder, its sub-folders and its files. This function
+    will (safely) not perform anything unless the OS is Linux or MacOS.
+
+    Args:
+        volume_folder (str): The path to the volume folder.
+
+        root_folder (str): The path to the root folder that the volume folder is
+            in.
+
+        owner_group (str): The group that should be applied to the folders and
+            files. The string can be in the form of a group name (e.g. `'media'`)
+            or a group number (e.g. `'1000'`).
+    """
+    # We can't change the group ownership if the running user isn't part of the
+    # target ownergroup. This doesn't happen in Kapowarr, but the user could
+    # manually change it.
+
+    if get_os_type() not in (OSType.LINUX, OSType.MACOS):
+        # Only Linux and MacOS support chown-type ownership
+        return
+
+    # Set folders leading up to, and including, the volume folder
+    towards_volume_folder = relpath(volume_folder, root_folder).split(sep)
+    for i in range(len(towards_volume_folder)):
+        chown(
+            join(root_folder, *towards_volume_folder[:i + 1]),
+            group=owner_group
+        )
+
+    # Set all sub-folders
+    for folder in list_folders(volume_folder):
+        chown(folder, group=owner_group)
+
+    # Set all files in the folder
+    for file in list_files(volume_folder):
+        chown(file, group=owner_group)
 
     return
 
