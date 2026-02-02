@@ -137,21 +137,24 @@
 								<option value="">Don't Change</option>
 								<option value="issue_release_date">Issue Release Date</option>
 							</select>
-							<p>Set date of file.</p>
+							<p>Set date of file. Save the settings before using the button below.</p>
+							<button type="button" id="mass-edit-file-date" data-identifier="file_date">Apply setting to existing files</button>
 						</td>
 					</tr>
 					<tr>
 						<th><label for="chmod-folder-input">Chmod Folder</label></th>
 						<td>
 							<input type="text" id="chmod-folder-input" spellcheck="false">
-							<p>Permissions applied to the folders and files (without execute bits). Give value in octal (e.g. '755'), or leave empty to disable.</p>
+							<p>Permissions applied to the folders and files (without execute bits). Give value in octal (e.g. '755'), or leave empty to disable. Save the settings before using the button below.</p>
+							<button type="button" id="mass-edit-file-permissions" data-identifier="file_permissions">Apply setting to existing files</button>
 						</td>
 					</tr>
 					<tr>
 						<th><label for="chown-group-input">Chown Group</label></th>
 						<td>
 							<input type="text" id="chown-group-input" spellcheck="false">
-							<p>Ownership group applied to the folders and files. Give group name or ID (e.g. 'media' or '1001'), or leave empty to disable.</p>
+							<p>Ownership group applied to the folders and files. Give group name or ID (e.g. 'media' or '1001'), or leave empty to disable. Save the settings before using the button below.</p>
+							<button type="button" id="mass-edit-file-ownership" data-identifier="file_ownership">Apply setting to existing files</button>
 						</td>
 					</tr>
 				</tbody>

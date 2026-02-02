@@ -107,6 +107,60 @@ function saveSettings(api_key) {
 };
 
 //
+// File Processing
+//
+function runFileProcessingMassEditor(e, api_key) {
+	const button = e.target;
+	const identifier = button.dataset.identifier;
+	const settingValue = button.parentElement.firstElementChild.value;
+	
+	if (settingValue === '') {
+		button.dataset.originalText = button.innerText
+		button.innerText = 'Not set'
+		setTimeout(() => {
+			button.innerText = button.dataset.originalText
+			button.removeAttribute('data-originalText')
+		}, 2000)
+		
+		return
+	}
+
+	button.dataset.originalText = button.innerText
+	button.innerText = 'Applying...'
+	
+	fetchAPI('/volumes', api_key)
+	.then(json => {
+		const volumeIds = json.result.map(v => v.id)
+		const data = {
+			action: identifier,
+			volume_ids: volumeIds
+		}
+		sendAPI('POST', '/masseditor', api_key, {}, data)
+		.then(response => {
+			button.innerText = 'Success'
+			setTimeout(() => {
+				button.innerText = button.dataset.originalText
+				button.removeAttribute('data-originalText')
+			}, 2000)
+		})
+		.catch(error => {
+			button.innerText = 'Failed'
+			setTimeout(() => {
+				button.innerText = button.dataset.originalText
+				button.removeAttribute('data-originalText')
+			}, 2000)
+		})
+	})
+	.catch(error => {
+		button.innerText = 'Failed'
+		setTimeout(() => {
+			button.innerText = button.dataset.originalText
+			button.removeAttribute('data-originalText')
+		}, 2000)
+	})
+}
+
+//
 // Convert
 //
 let convert_options = [];
@@ -363,6 +417,9 @@ usingApiKey()
 	fillSettings(api_key);
 	fillRootFolder(api_key);
 	document.querySelector('#save-button').onclick = e => saveSettings(api_key);
+	document.querySelector('#mass-edit-file-date').onclick = e => runFileProcessingMassEditor(e, api_key);
+	document.querySelector('#mass-edit-file-permissions').onclick = e => runFileProcessingMassEditor(e, api_key);
+	document.querySelector('#mass-edit-file-ownership').onclick = e => runFileProcessingMassEditor(e, api_key);
 	document.querySelector('#add-folder').onclick = e => addRootFolder(api_key);
 	document.querySelector('#folder-input').onkeydown = e => e.code === 'Enter' ? addRootFolder(api_key) : null;
 });

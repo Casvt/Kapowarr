@@ -138,7 +138,10 @@
 
 #toggle-root-folder,
 #empty-download-folder,
-#download-logs-button {
+#download-logs-button,
+#mass-edit-file-date,
+#mass-edit-file-permissions,
+#mass-edit-file-ownership {
 	margin-top: .5rem;
 	min-width: 5rem;
 
