@@ -150,7 +150,7 @@ def extract_key(request, key: str, check_existence: bool = True) -> Any:
     else:
         # Default value
         if key == 'sort':
-            value = 'title'
+            value = LibrarySorting.TITLE
 
         elif key == 'filter':
             value = None
