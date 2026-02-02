@@ -41,11 +41,10 @@ RUN --mount=from=builder,source=/wheels,target=/wheels \
     --mount=type=cache,target=/root/.cache/pip,sharing=private \
     pip3 install --no-index --find-links=/wheels -r /wheels/requirements.txt
 
-
 RUN groupadd -g 1000 kapowarr && \
     useradd -u 1000 -g kapowarr -d /app -M -s /bin/bash kapowarr
     
-COPY . .
+COPY --exclude=requirements.txt . .
 
 ENV PUID=0 \
     PGID=0 \
