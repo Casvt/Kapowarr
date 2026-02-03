@@ -44,7 +44,7 @@ RUN --mount=from=builder,source=/wheels,target=/wheels \
 RUN groupadd -g 1000 kapowarr && \
     useradd -u 1000 -g kapowarr -d /app -M -s /bin/bash kapowarr
     
-COPY --exclude=requirements.txt . .
+COPY . .
 
 ENV PUID=0 \
     PGID=0 \
