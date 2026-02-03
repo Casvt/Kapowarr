@@ -144,6 +144,7 @@ docker-compose.yml
 .gitignore
 .git/
 .github/
+.pre-commit-config.yaml
 
 # Various files
 *.md

@@ -1,4 +1,3 @@
-version: "3.3"
 services:
   kapowarr:
     container_name: kapowarr
@@ -6,7 +5,7 @@ services:
     environment:
       - PUID=0
       - PGID=0
-      - TZ=Etc/UTC 
+      - TZ=Etc/UTC
     volumes:
       - "kapowarr-db:/app/db"
       - "/path/to/download_folder:/app/temp_downloads"
