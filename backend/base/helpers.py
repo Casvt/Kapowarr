@@ -1068,6 +1068,7 @@ class AsyncSession(ClientSession):
 
                 if fs_result:
                     response._url = URL(fs_result["url"])
+                    response._real_url = URL(fs_result["url"])
                     response.status = fs_result["status"]
                     response._body = fs_result["response"].encode("utf-8")
                     response._headers = CIMultiDictProxy(CIMultiDict(
