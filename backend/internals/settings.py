@@ -180,19 +180,52 @@ class Settings(metaclass=Singleton):
             "SELECT key, value FROM config;"
         ))
 
+        for key, value in tuple(settings.items()):
+            if isinstance(value, bytes):
+                try:
+                    settings[key] = value.decode('utf-8')
+                except UnicodeDecodeError:
+                    settings[key] = value
+
+        int_values = (
+            'database_version',
+            'port',
+            'log_level',
+            'volume_padding',
+            'issue_padding'
+        )
+        for iv in int_values:
+            if iv in settings and isinstance(settings[iv], str):
+                try:
+                    settings[iv] = int(settings[iv])
+                except ValueError:
+                    settings[iv] = default_settings[iv]
+
         bool_values = ('rename_downloaded_files', 'volume_as_empty',
                     'convert', 'extract_issue_ranges',
                     'delete_completed_torrents', 'long_special_version')
         for bv in bool_values:
-            settings[bv] = settings[bv] == 1
+            bv_value = settings.get(bv, default_settings[bv])
+            if isinstance(bv_value, str):
+                settings[bv] = bv_value.lower() in ('1', 'true')
+            else:
+                settings[bv] = bv_value == 1 or bv_value is True
 
-        settings['format_preference'] = CommaList(settings['format_preference'])
+        settings['format_preference'] = CommaList(
+            settings.get('format_preference', default_settings['format_preference'])
+        )
         settings['service_preference'] = CommaList(
-            settings['service_preference']
+            settings.get('service_preference', default_settings['service_preference'])
         )
 
         # Ensure new settings have defaults for existing databases
         if 'library_display_mode' not in settings:
+            settings['library_display_mode'] = default_settings['library_display_mode']
+            get_db().execute(
+                "INSERT OR IGNORE INTO config(key, value) VALUES(?, ?);",
+                ('library_display_mode', default_settings['library_display_mode'])
+            )
+        elif settings['library_display_mode'] not in ('virtual_scroll', 'pagination'):
             settings['library_display_mode'] = default_settings['library_display_mode']
 
         self.settings = settings

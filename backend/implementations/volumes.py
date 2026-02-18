@@ -7,8 +7,9 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from io import BytesIO
 from multiprocessing import cpu_count
-from os.path import abspath, basename, isdir, join, relpath
+from os.path import abspath, basename, isdir, isfile, join, relpath
 from re import IGNORECASE, compile
+from sqlite3 import OperationalError
 from time import time
 from typing import Any, Callable, Dict, Iterable, List, Sequence, Tuple, Union
 
@@ -464,11 +465,36 @@ class _VolumeBackend:
         Returns:
             BytesIO: The cover.
         """
-        cover = get_db().execute(
-            "SELECT cover FROM volumes WHERE id = ? LIMIT 1",
-            (self.id,)
-        ).fetchone()[0]
-        return BytesIO(cover)
+        try:
+            cover_row = get_db().execute(
+                "SELECT cover FROM volumes WHERE id = ? LIMIT 1",
+                (self.id,)
+            ).fetchone()
+            if cover_row and cover_row[0]:
+                return BytesIO(cover_row[0])
+
+        except OperationalError as e:
+            if 'no such column: cover' not in str(e).lower():
+                raise
+
+        cover_file = get_db().execute(
+            """
+            SELECT f.filepath
+            FROM volume_files vf
+            INNER JOIN files f
+            ON vf.file_id = f.id
+            WHERE vf.volume_id = ?
+                AND vf.file_type = ?
+            LIMIT 1;
+            """,
+            (self.id, GeneralFileType.COVER.value)
+        ).exists()
+
+        if cover_file and isfile(cover_file):
+            with open(cover_file, 'rb') as fh:
+                return BytesIO(fh.read())
+
+        return BytesIO(b'')
 
     def _get_last_issue_date(self) -> Union[str, None]:
         """Get the date of the last issue that has a release date.

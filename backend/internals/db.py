@@ -411,6 +411,24 @@ def setup_db() -> None:
     """
     cursor.executescript(setup_commands)
 
+    volume_columns = {
+        c['name']
+        for c in cursor.execute("PRAGMA table_info(volumes);").fetchall()
+    }
+    missing_volume_columns = (
+        ('alt_title', "ALTER TABLE volumes ADD alt_title VARCHAR(255);"),
+        ('site_url', "ALTER TABLE volumes ADD site_url TEXT NOT NULL DEFAULT '';"),
+        ('cover', "ALTER TABLE volumes ADD cover BLOB;"),
+        ('special_version_locked',
+            "ALTER TABLE volumes ADD special_version_locked BOOL NOT NULL DEFAULT 0;")
+    )
+    for col_name, ddl in missing_volume_columns:
+        if col_name not in volume_columns:
+            LOGGER.warning(
+                f'Legacy database detected: adding missing volumes.{col_name} column'
+            )
+            cursor.execute(ddl)
+
     settings = Settings()
 
     set_log_level(settings['log_level'])
