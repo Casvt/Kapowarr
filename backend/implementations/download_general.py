@@ -254,17 +254,17 @@ class BaseTorrentClient(DownloadClient):
         self.id = id
         data = get_db().execute("""
             SELECT
-                type, title,
+                client_type, title,
                 base_url,
                 username, password,
                 api_token
-            FROM torrent_clients
+            FROM external_download_clients
             WHERE id = ?
             LIMIT 1;
             """,
             (id,)
         ).fetchone()
-        self.type = data['type']
+        self.type = data['client_type']
         self.title = data['title']
         self.base_url = data['base_url']
         self.username = data['username']
@@ -286,7 +286,7 @@ class BaseTorrentClient(DownloadClient):
     def edit(self, edits: dict) -> dict:
         cursor = get_db()
         if cursor.execute(
-            "SELECT 1 FROM download_queue WHERE torrent_client_id = ? LIMIT 1;",
+            "SELECT 1 FROM download_queue WHERE external_client_id = ? LIMIT 1;",
             (self.id,)
         ).fetchone() is not None:
             raise ClientDownloading(self.id)
@@ -319,7 +319,7 @@ class BaseTorrentClient(DownloadClient):
             raise TorrentClientNotWorking(test_result[1])
 
         cursor.execute("""
-            UPDATE torrent_clients SET
+            UPDATE external_download_clients SET
                 title = ?,
                 base_url = ?,
                 username = ?,
@@ -336,13 +336,13 @@ class BaseTorrentClient(DownloadClient):
     def delete(self) -> None:
         cursor = get_db()
         if cursor.execute(
-            "SELECT 1 FROM download_queue WHERE torrent_client_id = ? LIMIT 1;",
+            "SELECT 1 FROM download_queue WHERE external_client_id = ? LIMIT 1;",
             (self.id,)
         ).fetchone() is not None:
             raise ClientDownloading(self.id)
 
         cursor.execute(
-            "DELETE FROM torrent_clients WHERE id = ?;",
+            "DELETE FROM external_download_clients WHERE id = ?;",
             (self.id,)
         )
 

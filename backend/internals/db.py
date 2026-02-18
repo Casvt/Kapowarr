@@ -266,8 +266,8 @@ def setup_db() -> None:
             volume_number INTEGER(8) DEFAULT 1,
             description TEXT,
             site_url TEXT NOT NULL DEFAULT "",
-            cover BLOB,
             monitored BOOL NOT NULL DEFAULT 0,
+            monitor_new_issues BOOL NOT NULL DEFAULT 1,
             root_folder INTEGER NOT NULL,
             folder TEXT,
             custom_folder BOOL NOT NULL DEFAULT 0,
@@ -277,6 +277,14 @@ def setup_db() -> None:
 
             FOREIGN KEY (root_folder) REFERENCES root_folders(id)
         );
+        CREATE TABLE IF NOT EXISTS volumes_covers(
+            volume_id INTEGER UNIQUE NOT NULL,
+            cover BLOB,
+            FOREIGN KEY (volume_id) REFERENCES volumes(id)
+                ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS volumes_covers_volume_id_index
+            ON volumes_covers(volume_id);
         CREATE TABLE IF NOT EXISTS issues(
             id INTEGER PRIMARY KEY,
             volume_id INTEGER NOT NULL,
@@ -293,6 +301,8 @@ def setup_db() -> None:
         );
         CREATE INDEX IF NOT EXISTS issues_volume_number_index
             ON issues(volume_id, calculated_issue_number);
+        CREATE INDEX IF NOT EXISTS issues_volume_index
+            ON issues(volume_id);
         CREATE TABLE IF NOT EXISTS files(
             id INTEGER PRIMARY KEY,
             filepath TEXT UNIQUE NOT NULL,
@@ -310,6 +320,8 @@ def setup_db() -> None:
                 issue_id
             )
         );
+        CREATE INDEX IF NOT EXISTS issues_files_issue_id_index
+            ON issues_files(issue_id);
         CREATE TABLE IF NOT EXISTS volume_files(
             file_id INTEGER PRIMARY KEY,
             volume_id INTEGER NOT NULL,
@@ -320,9 +332,10 @@ def setup_db() -> None:
             FOREIGN KEY (file_id) REFERENCES files(id)
                 ON DELETE CASCADE
         );
-        CREATE TABLE IF NOT EXISTS torrent_clients(
+        CREATE TABLE IF NOT EXISTS external_download_clients(
             id INTEGER PRIMARY KEY,
-            type VARCHAR(255) NOT NULL,
+            download_type INTEGER NOT NULL,
+            client_type VARCHAR(255) NOT NULL,
             title VARCHAR(255) NOT NULL,
             base_url TEXT NOT NULL,
             username VARCHAR(255),
@@ -331,22 +344,24 @@ def setup_db() -> None:
         );
         CREATE TABLE IF NOT EXISTS download_queue(
             id INTEGER PRIMARY KEY,
+            volume_id INTEGER NOT NULL,
             client_type VARCHAR(255) NOT NULL,
-            torrent_client_id INTEGER,
+            external_client_id INTEGER,
 
             download_link TEXT NOT NULL,
-            filename_body TEXT NOT NULL,
-            source VARCHAR(25) NOT NULL,
+            covered_issues VARCHAR(255),
+            force_original_name BOOL,
 
-            volume_id INTEGER NOT NULL,
-            issue_id INTEGER,
+            source_type VARCHAR(25) NOT NULL,
+            source_name VARCHAR(255) NOT NULL,
+
             web_link TEXT,
             web_title TEXT,
             web_sub_title TEXT,
 
-            FOREIGN KEY (torrent_client_id) REFERENCES torrent_clients(id),
-            FOREIGN KEY (volume_id) REFERENCES volumes(id),
-            FOREIGN KEY (issue_id) REFERENCES issues(id)
+            FOREIGN KEY (external_client_id)
+                REFERENCES external_download_clients(id),
+            FOREIGN KEY (volume_id) REFERENCES volumes(id)
         );
         CREATE TABLE IF NOT EXISTS download_history(
             web_link TEXT,
@@ -359,6 +374,7 @@ def setup_db() -> None:
 
             source VARCHAR(25),
             downloaded_at INTEGER NOT NULL CHECK (downloaded_at > 0),
+            success BOOL,
 
             FOREIGN KEY (volume_id) REFERENCES volumes(id)
                 ON DELETE SET NULL,
@@ -395,22 +411,28 @@ def setup_db() -> None:
             FOREIGN KEY (issue_id) REFERENCES issues(id)
                 ON DELETE SET NULL
         );
-        CREATE TABLE IF NOT EXISTS credentials_sources(
-            id INTEGER PRIMARY KEY,
-            source VARCHAR(30) NOT NULL UNIQUE
-        );
         CREATE TABLE IF NOT EXISTS credentials(
             id INTEGER PRIMARY KEY,
-            source INTEGER NOT NULL UNIQUE,
-            email VARCHAR(255) NOT NULL,
-            password VARCHAR(255) NOT NULL,
+            source VARCHAR(30) NOT NULL,
+            username TEXT,
+            email TEXT,
+            password TEXT,
+            api_key TEXT
+        );
+        CREATE TABLE IF NOT EXISTS remote_mappings(
+            id INTEGER PRIMARY KEY,
+            external_download_client_id INTEGER NOT NULL,
+            remote_path TEXT NOT NULL,
+            local_path TEXT NOT NULL,
 
-            FOREIGN KEY (source) REFERENCES credentials_sources(id)
+            FOREIGN KEY (external_download_client_id)
+                REFERENCES external_download_clients(id)
                 ON DELETE CASCADE
         );
     """
     cursor.executescript(setup_commands)
 
+    # ---- Ensure columns exist for older databases ----
     volume_columns = {
         c['name']
         for c in cursor.execute("PRAGMA table_info(volumes);").fetchall()
@@ -418,7 +440,8 @@ def setup_db() -> None:
     missing_volume_columns = (
         ('alt_title', "ALTER TABLE volumes ADD alt_title VARCHAR(255);"),
         ('site_url', "ALTER TABLE volumes ADD site_url TEXT NOT NULL DEFAULT '';"),
-        ('cover', "ALTER TABLE volumes ADD cover BLOB;"),
+        ('monitor_new_issues',
+            "ALTER TABLE volumes ADD monitor_new_issues BOOL NOT NULL DEFAULT 1;"),
         ('special_version_locked',
             "ALTER TABLE volumes ADD special_version_locked BOOL NOT NULL DEFAULT 0;")
     )
@@ -454,11 +477,11 @@ def setup_db() -> None:
         ((k, v, current_time, v) for k, v in task_intervals.items())
     )
 
-    # Add credentials sources
+    # Ensure credential rows exist for known sources
     LOGGER.debug(f'Inserting credentials sources: {credential_sources}')
     cursor.executemany(
         """
-        INSERT OR IGNORE INTO credentials_sources(source)
+        INSERT OR IGNORE INTO credentials(source)
         VALUES (?);
         """,
         [(s,) for s in credential_sources]

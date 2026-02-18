@@ -322,7 +322,7 @@ def _get_download_groups(
     LOGGER.debug('Extracting download groups')
 
     torrent_client_available = get_db().execute(
-        "SELECT 1 FROM torrent_clients"
+        "SELECT 1 FROM external_download_clients"
     ).fetchone() is not None
 
     body: Union[Tag, None] = soup.find(

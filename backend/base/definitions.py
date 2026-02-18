@@ -269,6 +269,12 @@ service on the GC page.
 # and in the other part we only want the GC services. So in preparation
 # of the torrent and usenet sources coming, we're already making the
 # distinction here.
+class DownloadType(BaseEnum):
+    "The download protocol (download type)"
+    DIRECT = 1
+    TORRENT = 2
+
+
 class DownloadSource(BaseEnum):
     MEGA = 'Mega'
     MEDIAFIRE = 'MediaFire'

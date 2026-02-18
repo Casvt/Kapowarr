@@ -12,8 +12,9 @@ from requests import RequestException
 from backend.base.custom_exceptions import (InvalidKeyValue, LinkBroken,
                                             TorrentClientNotFound,
                                             TorrentClientNotWorking)
-from backend.base.definitions import (BlocklistReason, ClientTestResult,
-                                      DownloadSource, DownloadState)
+from backend.base.definitions import (BlocklistReason,
+                                      ClientTestResult, DownloadSource,
+                                      DownloadState, DownloadType)
 from backend.base.helpers import Session, get_torrent_info
 from backend.base.logging import LOGGER
 from backend.implementations.download_general import (BaseTorrentClient,
@@ -158,13 +159,14 @@ class TorrentClients:
         }
 
         client_id = get_db().execute("""
-            INSERT INTO torrent_clients(
-                type, title,
+            INSERT INTO external_download_clients(
+                download_type, client_type, title,
                 base_url,
                 username, password, api_token
-            ) VALUES (?, ?, ?, ?, ?, ?);
+            ) VALUES (?, ?, ?, ?, ?, ?, ?);
             """,
-            (data['type'], data['title'],
+            (DownloadType.TORRENT.value,
+            data['type'], data['title'],
             data['base_url'],
             data['username'], data['password'], data['api_token'])
         ).lastrowid
@@ -179,13 +181,15 @@ class TorrentClients:
         """
         result = get_db().execute("""
             SELECT
-                id, type,
+                id, client_type AS type,
                 title, base_url,
                 username, password,
                 api_token
-            FROM torrent_clients
+            FROM external_download_clients
+            WHERE download_type = ?
             ORDER BY title, id;
-            """
+            """,
+            (DownloadType.TORRENT.value,)
         ).fetchalldict()
         return result
 
@@ -204,7 +208,7 @@ class TorrentClients:
             representing the client with the given ID.
         """
         client_type = get_db().execute(
-            "SELECT type FROM torrent_clients WHERE id = ? LIMIT 1;",
+            "SELECT client_type FROM external_download_clients WHERE id = ? LIMIT 1;",
             (id,)
         ).exists()
 
@@ -335,6 +339,12 @@ class TorrentDownload(ExternalDownload):
             'status': self.state.value,
             'progress': self.progress,
             'speed': self.speed,
+
+            'client': self.client.id if self.client else None
+        }
+
+    def __repr__(self) -> str:
+        return f'<{self.__class__.__name__}, {self.download_link}, {self.file}>'
 
             'client': self.client.id if self.client else None
         }

@@ -38,7 +38,7 @@ def migrate_db() -> None:
     s = Settings()
     current_db_version = s['database_version']
     newest_version = get_latest_db_version()
-    if current_db_version == newest_version:
+    if current_db_version >= newest_version:
         return
 
     LOGGER.info('Migrating database to newer version...')

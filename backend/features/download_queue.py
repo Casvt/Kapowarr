@@ -76,7 +76,7 @@ class DownloadHandler:
         """
         torrent_clients = first_of_column(
             get_db().execute(
-                "SELECT id FROM torrent_clients;"
+                "SELECT id FROM external_download_clients;"
             )
         )
         queue_ids = [
@@ -267,26 +267,29 @@ class DownloadHandler:
                 download.id = cursor.execute(
                     """
                     INSERT INTO download_queue(
-                        client_type, torrent_client_id,
-                        download_link, filename_body, source,
-                        volume_id, issue_id,
+                        volume_id, client_type, external_client_id,
+                        download_link, covered_issues,
+                        force_original_name,
+                        source_type, source_name,
                         web_link, web_title, web_sub_title
                     )
                     VALUES (
-                        ?, ?,
                         ?, ?, ?,
+                        ?, ?,
+                        ?,
                         ?, ?,
                         ?, ?, ?
                     );
                     """,
                     (
+                        download.volume_id,
                         download.type,
                         None,
                         download.download_link,
-                        download._filename_body,
+                        str(download.issue_id) if download.issue_id else None,
+                        False,
                         download.source.value,
-                        download.volume_id,
-                        download.issue_id,
+                        download._filename_body,
                         download.web_link,
                         download.web_title,
                         download.web_sub_title
@@ -300,7 +303,7 @@ class DownloadHandler:
                     )
                     cursor.execute("""
                         UPDATE download_queue
-                        SET torrent_client_id = ?
+                        SET external_client_id = ?
                         WHERE id = ?;
                         """,
                         (download.client.id, download.id)
@@ -324,9 +327,10 @@ class DownloadHandler:
             cursor = get_db()
             downloads = cursor.execute("""
                 SELECT
-                    id, client_type, torrent_client_id,
-                    download_link, filename_body, source,
-                    volume_id, issue_id,
+                    id, volume_id, client_type, external_client_id,
+                    download_link, covered_issues,
+                    force_original_name,
+                    source_type, source_name,
                     web_link, web_title, web_sub_title
                 FROM download_queue;
             """).fetchall()
@@ -339,8 +343,8 @@ class DownloadHandler:
                 try:
                     dl_instance = download_type_to_class[download['client_type']](
                         download_link=download['download_link'],
-                        filename_body=download['filename_body'],
-                        source=DownloadSource(download['source']),
+                        filename_body=download['source_name'],
+                        source=DownloadSource(download['source_type']),
                         custom_name=True
                     )
                     dl_instance.id = download['id']
@@ -348,19 +352,21 @@ class DownloadHandler:
                     dl_instance.web_sub_title = download['web_sub_title']
                     if isinstance(dl_instance, TorrentDownload):
                         dl_instance.client = TorrentClients.get_client(
-                            download['torrent_client_id']
+                            download['external_client_id']
                         )
 
                 except LinkBroken as lb:
                     # Link is broken
+                    _covered = download['covered_issues']
+                    _issue_id = int(_covered) if _covered else None
                     add_to_blocklist(
                         web_link=download['web_link'],
                         web_title=download['web_title'],
                         web_sub_title=download['web_sub_title'],
                         download_link=download['download_link'],
-                        source=DownloadSource(download['source']),
+                        source=DownloadSource(download['source_type']),
                         volume_id=download['volume_id'],
-                        issue_id=download['issue_id'],
+                        issue_id=_issue_id,
                         reason=lb.reason
                     )
                     cursor.execute(
@@ -376,10 +382,12 @@ class DownloadHandler:
                 except DownloadLimitReached:
                     continue
 
+                _covered = download['covered_issues']
+                _issue_id = int(_covered) if _covered else None
                 self.queue += self.__prepare_downloads_for_queue(
                     [dl_instance],
                     download['volume_id'],
-                    download['issue_id'],
+                    _issue_id,
                     download['web_link']
                 )
                 # self.__prepare_downloads_for_queue() has a write to the db

@@ -461,18 +461,15 @@ class _VolumeBackend:
 
     def _get_cover(self) -> BytesIO:
         """Get the cover of the volume.
-        Checks multiple storage locations for backwards
-        compatibility with different DB schema versions:
-          1. volumes_covers table (upstream/development format)
-          2. volumes.cover BLOB column (dev branch format)
-          3. volume_files table (file-based covers)
+        Checks volumes_covers table first, then volume_files for
+        file-based covers.
 
         Returns:
             BytesIO: The cover.
         """
         cursor = get_db()
 
-        # 1) upstream format: separate volumes_covers table
+        # 1) volumes_covers table (BLOB stored cover)
         try:
             row = cursor.execute(
                 "SELECT cover FROM volumes_covers WHERE volume_id = ? LIMIT 1",
@@ -483,18 +480,7 @@ class _VolumeBackend:
         except OperationalError:
             pass
 
-        # 2) dev-branch format: cover column on volumes table
-        try:
-            row = cursor.execute(
-                "SELECT cover FROM volumes WHERE id = ? LIMIT 1",
-                (self.id,)
-            ).fetchone()
-            if row and row[0]:
-                return BytesIO(row[0])
-        except OperationalError:
-            pass
-
-        # 3) file-based cover via volume_files / files tables
+        # 2) file-based cover via volume_files / files tables
         try:
             cover_file = cursor.execute(
                 """
@@ -1324,7 +1310,6 @@ def refresh_and_scan(
             volume_data['volume_number'],
             volume_data['description'],
             volume_data['site_url'],
-            volume_data['cover'],
             one_day_ago + 86400,
 
             ids[volume_data['comicvine_id']]
@@ -1342,11 +1327,27 @@ def refresh_and_scan(
             volume_number = ?,
             description = ?,
             site_url = ?,
-            cover = ?,
             last_cv_fetch = ?
         WHERE id = ?;
         """,
         update_volumes
+    )
+
+    # Update covers in volumes_covers table
+    update_covers = (
+        (
+            ids[volume_data['comicvine_id']],
+            volume_data['cover'],
+        )
+        for volume_data in volume_datas
+        if volume_data.get('cover')
+    )
+    cursor.executemany(
+        """
+        INSERT OR REPLACE INTO volumes_covers(volume_id, cover)
+        VALUES (?, ?);
+        """,
+        update_covers
     )
     cursor.connection.commit()
 
@@ -1760,7 +1761,6 @@ class Library:
                 volume_number,
                 description,
                 site_url,
-                cover,
                 monitored,
                 root_folder,
                 custom_folder,
@@ -1768,7 +1768,7 @@ class Library:
                 special_version,
                 special_version_locked
             ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             );
             """,
             (
@@ -1780,7 +1780,6 @@ class Library:
                 volume_data['volume_number'],
                 volume_data['description'],
                 volume_data['site_url'],
-                volume_data['cover'],
                 True,
                 root_folder_id,
                 int(volume_folder is not None),
@@ -1790,6 +1789,16 @@ class Library:
             )
         )
         volume_id = cursor.lastrowid
+
+        # Store cover in volumes_covers table
+        if volume_data.get('cover'):
+            cursor.execute(
+                """
+                INSERT OR REPLACE INTO volumes_covers(volume_id, cover)
+                VALUES (?, ?);
+                """,
+                (volume_id, volume_data['cover'])
+            )
 
         create_volume_folder(root_folder, volume_id, volume_folder)
 

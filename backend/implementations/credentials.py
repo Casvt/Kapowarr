@@ -44,11 +44,9 @@ class Credentials:
                 (c['id'], dict(c))
                 for c in get_db().execute("""
                     SELECT
-                        c.id, cs.source,
-                        c.email, c.password
-                    FROM credentials c
-                    INNER JOIN credentials_sources cs
-                    ON c.source = cs.id;
+                        id, source,
+                        email, password
+                    FROM credentials;
                     """
                 )
             )
@@ -129,11 +127,8 @@ class Credentials:
             dict: The credential info
         """
         cursor = get_db()
-        source_id: Union[int, None] = cursor.execute(
-            "SELECT id FROM credentials_sources WHERE source = ? LIMIT 1;",
-            (source,)
-        ).exists()
-        if not source_id:
+        from backend.internals.settings import credential_sources
+        if source not in credential_sources:
             raise CredentialSourceNotFound(source)
 
         LOGGER.info(f'Adding credential for {source}')
@@ -145,7 +140,7 @@ class Credentials:
                 INSERT INTO credentials(source, email, password)
                 VALUES (?,?,?);
                 """,
-                (source_id, email, password)
+                (source, email, password)
             ).lastrowid
 
         except RequestError:
@@ -183,14 +178,8 @@ class Credentials:
         Returns:
             List[str]: The list of service strings
         """
-        result = first_of_column(
-            get_db().execute("""
-                SELECT cs.source
-                FROM credentials_sources cs
-                LEFT JOIN credentials c
-                ON cs.id = c.source
-                WHERE c.id IS NULL;
-            """)
+        from backend.internals.settings import credential_sources
+        used = first_of_column(
+            get_db().execute("SELECT source FROM credentials;")
         )
-
-        return result
+        return [s for s in credential_sources if s not in used]
