@@ -191,6 +191,10 @@ class Settings(metaclass=Singleton):
             settings['service_preference']
         )
 
+        # Ensure new settings have defaults for existing databases
+        if 'library_display_mode' not in settings:
+            settings['library_display_mode'] = default_settings['library_display_mode']
+
         self.settings = settings
         return
 

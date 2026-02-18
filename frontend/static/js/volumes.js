@@ -221,21 +221,21 @@ function renderTable(volumes, api_key) {
 
 function getVirtualRange(total_entries) {
 	const list_el = library_els.views.list;
-	const style = getComputedStyle(list_el);
-	const entry_width_raw = parseFloat(style.getPropertyValue('--entry-width'));
-	const gap = parseFloat(style.gap) || 16;
-	const entry_width = Number.isNaN(entry_width_raw) ? 140 : entry_width_raw;
-	const columns = Math.max(
-		1,
-		Math.floor((list_el.clientWidth + gap) / (entry_width + gap))
-	);
-	const item_height = Math.max(220, Math.round(entry_width * 2.2));
+	
+	// Use fixed dimensions for consistent virtual scroll behavior
+	const entry_width = 140; // Fixed width in virtual mode
+	const gap = 16; // 1rem gap
+	const entry_height = 280; // Approximate height: 140px * 1.5 (aspect ratio 2:3) + text/progress
+	
+	const container_width = list_el.clientWidth || window.innerWidth - 48;
+	const columns = Math.max(1, Math.floor((container_width + gap) / (entry_width + gap)));
+	
 	const list_top = list_el.getBoundingClientRect().top + window.scrollY;
 	const relative_scroll = Math.max(0, window.scrollY - list_top);
-	const visible_rows = Math.ceil(window.innerHeight / item_height) + 2;
-	const buffer_rows = 4;
+	const visible_rows = Math.ceil(window.innerHeight / entry_height) + 2;
+	const buffer_rows = 3;
 
-	const start_row = Math.max(0, Math.floor(relative_scroll / item_height) - buffer_rows);
+	const start_row = Math.max(0, Math.floor(relative_scroll / entry_height) - buffer_rows);
 	const end_row = start_row + visible_rows + (buffer_rows * 2);
 
 	const start = start_row * columns;
@@ -245,8 +245,8 @@ function getVirtualRange(total_entries) {
 	return {
 		start,
 		end,
-		padding_top: start_row * item_height,
-		padding_bottom: Math.max(0, (total_rows - end_row) * item_height)
+		padding_top: start_row * entry_height,
+		padding_bottom: Math.max(0, (total_rows - end_row) * entry_height)
 	};
 };
 
@@ -259,6 +259,8 @@ function renderVirtualList(force=false) {
 		return;
 
 	const range = getVirtualRange(total);
+	
+	// Skip if nothing changed (unless forced)
 	if (
 		!force
 		&& range.start === virtual_state.last_start
@@ -269,13 +271,22 @@ function renderVirtualList(force=false) {
 	virtual_state.last_start = range.start;
 	virtual_state.last_end = range.end;
 
+	// Ensure we render at least some items
+	const items_to_render = library_state.volumes.slice(range.start, range.end);
+	if (items_to_render.length === 0 && total > 0) {
+		// Fallback: render first batch if range calculation failed
+		const fallback_end = Math.min(total, 50);
+		clearLibraryEntries();
+		library_els.views.list.style.paddingTop = '0px';
+		library_els.views.list.style.paddingBottom = '0px';
+		renderList(library_state.volumes.slice(0, fallback_end), library_state.api_key);
+		return;
+	}
+
 	clearLibraryEntries();
 	library_els.views.list.style.paddingTop = `${range.padding_top}px`;
 	library_els.views.list.style.paddingBottom = `${range.padding_bottom}px`;
-	renderList(
-		library_state.volumes.slice(range.start, range.end),
-		library_state.api_key
-	);
+	renderList(items_to_render, library_state.api_key);
 };
 
 function scheduleVirtualRender() {
@@ -461,8 +472,20 @@ function runAction(api_key, action, args={}) {
 
 function fetchDisplayMode(api_key) {
 	return fetchAPI('/settings', api_key)
-		.then(json => json.result.library_display_mode || 'virtual_scroll')
-		.catch(() => 'virtual_scroll');
+		.then(json => {
+			const mode = json.result.library_display_mode;
+			// Validate mode value, default to virtual_scroll if invalid or missing
+			if (mode === 'pagination' || mode === 'virtual_scroll') {
+				console.log('Library display mode:', mode);
+				return mode;
+			}
+			console.log('Library display mode defaulting to virtual_scroll, got:', mode);
+			return 'virtual_scroll';
+		})
+		.catch(err => {
+			console.error('Failed to fetch display mode:', err);
+			return 'virtual_scroll';
+		});
 };
 
 // code run on load

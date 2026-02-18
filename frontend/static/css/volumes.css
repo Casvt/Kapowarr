@@ -89,6 +89,14 @@ main:has(#massedit-toggle:checked) #library-container {
 	display: none;
 }
 
+/* In virtual mode, use fixed sizing for consistent layout calculations */
+#list-library.virtual-mode .list-entry {
+	flex-grow: 0;
+	flex-shrink: 0;
+	width: 140px;
+	max-width: 140px;
+}
+
 .list-entry {
 	flex-grow: 1;
 	width: var(--entry-width);
