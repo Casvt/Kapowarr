@@ -648,6 +648,13 @@ class GeneralFileData(FileData):
     file_type: str
 
 
+class FileMatch(TypedDict):
+    filepath: str
+    issue_ids: List[int]
+    general_file: bool
+    forced_match: bool
+
+
 # region Dataclasses
 @dataclass
 class BlocklistEntry:

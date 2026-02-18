@@ -323,12 +323,79 @@ tbody .issue-title:hover {
 }
 
 /*  */
-/* Issue info window */
+/* Manage Issues window */
 /*  */
-#issue-info-window .window-content {
-	justify-content: flex-start;
+#manage-issues-table {
+	min-width: 40rem;
 }
 
+#manage-issues-table:has(tbody tr:nth-child(2)) .empty-manage-message {
+	display: none;
+}
+
+.empty-manage-message {
+	text-align: center;
+}
+
+#manage-issues-table input[type="checkbox"] {
+	width: min-content;
+}
+
+#manage-issues-table td:last-child {
+	text-wrap: nowrap;
+}
+
+#show-issue-match {
+	border: 1px solid var(--border-color);
+	transition: background-color 100ms linear,
+		color 100ms linear;
+}
+
+#manage-window:has(input[type="checkbox"]:checked) #show-issue-match {
+	background-color: var(--accent-color);
+	color: var(--nav-background-color);
+}
+
+#submit-match-issues {
+	border: 1px solid var(--border-color);
+	background-color: transparent;
+	transition: background-color 100ms linear;
+}
+
+#match-window:has(input[type="checkbox"]:checked) #submit-match-issues {
+	background-color: var(--success-color);
+}
+
+/*  */
+/* Match Files window */
+/*  */
+#issue-match-table {
+	min-width: 30rem;
+}
+
+#issue-match-table:has(tbody tr:nth-child(4)) .empty-issue-match-list-message {
+	display: none;
+}
+
+.empty-issue-match-list-message {
+	text-align: center;
+}
+
+#issue-match-table input[type="checkbox"] {
+	width: min-content;
+}
+
+#issue-match-table td:last-child {
+	text-wrap: nowrap;
+}
+
+#cancel-match-issues {
+	background-color: var(--error-color);
+}
+
+/*  */
+/* Issue info window */
+/*  */
 #issue-info-selectors {
 	display: flex;
 	gap: .75rem;
@@ -342,7 +409,8 @@ tbody .issue-title:hover {
 }
 
 .f-filepath,
-.gf-filepath {
+.gf-filepath,
+.mi-filepath {
 	white-space: pre-wrap;
 }
 
@@ -354,27 +422,30 @@ tbody .issue-title:hover {
 	display: none;
 }
 
-#files-window:has(tbody tr) .window-content {
+#manage-window .window-content,
+#match-window .window-content,
+#files-window:has(tbody tr) .window-content,
+#issue-info-window .window-content {
 	justify-content: flex-start;
 }
 
-:where(#files-window, #issue-files) :where(td, th):first-child {
+:where(#manage-window, #match-window, #files-window, #issue-files) :where(td, th):first-child {
 	padding-left: 1rem;
 }
 
-:where(#files-window, #issue-files) :where(td, th):last-child {
+:where(#manage-window, #match-window, #files-window, #issue-files) :where(td, th):last-child {
 	padding-right: 1rem;
 }
 
-:where(.files-entry, .general-files-entry) {
+:where(.manage-entry, .match-entry, .files-entry, .general-files-entry) {
 	transition: background-color 200ms linear;
 }
 
-:where(.files-entry, .general-files-entry):hover {
+:where(.manage-entry, .match-entry, .files-entry, .general-files-entry):hover {
 	background-color: var(--hover-color);
 }
 
-:where(.files-entry, .general-files-entry) td {
+:where(.manage-entry, .match-entry, .files-entry, .general-files-entry) td {
 	border-top: 1px solid var(--border-color);
 	padding: .5rem;
 }

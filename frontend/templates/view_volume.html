@@ -52,6 +52,21 @@
 		<td>+</td>
 		<td></td>
 	</tr>
+	<tr class="manage-entry" data-manage_id="">
+		<td>
+			<input type="checkbox">
+		</td>
+		<td class="mi-filepath"></td>
+		<td></td>
+	</tr>
+	<tr class="match-entry" data-issue_id="">
+		<td>
+			<input type="checkbox">
+		</td>
+		<td></td>
+		<td></td>
+		<td></td>
+	</tr>
 	<tr class="files-entry">
 		<td class="f-filepath"></td>
         <td class="f-size"></td>
@@ -246,6 +261,71 @@
 	{% endset %}
 	{{ window(True, "convert-window", "Convert volume files", convert_content, convert_submit) }}
 
+	{% set manage_issues_content %}
+		<table id="manage-issues-table">
+			<thead>
+				<tr>
+                    <th aria-label="Select All">
+                        <input type="checkbox" id="selectall-manage-input">
+                    </th>
+                    <th>File</th>
+					<th>Matched To</th>
+                </tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td colspan="3" class="empty-manage-message">No files in volume folder</td>
+				</tr>
+			</tbody>
+		</table>
+	{% endset %}
+	{% set manage_issues_submit %}
+		<button id="show-issue-match" type="button">Set Match</button>
+		<button id="submit-manage-issues" type="submit">Save</button>
+	{% endset %}
+	{{ window(True, "manage-window", "Manage Issues", manage_issues_content, manage_issues_submit) }}
+
+	{% set issue_match_content %}
+		<table id="issue-match-table">
+			<thead>
+				<tr>
+                    <th aria-label="Select All">
+                        <input type="checkbox" id="selectall-match-input">
+                    </th>
+                    <th>#</th>
+                    <th>Title</th>
+                    <th>Release Date</th>
+                </tr>
+			</thead>
+			<tbody>
+				<tr class="match-entry" id="auto-match-entry" data-issue_id="">
+					<td>
+						<input type="checkbox">
+					</td>
+					<td></td>
+					<td>Automatically Match</td>
+					<td></td>
+				</tr>
+				<tr class="match-entry" id="general-file-match-entry" data-issue_id="-1">
+					<td>
+						<input type="checkbox">
+					</td>
+					<td></td>
+					<td>General File</td>
+					<td></td>
+				</tr>
+				<tr>
+					<td colspan="4" class="empty-issue-match-list-message">No issues in volume</td>
+				</tr>
+			</tbody>
+		</table>
+	{% endset %}
+	{% set issue_match_submit %}
+		<button id="cancel-match-issues" type="button">Cancel</button>
+		<button id="submit-match-issues" type="submit">Select</button>
+	{% endset %}
+	{{ window(False, "match-window", "Match Files", issue_match_content, issue_match_submit, cancel=False) }}
+
 	{% set files_content %}
 		<p class="empty-rename-message">No general files</p>
 		<table class="icon-text-color">
@@ -301,6 +381,12 @@
 					"Preview how the files of the volume will be converted to a different format",
 					"convert.svg",
 					"Preview Convert"
+				) }}
+				{{ icon_button(
+					"manage-button",
+					"Change the mapping of files to issues or the volume",
+					"manage_files.svg",
+					"Manage Issues"
 				) }}
 				{{ icon_button(
 					"files-button",

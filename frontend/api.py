@@ -11,10 +11,10 @@ from backend.base.custom_exceptions import (InvalidKeyValue,
                                             KeyNotFound, TaskNotFound)
 from backend.base.definitions import (BlocklistReason, BlocklistReasonID,
                                       CredentialData, CredentialSource,
-                                      DownloadSource, KapowarrException,
-                                      LibraryFilter, LibrarySorting,
-                                      MonitorScheme, SpecialVersion,
-                                      StartType, VolumeData)
+                                      DownloadSource, FileMatch,
+                                      KapowarrException, LibraryFilter,
+                                      LibrarySorting, MonitorScheme,
+                                      SpecialVersion, StartType, VolumeData)
 from backend.base.helpers import hash_credential
 from backend.base.logging import LOGGER, get_log_file_contents
 from backend.features.download_queue import (DownloadHandler,
@@ -37,6 +37,8 @@ from backend.implementations.conversion import preview_mass_convert
 from backend.implementations.converters import ConvertersManager
 from backend.implementations.credentials import Credentials
 from backend.implementations.external_clients import ExternalClients
+from backend.implementations.file_matching import (get_file_matching,
+                                                   set_file_matching)
 from backend.implementations.naming import (generate_volume_folder_name,
                                             preview_mass_rename)
 from backend.implementations.remote_mapping import RemoteMappings
@@ -891,11 +893,51 @@ def api_issues(id: int):
         result = issue.get_data()
         return return_api(result)
 
+
+# =====================
+# Manual File Match
+# =====================
+@api.route('/volumes/<int:id>/manualmatch', methods=['GET', 'PUT'])
+@error_handler
+@auth
+def api_manual_match(id: int):
+    Library.get_volume(id)
+
+    if request.method == 'GET':
+        result = get_file_matching(id)
+        return return_api(result)
+
+    elif request.method == 'PUT':
+        file_matching_changes = request.get_json()
+        if not isinstance(file_matching_changes, list):
+            raise InvalidKeyValue('body', file_matching_changes)
+
+        entry_types = FileMatch.__annotations__
+        for entry in file_matching_changes:
+            if not isinstance(entry, dict):
+                raise InvalidKeyValue('body', file_matching_changes)
+            if not all(
+                key in entry_types
+                and (
+                    (
+                        isinstance(value, list)
+                        and all(isinstance(i_id, int) for i_id in value)
+                    )
+                    if entry_types[key] == List[int] else
+                    isinstance(value, entry_types[key])
+                )
+                for key, value in entry.items()
+            ):
+                raise InvalidKeyValue('body', file_matching_changes)
+
+        set_file_matching(id, file_matching_changes)
+
+        return return_api({})
+
+
 # =====================
 # Renaming
 # =====================
-
-
 @api.route('/volumes/<int:id>/rename', methods=['GET'])
 @error_handler
 @auth

@@ -5,15 +5,16 @@ The matching of files to issues in a volume
 """
 
 from collections import Counter
-from os.path import isdir
-from typing import Dict, List, Union
+from os.path import basename, isdir
+from typing import Dict, List, Set, Union
 
-from backend.base.definitions import (FileConstants, GeneralFileType,
-                                      SpecialVersion)
+from backend.base.definitions import (FileConstants, FileMatch,
+                                      GeneralFileType, SpecialVersion)
 from backend.base.file_extraction import (extract_filename_data,
                                           refine_special_version)
 from backend.base.files import (create_folder, delete_empty_child_folders,
-                                delete_empty_parent_folders, list_files)
+                                delete_empty_parent_folders,
+                                folder_is_inside_folder, list_files)
 from backend.base.helpers import (extract_year_from_date,
                                   filtered_iter, force_range)
 from backend.base.logging import LOGGER
@@ -25,6 +26,7 @@ from backend.internals.server import DownloadedStatusEvent, WebSocket
 from backend.internals.settings import Settings
 
 
+# region Automatic Match
 def scan_files(
     volume_id: int,
     filepath_filter: List[str] = [],
@@ -52,6 +54,7 @@ def scan_files(
 
     LOGGER.debug(f'Scanning for files for {volume_id}')
 
+    cursor = get_db()
     settings = Settings().get_settings()
     volume = Volume(volume_id)
     volume_data = volume.get_data()
@@ -73,6 +76,34 @@ def scan_files(
         for f in volume.get_all_files()
     }
 
+    # Skip processing manually matched files, but do note that they are found
+    manually_matched_files: Dict[str, int] = dict(cursor.execute(
+        """
+        SELECT DISTINCT f.filepath, f.id
+        FROM files f
+        INNER JOIN issues_files if
+        INNER JOIN issues i
+        ON f.id = if.file_id
+            AND if.issue_id = i.id
+        WHERE i.volume_id = ?
+            AND if.forced = ?
+        """,
+        (volume_id, True)
+    ))
+    manually_matched_files_found: Set[int] = set()
+    manually_matched_general_files: Dict[str, int] = dict(cursor.execute(
+        """
+        SELECT DISTINCT f.filepath, f.id
+        FROM files f
+        INNER JOIN volume_files vf
+        ON f.id = vf.file_id
+        WHERE vf.volume_id = ?
+            AND vf.forced = ?
+        """,
+        (volume_id, True)
+    ))
+    manually_matched_general_files_found: Set[int] = set()
+
     new_issue_bindings: Dict[int, int] = {}
     new_general_bindings: Dict[int, str] = {}
     folder_contents = list_files(
@@ -80,6 +111,20 @@ def scan_files(
         ext=FileConstants.SCANNABLE_EXTENSIONS
     )
     for file in filtered_iter(folder_contents, set(filepath_filter)):
+        if file in manually_matched_files:
+            # File already manually matched to issue(s)
+            manually_matched_files_found.add(
+                manually_matched_files.pop(file)
+            )
+            continue
+
+        elif file in manually_matched_general_files:
+            # File already manually matched as general file of volume
+            manually_matched_general_files_found.add(
+                manually_matched_general_files.pop(file)
+            )
+            continue
+
         file_data = extract_filename_data(file)
 
         # Check if file matches volume
@@ -150,10 +195,9 @@ def scan_files(
                 for issue in matching_issues:
                     new_issue_bindings[current_issue_files[file]] = issue
 
-    cursor = get_db()
-
     # Determine old and new bindings, and which issues change in
     # their marking of being downloaded because of the new bindings
+    manually_matched_files_missing = set(manually_matched_files.values())
     current_bindings: Dict[int, int] = dict(cursor.execute("""
         SELECT if.file_id, if.issue_id
         FROM issues_files if
@@ -166,7 +210,12 @@ def scan_files(
     delete_bindings = {
         bf: bi
         for bf, bi in current_bindings.items()
-        if new_issue_bindings.get(bf) != bi
+        if (
+            new_issue_bindings.get(bf) != bi
+            and bf not in manually_matched_files_found
+
+            or bf in manually_matched_files_missing
+        )
     }
     add_bindings = {
         bf: bi
@@ -209,6 +258,9 @@ def scan_files(
 
     # Delete bindings for general files that aren't in new bindings
     if not filepath_filter:
+        manually_matched_general_files_missing = set(
+            manually_matched_general_files.values()
+        )
         current_general_bindings = {
             gf['id']: gf['file_type']
             for gf in volume.get_general_files()
@@ -216,7 +268,12 @@ def scan_files(
         delete_general_bindings = (
             (b,)
             for b in current_general_bindings
-            if b not in new_general_bindings
+            if (
+                b not in new_general_bindings
+                and b not in manually_matched_general_files_found
+
+                or b in manually_matched_general_files_missing
+            )
         )
         cursor.executemany(
             "DELETE FROM volume_files WHERE file_id = ?;",
@@ -272,5 +329,184 @@ def scan_files(
                 volume_data.folder,
                 RootFolders()[volume_data.root_folder]
             )
+
+    return
+
+
+# region Manual Match
+def get_file_matching(volume_id: int) -> List[FileMatch]:
+    """Get the matchings of all files in the volume folder. Either they match to
+    nothing, one or more issues or it's a general file.
+
+    Args:
+        volume_id (int): The ID of the volume.
+
+    Returns:
+        List[FileMatch]: A list of all files in the volume folder and their match.
+    """
+    cursor = get_db()
+
+    # Add a files in folder to list
+    volume_folder: str = cursor.execute(
+        "SELECT folder FROM volumes WHERE id = ? LIMIT 1;",
+        (volume_id,)
+    ).fetchone()[0]
+
+    folder_files = list_files(volume_folder, FileConstants.SCANNABLE_EXTENSIONS)
+    folder_files.sort()
+    current_matches: Dict[str, FileMatch] = {
+        filepath: {
+            "filepath": filepath,
+            "issue_ids": [],
+            "general_file": False,
+            "forced_match": False
+        }
+        for filepath in folder_files
+    }
+
+    # Update file entries with their issue matches
+    cursor.execute("""
+        SELECT f.filepath, if.issue_id, if.forced
+        FROM files f
+        INNER JOIN issues_files if
+        INNER JOIN issues i
+        ON f.id = if.file_id
+            AND if.issue_id = i.id
+        WHERE volume_id = ?
+        ORDER BY if.issue_id;
+        """,
+        (volume_id,)
+    )
+
+    for filepath, issue_id, forced in cursor:
+        try:
+            file_match = current_matches[filepath]
+        except KeyError:
+            continue
+        file_match["issue_ids"].append(issue_id)
+        file_match["forced_match"] = forced
+
+    # Update file entries with their general file matches
+    cursor.execute("""
+        SELECT f.filepath, vf.forced
+        FROM files f
+        INNER JOIN volume_files vf
+        ON f.id = vf.file_id
+        WHERE vf.volume_id = ?;
+        """,
+        (volume_id,)
+    )
+
+    for filepath, forced in cursor:
+        try:
+            general_match = current_matches[filepath]
+        except KeyError:
+            continue
+        general_match["general_file"] = True
+        general_match["forced_match"] = forced
+
+    return list(current_matches.values())
+
+
+def set_file_matching(volume_id: int, matches: List[FileMatch]) -> None:
+    """Set the matchings of files in a volume's folder so that they match to one
+    or more issues, become a general file or are allowed to match automatically.
+    For a FileMatch entry, set `forced_match` to `True` and supply the IDs of
+    the issues that it should match to or set `general_file` to `True`. If it
+    should be set to automatically match (like a normal file), set `forced_match`
+    to `False`. Leave out entries to not change their matching. Afterwards, a
+    file scan is automatically done (in case a file that was previously force
+    matched can now be automatically matched).
+
+    Args:
+        volume_id (int): The ID of the volume.
+        matches (List[FileMatch]): A list of files and their desired matching.
+    """
+    cursor = get_db()
+    volume_folder: str = cursor.execute(
+        "SELECT folder FROM volumes WHERE id = ? LIMIT 1;",
+        (volume_id,)
+    ).fetchone()[0]
+
+    for file_match in matches:
+        if not folder_is_inside_folder(volume_folder, file_match['filepath']):
+            continue
+
+        # Add file to database if needed; get file ID
+        file_id = FilesDB.add_file(file_match["filepath"])
+
+        if not file_match["forced_match"]:
+            cursor.execute(
+                "UPDATE volume_files SET forced = ? WHERE file_id = ?;",
+                (False, file_id,)
+            )
+            cursor.execute(
+                "UPDATE issues_files SET forced = ? WHERE file_id = ?;",
+                (False, file_id,)
+            )
+
+        else:
+            if not file_match["general_file"]:
+                # Remove potential general match
+                cursor.execute(
+                    "DELETE FROM volume_files WHERE file_id = ?;",
+                    (file_id,)
+                )
+
+            # Remove any issue matches that aren't in the list
+            cursor.execute(f"""
+                DELETE FROM issues_files
+                WHERE file_id = ?
+                    AND issue_id NOT IN ({','.join(['?'] * len(file_match["issue_ids"]))})
+                """,
+                (file_id, *file_match["issue_ids"])
+            )
+
+            # Insert or update match in appropriate table
+            if file_match["general_file"]:
+                is_metadata_file = (
+                    basename(file_match["filepath"].lower())
+                    in FileConstants.METADATA_FILES
+                )
+                if is_metadata_file:
+                    file_type = GeneralFileType.METADATA.value
+                else:
+                    file_type = GeneralFileType.COVER.value
+
+                cursor.execute("""
+                    INSERT INTO volume_files(
+                        file_id, volume_id, file_type, forced
+                    ) VALUES (
+                        :file_id, :volume_id, :file_type, :forced
+                    )
+                    ON CONFLICT(file_id) DO
+                    UPDATE SET forced = :forced;
+                    """,
+                    {
+                        "file_id": file_id,
+                        "volume_id": volume_id,
+                        "file_type": file_type,
+                        "forced": True
+                    }
+                )
+
+            else:
+                cursor.executemany("""
+                    INSERT INTO issues_files(file_id, issue_id, forced)
+                        VALUES (:file_id, :issue_id, :forced)
+                    ON CONFLICT(file_id, issue_id) DO
+                    UPDATE SET forced = :forced;
+                    """,
+                    (
+                        {
+                            "file_id": file_id,
+                            "issue_id": issue_id,
+                            "forced": True
+                        }
+                        for issue_id in file_match["issue_ids"]
+                    )
+                )
+
+    scan_files(volume_id, update_websocket=True)
 
     return

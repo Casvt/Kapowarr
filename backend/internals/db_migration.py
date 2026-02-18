@@ -1171,3 +1171,16 @@ def _migrate_remove_unsupported_source_blocklist_entries():
         (2,) # Source not supported
     )
     return
+
+
+@DatabaseMigrationHandler.register_handler(44)
+def _migrate_add_forced_file_match_column():
+    get_db().executescript("""
+        ALTER TABLE issues_files ADD COLUMN
+            forced BOOL NOT NULL DEFAULT 0;
+
+        ALTER TABLE volume_files ADD COLUMN
+            forced BOOL NOT NULL DEFAULT 0;
+    """)
+
+    return

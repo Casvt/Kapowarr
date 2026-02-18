@@ -8,6 +8,8 @@ const ViewEls = {
 		manual_search: document.querySelector('.pre-build-els .search-entry'),
 		rename_before: document.querySelector('.pre-build-els .rename-before'),
 		rename_after: document.querySelector('.pre-build-els .rename-after'),
+		manage: document.querySelector('.pre-build-els .manage-entry'),
+		match: document.querySelector('.pre-build-els .match-entry'),
 		files_entry: document.querySelector('.pre-build-els .files-entry'),
 		general_files_entry: document.querySelector('.pre-build-els .general-files-entry')
 	},
@@ -34,6 +36,7 @@ const ViewEls = {
 		manual_search: document.querySelector('#manualsearch-button'),
 		rename: document.querySelector('#rename-button'),
 		convert: document.querySelector('#convert-button'),
+		manage: document.querySelector('#manage-button'),
 		files: document.querySelector('#files-button'),
 		edit: document.querySelector('#edit-button'),
 		delete: document.querySelector('#delete-button')
@@ -212,6 +215,7 @@ function fillPage(data, api_key) {
 
 	// fill issue lists
 	fillTable(data.issues, api_key);
+	fillIssueMatchTable(data.issues);
 
 	mapButtons(volume_id);
 
@@ -614,6 +618,198 @@ function convertVolume(api_key, issue_id=null) {
 };
 
 //
+// Manage Issues
+//
+const manageIdToFilepath = {};
+let managed_issues = [];
+let managed_issues_changes = {};
+
+function _issuesCoveredByMapping(mapping, no_match_is_tbd=false) {
+	let mapping_value = '';
+	if (mapping.general_file)
+		mapping_value += 'General File';
+
+	else if (mapping.issue_ids.length >= 1)
+		mapping_value += document.querySelector(
+			`#issue-match-table tr[data-issue_id="${mapping.issue_ids[0]}"] td:nth-child(2)`
+		).innerText;
+
+	if (mapping.issue_ids.length > 1)
+		mapping_value += ' - ' + document.querySelector(
+			`#issue-match-table tr[data-issue_id="${mapping.issue_ids[mapping.issue_ids.length - 1]}"] td:nth-child(2)`
+		).innerText;
+
+	if (no_match_is_tbd && !mapping_value)
+		mapping_value += 'TBD';
+
+	if (mapping.forced_match)
+		mapping_value += ' (Forced)';
+
+	return mapping_value;
+}
+
+function showManageIssues(api_key) {
+	managed_issues_changes = {};
+	managed_issues = [];
+	document.querySelector('#selectall-manage-input').checked = false;
+	const table = document.querySelector('#manage-issues-table tbody'),
+		volume_folder = ViewEls.vol_data.path.dataset.volume_folder;
+	table.querySelectorAll('tr:not(:first-child)').forEach(e => e.remove());
+
+	fetchAPI(`/volumes/${volume_id}/manualmatch`, api_key)
+	.then(json => {
+		json.result.forEach((mapping, idx) => {
+			const entry = ViewEls.pre_build.manage.cloneNode(true);
+			entry.dataset.manage_id = idx;
+			manageIdToFilepath[idx] = mapping.filepath;
+
+            const short_f = mapping.filepath.slice(
+                mapping.filepath.indexOf(volume_folder)
+                + volume_folder.length
+                + 1
+            );
+			entry.querySelector('td:nth-child(2)').innerText = short_f;
+			entry.querySelector('td:nth-child(2)').title = mapping.filepath;
+
+			entry.querySelector('td:nth-child(3)').innerText = _issuesCoveredByMapping(mapping);
+
+			table.appendChild(entry);
+		});
+	});
+
+	showWindow('manage-window');
+};
+
+function toggleAllManages() {
+	const checked = document.querySelector('#selectall-manage-input').checked;
+	document.querySelectorAll(
+		'#manage-window tbody input[type="checkbox"]'
+	).forEach(e => e.checked = checked);
+};
+
+function submitManagedIssues(api_key) {
+	sendAPI('PUT', `/volumes/${volume_id}/manualmatch`, api_key, {},
+		Object.values(managed_issues_changes)
+	)
+	.then(response => window.location.reload());
+};
+
+function fillIssueMatchTable(issues) {
+	const table = document.querySelector('#issue-match-table tbody');
+	issues.forEach(issue => {
+		const entry = ViewEls.pre_build.match.cloneNode(true);
+
+		entry.dataset.issue_id = issue.id;
+		entry.querySelector('input').onchange = e => handleIssueMatchCheckboxes(e);
+		entry.querySelector('td:nth-child(2)').innerText = issue.issue_number;
+		entry.querySelector('td:nth-child(3)').innerText = issue.title;
+		entry.querySelector('td:nth-child(4)').innerText = issue.date;
+
+		table.appendChild(entry);
+	});
+};
+
+function showMatchIssue() {
+	managed_issues = [...document.querySelectorAll(
+		'#manage-issues-table tbody tr:has(input[type="checkbox"]:checked)'
+	)].map(el => parseInt(el.dataset.manage_id));
+
+	if (!managed_issues.length)
+		return;
+
+	setIssueMatchCheckboxes(false);
+	showWindow('match-window');
+};
+
+function setIssueMatchCheckboxes(checked) {
+	document.querySelector('#selectall-match-input').checked = checked;
+	document.querySelectorAll(
+		'#match-window tbody > tr:nth-child(n + 4) input[type="checkbox"]'
+	).forEach(e => e.checked = checked);
+}
+
+function handleIssueMatchCheckboxes(e) {
+	const checkbox = e.target;
+
+	if (checkbox !== document.activeElement)
+		// Checkbox is not being altered by user
+		return;
+
+	const row = checkbox.parentElement.parentElement,
+		autoMatch = document.querySelector('#auto-match-entry input'),
+		generalFileMatch = document.querySelector('#general-file-match-entry input');
+
+	if (checkbox.id === "selectall-match-input") {
+		// Select All toggled
+		setIssueMatchCheckboxes(checkbox.checked);
+		autoMatch.checked = false;
+		generalFileMatch.checked = false;
+	}
+	else if (row.dataset.issue_id === "") {
+		// Auto match
+		setIssueMatchCheckboxes(false);
+		generalFileMatch.checked = false;
+	}
+	else if (row.dataset.issue_id === "-1") {
+		// General match
+		setIssueMatchCheckboxes(false);
+		autoMatch.checked = false;
+	}
+	else {
+		// Issue match
+		autoMatch.checked = false;
+		generalFileMatch.checked = false;
+	}
+};
+
+function processIssueMatch() {
+	const selectedIssues = [...document.querySelectorAll(
+		'#issue-match-table tbody > tr:has(input[type="checkbox"]:checked)'
+	)].map(row => row.dataset.issue_id)
+
+	if (!selectedIssues.length)
+		return;
+	
+	managed_issues.forEach(manageId => {
+		let data;
+		if (selectedIssues[0] == "") {
+			// Auto match
+			data = {
+				filepath: manageIdToFilepath[manageId],
+				issue_ids: [],
+				general_file: false,
+				forced_match: false
+			};
+		}
+		else if (selectedIssues[0] == "-1") {
+			// General file
+			data = {
+				filepath: manageIdToFilepath[manageId],
+				issue_ids: [],
+				general_file: true,
+				forced_match: true
+			};
+		} 
+		else {
+			// Issue match
+			data = {
+				filepath: manageIdToFilepath[manageId],
+				issue_ids: selectedIssues.map(i => parseInt(i)),
+				general_file: false,
+				forced_match: true
+			};
+		};
+
+		managed_issues_changes[manageId] = data;
+		document.querySelector(
+			`#manage-issues-table tbody > tr[data-manage_id="${manageId}"] td:last-child`
+		).innerText = _issuesCoveredByMapping(data, no_match_is_tbd=true);
+	});
+	document.querySelector('#selectall-manage-input').checked = false;
+	showWindow('manage-window');
+};
+
+//
 // Editing
 //
 function showEdit(api_key) {
@@ -753,16 +949,20 @@ usingApiKey()
 	ViewEls.tool_bar.manual_search.onclick = e => showManualSearch(api_key);
 	ViewEls.tool_bar.rename.onclick = e => showRename(api_key);
 	ViewEls.tool_bar.convert.onclick = e => showConvert(api_key);
+	ViewEls.tool_bar.manage.onclick = e => showManageIssues(api_key);
 	ViewEls.tool_bar.edit.onclick = e => showEdit(api_key);
 
 	document.querySelector('#submit-rename').onclick =
-		e => renameVolume(api_key, parseInt(e.target.dataset.issue_id) || null);
+	e => renameVolume(api_key, parseInt(e.target.dataset.issue_id) || null);
 
 	document.querySelector('#submit-convert').onclick =
-		e => convertVolume(api_key, parseInt(e.target.dataset.issue_id) || null);
+	e => convertVolume(api_key, parseInt(e.target.dataset.issue_id) || null);
 
 	document.querySelector('#issue-rename-selector').onclick =
-		e => showRename(api_key, parseInt(e.target.dataset.issue_id));
+	e => showRename(api_key, parseInt(e.target.dataset.issue_id));
+
+	document.querySelector('#submit-manage-issues').onclick =
+	e => submitManagedIssues(api_key);
 
 	socket.on(
 		'downloaded_status',
@@ -786,6 +986,13 @@ document.querySelector('#issue-info-selector').onclick = e => showInfoWindow('is
 document.querySelector('#issue-files-selector').onclick = e => showInfoWindow('issue-files');
 document.querySelector('#selectall-input').onchange = e => toggleAllRenames();
 document.querySelector('#selectall-convert-input').onchange = e => toggleAllConverts();
+document.querySelector('#selectall-manage-input').onchange = e => toggleAllManages();
+document.querySelector('#show-issue-match').onclick = e => showMatchIssue();
+document.querySelector('#selectall-match-input').onchange = e => handleIssueMatchCheckboxes(e);
+document.querySelector('#auto-match-entry input').onchange = e => handleIssueMatchCheckboxes(e);
+document.querySelector('#general-file-match-entry input').onchange = e => handleIssueMatchCheckboxes(e);
+document.querySelector('#cancel-match-issues').onclick = e => showWindow('manage-window');
+document.querySelector('#submit-match-issues').onclick = e => processIssueMatch();
 
 document.querySelector('#edit-form').action = 'javascript:editVolume();';
 document.querySelector('#delete-form').action = 'javascript:deleteVolume();';
