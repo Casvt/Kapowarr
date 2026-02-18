@@ -6,7 +6,7 @@ The matching of files to issues in a volume
 
 from collections import Counter
 from os.path import basename, isdir
-from typing import Dict, List, Set, Union
+from typing import Dict, List, Set, Tuple, Union
 
 from backend.base.definitions import (FileConstants, FileMatch,
                                       GeneralFileType, SpecialVersion)
@@ -104,7 +104,7 @@ def scan_files(
     ))
     manually_matched_general_files_found: Set[int] = set()
 
-    new_issue_bindings: Dict[int, int] = {}
+    new_issue_bindings: Set[Tuple[int, int]] = set()
     new_general_bindings: Dict[int, str] = {}
     folder_contents = list_files(
         folder=volume_data.folder,
@@ -173,7 +173,9 @@ def scan_files(
             if file not in current_issue_files:
                 current_issue_files[file] = FilesDB.add_file(file)
 
-            new_issue_bindings[current_issue_files[file]] = volume_issues[0].id
+            new_issue_bindings.add(
+                (current_issue_files[file], volume_issues[0].id)
+            )
 
         elif file_data["issue_number"] is not None:
             # Normal issue
@@ -193,12 +195,14 @@ def scan_files(
                     current_issue_files[file] = FilesDB.add_file(file)
 
                 for issue in matching_issues:
-                    new_issue_bindings[current_issue_files[file]] = issue
+                    new_issue_bindings.add(
+                        (current_issue_files[file], issue)
+                    )
 
     # Determine old and new bindings, and which issues change in
     # their marking of being downloaded because of the new bindings
     manually_matched_files_missing = set(manually_matched_files.values())
-    current_bindings: Dict[int, int] = dict(cursor.execute("""
+    current_bindings: Set[Tuple[int, int]] = set(map(tuple, cursor.execute("""
         SELECT if.file_id, if.issue_id
         FROM issues_files if
         INNER JOIN issues i
@@ -206,30 +210,30 @@ def scan_files(
         WHERE i.volume_id = ?;
         """,
         (volume_id,)
-    ))
+    )))
     delete_bindings = {
-        bf: bi
-        for bf, bi in current_bindings.items()
+        (file_id, issue_id)
+        for file_id, issue_id in current_bindings
         if (
-            new_issue_bindings.get(bf) != bi
-            and bf not in manually_matched_files_found
+            (file_id, issue_id) not in new_issue_bindings
+            and file_id not in manually_matched_files_found
 
-            or bf in manually_matched_files_missing
+            or file_id in manually_matched_files_missing
         )
     }
     add_bindings = {
-        bf: bi
-        for bf, bi in new_issue_bindings.items()
-        if current_bindings.get(bf) != bi
+        (file_id, issue_id)
+        for file_id, issue_id in new_issue_bindings
+        if (file_id, issue_id) not in current_bindings
     }
 
-    issue_binding_count = Counter(current_bindings.values())
+    issue_binding_count = Counter((b[1] for b in current_bindings))
 
-    new_binding_count = Counter(add_bindings.values())
+    new_binding_count = Counter((b[1] for b in add_bindings))
     issue_binding_count.update(new_binding_count)
     newly_downloaded_issues = list(new_binding_count)
 
-    delete_binding_count = Counter(delete_bindings.values())
+    delete_binding_count = Counter((b[1] for b in delete_bindings))
     issue_binding_count.subtract(delete_binding_count)
     deleted_downloaded_issues = [
         k
@@ -241,7 +245,7 @@ def scan_files(
     if not filepath_filter:
         cursor.executemany(
             "DELETE FROM issues_files WHERE file_id = ? AND issue_id = ?;",
-            delete_bindings.items()
+            delete_bindings
         )
 
         if settings.unmonitor_deleted_issues:
@@ -253,7 +257,7 @@ def scan_files(
     # Add bindings that aren't in current bindings
     cursor.executemany(
         "INSERT INTO issues_files(file_id, issue_id) VALUES (?, ?);",
-        add_bindings.items()
+        add_bindings
     )
 
     # Delete bindings for general files that aren't in new bindings
