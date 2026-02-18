@@ -80,6 +80,15 @@ main:has(#massedit-toggle:checked) #library-container {
 	gap: 1rem;
 }
 
+#list-library.virtual-mode {
+	align-content: flex-start;
+	min-height: 12rem;
+}
+
+#list-library.virtual-mode .space-taker {
+	display: none;
+}
+
 .list-entry {
 	flex-grow: 1;
 	width: var(--entry-width);
@@ -160,6 +169,35 @@ main:has(#massedit-toggle:checked) #library-container {
 	width: 100%;
 	overflow-x: auto;
 
+	color: var(--text-color);
+}
+
+#library-pagination {
+	margin-top: 1.25rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: .8rem;
+	flex-wrap: wrap;
+}
+
+#library-pagination button,
+#library-pagination select {
+	padding: .35rem .6rem;
+	border: 1px solid var(--border-color);
+	border-radius: 4px;
+	background-color: var(--background-color);
+	color: var(--text-color);
+}
+
+#library-pagination button:disabled {
+	opacity: .5;
+	cursor: not-allowed;
+}
+
+#pagination-status {
+	min-width: 8rem;
+	text-align: center;
 	color: var(--text-color);
 }
 

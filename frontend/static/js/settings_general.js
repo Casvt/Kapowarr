@@ -8,6 +8,8 @@ function fillSettings(api_key) {
 		document.querySelector('#api-input').value = api_key;
 		document.querySelector('#cv-input').value = json.result.comicvine_api_key;
 		document.querySelector('#log-level-input').value = json.result.log_level;
+		document.querySelector('#library-display-mode-input').value =
+			json.result.library_display_mode;
 	});
 	document.querySelector('#theme-input').value = getLocalStorage('theme')['theme'];
 };
@@ -21,7 +23,8 @@ function saveSettings(api_key) {
 		'url_base': document.querySelector('#url-base-input').value,
 		'auth_password': document.querySelector('#password-input').value,
 		'comicvine_api_key': document.querySelector('#cv-input').value,
-		'log_level': parseInt(document.querySelector('#log-level-input').value)
+		'log_level': parseInt(document.querySelector('#log-level-input').value),
+		'library_display_mode': document.querySelector('#library-display-mode-input').value
 	};
 	sendAPI('PUT', '/settings', api_key, {}, data)
 	.then(response => response.json())

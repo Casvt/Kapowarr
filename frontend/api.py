@@ -619,10 +619,47 @@ def api_volumes():
         query = extract_key(request, 'query', False)
         sort = extract_key(request, 'sort', False)
         filter = extract_key(request, 'filter', False)
+
+        page_value = request.values.get('page')
+        per_page_value = request.values.get('per_page')
+        page = None
+        per_page = None
+        if page_value is not None:
+            try:
+                page = int(page_value)
+            except (TypeError, ValueError):
+                raise InvalidKeyValue('page', page_value)
+            if page <= 0:
+                raise InvalidKeyValue('page', page_value)
+
+        if per_page_value is not None:
+            try:
+                per_page = int(per_page_value)
+            except (TypeError, ValueError):
+                raise InvalidKeyValue('per_page', per_page_value)
+            if per_page <= 0:
+                raise InvalidKeyValue('per_page', per_page_value)
+
         if query:
             volumes = library.search(query, sort, filter)
         else:
             volumes = library.get_volumes(sort, filter)
+
+        if page is not None or per_page is not None:
+            page = page or 1
+            per_page = per_page or 50
+            total = len(volumes)
+            offset = (page - 1) * per_page
+            paged = volumes[offset:offset + per_page]
+
+            total_pages = max(1, (total + per_page - 1) // per_page)
+            return return_api({
+                'items': paged,
+                'page': page,
+                'per_page': per_page,
+                'total': total,
+                'total_pages': total_pages
+            })
 
         return return_api(volumes)
 

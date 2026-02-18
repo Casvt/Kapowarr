@@ -26,6 +26,7 @@ default_settings = {
     'comicvine_api_key': '',
     'auth_password': '',
     'log_level': INFO,
+    'library_display_mode': 'virtual_scroll',
 
     'rename_downloaded_files': True,
     'volume_folder_naming': join('{series_name}', 'Volume {volume_number} ({year})'),
@@ -261,6 +262,10 @@ class Settings(metaclass=Singleton):
 
         elif key == 'log_level' and not isinstance(value, int):
             raise InvalidSettingValue(key, value)
+
+        elif key == 'library_display_mode':
+            if value not in ('virtual_scroll', 'pagination'):
+                raise InvalidSettingValue(key, value)
 
         elif key == 'volume_padding':
             try:
