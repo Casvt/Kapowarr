@@ -345,9 +345,3 @@ class TorrentDownload(ExternalDownload):
 
     def __repr__(self) -> str:
         return f'<{self.__class__.__name__}, {self.download_link}, {self.file}>'
-
-            'client': self.client.id if self.client else None
-        }
-
-    def __repr__(self) -> str:
-        return f'<{self.__class__.__name__}, {self.download_link}, {self.file}>'
