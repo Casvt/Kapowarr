@@ -461,38 +461,58 @@ class _VolumeBackend:
 
     def _get_cover(self) -> BytesIO:
         """Get the cover of the volume.
+        Checks multiple storage locations for backwards
+        compatibility with different DB schema versions:
+          1. volumes_covers table (upstream/development format)
+          2. volumes.cover BLOB column (dev branch format)
+          3. volume_files table (file-based covers)
 
         Returns:
             BytesIO: The cover.
         """
+        cursor = get_db()
+
+        # 1) upstream format: separate volumes_covers table
         try:
-            cover_row = get_db().execute(
+            row = cursor.execute(
+                "SELECT cover FROM volumes_covers WHERE volume_id = ? LIMIT 1",
+                (self.id,)
+            ).fetchone()
+            if row and row[0]:
+                return BytesIO(row[0])
+        except OperationalError:
+            pass
+
+        # 2) dev-branch format: cover column on volumes table
+        try:
+            row = cursor.execute(
                 "SELECT cover FROM volumes WHERE id = ? LIMIT 1",
                 (self.id,)
             ).fetchone()
-            if cover_row and cover_row[0]:
-                return BytesIO(cover_row[0])
+            if row and row[0]:
+                return BytesIO(row[0])
+        except OperationalError:
+            pass
 
-        except OperationalError as e:
-            if 'no such column: cover' not in str(e).lower():
-                raise
-
-        cover_file = get_db().execute(
-            """
-            SELECT f.filepath
-            FROM volume_files vf
-            INNER JOIN files f
-            ON vf.file_id = f.id
-            WHERE vf.volume_id = ?
-                AND vf.file_type = ?
-            LIMIT 1;
-            """,
-            (self.id, GeneralFileType.COVER.value)
-        ).exists()
-
-        if cover_file and isfile(cover_file):
-            with open(cover_file, 'rb') as fh:
-                return BytesIO(fh.read())
+        # 3) file-based cover via volume_files / files tables
+        try:
+            cover_file = cursor.execute(
+                """
+                SELECT f.filepath
+                FROM volume_files vf
+                INNER JOIN files f
+                ON vf.file_id = f.id
+                WHERE vf.volume_id = ?
+                    AND vf.file_type = ?
+                LIMIT 1;
+                """,
+                (self.id, GeneralFileType.COVER.value)
+            ).exists()
+            if cover_file and isfile(cover_file):
+                with open(cover_file, 'rb') as fh:
+                    return BytesIO(fh.read())
+        except OperationalError:
+            pass
 
         return BytesIO(b'')
 

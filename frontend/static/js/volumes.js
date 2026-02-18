@@ -68,7 +68,8 @@ const virtual_state = {
 	enabled: false,
 	last_start: -1,
 	last_end: -1,
-	handle: null
+	handle: null,
+	measured_row_h: 0 // measured once from real DOM
 };
 
 function showLibraryPage(el) {
@@ -221,32 +222,42 @@ function renderTable(volumes, api_key) {
 
 function getVirtualRange(total_entries) {
 	const list_el = library_els.views.list;
-	
-	// Use fixed dimensions for consistent virtual scroll behavior
-	const entry_width = 140; // Fixed width in virtual mode
-	const gap = 16; // 1rem gap
-	const entry_height = 280; // Approximate height: 140px * 1.5 (aspect ratio 2:3) + text/progress
-	
+
+	// Fixed entry width in virtual mode (matches CSS)
+	const entry_width = 140;
+	const gap = 16; // 1rem ≈ 16px
+
+	// Measure actual row height from the DOM if we haven't yet
+	if (virtual_state.measured_row_h === 0) {
+		const first = list_el.querySelector('.list-entry');
+		if (first) {
+			virtual_state.measured_row_h = first.offsetHeight + gap;
+		}
+	}
+	// Fallback: 140px width * 1.5 (2:3 aspect) + ~70px text/progress + gap
+	const row_h = virtual_state.measured_row_h || (210 + 70 + gap);
+
 	const container_width = list_el.clientWidth || window.innerWidth - 48;
 	const columns = Math.max(1, Math.floor((container_width + gap) / (entry_width + gap)));
-	
+
 	const list_top = list_el.getBoundingClientRect().top + window.scrollY;
 	const relative_scroll = Math.max(0, window.scrollY - list_top);
-	const visible_rows = Math.ceil(window.innerHeight / entry_height) + 2;
+	const visible_rows = Math.ceil(window.innerHeight / row_h) + 2;
 	const buffer_rows = 3;
 
-	const start_row = Math.max(0, Math.floor(relative_scroll / entry_height) - buffer_rows);
+	const start_row = Math.max(0, Math.floor(relative_scroll / row_h) - buffer_rows);
 	const end_row = start_row + visible_rows + (buffer_rows * 2);
 
+	const total_rows = Math.ceil(total_entries / columns);
 	const start = start_row * columns;
 	const end = Math.min(total_entries, end_row * columns);
-	const total_rows = Math.ceil(total_entries / columns);
 
 	return {
 		start,
 		end,
-		padding_top: start_row * entry_height,
-		padding_bottom: Math.max(0, (total_rows - end_row) * entry_height)
+		total_height: total_rows * row_h,
+		padding_top: start_row * row_h,
+		padding_bottom: Math.max(0, (total_rows - end_row) * row_h)
 	};
 };
 
@@ -259,7 +270,7 @@ function renderVirtualList(force=false) {
 		return;
 
 	const range = getVirtualRange(total);
-	
+
 	// Skip if nothing changed (unless forced)
 	if (
 		!force
@@ -271,22 +282,35 @@ function renderVirtualList(force=false) {
 	virtual_state.last_start = range.start;
 	virtual_state.last_end = range.end;
 
-	// Ensure we render at least some items
 	const items_to_render = library_state.volumes.slice(range.start, range.end);
-	if (items_to_render.length === 0 && total > 0) {
-		// Fallback: render first batch if range calculation failed
-		const fallback_end = Math.min(total, 50);
-		clearLibraryEntries();
-		library_els.views.list.style.paddingTop = '0px';
-		library_els.views.list.style.paddingBottom = '0px';
-		renderList(library_state.volumes.slice(0, fallback_end), library_state.api_key);
-		return;
-	}
 
-	clearLibraryEntries();
+	// Set min-height BEFORE clearing so scroll area doesn't collapse
+	library_els.views.list.style.minHeight = `${range.total_height}px`;
 	library_els.views.list.style.paddingTop = `${range.padding_top}px`;
 	library_els.views.list.style.paddingBottom = `${range.padding_bottom}px`;
+
+	clearLibraryEntries();
 	renderList(items_to_render, library_state.api_key);
+
+	// If we haven't measured yet and now have entries in DOM, measure and re-render
+	if (virtual_state.measured_row_h === 0) {
+		const first = library_els.views.list.querySelector('.list-entry');
+		if (first) {
+			virtual_state.measured_row_h = first.offsetHeight + 16;
+			// Re-render with accurate measurement
+			const updated = getVirtualRange(total);
+			library_els.views.list.style.minHeight = `${updated.total_height}px`;
+			library_els.views.list.style.paddingTop = `${updated.padding_top}px`;
+			library_els.views.list.style.paddingBottom = `${updated.padding_bottom}px`;
+			clearLibraryEntries();
+			renderList(
+				library_state.volumes.slice(updated.start, updated.end),
+				library_state.api_key
+			);
+			virtual_state.last_start = updated.start;
+			virtual_state.last_end = updated.end;
+		}
+	}
 };
 
 function scheduleVirtualRender() {
@@ -306,15 +330,20 @@ function enableVirtualMode() {
 	virtual_state.enabled = true;
 	virtual_state.last_start = -1;
 	virtual_state.last_end = -1;
+	virtual_state.measured_row_h = 0;
 	library_els.views.list.classList.add('virtual-mode');
 	window.addEventListener('scroll', scheduleVirtualRender, { passive: true });
-	window.addEventListener('resize', scheduleVirtualRender, { passive: true });
+	window.addEventListener('resize', () => {
+		virtual_state.measured_row_h = 0; // re-measure on resize
+		scheduleVirtualRender();
+	}, { passive: true });
 };
 
 function disableVirtualMode() {
 	virtual_state.enabled = false;
 	virtual_state.last_start = -1;
 	virtual_state.last_end = -1;
+	virtual_state.measured_row_h = 0;
 	if (virtual_state.handle !== null) {
 		cancelAnimationFrame(virtual_state.handle);
 		virtual_state.handle = null;
@@ -324,6 +353,7 @@ function disableVirtualMode() {
 	library_els.views.list.classList.remove('virtual-mode');
 	library_els.views.list.style.paddingTop = '0px';
 	library_els.views.list.style.paddingBottom = '0px';
+	library_els.views.list.style.minHeight = '';
 };
 
 function renderPaginationControls() {

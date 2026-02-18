@@ -34,7 +34,7 @@ from backend.base.custom_exceptions import (BlocklistEntryNotFound,
 from backend.base.definitions import (BlocklistReason, BlocklistReasonID,
                                       DownloadSource, MonitorScheme,
                                       SpecialVersion)
-from backend.base.files import delete_file_from_db, get_file
+from backend.base.files import delete_file_from_db, folder_path, get_file
 from backend.base.logging import LOGGER, get_log_filepath
 from backend.features.download_queue import (DownloadHandler,
                                              delete_download_history,
@@ -751,6 +751,13 @@ def api_volume(id: int):
 @auth
 def api_volume_cover(id: int):
     cover = library.get_volume(id)['cover']
+    if cover.getbuffer().nbytes == 0:
+        return send_file(
+            folder_path('frontend', 'static', 'img', 'favicon.svg'),
+            mimetype='image/svg+xml'
+        ), 200
+
+    cover.seek(0)
     return send_file(
         cover,
         mimetype='image/jpeg'
