@@ -1,0 +1,10 @@
+requests
+bs4
+flask
+waitress
+pycryptodome
+tenacity
+bencoding
+simplejson
+aiohttp
+flask-socketio
