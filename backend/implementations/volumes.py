@@ -1440,7 +1440,9 @@ class Library:
 
     def get_volumes(self,
         sort: str = 'title',
-        filter: Union[str, None] = None
+        filter: Union[str, None] = None,
+        limit: Union[int, None] = None,
+        offset: Union[int, None] = None
     ) -> List[dict]:
         """Get all volumes in the library
 
@@ -1453,11 +1455,23 @@ class Library:
             `wanted` and `monitored` allowed.
                 Defaults to None.
 
+            limit (Union[int, None], optional): Maximum number of volumes to return.
+                Defaults to None (no limit).
+
+            offset (Union[int, None], optional): Number of volumes to skip.
+                Defaults to None (no offset).
+
         Returns:
             List[dict]: The list of volumes in the library.
         """
         sort = self.sorting_orders[sort]
         filter = self.filters.get(filter or '', '')
+
+        pagination = ''
+        if limit is not None:
+            pagination = f'LIMIT {int(limit)}'
+            if offset is not None:
+                pagination += f' OFFSET {int(offset)}'
 
         volumes = get_db().execute(f"""
             WITH
@@ -1492,11 +1506,58 @@ class Library:
                 ) AS issues_downloaded_monitored
             FROM volumes
             {filter}
-            ORDER BY {sort};
+            ORDER BY {sort}
+            {pagination};
             """
         ).fetchalldict()
 
         return volumes
+
+    def get_volume_count(self, filter: Union[str, None] = None) -> int:
+        """Get total count of volumes in the library
+
+        Args:
+            filter (Union[str, None], optional): Apply a filter to the count.
+            `wanted` and `monitored` allowed.
+                Defaults to None.
+
+        Returns:
+            int: The total number of volumes matching the filter.
+        """
+        filter_clause = self.filters.get(filter or '', '')
+
+        # For 'wanted' filter we need the full subquery since it depends on computed columns
+        if filter == 'wanted':
+            result = get_db().execute(f"""
+                WITH
+                    vol_issues AS (
+                        SELECT id, monitored
+                        FROM issues
+                        WHERE volume_id = volumes.id
+                    ),
+                    issues_with_files AS (
+                        SELECT DISTINCT issue_id, monitored
+                        FROM issues i
+                        INNER JOIN issues_files if
+                        ON i.id = if.issue_id
+                        WHERE volume_id = volumes.id
+                    )
+                SELECT COUNT(*) as cnt FROM (
+                    SELECT
+                        (SELECT COUNT(id) FROM vol_issues WHERE monitored = 1) AS issue_count_monitored,
+                        (SELECT COUNT(issue_id) FROM issues_with_files WHERE monitored = 1) AS issues_downloaded_monitored
+                    FROM volumes
+                ) sub
+                WHERE issues_downloaded_monitored < issue_count_monitored;
+                """
+            ).fetchone()
+        else:
+            result = get_db().execute(f"""
+                SELECT COUNT(*) as cnt FROM volumes {filter_clause};
+                """
+            ).fetchone()
+
+        return result['cnt'] if result else 0
 
     def search(self,
         query: str,

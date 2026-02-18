@@ -640,17 +640,21 @@ def api_volumes():
             if per_page <= 0:
                 raise InvalidKeyValue('per_page', per_page_value)
 
-        if query:
-            volumes = library.search(query, sort, filter)
-        else:
-            volumes = library.get_volumes(sort, filter)
-
+        # Pagination mode: use SQL-level LIMIT/OFFSET for efficiency
         if page is not None or per_page is not None:
             page = page or 1
             per_page = per_page or 50
-            total = len(volumes)
             offset = (page - 1) * per_page
-            paged = volumes[offset:offset + per_page]
+
+            if query:
+                # Search requires filtering in Python, so fetch all then slice
+                volumes = library.search(query, sort, filter)
+                total = len(volumes)
+                paged = volumes[offset:offset + per_page]
+            else:
+                # Use efficient SQL pagination
+                total = library.get_volume_count(filter)
+                paged = library.get_volumes(sort, filter, limit=per_page, offset=offset)
 
             total_pages = max(1, (total + per_page - 1) // per_page)
             return return_api({
@@ -660,6 +664,12 @@ def api_volumes():
                 'total': total,
                 'total_pages': total_pages
             })
+
+        # Non-paginated mode: fetch all
+        if query:
+            volumes = library.search(query, sort, filter)
+        else:
+            volumes = library.get_volumes(sort, filter)
 
         return return_api(volumes)
 
