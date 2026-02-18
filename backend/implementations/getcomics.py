@@ -26,7 +26,7 @@ from backend.base.definitions import (GC_DOWNLOAD_SOURCE_TERMS,
 from backend.base.file_extraction import (extract_filename_data,
                                           refine_special_version)
 from backend.base.helpers import (AsyncSession, check_overlapping_issues,
-                                  fix_year, force_range,
+                                  first_of_range, fix_year, force_range,
                                   get_torrent_info, normalise_year)
 from backend.base.logging import LOGGER
 from backend.implementations.blocklist import (add_to_blocklist,
@@ -96,9 +96,11 @@ def _get_articles(
         if not title_el:
             continue
 
-        link = force_range(
-            title_el.find('a')["href"] or ''
-        )[0]
+        anchor = title_el.find('a')
+        if not anchor:
+            continue
+
+        link: str = first_of_range(anchor.get('href') or '')
         title = title_el.get_text(strip=True)
         result.append((link, title))
 
@@ -242,7 +244,7 @@ def __extract_button_links(
                 link_title = group_link.text.strip().lower()
                 if group_link.get('href') is None:
                     continue
-                href = force_range(group_link.get('href') or '')[0]
+                href: str = first_of_range(group_link.get('href') or '')
                 if not href:
                     continue
 
@@ -308,7 +310,7 @@ def __extract_list_links(
             if group_link.get('href') is None:
                 continue
             link_title = group_link.text.strip().lower()
-            href = force_range(group_link.get('href') or '')[0]
+            href: str = first_of_range(group_link.get('href') or '')
             if not href:
                 continue
 

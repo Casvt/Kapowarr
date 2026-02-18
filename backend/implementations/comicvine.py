@@ -20,10 +20,10 @@ from backend.base.definitions import (Constants, FilenameData,
                                       IssueMetadata, T, VolumeMetadata)
 from backend.base.file_extraction import (extract_issue_number,
                                           extract_volume_number, volume_regex)
-from backend.base.helpers import (AsyncSession, Session, batched, force_range,
-                                  force_suffix, normalise_string,
-                                  normalise_year, to_full_string_cv_id,
-                                  to_string_cv_id)
+from backend.base.helpers import (AsyncSession, Session, batched,
+                                  first_of_range, force_range, force_suffix,
+                                  normalise_string, normalise_year,
+                                  to_full_string_cv_id, to_string_cv_id)
 from backend.base.logging import LOGGER
 from backend.implementations.matching import select_best_volume_result_for_file
 from backend.internals.db import get_db
@@ -119,10 +119,12 @@ def _clean_description(description: str, short: bool = False) -> str:
             if not k.startswith('data-')
         }
         link['target'] = '_blank'
-        link['href'] = link.attrs.get('href', '').lstrip('.').lstrip('/')
-        if not link.attrs.get('href', 'http').startswith('http'):
+        href: str = first_of_range(link.attrs.get('href', ''))
+        href = href.lstrip('.').lstrip('/')
+        link['href'] = href
+        if href and not href.startswith('http'):
             link['href'] = (
-                Constants.CV_SITE_URL + '/' + link.attrs.get('href', '')
+                Constants.CV_SITE_URL + '/' + href
             )
 
     result = str(soup)
