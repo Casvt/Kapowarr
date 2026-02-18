@@ -3,7 +3,7 @@ requests ~= 2.31
 beautifulsoup4 ~= 4.12
 flask ~= 3.0
 waitress ~= 3.0
-cryptography ~= 44.0, >= 44.0.1
+cryptography ~= 46.0, >= 46.0.5
 bencoding ~= 0.2
 aiohttp ~= 3.9
 flask-socketio ~= 5.3
