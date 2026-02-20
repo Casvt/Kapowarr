@@ -1,3 +1,16 @@
+function getCurrentValues() {
+	return {
+		host: document.querySelector('#bind-address-input').value,
+		port: parseInt(document.querySelector('#port-input').value),
+		url_base: document.querySelector('#url-base-input').value,
+		auth_password: document.querySelector('#password-input').value,
+		comicvine_api_key: document.querySelector('#cv-input').value,
+		flaresolverr_base_url: document.querySelector('#flaresolverr-input').value,
+		log_level: parseInt(document.querySelector('#log-level-input').value),
+		theme: document.querySelector('#theme-input').value
+	};
+}
+
 function fillSettings(api_key) {
 	fetchAPI('/settings', api_key)
 	.then(json => {
@@ -18,6 +31,9 @@ function fillSettings(api_key) {
 		};
 	});
 	document.querySelector('#theme-input').value = getLocalStorage('theme')['theme'];
+	
+	// Initialize unsaved changes tracking after all settings are loaded
+	setTimeout(() => initUnsavedChangesTracking(getCurrentValues), 100);
 };
 
 function saveSettings(api_key) {
@@ -47,6 +63,7 @@ function saveSettings(api_key) {
 	.then(json => {
 		if (json.error !== null) return Promise.reject(json);
 		document.querySelector("#save-button p").innerText = 'Saved';
+		markAsSaved(getCurrentValues);
 	})
 	.catch(e => {
 		document.querySelector("#save-button p").innerText = 'Failed';
@@ -91,4 +108,6 @@ document.querySelector('#theme-input').onchange = e => {
 		document.querySelector(':root').classList.add('dark-mode');
 	else if (value === 'light')
 		document.querySelector(':root').classList.remove('dark-mode');
+	// Theme change triggers unsaved changes check
+	checkForChanges(getCurrentValues);
 };

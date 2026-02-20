@@ -438,3 +438,16 @@
 #remote-mapping-list > tr > td {
 	border-top: 1px solid var(--border-color);
 }
+
+/*  */
+/* Unsaved changes indicator */
+/*  */
+#save-button.has-unsaved-changes {
+	background-color: var(--accent-color);
+	transition: background-color 200ms ease-in-out;
+}
+
+#save-button.has-unsaved-changes:hover {
+	background-color: var(--accent-color);
+	opacity: 0.9;
+}
