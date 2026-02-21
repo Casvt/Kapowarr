@@ -13,12 +13,11 @@ function saveSettings(api_key) {
 	sendAPI('PUT', '/settings', api_key, {}, data)
 	.then(response => response.json())
 	.then(json => {
-		if (json.error !== null) return Promise.reject(json);
 		document.querySelector("#save-button p").innerText = 'Saved';
 	})
 	.catch(e => {
 		document.querySelector("#save-button p").innerText = 'Failed';
-		console.log(e.error);
+		console.log(e);
 	});
 };
 

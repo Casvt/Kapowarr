@@ -9,18 +9,21 @@ from os.path import abspath, isdir, join, sep
 from secrets import token_bytes
 from typing import Any, Dict, Mapping
 
-from backend.base.custom_exceptions import (FolderNotFound, InvalidKeyValue,
+from backend.base.custom_exceptions import (ClientNotWorking,
+                                            CredentialInvalid,
+                                            FolderNotFound, InvalidKeyValue,
                                             InvalidSettingModification,
                                             KeyNotFound)
-from backend.base.definitions import (BaseEnum, Constants, DateType, FileDate,
-                                      GCDownloadSource, SeedingHandling)
+from backend.base.definitions import (BaseEnum, Constants, DateType,
+                                      FileDate, GCDownloadSource,
+                                      ProxyType, SeedingHandling)
 from backend.base.files import (are_folders_colliding, folder_path,
                                 uppercase_drive_letter)
-from backend.base.helpers import (CommaList, Singleton,
+from backend.base.helpers import (CommaList, Singleton, build_proxy_url,
                                   can_run_64bit_executable, force_suffix,
                                   get_os_type, get_python_version,
                                   get_version_from_pyproject, hash_credential,
-                                  normalise_base_url)
+                                  normalise_base_url, test_proxy_url)
 from backend.base.logging import LOGGER, set_log_level
 from backend.internals.db import DBConnection, commit, get_db
 from backend.internals.db_migration import DatabaseMigrationHandler
@@ -69,6 +72,15 @@ class PublicSettingsValues:
     host: str = '0.0.0.0'
     port: int = 5656
     url_base: str = ''
+
+    proxy_type: ProxyType = ProxyType.NONE
+    proxy_host: str = ''
+    proxy_port: int = 8080
+    proxy_username: str = ''
+    proxy_password: str = ''
+    proxy_ignored_addresses: CommaList = field(
+        default_factory=lambda: CommaList(['localhost', '127.0.0.1'])
+    )
 
     rename_downloaded_files: bool = True
     replace_illegal_characters: bool = True
@@ -124,7 +136,7 @@ class PublicSettingsValues:
             return result
 
         for k, v in result.items():
-            if k in ("auth_username", "auth_password") and v:
+            if k in ("auth_username", "auth_password", "proxy_password") and v:
                 result[k] = Constants.CREDENTIAL_REPLACEMENT
 
             if isinstance(v, BaseEnum):
@@ -265,6 +277,9 @@ class Settings(metaclass=Singleton):
                 for key in NAMING_MAPPING
             })
 
+        # Check whether setting combinations are valid
+        self.__validate_settings(formatted_data)
+
         old_settings = self.get_settings()
 
         get_db().executemany(
@@ -385,6 +400,9 @@ class Settings(metaclass=Singleton):
 
         # Convert type to special type
         if key_data.type is CommaList and isinstance(value, list):
+            if not all(isinstance(e, str) for e in value):
+                raise InvalidKeyValue(key, value)
+
             # Convert list to CommaList
             value = CommaList(value)
 
@@ -422,12 +440,16 @@ class Settings(metaclass=Singleton):
                     value
                 )
 
-        elif key == 'port' and not 0 < value <= 65_535:
+        elif key in ('port', 'proxy_port') and not 0 < value <= 65_535:
             raise InvalidKeyValue(key, value)
 
         elif key == 'url_base':
             if value:
                 converted_value = ('/' + value.lstrip('/')).rstrip('/')
+
+        elif key == 'proxy_password':
+            if value == Constants.CREDENTIAL_REPLACEMENT:
+                converted_value = self.sv.proxy_password
 
         elif key == 'comicvine_api_key':
             from backend.implementations.comicvine import ComicVine
@@ -544,3 +566,55 @@ class Settings(metaclass=Singleton):
                     raise InvalidKeyValue(key, value)
 
         return converted_value
+
+    def __validate_settings(self, formatted_data: Mapping[str, Any]) -> None:
+        """Validate a combination of setting values, NOT individual setting
+        values. E.g. NOT validating individual proxy fields, but checking that
+        there is a working connection based on all proxy fields together.
+
+        Args:
+            formatted_data (Mapping[str, Any]): The supplied changes to the
+                settings, after having their fields validated and formatted
+                by `__format_value()`. These values are overlapped over the
+                existing values.
+
+        Raises:
+            InvalidKeyValue: Value of the key is not allowed.
+        """
+        settings_after_update = SettingsValues(**{
+            **self.get_settings().todict(),
+            **formatted_data
+        })
+
+        if settings_after_update.proxy_type != ProxyType.NONE:
+            if not settings_after_update.proxy_host:
+                raise InvalidKeyValue(
+                    'proxy_host', settings_after_update.proxy_host
+                )
+
+            # Check whether proxy works
+            proxy_url = build_proxy_url(
+                settings_after_update.proxy_type,
+                settings_after_update.proxy_host,
+                settings_after_update.proxy_port,
+                settings_after_update.proxy_username,
+                settings_after_update.proxy_password,
+            )
+            if proxy_url:
+                try:
+                    test_proxy_url(
+                        proxy_url,
+                        settings_after_update.proxy_ignored_addresses
+                    )
+
+                except ClientNotWorking:
+                    raise InvalidKeyValue(
+                        'proxy_host', settings_after_update.proxy_host
+                    )
+
+                except CredentialInvalid:
+                    raise InvalidKeyValue(
+                        'proxy_username', settings_after_update.proxy_username
+                    )
+
+        return

@@ -1,5 +1,5 @@
 typing_extensions ~= 4.12
-requests ~= 2.31
+requests[socks] ~= 2.31
 beautifulsoup4 ~= 4.12
 flask ~= 3.0
 waitress ~= 3.0

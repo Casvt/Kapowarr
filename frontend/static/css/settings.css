@@ -183,6 +183,13 @@
 
 
 /*  */
+/* Proxy Selection */
+/*  */
+#settings-form > table:has(#proxy-type-input > option:checked[value=""]) tr:nth-child(n + 2) {
+	display: none;
+}
+
+/*  */
 /* Api key bar */
 /*  */
 #api-container {

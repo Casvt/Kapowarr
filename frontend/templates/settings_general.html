@@ -78,6 +78,57 @@
 					</td>
 				</tr>
 			</table>
+			<h2>Proxy</h2>
+			<p>Changing proxy settings will immediately restart Kapowarr.</p>
+			<table class="fold-table">
+				<tr>
+					<th><label for="proxy-type-input">Proxy Type</label></th>
+					<td>
+						<select id="proxy-type-input">
+							<option value="">Disabled</option>
+							<option value="http">HTTP</option>
+							<option value="https">HTTPS</option>
+							<option value="socks5">Socks5 (local DNS)</option>
+							<option value="socks5h">Socks5h (remote DNS)</option>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="proxy-host-input">Hostname</label></th>
+					<td>
+						<input id="proxy-host-input" spellcheck="false">
+						<p>The hostname of the proxy.</p>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="proxy-port-input">Port</label></th>
+					<td>
+						<input id="proxy-port-input" type="number" spellcheck="false" min="1" max="65535">
+						<p>The port of the proxy.</p>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="proxy-username-input">Username</label></th>
+					<td>
+						<input id="proxy-username-input" spellcheck="false">
+						<p>You only need to enter a username and password if one is required. Leave them blank otherwise.</p>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="proxy-password-input">Password</label></th>
+					<td>
+						<input id="proxy-password-input" type="password" spellcheck="false">
+						<p>You only need to enter a username and password if one is required. Leave them blank otherwise.</p>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="proxy-ignored-addresses-input">Ignored Addresses</label></th>
+					<td>
+						<input id="proxy-ignored-addresses-input" spellcheck="false">
+						<p>Use ',' as a separator, and '*' as a wildcard for subdomains.</p>
+					</td>
+				</tr>
+			</table>
 			<h2>External Websites</h2>
 			<table class="fold-table">
 				<tr>

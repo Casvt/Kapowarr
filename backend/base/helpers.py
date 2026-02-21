@@ -19,18 +19,20 @@ from sys import base_exec_prefix, executable, maxsize, platform, version_info
 from threading import current_thread
 from typing import (TYPE_CHECKING, Any, Callable, Collection, Dict, Iterable,
                     Iterator, List, Mapping, Sequence, Tuple, Union)
-from urllib.parse import unquote
+from urllib.parse import quote_plus, unquote
 
 from aiohttp import ClientError, ClientSession, ClientTimeout
 from bencoding import bdecode
 from multidict import CIMultiDict, CIMultiDictProxy
-from requests import Session as RSession
+from requests import RequestException, Session as RSession
 from requests.adapters import HTTPAdapter, Retry
 from requests.structures import CaseInsensitiveDict
 from urllib3 import __version__ as urllib3_version
 from yarl import URL
 
-from backend.base.definitions import RAR_EXECUTABLES, Constants, OSType, T, U
+from backend.base.custom_exceptions import ClientNotWorking, CredentialInvalid
+from backend.base.definitions import (RAR_EXECUTABLES, BrokenClientReason,
+                                      Constants, OSType, ProxyType, T, U)
 from backend.base.logging import LOGGER, get_log_filepath
 
 if TYPE_CHECKING:
@@ -798,11 +800,11 @@ class CommaList(list):
     ```
     """
 
-    def __init__(self, value: Union[str, Iterable]):
+    def __init__(self, value: Union[str, Iterable[str]]):
         """Create an instance.
 
         Args:
-            value (Union[str, Iterable]): Either a string of comma-seperated
+            value (Union[str, Iterable[str]]): Either a string of comma-seperated
             values, or any other standard input to the `list` class.
         """
         if not isinstance(value, str):
@@ -1165,6 +1167,102 @@ class AsyncSession(ClientSession):
             if quiet_fail:
                 return b''
             raise
+
+
+# region Proxy
+def build_proxy_url(
+    protocol: ProxyType,
+    host: str,
+    port: int,
+    username: str,
+    password: str
+) -> Union[str, None]:
+    """Create a URL to the proxy based on the input variables.
+
+    Args:
+        protocol (ProxyType): The type of protocol used to contact the proxy.
+            If its `ProxyType.NONE`, then the proxy is disabled so `None` is
+            returned.
+        host (str): The domain name or IP-address of the proxy.
+        port (int): The port to contact the proxy at.
+        username (str): The username to authorise the access to the proxy. Leave
+            as an empty string to disable authentication.
+        password (str): The password to authorise the access to the proxy. Leave
+            as an empty string to disable authentication.
+
+    Note:
+        Either supply both the username or password, or none. If not both are
+            supplied, then the URL is created without the credentials.
+
+    Returns:
+        Union[str, None]: Either the proxy URL, or `None` if the proxy is
+            disabled based on whether the protocol is set to `ProxyType.NONE`.
+    """
+    if protocol == ProxyType.NONE:
+        return None
+
+    proxy_url = f"{protocol.value}://"
+    if username and password:
+        proxy_url += f"{quote_plus(username)}:{quote_plus(password)}@"
+
+    proxy_url += f"{host}:{port}"
+
+    return proxy_url
+
+
+def test_proxy_url(url: str, ignored_addresses: CommaList) -> None:
+    """Test whether, given a proxy URL and its ignored addresses, "the internet"
+    is still accessible. We make a request to `Constants.PROXY_TEST_URL` to test.
+
+    Args:
+        url (str): The URL to the proxy.
+        ignored_addresses (CommaList): The addresses that should be ignored.
+            Allowed to be an empty list.
+
+    Raises:
+        ClientNotWorking: Can't make a connection to the proxy.
+        CredentialInvalid: Connection made to proxy, but credentials are invalid.
+
+    Returns:
+        None: Connection successful.
+    """
+    # I recognise that technically this is a race condition where new requests
+    # that are ran or sessions that are created while this function is running
+    # will use the given proxy URL even though it's not validated. The
+    # probability is small enough that in my opinion it's fine. We can pass the
+    # proxies in an argument value, but not the NO_PROXY value. So we are forced
+    # to use the environment variables to test properly.
+
+    old_proxy_url = environ.get('HTTP_PROXY', '')
+    old_no_proxy = CommaList(environ.get('NO_PROXY', ''))
+
+    apply_proxy(url, ignored_addresses)
+
+    with Session() as session:
+        try:
+            response = session.get(Constants.PROXY_TEST_URL)
+            if response.status_code == 407:
+                raise CredentialInvalid()
+
+        except RequestException:
+            raise ClientNotWorking(BrokenClientReason.CONNECTION_ERROR)
+
+    apply_proxy(old_proxy_url, old_no_proxy)
+    return
+
+
+def apply_proxy(url: str, ignored_addresses: CommaList) -> None:
+    """Set the appropriate environment variables to set the proxy to be used
+    globally by the application.
+
+    Args:
+        url (str): The proxy URL.
+        ignored_addresses (CommaList): The addresses to ignore.
+    """
+    environ['HTTP_PROXY'] = url
+    environ['HTTPS_PROXY'] = url
+    environ['NO_PROXY'] = str(ignored_addresses)
+    return
 
 
 # region Multiprocessing
