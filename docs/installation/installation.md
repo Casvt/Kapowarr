@@ -1,13 +1,17 @@
-Installing Kapowarr can be done via Docker or via a manual install. Docker requires less setup and has better support, but if your OS/system does not support Docker, you can also install Kapowarr directly on your OS via a manual install.
+# Installation and Updating
 
-!!! success "Recommended Installation"
-    The recommended way to install Kapowarr is using Docker.
+## Installation Method
 
-For instructions on installing Kapowarr using Docker, see the [Docker installation instructions](./docker.md). For instructions on installing Kapowarr via a manual install, see the [manual installation instructions](./manual_install.md).
+Kapowarr supports multiple installation methods. The two most common methods are using Docker and directly on your computer. The recommended method is Docker. Choose an installation method:
 
-After installing Kapowarr, there is some setup needed so that Kapowarr can start doing it's job, work optimally and act to your preferences. It's advised to visit the [Setup After Installation page](./setup_after_installation.md) after installation for more information.
+<div class="button-container">
+	<a href="../docker">Docker</a>
+	<a href="../manual_install">Manual Install</a>
+</div>
 
-Updating an installation can also be found on the installation pages of the respective installation method.
+After installing Kapowarr, there is some configuration needed so that it can start working and act to your preferences. It's advised to visit the [Setup After Installation page](./setup_after_installation.md) after installation for more information.
+
+Instructions on how to update an installation can be found on the pages of the respective installation method.
 
 ## Quick Instructions
 
