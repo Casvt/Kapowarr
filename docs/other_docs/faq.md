@@ -4,7 +4,7 @@
 
 ### Does Kapowarr support XYZ?
 
-Look around in the web-UI and this documentation hub first, to see if you find it. Otherwise you can ask on the [Discord server](https://discord.gg/nMNdgG7vsE). If you are sure that it is not available in Kapowarr, you can [report it](./reporting.md).
+Look around in the web-UI and this documentation hub first, to see if you find it. Otherwise you can ask on the [Discord server](https://discord.gg/5gWtW3ekgZ). If you are sure that it is not available in Kapowarr, you can [report it](./reporting.md).
 
 ### When will XYZ be added?
 

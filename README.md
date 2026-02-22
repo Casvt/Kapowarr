@@ -21,7 +21,7 @@ Kapowarr allows you to build a digital library of comics. You can add volumes, m
 ## Installation, support and documentation
 
 - For instructions on how to install Kapowarr, see the [installation documentation](https://casvt.github.io/Kapowarr/installation/installation/).
-- For support, a [Discord server](https://discord.gg/nMNdgG7vsE) and [subreddit](https://www.reddit.com/r/kapowarr/) are available, or [make an issue](https://github.com/Casvt/Kapowarr/issues).
+- For support, a [Discord server](https://discord.gg/5gWtW3ekgZ) and [subreddit](https://www.reddit.com/r/kapowarr/) are available, or [make an issue](https://github.com/Casvt/Kapowarr/issues).
 - For all documentation, see the [documentation hub](https://casvt.github.io/Kapowarr/).
 
 ## Screenshots
