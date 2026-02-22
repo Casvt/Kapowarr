@@ -31,6 +31,16 @@
 			"postDebugTask": "Show Profile Data"
 		},
 		{
+			"name": "Render Docs",
+			"type": "debugpy",
+			"request": "launch",
+			"module": "mkdocs",
+			"args": [
+				"serve",
+				"-f", "${workspaceFolder}/project_management/mkdocs.yml"
+			]
+		},
+		{
 			"name": "Current File",
 			"type": "debugpy",
 			"request": "launch",
