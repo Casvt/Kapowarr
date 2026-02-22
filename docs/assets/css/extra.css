@@ -186,3 +186,35 @@ details > summary {
 details > summary::before {
 	background-color: var(--header-color);
 }
+
+
+/* Custom classes */
+.button-container {
+	max-width: 30rem;
+	display: flex;
+	gap: 1rem;
+	justify-content: space-between;
+	flex-wrap: wrap;
+}
+
+.button-container > a {
+	min-width: 12rem;
+	width: 40%;
+	height: 4.5rem;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-grow: 1;
+	padding: 0.5rem;
+	border-radius: 10px;
+	border: 3px solid rgb(235 199 0);
+	background-color: rgb(177 150 0 / 39%);
+	color: var(--text-color);
+	text-decoration: none;
+	font-size: larger;
+	
+	&:hover {
+		box-shadow: 0 0 10px 1px rgba(0,0,0,53%);
+	}
+}
+

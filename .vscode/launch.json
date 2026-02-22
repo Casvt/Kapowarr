@@ -37,7 +37,8 @@
 			"module": "mkdocs",
 			"args": [
 				"serve",
-				"-f", "${workspaceFolder}/project_management/mkdocs.yml"
+				"-f", "${workspaceFolder}/project_management/mkdocs.yml",
+				"-a", "${input:docsHostPort}"
 			]
 		},
 		{
@@ -46,6 +47,14 @@
 			"request": "launch",
 			"program": "${file}",
 			"justMyCode": true
+		}
+	],
+	"inputs": [
+		{
+			"id": "docsHostPort",
+			"type": "promptString",
+			"description": "The host:port to serve the docs at",
+			"default": "192.168.2.15:8000"
 		}
 	]
 }
