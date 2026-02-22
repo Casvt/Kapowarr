@@ -34,9 +34,3 @@ This means that for information about the 'File Naming' setting, (found at `{hos
 - For support, a [Discord server](https://discord.gg/5gWtW3ekgZ) and [subreddit](https://www.reddit.com/r/kapowarr/) are available.
 - For issues or feature suggestions, see the [Reporting page](./other_docs/reporting.md).
 - For donations, go to [Ko-Fi](https://ko-fi.com/casvt).
-
-### Beta Documentation
-
-_Documentation that only applies to the beta releases._
-
-- [Beta Documentation](./beta/beta.md)

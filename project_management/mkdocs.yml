@@ -94,8 +94,6 @@ nav:
     - Downloading: general_info/downloading.md
     - Matching: general_info/matching.md
     - Features: general_info/features.md
-  - Beta Documentation:
-    - Documentation: beta/beta.md
   - Settings:
     - Introduction: settings/settings.md
     - Media Management: settings/mediamanagement.md
