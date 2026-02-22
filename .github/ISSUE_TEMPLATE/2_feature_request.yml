@@ -1,0 +1,35 @@
+name: Feature Request
+description: Suggest a feature or change for this project
+labels: ["enhancement"]
+body:
+- type: checkboxes
+  attributes:
+    label: Is there an existing issue for this?
+    description: Please search to see if an issue already exists for the feature.
+    options:
+    - label: I have searched the existing issues
+      required: true
+
+- type: textarea
+  attributes:
+    label: Is your feature request related to a problem?
+    description: A concise description of what the problem is.
+    placeholder: I'm always frustrated when [...]
+    render: markdown
+  validations:
+    required: false
+
+- type: textarea
+  attributes:
+    label: Describe the feature you'd like
+    render: markdown
+  validations:
+    required: true
+
+- type: textarea
+  attributes:
+    label: Additional context
+    description: If needed, add context, screenshots, details or anything else about the feature request here.
+    render: markdown
+  validations:
+    required: false

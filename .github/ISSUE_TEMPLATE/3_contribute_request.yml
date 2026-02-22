@@ -1,0 +1,18 @@
+name: Contribute Request
+description: Announce that you want to contribute to the project
+labels: ["contributing"]
+body:
+- type: textarea
+  attributes:
+    label: What do you want to contribute?
+    description: For example adding a feature, fixing a bug or improving documentation.
+    render: markdown
+  validations:
+    required: true
+
+- type: input
+  attributes:
+    label: How long do you think it will take to finish it?
+    placeholder: Six days, four weeks, three months, ...
+  validations:
+    required: true
