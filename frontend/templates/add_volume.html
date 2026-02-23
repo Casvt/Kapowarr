@@ -11,7 +11,7 @@
 {% endblock %}
 
 {% block pre_build_els %}
-<button
+<div
 	class="search-entry"
 	data-title=""
 	data-cover=""
@@ -22,6 +22,7 @@
 	data-_volume_number=""
 	data-_publisher=""
 >
+	<button class="addvolume-button"></button>
 	<div class="cover-info-container">
 		<div>
 			<img src="" alt="" loading="lazy">
@@ -34,7 +35,7 @@
 		</div>
 	</div>
 	<div class="entry-spare-description description" aria-hidden="true"></div>
-</button>
+</div>
 {% endblock pre_build_els %}
 
 {% block windows %}
