@@ -786,12 +786,20 @@ class CredentialData:
             self.api_key = self.api_key.strip() or None
         return
 
-    def todict(self) -> Dict[str, Any]:
-        "Note: Will replace password with a string of stars"
+    def todict(self, hide_password: bool = False) -> Dict[str, Any]:
+        """Return a dictionary version of this dataclass.
+
+        Args:
+            hide_password (bool, optional): Replace the password with stars.
+                Defaults to False.
+
+        Returns:
+            Dict[str, Any]: The dictionary.
+        """
         result = asdict(self)
 
         result['source'] = self.source.value
-        if result['password'] is not None:
+        if result['password'] is not None and hide_password:
             result['password'] = Constants.CREDENTIAL_REPLACEMENT
 
         return result

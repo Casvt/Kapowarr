@@ -1268,7 +1268,7 @@ def api_credentials():
 
     if request.method == 'GET':
         result = [
-            c.todict()
+            c.todict(hide_password=True)
             for c in cred.get_all()
         ]
         return return_api(result)
@@ -1297,7 +1297,7 @@ def api_credentials():
             password=data.get("password"),
             api_key=data.get("api_key")
         ))
-        return return_api(result.todict(), code=201)
+        return return_api(result.todict(hide_password=True), code=201)
 
 
 @api.route('/credentials/<int:id>', methods=['GET', 'DELETE'])
@@ -1306,7 +1306,7 @@ def api_credentials():
 def api_credential(id: int):
     cred = Credentials()
     if request.method == 'GET':
-        result = cred.get_one(id).todict()
+        result = cred.get_one(id).todict(hide_password=True)
         return return_api(result)
 
     elif request.method == 'DELETE':
