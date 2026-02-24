@@ -14,7 +14,7 @@ Kapowarr is a software to build and manage a comic book library, fitting in the 
 
 Kapowarr allows you to build a digital library of comics. You can add volumes, map them to a folder and start managing! Download, rename, move and convert issues of the volume (including TPBs, One Shots, Hard Covers, and more). The whole process is automated and can be customised in the settings.
 
-Featured on [Noted](https://noted.lol/kapowarr/).
+Featured on [Noted](https://noted.lol/kapowarr/) and [Respectlytics](https://respectlytics.com/).
 
 ## Features
 
