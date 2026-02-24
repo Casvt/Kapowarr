@@ -1,6 +1,6 @@
 [project]
 name = "Kapowarr"
-version = "1.2.0"
+version = "alpha-37"
 description = "Kapowarr is a software to build and manage a comic book library, fitting in the *arr suite of software."
 authors = [
     {name = "Cas van Tijn"}
@@ -30,4 +30,3 @@ aggressive = 3
 experimental = true
 max_line_length = 80
 ignore = ["E124", "E125", "E126", "E128", "E261"]
-
