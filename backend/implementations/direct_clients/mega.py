@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from base64 import b64decode, b64encode
-from hashlib import pbkdf2_hmac
+from hashlib import pbkdf2_hmac, sha256
 from json import JSONDecodeError, dumps, loads
 from random import randint
 from re import compile, search
@@ -82,6 +82,11 @@ class MegaCrypto:
         a = [0] * ((len(s) + 3) >> 2)
         for i in range(len(s)):
             a[i >> 2] |= (s[i] << (24 - (i & 3) * 8))
+
+        for i in range(len(a)):
+            if a[i] & 0x80000000:
+                a[i] = a[i] - 0x100000000
+
         return tuple(a)
 
     @staticmethod
@@ -218,6 +223,43 @@ class MegaCrypto:
         if chunk_start < size:
             yield chunk_start, size - chunk_start
 
+    @staticmethod
+    def gen_cash(cash_header_value: str) -> str:
+        """
+        Generate a 4-byte base64 prefix that satisfies the X-Hashcash threshold.
+        """
+        cash = cash_header_value.split(":")
+        token = cash[3]
+        easiness = int(cash[1])
+
+        buffer = bytearray(4 + 262144 * 48)
+        threshold = (((easiness & 63) << 1) + 1) << ((easiness >> 6) * 7 + 3)
+        token_bytes = MegaCrypto.base64_decode(token)
+        token_len = len(token_bytes)
+        if token_len > 48:
+            # If token is longer than 48 bytes just truncate it
+            token_bytes = token_bytes[:48]
+            token_len = 48
+
+        for i in range(262144):
+            offset = 4 + i * 48
+            buffer[offset: offset + token_len] = token_bytes
+
+        while True:
+            for idx in range(4):
+                buffer[idx] = (buffer[idx] + 1) & 0xff
+                if buffer[idx]:
+                    break
+
+            prefix = buffer[0:4]
+            h = int.from_bytes(sha256(buffer).digest()[:4], "big")
+            if h <= threshold:
+                result = MegaCrypto.to_str(
+                    MegaCrypto.base64_encode(bytes(prefix)),
+                    "ascii"
+                ).replace("=", "")
+                return f"1:{token}:{result}"
+
     class Checksum:
         """
         Interface for checking CBC-MAC checksum.
@@ -295,13 +337,42 @@ class MegaAPIClient:
                 params=get_params,
                 data=dumps([kwargs]),
                 headers={'User-Agent': Constants.BROWSER_USERAGENT}
-            ).json()
+            )
+
+            while (
+                response.status_code == 402
+                and "X-Hashcash" in response.headers
+            ):
+                # Is this OPTIONS request actually required?
+                session.options(
+                    Constants.MEGA_API_URL,
+                    params=get_params,
+                    headers={
+                        'User-Agent': Constants.BROWSER_USERAGENT,
+                        'Access-Control-Request-Headers': 'x-hashcash',
+                        'Access-Control-Request-Method': 'POST'
+                    }
+                )
+
+                cash_header_value = response.headers["X-Hashcash"]
+                new_cash = MegaCrypto.gen_cash(cash_header_value)
+                response = session.post(
+                    Constants.MEGA_API_URL,
+                    params=get_params,
+                    data=dumps([kwargs]),
+                    headers={
+                        'User-Agent': Constants.BROWSER_USERAGENT,
+                        'X-Hashcash': new_cash
+                    }
+                )
+
+            json_response = response.json()
 
         self.id += 1
 
-        if isinstance(response, list):
-            return response[0]
-        return response
+        if isinstance(json_response, list):
+            return json_response[0]
+        return json_response
 
     def __repr__(self) -> str:
         return f'<{self.__class__.__name__}, sid={self.sid}, node_id={self.node_id}>'
@@ -389,6 +460,8 @@ class MegaAccount:
         )
 
     def _login_user(self, user: str, password: str) -> str:
+        # Based on:
+        #   https://github.com/meganz/webclient/blob/2403abfaa06dd5616c7d1801e37b16fef0d96979/js/security.js#L1252
         LOGGER.debug('Logging into Mega with user account')
         user = user.lower()
 
