@@ -1,5 +1,13 @@
 # Implementation Details
 
+## Update All
+
+Coming soon.
+
+## Special Version and annuals
+
+Coming soon.
+
 ## Downloading from GetComics
 
 When a GetComics (GC) release has been chosen, either by you or by Kapowarr, Kapowarr will try to find a download link (or multiple) on the page to use for downloading the file(s). How Kapowarr decides which link(s) to use, is broken down in the following steps:

@@ -1,16 +1,10 @@
-This page covers how Kapowarr matches certain things. First a note on the Special Version, as it affects all matching.
+This page covers how Kapowarr matches certain things.
 
 !!! tip "Matching using year"
 	If it is an option to match using the year, both the release year of the volume and the release year of the issue is allowed. The year is also allowed to be off by one from the reference year.
 
-## Special Version
-
-The matching criteria differ based on the type of volume. Kapowarr calls this the "Special Version" of the volume. A volume can be a "Normal Volume", "Trade Paper Back", "One Shot", "Hard Cover" or "Volume As Issue". Kapowarr tries it's best to automatically determine the type, but there are scenario's where it's wrong. You can override the Special Version when adding a volume, or by editing the volume. This setting is one of the first things you should check in case matching does not work for a volume.
-
-!!! info "What is a "Volume As Issue" volume?"
-	The "Volume As Issue" Special Version is for volumes where each issue is named "Volume N", where N is a number. An example of such a volume is [Reign of X](https://comicvine.gamespot.com/reign-of-x/4050-137265/). Issue 1 is named "Volume 1", issue 2 is named "Volume 2", etc.
-
-If a specific string is required, most common variations are also supported. For example, if the string 'one-shot' is required, the variations 'one shot' and 'os' are also allowed. And upper case or lower case does not matter. 
+!!! tip "The Special Version affects the matching"
+	Make sure that the [Special Version](./how_to_use.md#special-version) of the volume is correct, as it influences the matching criteria. If a specific string is required, most common variations are also supported. For example, if the string 'one-shot' is required, the variations 'one shot' and 'os' are also allowed. And upper case or lower case does not matter. 
 
 ## Files to Issues
 
