@@ -1,10 +1,8 @@
-# Features
-
-## Library Import
+# Library Import
 
 The feature 'Library Import' makes it possible to import an existing library into Kapowarr. You could have an existing library because you used a different software before, or because you downloaded media manually. In that case, Library Import makes it easy to start using Kapowarr.
 
-### Proposal
+## Proposal
 
 When you run Library Import, it will search for files in your root folders that aren't matched to any issues yet. It will then try to find the volume for the file on ComicVine. This list of files and ComicVine matches is presented to you (a.k.a. Library Import proposal). You can then change the matches in case Kapowarr guessed incorrectly. You can choose to apply the changed match to only the file, or to all files for the volume.
 
@@ -15,11 +13,11 @@ On the start screen, there are some settings that change the behaviour of Librar
 - **Only match english volumes**: When Kapowarr is searching on ComicVine for a match to the file, only allow the match when it's an english release; it won't allow translations.
 - **Folder(s) to scan**: Allows you to supply a specific folder to scan, instead of all root folders. Supports glob patterns (e.g. `/comics-1/Star Wars*`).
 
-### Importing
+## Importing
 
 When you are happy with the proposal, you have two options: 'Import' and 'Import and Rename'. Clicking 'Import' will make Kapowarr add all the volumes and set their volume folder to the folder that the file is in. Clicking 'Import and Rename' will make Kapowarr add all the volumes and move the files into the automatically generated volume folder, after which it will rename them. If a volume is already added to the library, then clicking 'Import' will move the matched files to the volume folder. Clicking 'Import and Rename' will move the matched files to the volume folder and rename them then.
 
-### Implementation Details
+## Implementation Details
 
 When 'Import' is used, the volume folder that is set is the 'deepest common folder'. This is the deepest folder that still contains all files that are matched to that volume.
 

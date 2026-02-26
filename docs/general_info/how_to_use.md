@@ -1,8 +1,8 @@
-# Volume Management
+# How To Use
 
 ## Adding Volumes To Your Library
 
-There are two ways you can add volumes: manually or by importing. To add a volume to your library manually, follow the instructions below. To add a volume by importing files for it, see the [Library Import documentation](./features.md#library-import).
+There are two ways you can add volumes: manually or by importing. To add a volume to your library manually, follow the instructions below. To add a volume by importing files for it, see the [Library Import documentation](./library_import.md).
 
 To manually add a volume:
 
@@ -43,7 +43,7 @@ Clicking on the 'Edit' button will show a screen where you can edit the two fold
 
 ## Downloading
 
-This section covers the 'downloading' category. Implementation details on how Kapowarr downloads media can be found on the ['Downloading' page](./downloading.md).
+This section covers the 'downloading' category.
 
 ### Monitoring
 

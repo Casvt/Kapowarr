@@ -78,7 +78,11 @@ plugins:
       fallback_to_build_date: false
   - redirects:
       redirect_maps:
-        'library-import.md': 'general_info/features.md#library-import'
+        'general_info/workings.md': 'general_info/general_info.md'
+        'general_info/managing_volume.md': 'general_info/how_to_use.md'
+        'library-import.md': 'general_info/library_import.md'
+        'general_info/features.md': 'general_info/library_import.md'
+        'general_info/downloading.md': 'general_info/implementation_details.md'
 
 # Navigation Layout
 nav:
@@ -89,11 +93,11 @@ nav:
     - Manual Install: installation/manual_install.md
     - Setup After Installation: installation/setup_after_installation.md
   - General Information:
-    - Introduction: general_info/workings.md
-    - Managing A Volume: general_info/managing_volume.md
-    - Downloading: general_info/downloading.md
+    - Introduction: general_info/general_info.md
+    - How To Use: general_info/how_to_use.md
     - Matching: general_info/matching.md
-    - Features: general_info/features.md
+    - Library Import: general_info/library_import.md
+    - Implementation Details: general_info/implementation_details.md
   - Settings:
     - Introduction: settings/settings.md
     - Media Management: settings/mediamanagement.md

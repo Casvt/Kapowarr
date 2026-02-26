@@ -28,4 +28,4 @@ If you have an account at a download service like Mega or Pixeldrain, then Kapow
 
 ## Building a library
 
-Now you can start filling up your library. You can [add volumes to your library](../general_info/managing_volume.md#adding-volumes-to-your-library) or import an existing library of media files using [Library Import](../general_info/features.md#library-import).
+Now you can start filling up your library. You can [add volumes to your library](../general_info/how_to_use.md) or import an existing library of media files using [Library Import](../general_info/library_import.md).

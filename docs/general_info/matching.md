@@ -103,7 +103,7 @@ When searching for a GC release, Kapowarr determines if the page is a match for 
 
 ## GetComics Groups
 
-When selecting links from a GC page for downloading, Kapowarr filters the groups so that no irrelevant files are downloaded. See the ['Downloading' page](./downloading.md) for more information. The download group has to conform with the following rules to pass the filter:
+When selecting links from a GC page for downloading, Kapowarr filters the groups so that no irrelevant files are downloaded. See the [implementation details](./implementation_details.md#downloading-from-getcomics) for more information. The download group has to conform with the following rules to pass the filter:
 
 1. Series title has to match.
 2. If the volume number is given, it should match.
