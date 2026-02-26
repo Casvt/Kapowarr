@@ -191,7 +191,10 @@ def get_version_from_pyproject(filepath: str) -> str:
     with open(filepath, "r") as f:
         for line in f:
             if line.startswith("version = "):
-                return "V" + line.split('"')[1]
+                version = line.split('"')[1]
+                if version[0].isdecimal():
+                    version = "V" + version
+                return version
         else:
             raise RuntimeError("Version not found in pyproject.toml")
 
