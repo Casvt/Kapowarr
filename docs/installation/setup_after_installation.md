@@ -1,48 +1,31 @@
-After installing Kapowarr, you should have access to the web-ui. If not, check the [FAQ on this topic](../other_docs/faq.md#how-do-i-access-the-web-ui). Kapowarr needs some configuration in order for it to work properly.
-
-## Port
-
-The first thing to do is decide if you want to leave Kapowarr on the default port of 5656. If you want to _keep_ the port, you can go to the next step. If you want to _change_ the port, see the ['Port Number' setting](../settings/general.md#port-number).
+After installing Kapowarr, you should have access to the web-ui. If not, check the [FAQ on this topic](../other_docs/faq.md#how-do-i-access-the-web-ui). Kapowarr needs some configuration in order for it to work properly. Remember that you should click 'Save' after changing settings.
 
 ## Authentication
 
-If you want to put a password on your instance of Kapowarr, see the ['Login Password' setting](../settings/general.md#login-password).
+If you want to require authentication when accessing Kapowarr, see the ['Authentication' setting](../settings/general.md#authentication).
 
 !!! warning "Exposing Kapowarr"
-	If you are exposing your Kapowarr instance to the internet, we highly recommend setting a password.
+	If you are exposing your Kapowarr instance to the internet, we highly recommend enabling authentication.
 
 ## ComicVine API key
 
-Kapowarr uses [ComicVine](https://comicvine.gamespot.com/) as it's metadata source. To fetch the metadata from ComicVine, Kapowarr needs access to it's API, which requires an API key.
-
-See the ['Comic Vine API Key' setting](../settings/general.md#comic-vine-api-key) for how to get one. Once you've entered your key and hit 'Save', move on to Root Folders.  
+Kapowarr uses [ComicVine](https://comicvine.gamespot.com/) as its metadata source. To fetch the metadata from ComicVine, Kapowarr needs access to its API. That requires a ComicVine API key. See the ['Comic Vine API Key' setting](../settings/general.md#comic-vine-api-key) for how to get one.
 
 ## Root folders
 
-Root folders are the base folders that Kapowarr works in. All media files are put in these folders. See the ['Root Folders' section of the settings](../settings/mediamanagement.md#root-folders) for more details.
-
-!!! info "You need at least one root folder"
-	At least one root folder must be set before you are able to add any volumes to your library.
+Root folders are the base folders that Kapowarr puts media files in. Add at least one root folder to be able to add any volumes to your library. See the ['Root Folders' section of the settings](../settings/mediamanagement.md#root-folders) for more details.
 
 !!! warning "Adding root folders on Docker"
-	If you use Docker to run Kapowarr, then the root folder that you enter in the web-UI is the mapped folder, not the folder path on the host machine. That means that if you followed the [installation instructions](../installation/docker.md#launch-container), you would need to enter `/comics-1`, `/comics-2`, etc. as your root folder. This mistake is often made.
+	If you use Docker to run Kapowarr, then the root folder that you enter in the web-UI is the mapped folder, not the folder path on the host machine. That means that if you followed the [Docker installation instructions](../installation/docker.md#launch-container), you would need to enter `/comics-1`, `/comics-2`, etc. as your root folder.
 
 ## Direct Download Temporary Folder
 
 This is only applicable to people _not_ using Docker. If you want to, you can change the folder that Kapowarr downloads files to using the ['Direct Download Temporary Folder' setting](../settings/download.md#direct-download-temporary-folder).
 
-## Service preference
-
-The ['Service Preference' section of the settings](../settings/download.md#service-preference) dictate which download service Kapowarr should choose when multiple are available to use for a download. 
-
-If you have an account with Mega, set that service as the priority and add a credential for it. The other services will then be used as a fallback option for if a link fails.
-
-For a full explanation, see .  
-
 ## Credentials
 
-This only applies if you have an account with Mega (for now). Kapowarr can take advantage of the higher limits (download speed, daily size limit, etc.) that an account has to offer. Enter the credentials of the account at Settings -> Download Clients -> Mega. Afterwards, go to Settings -> Download -> Service Preference, and make sure to put Mega at the top. This will make Kapowarr prefer to use Mega when available.
+If you have an account at a download service like Mega or Pixeldrain, then Kapowarr can take advantage of the higher limits (download speed, daily download limit, etc.) that the account has to offer. See the ['Credentials' section of the settings](../settings/downloadclients.md#credentials) for more details.
 
 ## Building a library
 
-Now that you are ready, you can start [adding volumes to your library](../general_info/managing_volume.md#adding-volumes-to-your-library). If you have an existing library that you want to import into Kapowarr, use the [Library Import](../general_info/features.md#library-import) feature found at Volumes -> Library Import.
+Now you can start filling up your library. You can [add volumes to your library](../general_info/managing_volume.md#adding-volumes-to-your-library) or import an existing library of media files using [Library Import](../general_info/features.md#library-import).

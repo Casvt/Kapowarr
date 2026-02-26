@@ -20,8 +20,7 @@ On this page, you can find instructions on how to manually install Kapowarr (dir
        python -m pip install -r requirements.txt
        ```
     5. Run Kapowarr with the command `python C:\services\Kapowarr\kapowarr.py`.
-    6. Access Kapowarr with the IP of the host machine and port 5656.  
-       If it's the machine you're using, try [http://localhost:5656](http://localhost:5656)
+    6. Access Kapowarr with the IP of the host machine and port 5656. If it's the machine you're using, try [http://localhost:5656](http://localhost:5656). You can change the port Kapowarr runs on afterwards using the ['Port Number' setting](../settings/general.md#port-number).
     
     If you want Kapowarr to run in the background, without you having to start it each time your machine restarts, a tool called [nssm](https://nssm.cc/download) will allow you to configure Kapowarr to run as a system service. It is recommended that you set it up as above before doing this, as it will allow you to see any errors you may encounter on screen (instead of having nssm intercept them).
 

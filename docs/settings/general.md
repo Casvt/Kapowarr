@@ -34,9 +34,12 @@ To get Kapowarr running on `http://example.com/kapowarr`, you would set your rev
 
 ## Security
 
-### Login Password
+### Authentication
 
-You might want to set a password to restrict access to the web-ui (and API). This is optional, but highly recommended if you are exposing Kapowarr to the internet. If you want to disable the password, set an empty value for the setting and save.
+Require authentication to access the web-ui (and API). Set to 'None' to disable. Set to 'Password' to require a password or to 'Username And Password' to require both a username and password to get access (even though there is only one user).
+
+!!! warning "Exposing Kapowarr"
+	If you are exposing your Kapowarr instance to the internet, we highly recommend enabling authentication.
 
 ### API Key
 
