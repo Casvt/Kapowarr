@@ -1,11 +1,10 @@
 ## Host
 
-This section defines how Kapowarr binds to a IP/port when starting up. Any setting here requires you to restart Kapowarr after saving it for it to apply.
+This section defines how Kapowarr binds to a IP/port when starting up. Changing any setting here will make Kapowarr automatically restart after saving. Access the web-ui within 60 seconds for the changes to stay, or they will be reverted.
 
 ### Bind Address
 
-This tells Kapowarr what IP to bind to. If you specify an IP that is _not_ on the machine running Kapowarr, you _will_ encounter errors.  
-Using `0.0.0.0` will have Kapowarr bind to all interfaces it finds on the host machine.
+This tells Kapowarr what IP address to bind to. Using `0.0.0.0` will have Kapowarr bind to all interfaces it finds on the host machine. You can also enter an IPv6 address.
 
 _Note: this setting is not applicable if you have Kapowarr deployed using Docker._
 
@@ -28,9 +27,9 @@ If you have Kapowarr deployed using Docker, do not change this setting but inste
 
 ### Base URL
 
-This is used for reverse proxy support - the default is empty. If you want to put Kapowarr behind a proxy (so you can access the web-UI via a nice URL), set a Base URL (it _must_ start with a `/` character).  
+If you want to put Kapowarr behind a proxy (so you can access the web-UI via a nice URL), set a base URL (it _must_ start with a `/` character). Set it empty to disable.
 
-To get Kapowarr running on `http://example.com/kapowarr`, you would set your reverse proxy to forward the `/kapowarr` path to the IP and port of your Kapowarr instance, and set Base URL to `/kapowarr`.
+To get Kapowarr running on `http://example.com/kapowarr`, you would set your reverse proxy to forward the `/kapowarr` path to the IP and port of your Kapowarr instance, and set the base URL to `/kapowarr`.
 
 ## Security
 
@@ -43,7 +42,11 @@ Require authentication to access the web-ui (and API). Set to 'None' to disable.
 
 ### API Key
 
-This is where Kapowarr defines the API key for any queries made to the [Kapowarr API](../other_docs/api.md).
+The API key needed to authenticate when using the [Kapowarr API](../other_docs/api.md).
+
+## Proxy
+
+Make Kapowarr use a proxy for all network requests. Choose the protocol used to contact the proxy and then supply the hostname/IP and port. Supply a username and password if needed. Kapowarr will test whether the proxy works once you click on 'Save'. This test could take a while, especially when it's failing.
 
 ## External Websites
 
@@ -58,7 +61,7 @@ Kapowarr uses ComicVine as its metadata source. To fetch the metadata from Comic
 
 ### FlareSolverr Base URL
 
-Multiple services are protected by CloudFlare. This means that if Kapowarr makes too many requests too quickly, CloudFlare will block Kapowarr. [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) is a software that can bypass this block. Kapowarr can use FlareSolverr to make requests without getting blocked. If Kapowarr experiences a CloudFlare block and it doesn't have FlareSolverr setup, it will log this. Enter the base URL of your FlareSolverr instance if you want Kapowarr to make use of it. Supply the base URL without the API prefix (`/v1`).
+Multiple services are protected by CloudFlare. This means that if Kapowarr makes too many requests too quickly, CloudFlare will block Kapowarr. [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) is a software that can bypass this block. Kapowarr can use FlareSolverr to make requests without getting blocked. If Kapowarr experiences a CloudFlare block and it doesn't have FlareSolverr setup, it will log this. Enter the base URL of your FlareSolverr instance if you want Kapowarr to make use of it. Supply the base URL without the API prefix (`/v1`). Drop-in replacements like Byparr are also supported.
 
 ## UI
 
@@ -76,4 +79,4 @@ _Note that this should be set to 'Info' when not debugging, as Kapowarr logs so 
 
 ### Download Logs
 
-By clicking the button, a text file will be downloaded containing all the latest logs. This file can be used in case a large amount of logs need to be shared (as it would be impractical to paste everything in a comment).
+By clicking the button, a text file will be downloaded containing all the latest logs. This file can be used in case a large amount of logs need to be shared (as it would be impractical to paste everything in a message).

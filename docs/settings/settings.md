@@ -1,1 +1,16 @@
-You can find documentation for each setting here. It's also possible to find documentation for a setting by [using the same URL as in the web-UI](../index.md#finding-documentation). When you make changes in the settings, don't forget to click 'Save' at the top!
+You can find documentation for each setting here. When you make changes in the settings, don't forget to click 'Save' at the top!
+
+[Media Management](./mediamanagement.md)  
+Naming and file management settings
+
+[Download](./download.md)  
+Download settings
+
+[Download Clients](./downloadclients.md)  
+Manage the internal and external download clients
+
+[Metadata](./metadata.md)  
+Metadata settings
+
+[General](./general.md)  
+Hosting, security, interface and logging settings

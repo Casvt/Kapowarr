@@ -103,6 +103,7 @@ nav:
     - Media Management: settings/mediamanagement.md
     - Download: settings/download.md
     - Download Clients: settings/downloadclients.md
+    - Metadata: settings/metadata.md
     - General: settings/general.md
   - FAQ: other_docs/faq.md
   - API: other_docs/api.md

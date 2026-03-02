@@ -1,19 +1,29 @@
-In the 'Media Management' sub-section, you can find settings related to the placement, naming and format of files.
+In the 'Media Management' sub-section, you can find settings related to the placement and naming of files.
 
 ## File Naming
 
 ### Rename Downloaded Files
 
-When a file is downloaded, this setting decides if it should be renamed or not. If the checkbox is unchecked, the default filename is used. If the checkbox is checked, it is renamed following the formats set below. This does not affect the naming of the volume folder, only the filename itself.
+When a file is downloaded, this setting decides whether it should be renamed or not. If the checkbox is unchecked, the default filename is used. If the checkbox is checked, it is renamed following the formats set below. This does not affect the naming of the volume folder, only the filename itself.
 
 | Setting | Example Result |
 | ------- | -------------- |
 | Disabled | Deadpool 01 (of 04) (1994) (digital) (Minutemen-Slayer).cbr |
 | Enabled | Deadpool (1994) Volume 02 Issue 001.cbr |
 
+### Replace Illegal Characters
+
+Instead of removing illegal characters from the filename, replace them smartly with a dash. Depending on the place, spaces might be put before, after or around the dash.
+
+| Setting | Example Result |
+| ------- | -------------- |
+|  | Batman/Superman: World's Finest |
+| Disabled | BatmanSuperman Worlds Finest |
+| Enabled | Batman-Superman - Worlds Finest |
+
 ### Volume Folder Naming
 
-The naming format for the volume folder. Keep in mind that the resulting name could differ slightly from the format, in the case that certain values of variables contain illegal characters. For example, if the `{series_name}` is "What If...", the resulting name will have "What If" as it's value, because the character `.` is not allowed at the end of the name in Windows. This also applies to the other naming formats in this section.
+The naming format for the volume folder. Keep in mind that the resulting name could differ slightly from the format, in the case that certain values of variables contain illegal characters. For example, if the `{series_name}` is "What If...", the resulting name will have "What If" as its value, because the character `.` is not allowed at the end of the name in Windows. This also applies to the other naming formats in this section.
 
 ??? info "Available Variables"
 	| Variable | Example Value |
@@ -24,6 +34,7 @@ The naming format for the volume folder. Keep in mind that the resulting name co
 	| {comicvine_id} | 2127 |
 	| {year} | 1994 |
 	| {publisher} | DC Comics |
+	| {special_version} | One-Shot |
 
 | Example Value | Example Resulting Name |
 | ------------- | -------------- |
@@ -81,7 +92,7 @@ If the value of the setting [File Naming](#file-naming_1) uses the issue title, 
 
 ### File Naming For Special Versions
 
-The naming format for the file itself (if it's a special version, like a one shot, tpb or hard cover).
+The naming format for the file itself (if it's a special version, like a TPB, one shot or hard cover).
 
 ??? info "Available Variables"
 	| Variable | Example Value |
@@ -124,11 +135,11 @@ The naming format for the file itself (if it's a Volume As Issue, so an issue na
 
 ### Use Long Special Version Labels
 
-Whether or not to use, for example, 'One-Shot' instead of 'OS' [in the filename of special versions](#file-naming-for-special-versions). The term 'TPB' will always stay 'TPB'.
+Whether or not to use, for example, 'One-Shot' instead of 'OS' [in the filename for Special Versions](#file-naming-for-special-versions). The term 'TPB' will always stay 'TPB'.
 
 ### Issue Padding
 
-This defines how issue numbers are 'padded' (3 digits, 2 digits, etc.). This is useful in the case of file sorting, as many operating systems sort _alphabetically_, instead of alphanumerically. To them, because 1 is lower than 2, "10" comes before "2". To get around this, we 'pad' the numbers with leading zeroes.
+How issue numbers should be padded with leading zeros. This is useful in the case of file sorting, as many operating systems sort alphabetically, instead of alphanumerically. To them, because '1' is lower than '2', '10' comes before '2'. To get around this, pad the numbers with leading zeroes.
 
 Options are:
 
@@ -139,7 +150,7 @@ Options are:
 
 ### Volume Padding
 
-This defines how volume numbers are 'padded' (3 digits, 2 digits, etc.). It has the same use case that [Issue Padding](#issue-padding) has.
+How volume numbers should be padded, similarly to the [Issue Padding](#issue-padding) setting.
 
 Options are:
 
@@ -163,9 +174,25 @@ When scanning for files, delete any empty folders that are found in the volume f
 
 If an issue had files matched to it, but all have been deleted, automatically unmonitor the issue.
 
+### Change File Date
+
+Change the date of the file in the file system by setting it to the release date of the issue that the file is for. Use the button below it to apply the setting to all existing files.
+
+- Linux: modification time and access time
+- Windows: modification time and creation time
+- MacOS: modification time, access time and creation time
+
+### Chmod Folder
+
+Set the filesystem permissions of the volume folders, all sub-folders and all files in the volume folders. Give the permissions in the octal 'chmod' format (e.g. '755'). The version of the permissions _with_ execute bits is applied to the folders and one _without_ execute bits is applied to the files. Use the button below it to apply the setting to all existing files.
+
+### Chown Group
+
+Set the filesystem group owner of the volume folders, all sub-folders and all files in the volume folders. Give the group name or ID (e.g. 'media' or '1001'). The user that is running Kapowarr must be part of the group. Use the button below it to apply the setting to all existing files.
+
 ## Converting
 
-The "Converting" feature allows you to change the format of your files (e.g. from cbr to cbz). Extracting archive files also falls under "converting".
+The "converting" feature allows you to change the format of your files (e.g. from cbr to cbz). Extracting archive files also falls under "converting".
 
 ### Convert/Extract Downloaded Files
 
@@ -188,9 +215,11 @@ The formats that Kapowarr should convert the files to. It will try to convert th
 
 ## Root Folders
 
-Root folders are the base folders that Kapowarr works in. All content is put in these folders. Kapowarr needs at least one root folder set in order to work properly.
+Root folders are the base folders that Kapowarr works in. All media files are put in these folders. Kapowarr needs at least one root folder set in order to work properly.
 
-When adding a volume (or when editing one), you choose in which root folder all content for that volume is put. Kapowarr will never touch any files outside the root folders (except in the [download folder](#download-location)). You might have multiple root folders because you store your comics on multiple drives or want different access rights to certain volumes, to name a few reasons.
+When adding a volume (or when editing one), you choose in which root folder all content for that volume is put. You might have multiple root folders because you store your comics on multiple drives or want different access rights to certain volumes, to name a few reasons.
+
+You can use the edit button on the right to rename a root folder. Or the delete button to remove a root folder from Kapowarr, but not actually deleting the folder on the filesystem. You can only remove a root folder when no volume in your library has their volume folder in the root folder.
 
 !!! warning "Adding root folders on Docker"
 	If you use Docker to run Kapowarr, then the root folder that you enter in the web-UI is the mapped folder, not the folder path on the host machine. That means that if you followed the [installation instructions](../installation/docker.md#launch-container), you would need to enter `/comics-1`, `/comics-2`, etc. as your root folder.
