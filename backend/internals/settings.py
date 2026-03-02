@@ -2,7 +2,13 @@
 
 from dataclasses import _MISSING_TYPE, asdict, dataclass, field
 from functools import lru_cache
-from grp import getgrgid, getgrnam
+
+try:
+    from grp import getgrgid, getgrnam
+except ImportError:
+    getgrgid = None
+    getgrnam = None
+
 from logging import INFO
 from os import urandom
 from os.path import abspath, isdir, join, sep
@@ -15,7 +21,7 @@ from backend.base.custom_exceptions import (ClientNotWorking,
                                             InvalidSettingModification,
                                             KeyNotFound)
 from backend.base.definitions import (BaseEnum, Constants, DateType,
-                                      FileDate, GCDownloadSource,
+                                      FileDate, GCDownloadSource, OSType,
                                       ProxyType, SeedingHandling)
 from backend.base.files import (are_folders_colliding, folder_path,
                                 uppercase_drive_letter)
@@ -486,6 +492,9 @@ class Settings(metaclass=Singleton):
             raise InvalidKeyValue(key, value)
 
         elif key == 'chmod_folder':
+            if System.os_type == OSType.WINDOWS:
+                raise InvalidKeyValue(key, value)
+
             if value.startswith('0'):
                 converted_value = value[1:]
 
@@ -508,6 +517,13 @@ class Settings(metaclass=Singleton):
             # We can't change existing group to a group that the running user
             # isn't a part of. If that's needed, we need to be root.
             if value:
+                if not (
+                    System.os_type != OSType.WINDOWS
+                    and getgrgid is not None # type: ignore
+                    and getgrnam is not None
+                ):
+                    raise InvalidKeyValue(key, value)
+
                 try:
                     getgrgid(int(value))
                 except (TypeError, ValueError, KeyError):
