@@ -8,6 +8,14 @@ Coming soon.
 
 Coming soon.
 
+## Library Import
+
+When 'Import' is used, the volume folder that is set is the 'deepest common folder'. This is the deepest folder that still contains all files that are matched to that volume.
+
+If the CV rate limit is reached halfway through the proposal, the unhandled files will have no match. Files that don't have a match linked to them will be ignored when importing, regardless of the state of the checkbox for that file. It's advised to wait a few minutes and then do another run.
+
+If you imported files but certain ones pop up again in the next run, see the [FAQ on this topic](../other_docs/faq.md#why-do-certain-files-pop-up-in-the-library-import-even-though-i-just-imported-them).
+
 ## Downloading from GetComics
 
 When a GetComics (GC) release has been chosen, either by you or by Kapowarr, Kapowarr will try to find a download link (or multiple) on the page to use for downloading the file(s). How Kapowarr decides which link(s) to use, is broken down in the following steps:
