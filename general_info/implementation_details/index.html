@@ -327,20 +327,17 @@
   
   
   
-    
-    
-      <li class="md-tabs__item">
-        <a href="../../other_docs/reporting/" class="md-tabs__link">
-          
+    <li class="md-tabs__item">
+      <a href="../../other_docs/api/" class="md-tabs__link">
+        
   
   
     
   
-  Other Docs
+  API
 
-        </a>
-      </li>
-    
+      </a>
+    </li>
   
 
       
@@ -874,6 +871,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#library-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Library Import
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#downloading-from-getcomics" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -908,6 +916,8 @@
   
     
     
+      
+        
       
         
       
@@ -1085,6 +1095,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../settings/metadata/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metadata
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../settings/general/" class="md-nav__link">
         
   
@@ -1146,154 +1184,6 @@
   
   
   
-    
-    
-      
-        
-      
-        
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
-        
-          
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Other Docs
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Other Docs
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../other_docs/reporting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Reporting
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../other_docs/faq/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    FAQ
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../other_docs/rate_limiting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Rate Limiting
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
     <li class="md-nav__item">
       <a href="../../other_docs/api/" class="md-nav__link">
         
@@ -1311,14 +1201,6 @@
   
 
       </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
     </li>
   
 
@@ -1372,6 +1254,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#library-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Library Import
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#downloading-from-getcomics" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1404,18 +1297,51 @@
 
 <h1 id="implementation-details">Implementation Details<a class="headerlink" href="#implementation-details" title="Permanent link">&para;</a></h1>
 <h2 id="update-all">Update All<a class="headerlink" href="#update-all" title="Permanent link">&para;</a></h2>
-<p>Coming soon.</p>
+<p>The Update All task runs every hour by default. When it runs, it gathers the volumes that haven't been updated in over 24 hours. It fetches the metadata of all these volumes (not their issues). The volumes are fetched in order of their last time they were updated, so that volumes that haven't been updated the longest are first. This matters because it could be the case that not all volumes are actually fetched because the ComicVine rate limit is hit first. The rate limit allows fetching the metadata of 20.000 volumes per hour. This is why the task runs every hour even though it only updates volumes once every 24 hours: it could be that in the first run we don't actually update all volumes, so we run it again an hour later to update the remaining volumes, and so on every hour.</p>
+<p>The received volume metadata is saved and the reported count of issues in each volume is compared to the count of issues found in the database for the volume. If they are equal, it's safe to say that nothing about the issues changed (at least there was no issue added). So the metadata of the issues of the volume aren't fetched then. If the counts aren't equal, and once every 30 days just in case, the metadata of all issues in that volume are fetched and saved.</p>
+<p>Fetching the metadata of all volumes is relatively quick, taking between 3 and 4 minutes for 20.000 volumes (100 volumes per second). It's the fetching of all issues that can take a very long time. This is why the system that compares the issue counts to most likely skip fetching the issues is in place.</p>
 <h2 id="special-version-and-annuals">Special Version and annuals<a class="headerlink" href="#special-version-and-annuals" title="Permanent link">&para;</a></h2>
-<p>Coming soon.</p>
+<ul>
+<li>
+<p><strong>Normal Volume</strong><br />
+A normal volume is a volume that has one or more issues. If the volume only has one issue, then the issue must be released within the last month. Otherwise the volume is considered a TPB by default.</p>
+</li>
+<li>
+<p><strong>Volume as Issue</strong><br />
+A 'Volume as Issue' volume is a volume where each issue is called 'Volume N', where N is a number. Kapowarr automatically detects this by looking at the issue titles. It recognises digits (e.g. 'Volume 2') and words (e.g. 'Volume Two') but not roman numbers (e.g. NOT 'Volume III'). If you want your files to be named like a VAI (see the <a href="../../settings/mediamanagement/#file-naming-for-volume-as-issue">File Naming For "Volume As Issue"</a> setting), then override the Special Version of the volume to this.</p>
+</li>
+<li>
+<p><strong>TPB</strong><br />
+A TPB volume is a volume with only one issue: the TPB. If there is a volume that contains multiple issues where it claims that each issue is a TPB, then such a volume is a normal volume.</p>
+</li>
+<li>
+<p><strong>Omnibus</strong><br />
+An omnibus is a volume with only one issue: the omnibus.</p>
+</li>
+<li>
+<p><strong>One Shot</strong>
+A one shot is a volume with only one issue: the one shot. If there is a volume that contains multiple issues where it claims that each issue is a one shot, then such a volume is a normal volume.</p>
+</li>
+<li>
+<p><strong>Hard Cover</strong>
+A hard cover is a volume with only one issue: the hard cover. If there is a volume that contains multiple issues where it claims that each issue is a hard cover, then such a volume is a normal volume.</p>
+</li>
+</ul>
+<p>If a volume is an annual, then it's a normal volume. It's not really a Special Version, but some extra checks are done based on whether the volume is an annual or not. For example, files can only match to a volume when both the volume and file are for an annual or both not. There is no setting to change whether a volume is considered an annual.</p>
+<h2 id="library-import">Library Import<a class="headerlink" href="#library-import" title="Permanent link">&para;</a></h2>
+<p>Files have to be in a sub-folder of the root folder in order to show up in Library Import.</p>
+<p>If the ComicVine rate limit is reached halfway through the proposal, then unhandled files will have no match. Files that don't have a match linked to them will be ignored when importing, regardless of the state of the checkbox for that file. It's advised to wait a few minutes and then do another run.</p>
+<p>When 'Import' is used, the volume folder that is set is the 'deepest common folder'. This is the deepest folder that still contains all files that are matched to that volume.</p>
+<p>If you imported files but certain ones pop up again in the next run, see the <a href="../../other_docs/faq/#why-do-files-pop-up-in-library-import-even-though-i-just-imported-them">FAQ on this topic</a>.</p>
 <h2 id="downloading-from-getcomics">Downloading from GetComics<a class="headerlink" href="#downloading-from-getcomics" title="Permanent link">&para;</a></h2>
-<p>When a GetComics (GC) release has been chosen, either by you or by Kapowarr, Kapowarr will try to find a download link (or multiple) on the page to use for downloading the file(s). How Kapowarr decides which link(s) to use, is broken down in the following steps:</p>
+<p>When a GetComics release has been chosen, either by you or by Kapowarr, Kapowarr will try to find a download link (or multiple) on the page to use for downloading the file(s). How Kapowarr decides which link(s) to use, is broken down in the following steps:</p>
 <ol>
-<li>GC often offers multiple services for the same download. Kapowarr first analyses the page and collects all groups and their links (one group per download).</li>
+<li>GetComics often offers multiple services for the same download. Kapowarr first analyses the page and collects all groups and their links (one group per download).</li>
 <li>Next, it will combine multiple groups to cover as many issues as possible (if the download is for more than one issue). This collection of groups will form a 'path'. Groups are only added to a path if Kapowarr thinks that the group is actually downloading something we want. There can be multiple paths, in the case where there are conflicting groups. For example when there is a torrent download for all issues and multiple other downloads for issues 1-10, 11-20, etc.</li>
 <li>All the links in the first path are tested, to see if they work, are supported and are allowed by the blocklist. A link could not be supported because the service is simply not supported, or because it's a torrent download and no torrent client is set up. If enough links pass, all the downloads in the path are added to the queue to be downloaded. If not enough links pass, the next path is tested until one is found that passes. If none pass, the page is added to the blocklist for having no working links.</li>
-<li>When a path passes and it's groups are added to the download queue, a decision needs to be made for which service is going to be used for each group (direct download, Mega, MediaFire, etc.). The <a href="../../settings/download/#service-preference">'Service Preference' setting</a> decides this.</li>
+<li>When a path passes and its groups are added to the download queue, a decision needs to be made for which service is going to be used for each group (DDL, Mega, MediaFire, etc.). The <a href="../../settings/download/#service-preference">'Service Preference' setting</a> decides this.</li>
 </ol>
-<p>If Kapowarr downloads less (or nothing at all) from a page, but you are convinced that that shouldn't be the case, read about this topic <a href="../../other_docs/faq/#why-does-kapowarr-not-grab-the-links-from-a-gc-page-even-though-they-work-fine">on the FAQ page</a>.</p>
+<p>If Kapowarr downloads less (or nothing at all) from a page, but you are convinced that that shouldn't be the case, read about this topic <a href="../../other_docs/faq/#why-does-kapowarr-not-grab-the-links-from-a-getcomics-page-even-though-they-work-fine">on the FAQ page</a>.</p>
 
 
 
@@ -1436,7 +1362,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="February 26, 2026 15:54:49 UTC"><span class="timeago" datetime="2026-02-26T15:54:49+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="February 26, 2026 15:54:49 UTC">2026-02-26</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="March 2, 2026 12:39:00 UTC"><span class="timeago" datetime="2026-03-02T12:39:00+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="March 2, 2026 12:39:00 UTC">2026-03-02</span>
   </span>
 
     

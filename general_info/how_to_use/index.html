@@ -327,20 +327,17 @@
   
   
   
-    
-    
-      <li class="md-tabs__item">
-        <a href="../../other_docs/reporting/" class="md-tabs__link">
-          
+    <li class="md-tabs__item">
+      <a href="../../other_docs/api/" class="md-tabs__link">
+        
   
   
     
   
-  Other Docs
+  API
 
-        </a>
-      </li>
-    
+      </a>
+    </li>
   
 
       
@@ -1069,6 +1066,8 @@
       
         
       
+        
+      
     
     
     
@@ -1235,6 +1234,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../settings/metadata/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metadata
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../settings/general/" class="md-nav__link">
         
   
@@ -1296,154 +1323,6 @@
   
   
   
-    
-    
-      
-        
-      
-        
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
-        
-          
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Other Docs
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Other Docs
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../other_docs/reporting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Reporting
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../other_docs/faq/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    FAQ
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../other_docs/rate_limiting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Rate Limiting
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
     <li class="md-nav__item">
       <a href="../../other_docs/api/" class="md-nav__link">
         
@@ -1461,14 +1340,6 @@
   
 
       </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
     </li>
   
 
@@ -1771,7 +1642,7 @@ Override the Special Version of the volume, or allow Kapowarr to automatically d
 <p>Another feature of Kapowarr is the ability to change the format of files. For example, Kapowarr can convert cbr files to cbz. To what format Kapowarr will (try to) change the files is set <a href="../../settings/mediamanagement/#format-preference">in the settings</a>. The 'Preview Convert' button will show a list of the media files matched to the volume and what format they will be converted to. Click the 'Convert' button to finalise it.</p>
 <div class="admonition info">
 <p class="admonition-title">Extracting Archives</p>
-<p>If you download multiple issues in one go, they often come in an archive file (e.g. <code class="highlight">Issue 1-10.zip</code>). Kapowarr can extract these archive files and put the contents directly in the folder. This functionality falls under 'Conversion'. See the <a href="../../settings/mediamanagement/#extract-archives-covering-multiple-issues">'Extract archives containing issues' setting</a> to enable this.</p>
+<p>If you download multiple issues in one go, they often come in an archive file (e.g. <code class="highlight">Issue 1-10.zip</code>). Kapowarr can extract these archive files and put the contents directly in the folder. This functionality falls under 'Conversion'. See the <a href="../../settings/mediamanagement/#extract-archives-containing-issues">'Extract archives containing issues' setting</a> to enable this.</p>
 </div>
 <h2 id="downloading">Downloading<a class="headerlink" href="#downloading" title="Permanent link">&para;</a></h2>
 <p>This section covers searching for, and downloading, files for issues.</p>
@@ -1779,7 +1650,7 @@ Override the Special Version of the volume, or allow Kapowarr to automatically d
 <p>The button 'Search Monitored' will make Kapowarr try to download media files for issues that aren't downloaded yet. This button only does something if the volume is monitored and at least one of its monitored issues doesn't have a file yet. It will try to find a download for as many issues as possible, but it isn't guaranteed that it will always find a matching and working download.</p>
 <p>On the library page, the button 'Search All' will trigger a 'Search Monitored' for all monitored volumes. A search is done automatically every 24 hours by default, but you can also trigger it manually.</p>
 <h3 id="manual-search">Manual Search<a class="headerlink" href="#manual-search" title="Permanent link">&para;</a></h3>
-<p>The button 'Manual Search' will show you a list of search results for the volume/issue. From these results, you can choose yourself which one should be downloaded (instead of Kapowarr automatically choosing with Search Monitored). It is possible that the search result does not contain any matching and working downloads. In that case, the download button will turn red and the page will be added to the blocklist. Hover with your mouse over the red button to see the reason why it failed. If Kapowarr is convinced that the download links <a href="../matching/#getcomics-search-results">don't match</a> to the volume but you click the download button anyway, it'll probably fail (because nothing matches). If you still want Kapowarr to download it, then click the icon next to the download icon, which will <em>force</em> download it.</p>
+<p>The button 'Manual Search' will show you a list of search results for the volume/issue. From these results, you can choose yourself which one should be downloaded (instead of Kapowarr automatically choosing with Search Monitored). It is possible that the search result does not contain any matching and working downloads. In that case, the download button will turn red and the page will be added to the blocklist. Hover with your mouse over the red button to see the reason why it failed. If Kapowarr is convinced that the download links <a href="../matching/#search-results-for-downloads">don't match</a> to the volume but you click the download button anyway, it'll probably fail (because nothing matches). If you still want Kapowarr to download it, then click the icon next to the download icon, which will <em>force</em> download it.</p>
 <h3 id="download-queue-and-post-processing">Download Queue and Post Processing<a class="headerlink" href="#download-queue-and-post-processing" title="Permanent link">&para;</a></h3>
 <p>When a download is added to the queue, you can see it on the Activity -&gt; Queue page. When a download is complete, it will enter post-download processing (a.k.a. post-processing). Entirely depending on your configuration, the file could be renamed, converted to a different format and/or be extracted (if it's an archive file with issues inside). It will always be moved from the <a href="../../settings/download/#direct-download-temporary-folder">download folder</a> to its final destination inside the volume folder.</p>
 <p>When you view the volume after the download, you'll see that the issue now has a check mark on the right, indicating that it has been downloaded.</p>
@@ -1803,7 +1674,7 @@ Override the Special Version of the volume, or allow Kapowarr to automatically d
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="February 26, 2026 15:54:49 UTC"><span class="timeago" datetime="2026-02-26T15:54:49+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="February 26, 2026 15:54:49 UTC">2026-02-26</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="March 2, 2026 14:12:33 UTC"><span class="timeago" datetime="2026-03-02T14:12:33+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="March 2, 2026 14:12:33 UTC">2026-03-02</span>
   </span>
 
     

@@ -327,20 +327,17 @@
   
   
   
-    
-    
-      <li class="md-tabs__item">
-        <a href="../../other_docs/reporting/" class="md-tabs__link">
-          
+    <li class="md-tabs__item">
+      <a href="../../other_docs/api/" class="md-tabs__link">
+        
   
   
     
   
-  Other Docs
+  API
 
-        </a>
-      </li>
-    
+      </a>
+    </li>
   
 
       
@@ -838,6 +835,8 @@
       
         
       
+        
+      
     
     
     
@@ -1056,6 +1055,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#concurrent-direct-downloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Concurrent Direct Downloads
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#failing-download-timeout" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1148,6 +1158,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../metadata/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metadata
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../general/" class="md-nav__link">
         
   
@@ -1209,154 +1247,6 @@
   
   
   
-    
-    
-      
-        
-      
-        
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
-        
-          
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Other Docs
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Other Docs
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../other_docs/reporting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Reporting
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../other_docs/faq/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    FAQ
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../other_docs/rate_limiting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Rate Limiting
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
     <li class="md-nav__item">
       <a href="../../other_docs/api/" class="md-nav__link">
         
@@ -1374,14 +1264,6 @@
   
 
       </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
     </li>
   
 
@@ -1462,6 +1344,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#concurrent-direct-downloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Concurrent Direct Downloads
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#failing-download-timeout" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1539,18 +1432,26 @@
 <h3 id="empty-temporary-download-folder">Empty Temporary Download Folder<a class="headerlink" href="#empty-temporary-download-folder" title="Permanent link">&para;</a></h3>
 <p>This isn't so much of a setting as it is a tool. It will delete all files from the download folder that aren't actively being downloaded. This can be handy if the application crashed while downloading, leading to half-downloaded 'ghost' files in the folder.  </p>
 <h2 id="queue">Queue<a class="headerlink" href="#queue" title="Permanent link">&para;</a></h2>
+<h3 id="concurrent-direct-downloads">Concurrent Direct Downloads<a class="headerlink" href="#concurrent-direct-downloads" title="Permanent link">&para;</a></h3>
+<p>The amount of direct downloads (DDLs) that are allowed to run at the same time.</p>
 <h3 id="failing-download-timeout">Failing Download Timeout<a class="headerlink" href="#failing-download-timeout" title="Permanent link">&para;</a></h3>
 <p>If a download is stalled (no seeders, no servers, no metadata found, etc.) for a long time, you can be pretty confident that it's not going to work. Kapowarr can automatically delete a download when it's stalled for a set amount of minutes. So for example, if you set it to 60, then Kapowarr will delete downloads that have been stalled for more than 60 minutes. Make the field empty (or set it to 0) to disable this feature.</p>
 <h3 id="seeding-handling">Seeding Handling<a class="headerlink" href="#seeding-handling" title="Permanent link">&para;</a></h3>
-<p>When a torrent has completed downloading, it will start to seed depending on the settings of the torrent client. The originally downloaded files need to be available in order to seed. But you might not want to wait for the torrent to complete seeding before you can read the downloaded comics. Kapowarr offers two solutions:</p>
+<p>When a torrent has completed downloading, it will start to seed depending on the settings of the torrent client. The originally downloaded files need to be available in order to seed. But you might not want to wait for the torrent to complete seeding before you can read the downloaded media. Kapowarr offers two solutions:</p>
 <ol>
-<li><strong>Complete</strong>: wait until the torrent has completed seeding and then move the files. You'll have to wait until the torrent has completed seeding before the comics are available.</li>
-<li><strong>Copy</strong>: make a copy of the downloaded files and post-process those (moving, renaming, converting, etc.). When the torrent finishes seeding, it's files are deleted. With this setup, your downloaded comics will be available immediately, but will temporarily take up twice as much space.</li>
+<li>
+<p><strong>Complete</strong><br />
+Wait until the torrent has completed seeding and then move the files. You'll have to wait until the torrent has completed seeding before the comics are available.</p>
+</li>
+<li>
+<p><strong>Copy</strong><br />
+Make a copy of the downloaded files and post-process those (moving, renaming, converting, etc.). When the torrent finishes seeding, its files are deleted. With this setup, your downloaded comics will be available immediately, but will temporarily take up twice as much space.</p>
+</li>
 </ol>
 <h3 id="delete-completed-downloads">Delete Completed Downloads<a class="headerlink" href="#delete-completed-downloads" title="Permanent link">&para;</a></h3>
-<p>Whether Kapowarr should delete external downloads from their client once they have completed. Otherwise leave them in the queue of the external download client as 'completed'.</p>
+<p>Whether external downloads should be deleted from their client once they have completed. Otherwise leave them in the queue of the external download client as 'completed'.</p>
 <h2 id="service-preference">Service preference<a class="headerlink" href="#service-preference" title="Permanent link">&para;</a></h2>
-<p>Kapowarr has the ability to download directly from the servers of GetComics, but also to download from services like MediaFire and Mega. When an issue is queried on <a href="https://getcomics.org/">GetComics</a> and found to have multiple possible download sources, this defines which source takes priority. If the first download fails, Kapowarr will try the next service in order.</p>
+<p>Kapowarr has the ability to download directly from the servers of GetComics, but also to download from services like MediaFire and Mega. When a download on GetComics is found and  has multiple possible download sources, this defines which source takes priority. If the first download fails, Kapowarr will try the next service in order.</p>
 <p>If you have an account for one of these services (see <a href="../downloadclients/#credentials">Credentials</a> setting), you might want to put that one at the top, to make Kapowarr take advantage of the extra features that the account offers (extra bandwidth, higher rate limit, etc.).  </p>
 
 
@@ -1572,7 +1473,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="May 23, 2025 11:19:36 UTC"><span class="timeago" datetime="2025-05-23T11:19:36+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="May 23, 2025 11:19:36 UTC">2025-05-23</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="March 2, 2026 13:58:32 UTC"><span class="timeago" datetime="2026-03-02T13:58:32+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="March 2, 2026 13:58:32 UTC">2026-03-02</span>
   </span>
 
     

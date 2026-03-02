@@ -16,7 +16,7 @@
         <link rel="prev" href="../download/">
       
       
-        <link rel="next" href="../general/">
+        <link rel="next" href="../metadata/">
       
       
         
@@ -327,20 +327,17 @@
   
   
   
-    
-    
-      <li class="md-tabs__item">
-        <a href="../../other_docs/reporting/" class="md-tabs__link">
-          
+    <li class="md-tabs__item">
+      <a href="../../other_docs/api/" class="md-tabs__link">
+        
   
   
     
   
-  Other Docs
+  API
 
-        </a>
-      </li>
-    
+      </a>
+    </li>
   
 
       
@@ -838,6 +835,8 @@
       
         
       
+        
+      
     
     
     
@@ -1071,10 +1070,49 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#remote-path-mappings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remote Path Mappings
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metadata/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metadata
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1148,154 +1186,6 @@
   
   
   
-    
-    
-      
-        
-      
-        
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
-        
-          
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Other Docs
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Other Docs
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../other_docs/reporting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Reporting
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../other_docs/faq/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    FAQ
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../other_docs/rate_limiting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Rate Limiting
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
     <li class="md-nav__item">
       <a href="../../other_docs/api/" class="md-nav__link">
         
@@ -1313,14 +1203,6 @@
   
 
       </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
     </li>
   
 
@@ -1388,6 +1270,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#remote-path-mappings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remote Path Mappings
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1413,12 +1306,19 @@
 <h2 id="built-in-clients">Built-in Clients<a class="headerlink" href="#built-in-clients" title="Permanent link">&para;</a></h2>
 <p>A list of the download clients Kapowarr has built-in. It uses these to download from multiple sources offered by GetComics. Clicking on one of them shows a window with more information and, if the client has support for it, an option to enter credentials (see below).</p>
 <h3 id="credentials">Credentials<a class="headerlink" href="#credentials" title="Permanent link">&para;</a></h3>
-<p>If you have an account with Mega, Kapowarr has the ability to use this account. If you provide your login credentials for the service, Kapowarr will then take advantage of the extra features that your account has access to (higher speeds and limits, usually). You can enter the credentials by clicking on the client and filling in the form.</p>
+<p>If you have an account with Mega or Pixeldrain, Kapowarr has the ability to use this account. If you provide your login credentials for the service, Kapowarr will then take advantage of the extra features that your account has access to (higher speeds and limits, usually). You can enter the credentials by clicking on the client and filling in the form.</p>
 <h2 id="torrent-clients">Torrent Clients<a class="headerlink" href="#torrent-clients" title="Permanent link">&para;</a></h2>
 <p>By adding at least one torrent client, Kapowarr is able to download torrents.</p>
 <div class="admonition warning">
 <p class="admonition-title">Using localhost in combination with a Docker container</p>
 <p>If the torrent client is hosted on the host OS, and Kapowarr is running inside a Docker container, then it is not possible to use <code class="highlight">localhost</code> in the base URL of the torrent client. Instead, the IP address used by the host OS must be used.</p>
+</div>
+<h2 id="remote-path-mappings">Remote Path Mappings<a class="headerlink" href="#remote-path-mappings" title="Permanent link">&para;</a></h2>
+<p>When a remote download client and Kapowarr do not run on the same machine (because at least one of them is on another machine or in a Docker container), then filepaths could not match up. For example, a torrent client might be running in a Docker container where the download folder is at <code class="highlight"><span class="o">/</span><span class="n">downloads</span></code> which maps to <code class="highlight"><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">media</span><span class="o">/</span><span class="n">downloads</span></code> on the host while Kapowarr is running on the host. Then when Kapowarr reaches out to the torrent client, it'll report that the file is located at <code class="highlight"><span class="o">/</span><span class="n">downloads</span><span class="o">/</span><span class="n">file</span><span class="o">.</span><span class="n">ext</span></code>. But Kapowarr can actually find it at <code class="highlight"><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">media</span><span class="o">/</span><span class="n">downloads</span><span class="o">/</span><span class="n">file</span><span class="o">.</span><span class="n">ext</span></code>. 'Remote Path Mappings' allows you to add such a mapping so that Kapowarr can translate filepaths that are reported by the external download client to where it can actually find it.</p>
+<p>When adding a remote mapping, choose the client it's for and then set the paths. The remote path is the path that the client reports (e.g. <code class="highlight"><span class="o">/</span><span class="n">downloads</span></code>). The local path is the path that Kapowarr should actually look (e.g. <code class="highlight"><span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">media</span><span class="o">/</span><span class="n">downloads</span></code>).</p>
+<div class="admonition warning">
+<p class="admonition-title">Cross-OS remote mapping</p>
+<p>Kapowarr currently does not support remote mappings between different operating systems. So for example, if a client is running on Windows and Kapowarr on Linux, then it currently doesn't support translating those. </p>
 </div>
 
 
@@ -1440,7 +1340,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="September 5, 2024 20:37:23 UTC"><span class="timeago" datetime="2024-09-05T20:37:23+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="September 5, 2024 20:37:23 UTC">2024-09-05</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="March 2, 2026 13:58:32 UTC"><span class="timeago" datetime="2026-03-02T13:58:32+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="March 2, 2026 13:58:32 UTC">2026-03-02</span>
   </span>
 
     
