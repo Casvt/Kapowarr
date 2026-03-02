@@ -83,9 +83,18 @@ Examples:
 3. `John Constantine, Hellblazer 30th Anniversary Celebration Volume 1.cbr`
 4. `John Constantine, Hellblazer 30th Anniversary Celebration Volume 1 Issue 01.cbr`
 
-## GetComics Search Results
+## Archive Extractions
 
-When searching for a GC release, Kapowarr determines if the page is a match for the volume or not. The release has to conform with the following rules to pass the filter:
+When extracting files from archives, the files are filtered and deleted if they are not for the volume. A file has to conform with the following rules to pass the filter:
+
+1. Series title has to match.
+2. Either year or volume number has to be mentioned and should match, or neither should be mentioned.
+3. If it is for a hard cover or one shot, it has to follow the first rule they have for files.
+4. If it is for a TPB, it has to follow the first two rules it has for files.
+
+## Search Results for Downloads
+
+When searching for downloads, Kapowarr determines whether the result is a match for the volume or not. The download has to conform with the following rules to be considered a match:
 
 1. Not be blocklisted.
 2. Series title has to match.
@@ -97,17 +106,10 @@ When searching for a GC release, Kapowarr determines if the page is a match for 
 
 ## GetComics Groups
 
-When selecting links from a GC page for downloading, Kapowarr filters the groups so that no irrelevant files are downloaded. See the [implementation details](./implementation_details.md#downloading-from-getcomics) for more information. The download group has to conform with the following rules to pass the filter:
+When selecting links from a GetComics download page, Kapowarr filters the groups so that no irrelevant files are downloaded. See the [implementation details](./implementation_details.md#downloading-from-getcomics) for more information. The download group has to conform with the following rules to pass the filter:
 
 1. Series title has to match.
 2. If the volume number is given, it should match.
 3. If the year is given, it should match.
 4. If it is for a hard cover or one shot, it has to follow the first rule they have for files.
 5. If it is for a TPB, it has to follow the first two rules it has for files.
-
-## Archive Extractions
-
-When extracting files from archives, the files are filtered and deleted if they are not for the volume. A file has to conform with the following rules to pass the filter:
-
-1. Series title has to match.
-2. Either year or volume number has to be mentioned and should match, or neither should be mentioned.
