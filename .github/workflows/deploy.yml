@@ -16,9 +16,9 @@ jobs:
           fetch-depth: 0
 
       - uses: actions/setup-python@v4
-        name: Setup python 3.8
+        name: Setup python 3.12
         with:
-          python-version: 3.8
+          python-version: 3.12
           cache: 'pip'
 
       - run: pip install -r project_management/docs-requirements.txt
