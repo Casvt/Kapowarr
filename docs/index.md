@@ -12,7 +12,7 @@ __Kapowarr is a software to build and manage a comic book library, fitting in th
   <a href="./installation/installation">Installation and Updating</a>
   <a href="./general_info/workings">How to Use</a>
   <a href="./settings/settings">Explanation of Settings</a>
-  <a href="./settings/settings">FAQ</a>
+  <a href="./other_docs/faq">FAQ</a>
 </div>
 
 ## Support

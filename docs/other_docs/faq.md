@@ -1,14 +1,19 @@
+---
+hide:
+  - navigation
+---
+
 # FAQ
 
 ## Project
 
 ### Does Kapowarr support XYZ?
 
-Look around in the web-UI and this documentation hub first, to see if you find it. Otherwise you can ask on the [Discord server](https://discord.gg/5gWtW3ekgZ). If you are sure that it is not available in Kapowarr, you can [report it](./reporting.md).
+Look around in the web-UI and this documentation hub first, to see if you find it. Otherwise you can ask on the [Discord server](https://discord.gg/5gWtW3ekgZ). If you are sure that it is not available in Kapowarr, you can make an issue on GitHub to request it.
 
 ### When will XYZ be added?
 
-First, check out the [project board](https://github.com/users/Casvt/projects/5) to see if it's already on there and if so, at what stage it is. If it's not, check if a feature request is already made for it on the [issues page](https://github.com/Casvt/Kapowarr/issues) and otherwise [make an issue yourself](./reporting.md).
+First, check out the [project board](https://github.com/users/Casvt/projects/5) to see if it's already on there and if so, at what stage it is. If it's not, check if a feature request is already made for it on the [issues page](https://github.com/Casvt/Kapowarr/issues) and otherwise make one.
 
 ### What are the alpha releases?
 
@@ -57,11 +62,11 @@ There are multiple causes to this:
     If the volume in your library is for a TPB, and the files are for individual issues, then Kapowarr is correct in not matching the files. This often happens in the scenario where a TPB file is (incorrectly) named as "Issue 1". The same goes for Deluxe Editions: if the file is for a Deluxe Edition and the volume is for a standard version, then Kapowarr is correct in not matching the file. Almost always, the correct version of the volume can be added to your library, fixing the problem. With the example of the Deluxe Edition, you can fix it by adding the Deluxe Edition of the volume from ComicVine to your library.
 
 !!! info "Kapowarr is wrong"
-    <a name="wrong-special-version"></a> Kapowarr tries to automatically determine the [Special Version](../general_info/matching.md#special-version) of a volume, but it isn't always right. For example, it often marks One Shot's as TPB's. Read the linked section for more information on the Special Version of a volume. Editing the volume and overriding the Special Version often resolves problems. Please [report](./reporting.md) a volume if the Special Version was wrongly determined and you think Kapowarr could've done it correctly.
+    <a name="wrong-special-version"></a> Kapowarr tries to automatically determine the [Special Version](../general_info/matching.md#special-version) of a volume, but it isn't always right. For example, it often marks One Shot's as TPB's. Read the linked section for more information on the Special Version of a volume. Editing the volume and overriding the Special Version often resolves problems. Please make an issue on GitHub if the Special Version of a volume was wrongly determined and you think Kapowarr could've done it correctly.
 
 3. <a name="wrong-filename"></a> The filename does not follow the [matching criteria](../general_info/matching.md#files-to-issues). The filename does not have to be perfect, but it does have to give the correct information. For example, it often happens that TPB files have "Issue 1" in their filename, which does not meet [rule 2 of the matching criteria for TPB's](../general_info/matching.md#tpb-volume).
 
-3. The filename is simply not handled properly by Kapowarr. The chance of this happening is slim, but if you think this is the case, please [report it](../other_docs/reporting.md).
+3. The filename is simply not handled properly by Kapowarr. The chance of this happening is slim, but if you think this is the case, please make an issue on GitHub.
 
 ### Why do files pop up in Library Import, even though I just imported them?
 

@@ -175,7 +175,7 @@ This setting dictates whether Kapowarr should automatically convert downloaded f
 
 If an archive file has (most often multiple) complete issues inside, then extract the files inside and convert those issue files following the format preference. With the setting disabled, Kapowarr will convert the file as normal. Even when no format preference is set (= don't convert), this setting can still be enabled to extract archive files (up to beta-3, this was called 'unzipping').
 
-_Note: if Kapowarr determines that a file in the archive file is not related to the volume, it will not be extracted and will be deleted when the archive file is finished being unpacked. If you find faulty deletions occurring, please [report](../other_docs/reporting.md) this._
+_Note: if Kapowarr determines that a file in the archive file is not related to the volume, it will not be extracted and will be deleted when the archive file is finished being unpacked. If you find faulty deletions occurring, please make an issue on GitHub._
 
 ### Format Preference
 
@@ -184,7 +184,7 @@ The formats that Kapowarr should convert the files to. It will try to convert th
 ??? info "The format called 'folder'"
 	The format called 'folder' means extracting archive files containing images that directly cover a single issue. This is different from the ['Extract archives covering multiple issues' setting](#extract-archives-covering-multiple-issues). That setting will extract complete issue files from an archive file containing them. If you then add 'folder' to the format preference, it will extract any archive files coming out of the original archive file again. The format 'folder' will most likely lead to a folder with inside of it a series of image files. If you want to recreate the 'unzipping' feature from Kapowarr beta-3 and before, enable the before mentioned setting and do _not_ include 'folder' in the format preference. 
 
-	_Note: if Kapowarr determines that a file in the archive file is not related to the volume, it will not be extracted and will be deleted when the archive file is finished being unpacked. If you find faulty deletions occurring, please [report](../other_docs/reporting.md) this._
+	_Note: if Kapowarr determines that a file in the archive file is not related to the volume, it will not be extracted and will be deleted when the archive file is finished being unpacked. If you find faulty deletions occurring, please make an issue on GitHub._
 
 ## Root Folders
 

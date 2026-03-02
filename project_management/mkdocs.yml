@@ -105,7 +105,4 @@ nav:
     - Download Clients: settings/downloadclients.md
     - General: settings/general.md
   - FAQ: other_docs/faq.md
-  - Other Docs:
-    - Reporting: other_docs/reporting.md
-    - FAQ: other_docs/faq.md
-    - API: other_docs/api.md
+  - API: other_docs/api.md
