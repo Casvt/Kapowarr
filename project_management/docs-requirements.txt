@@ -1,4 +1,4 @@
-wheel ~= 0.45
+wheel ~= 0.46, >= 0.46.2
 mkdocs-material ~= 9.7
 mkdocs-redirects ~= 1.2
 mkdocs-git-revision-date-localized-plugin ~= 1.1
