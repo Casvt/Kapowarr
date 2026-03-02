@@ -80,7 +80,7 @@ Kapowarr has the ability to easily manage your files by (re)naming them all to o
 Another feature of Kapowarr is the ability to change the format of files. For example, Kapowarr can convert cbr files to cbz. To what format Kapowarr will (try to) change the files is set [in the settings](../settings/mediamanagement.md#format-preference). The 'Preview Convert' button will show a list of the media files matched to the volume and what format they will be converted to. Click the 'Convert' button to finalise it.
 
 !!! info "Extracting Archives"
-    If you download multiple issues in one go, they often come in an archive file (e.g. `Issue 1-10.zip`). Kapowarr can extract these archive files and put the contents directly in the folder. This functionality falls under 'Conversion'. See the ['Extract archives containing issues' setting](../settings/mediamanagement.md#extract-archives-covering-multiple-issues) to enable this.
+    If you download multiple issues in one go, they often come in an archive file (e.g. `Issue 1-10.zip`). Kapowarr can extract these archive files and put the contents directly in the folder. This functionality falls under 'Conversion'. See the ['Extract archives containing issues' setting](../settings/mediamanagement.md#extract-archives-containing-issues) to enable this.
 
 ## Downloading
 
@@ -94,7 +94,7 @@ On the library page, the button 'Search All' will trigger a 'Search Monitored' f
 
 ### Manual Search
 
-The button 'Manual Search' will show you a list of search results for the volume/issue. From these results, you can choose yourself which one should be downloaded (instead of Kapowarr automatically choosing with Search Monitored). It is possible that the search result does not contain any matching and working downloads. In that case, the download button will turn red and the page will be added to the blocklist. Hover with your mouse over the red button to see the reason why it failed. If Kapowarr is convinced that the download links [don't match](./matching.md#getcomics-search-results) to the volume but you click the download button anyway, it'll probably fail (because nothing matches). If you still want Kapowarr to download it, then click the icon next to the download icon, which will _force_ download it.
+The button 'Manual Search' will show you a list of search results for the volume/issue. From these results, you can choose yourself which one should be downloaded (instead of Kapowarr automatically choosing with Search Monitored). It is possible that the search result does not contain any matching and working downloads. In that case, the download button will turn red and the page will be added to the blocklist. Hover with your mouse over the red button to see the reason why it failed. If Kapowarr is convinced that the download links [don't match](./matching.md#search-results-for-downloads) to the volume but you click the download button anyway, it'll probably fail (because nothing matches). If you still want Kapowarr to download it, then click the icon next to the download icon, which will _force_ download it.
 
 ### Download Queue and Post Processing
 
