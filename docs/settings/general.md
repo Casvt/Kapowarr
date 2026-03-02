@@ -56,8 +56,6 @@ Kapowarr uses ComicVine as its metadata source. To fetch the metadata from Comic
 3. You'll see your ComicVine API key, which is 40 characters long and contains the letters a-f and numbers 0-9 (e.g. `da39a3ee5e6b4b0d3255bfef95601890afd80709`).
 4. Copy that API key and set it as the value in the web-UI. Don't forget to save.
 
-On the documentation page about [rate limiting](../other_docs/rate_limiting.md), information can be found about the handling of the ComicVine API rate limit.
-
 ### FlareSolverr Base URL
 
 Multiple services are protected by CloudFlare. This means that if Kapowarr makes too many requests too quickly, CloudFlare will block Kapowarr. [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) is a software that can bypass this block. Kapowarr can use FlareSolverr to make requests without getting blocked. If Kapowarr experiences a CloudFlare block and it doesn't have FlareSolverr setup, it will log this. Enter the base URL of your FlareSolverr instance if you want Kapowarr to make use of it. Supply the base URL without the API prefix (`/v1`).

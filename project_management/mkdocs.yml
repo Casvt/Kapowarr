@@ -108,5 +108,4 @@ nav:
   - Other Docs:
     - Reporting: other_docs/reporting.md
     - FAQ: other_docs/faq.md
-    - Rate Limiting: other_docs/rate_limiting.md
     - API: other_docs/api.md
