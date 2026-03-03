@@ -16,7 +16,7 @@ Kapowarr uses [ComicVine](https://comicvine.gamespot.com/) as its metadata sourc
 Root folders are the base folders that Kapowarr puts media files in. Add at least one root folder to be able to add any volumes to your library. See the ['Root Folders' section of the settings](../settings/mediamanagement.md#root-folders) for more details.
 
 !!! warning "Adding root folders on Docker"
-	If you use Docker to run Kapowarr, then the root folder that you enter in the web-UI is the mapped folder, not the folder path on the host machine. That means that if you followed the [Docker installation instructions](../installation/docker.md#launch-container), you would need to enter `/comics-1`, `/comics-2`, etc. as your root folder.
+	If you use Docker to run Kapowarr, then the root folder that you enter in the web-UI is the mapped folder, not the folder path on the host machine. That means that if you followed the [Docker installation instructions](../installation/docker.md#launch-container), you would need to enter `/comics`, `/comics-2`, etc. as your root folder.
 
 ## Direct Download Temporary Folder
 

@@ -222,4 +222,4 @@ When adding a volume (or when editing one), you choose in which root folder all 
 You can use the edit button on the right to rename a root folder. Or the delete button to remove a root folder from Kapowarr, but not actually deleting the folder on the filesystem. You can only remove a root folder when no volume in your library has their volume folder in the root folder.
 
 !!! warning "Adding root folders on Docker"
-	If you use Docker to run Kapowarr, then the root folder that you enter in the web-UI is the mapped folder, not the folder path on the host machine. That means that if you followed the [installation instructions](../installation/docker.md#launch-container), you would need to enter `/comics-1`, `/comics-2`, etc. as your root folder.
+	If you use Docker to run Kapowarr, then the root folder that you enter in the web-UI is the mapped folder, not the folder path on the host machine. That means that if you followed the [installation instructions](../installation/docker.md#launch-container), you would need to enter `/comics`, `/comics-2`, etc. as your root folder.
