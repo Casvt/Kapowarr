@@ -15,14 +15,12 @@ body:
     label: Is your feature request related to a problem?
     description: A concise description of what the problem is.
     placeholder: I'm always frustrated when [...]
-    render: markdown
   validations:
     required: false
 
 - type: textarea
   attributes:
     label: Describe the feature you'd like
-    render: markdown
   validations:
     required: true
 
@@ -30,6 +28,5 @@ body:
   attributes:
     label: Additional context
     description: If needed, add context, screenshots, details or anything else about the feature request here.
-    render: markdown
   validations:
     required: false
