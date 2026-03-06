@@ -108,6 +108,23 @@ class Server(metaclass=Singleton):
             client_manager=MPWebSocketQueue(SimpleQueue(), write_only=False)
         )
 
+        @ws.on('connect')
+        def auth_ws(auth_payload: Any) -> bool:
+            if not (
+                isinstance(auth_payload, dict)
+                and 'api_key' in auth_payload
+                and isinstance(auth_payload['api_key'], str)
+                and auth_payload['api_key'] == Settings().sv.api_key
+            ):
+                ip = request.environ.get(
+                    'HTTP_X_FORWARDED_FOR',
+                    request.remote_addr
+                )
+                LOGGER.warning(f'Unauthorised request from {ip}')
+                return False
+
+            return True
+
         # Add error handlers
         @app.errorhandler(400)
         def bad_request(e):
