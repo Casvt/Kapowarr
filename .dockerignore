@@ -159,3 +159,4 @@ temp_downloads/*
 # Project management files
 docs/
 requirements-dev.txt
+release.sh
