@@ -21,8 +21,8 @@ jobs:
           python-version: 3.12
           cache: 'pip'
 
-      - run: pip install -r project_management/docs-requirements.txt
+      - run: pip install -r docs/requirements-docs.txt
         name: Install dependencies
 
-      - run: mkdocs gh-deploy --force -f project_management/mkdocs.yml
+      - run: mkdocs gh-deploy --force -f docs/mkdocs.yml
         name: Build docs

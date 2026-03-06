@@ -37,7 +37,7 @@
 			"module": "mkdocs",
 			"args": [
 				"serve",
-				"-f", "${workspaceFolder}/project_management/mkdocs.yml",
+				"-f", "${workspaceFolder}/docs/mkdocs.yml",
 				"-a", "${input:docsHostPort}"
 			]
 		},

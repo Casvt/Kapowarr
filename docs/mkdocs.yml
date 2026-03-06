@@ -3,9 +3,9 @@ site_name: Kapowarr Docs
 site_description: The official guide for Kapowarr 
 site_author: Casvt
 repo_url: https://github.com/Casvt/Kapowarr
-edit_uri: blob/development/docs/
+edit_uri: blob/development/docs/src/
 repo_name: Casvt/Kapowarr
-docs_dir: ../docs
+docs_dir: src/
 
 
 
