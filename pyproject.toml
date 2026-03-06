@@ -1,6 +1,6 @@
 [project]
 name = "Kapowarr"
-version = "alpha-37"
+version = "1.3.0"
 description = "Kapowarr is a software to build and manage a comic book library, fitting in the *arr suite of software."
 authors = [
     {name = "Cas van Tijn"}
