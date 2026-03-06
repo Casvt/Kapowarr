@@ -303,7 +303,7 @@ In Kapowarr we'd then add `/comics` and `/comics-2` as root folders.
 
 ### Check Setup After Installation
 
-Now that the container is up and running, check out the [Setup After Installation] page for instructions on how to configure Kapowarr so that it works properly.
+Now that the container is up and running, you can access it at [http://localhost:5656](http://localhost:5656). Check out the [Setup After Installation](./setup_after_installation.md) page for instructions on how to configure Kapowarr so that it works properly.
 
 ## Updating
 
