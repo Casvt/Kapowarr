@@ -492,7 +492,7 @@ class Settings(metaclass=Singleton):
             raise InvalidKeyValue(key, value)
 
         elif key == 'chmod_folder':
-            if System.os_type == OSType.WINDOWS:
+            if System.os_type == OSType.WINDOWS and value:
                 raise InvalidKeyValue(key, value)
 
             if value.startswith('0'):
