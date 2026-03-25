@@ -11,6 +11,7 @@ const SearchEls = {
 	msgs: {
 		blocked: document.querySelector('#search-blocked'),
 		failed: document.querySelector('#search-failed'),
+		rate_limited: document.querySelector('#search-rate-limited'),
 		empty: document.querySelector('#search-empty'),
 		explain: document.querySelector('#search-explain'),
 		loading: document.querySelector('#search-loading')
@@ -214,6 +215,7 @@ function search(reset_url_params=true) {
 		SearchEls.msgs.empty,
 		SearchEls.msgs.explain,
 		SearchEls.msgs.failed,
+		SearchEls.msgs.rate_limited,
 		SearchEls.search_results
 	], [
 		SearchEls.msgs.loading
@@ -237,6 +239,8 @@ function search(reset_url_params=true) {
 		.catch(e => {
 			if (e.status === 400)
 				hide([SearchEls.msgs.loading], [SearchEls.msgs.failed]);
+			else if (e.status === 509)
+				hide([SearchEls.msgs.loading], [SearchEls.msgs.rate_limited]);
 			else
 				console.log(e);
 		});
@@ -247,7 +251,8 @@ function clearSearch(e) {
 	hide([
 		SearchEls.search_results,
 		SearchEls.msgs.empty,
-		SearchEls.msgs.failed
+		SearchEls.msgs.failed,
+		SearchEls.msgs.rate_limited
 	], [
 		SearchEls.msgs.explain
 	]);
@@ -376,6 +381,9 @@ function fillRootFolderInput(api_key) {
 };
 
 function showAddWindow(comicvine_id, api_key) {
+	SearchEls.window.submit.innerText = 'Add Volume';
+	SearchEls.window.submit.style.color = '';
+
 	const volume_data = document.querySelector(
 		`button[data-comicvine_id="${comicvine_id}"]`
 	).dataset;
@@ -452,9 +460,11 @@ function addVolume() {
 		.catch(e => {
 			if (e.status === 509) {
 				SearchEls.window.submit.innerText = 'ComicVine API rate limit reached';
+				SearchEls.window.submit.style.color = 'var(--error-color)';
 				showWindow("add-window");
 			} else if (e.status === 400) {
 				SearchEls.window.submit.innerText = 'Volume folder is parent or child of other volume folder';
+				SearchEls.window.submit.style.color = 'var(--error-color)';
 				showWindow("add-window");
 			} else
 				console.log(e);

@@ -261,6 +261,16 @@ class WebSocketEventType(BaseEnum):
     DOWNLOADED_STATUS = "downloaded_status"
     "A change in what issues are marked as downloaded and which aren't"
 
+    STATUS_COUNT = "status_count"
+    "A change in the number of active status issues"
+
+
+class StatusType(BaseEnum):
+    "A type of status issue that can be reported"
+
+    CV_RATE_LIMIT = "cv_rate_limit"
+    "ComicVine API rate limit reached"
+
 
 class StartType(BaseEnum):
     "The reason for or cause of starting up"
@@ -839,6 +849,59 @@ class StartTypeHandler(ABC):
     def on_diffuse(self) -> None:
         """
         Called when the timer is diffused. Generally finalises changes.
+        """
+        ...
+
+
+class StatusHandler(ABC):
+    "A handler for a specific status type"
+
+    description: str
+    """A short description of what the status type represents"""
+
+    @abstractmethod
+    def get_expiry(
+        self, subtype: str, timestamp: float
+    ) -> Union[float, None]:
+        """Get the absolute expiry timestamp for this subtype.
+
+        Args:
+            subtype (str): The subtype identifier.
+            timestamp (float): When the status was first reported.
+
+        Returns:
+            Union[float, None]: The absolute expiry timestamp, or None if
+                the status should persist until manually cleared.
+        """
+        ...
+
+    @abstractmethod
+    def on_report(self, subtype: str) -> None:
+        """Called when a status is reported. For additional side effects.
+
+        Args:
+            subtype (str): The subtype that was reported.
+        """
+        ...
+
+    @abstractmethod
+    def on_clear(self) -> None:
+        """Called when the status is fully cleared (all subtypes gone)."""
+        ...
+
+    @abstractmethod
+    def get_display(
+        self,
+        subtypes: Dict[str, 'Tuple[float, Union[float, None]]']
+    ) -> Dict[str, Any]:
+        """Return formatted display data for the API and status page.
+
+        Args:
+            subtypes (Dict[str, Tuple[float, Union[float, None]]]): A mapping
+                from subtype name to (timestamp, expires_at).
+
+        Returns:
+            Dict[str, Any]: The formatted data.
         """
         ...
 

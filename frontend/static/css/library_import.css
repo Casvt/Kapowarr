@@ -3,6 +3,15 @@ main {
 	color: var(--text-color);
 }
 
+#rate-limit-banner {
+	padding: .7rem 1rem;
+	margin-bottom: 1rem;
+	border-radius: 4px;
+	background-color: var(--error-color);
+	color: var(--light-color);
+	font-weight: 500;
+}
+
 #start-window {
 	display: flex;
 	flex-direction: column;

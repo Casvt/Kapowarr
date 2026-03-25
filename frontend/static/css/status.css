@@ -36,6 +36,24 @@ section:not(:first-of-type) h2 {
 	font-weight: 700;
 }
 
+#status-checks-table {
+	width: 100%;
+	min-width: 31rem;
+}
+
+#status-checks-table :where(th, td) {
+	padding: .3rem .5rem;
+}
+
+#status-checks-table th {
+	text-align: left;
+	font-weight: 500;
+}
+
+#status-checks-ok {
+	padding: .5rem;
+}
+
 #about-table {
 	width: 100%;
 	min-width: 31rem;

@@ -6,6 +6,11 @@ const StatEls = {
 	data_folder: document.querySelector('#data-folder'),
 	os: document.querySelector('#os'),
 	runs_64bit: document.querySelector('#runs-64bit'),
+	status_checks: {
+		table: document.querySelector('#status-checks-table'),
+		body: document.querySelector('#status-checks-body'),
+		ok: document.querySelector('#status-checks-ok')
+	},
 	buttons: {
 		copy: document.querySelector('#copy-about'),
 		restart: document.querySelector('#restart-button'),
@@ -26,10 +31,53 @@ const about_table = `
 
 `;
 
+function loadStatusChecks(api_key) {
+	fetchAPI('/system/status/checks', api_key)
+	.then(json => {
+		StatEls.status_checks.body.innerHTML = '';
+		if (json.result.length === 0) {
+			hide([StatEls.status_checks.table],
+				[StatEls.status_checks.ok]);
+		} else {
+			hide([StatEls.status_checks.ok],
+				[StatEls.status_checks.table]);
+			json.result.forEach(status_type => {
+				status_type.subtypes.forEach(sub => {
+					const row = document.createElement('tr');
+
+					const source = document.createElement('td');
+					source.innerText = status_type.source;
+
+					const category = document.createElement('td');
+					category.innerText = sub.label;
+
+					const status = document.createElement('td');
+					status.innerText = status_type.description;
+					status.style.color = 'var(--error-color)';
+
+					const since = document.createElement('td');
+					since.innerText = new Date(
+						sub.since * 1000
+					).toLocaleString();
+
+					row.appendChild(source);
+					row.appendChild(category);
+					row.appendChild(status);
+					row.appendChild(since);
+					StatEls.status_checks.body.appendChild(row);
+				});
+			});
+		};
+	})
+	.catch(e => console.log(e));
+};
+
 // code run on load
 
 usingApiKey()
 .then(api_key => {
+	loadStatusChecks(api_key);
+
 	fetchAPI('/system/about', api_key)
 	.then(json => {
 		StatEls.version.innerText = json.result.version;
