@@ -302,9 +302,9 @@ nav svg {
 	height: 1.2rem;
 	padding: 0 .3rem;
 	margin-left: .3rem;
-	border-radius: .6rem;
-	background-color: var(--error-color);
-	color: var(--light-color);
+	border-radius: 2px;
+	background-color: var(--accent-color);
+	color: var(--nav-background-color);
 	font-size: .7rem;
 	font-weight: 700;
 }

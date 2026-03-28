@@ -859,46 +859,85 @@ class StatusHandler(ABC):
     description: str
     """A short description of what the status type represents"""
 
-    @abstractmethod
     def get_expiry(
-        self, subtype: str, timestamp: float
-    ) -> Union[float, None]:
+        self, subtype: str, timestamp: int
+    ) -> Union[int, None]:
         """Get the absolute expiry timestamp for this subtype.
+        Override in handlers that auto-expire. Defaults to None
+        (no auto-expiry, persists until manually cleared).
 
         Args:
             subtype (str): The subtype identifier.
-            timestamp (float): When the status was first reported.
+            timestamp (int): When the status was reported (epoch seconds).
 
         Returns:
-            Union[float, None]: The absolute expiry timestamp, or None if
-                the status should persist until manually cleared.
+            Union[int, None]: The absolute expiry timestamp, or None.
+        """
+        return None
+
+    @abstractmethod
+    def report(self, subtype: str, timestamp: int) -> None:
+        """Report a status issue. Store the subtype and manage timers.
+
+        Args:
+            subtype (str): The subtype identifier.
+            timestamp (int): When the status was reported (epoch seconds).
         """
         ...
 
     @abstractmethod
-    def on_report(self, subtype: str) -> None:
-        """Called when a status is reported. For additional side effects.
+    def clear(self, subtype: Union[str, None] = None) -> None:
+        """Clear a subtype or all subtypes. Cancel associated timers.
 
         Args:
-            subtype (str): The subtype that was reported.
+            subtype (Union[str, None], optional): The subtype to clear.
+                If None, clear all subtypes. Defaults to None.
         """
         ...
 
     @abstractmethod
-    def on_clear(self) -> None:
-        """Called when the status is fully cleared (all subtypes gone)."""
+    def problem_reported(
+        self, subtype: Union[str, None] = None
+    ) -> bool:
+        """Check if a problem is reported for this handler.
+
+        Args:
+            subtype (Union[str, None], optional): Check a specific subtype.
+                If None, check if any subtype is active. Defaults to None.
+
+        Returns:
+            bool: Whether the problem is reported.
+        """
         ...
 
     @abstractmethod
-    def get_display(
-        self,
-        subtypes: Dict[str, 'Tuple[float, Union[float, None]]']
-    ) -> Dict[str, Any]:
-        """Return formatted display data for the API and status page.
+    def restore(
+        self, subtype: str, timestamp: int,
+        remaining: Union[int, None]
+    ) -> None:
+        """Restore a subtype from database on startup.
 
         Args:
-            subtypes (Dict[str, Tuple[float, Union[float, None]]]): A mapping
-                from subtype name to (timestamp, expires_at).
+            subtype (str): The subtype identifier.
+            timestamp (int): The stored timestamp.
+            remaining (Union[int, None]): Seconds until expiry, or None
+                if the status has no auto-expiry.
+        """
+        ...
+
+    @abstractmethod
+    def get_subtypes(self) -> Dict[str, int]:
+        """Get the current subtypes and their timestamps.
+
+        Returns:
+            Dict[str, int]: A mapping from subtype to timestamp.
+        """
+        ...
+
+    @abstractmethod
+    def get_display(self) -> Dict[str, Any]:
+        """Return display data for the API. Subtype labels should be
+        handled in the frontend, not here.
 
         Returns:
             Dict[str, Any]: The formatted data.

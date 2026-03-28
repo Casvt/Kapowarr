@@ -531,8 +531,8 @@ CREATE TABLE IF NOT EXISTS remote_mappings(
 CREATE TABLE IF NOT EXISTS status(
     status_type VARCHAR(100) NOT NULL,
     subtype VARCHAR(100) NOT NULL,
-    timestamp REAL NOT NULL,
-    expires_at REAL,
+    timestamp INTEGER NOT NULL,
+    expires_at INTEGER,
     PRIMARY KEY (status_type, subtype)
 );
 """

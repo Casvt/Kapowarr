@@ -7,8 +7,7 @@ const StatEls = {
 	os: document.querySelector('#os'),
 	runs_64bit: document.querySelector('#runs-64bit'),
 	status_checks: {
-		table: document.querySelector('#status-checks-table'),
-		body: document.querySelector('#status-checks-body'),
+		list: document.querySelector('#status-checks-list'),
 		ok: document.querySelector('#status-checks-ok')
 	},
 	buttons: {
@@ -31,41 +30,52 @@ const about_table = `
 
 `;
 
+const subtypeLabels = {
+	'search_volumes': 'Searching volumes',
+	'fetch_volume': 'Fetching volume metadata',
+	'fetch_issues': 'Fetching issue metadata'
+};
+
+const statusDescriptions = {
+	'cv_rate_limit': 'ComicVine rate limit reached'
+};
+
 function loadStatusChecks(api_key) {
 	fetchAPI('/system/status/checks', api_key)
 	.then(json => {
-		StatEls.status_checks.body.innerHTML = '';
+		StatEls.status_checks.list.innerHTML = '';
 		if (json.result.length === 0) {
-			hide([StatEls.status_checks.table],
+			hide([StatEls.status_checks.list],
 				[StatEls.status_checks.ok]);
 		} else {
 			hide([StatEls.status_checks.ok],
-				[StatEls.status_checks.table]);
-			json.result.forEach(status_type => {
-				status_type.subtypes.forEach(sub => {
-					const row = document.createElement('tr');
+				[StatEls.status_checks.list]);
+			json.result.forEach(entry => {
+				const item = document.createElement('div');
+				item.classList.add('status-check-item');
 
-					const source = document.createElement('td');
-					source.innerText = status_type.source;
+				const text = document.createElement('p');
+				const desc = statusDescriptions[entry.type]
+					|| entry.description;
+				const subs = entry.subtypes
+					.map(s => subtypeLabels[s] || s)
+					.join(', ');
+				text.innerText = `${desc}: ${subs}`;
 
-					const category = document.createElement('td');
-					category.innerText = sub.label;
+				const clearBtn = document.createElement('button');
+				clearBtn.innerText = 'Clear';
+				clearBtn.onclick = e => {
+					sendAPI(
+						'DELETE',
+						'/system/status/checks',
+						api_key,
+						{type: entry.type}
+					).then(() => loadStatusChecks(api_key));
+				};
 
-					const status = document.createElement('td');
-					status.innerText = status_type.description;
-					status.style.color = 'var(--error-color)';
-
-					const since = document.createElement('td');
-					since.innerText = new Date(
-						sub.since * 1000
-					).toLocaleString();
-
-					row.appendChild(source);
-					row.appendChild(category);
-					row.appendChild(status);
-					row.appendChild(since);
-					StatEls.status_checks.body.appendChild(row);
-				});
+				item.appendChild(text);
+				item.appendChild(clearBtn);
+				StatEls.status_checks.list.appendChild(item);
 			});
 		};
 	})

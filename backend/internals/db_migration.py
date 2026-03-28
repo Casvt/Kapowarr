@@ -1184,18 +1184,3 @@ def _migrate_add_forced_file_match_column():
     """)
 
     return
-
-
-@DatabaseMigrationHandler.register_handler(45)
-def _migrate_add_status_table():
-    get_db().executescript("""
-        CREATE TABLE IF NOT EXISTS status(
-            status_type VARCHAR(100) NOT NULL,
-            subtype VARCHAR(100) NOT NULL,
-            timestamp REAL NOT NULL,
-            expires_at REAL,
-            PRIMARY KEY (status_type, subtype)
-        );
-    """)
-
-    return

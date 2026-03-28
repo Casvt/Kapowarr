@@ -463,7 +463,7 @@ class ComicVine:
                     f'/volume/{cv_id}',
                     {'field_list': self.volume_field_list}
                 )
-                StatusHandlers.clear(StatusType.CV_RATE_LIMIT, "fetch_volume")
+                StatusHandlers().clear(StatusType.CV_RATE_LIMIT, "fetch_volume")
 
                 volume_info = self.__format_volume_output(result['results'])
                 volume_info['issues'] = await self.fetch_issues((cv_id,))
@@ -478,7 +478,7 @@ class ComicVine:
                 return volume_info
 
         except CVRateLimitReached:
-            StatusHandlers.report(StatusType.CV_RATE_LIMIT, "fetch_volume")
+            StatusHandlers().report(StatusType.CV_RATE_LIMIT, "fetch_volume")
             raise
 
     async def fetch_volumes(
@@ -594,10 +594,10 @@ class ComicVine:
                             'filter': f'volume:{batch_filter}'
                         }
                     )
-                    StatusHandlers.clear(StatusType.CV_RATE_LIMIT, "fetch_issues")
+                    StatusHandlers().clear(StatusType.CV_RATE_LIMIT, "fetch_issues")
 
                 except CVRateLimitReached:
-                    StatusHandlers.report(StatusType.CV_RATE_LIMIT, "fetch_issues")
+                    StatusHandlers().report(StatusType.CV_RATE_LIMIT, "fetch_issues")
                     break
 
                 issue_infos.extend((
@@ -694,13 +694,13 @@ class ComicVine:
                 results = await self.__search_volume(query)
             else:
                 results = await self.__search_query(query)
-            StatusHandlers.clear(StatusType.CV_RATE_LIMIT, "search_volumes")
+            StatusHandlers().clear(StatusType.CV_RATE_LIMIT, "search_volumes")
 
         except VolumeNotMatched:
             return []
 
         except CVRateLimitReached:
-            StatusHandlers.report(StatusType.CV_RATE_LIMIT, "search_volumes")
+            StatusHandlers().report(StatusType.CV_RATE_LIMIT, "search_volumes")
             if allow_rate_limit_reached:
                 return []
             raise

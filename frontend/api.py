@@ -14,7 +14,8 @@ from backend.base.definitions import (BlocklistReason, BlocklistReasonID,
                                       DownloadSource, FileMatch,
                                       KapowarrException, LibraryFilter,
                                       LibrarySorting, MonitorScheme,
-                                      SpecialVersion, StartType, VolumeData)
+                                      SpecialVersion, StartType,
+                                      StatusType, VolumeData)
 from backend.base.helpers import hash_credential
 from backend.base.logging import LOGGER, get_log_file_contents
 from backend.features.download_queue import (DownloadHandler,
@@ -295,10 +296,16 @@ def api_about():
 @auth
 def api_status_checks():
     if request.method == 'GET':
-        return return_api(StatusHandlers.get_all())
+        return return_api(StatusHandlers().get_all())
 
     elif request.method == 'DELETE':
-        StatusHandlers.clear_all()
+        status_type = extract_key(
+            request, 'type', check_existence=False
+        )
+        if status_type:
+            StatusHandlers().clear(StatusType(status_type))
+        else:
+            StatusHandlers().clear_all()
         return return_api({})
 
 

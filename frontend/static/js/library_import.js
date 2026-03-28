@@ -86,9 +86,7 @@ function loadProposal(api_key) {
 				.then(checks => {
 					const search_limited = checks.result.some(
 						st => st.type === 'cv_rate_limit'
-							&& st.subtypes.some(
-								s => s.name === 'search_volumes'
-							)
+							&& st.subtypes.includes('search_volumes')
 					);
 					if (search_limited)
 						hide([], [LIEls.rate_limit_banner]);

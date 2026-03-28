@@ -6,34 +6,33 @@ Status type implementations register via decorator and are persisted
 to the database across restarts.
 """
 
-from threading import Lock, Timer
+from threading import Timer
 from time import time
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Type, Union
 
 from backend.base.definitions import StatusHandler, StatusType
+from backend.base.helpers import Singleton
 from backend.base.logging import LOGGER
 from backend.internals.db import get_db
+from backend.internals.server import Server, StatusCountEvent, WebSocket
 
 
-class StatusHandlers:
+class StatusHandlers(metaclass=Singleton):
     """Registry and manager for status type handlers.
     Modeled after StartTypeHandlers in server.py.
+
+    Handlers register via the class-level register_handler() decorator
+    at import time. All other methods are instance methods accessed via
+    StatusHandlers().
     """
 
     handlers: Dict[StatusType, StatusHandler] = {}
-    _active: Dict[StatusType, Dict[str, Tuple[float, Union[float, None]]]] = {}
-    """In-memory state: {type: {subtype: (timestamp, expires_at)}}"""
-    _timers: Dict[str, Timer] = {}
-    """Expiry timers keyed by 'type.subtype'"""
-    _lock = Lock()
 
     @classmethod
     def register_handler(
         cls,
         status_type: StatusType
-    ) -> Callable[
-        ['type[StatusHandler]'], 'type[StatusHandler]'
-    ]:
+    ) -> Callable[[Type[StatusHandler]], Type[StatusHandler]]:
         """Register a handler for a status type.
 
         ```
@@ -47,14 +46,13 @@ class StatusHandlers:
                 is for.
         """
         def wrapper(
-            handler_class: 'type[StatusHandler]'
-        ) -> 'type[StatusHandler]':
+            handler_class: Type[StatusHandler]
+        ) -> Type[StatusHandler]:
             cls.handlers[status_type] = handler_class()
             return handler_class
         return wrapper
 
-    @classmethod
-    def report(cls, status_type: StatusType, subtype: str) -> None:
+    def report(self, status_type: StatusType, subtype: str) -> None:
         """Report a status issue.
 
         Args:
@@ -62,44 +60,38 @@ class StatusHandlers:
             subtype (str): The subtype identifier
                 (e.g. "search_volumes" for CV rate limit).
         """
-        handler = cls.handlers.get(status_type)
-        if handler is None:
-            return
+        handler = self.handlers[status_type]
+        timestamp = int(time())
 
-        timestamp = time()
-        timer_key = f"{status_type.value}.{subtype}"
+        was_active = handler.problem_reported(subtype)
+        handler.report(subtype, timestamp)
 
-        with cls._lock:
-            type_statuses = cls._active.setdefault(status_type, {})
-            existing = type_statuses.get(subtype)
+        if was_active:
+            # Update timestamp in DB but keep existing expires_at
+            get_db().execute(
+                "UPDATE status SET timestamp = ? "
+                "WHERE status_type = ? AND subtype = ?;",
+                (timestamp, status_type.value, subtype)
+            )
+        else:
+            # New subtype: get expiry from handler's subtypes
+            expires_at = self._get_expires_at(handler, subtype, timestamp)
+            get_db().execute(
+                "INSERT OR REPLACE INTO status "
+                "(status_type, subtype, timestamp, expires_at) "
+                "VALUES (?, ?, ?, ?);",
+                (status_type.value, subtype, timestamp, expires_at)
+            )
 
-            if existing is not None:
-                # Subtype already active: update timestamp, keep expires_at
-                type_statuses[subtype] = (timestamp, existing[1])
-                cls._save_to_db(status_type, subtype,
-                                timestamp, existing[1])
-            else:
-                # New subtype
-                expires_at = handler.get_expiry(subtype, timestamp)
-                type_statuses[subtype] = (timestamp, expires_at)
-                cls._save_to_db(status_type, subtype,
-                                timestamp, expires_at)
-                cls._schedule_expiry(
-                    status_type, subtype, expires_at, timer_key
-                )
-
-        handler.on_report(subtype)
-        cls._emit_count()
-
+        self._emit_count()
         LOGGER.info(
             "Status reported: %s / %s",
             status_type.value, subtype
         )
         return
 
-    @classmethod
     def clear(
-        cls,
+        self,
         status_type: StatusType,
         subtype: Union[str, None] = None
     ) -> None:
@@ -111,71 +103,44 @@ class StatusHandlers:
                 If None, clears all subtypes for this type.
                 Defaults to None.
         """
-        handler = cls.handlers.get(status_type)
+        handler = self.handlers[status_type]
 
-        with cls._lock:
-            type_statuses = cls._active.get(status_type)
-            if type_statuses is None:
-                return
+        if not handler.problem_reported(subtype):
+            return
 
-            if subtype is not None:
-                if subtype not in type_statuses:
-                    return
-                del type_statuses[subtype]
-                cls._delete_from_db(status_type, subtype)
-                cls._cancel_timer(f"{status_type.value}.{subtype}")
+        handler.clear(subtype)
 
-                if not type_statuses:
-                    del cls._active[status_type]
-                    fully_cleared = True
-                else:
-                    fully_cleared = False
-            else:
-                # Clear all subtypes
-                for st in list(type_statuses):
-                    cls._cancel_timer(f"{status_type.value}.{st}")
-                    cls._delete_from_db(status_type, st)
-                del cls._active[status_type]
-                fully_cleared = True
+        if subtype is not None:
+            get_db().execute(
+                "DELETE FROM status "
+                "WHERE status_type = ? AND subtype = ?;",
+                (status_type.value, subtype)
+            )
+        else:
+            get_db().execute(
+                "DELETE FROM status WHERE status_type = ?;",
+                (status_type.value,)
+            )
 
-        if fully_cleared and handler is not None:
-            handler.on_clear()
-
-        cls._emit_count()
-
-        LOGGER.info(
-            "Status cleared: %s%s",
-            status_type.value,
-            f" / {subtype}" if subtype else " (all)"
-        )
+        self._emit_count()
         return
 
-    @classmethod
-    def clear_all(cls) -> None:
+    def clear_all(self) -> None:
         """Clear all status issues."""
-        with cls._lock:
-            for status_type in list(cls._active):
-                for st in list(cls._active.get(status_type, {})):
-                    cls._cancel_timer(f"{status_type.value}.{st}")
-                    cls._delete_from_db(status_type, st)
+        for status_type, handler in self.handlers.items():
+            if handler.problem_reported():
+                handler.clear()
 
-                handler = cls.handlers.get(status_type)
-                if handler is not None:
-                    handler.on_clear()
-
-            cls._active.clear()
-
-        cls._emit_count()
-        LOGGER.info("All statuses cleared")
+        get_db().execute("DELETE FROM status;")
+        self._emit_count()
         return
 
-    @classmethod
-    def is_active(
-        cls,
+    def problem_reported(
+        self,
         status_type: StatusType,
         subtype: Union[str, None] = None
     ) -> bool:
-        """Check if a status type (or specific subtype) is currently active.
+        """Check if a problem is reported for a status type.
 
         Args:
             status_type (StatusType): The type to check.
@@ -184,18 +149,12 @@ class StatusHandlers:
                 Defaults to None.
 
         Returns:
-            bool: Whether the status is active.
+            bool: Whether a problem is reported.
         """
-        with cls._lock:
-            type_statuses = cls._active.get(status_type)
-            if type_statuses is None:
-                return False
-            if subtype is not None:
-                return subtype in type_statuses
-            return True
+        handler = self.handlers[status_type]
+        return handler.problem_reported(subtype)
 
-    @classmethod
-    def get_all(cls) -> List[Dict[str, Any]]:
+    def get_all(self) -> List[Dict[str, Any]]:
         """Get all active statuses with display data from handlers.
 
         Returns:
@@ -203,33 +162,29 @@ class StatusHandlers:
                 data provided by each handler.
         """
         result: List[Dict[str, Any]] = []
-        with cls._lock:
-            for status_type, subtypes in cls._active.items():
-                handler = cls.handlers.get(status_type)
-                if handler is None:
-                    continue
-                display = handler.get_display(subtypes.copy())
+        for status_type, handler in self.handlers.items():
+            if handler.problem_reported():
+                display = handler.get_display()
                 display["type"] = status_type.value
                 result.append(display)
         return result
 
-    @classmethod
-    def get_count(cls) -> int:
+    def get_count(self) -> int:
         """Get the total number of active status types.
 
         Returns:
-            int: The count of active status types (not subtypes).
+            int: The count of status types with problems reported.
         """
-        with cls._lock:
-            return len(cls._active)
+        return sum(
+            1 for handler in self.handlers.values()
+            if handler.problem_reported()
+        )
 
-    @classmethod
-    def load_from_db(cls) -> None:
+    def load_from_db(self) -> None:
         """Load status data from the database on startup.
-        Expired entries are deleted. Active entries are restored
-        with timers for remaining time.
+        Expired entries are deleted. Active entries are restored.
         """
-        now = time()
+        now = int(time())
         cursor = get_db()
 
         rows = cursor.execute(
@@ -239,25 +194,10 @@ class StatusHandlers:
 
         for row in rows:
             raw_type, subtype, timestamp, expires_at = row
+            status_type = StatusType(raw_type)
+            handler = self.handlers[status_type]
 
-            # Find the matching StatusType enum
-            try:
-                status_type = StatusType(raw_type)
-            except ValueError:
-                # Unknown status type, remove from DB
-                cursor.execute(
-                    "DELETE FROM status "
-                    "WHERE status_type = ? AND subtype = ?;",
-                    (raw_type, subtype)
-                )
-                continue
-
-            if status_type not in cls.handlers:
-                continue
-
-            # Check expiry
             if expires_at is not None and expires_at <= now:
-                # Expired while offline, remove
                 cursor.execute(
                     "DELETE FROM status "
                     "WHERE status_type = ? AND subtype = ?;",
@@ -269,140 +209,37 @@ class StatusHandlers:
                 )
                 continue
 
-            # Restore active entry
-            with cls._lock:
-                type_statuses = cls._active.setdefault(status_type, {})
-                type_statuses[subtype] = (timestamp, expires_at)
-
-                timer_key = f"{status_type.value}.{subtype}"
-                cls._schedule_expiry(
-                    status_type, subtype, expires_at, timer_key
-                )
-
-            handler = cls.handlers[status_type]
-            handler.on_report(subtype)
-
+            remaining = (expires_at - now) if expires_at is not None else None
+            handler.restore(subtype, timestamp, remaining)
             LOGGER.info(
                 "Restored status from DB: %s / %s",
                 raw_type, subtype
             )
 
-        cls._emit_count()
+        self._emit_count()
         return
 
-    @classmethod
-    def _schedule_expiry(
-        cls,
-        status_type: StatusType,
+    def _get_expires_at(
+        self,
+        handler: StatusHandler,
         subtype: str,
-        expires_at: Union[float, None],
-        timer_key: str
-    ) -> None:
-        """Schedule an expiry timer. Must be called while holding _lock.
+        timestamp: int
+    ) -> Union[int, None]:
+        """Get the expiry timestamp from the handler.
 
         Args:
-            status_type (StatusType): The status type.
+            handler (StatusHandler): The handler.
             subtype (str): The subtype.
-            expires_at (Union[float, None]): When to expire.
-                None means no auto-expiry.
-            timer_key (str): The key for the timer dict.
+            timestamp (int): The report timestamp.
+
+        Returns:
+            Union[int, None]: The expiry timestamp or None.
         """
-        if expires_at is None:
-            return
+        return handler.get_expiry(subtype, timestamp)
 
-        if timer_key in cls._timers:
-            return
-
-        remaining = max(expires_at - time(), 0.001)
-
-        from backend.internals.server import Server
-        timer = Server().get_db_timer_thread(
-            interval=remaining,
-            target=cls._on_expiry,
-            name=f"StatusExpiry.{timer_key}",
-            args=(status_type, subtype)
-        )
-        timer.daemon = True
-        timer.start()
-        cls._timers[timer_key] = timer
-        return
-
-    @classmethod
-    def _on_expiry(cls, status_type: StatusType, subtype: str) -> None:
-        """Called by an expiry timer.
-
-        Args:
-            status_type (StatusType): The status type that expired.
-            subtype (str): The subtype that expired.
-        """
-        timer_key = f"{status_type.value}.{subtype}"
-        with cls._lock:
-            cls._timers.pop(timer_key, None)
-        cls.clear(status_type, subtype)
-        return
-
-    @classmethod
-    def _cancel_timer(cls, timer_key: str) -> None:
-        """Cancel an expiry timer. Must be called while holding _lock.
-
-        Args:
-            timer_key (str): The key for the timer dict.
-        """
-        timer = cls._timers.pop(timer_key, None)
-        if timer is not None:
-            timer.cancel()
-        return
-
-    @classmethod
-    def _save_to_db(
-        cls,
-        status_type: StatusType,
-        subtype: str,
-        timestamp: float,
-        expires_at: Union[float, None]
-    ) -> None:
-        """Save or update a status entry in the database.
-        Must be called while holding _lock.
-
-        Args:
-            status_type (StatusType): The status type.
-            subtype (str): The subtype.
-            timestamp (float): When the status was reported.
-            expires_at (Union[float, None]): When it expires, or None.
-        """
-        get_db().execute(
-            "INSERT OR REPLACE INTO status "
-            "(status_type, subtype, timestamp, expires_at) "
-            "VALUES (?, ?, ?, ?);",
-            (status_type.value, subtype, timestamp, expires_at)
-        )
-        return
-
-    @classmethod
-    def _delete_from_db(
-        cls,
-        status_type: StatusType,
-        subtype: str
-    ) -> None:
-        """Delete a status entry from the database.
-        Must be called while holding _lock.
-
-        Args:
-            status_type (StatusType): The status type.
-            subtype (str): The subtype.
-        """
-        get_db().execute(
-            "DELETE FROM status "
-            "WHERE status_type = ? AND subtype = ?;",
-            (status_type.value, subtype)
-        )
-        return
-
-    @classmethod
-    def _emit_count(cls) -> None:
+    def _emit_count(self) -> None:
         """Emit a WebSocket event with the current status count."""
-        from backend.internals.server import StatusCountEvent, WebSocket
-        count = cls.get_count()
+        count = self.get_count()
         WebSocket().emit(StatusCountEvent(count=count))
         return
 
@@ -419,38 +256,114 @@ class CVRateLimitHandler(StatusHandler):
     """
 
     description = "ComicVine rate limit"
+    EXPIRY_SECONDS = 3600
 
-    _subtype_labels: Dict[str, str] = {
-        "search_volumes": "Searching volumes",
-        "fetch_volume": "Fetching volume metadata",
-        "fetch_issues": "Fetching issue metadata"
-    }
-
-    def get_expiry(
-        self, subtype: str, timestamp: float
-    ) -> Union[float, None]:
-        return timestamp + 3600
-
-    def on_report(self, subtype: str) -> None:
+    def __init__(self) -> None:
+        self._subtypes: Dict[str, int] = {}
+        self._timers: Dict[str, Timer] = {}
         return
 
-    def on_clear(self) -> None:
+    def get_expiry(self, subtype: str, timestamp: int) -> int:
+        """Get the expiry timestamp for a subtype.
+
+        Args:
+            subtype (str): The subtype.
+            timestamp (int): The report timestamp.
+
+        Returns:
+            int: The absolute expiry timestamp.
+        """
+        return timestamp + self.EXPIRY_SECONDS
+
+    def report(self, subtype: str, timestamp: int) -> None:
+        if subtype in self._subtypes:
+            self._subtypes[subtype] = timestamp
+            return
+
+        self._subtypes[subtype] = timestamp
+        self._schedule_timer(subtype, self.EXPIRY_SECONDS)
         return
 
-    def get_display(
-        self,
-        subtypes: Dict[str, Tuple[float, Union[float, None]]]
-    ) -> Dict[str, Any]:
+    def restore(
+        self, subtype: str, timestamp: int,
+        remaining: Union[int, None]
+    ) -> None:
+        """Restore a subtype from database on startup.
+
+        Args:
+            subtype (str): The subtype.
+            timestamp (int): The stored timestamp.
+            remaining (Union[int, None]): Seconds until expiry, or None.
+        """
+        self._subtypes[subtype] = timestamp
+        if remaining is not None:
+            self._schedule_timer(subtype, remaining)
+        return
+
+    def clear(self, subtype: Union[str, None] = None) -> None:
+        if subtype is not None:
+            self._subtypes.pop(subtype, None)
+            self._cancel_timer(subtype)
+        else:
+            self._subtypes.clear()
+            for key in list(self._timers):
+                self._cancel_timer(key)
+        return
+
+    def problem_reported(
+        self, subtype: Union[str, None] = None
+    ) -> bool:
+        if subtype is not None:
+            return subtype in self._subtypes
+        return len(self._subtypes) > 0
+
+    def get_subtypes(self) -> Dict[str, int]:
+        return self._subtypes.copy()
+
+    def get_display(self) -> Dict[str, Any]:
         return {
-            "source": "ComicVine",
             "description": self.description,
-            "subtypes": [
-                {
-                    "name": st,
-                    "label": self._subtype_labels.get(st, st),
-                    "since": data[0],
-                    "expires_at": data[1]
-                }
-                for st, data in subtypes.items()
-            ]
+            "subtypes": list(self._subtypes.keys())
         }
+
+    def _schedule_timer(self, subtype: str, seconds: int) -> None:
+        """Schedule an expiry timer for a subtype.
+
+        Args:
+            subtype (str): The subtype.
+            seconds (int): Seconds until expiry.
+        """
+        if subtype in self._timers:
+            return
+
+        timer = Server().get_db_timer_thread(
+            interval=seconds,
+            target=self._on_expiry,
+            name=f"StatusExpiry.{StatusType.CV_RATE_LIMIT.value}.{subtype}",
+            args=(subtype,)
+        )
+        timer.daemon = True
+        timer.start()
+        self._timers[subtype] = timer
+        return
+
+    def _cancel_timer(self, subtype: str) -> None:
+        """Cancel an expiry timer.
+
+        Args:
+            subtype (str): The subtype.
+        """
+        timer = self._timers.pop(subtype, None)
+        if timer is not None:
+            timer.cancel()
+        return
+
+    def _on_expiry(self, subtype: str) -> None:
+        """Called when a timer fires.
+
+        Args:
+            subtype (str): The subtype that expired.
+        """
+        self._timers.pop(subtype, None)
+        StatusHandlers().clear(StatusType.CV_RATE_LIMIT, subtype)
+        return

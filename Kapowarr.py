@@ -87,7 +87,7 @@ def _main(
     with SERVER.app.app_context():
         StartTypeHandlers.start_timer(start_type)
         setup_db()
-        StatusHandlers.load_from_db()
+        StatusHandlers().load_from_db()
 
         s = Settings()
 
