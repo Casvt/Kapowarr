@@ -294,6 +294,21 @@ nav svg {
 	font-size: .8rem;
 }
 
+#system-issues-badge {
+	display: inline-flex;
+	justify-content: center;
+	align-items: center;
+	min-width: 1.2rem;
+	height: 1.2rem;
+	padding: 0 .3rem;
+	margin-left: .3rem;
+	border-radius: 2px;
+	background-color: var(--accent-color);
+	color: var(--nav-background-color);
+	font-size: .7rem;
+	font-weight: 700;
+}
+
 /*  */
 /* Main window */
 /*  */

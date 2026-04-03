@@ -10,6 +10,7 @@ const LIEls = {
 		loading: document.querySelector('#loading-window'),
 		no_cv: document.querySelector('#no-cv-window')
 	},
+	rate_limit_banner: document.querySelector('#rate-limit-banner'),
 	proposal_list: document.querySelector('.proposal-list'),
 	select_all: document.querySelector('#selectall-input'),
 	search: {
@@ -40,7 +41,8 @@ function loadProposal(api_key) {
 		params.folder_filter = encodeURIComponent(ffi.value);
 
 	hide(
-		[LIEls.views.start, document.querySelector('#folder-filter-error')],
+		[LIEls.views.start, document.querySelector('#folder-filter-error'),
+		 LIEls.rate_limit_banner],
 		[LIEls.views.loading]
 	);
 
@@ -73,23 +75,43 @@ function loadProposal(api_key) {
 			LIEls.proposal_list.appendChild(entry);
 		});
 
-		if (json.result.length > 0)
+		if (json.result.length > 0) {
 			hide([LIEls.views.loading], [LIEls.views.list]);
-		else
+
+			const has_empty_matches = json.result.some(
+				r => r.cv.id === null
+			);
+			if (has_empty_matches) {
+				fetchAPI('/system/status/checks', api_key)
+				.then(checks => {
+					const search_limited = checks.result.some(
+						st => st.type === 'cv_rate_limit'
+							&& st.subtypes.includes('search_volumes')
+					);
+					if (search_limited)
+						hide([], [LIEls.rate_limit_banner]);
+				});
+			};
+		} else
 			hide([LIEls.views.loading], [LIEls.views.no_result]);
 	})
 	.catch(e => {
-		e.json().then(j => {
-			if (j.error === 'InvalidComicVineApiKey')
-				hide([LIEls.views.loading], [LIEls.views.no_cv]);
-			else if (j.error === 'InvalidKeyValue')
-				hide(
-					[LIEls.views.loading],
-					[LIEls.views.start, document.querySelector('#folder-filter-error')]
-				);
-			else
-				console.log(j);
-		});
+		if (e.status === 509) {
+			hide([LIEls.views.loading], [LIEls.views.start]);
+			hide([], [LIEls.rate_limit_banner]);
+		} else {
+			e.json().then(j => {
+				if (j.error === 'InvalidComicVineApiKey')
+					hide([LIEls.views.loading], [LIEls.views.no_cv]);
+				else if (j.error === 'InvalidKeyValue')
+					hide(
+						[LIEls.views.loading],
+						[LIEls.views.start, document.querySelector('#folder-filter-error')]
+					);
+				else
+					console.log(j);
+			});
+		};
 	});
 };
 

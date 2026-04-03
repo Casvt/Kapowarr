@@ -6,6 +6,10 @@ const StatEls = {
 	data_folder: document.querySelector('#data-folder'),
 	os: document.querySelector('#os'),
 	runs_64bit: document.querySelector('#runs-64bit'),
+	status_checks: {
+		list: document.querySelector('#status-checks-list'),
+		ok: document.querySelector('#status-checks-ok')
+	},
 	buttons: {
 		copy: document.querySelector('#copy-about'),
 		restart: document.querySelector('#restart-button'),
@@ -26,10 +30,64 @@ const about_table = `
 
 `;
 
+const subtypeLabels = {
+	'search_volumes': 'Searching volumes',
+	'fetch_volume': 'Fetching volume metadata',
+	'fetch_issues': 'Fetching issue metadata'
+};
+
+const statusDescriptions = {
+	'cv_rate_limit': 'ComicVine rate limit reached'
+};
+
+function loadStatusChecks(api_key) {
+	fetchAPI('/system/status/checks', api_key)
+	.then(json => {
+		StatEls.status_checks.list.innerHTML = '';
+		if (json.result.length === 0) {
+			hide([StatEls.status_checks.list],
+				[StatEls.status_checks.ok]);
+		} else {
+			hide([StatEls.status_checks.ok],
+				[StatEls.status_checks.list]);
+			json.result.forEach(entry => {
+				const item = document.createElement('div');
+				item.classList.add('status-check-item');
+
+				const text = document.createElement('p');
+				const desc = statusDescriptions[entry.type]
+					|| entry.description;
+				const subs = entry.subtypes
+					.map(s => subtypeLabels[s] || s)
+					.join(', ');
+				text.innerText = `${desc}: ${subs}`;
+
+				const clearBtn = document.createElement('button');
+				clearBtn.innerText = 'Clear';
+				clearBtn.onclick = e => {
+					sendAPI(
+						'DELETE',
+						'/system/status/checks',
+						api_key,
+						{type: entry.type}
+					).then(() => loadStatusChecks(api_key));
+				};
+
+				item.appendChild(text);
+				item.appendChild(clearBtn);
+				StatEls.status_checks.list.appendChild(item);
+			});
+		};
+	})
+	.catch(e => console.log(e));
+};
+
 // code run on load
 
 usingApiKey()
 .then(api_key => {
+	loadStatusChecks(api_key);
+
 	fetchAPI('/system/about', api_key)
 	.then(json => {
 		StatEls.version.innerText = json.result.version;

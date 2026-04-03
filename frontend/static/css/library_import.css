@@ -3,6 +3,17 @@ main {
 	color: var(--text-color);
 }
 
+#rate-limit-banner {
+	padding: .7rem 1rem;
+	margin-inline: auto;
+	width: fit-content;
+	border-radius: 4px;
+	background-color: var(--error-color);
+	color: var(--light-color);
+	font-weight: 500;
+	text-align: center;
+}
+
 #start-window {
 	display: flex;
 	flex-direction: column;

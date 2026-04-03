@@ -228,6 +228,28 @@ function handleTaskRemoved(data) {
 		unspinButton(task_string);
 };
 
+function updateBadge(count) {
+	const badge = document.querySelector('#system-issues-badge');
+	if (!badge) return;
+	badge.innerText = count;
+	if (count > 0)
+		badge.classList.remove('hidden');
+	else
+		badge.classList.add('hidden');
+};
+
+function handleStatusCount(data) {
+	updateBadge(data.count);
+};
+
+function initStatusBadge(api_key) {
+	fetchAPI('/system/status/checks', api_key)
+	.then(json => {
+		updateBadge(json.result.length);
+	})
+	.catch(e => console.log(e));
+};
+
 function connectToWebSocket(api_key) {
 	const socket = io({
 		path: `${url_base}/api/socket.io`,
@@ -243,6 +265,7 @@ function connectToWebSocket(api_key) {
 	socket.on('task_added', handleTaskAdded);
 	socket.on('task_ended', handleTaskRemoved);
 	socket.on('task_status', data => setTaskMessage(data.message));
+	socket.on('status_count', handleStatusCount);
 	socket.connect();
 	return socket;
 };
@@ -350,6 +373,7 @@ usingApiKey()
 .then(api_key => {
 	setTimeout(() => fillTaskQueue(api_key), 200);
 	socket = connectToWebSocket(api_key);
+	initStatusBadge(api_key);
 });
 
 setupLocalStorage();

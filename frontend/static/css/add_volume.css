@@ -68,6 +68,7 @@ main > div {
 #search-explain,
 #search-empty,
 #search-failed,
+#search-rate-limited,
 #search-blocked,
 #search-loading {
 	color: var(--text-color);

@@ -16,8 +16,8 @@ from bs4 import BeautifulSoup, Tag
 from backend.base.custom_exceptions import (CVRateLimitReached,
                                             InvalidComicVineApiKey,
                                             VolumeNotMatched)
-from backend.base.definitions import (Constants, FilenameData,
-                                      IssueMetadata, T, VolumeMetadata)
+from backend.base.definitions import (Constants, FilenameData, IssueMetadata,
+                                      StatusType, T, VolumeMetadata)
 from backend.base.file_extraction import (extract_issue_number,
                                           extract_volume_number, volume_regex)
 from backend.base.helpers import (AsyncSession, Session, batched,
@@ -28,6 +28,7 @@ from backend.base.logging import LOGGER
 from backend.implementations.matching import select_best_volume_result_for_file
 from backend.internals.db import get_db
 from backend.internals.settings import Settings
+from backend.internals.status import StatusHandlers
 
 translation_regex = compile(
     r'^<p>\s*\w+(?<!English) publication(\.?</p>$|,\s| \(in the \w+(?<!English) language\)|, translates )|' +
@@ -455,24 +456,30 @@ class ComicVine:
 
         LOGGER.debug(f'Fetching volume data for {cv_id}')
 
-        async with AsyncSession() as session:
-            result = await self.__call_api(
-                session,
-                f'/volume/{cv_id}',
-                {'field_list': self.volume_field_list}
-            )
+        try:
+            async with AsyncSession() as session:
+                result = await self.__call_api(
+                    session,
+                    f'/volume/{cv_id}',
+                    {'field_list': self.volume_field_list}
+                )
+                StatusHandlers().clear(StatusType.CV_RATE_LIMIT, "fetch_volume")
 
-            volume_info = self.__format_volume_output(result['results'])
-            volume_info['issues'] = await self.fetch_issues((cv_id,))
+                volume_info = self.__format_volume_output(result['results'])
+                volume_info['issues'] = await self.fetch_issues((cv_id,))
 
-            LOGGER.debug('Fetching volume data result: %s', volume_info)
+                LOGGER.debug('Fetching volume data result: %s', volume_info)
 
-            volume_info['cover'] = await session.get_content(
-                volume_info['cover_link'],
-                quiet_fail=True
-            ) or None
+                volume_info['cover'] = await session.get_content(
+                    volume_info['cover_link'],
+                    quiet_fail=True
+                ) or None
 
-            return volume_info
+                return volume_info
+
+        except CVRateLimitReached:
+            StatusHandlers().report(StatusType.CV_RATE_LIMIT, "fetch_volume")
+            raise
 
     async def fetch_volumes(
         self,
@@ -587,8 +594,10 @@ class ComicVine:
                             'filter': f'volume:{batch_filter}'
                         }
                     )
+                    StatusHandlers().clear(StatusType.CV_RATE_LIMIT, "fetch_issues")
 
                 except CVRateLimitReached:
+                    StatusHandlers().report(StatusType.CV_RATE_LIMIT, "fetch_issues")
                     break
 
                 issue_infos.extend((
@@ -654,8 +663,7 @@ class ComicVine:
                     'resources': 'volume',
                     'limit': 50,
                     'field_list': self.search_field_list
-                },
-                {'results': []}
+                }
             )
             return results['results']
 
@@ -686,11 +694,13 @@ class ComicVine:
                 results = await self.__search_volume(query)
             else:
                 results = await self.__search_query(query)
+            StatusHandlers().clear(StatusType.CV_RATE_LIMIT, "search_volumes")
 
         except VolumeNotMatched:
             return []
 
         except CVRateLimitReached:
+            StatusHandlers().report(StatusType.CV_RATE_LIMIT, "search_volumes")
             if allow_rate_limit_reached:
                 return []
             raise

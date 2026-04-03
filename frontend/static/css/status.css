@@ -36,6 +36,30 @@ section:not(:first-of-type) h2 {
 	font-weight: 700;
 }
 
+.status-check-item {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	padding: .5rem;
+}
+
+.status-check-item p {
+	color: var(--error-color);
+}
+
+.status-check-item button {
+	padding: .3rem .7rem;
+	border-radius: 4px;
+	background-color: var(--accent-color);
+	color: var(--nav-background-color);
+	font-weight: 700;
+	font-size: .8rem;
+}
+
+#status-checks-ok {
+	padding: .5rem;
+}
+
 #about-table {
 	width: 100%;
 	min-width: 31rem;

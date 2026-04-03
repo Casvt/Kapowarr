@@ -528,4 +528,11 @@ CREATE TABLE IF NOT EXISTS remote_mappings(
         REFERENCES external_download_clients(id)
         ON DELETE CASCADE
 );
+CREATE TABLE IF NOT EXISTS status(
+    status_type VARCHAR(100) NOT NULL,
+    subtype VARCHAR(100) NOT NULL,
+    timestamp INTEGER NOT NULL,
+    expires_at INTEGER,
+    PRIMARY KEY (status_type, subtype)
+);
 """
