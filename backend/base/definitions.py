@@ -91,7 +91,10 @@ class Constants:
     BACKOFF_FACTOR_RETRIES = 1
     "Backoff factor for waiting in-between retries"
 
-    STATUS_FORCELIST_RETRIES = (500, 502, 503, 504)
+    STATUS_FORCELIST_RETRIES = (
+        500, 502, 503, 504,
+        522 # CloudFlare timed out connecting to host server
+    )
     "The HTTP status codes for which a retry should be done"
 
     PROXY_TEST_URL = "https://httpbin.org/ip"
