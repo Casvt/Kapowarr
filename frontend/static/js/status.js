@@ -30,15 +30,16 @@ const about_table = `
 
 `;
 
-const subtypeLabels = {
-	'search_volumes': 'Searching volumes',
-	'fetch_volume': 'Fetching volume metadata',
-	'fetch_issues': 'Fetching issue metadata'
-};
-
-const statusDescriptions = {
-	'cv_rate_limit': 'ComicVine rate limit reached'
-};
+const statusDescs = {
+	cv_rate_limit: {
+		desc: 'ComicVine rate limit reached',
+		subTypeLabels: {
+			search_volumes: 'Searching volumes',
+			fetch_volume: 'Fetching volume metadata',
+			fetch_issues: 'Fetching issue metadata'
+		}
+	}
+}
 
 function loadStatusChecks(api_key) {
 	fetchAPI('/system/status/checks', api_key)
@@ -55,22 +56,19 @@ function loadStatusChecks(api_key) {
 				item.classList.add('status-check-item');
 
 				const text = document.createElement('p');
-				const desc = statusDescriptions[entry.type]
-					|| entry.description;
-				const subs = entry.subtypes
-					.map(s => subtypeLabels[s] || s)
+				const desc = statusDescs[entry.type].desc;
+				const subs = entry.display_subtypes
+					.map(s => statusDescs[entry.type].subTypeLabels[s] || s)
 					.join(', ');
 				text.innerText = `${desc}: ${subs}`;
 
 				const clearBtn = document.createElement('button');
 				clearBtn.innerText = 'Clear';
 				clearBtn.onclick = e => {
-					sendAPI(
-						'DELETE',
-						'/system/status/checks',
-						api_key,
-						{type: entry.type}
-					).then(() => loadStatusChecks(api_key));
+					sendAPI('DELETE', '/system/status/checks', api_key, {
+						type: entry.type
+					})
+					.then(_ => loadStatusChecks(api_key));
 				};
 
 				item.appendChild(text);
