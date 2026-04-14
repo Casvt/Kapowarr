@@ -5,12 +5,16 @@ from __future__ import annotations
 from asyncio import Semaphore
 from typing import TYPE_CHECKING, Any, Dict, Mapping, Tuple, Union
 
-from requests import RequestException
+from requests import RequestException, Session as _SyncSession
 
 from backend.base.definitions import Constants, ProxyType
 from backend.base.helpers import Session
 from backend.base.logging import LOGGER
 from backend.internals.settings import Settings
+
+# FlareSolverr requests can take a long time (page load + CF solve),
+# so we use a longer timeout than the default REQUEST_TIMEOUT.
+FS_HTTP_TIMEOUT = (Constants.FS_MAX_TIMEOUT // 1000) + 30  # seconds
 
 if TYPE_CHECKING:
     from backend.base.helpers import AsyncSession
@@ -51,7 +55,8 @@ class FlareSolverr:
         return session.post(
             base_url + Constants.FS_API_BASE,
             json=data,
-            headers={'Content-Type': 'application/json'}
+            headers={'Content-Type': 'application/json'},
+            timeout=FS_HTTP_TIMEOUT
         ).json()
 
     @staticmethod
@@ -176,7 +181,8 @@ class FlareSolverr:
                 {
                     'cmd': 'request.get',
                     'session': session_id,
-                    'url': url
+                    'url': url,
+                    'maxTimeout': Constants.FS_MAX_TIMEOUT
                 }
             )["solution"]
 
@@ -257,7 +263,8 @@ class FlareSolverr:
                 {
                     'cmd': 'request.get',
                     'session': session_id,
-                    'url': url
+                    'url': url,
+                    'maxTimeout': Constants.FS_MAX_TIMEOUT
                 }
             ))["solution"]
 

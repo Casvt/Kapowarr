@@ -116,10 +116,13 @@ class Constants:
     "The base URL of the Pixeldrain API"
 
     FS_API_BASE = "/v1"
-    "The base endpoint of the FlareSolverr API"
+    """The base endpoint of the FlareSolverr API"""
+
+    FS_MAX_TIMEOUT = 300000  # milliseconds (5 minutes)
+    """Max time FlareSolverr waits for a page to fully load"""
 
     MAX_CONCURRENT_FS_SESSIONS = 2
-    "The maximum amount of FlareSolverr browser sessions that can concurrently run"
+    """The maximum amount of FlareSolverr browser sessions that can concurrently run"""
 
     CF_CHALLENGE_HEADER = ("cf-mitigated", "challenge")
     """

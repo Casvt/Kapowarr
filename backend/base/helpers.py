@@ -1019,9 +1019,16 @@ class Session(RSession):
             fs_result = self.fs.handle_cf_block(result.url, result.headers)
 
             if fs_result:
+                response_body = fs_result.get("response")
+                if response_body is None:
+                    LOGGER.warning(
+                        "FlareSolverr returned null response body for %s",
+                        result.url
+                    )
+                    return result
                 result.url = fs_result["url"]
                 result.status_code = fs_result["status"]
-                result._content = fs_result["response"].encode("utf-8")
+                result._content = response_body.encode("utf-8")
                 result.headers = CaseInsensitiveDict(fs_result["headers"])
 
         if 400 <= result.status_code < 500:
@@ -1109,10 +1116,17 @@ class AsyncSession(ClientSession):
                 )
 
                 if fs_result:
+                    response_body = fs_result.get("response")
+                    if response_body is None:
+                        LOGGER.warning(
+                            "FlareSolverr returned null response body for %s",
+                            response.url
+                        )
+                        return response
                     response._url = URL(fs_result["url"])
                     response._real_url = URL(fs_result["url"])
                     response.status = fs_result["status"]
-                    response._body = fs_result["response"].encode("utf-8")
+                    response._body = response_body.encode("utf-8")
                     response._headers = CIMultiDictProxy(CIMultiDict(
                         fs_result["headers"]
                     ))
