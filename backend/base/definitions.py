@@ -678,6 +678,18 @@ class DownloadGroup(TypedDict):
     links: Dict[GCDownloadSource, List[str]]
 
 
+class ExternalDownloadClientData(TypedDict):
+    id: int
+    download_type: int
+    client_type: str
+    required_tokens: List[str]
+    title: str
+    base_url: str
+    username: Union[str, None]
+    password: Union[str, None]
+    api_token: Union[str, None]
+
+
 class ClientTestResult(TypedDict):
     success: bool
     description: Union[None, str]
@@ -1089,11 +1101,11 @@ class ExternalDownloadClient(ABC):
         ...
 
     @abstractmethod
-    def get_client_data(self) -> Dict[str, Any]:
+    def get_client_data(self) -> ExternalDownloadClientData:
         """Get info about the client.
 
         Returns:
-            Dict[str, Any]: The info about the client.
+            ExternalDownloadClientData: The info about the client.
         """
         ...
 

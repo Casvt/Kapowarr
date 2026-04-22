@@ -64,39 +64,36 @@ function loadEditTorrent(api_key, id) {
 	.then(client_data => {
 		const client_type = client_data.result.client_type;
 		form.dataset.type = client_type;
-		fetchAPI('/externalclients/options', api_key)
-		.then(options => {
-			const client_options = options.result[client_type];
+		const client_options = client_data.result.required_tokens;
 
-			form.querySelector('#edit-title-input').value =
-				client_data.result.title || '';
+		form.querySelector('#edit-title-input').value =
+			client_data.result.title || '';
 
-			form.querySelector('#edit-baseurl-input').value =
-				client_data.result.base_url;
+		form.querySelector('#edit-baseurl-input').value =
+			client_data.result.base_url;
 
-			if (client_options.includes('username')) {
-				const username_input = createUsernameInput('edit-username-input');
-				username_input.querySelector('input').value =
-					client_data.result.username || '';
-				form.appendChild(username_input);
-			};
+		if (client_options.includes('username')) {
+			const username_input = createUsernameInput('edit-username-input');
+			username_input.querySelector('input').value =
+				client_data.result.username || '';
+			form.appendChild(username_input);
+		};
 
-			if (client_options.includes('password')) {
-				const password_input = createPasswordInput('edit-password-input');
-				password_input.querySelector('input').value =
-					client_data.result.password || '';
-				form.appendChild(password_input);
-			};
+		if (client_options.includes('password')) {
+			const password_input = createPasswordInput('edit-password-input');
+			password_input.querySelector('input').value =
+				client_data.result.password || '';
+			form.appendChild(password_input);
+		};
 
-			if (client_options.includes('api_token')) {
-				const token_input = createApiTokenInput('edit-token-input');
-				token_input.querySelector('input').value =
-					client_data.result.api_token || '';
-				form.appendChild(token_input);
-			};
+		if (client_options.includes('api_token')) {
+			const token_input = createApiTokenInput('edit-token-input');
+			token_input.querySelector('input').value =
+				client_data.result.api_token || '';
+			form.appendChild(token_input);
+		};
 
-			showWindow('edit-torrent-window');
-		});
+		showWindow('edit-torrent-window');
 	});
 };
 
