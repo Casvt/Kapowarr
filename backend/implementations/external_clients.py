@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from functools import lru_cache
 from importlib import import_module
 from os.path import basename, dirname, splitext
 from sqlite3 import IntegrityError
-from typing import Any, Dict, List, Mapping, Type, Union
+from typing import Any, Dict, List, Mapping, Sequence, Type, Union
 
 import backend.implementations.torrent_clients as tc
 from backend.base.custom_exceptions import (ClientNotWorking,
@@ -15,13 +14,11 @@ from backend.base.custom_exceptions import (ClientNotWorking,
 from backend.base.definitions import (ClientTestResult, DownloadType,
                                       ExternalDownloadClient)
 from backend.base.files import list_files
-from backend.base.helpers import get_subclasses, normalise_base_url
+from backend.base.helpers import normalise_base_url
 from backend.internals.db import get_db
 
 
-# =====================
 # region Base External Client
-# =====================
 class BaseExternalClient(ExternalDownloadClient):
     required_tokens = ('title', 'base_url')
 
@@ -158,35 +155,42 @@ class BaseExternalClient(ExternalDownloadClient):
         return
 
 
-# =====================
 # region Clients
-# =====================
 class ExternalClients:
-    @staticmethod
-    @lru_cache(1)
-    def get_client_types() -> Dict[str, Type[ExternalDownloadClient]]:
-        """Get a mapping of the client type strings to their class.
+    clients: Dict[str, Type[ExternalDownloadClient]] = {}
 
-        Returns:
-            Dict[str, Type[ExternalDownloadClient]]: The mapping.
-        """
-        for file in list_files(
-            dirname(tc.__file__ or '')
+    @classmethod
+    def register_client(
+        cls,
+        download_type: DownloadType,
+        client_type: str,
+        required_tokens: Sequence[str]
+    ):
+        def wrapper(
+            client_class: Type[ExternalDownloadClient]
+        ) -> Type[ExternalDownloadClient]:
+            cls.clients[client_type] = client_class
+            client_class.download_type = download_type
+            client_class.client_type = client_type
+            client_class.required_tokens = required_tokens
+            return client_class
+        return wrapper
+
+    @staticmethod
+    def _import_clients() -> None:
+        for file in sorted(
+            list_files(
+                dirname(tc.__file__ or '')
+            ),
+            key=lambda f: f.lower()
         ):
             if file.endswith(".py") and not file.endswith("__init__.py"):
                 module_name = splitext(basename(file))[0]
                 import_module(f"{tc.__name__}.{module_name}")
 
-        return {
-            client.client_type: client
-            for client in sorted(
-                get_subclasses(BaseExternalClient),
-                key=lambda c: c.client_type.lower()
-            )
-        }
-
-    @staticmethod
+    @classmethod
     def test(
+        cls,
         client_type: str,
         base_url: str,
         username: Union[str, None],
@@ -219,10 +223,8 @@ class ExternalClients:
         Returns:
             ClientTestResult: Whether the test was successful.
         """
-        client_types = ExternalClients.get_client_types()
-
         try:
-            client_types[client_type].test(
+            cls.clients[client_type].test(
                 normalise_base_url(base_url),
                 username,
                 password,
@@ -250,8 +252,9 @@ class ExternalClients:
                 'description': None
             })
 
-    @staticmethod
+    @classmethod
     def add(
+        cls,
         client_type: str,
         title: str,
         base_url: str,
@@ -299,11 +302,11 @@ class ExternalClients:
             raise InvalidKeyValue('password', password)
 
         try:
-            ClientClass = ExternalClients.get_client_types()[client_type]
+            ClientClass = cls.clients[client_type]
         except KeyError:
             raise InvalidKeyValue('type', client_type)
 
-        ExternalClients.get_client_types()[client_type].test(
+        cls.clients[client_type].test(
             normalise_base_url(base_url),
             username,
             password,
@@ -345,10 +348,10 @@ class ExternalClients:
             """,
             data
         ).lastrowid
-        return ExternalClients.get_client(client_id)
+        return cls.get_client(client_id)
 
-    @staticmethod
-    def get_clients() -> List[Dict[str, Any]]:
+    @classmethod
+    def get_clients(cls) -> List[Dict[str, Any]]:
         """Get a list of all external clients.
 
         Returns:
@@ -366,8 +369,8 @@ class ExternalClients:
         ).fetchalldict()
         return result
 
-    @staticmethod
-    def get_client(client_id: int) -> ExternalDownloadClient:
+    @classmethod
+    def get_client(cls, client_id: int) -> ExternalDownloadClient:
         """Get an external client based on it's ID.
 
         Args:
@@ -391,10 +394,11 @@ class ExternalClients:
         if not client_type:
             raise ExternalClientNotFound(client_id)
 
-        return ExternalClients.get_client_types()[client_type](client_id)
+        return cls.clients[client_type](client_id)
 
-    @staticmethod
+    @classmethod
     def get_least_used_client(
+        cls,
         download_type: DownloadType
     ) -> ExternalDownloadClient:
         """Get the least used client of a specific download type.
@@ -424,7 +428,7 @@ class ExternalClients:
         ).fetchone()
 
         if lu_id:
-            return ExternalClients.get_client(lu_id[0])
+            return cls.get_client(lu_id[0])
 
         first_id = cursor.execute("""
             SELECT id
@@ -436,6 +440,6 @@ class ExternalClients:
         ).fetchone()
 
         if first_id:
-            return ExternalClients.get_client(first_id[0])
+            return cls.get_client(first_id[0])
 
         raise ExternalClientNotFound(-1)

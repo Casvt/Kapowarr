@@ -12,18 +12,18 @@ from backend.base.definitions import (BrokenClientReason,
                                       DownloadState, DownloadType)
 from backend.base.helpers import Session
 from backend.base.logging import LOGGER
-from backend.implementations.external_clients import BaseExternalClient
+from backend.implementations.external_clients import (BaseExternalClient,
+                                                      ExternalClients)
 from backend.internals.settings import Settings
 
 filename_magnet_link = compile(r'(?<=&dn=).*?(?=&)', IGNORECASE)
 
 
+@ExternalClients.register_client(
+    DownloadType.TORRENT, 'Transmission',
+    ('title', 'base_url', 'username', 'password')
+)
 class Transmission(BaseExternalClient):
-    client_type = 'Transmission'
-    download_type = DownloadType.TORRENT
-
-    required_tokens = ('title', 'base_url', 'username', 'password')
-
     state_mapping = {
         0: DownloadState.PAUSED_STATE,        # Stopped
         1: DownloadState.DOWNLOADING_STATE,   # CheckWait
@@ -271,14 +271,15 @@ class Transmission(BaseExternalClient):
         del self.torrent_hashes[download_id]
         return
 
-    @staticmethod
+    @classmethod
     def test(
+        cls,
         base_url: str,
         username: Union[str, None] = None,
         password: Union[str, None] = None,
         api_token: Union[str, None] = None
     ) -> None:
-        Transmission._login(
+        cls._login(
             base_url,
             username,
             password

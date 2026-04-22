@@ -1169,9 +1169,10 @@ class ExternalDownloadClient(ABC):
         """
         ...
 
-    @staticmethod
+    @classmethod
     @abstractmethod
     def test(
+        cls,
         base_url: str,
         username: Union[str, None],
         password: Union[str, None],

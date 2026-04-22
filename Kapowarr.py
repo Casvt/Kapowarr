@@ -69,6 +69,7 @@ def _main(
     from backend.base.logging import LOGGER, setup_logging
     from backend.features.download_queue import DownloadHandler
     from backend.features.tasks import TaskHandler
+    from backend.implementations.external_clients import ExternalClients
     from backend.internals.db import set_db_location, setup_db
     from backend.internals.server import Server, StartTypeHandlers
     from backend.internals.settings import Settings
@@ -80,6 +81,8 @@ def _main(
 
     if not check_min_python_version(*Constants.MIN_PYTHON_VERSION):
         exit(1)
+
+    ExternalClients._import_clients()
 
     set_db_location(db_folder)
 
