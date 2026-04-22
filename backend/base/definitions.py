@@ -475,6 +475,16 @@ class DownloadType(BaseEnum):
     TORRENT = 2
 
 
+class ExternalClientField(BaseEnum):
+    "A field for which the external client possibly requires a value to work"
+
+    TITLE = "title"
+    BASE_URL = "base_url"
+    USERNAME = "username"
+    PASSWORD = "password"
+    API_TOKEN = "api_token"
+
+
 class GCDownloadSource(BaseEnum):
     "Download sources offered on a GetComics webpage"
 
@@ -1033,7 +1043,7 @@ class ExternalDownloadClient(ABC):
     download_type: DownloadType
     "The protocol it uses to download (e.g. a torrent)"
 
-    required_tokens: Sequence[str]
+    required_tokens: Tuple[ExternalClientField, ...]
     """
     The keys the client needs or could need for operation
     (mostly whether it's username + password or api_token)

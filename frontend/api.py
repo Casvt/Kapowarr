@@ -1367,7 +1367,7 @@ def api_external_clients():
 @auth
 def api_external_clients_keys():
     result = {
-        k: v.required_tokens
+        k: [rt.value for rt in v.required_tokens]
         for k, v in ExternalClients.clients.items()
     }
     return return_api(result)
