@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+"""
+The manager of external download clients and their base class
+"""
+
 from importlib import import_module
 from os.path import basename, dirname, splitext
 from sqlite3 import IntegrityError
@@ -166,6 +170,22 @@ class ExternalClients:
         client_type: str,
         required_tokens: Sequence[str]
     ):
+        """Register an external download client.
+
+        ```
+        @ExternalClients.register_client(
+            DownloadType.TORRENT, 'ProductName',
+            ('title', 'base_url', 'username', 'password')
+        )
+        class ProductName(ExternalDownloadClient):
+            ...
+        ```
+
+        Args:
+            download_type (DownloadType): The protocol that the client handles.
+            client_type (str): The product name of the client (e.g. 'qBittorrent').
+            required_tokens (Sequence[str]): The fields that the client needs.
+        """
         def wrapper(
             client_class: Type[ExternalDownloadClient]
         ) -> Type[ExternalDownloadClient]:
@@ -178,6 +198,9 @@ class ExternalClients:
 
     @staticmethod
     def _import_clients() -> None:
+        """Import the implementations of the external download clients in the
+        sub-folders, automatically making them register themselves.
+        """
         for file in sorted(
             list_files(
                 dirname(tc.__file__ or '')
@@ -187,6 +210,7 @@ class ExternalClients:
             if file.endswith(".py") and not file.endswith("__init__.py"):
                 module_name = splitext(basename(file))[0]
                 import_module(f"{tc.__name__}.{module_name}")
+        return
 
     @classmethod
     def test(
@@ -197,24 +221,24 @@ class ExternalClients:
         password: Union[str, None],
         api_token: Union[str, None]
     ) -> ClientTestResult:
-        """Test if an external client is supported, working and available.
+        """Test whether an external client is supported, working and available.
 
         Args:
-            client_type (str): The client type, which is the value of the
-            client's `client_type` attribute.
+            client_type (str): The client type of the client, as supplied when
+                they registered to this class.
 
             base_url (str): The base URL of the client.
 
             username (Union[str, None]): The username to use when authenticating
-            to the client.
+                to the client.
                 Allowed to be `None` if not applicable.
 
             password (Union[str, None]): The password to use when authenticating
-            to the client.
+                to the client.
                 Allowed to be `None` if not applicable.
 
             api_token (Union[str, None]): The api token to use when authenticating
-            to the client.
+                to the client.
                 Allowed to be `None` if not applicable.
 
         Raises:
@@ -265,23 +289,23 @@ class ExternalClients:
         """Add an external client.
 
         Args:
-            client_type (str): The client type, which is the value of the
-            client's `client_type` attribute.
+            client_type (str): The client type of the client, as supplied when
+                they registered to this class.
 
             title (str): The title to give the client.
 
             base_url (str): The base URL of the client.
 
             username (Union[str, None]): The username to use when authenticating
-            to the client.
+                to the client.
                 Allowed to be `None` if not applicable.
 
             password (Union[str, None]): The password to use when authenticating
-            to the client.
+                to the client.
                 Allowed to be `None` if not applicable.
 
             api_token (Union[str, None]): The api token to use when authenticating
-            to the client.
+                to the client.
                 Allowed to be `None` if not applicable.
 
         Raises:
@@ -371,10 +395,10 @@ class ExternalClients:
 
     @classmethod
     def get_client(cls, client_id: int) -> ExternalDownloadClient:
-        """Get an external client based on it's ID.
+        """Get an external client based on its ID.
 
         Args:
-            id (int): The ID of the external client.
+            client_id (int): The ID of the external client.
 
         Raises:
             ExternalClientNotFound: The ID does not link to any client.
@@ -405,7 +429,7 @@ class ExternalClients:
 
         Args:
             download_type (DownloadType): The download type to get the client
-            for.
+                for.
 
         Raises:
             ExternalClientNotFound: No client of the specified type was found.
