@@ -21,7 +21,7 @@ filename_magnet_link = compile(r'(?<=&dn=).*?(?=&)', IGNORECASE)
 
 @ExternalClients.register_client(
     DownloadType.TORRENT, 'qBittorrent',
-    (ECF.TITLE, ECF.BASE_URL, ECF.USERNAME, ECF.PASSWORD)
+    (ECF.TITLE, ECF.ENABLED, ECF.BASE_URL, ECF.USERNAME, ECF.PASSWORD)
 )
 class qBittorrent(BaseExternalClient):
     state_mapping = {

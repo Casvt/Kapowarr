@@ -1184,3 +1184,13 @@ def _migrate_add_forced_file_match_column():
     """)
 
     return
+
+
+@DatabaseMigrationHandler.register_handler(45)
+def _migrate_add_enabled_option_to_ec():
+    get_db().execute("""
+        ALTER TABLE external_download_clients
+            ADD COLUMN enabled BOOL NOT NULL DEFAULT 1;
+    """)
+
+    return

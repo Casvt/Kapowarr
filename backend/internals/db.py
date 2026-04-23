@@ -434,6 +434,7 @@ CREATE TABLE IF NOT EXISTS volume_files(
 );
 CREATE TABLE IF NOT EXISTS external_download_clients(
     id INTEGER PRIMARY KEY,
+    enabled BOOL NOT NULL DEFAULT 1,
     download_type INTEGER NOT NULL,
     client_type VARCHAR(255) NOT NULL,
     title VARCHAR(255) NOT NULL,

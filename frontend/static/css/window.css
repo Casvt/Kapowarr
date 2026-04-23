@@ -100,7 +100,7 @@
 	width: min-content;
 }
 
-.window-content table :where(select, input) {
+.window-content table :where(select, input:not([type="checkbox"])) {
 	width: 90%;
 	padding: .5rem;
 	border: 2px solid var(--border-color);

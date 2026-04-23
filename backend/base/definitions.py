@@ -479,6 +479,7 @@ class ExternalClientField(BaseEnum):
     "A field for which the external client possibly requires a value to work"
 
     TITLE = "title"
+    ENABLED = "enabled"
     BASE_URL = "base_url"
     USERNAME = "username"
     PASSWORD = "password"
@@ -680,6 +681,7 @@ class DownloadGroup(TypedDict):
 
 class ExternalDownloadClientData(TypedDict):
     id: int
+    enabled: bool
     download_type: int
     client_type: str
     required_tokens: List[str]

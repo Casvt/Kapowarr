@@ -53,7 +53,7 @@ function loadEditTorrent(api_key, id) {
 	const form = document.querySelector('#edit-torrent-form tbody');
 	form.dataset.id = id;
 	form.querySelectorAll(
-		'tr:not(:has(input#edit-title-input, input#edit-baseurl-input))'
+		'tr:not(:has(input#edit-title-input, input#edit-enabled-input, input#edit-baseurl-input))'
 	).forEach(el => el.remove());
 	document.querySelector('#test-torrent-edit').classList.remove(
 		'show-success', 'show-fail'
@@ -68,6 +68,9 @@ function loadEditTorrent(api_key, id) {
 
 		form.querySelector('#edit-title-input').value =
 			client_data.result.title || '';
+
+		form.querySelector('#edit-enabled-input').checked =
+			client_data.result.enabled;
 
 		form.querySelector('#edit-baseurl-input').value =
 			client_data.result.base_url;
@@ -108,6 +111,7 @@ function saveEditTorrent() {
 			const id = form.dataset.id;
 			const data = {
 				title: form.querySelector('#edit-title-input').value,
+				enabled: form.querySelector('#edit-enabled-input').checked,
 				base_url: form.querySelector('#edit-baseurl-input').value,
 				username: form.querySelector('#edit-username-input')?.value || null,
 				password: form.querySelector('#edit-password-input')?.value || null,
@@ -207,13 +211,13 @@ function loadAddTorrent(api_key, client_type) {
 	const form = document.querySelector('#add-torrent-form tbody');
 	form.dataset.type = client_type;
 	form.querySelectorAll(
-		'tr:not(:has(input#add-title-input, input#add-baseurl-input))'
+		'tr:not(:has(input#add-title-input, input#add-enabled-input, input#add-baseurl-input))'
 	).forEach(el => el.remove());
 	document.querySelector('#test-torrent-add').classList.remove(
 		'show-success', 'show-fail'
 	)
 	form.querySelectorAll(
-		'#add-title-input, #add-baseurl-input'
+		'#add-title-input, #add-enabled-input, #add-baseurl-input'
 	).forEach(el => el.value = '');
 
 	fetchAPI('/externalclients/options', api_key)
@@ -245,6 +249,7 @@ function saveAddTorrent() {
 				download_type: 2,
 				client_type: form.dataset.type,
 				title: form.querySelector('#add-title-input').value,
+				enabled: form.querySelector('#add-enabled-input').checked,
 				base_url: form.querySelector('#add-baseurl-input').value,
 				username: form.querySelector('#add-username-input')?.value || null,
 				password: form.querySelector('#add-password-input')?.value || null,

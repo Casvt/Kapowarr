@@ -1354,7 +1354,8 @@ def api_external_clients():
             k: data.get(k)
             for k in (
                 'download_type', 'client_type',
-                'title', 'base_url',
+                'title', 'enabled',
+                'base_url',
                 'username', 'password', 'api_token'
             )
         }
@@ -1423,7 +1424,7 @@ def api_external_client(id: int):
         data = {
             k: data.get(k)
             for k in (
-                'title', 'base_url',
+                'title', 'enabled', 'base_url',
                 'username', 'password', 'api_token'
             )
         }
