@@ -511,12 +511,11 @@ class ExternalClients:
         Returns:
             ExternalDownloadClient: The least used client.
         """
-        cursor = get_db()
-        lu_id = cursor.execute("""
+        least_used_id = get_db().execute("""
             SELECT clients.id
-            FROM download_queue queue
-            INNER JOIN external_download_clients clients
-                ON queue.external_client_id = clients.id
+            FROM external_download_clients clients
+            LEFT JOIN download_queue queue
+            ON clients.id = queue.external_client_id
             WHERE clients.download_type = ?
                 AND clients.enabled = 1
             GROUP BY clients.id
@@ -524,22 +523,9 @@ class ExternalClients:
             LIMIT 1;
             """,
             (download_type.value,)
-        ).fetchone()
+        ).exists()
 
-        if lu_id:
-            return cls.get_client(lu_id[0])
-
-        first_id = cursor.execute("""
-            SELECT id
-            FROM external_download_clients
-            WHERE download_type = ?
-                AND enabled = 1
-            LIMIT 1;
-            """,
-            (download_type.value,)
-        ).fetchone()
-
-        if first_id:
-            return cls.get_client(first_id[0])
+        if least_used_id:
+            return cls.get_client(least_used_id)
 
         raise ExternalClientNotFound(-1)
