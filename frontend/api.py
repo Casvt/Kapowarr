@@ -11,11 +11,11 @@ from backend.base.custom_exceptions import (InvalidKeyValue,
                                             KeyNotFound, TaskNotFound)
 from backend.base.definitions import (BlocklistReason, BlocklistReasonID,
                                       CredentialData, CredentialSource,
-                                      DownloadSource, FileMatch,
+                                      DownloadSource, DownloadType, FileMatch,
                                       KapowarrException, LibraryFilter,
                                       LibrarySorting, MonitorScheme,
-                                      SpecialVersion, StartType,
-                                      StatusType, VolumeData)
+                                      SpecialVersion, StartType, StatusType,
+                                      VolumeData)
 from backend.base.helpers import hash_credential
 from backend.base.logging import LOGGER, get_log_file_contents
 from backend.features.download_queue import (DownloadHandler,
@@ -1353,11 +1353,19 @@ def api_external_clients():
         data = {
             k: data.get(k)
             for k in (
-                'client_type',
+                'download_type', 'client_type',
                 'title', 'base_url',
                 'username', 'password', 'api_token'
             )
         }
+
+        if not isinstance(data["download_type"], int):
+            raise InvalidKeyValue("download_type", data["download_type"])
+        try:
+            data["download_type"] = DownloadType(data["download_type"])
+        except ValueError:
+            raise InvalidKeyValue("download_type", data["download_type"])
+
         result = ExternalClients.add(**data).get_client_data()
         return return_api(result, code=201)
 
@@ -1367,8 +1375,11 @@ def api_external_clients():
 @auth
 def api_external_clients_keys():
     result = {
-        k: [rt.value for rt in v.required_tokens]
-        for k, v in ExternalClients.clients.items()
+        dt.value: {
+            ct: [rt.value for rt in client.required_tokens]
+            for ct, client in v.items()
+        }
+        for dt, v in ExternalClients.clients.items()
     }
     return return_api(result)
 
@@ -1381,10 +1392,18 @@ def api_external_clients_test():
     data = {
         k: data.get(k)
         for k in (
-            'client_type', 'base_url',
+            'download_type', 'client_type', 'base_url',
             'username', 'password', 'api_token'
         )
     }
+
+    if not isinstance(data["download_type"], int):
+        raise InvalidKeyValue("download_type", data["download_type"])
+    try:
+        data["download_type"] = DownloadType(data["download_type"])
+    except ValueError:
+        raise InvalidKeyValue("download_type", data["download_type"])
+
     result = ExternalClients.test(**data)
     return return_api(result)
 

@@ -146,6 +146,7 @@ async function testEditTorrent(api_key) {
 	const test_button = document.querySelector('#test-torrent-edit');
 	test_button.classList.remove('show-success', 'show-fail');
 	const data = {
+		download_type: 2,
 		client_type: form.dataset.type,
 		base_url: form.querySelector('#edit-baseurl-input').value,
 		username: form.querySelector('#edit-username-input')?.value || null,
@@ -192,7 +193,7 @@ function loadTorrentList(api_key) {
 
 	fetchAPI('/externalclients/options', api_key)
 	.then(json => {
-		Object.keys(json.result).forEach(c => {
+		Object.keys(json.result[2]).forEach(c => {
 			const entry = document.createElement('button');
 			entry.innerText = c;
 			entry.onclick = e => loadAddTorrent(api_key, c);
@@ -217,7 +218,7 @@ function loadAddTorrent(api_key, client_type) {
 
 	fetchAPI('/externalclients/options', api_key)
 	.then(json => {
-		const client_options = json.result[client_type];
+		const client_options = json.result[2][client_type];
 
 		if (client_options.includes('username'))
 			form.appendChild(createUsernameInput('add-username-input'));
@@ -241,6 +242,7 @@ function saveAddTorrent() {
 
 			const form = document.querySelector('#add-torrent-form tbody');
 			const data = {
+				download_type: 2,
 				client_type: form.dataset.type,
 				title: form.querySelector('#add-title-input').value,
 				base_url: form.querySelector('#add-baseurl-input').value,
@@ -276,6 +278,7 @@ async function testAddTorrent(api_key) {
 	const test_button = document.querySelector('#test-torrent-add');
 	test_button.classList.remove('show-success', 'show-fail');
 	const data = {
+		download_type: 2,
 		client_type: form.dataset.type,
 		base_url: form.querySelector('#add-baseurl-input').value,
 		username: form.querySelector('#add-username-input')?.value || null,

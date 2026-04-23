@@ -167,7 +167,10 @@ class BaseExternalClient(ExternalDownloadClient):
 
 # region Clients
 class ExternalClients:
-    clients: Dict[str, Type[ExternalDownloadClient]] = {}
+    clients: Dict[DownloadType, Dict[str, Type[ExternalDownloadClient]]] = {
+        dt: {}
+        for dt in DownloadType
+    }
 
     @classmethod
     def register_client(
@@ -181,7 +184,7 @@ class ExternalClients:
         ```
         @ExternalClients.register_client(
             DownloadType.TORRENT, 'ProductName',
-            ('title', 'base_url', 'username', 'password')
+            (ECF.TITLE, ECF.BASE_URL, ECF.USERNAME, ECF.PASSWORD)
         )
         class ProductName(ExternalDownloadClient):
             ...
@@ -196,7 +199,7 @@ class ExternalClients:
         def wrapper(
             client_class: Type[ExternalDownloadClient]
         ) -> Type[ExternalDownloadClient]:
-            cls.clients[client_type] = client_class
+            cls.clients[download_type][client_type] = client_class
             client_class.download_type = download_type
             client_class.client_type = client_type
             client_class.required_tokens = required_tokens
@@ -222,6 +225,7 @@ class ExternalClients:
     @classmethod
     def test(
         cls,
+        download_type: DownloadType,
         client_type: str,
         base_url: str,
         username: Union[str, None],
@@ -231,6 +235,8 @@ class ExternalClients:
         """Test whether an external client is supported, working and available.
 
         Args:
+            download_type (DownloadType): The protocol that the client handles.
+
             client_type (str): The client type of the client, as supplied when
                 they registered to this class.
 
@@ -255,7 +261,12 @@ class ExternalClients:
             ClientTestResult: Whether the test was successful.
         """
         try:
-            cls.clients[client_type].test(
+            type_clients = cls.clients[download_type]
+        except KeyError:
+            raise InvalidKeyValue('download_type', download_type)
+
+        try:
+            type_clients[client_type].test(
                 normalise_base_url(base_url),
                 username,
                 password,
@@ -263,7 +274,7 @@ class ExternalClients:
             )
 
         except KeyError:
-            raise InvalidKeyValue('type', client_type)
+            raise InvalidKeyValue('client_type', client_type)
 
         except ClientNotWorking as e:
             return ClientTestResult({
@@ -286,6 +297,7 @@ class ExternalClients:
     @classmethod
     def add(
         cls,
+        download_type: DownloadType,
         client_type: str,
         title: str,
         base_url: str,
@@ -296,6 +308,8 @@ class ExternalClients:
         """Add an external client.
 
         Args:
+            download_type (DownloadType): The protocol that the client handles.
+
             client_type (str): The client type of the client, as supplied when
                 they registered to this class.
 
@@ -333,11 +347,16 @@ class ExternalClients:
             raise InvalidKeyValue('password', password)
 
         try:
-            ClientClass = cls.clients[client_type]
+            type_clients = cls.clients[download_type]
         except KeyError:
-            raise InvalidKeyValue('type', client_type)
+            raise InvalidKeyValue('download_type', download_type)
 
-        cls.clients[client_type].test(
+        try:
+            ClientClass = type_clients[client_type]
+        except KeyError:
+            raise InvalidKeyValue('client_type', client_type)
+
+        ClientClass.test(
             normalise_base_url(base_url),
             username,
             password,
@@ -392,7 +411,10 @@ class ExternalClients:
                 **client,
                 "required_tokens": [
                     rt.value
-                    for rt in cls.clients[client["client_type"]].required_tokens
+                    for rt in cls.clients
+                    [DownloadType(client["download_type"])]
+                    [client["client_type"]]
+                    .required_tokens
                 ]
             }
             for client in get_db().execute("""
@@ -421,19 +443,24 @@ class ExternalClients:
         Returns:
             ExternalDownloadClient: The client.
         """
-        client_type = get_db().execute("""
-            SELECT client_type
+        client_types = get_db().execute("""
+            SELECT download_type, client_type
             FROM external_download_clients
             WHERE id = ?
             LIMIT 1;
             """,
             (client_id,)
-        ).exists()
+        ).fetchone()
 
-        if not client_type:
+        if not client_types:
             raise ExternalClientNotFound(client_id)
 
-        return cls.clients[client_type](client_id)
+        return (cls
+            .clients
+            [DownloadType(client_types[0])]
+            [client_types[1]]
+            (client_id)
+        )
 
     @classmethod
     def get_least_used_client(

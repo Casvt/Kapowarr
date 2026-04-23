@@ -19,7 +19,7 @@ from backend.base.custom_exceptions import (DownloadLimitReached,
                                             IssueNotFound, LinkBroken)
 from backend.base.definitions import (GC_DOWNLOAD_SOURCE_TERMS,
                                       BlocklistReason, Constants, Download,
-                                      DownloadGroup,
+                                      DownloadGroup, DownloadType,
                                       EnqueuingDownloadFailureReason,
                                       GCDownloadSource, SearchResultData,
                                       SpecialVersion)
@@ -342,7 +342,9 @@ def _get_download_groups(
     """
     LOGGER.debug('Extracting download groups')
 
-    torrent_client_available = bool(ExternalClients.get_clients())
+    torrent_client_available = bool(
+        ExternalClients.clients[DownloadType.TORRENT]
+    )
 
     body: Union[Tag, None] = soup.find(
         'section', {'class': 'post-contents'}
