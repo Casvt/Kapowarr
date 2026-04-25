@@ -614,6 +614,19 @@ class MegaAccount:
         raise CredentialInvalid
 
 
+@Credentials.register_validator(CredentialSource.MEGA)
+def mega_login_validator(credential_data: CredentialData) -> CredentialData:
+    MegaAccount(
+        MegaAPIClient(),
+        credential_data.email or '',
+        credential_data.password or ''
+    )
+
+    credential_data.api_key = None
+    credential_data.username = None
+    return credential_data
+
+
 class MegaABC(ABC):
     size: int
     progress: float
