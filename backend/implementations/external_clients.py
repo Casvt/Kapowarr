@@ -549,3 +549,22 @@ class ExternalClients:
             return cls.get_client(least_used_id)
 
         raise ExternalClientNotFound(-1)
+
+    @classmethod
+    def delete_client(cls, client_id: int) -> None:
+        """Delete a client.
+
+        Args:
+            client_id (int): The ID of the client.
+
+        Raises:
+            ExternalClientNotFound: The ID does not link to any client.
+            ExternalClientDownloading: There is a download using the client.
+        """
+        cls.get_client(client_id).delete_client()
+
+        if client_id in cls.instances:
+            cls.instances[client_id].on_shutdown()
+            del cls.instances[client_id]
+
+        return
