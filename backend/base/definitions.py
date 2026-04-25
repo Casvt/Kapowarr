@@ -1173,9 +1173,8 @@ class ExternalDownloadClient(ABC):
             CredentialInvalid: Credentials are invalid.
 
         Returns:
-            Union[Dict[str, Any], None]: The status of the download,
-                empty dict if download is not found
-                and `None` if client deleted the download.
+            Union[Dict[str, Any], None]: The status of the download or
+                `None` if client deleted the download.
         """
         ...
 
@@ -1191,6 +1190,11 @@ class ExternalDownloadClient(ABC):
             download_id (str): The ID/hash of the download to delete.
             delete_files (bool): Whether to delete the downloaded files.
         """
+        ...
+
+    @abstractmethod
+    def on_shutdown(self) -> None:
+        """Shut down the connection to the client"""
         ...
 
     @classmethod
