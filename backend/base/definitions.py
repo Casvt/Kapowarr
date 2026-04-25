@@ -9,8 +9,8 @@ from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass
 from enum import Enum
 from threading import Event, Thread
-from typing import (TYPE_CHECKING, Any, Callable, Dict, List, Mapping,
-                    Sequence, Tuple, TypedDict, TypeVar, Union)
+from typing import (TYPE_CHECKING, Any, Callable, Dict, List,
+                    Mapping, Tuple, TypedDict, TypeVar, Union)
 
 if TYPE_CHECKING:
     from threading import Timer
@@ -132,7 +132,7 @@ class Constants:
     when a challenge is presented
     """
 
-    TORRENT_UPDATE_INTERVAL = 5 # seconds
+    TORRENT_UPDATE_INTERVAL = 30 # seconds
     "The interval in seconds between status updates from external clients"
 
     TORRENT_TAG = "kapowarr"
