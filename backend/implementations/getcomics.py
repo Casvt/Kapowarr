@@ -31,15 +31,16 @@ from backend.base.helpers import (AsyncSession, check_overlapping_issues,
 from backend.base.logging import LOGGER
 from backend.implementations.blocklist import (add_to_blocklist,
                                                blocklist_contains)
-from backend.implementations.download_clients import (DirectDownload,
-                                                      MediaFireDownload,
-                                                      MediaFireFolderDownload,
-                                                      MegaDownload,
-                                                      MegaFolderDownload,
-                                                      PixelDrainDownload,
-                                                      PixelDrainFolderDownload,
-                                                      TorrentDownload,
-                                                      WeTransferDownload)
+from backend.implementations.download_clients.Direct import DirectDownload
+from backend.implementations.download_clients.MediaFire import (
+    MediaFireDownload, MediaFireFolderDownload)
+from backend.implementations.download_clients.Mega import (MegaDownload,
+                                                           MegaFolderDownload)
+from backend.implementations.download_clients.PixelDrain import (
+    PixelDrainDownload, PixelDrainFolderDownload)
+from backend.implementations.download_clients.Torrent import TorrentDownload
+from backend.implementations.download_clients.WeTransfer import \
+    WeTransferDownload
 from backend.implementations.external_clients import ExternalClients
 from backend.implementations.matching import download_group_filter
 from backend.implementations.volumes import Volume

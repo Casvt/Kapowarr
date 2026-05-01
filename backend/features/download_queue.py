@@ -5,7 +5,7 @@ from __future__ import annotations
 from asyncio import gather, run
 from os import listdir
 from os.path import basename, join
-from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Tuple, Union
 
 from typing_extensions import assert_never
 
@@ -21,15 +21,15 @@ from backend.base.definitions import (BlocklistReason, Constants, Download,
                                       EnqueuingDownloadFailureReason,
                                       ExternalDownload, SeedingHandling)
 from backend.base.files import create_folder, delete_file_folder
-from backend.base.helpers import CommaList, Singleton, get_subclasses
+from backend.base.helpers import CommaList, Singleton
 from backend.base.logging import LOGGER
 from backend.features.post_processing import (PostProcessor,
                                               PostProcessorTorrentsComplete,
                                               PostProcessorTorrentsCopy)
 from backend.implementations.blocklist import add_to_blocklist
-from backend.implementations.download_clients import (BaseDirectDownload,
-                                                      MegaDownload,
-                                                      TorrentDownload)
+from backend.implementations.download_client_manager import DownloadClients
+from backend.implementations.download_clients.Mega import MegaDownload
+from backend.implementations.download_clients.Torrent import TorrentDownload
 from backend.implementations.external_clients import ExternalClients
 from backend.implementations.getcomics import GetComicsPage
 from backend.implementations.volumes import Issue
@@ -45,12 +45,6 @@ if TYPE_CHECKING:
 # =====================
 # Download handling
 # =====================
-download_type_to_class: Dict[str, Type[Download]] = {
-    c.identifier: c
-    for c in get_subclasses(BaseDirectDownload)
-}
-
-
 class DownloadHandler(metaclass=Singleton):
     queue: List[Download] = []
 
@@ -527,9 +521,10 @@ class DownloadHandler(metaclass=Singleton):
             else:
                 covered_issues = float(download['covered_issues'])
 
+            DownloadClient = DownloadClients.get_client(download['client_type'])
             kwargs = {}
             if issubclass(
-                download_type_to_class[download['client_type']],
+                DownloadClient,
                 ExternalDownload
             ):
                 kwargs = {
@@ -539,7 +534,7 @@ class DownloadHandler(metaclass=Singleton):
                 }
 
             try:
-                dl_instance = download_type_to_class[download['client_type']](
+                dl_instance = DownloadClient(
                     download_link=download['download_link'],
                     volume_id=download['volume_id'],
                     covered_issues=covered_issues,

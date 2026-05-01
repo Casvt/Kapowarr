@@ -4,26 +4,36 @@ from abc import ABC, abstractmethod
 from base64 import b64decode, b64encode
 from hashlib import pbkdf2_hmac, sha256
 from json import JSONDecodeError, dumps, loads
+from os.path import basename, splitext
 from random import randint
 from re import compile, search
 from time import perf_counter, time
-from typing import Any, Callable, Dict, Generator, List, Sequence, Tuple, Union
+from typing import (Any, Callable, Dict, Generator,
+                    List, Sequence, Tuple, Type, Union)
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from requests import Response
 from requests.exceptions import (JSONDecodeError as RequestsJSONDecodeError,
                                  RetryError)
 from urllib3.exceptions import ProtocolError, TimeoutError
 
 from backend.base.custom_exceptions import (ClientNotWorking,
                                             CredentialInvalid,
-                                            DownloadLimitReached, LinkBroken)
+                                            DownloadLimitReached,
+                                            IssueNotFound, LinkBroken)
 from backend.base.definitions import (BaseEnum, BrokenClientReason, Constants,
                                       CredentialData, CredentialSource,
-                                      DownloadSource)
+                                      DownloadSource, DownloadState)
 from backend.base.helpers import Session
 from backend.base.logging import LOGGER
 from backend.implementations.credentials import Credentials
+from backend.implementations.download_client_manager import DownloadClients
+from backend.implementations.download_clients.base import BaseDirectDownload
+from backend.implementations.naming import generate_issue_name
+from backend.implementations.volumes import Volume
+from backend.internals.server import QueueStatusEvent, WebSocket
+from backend.internals.settings import Settings
 
 mega_url_regex = compile(
     r"https?://(?:www\.)?mega(?:\.co)?\.nz/(?:file/(?P<ID1>[\w^_]+)#(?P<K1>[\w\-,=]+)|folder/(?P<ID2>[\w^_]+)#(?P<K2>[\w\-,=]+)/file/(?P<NID>[\w^_]+)|#!(?P<ID3>[\w^_]+)!(?P<K3>[\w\-,=]+))"
@@ -33,6 +43,7 @@ mega_folder_regex = compile(
 )
 
 
+# region Crypto
 class MegaCommands(BaseEnum):
     PRELOGIN = "us0"
     ANONYMOUS_PRELOGIN = "up"
@@ -302,6 +313,7 @@ class MegaCrypto:
             return d[0] ^ d[1], d[2] ^ d[3]
 
 
+# region API Client
 class MegaAPIClient:
     def __init__(
         self,
@@ -378,6 +390,7 @@ class MegaAPIClient:
         return f'<{self.__class__.__name__}, sid={self.sid}, node_id={self.node_id}>'
 
 
+# region Account
 class MegaAccount:
     def __init__(
         self,
@@ -614,6 +627,7 @@ class MegaAccount:
         raise CredentialInvalid
 
 
+# region Validator
 @Credentials.register_validator(CredentialSource.MEGA)
 def mega_login_validator(credential_data: CredentialData) -> CredentialData:
     MegaAccount(
@@ -651,6 +665,7 @@ class MegaABC(ABC):
         ...
 
 
+# region File Downloader
 class Mega(MegaABC):
     def __init__(self, download_link: str) -> None:
         self.client = MegaAPIClient()
@@ -866,6 +881,7 @@ class Mega(MegaABC):
         return
 
 
+# region Folder Downloader
 class MegaFolder(MegaABC):
     def __init__(self, download_link: str) -> None:
         self.client = MegaAPIClient()
@@ -1079,3 +1095,139 @@ class MegaFolder(MegaABC):
                 if e.errno != 9:
                     raise
         return
+
+
+# region File Client
+@DownloadClients.register_client('mega')
+class MegaDownload(BaseDirectDownload):
+    _mega_class: Type[MegaABC] = Mega
+
+    @property
+    def size(self) -> int:
+        return self._mega.size
+
+    @property
+    def progress(self) -> float:
+        return self._mega.progress
+
+    @property
+    def speed(self) -> float:
+        return self._mega.speed
+
+    @property
+    def _size(self) -> int:
+        return self._mega.size
+
+    @property
+    def _progress(self) -> float:
+        return self._mega.progress
+
+    @property
+    def _speed(self) -> float:
+        return self._mega.speed
+
+    @property
+    def _pure_link(self) -> str:
+        return self._mega.pure_link
+
+    def __init__(
+        self,
+        download_link: str,
+
+        volume_id: int,
+        covered_issues: Union[float, Tuple[float, float], None],
+
+        source_type: DownloadSource,
+        source_name: str,
+
+        web_link: Union[str, None],
+        web_title: Union[str, None],
+        web_sub_title: Union[str, None],
+
+        forced_match: bool = False
+    ) -> None:
+        LOGGER.debug(
+            'Creating mega download: %s',
+            download_link
+        )
+
+        settings = Settings().sv
+        volume = Volume(volume_id)
+
+        self._download_link = download_link
+        self._volume_id = volume_id
+        self._issue_id = None
+        self._covered_issues = covered_issues
+        self._source_type = source_type
+        self._source_name = source_name
+        self._web_link = web_link
+        self._web_title = web_title
+        self._web_sub_title = web_sub_title
+
+        self._id = None
+        self._state = DownloadState.QUEUED_STATE
+        self._download_thread = None
+        self._download_folder = settings.download_folder
+
+        self._mega = self._mega_class(download_link)
+
+        self._filename_body = ''
+        try:
+            if isinstance(covered_issues, float):
+                self._issue_id = volume.get_issue_from_number(covered_issues).id
+
+            if settings.rename_downloaded_files:
+                self._filename_body = generate_issue_name(
+                    volume.get_data(),
+                    covered_issues
+                )
+
+        except IssueNotFound as e:
+            if not forced_match:
+                raise e
+
+        if not self._filename_body:
+            self._filename_body = self._extract_default_filename_body(
+                response=None
+            )
+
+        self._title = basename(self._filename_body)
+        self._files = [self._build_filename(response=None)]
+        return
+
+    def _extract_default_filename_body(
+        self,
+        response: Union[Response, None]
+    ) -> str:
+        return splitext(self._mega.mega_filename)[0]
+
+    def _extract_extension(self, response: Union[Response, None]) -> str:
+        return splitext(self._mega.mega_filename)[1]
+
+    def run(self) -> None:
+        self._state = DownloadState.DOWNLOADING_STATE
+        ws = WebSocket()
+        status_event = QueueStatusEvent(self)
+        try:
+            self._mega.download(
+                self.files[0],
+                lambda: ws.emit(status_event)
+            )
+
+        except ClientNotWorking:
+            self._state = DownloadState.FAILED_STATE
+
+        return
+
+    def stop(self,
+        state: DownloadState = DownloadState.CANCELED_STATE
+    ) -> None:
+        self._state = state
+        self._mega.stop()
+        return
+
+
+# region Folder Client
+@DownloadClients.register_client('mega_folder')
+class MegaFolderDownload(MegaDownload):
+    _mega_class = MegaFolder

@@ -18,7 +18,7 @@ from backend.base.logging import LOGGER
 from backend.implementations.blocklist import add_to_blocklist
 from backend.implementations.conversion import mass_convert
 from backend.implementations.converters import extract_files_from_folder
-from backend.implementations.download_clients import TorrentDownload
+from backend.implementations.download_clients.Torrent import TorrentDownload
 from backend.implementations.file_matching import scan_files
 from backend.implementations.file_processing import mass_process_files
 from backend.implementations.naming import mass_rename

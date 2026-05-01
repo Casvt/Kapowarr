@@ -12,6 +12,7 @@ from typing import NoReturn, Union
 
 from backend.base.definitions import Constants, StartType
 from backend.base.helpers import get_python_exe
+from backend.implementations.download_client_manager import DownloadClients
 
 
 def _main(
@@ -83,6 +84,7 @@ def _main(
         exit(1)
 
     ExternalClients.trigger_client_registration()
+    DownloadClients.trigger_client_registration()
 
     set_db_location(db_folder)
 
