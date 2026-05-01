@@ -12,6 +12,7 @@ from backend.base.definitions import (DownloadSource, DownloadState,
                                       ExternalDownloadClient)
 from backend.base.helpers import Session, get_torrent_info
 from backend.base.logging import LOGGER
+from backend.implementations.download_client_manager import DownloadClients
 from backend.implementations.download_clients.base import BaseDirectDownload
 from backend.implementations.external_clients import ExternalClients
 from backend.implementations.naming import generate_issue_name
@@ -20,9 +21,8 @@ from backend.implementations.volumes import Volume
 from backend.internals.settings import Settings
 
 
+@DownloadClients.register_client('torrent')
 class TorrentDownload(ExternalDownload, BaseDirectDownload):
-    identifier: str = 'torrent'
-
     @property
     def external_client(self) -> ExternalDownloadClient:
         return self._external_client
