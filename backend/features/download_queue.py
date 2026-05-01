@@ -31,7 +31,7 @@ from backend.implementations.blocklist import add_to_blocklist
 from backend.implementations.download_client_manager import DownloadClients
 from backend.implementations.download_clients.Mega import MegaDownload
 from backend.implementations.download_clients.Torrent import TorrentDownload
-from backend.implementations.external_clients import ExternalClients
+from backend.implementations.external_client_manager import ExternalClients
 from backend.implementations.getcomics import GetComicsPage
 from backend.implementations.volumes import Issue
 from backend.internals.db import get_db, iter_commit

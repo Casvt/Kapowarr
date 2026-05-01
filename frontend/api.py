@@ -37,7 +37,7 @@ from backend.implementations.comicvine import ComicVine
 from backend.implementations.conversion import preview_mass_convert
 from backend.implementations.converters import ConvertersManager
 from backend.implementations.credentials import Credentials
-from backend.implementations.external_clients import ExternalClients
+from backend.implementations.external_client_manager import ExternalClients
 from backend.implementations.file_matching import (get_file_matching,
                                                    set_file_matching)
 from backend.implementations.naming import (generate_volume_folder_name,

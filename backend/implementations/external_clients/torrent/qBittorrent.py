@@ -11,9 +11,8 @@ from backend.base.definitions import (BrokenClientReason, Constants,
                                       ExternalClientField as ECF)
 from backend.base.helpers import Session
 from backend.base.logging import LOGGER
-from backend.implementations.external_clients import (BaseExternalClient,
-                                                      ExternalClients,
-                                                      filename_magnet_link)
+from backend.implementations.external_client_manager import (
+    BaseExternalClient, ExternalClients, filename_magnet_link)
 from backend.internals.settings import Settings
 
 

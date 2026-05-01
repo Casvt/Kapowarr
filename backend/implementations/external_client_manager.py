@@ -10,7 +10,7 @@ from re import IGNORECASE, compile
 from sqlite3 import IntegrityError
 from typing import Any, Dict, List, Mapping, Tuple, Type, TypeVar, Union, cast
 
-import backend.implementations.torrent_clients as tc
+import backend.implementations.external_clients as ec
 from backend.base.custom_exceptions import (ClientNotWorking,
                                             CredentialInvalid,
                                             ExternalClientDownloading,
@@ -254,13 +254,18 @@ class ExternalClients:
         """
         for file in sorted(
             list_files(
-                dirname(tc.__file__ or '')
+                dirname(ec.__file__ or ''),
+                (".py",)
             ),
             key=lambda f: f.lower()
         ):
-            if file.endswith(".py") and not file.endswith("__init__.py"):
-                module_name = splitext(basename(file))[0]
-                import_module(f"{tc.__name__}.{module_name}")
+            if file.endswith("__init__.py"):
+                continue
+
+            foldername = basename(dirname(file))
+            filename = splitext(basename(file))[0]
+            module_path = f"{ec.__name__}.{foldername}.{filename}"
+            import_module(module_path)
         return
 
     @classmethod

@@ -41,7 +41,7 @@ from backend.implementations.download_clients.PixelDrain import (
 from backend.implementations.download_clients.Torrent import TorrentDownload
 from backend.implementations.download_clients.WeTransfer import \
     WeTransferDownload
-from backend.implementations.external_clients import ExternalClients
+from backend.implementations.external_client_manager import ExternalClients
 from backend.implementations.matching import download_group_filter
 from backend.implementations.volumes import Volume
 from backend.internals.db import iter_commit
