@@ -7,9 +7,9 @@ from typing import Any, Dict, List, Tuple, Union
 from requests import RequestException
 
 from backend.base.custom_exceptions import IssueNotFound, LinkBroken
-from backend.base.definitions import (DownloadSource, DownloadState,
-                                      DownloadType, ExternalDownload,
-                                      ExternalDownloadClient)
+from backend.base.definitions import (DownloadClientIdentifier, DownloadSource,
+                                      DownloadState, DownloadType,
+                                      ExternalDownload, ExternalDownloadClient)
 from backend.base.helpers import Session, get_torrent_info
 from backend.base.logging import LOGGER
 from backend.implementations.download_client_manager import DownloadClients
@@ -21,7 +21,7 @@ from backend.implementations.volumes import Volume
 from backend.internals.settings import Settings
 
 
-@DownloadClients.register_client('torrent')
+@DownloadClients.register_client(DownloadClientIdentifier.TORRENT)
 class TorrentDownload(ExternalDownload, BaseDirectDownload):
     @property
     def external_client(self) -> ExternalDownloadClient:

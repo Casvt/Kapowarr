@@ -17,7 +17,8 @@ from backend.base.custom_exceptions import (ClientNotWorking,
                                             InvalidKeyValue, IssueNotFound,
                                             LinkBroken)
 from backend.base.definitions import (BlocklistReason, Constants, Download,
-                                      DownloadSource, DownloadState,
+                                      DownloadClientIdentifier, DownloadSource,
+                                      DownloadState,
                                       EnqueuingDownloadFailureReason,
                                       ExternalDownload, SeedingHandling)
 from backend.base.files import create_folder, delete_file_folder
@@ -281,7 +282,7 @@ class DownloadHandler(metaclass=Singleton):
                     """,
                     {
                         'volume_id': download.volume_id,
-                        'client_type': download.identifier,
+                        'client_type': download.identifier.value,
                         'external_client_id': external_client_id,
                         'download_link': download.download_link,
                         'covered_issues': covered_issues,
@@ -521,7 +522,9 @@ class DownloadHandler(metaclass=Singleton):
             else:
                 covered_issues = float(download['covered_issues'])
 
-            DownloadClient = DownloadClients.get_client(download['client_type'])
+            DownloadClient = DownloadClients.get_client(
+                DownloadClientIdentifier(download['client_type'])
+            )
             kwargs = {}
             if issubclass(
                 DownloadClient,

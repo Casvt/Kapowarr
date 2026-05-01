@@ -24,6 +24,7 @@ from backend.base.custom_exceptions import (ClientNotWorking,
                                             IssueNotFound, LinkBroken)
 from backend.base.definitions import (BaseEnum, BrokenClientReason, Constants,
                                       CredentialData, CredentialSource,
+                                      DownloadClientIdentifier,
                                       DownloadSource, DownloadState)
 from backend.base.helpers import Session
 from backend.base.logging import LOGGER
@@ -1098,7 +1099,7 @@ class MegaFolder(MegaABC):
 
 
 # region File Client
-@DownloadClients.register_client('mega')
+@DownloadClients.register_client(DownloadClientIdentifier.MEGA)
 class MegaDownload(BaseDirectDownload):
     _mega_class: Type[MegaABC] = Mega
 
@@ -1228,6 +1229,6 @@ class MegaDownload(BaseDirectDownload):
 
 
 # region Folder Client
-@DownloadClients.register_client('mega_folder')
+@DownloadClients.register_client(DownloadClientIdentifier.MEGA_FOLDER)
 class MegaFolderDownload(MegaDownload):
     _mega_class = MegaFolder

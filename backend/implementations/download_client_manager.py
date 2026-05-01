@@ -5,17 +5,17 @@ from os.path import basename, dirname, splitext
 from typing import Dict, Type, TypeVar
 
 import backend.implementations.download_clients as dc
-from backend.base.definitions import Download
+from backend.base.definitions import Download, DownloadClientIdentifier
 from backend.base.files import list_files
 
 DownloadType = TypeVar("DownloadType", bound=Download)
 
 
 class DownloadClients:
-    clients: Dict[str, Type[Download]] = {}
+    clients: Dict[DownloadClientIdentifier, Type[Download]] = {}
 
     @classmethod
-    def register_client(cls, identifier: str):
+    def register_client(cls, identifier: DownloadClientIdentifier):
         """Register a download client for a given service.
 
         ```
@@ -25,7 +25,8 @@ class DownloadClients:
         ```
 
         Args:
-            identifier (str): The service or protocol that the downloader is for.
+            identifier (DownloadClientIdentifier): The service or protocol that
+                the downloader is for.
 
         Raises:
             RuntimeError: A download client with the given identifier is
@@ -59,11 +60,11 @@ class DownloadClients:
         return
 
     @classmethod
-    def get_client(cls, identifier: str) -> Type[Download]:
+    def get_client(cls, identifier: DownloadClientIdentifier) -> Type[Download]:
         """Get a download client based on its identifier.
 
         Args:
-            identifier (str): The identifier.
+            identifier (DownloadClientIdentifier): The identifier.
 
         Raises:
             KeyError: Download client with given identifier not found.

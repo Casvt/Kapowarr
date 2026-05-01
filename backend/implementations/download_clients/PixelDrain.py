@@ -10,7 +10,7 @@ from backend.base.custom_exceptions import (ClientNotWorking,
                                             DownloadLimitReached)
 from backend.base.definitions import (BrokenClientReason, Constants,
                                       CredentialData, CredentialSource,
-                                      DownloadSource)
+                                      DownloadClientIdentifier, DownloadSource)
 from backend.base.helpers import Session
 from backend.base.logging import LOGGER
 from backend.implementations.credentials import Credentials
@@ -18,7 +18,7 @@ from backend.implementations.download_client_manager import DownloadClients
 from backend.implementations.download_clients.base import BaseDirectDownload
 
 
-@DownloadClients.register_client('pd')
+@DownloadClients.register_client(DownloadClientIdentifier.PIXELDRAIN)
 class PixelDrainDownload(BaseDirectDownload):
     @staticmethod
     def login(api_key: str) -> None:
@@ -110,7 +110,7 @@ class PixelDrainDownload(BaseDirectDownload):
         )
 
 
-@DownloadClients.register_client('pd_folder')
+@DownloadClients.register_client(DownloadClientIdentifier.PIXELDRAIN_FOLDER)
 class PixelDrainFolderDownload(PixelDrainDownload):
     def _convert_to_pure_link(self) -> str:
         self._api_key = None

@@ -380,7 +380,7 @@ class BaseDirectDownload(Download):
 
             'source_type': self._source_type.value,
             'source_name': self._source_name,
-            'type': self.identifier,
+            'type': self.identifier.value,
 
             'file': self._files[0],
             'title': self._title,

@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup, Tag
 from requests import Response
 
 from backend.base.custom_exceptions import LinkBroken
+from backend.base.definitions import DownloadClientIdentifier
 from backend.base.helpers import first_of_range
 from backend.implementations.download_client_manager import DownloadClients
 from backend.implementations.download_clients.base import BaseDirectDownload
@@ -18,7 +19,7 @@ MEDIAFIRE_FOLDER_LINK = "https://www.mediafire.com/api/1.5/file/zip.php"
 # autopep8: on
 
 
-@DownloadClients.register_client('mf')
+@DownloadClients.register_client(DownloadClientIdentifier.MEDIAFIRE)
 class MediaFireDownload(BaseDirectDownload):
     def _convert_to_pure_link(self) -> str:
         r = self._ssn.get(
@@ -45,7 +46,7 @@ class MediaFireDownload(BaseDirectDownload):
         raise LinkBroken(self.download_link)
 
 
-@DownloadClients.register_client('mf_folder')
+@DownloadClients.register_client(DownloadClientIdentifier.MEDIAFIRE_FOLDER)
 class MediaFireFolderDownload(BaseDirectDownload):
     def _convert_to_pure_link(self) -> str:
         return self.download_link.split("/folder/")[1].split("/")[0]
