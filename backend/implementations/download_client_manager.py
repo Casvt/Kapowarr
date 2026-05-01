@@ -26,8 +26,17 @@ class DownloadClients:
 
         Args:
             identifier (str): The service or protocol that the downloader is for.
+
+        Raises:
+            RuntimeError: A download client with the given identifier is
+                already registered.
         """
         def wrapper(client_class: Type[DownloadType]) -> Type[DownloadType]:
+            if identifier in cls.clients:
+                raise RuntimeError(
+                    f"Download client with identifier {identifier} "
+                    "registered multiple times"
+                )
             client_class.identifier = identifier
             cls.clients[identifier] = client_class
             return client_class

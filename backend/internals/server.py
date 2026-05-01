@@ -10,8 +10,8 @@ from __future__ import annotations
 from multiprocessing import SimpleQueue
 from os import urandom
 from threading import Thread, Timer
-from typing import (TYPE_CHECKING, Any, Callable, Dict,
-                    Iterable, List, Mapping, Union)
+from typing import (TYPE_CHECKING, Any, Callable, Dict, Iterable,
+                    List, Mapping, Type, TypeVar, Union)
 
 from flask import Flask, render_template, request
 from flask.json.provider import DefaultJSONProvider
@@ -613,6 +613,9 @@ class StatusCountEvent(WebSocketEvent):
 
 
 # region StartType Handling
+StartTypeHandlerType = TypeVar("StartTypeHandlerType", bound=StartTypeHandler)
+
+
 class StartTypeHandlers:
     handlers: dict[StartType, StartTypeHandler] = {}
     timeout_thread: Union[Timer, None] = None
@@ -630,10 +633,19 @@ class StartTypeHandlers:
 
         Args:
             start_type (StartType): The start type that the handler is for.
+
+        Raises:
+            RuntimeError: A start type handler with the given start type is
+                already registered.
         """
         def wrapper(
-            handler_class: type[StartTypeHandler]
-        ) -> type[StartTypeHandler]:
+            handler_class: Type[StartTypeHandlerType]
+        ) -> Type[StartTypeHandlerType]:
+            if start_type in cls.handlers:
+                raise RuntimeError(
+                    f"Start type handler with start type {start_type.name} "
+                    "registered multiple times"
+                )
             cls.handlers[start_type] = handler_class()
             return handler_class
         return wrapper

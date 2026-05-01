@@ -8,7 +8,7 @@ from importlib import import_module
 from os.path import basename, dirname, splitext
 from re import IGNORECASE, compile
 from sqlite3 import IntegrityError
-from typing import Any, Dict, List, Mapping, Tuple, Type, Union, cast
+from typing import Any, Dict, List, Mapping, Tuple, Type, TypeVar, Union, cast
 
 import backend.implementations.torrent_clients as tc
 from backend.base.custom_exceptions import (ClientNotWorking,
@@ -190,6 +190,12 @@ class BaseExternalClient(ExternalDownloadClient):
 
 
 # region Clients
+ExternalDownloadClientType = TypeVar(
+    "ExternalDownloadClientType",
+    bound=ExternalDownloadClient
+)
+
+
 class ExternalClients:
     clients: Dict[DownloadType, Dict[str, Type[ExternalDownloadClient]]] = {
         dt: {}
@@ -220,10 +226,20 @@ class ExternalClients:
             client_type (str): The product name of the client (e.g. 'qBittorrent').
             required_tokens (Tuple[ExternalClientField, ...]): The fields that
                 the client needs.
+
+        Raises:
+            RuntimeError: An external client with the given client type is
+                already registered for the download type.
         """
         def wrapper(
-            client_class: Type[ExternalDownloadClient]
-        ) -> Type[ExternalDownloadClient]:
+            client_class: Type[ExternalDownloadClientType]
+        ) -> Type[ExternalDownloadClientType]:
+            if client_type in cls.clients[download_type]:
+                raise RuntimeError(
+                    f"External client with client type {client_type} "
+                    f"(download type {download_type.name}) "
+                    "registered multiple times"
+                )
             cls.clients[download_type][client_type] = client_class
             client_class.download_type = download_type
             client_class.client_type = client_type
