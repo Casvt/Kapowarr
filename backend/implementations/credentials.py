@@ -24,6 +24,11 @@ class Credentials:
 
     @classmethod
     def register_validator(cls, source: CredentialSource):
+        """Register a validator of credentials for a certain source.
+
+        Args:
+            source (CredentialSource): The credential source.
+        """
         def wrapper(
             validator: Callable[[CredentialData], CredentialData]
         ) -> Callable[[CredentialData], CredentialData]:
