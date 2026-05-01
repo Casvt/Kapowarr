@@ -2,7 +2,7 @@
 ## General steps
 Contributing to Kapowarr consists of 5 steps, listed hereunder. 
 
-1. Make a [contributing request](https://github.com/Casvt/Kapowarr/issues/new?template=contribute_request.md), where you describe what you plan on doing. _This request needs to get approved before you can start._ The contributing request has multiple uses:
+1. Make a [contributing request](https://github.com/Casvt/Kapowarr/issues/new?template=3_contribute_request.yml), where you describe what you plan on doing. _This request needs to get approved before you can start._ The contributing request has multiple uses:
     1. Avoid multiple people working on the same thing.
     2. Avoid you wasting your time on changes that we do not wish for.
     3. If needed, have discussions about how something will be implemented.
