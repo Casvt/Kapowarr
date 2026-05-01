@@ -40,6 +40,19 @@ Require authentication to access the web-ui (and API). Set to 'None' to disable.
 !!! warning "Exposing Kapowarr"
 	If you are exposing your Kapowarr instance to the internet, we highly recommend enabling authentication.
 
+??? info "Forgetting the password"
+	If you forget the username and/or password, then you'll need to reset it by manually removing it in the database of Kapowarr. You can run the command below in a terminal to clear the password. If you're running Kapowarr using Docker, then you need to run the command inside the container. In this command, it is assumed that the database of Kapowarr is located at `/app/db/Kapowarr.db`. If it is somewhere else, then change the path in the command.
+
+	```bash
+	python3 -c 'import sqlite3; sqlite3.connect("/app/db/Kapowarr.db").cursor().execute("UPDATE config SET value = "" WHERE key = "auth_password";").connection.commit()'
+	```
+
+	If you not only have a password but also a username set, then you'll have to also clear the username. You can run the command below in a terminal to clear the username. Again, if the database is located somewhere else, then change the path in the command.
+
+	```bash
+	python3 -c 'import sqlite3; sqlite3.connect("/app/db/Kapowarr.db").cursor().execute("UPDATE config SET value = "" WHERE key = "auth_username";").connection.commit()'
+	```
+
 ### API Key
 
 The API key needed to authenticate when using the [Kapowarr API](../other_docs/api.md).
