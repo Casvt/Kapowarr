@@ -43,16 +43,15 @@ mediafire_dd_regex = compile(
     r'https?://download\d+\.mediafire\.com/',
     IGNORECASE
 )
+MAX_PAGE_DEPTH = 10
 
 
 # region Scraping
-def _get_max_page(
-    soup: BeautifulSoup
-) -> int:
-    """From a GC search result page, extract the total page count.
+def _get_page_count(soup: BeautifulSoup) -> int:
+    """From a search result page, extract the total page count.
 
     Args:
-        soup (BeautifulSoup): The soup of the GC search result page.
+        soup (BeautifulSoup): The soup of the search result page.
 
     Returns:
         int: The number of pages. E.g. `10` means 10 pages of search results.
@@ -749,10 +748,7 @@ async def search_getcomics(
         return []
 
     first_soup = BeautifulSoup(first_page, "html.parser")
-    max_page = min(
-        _get_max_page(first_soup),
-        10
-    )
+    max_page = min(_get_page_count(first_soup), MAX_PAGE_DEPTH)
 
     # Fetch pages beyond first concurrently
     other_tasks = [
