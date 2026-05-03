@@ -631,7 +631,7 @@ class DownloadHandler(metaclass=Singleton):
         WebSocket().emit(QueueStatusEvent(download))
 
         if (
-            # Direct download
+            # DDL download
             not isinstance(download, ExternalDownload)
             and (
                 # Download was queued when we stopped it

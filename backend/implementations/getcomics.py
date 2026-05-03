@@ -527,7 +527,7 @@ async def __purify_link(
 
         elif mediafire_dd_regex.search(url):
             # Link on page was to pure link
-            return url, DownloadClientIdentifier.DIRECT
+            return url, DownloadClientIdentifier.DDL
 
         # Normal file download
         return url, DownloadClientIdentifier.MEDIAFIRE
@@ -555,9 +555,9 @@ async def __purify_link(
         )
 
     else:
-        # Link is direct download from getcomics
+        # Link is DDL download from getcomics
         # ('Main Server', 'Mirror Server', 'Link 1', 'Link 2', etc.)
-        return url, DownloadClientIdentifier.DIRECT
+        return url, DownloadClientIdentifier.DDL
 
 
 async def __purify_download_group(
