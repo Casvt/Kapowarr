@@ -242,7 +242,7 @@ function fetchStats(api_key) {
 		library_els.stats.file_count.innerText = json.result.files;
 		library_els.stats.total_file_size.innerText =
 			json.result.total_file_size > 0
-			? convertSize(json.result.total_file_size)
+			? convertSize(json.result.total_file_size, 2)
 			: '0 MB';
 	});
 };

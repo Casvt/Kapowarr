@@ -1,8 +1,8 @@
 //
 // General functions
 //
-function twoDigits(n) {
-	return n.toLocaleString("en", { minimumFractionDigits: 2 });
+function minDecimalPoints(n, pointCount) {
+	return n.toLocaleString("en", { minimumFractionDigits: pointCount });
 };
 
 function setIcon(container, icon, title='') {
@@ -280,17 +280,18 @@ const sizes = {
 	'GB': 1000000000,
 	'TB': 1000000000000
 };
-function convertSize(size) {
+function convertSize(size, decimalPointCount) {
 	if (size === null || size <= 0)
 		return 'Unknown';
 
 	for (const [term, division_size] of Object.entries(sizes)) {
 		let resulting_size = size / division_size
 		if (0 <= resulting_size && resulting_size <= 1000) {
-			size = twoDigits(
+			size = minDecimalPoints(
 				Math.round(
 					(size / division_size * 100)
-				) / 100
+				) / 100,
+				decimalPointCount
 			) + ' ' + term;
 			return size;
 		};

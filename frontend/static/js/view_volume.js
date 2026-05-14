@@ -194,7 +194,7 @@ function fillPage(data, api_key) {
 	special_version.innerText = data.special_version?.toUpperCase() || 'Normal volume';
 	tags.appendChild(special_version);
 	const total_size = document.createElement('p');
-	total_size.innerText = data.total_size > 0 ? convertSize(data.total_size) : '0MB';
+	total_size.innerText = data.total_size > 0 ? convertSize(data.total_size, 1) : '0 MB';
 	tags.appendChild(total_size);
 	if (data.site_url !== "") {
 		const link = document.createElement('a');
@@ -236,7 +236,7 @@ function fillPage(data, api_key) {
 		file_name.title = gf.filepath;
 
         entry.querySelector('.gf-type').innerText = gf.file_type;
-        entry.querySelector('.gf-size').innerText = convertSize(gf.size);
+        entry.querySelector('.gf-size').innerText = convertSize(gf.size, 1);
         entry.querySelector('.gf-delete button').onclick = e =>
             sendAPI("DELETE", `/files/${gf.id}`, api_key)
             .then(response => entry.remove());
@@ -355,6 +355,8 @@ function showManualSearch(api_key, issue_id=null) {
 			title.innerText = result.display_title;
 
 			entry.querySelector('.source-column').innerText = result.source;
+			
+			entry.querySelector('.size-column').innerText = convertSize(result.size, 1);
 
 			const download_button = entry.querySelector('.search-action-column :nth-child(1)');
 			download_button.classList.add('icon-text-color');
@@ -911,7 +913,7 @@ function showIssueInfo(issue_id, api_key) {
             entry.querySelector('.f-filepath').innerText = short_f;
             entry.querySelector('.f-filepath').title = f.filepath;
             
-            entry.querySelector('.f-size').innerText = convertSize(f.size);
+            entry.querySelector('.f-size').innerText = convertSize(f.size, 1);
             entry.querySelector('.f-delete button').onclick = e =>
                 sendAPI("DELETE", `/files/${f.id}`, api_key)
                 .then(response => entry.remove());

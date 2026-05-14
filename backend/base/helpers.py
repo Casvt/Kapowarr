@@ -611,8 +611,42 @@ def normalise_year(s: str) -> Union[int, None]:
     return None
 
 
+SCALE_SIZES = {
+    'b': 1,
+    'kb': 1000,
+    'mb': 1000000,
+    'gb': 1000000000,
+    'tb': 1000000000000
+}
+
+
+def normalise_size(s: str) -> int:
+    """Turn a user-entered file size string into an integer for byte size.
+
+    Args:
+        s (str): The string containing the file size (e.g. "200 MB").
+
+    Returns:
+        int: The number of bytes that the file size is.
+    """
+    # We remove the i from 'GiB' as it's not
+    # agreed upon which one means what anyway
+    s = s.lower().replace('i', '').strip()
+    for unit, size in SCALE_SIZES.items():
+        if not s.endswith(unit):
+            continue
+
+        n = s.replace(unit, "").strip()
+        if not n.isdigit():
+            continue
+
+        return int(n) * size
+
+    return 0
+
+
 def normalise_base_url(base_url: str) -> str:
-    """Turn user-entered base URL's into a standard format. No trailing slash,
+    """Turn a user-entered base URL into a standard format. No trailing slash,
     and `http://` prefix applied if no protocol is found.
 
     Args:

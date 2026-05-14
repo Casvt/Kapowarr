@@ -639,6 +639,7 @@ class RemoteMappingData(TypedDict):
 class SearchResultData(FilenameData):
     link: str
     display_title: str
+    size: int
     source: str
 
 

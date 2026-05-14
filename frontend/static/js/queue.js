@@ -51,13 +51,13 @@ function updateQueueEntry(obj) {
 	tr.querySelector('td:nth-child(1)').innerText =
 		obj.status.charAt(0).toUpperCase() + obj.status.slice(1);
 	tr.querySelector('td:nth-child(4)').innerText =
-		convertSize(obj.size);
+		convertSize(obj.size, 1);
 	tr.querySelector('td:nth-child(5)').innerText =
-		twoDigits(Math.round(obj.speed / 100000) / 10) + 'MB/s';
+		minDecimalPoints(Math.round(obj.speed / 100000) / 10, 2) + 'MB/s';
 	tr.querySelector('td:nth-child(6)').innerText =
 		obj.size === -1
-			? convertSize(obj.progress)
-			: twoDigits(Math.round(obj.progress * 10) / 10) + '%';
+			? convertSize(obj.progress, 1)
+			: minDecimalPoints(Math.round(obj.progress * 10) / 10, 2) + '%';
 };
 
 function removeQueueEntry(id) {

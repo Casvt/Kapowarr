@@ -28,7 +28,8 @@ from backend.base.file_extraction import (extract_filename_data,
                                           refine_special_version)
 from backend.base.helpers import (AsyncSession, check_overlapping_issues,
                                   first_of_range, fix_year, force_range,
-                                  get_torrent_info, normalise_year)
+                                  get_torrent_info, normalise_size,
+                                  normalise_year)
 from backend.base.logging import LOGGER
 from backend.implementations.blocklist import (add_to_blocklist,
                                                blocklist_contains)
@@ -71,7 +72,7 @@ def _get_page_count(soup: BeautifulSoup) -> int:
 
 def _get_articles(
     soup: BeautifulSoup
-) -> List[Tuple[str, str]]:
+) -> List[Tuple[str, str, int]]:
     """From a GC search result page, extract article (single search result)
     data.
 
@@ -79,10 +80,10 @@ def _get_articles(
         soup (BeautifulSoup): The soup of the GC search result page.
 
     Returns:
-        List[Tuple[str, str]]: The data of the articles. First string of the
-        tuple is the link, second string is the title.
+        List[Tuple[str, str, int]]: The data of the articles. First string is
+        the link, second string is the title, the integer is the byte size.
     """
-    result: List[Tuple[str, str]] = []
+    result: List[Tuple[str, str, int]] = []
     for article in soup.find_all("article", {"class": "post"}):
         title_el = article.find("h1", {"class": "post-title"})
         if not title_el:
@@ -94,7 +95,19 @@ def _get_articles(
 
         link: str = first_of_range(anchor.get('href') or '')
         title = title_el.get_text(strip=True)
-        result.append((link, title))
+
+        size_container = title_el.next_sibling
+        if not isinstance(size_container, Tag):
+            size = 0
+        else:
+            size_p = next(size_container.children, None)
+            if not size_p:
+                size = 0
+            else:
+                size_text = size_p.get_text().split("Size : ")[1]
+                size = normalise_size(size_text)
+
+        result.append((link, title, size))
 
     return result
 
@@ -786,6 +799,7 @@ async def search_getcomics(
             ),
             "link": article[0],
             "display_title": article[1],
+            "size": article[2],
             "source": Constants.GC_SOURCE_TERM
         }
         for soup in (first_soup, *other_soups)
