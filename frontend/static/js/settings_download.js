@@ -6,6 +6,7 @@ function fillSettings(api_key) {
 		document.querySelector('#download-timeout-input').value = ((json.result.failing_download_timeout || 0) / 60) || '';
 		document.querySelector('#seeding-handling-input').value = json.result.seeding_handling;
 		document.querySelector('#delete-downloads-input').checked = json.result.delete_completed_downloads;
+		document.querySelector('#avoid-large-gc-downloads-input').checked = json.result.avoid_large_gc_downloads;
 		fillPref(json.result.service_preference);
 	});
 };
@@ -19,6 +20,7 @@ function saveSettings(api_key) {
 		'failing_download_timeout': parseInt(document.querySelector('#download-timeout-input').value || 0) * 60,
 		'seeding_handling': document.querySelector('#seeding-handling-input').value,
 		'delete_completed_downloads': document.querySelector('#delete-downloads-input').checked,
+		'avoid_large_gc_downloads': document.querySelector('#avoid-large-gc-downloads-input').checked,
 		'service_preference': [...document.querySelectorAll('#pref-table select')].map(e => e.value)
 	};
 	sendAPI('PUT', '/settings', api_key, {}, data)

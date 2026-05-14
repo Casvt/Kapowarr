@@ -44,6 +44,10 @@ mediafire_dd_regex = compile(
     r'https?://download\d+\.mediafire\.com/',
     IGNORECASE
 )
+size_regex = compile(
+    r'\d+(?:\.\d+)?\s*(?:B|Ki?B|Mi?B|Gi?B|Ti?B)',
+    IGNORECASE
+)
 MAX_PAGE_DEPTH = 10
 
 
@@ -226,8 +230,17 @@ def __extract_button_links(
             if year:
                 processed_title["year"] = fix_year(year)
 
+        size = 0
+        if "Size :\x00" in extracted_title:
+            size = normalise_size(
+                extracted_title
+                .split("Size :\x00")[1]
+                .strip()
+            )
+
         result: DownloadGroup = {
             "web_sub_title": title,
+            "size": size,
             "info": processed_title,
             "links": {}
         }
@@ -302,8 +315,14 @@ def __extract_list_links(
         if processed_title['special_version'] == 'cover':
             continue
 
+        size = 0
+        size_result = size_regex.search(title)
+        if size_result:
+            size = normalise_size(size_result.group(0))
+
         result: DownloadGroup = {
             "web_sub_title": title,
+            "size": size,
             "info": processed_title,
             "links": {}
         }
@@ -360,13 +379,26 @@ def _get_download_groups(
     download_groups = __extract_button_links(body, torrent_client_available)
     download_groups.extend(__extract_list_links(body, torrent_client_available))
 
-    service_preference = Settings().sv.service_preference
+    settings = Settings().sv
+    service_preference = settings.service_preference
+    avoid_gc_preference = service_preference.copy()
+    avoid_gc_preference.remove(GCDownloadSource.GETCOMICS)
+    avoid_gc_preference.append(GCDownloadSource.GETCOMICS)
+
     for group in download_groups:
         group["links"] = {
             k: v
             for k, v in sorted(
                 group["links"].items(),
-                key=lambda k: service_preference.index(k[0].value)
+                key=lambda k: (
+                    avoid_gc_preference.index(k[0].value)
+
+                    if settings.avoid_large_gc_downloads
+                    and group['size'] >= 400000000
+                    else
+
+                    service_preference.index(k[0].value)
+                )
             )
         }
 

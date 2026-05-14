@@ -117,6 +117,7 @@ class PublicSettingsValues:
     service_preference: CommaList = field(default_factory=lambda: CommaList(
         (s.value for s in GCDownloadSource._member_map_.values())
     ))
+    avoid_large_gc_downloads: bool = False
     download_folder: str = folder_path('temp_downloads')
     concurrent_direct_downloads: int = 1
     failing_download_timeout: int = 0

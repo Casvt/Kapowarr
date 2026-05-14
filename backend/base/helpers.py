@@ -637,10 +637,10 @@ def normalise_size(s: str) -> int:
             continue
 
         n = s.replace(unit, "").strip()
-        if not n.isdigit():
+        try:
+            return int(float(n) * size)
+        except ValueError:
             continue
-
-        return int(n) * size
 
     return 0
 
