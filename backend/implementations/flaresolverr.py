@@ -51,7 +51,8 @@ class FlareSolverr:
         return session.post(
             base_url + Constants.FS_API_BASE,
             json=data,
-            headers={'Content-Type': 'application/json'}
+            headers={'Content-Type': 'application/json'},
+            timeout=Constants.REQUEST_TIMEOUT + Constants.FS_RESOLVE_TIMEOUT
         ).json()
 
     @staticmethod
@@ -63,7 +64,8 @@ class FlareSolverr:
         return await (await session.post(
             base_url + Constants.FS_API_BASE,
             json=data,
-            headers={'Content-Type': 'application/json'}
+            headers={'Content-Type': 'application/json'},
+            timeout=Constants.REQUEST_TIMEOUT + Constants.FS_RESOLVE_TIMEOUT
         )).json()
 
     @staticmethod
@@ -176,7 +178,8 @@ class FlareSolverr:
                 {
                     'cmd': 'request.get',
                     'session': session_id,
-                    'url': url
+                    'url': url,
+                    'maxTimeout': Constants.FS_RESOLVE_TIMEOUT * 1000
                 }
             )["solution"]
 
@@ -189,11 +192,16 @@ class FlareSolverr:
                 }
             )
 
-            self.ua_mapping[url] = result["userAgent"]
-            self.cookie_mapping[url] = {
-                cookie["name"]: cookie["value"]
-                for cookie in result["cookies"]
-            }
+        if result["response"] is None:
+            # FlareSolverr responded, but content of
+            # returned webpage is empty.
+            return
+
+        self.ua_mapping[url] = result["userAgent"]
+        self.cookie_mapping[url] = {
+            cookie["name"]: cookie["value"]
+            for cookie in result["cookies"]
+        }
 
         return result
 
@@ -257,7 +265,8 @@ class FlareSolverr:
                 {
                     'cmd': 'request.get',
                     'session': session_id,
-                    'url': url
+                    'url': url,
+                    'maxTimeout': Constants.FS_RESOLVE_TIMEOUT * 1000
                 }
             ))["solution"]
 
@@ -269,6 +278,11 @@ class FlareSolverr:
                     'session': session_id
                 }
             )
+
+        if result["response"] is None:
+            # FlareSolverr responded, but content of
+            # returned webpage is empty.
+            return
 
         self.ua_mapping[url] = result["userAgent"]
         self.cookie_mapping[url] = {
