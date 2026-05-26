@@ -429,16 +429,17 @@ class DownloadHandler(metaclass=Singleton):
                 await gcp.load_data()
 
             except EnqueuingDownloadFailure as e:
-                add_to_blocklist(
-                    web_link=link,
-                    web_title=None,
-                    web_sub_title=None,
-                    download_link=None,
-                    source=None,
-                    volume_id=volume_id,
-                    issue_id=issue_id,
-                    reason=BlocklistReason.LINK_BROKEN
-                )
+                if e.reason != EnqueuingDownloadFailureReason.LINK_RATE_LIMITED:
+                    add_to_blocklist(
+                        web_link=link,
+                        web_title=None,
+                        web_sub_title=None,
+                        download_link=None,
+                        source=None,
+                        volume_id=volume_id,
+                        issue_id=issue_id,
+                        reason=BlocklistReason.LINK_BROKEN
+                    )
                 LOGGER.warning(
                     f'Unable to extract download links from source; fail_reason="{e.reason.value}"'
                 )

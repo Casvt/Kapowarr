@@ -463,12 +463,15 @@ class BrokenClientReason(BaseEnum):
 class EnqueuingDownloadFailureReason(BaseEnum):
     "The reason a download failed to be added to the queue"
 
+    # Download link is webpage with links on it. E.g. GetComics.
     WEBPAGE_BROKEN = "Webpage unavailable"
     NO_MATCHES = "No links found on webpage that match to volume and are not blocklisted"
     NO_WORKING_LINKS = "All download links found on the webpage are broken"
     ONLY_RATE_LIMITED_LINKS = "All working download links on the webpage are from rate limited services"
 
+    # Any download link, whether webpage or direct link.
     LINK_BROKEN = "Download link broken"
+    LINK_RATE_LIMITED = "Download link rate limited"
 
 
 class DownloadType(BaseEnum):

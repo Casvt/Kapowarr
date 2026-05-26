@@ -866,6 +866,12 @@ class GetComicsPage:
         async with AsyncSession() as session:
             try:
                 response = await session.get(self.link)
+
+                if response.status == 429:
+                    raise EnqueuingDownloadFailure(
+                        EnqueuingDownloadFailureReason.LINK_RATE_LIMITED
+                    )
+
                 if not response.ok:
                     raise ClientError
 
