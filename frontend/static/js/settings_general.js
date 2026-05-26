@@ -70,7 +70,10 @@ function saveSettings(api_key) {
 	.catch(async e => {
 		document.querySelector("#save-button p").innerText = 'Failed';
 		const json = await e.json();
-		if (json.error === 'InvalidComicVineApiKey')
+		if (
+			json.error === "InvalidKeyValue"
+			&& json.result.key === "comicvine_api_key"
+		)
 			document.querySelector('#cv-input').classList.add('error-input');
 
 		else if (

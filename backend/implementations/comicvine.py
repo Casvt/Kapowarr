@@ -13,8 +13,8 @@ from aiohttp import ContentTypeError
 from aiohttp.client_exceptions import ClientError
 from bs4 import BeautifulSoup, Tag
 
-from backend.base.custom_exceptions import (CVRateLimitReached,
-                                            InvalidComicVineApiKey,
+from backend.base.custom_exceptions import (InvalidKeyValue,
+                                            MetadataSourceRateLimitReached,
                                             VolumeNotMatched)
 from backend.base.definitions import (Constants, FilenameData, IssueMetadata,
                                       StatusType, T, VolumeMetadata)
@@ -177,7 +177,7 @@ class ComicVine:
                 Defaults to None.
 
         Raises:
-            InvalidComicVineApiKey: No ComicVine API key is set in the settings
+            InvalidKeyValue: No ComicVine API key is set in the settings
                 and no key is given.
         """
         settings = Settings().get_settings()
@@ -185,7 +185,7 @@ class ComicVine:
         self.date_type = settings.date_type.value
         api_key = comicvine_api_key or settings.comicvine_api_key
         if not api_key:
-            raise InvalidComicVineApiKey
+            raise InvalidKeyValue('comicvine_api_key', api_key)
 
         self.ssn = Session()
         self._params = {'format': 'json', 'api_key': api_key}
@@ -204,8 +204,7 @@ class ComicVine:
         Args:
             session (AsyncSession): The session to make the request with.
 
-            url_path (str): The API endpoint to make the call to.
-                For example: '/volumes'.
+            url_path (str): The API endpoint to make the call to. E.g. '/volumes'.
 
             params (Dict[str, Any], optional): The URL parameters that should go
                 with the request. The standard parameters (api_key and format)
@@ -217,9 +216,9 @@ class ComicVine:
                 Defaults to None.
 
         Raises:
-            CVRateLimitReached: The rate limit for this endpoint has been
-                reached, and no `default` was supplied.
-            InvalidComicVineApiKey: The API key is not valid.
+            MetadataSourceRateLimitReached: The rate limit is reached, and no
+                `default` is supplied.
+            InvalidKeyValue: The API key is not valid.
             VolumeNotMatched: The ID doesn't map to any volume.
 
         Returns:
@@ -240,14 +239,16 @@ class ComicVine:
             elif result['status_code'] == 101:
                 raise VolumeNotMatched
             elif result['status_code'] == 100:
-                raise InvalidComicVineApiKey
+                raise InvalidKeyValue(
+                    'comicvine_api_key', self._params['api_key']
+                )
 
             return result
 
         except (ClientError, ContentTypeError, JSONDecodeError):
             if default is not None:
                 return default
-            raise CVRateLimitReached
+            raise MetadataSourceRateLimitReached
 
     def __format_volume_output(
         self,
@@ -428,7 +429,7 @@ class ComicVine:
                         {'field_list': 'id'}
                     )
 
-            except (CVRateLimitReached, InvalidComicVineApiKey):
+            except (MetadataSourceRateLimitReached, InvalidKeyValue):
                 return False
 
             return True
@@ -442,9 +443,10 @@ class ComicVine:
             cv_id (Union[str, int]): The CV ID of the volume.
 
         Raises:
+            MetadataSourceRateLimitReached: The rate limit is reached.
+            InvalidKeyValue: The API key is not valid.
+            VolumeNotMatched: Couldn't convert string CV ID to number.
             VolumeNotMatched: The ID doesn't map to any volume.
-            CVRateLimitReached: The ComicVine rate limit is reached.
-            InvalidComicVineApiKey: The API key is not valid.
 
         Returns:
             VolumeMetadata: The metadata of the volume, including issues.
@@ -477,7 +479,7 @@ class ComicVine:
 
                 return volume_info
 
-        except CVRateLimitReached:
+        except MetadataSourceRateLimitReached:
             StatusHandlers().report(StatusType.CV_RATE_LIMIT, "fetch_volume")
             raise
 
@@ -491,13 +493,13 @@ class ComicVine:
             cv_ids (Sequence[Union[str, int]]): The CV IDs of the volumes.
 
         Raises:
-            VolumeNotMatched: An ID doesn't map to any volume.
-            InvalidComicVineApiKey: The API key is not valid.
+            InvalidKeyValue: The API key is not valid.
+            VolumeNotMatched: Couldn't convert string CV ID to number.
 
         Returns:
             List[VolumeMetadata]: The metadata of the volumes, without issues.
                 The list of volumes could be incomplete if the rate limit was
-                reached.
+                reached or if an ID couldn't be found.
         """
         try:
             formatted_cv_ids = to_string_cv_id(cv_ids)
@@ -566,13 +568,13 @@ class ComicVine:
             cv_ids (Sequence[Union[str, int]]): The CV IDs of the volumes.
 
         Raises:
-            VolumeNotMatched: An ID doesn't map to any volume.
-            InvalidComicVineApiKey: The API key is not valid.
+            InvalidKeyValue: The API key is not valid.
+            VolumeNotMatched: Couldn't convert string CV ID to number.
 
         Returns:
             List[IssueMetadata]: The metadata of all the issues inside the
                 volumes. The list of issues could be incomplete if the rate
-                limit was reached.
+                limit was reached or if an ID couldn't be found.
         """
         try:
             formatted_cv_ids = to_string_cv_id(cv_ids)
@@ -594,10 +596,14 @@ class ComicVine:
                             'filter': f'volume:{batch_filter}'
                         }
                     )
-                    StatusHandlers().clear(StatusType.CV_RATE_LIMIT, "fetch_issues")
+                    StatusHandlers().clear(
+                        StatusType.CV_RATE_LIMIT, "fetch_issues"
+                    )
 
-                except CVRateLimitReached:
-                    StatusHandlers().report(StatusType.CV_RATE_LIMIT, "fetch_issues")
+                except MetadataSourceRateLimitReached:
+                    StatusHandlers().report(
+                        StatusType.CV_RATE_LIMIT, "fetch_issues"
+                    )
                     break
 
                 issue_infos.extend((
@@ -677,12 +683,14 @@ class ComicVine:
         Args:
             query (str): The query to use when searching.
             allow_rate_limit_reached (bool, optional): Instead of a
-                CVRateLimitReached exception being thrown, return an empty list.
+                MetadataSourceRateLimitReached exception being thrown, return an
+                empty list.
                 Defaults to False.
 
         Raises:
-            CVRateLimitReached: The rate limit for this endpoint has been reached.
-            InvalidComicVineApiKey: The API key is not valid.
+            MetadataSourceRateLimitReached: The rate limit is reached, and
+                `allow_rate_limit_reached` is `False`.
+            InvalidKeyValue: The API key is not valid.
 
         Returns:
             List[VolumeMetadata]: The search results.
@@ -699,7 +707,7 @@ class ComicVine:
         except VolumeNotMatched:
             return []
 
-        except CVRateLimitReached:
+        except MetadataSourceRateLimitReached:
             StatusHandlers().report(StatusType.CV_RATE_LIMIT, "search_volumes")
             if allow_rate_limit_reached:
                 return []
@@ -722,6 +730,9 @@ class ComicVine:
                 Is a mapping from group number to a mapping of filename to
                 filename data for all files in that group.
             only_english (bool): Only match to english volumes.
+
+        Raises:
+            InvalidKeyValue: The API key is not valid.
 
         Returns:
             Dict[int, Dict[str, Any]]: A mapping from the group number to its CV

@@ -459,11 +459,11 @@ function addVolume() {
 		})
 		.catch(e => {
 			if (e.status === 509) {
-				SearchEls.window.submit.innerText = 'ComicVine API rate limit reached';
+				SearchEls.window.submit.innerText = 'Metadata source API rate limit reached';
 				SearchEls.window.submit.style.color = 'var(--error-color)';
 				showWindow("add-window");
 			} else if (e.status === 400) {
-				SearchEls.window.submit.innerText = 'Volume folder is parent or child of other volume folder';
+				SearchEls.window.submit.innerText = 'The API key of the metadata source is invalid';
 				SearchEls.window.submit.style.color = 'var(--error-color)';
 				showWindow("add-window");
 			} else

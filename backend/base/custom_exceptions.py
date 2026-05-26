@@ -653,13 +653,13 @@ class ExternalClientDownloading(KapowarrException):
         }
 
 
-# region ComicVine
-class CVRateLimitReached(KapowarrException):
-    "ComicVine API rate limit reached"
+# region Metadata Source
+class MetadataSourceRateLimitReached(KapowarrException):
+    "Rate limit reached of metadata source"
 
     def __init__(self) -> None:
         LOGGER.warning(
-            "Reached the rate limit of ComicVine"
+            "Reached the rate limit of metadata source"
         )
         return
 
@@ -667,24 +667,6 @@ class CVRateLimitReached(KapowarrException):
     def api_response(self) -> ApiResponse:
         return {
             "code": 509,
-            "error": self.__class__.__name__,
-            "result": {}
-        }
-
-
-class InvalidComicVineApiKey(KapowarrException):
-    "No Comic Vine API key is set or it's invalid"
-
-    def __init__(self) -> None:
-        LOGGER.warning(
-            "No Comic Vine API key is set or it's invalid"
-        )
-        return
-
-    @property
-    def api_response(self) -> ApiResponse:
-        return {
-            "code": 400,
             "error": self.__class__.__name__,
             "result": {}
         }

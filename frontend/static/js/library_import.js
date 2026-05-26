@@ -86,7 +86,7 @@ function loadProposal(api_key) {
 				.then(checks => {
 					const search_limited = checks.result.some(
 						st => st.type === 'cv_rate_limit'
-							&& st.subtypes.includes('search_volumes')
+							&& st.display_subtypes.includes('search_volumes')
 					);
 					if (search_limited)
 						hide([], [LIEls.rate_limit_banner]);
@@ -96,22 +96,25 @@ function loadProposal(api_key) {
 			hide([LIEls.views.loading], [LIEls.views.no_result]);
 	})
 	.catch(e => {
-		if (e.status === 509) {
-			hide([LIEls.views.loading], [LIEls.views.start]);
-			hide([], [LIEls.rate_limit_banner]);
-		} else {
-			e.json().then(j => {
-				if (j.error === 'InvalidComicVineApiKey')
-					hide([LIEls.views.loading], [LIEls.views.no_cv]);
-				else if (j.error === 'InvalidKeyValue')
-					hide(
-						[LIEls.views.loading],
-						[LIEls.views.start, document.querySelector('#folder-filter-error')]
-					);
-				else
-					console.log(j);
-			});
-		};
+		e.json().then(j => {
+			if (
+				j.error === "InvalidKeyValue"
+				&& j.result.key === "comicvine_api_key"
+			)
+				hide([LIEls.views.loading], [LIEls.views.no_cv]);
+
+			else if (
+				j.error === "InvalidKeyValue"
+				&& j.result.key === "folder_filter"
+			)
+				hide(
+					[LIEls.views.loading],
+					[LIEls.views.start, document.querySelector('#folder-filter-error')]
+				);
+
+			else
+				console.log(j);
+		});
 	});
 };
 

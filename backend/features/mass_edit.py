@@ -118,7 +118,11 @@ class MassEditorUpdate(MassEditorAction):
                 total_items
             ))
 
-            refresh_and_scan(volume_id)
+            try:
+                refresh_and_scan(volume_id)
+            except InvalidKeyValue:
+                # API key invalid
+                break
 
         return
 

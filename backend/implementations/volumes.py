@@ -1114,10 +1114,11 @@ class Library:
 
         Raises:
             RootFolderNotFound: The root folder with the given ID was not found.
-            VolumeFolderInvalid: The volume folder is the parent or child of
-                another volume folder.
             VolumeAlreadyAdded: The volume already exists in the library.
-            CVRateLimitReached: The ComicVine API rate limit is reached.
+            InvalidKeyValue: The API key of the metadata source is invalid.
+            VolumeNotMatched: The ID doesn't map to any volume.
+            MetadataSourceRateLimitReached: The metadata source rate limit is
+                reached.
 
         Returns:
             int: The ID of the new volume.
@@ -1370,6 +1371,9 @@ def refresh_and_scan(
             the last 24 hours or that have the same amount of issues as what
             the metadata source reports.
             Defaults to True.
+
+    Raises:
+        InvalidKeyValue: The API key of the metadata source is invalid.
     """
     current_time = datetime.now()
     one_day_ago = current_time - ONE_DAY
