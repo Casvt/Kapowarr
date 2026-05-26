@@ -11,7 +11,7 @@ from urllib.parse import unquote_plus
 from requests import RequestException, Response
 
 from backend.base.custom_exceptions import (DownloadLimitReached,
-                                            IssueNotFound, LinkBroken)
+                                            DownloadLinkBroken, IssueNotFound)
 from backend.base.definitions import (Constants, Download,
                                       DownloadSource, DownloadState)
 from backend.base.helpers import Session
@@ -192,7 +192,7 @@ class BaseDirectDownload(Download):
                 # Pixeldrain rate limit because of hotlinking
                 raise DownloadLimitReached(DownloadSource.PIXELDRAIN)
 
-            raise LinkBroken(download_link)
+            raise DownloadLinkBroken(download_link)
 
         self._size = int(response.headers.get('Content-Length', -1))
         self._supports_range_header = (

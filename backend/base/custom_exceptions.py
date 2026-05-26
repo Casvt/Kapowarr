@@ -442,13 +442,13 @@ class TaskNotDeletable(KapowarrException):
 
 
 # region Downloads
-class LinkBroken(KapowarrException):
-    "The link is broken"
+class DownloadLinkBroken(KapowarrException):
+    "The download link of a download service is broken"
 
     def __init__(self, link: str) -> None:
         self.link = link
         LOGGER.warning(
-            f"Link is broken: {self.link}"
+            f"Download link is broken: {self.link}"
         )
         return
 

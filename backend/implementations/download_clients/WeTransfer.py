@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from backend.base.custom_exceptions import LinkBroken
+from backend.base.custom_exceptions import DownloadLinkBroken
 from backend.base.definitions import DownloadClientIdentifier
 from backend.implementations.download_client_manager import DownloadClients
 from backend.implementations.download_clients.base import BaseDirectDownload
@@ -21,11 +21,11 @@ class WeTransferDownload(BaseDirectDownload):
             headers={"x-requested-with": "XMLHttpRequest"}
         )
         if not r.ok:
-            raise LinkBroken(self.download_link)
+            raise DownloadLinkBroken(self.download_link)
 
         direct_link = r.json().get("direct_link")
 
         if not direct_link:
-            raise LinkBroken(self.download_link)
+            raise DownloadLinkBroken(self.download_link)
 
         return direct_link

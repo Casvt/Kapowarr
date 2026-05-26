@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Tuple, Union
 
 from requests import RequestException
 
-from backend.base.custom_exceptions import IssueNotFound, LinkBroken
+from backend.base.custom_exceptions import DownloadLinkBroken, IssueNotFound
 from backend.base.definitions import (DownloadClientIdentifier, DownloadSource,
                                       DownloadState, DownloadType,
                                       ExternalDownload, ExternalDownloadClient)
@@ -115,7 +115,7 @@ class TorrentDownload(ExternalDownload, BaseDirectDownload):
                 raise RequestException
 
         except RequestException:
-            raise LinkBroken(self.download_link)
+            raise DownloadLinkBroken(self.download_link)
 
         torrent_name = get_torrent_info(response.content)[b'name'].decode()
 

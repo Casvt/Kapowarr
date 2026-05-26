@@ -1445,7 +1445,7 @@ class Download(ABC):
 
             ClientNotWorking: Some problem occured in the client.
 
-            LinkBroken: The link doesn't work.
+            DownloadLinkBroken: The link doesn't work.
 
             DownloadLimitReached: Can't download because the limit of the service
                 is reached.
@@ -1458,7 +1458,7 @@ class Download(ABC):
         Start the download.
 
         Raises:
-            LinkBroken: The link doesn't work.
+            DownloadLinkBroken: The link doesn't work.
 
             DownloadLimitReached: At the source that is downloaded from,
                 we've reached a rate limit.
@@ -1576,7 +1576,7 @@ class ExternalDownload(Download):
 
             ClientNotWorking: Some problem occured in the client.
 
-            LinkBroken: The link doesn't work.
+            DownloadLinkBroken: The link doesn't work.
 
             DownloadLimitReached: Can't download because the limit of the service
                 is reached.
@@ -1593,7 +1593,7 @@ class ExternalDownload(Download):
 
             CredentialInvalid: Credentials are invalid.
 
-            LinkBroken: The link doesn't work.
+            DownloadLinkBroken: The link doesn't work.
 
             DownloadLimitReached: At the source that is downloaded from,
                 we've reached a rate limit.
