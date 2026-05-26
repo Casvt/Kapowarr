@@ -1194,3 +1194,11 @@ def _migrate_add_enabled_option_to_ec():
     """)
 
     return
+
+
+@DatabaseMigrationHandler.register_handler(46)
+def _migrate_blocklist_source_to_download_service():
+    get_db().execute("""
+        ALTER TABLE blocklist
+            RENAME COLUMN source TO download_service;
+    """)
