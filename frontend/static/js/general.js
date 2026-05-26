@@ -243,7 +243,7 @@ function handleStatusCount(data) {
 };
 
 function initStatusBadge(api_key) {
-	fetchAPI('/system/status/checks', api_key)
+	fetchAPI('/system/status', api_key)
 	.then(json => {
 		updateBadge(json.result.length);
 	})

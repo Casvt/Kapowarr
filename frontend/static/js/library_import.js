@@ -82,7 +82,7 @@ function loadProposal(api_key) {
 				r => r.cv.id === null
 			);
 			if (has_empty_matches) {
-				fetchAPI('/system/status/checks', api_key)
+				fetchAPI('/system/status', api_key)
 				.then(checks => {
 					const search_limited = checks.result.some(
 						st => st.type === 'cv_rate_limit'

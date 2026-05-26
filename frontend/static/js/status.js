@@ -42,7 +42,7 @@ const statusDescs = {
 }
 
 function loadStatusChecks(api_key) {
-	fetchAPI('/system/status/checks', api_key)
+	fetchAPI('/system/status', api_key)
 	.then(json => {
 		StatEls.status_checks.list.innerHTML = '';
 		if (json.result.length === 0) {
@@ -65,7 +65,7 @@ function loadStatusChecks(api_key) {
 				const clearBtn = document.createElement('button');
 				clearBtn.innerText = 'Clear';
 				clearBtn.onclick = e => {
-					sendAPI('DELETE', '/system/status/checks', api_key, {
+					sendAPI('DELETE', '/system/status', api_key, {
 						type: entry.type
 					})
 					.then(_ => loadStatusChecks(api_key));
