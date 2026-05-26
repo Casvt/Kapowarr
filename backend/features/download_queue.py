@@ -10,15 +10,15 @@ from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Tuple, Union
 from typing_extensions import assert_never
 
 from backend.base.custom_exceptions import (ClientNotWorking,
-                                            DownloadLimitReached,
                                             DownloadLinkBroken,
                                             DownloadQueueEntryNotFound,
                                             DownloadQueueEntryUnmovable,
+                                            DownloadServiceRateLimitReached,
                                             EnqueuingDownloadFailure,
                                             InvalidKeyValue, IssueNotFound)
 from backend.base.definitions import (BlocklistReason, Constants, Download,
-                                      DownloadClientIdentifier, DownloadSource,
-                                      DownloadState,
+                                      DownloadClientIdentifier,
+                                      DownloadService, DownloadState,
                                       EnqueuingDownloadFailureReason,
                                       ExternalDownload, SeedingHandling)
 from backend.base.files import create_folder, delete_file_folder
@@ -70,9 +70,9 @@ class DownloadHandler(metaclass=Singleton):
         try:
             download.run()
 
-        except DownloadLimitReached as e:
+        except DownloadServiceRateLimitReached as e:
             download.stop(DownloadState.FAILED_STATE)
-            if e.source == DownloadSource.MEGA:
+            if e.service == DownloadService.MEGA:
                 self._remove_mega(exclude_id=download.id)
 
         ws.emit(status_event)
@@ -288,7 +288,7 @@ class DownloadHandler(metaclass=Singleton):
                         'download_link': download.download_link,
                         'covered_issues': covered_issues,
                         'force_original_name': forced_match,
-                        'source_type': download.source_type.value,
+                        'source_type': download.download_service.value,
                         'source_name': download.source_name,
                         'web_link': download.web_link,
                         'web_title': download.web_title,
@@ -437,7 +437,7 @@ class DownloadHandler(metaclass=Singleton):
                         web_title=None,
                         web_sub_title=None,
                         download_link=None,
-                        source=None,
+                        download_service=None,
                         volume_id=volume_id,
                         issue_id=issue_id,
                         reason=BlocklistReason.LINK_BROKEN
@@ -459,7 +459,7 @@ class DownloadHandler(metaclass=Singleton):
                         web_title=gcp.title,
                         web_sub_title=None,
                         download_link=None,
-                        source=None,
+                        download_service=None,
                         volume_id=volume_id,
                         issue_id=issue_id,
                         reason=BlocklistReason.NO_WORKING_LINKS
@@ -544,7 +544,7 @@ class DownloadHandler(metaclass=Singleton):
                     download_link=download['download_link'],
                     volume_id=download['volume_id'],
                     covered_issues=covered_issues,
-                    source_type=DownloadSource(download['source_type']),
+                    download_service=DownloadService(download['source_type']),
                     source_name=download['source_name'],
                     web_link=download['web_link'],
                     web_title=download['web_title'],
@@ -569,7 +569,7 @@ class DownloadHandler(metaclass=Singleton):
                     web_title=download['web_title'],
                     web_sub_title=download['web_sub_title'],
                     download_link=download['download_link'],
-                    source=DownloadSource(download['source']),
+                    download_service=DownloadService(download['source_type']),
                     volume_id=download['volume_id'],
                     issue_id=issue_id,
                     reason=BlocklistReason.LINK_BROKEN
@@ -580,7 +580,9 @@ class DownloadHandler(metaclass=Singleton):
                 )
                 continue
 
-            except (DownloadLimitReached, IssueNotFound, ClientNotWorking):
+            except (
+                DownloadServiceRateLimitReached, IssueNotFound, ClientNotWorking
+            ):
                 cursor.execute(
                     "DELETE FROM download_queue WHERE id = ?;",
                     (download['id'],)
@@ -658,7 +660,7 @@ class DownloadHandler(metaclass=Singleton):
                 web_title=download.web_title,
                 web_sub_title=download.web_sub_title,
                 download_link=download.download_link,
-                source=download.source_type,
+                download_service=download.download_service,
                 volume_id=download.volume_id,
                 issue_id=download.issue_id,
                 reason=BlocklistReason.ADDED_BY_USER

@@ -11,7 +11,7 @@ from backend.base.custom_exceptions import (InvalidKeyValue,
                                             KeyNotFound, TaskNotFound)
 from backend.base.definitions import (BlocklistReason, BlocklistReasonID,
                                       CredentialData, CredentialSource,
-                                      DownloadSource, DownloadType, FileMatch,
+                                      DownloadService, DownloadType, FileMatch,
                                       KapowarrException, LibraryFilter,
                                       LibrarySorting, MonitorScheme,
                                       SpecialVersion, StartType, StatusType,
@@ -1214,21 +1214,23 @@ def api_blocklist():
         ):
             raise InvalidKeyValue('download_link', download_link)
 
-        source = data.get('source')
+        download_service = data.get('download_service')
         if not (
-            source is None
-            or source
-                and isinstance(source, str)
+            download_service is None
+            or download_service
+                and isinstance(download_service, str)
         ):
-            raise InvalidKeyValue('source', source)
+            raise InvalidKeyValue('download_service', download_service)
 
-        if not data.get('source'):
-            source = None
+        if not data.get('download_service'):
+            download_service = None
         else:
             try:
-                source = DownloadSource(data['source'])
+                download_service = DownloadService(data['download_service'])
             except ValueError:
-                raise InvalidKeyValue('source', data['source'])
+                raise InvalidKeyValue(
+                    'download_service', data['download_service']
+                )
 
         volume_id = data.get('volume_id')
         if not (volume_id and isinstance(volume_id, int)):
@@ -1255,7 +1257,7 @@ def api_blocklist():
             web_title=web_title,
             web_sub_title=web_sub_title,
             download_link=download_link,
-            source=source,
+            download_service=download_service,
             volume_id=volume_id,
             issue_id=issue_id,
             reason=reason

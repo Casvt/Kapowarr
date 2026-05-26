@@ -32,8 +32,8 @@ function fillList(api_key) {
                 // Download link blocked
                 if (obj.web_title !== null) {
                     link.innerText = `${obj.web_title} - ${obj.web_sub_title}`;
-                    if (obj.source !== null)
-                        link.innerText += ` - ${obj.source}`;
+                    if (obj.download_service !== null)
+                        link.innerText += ` - ${obj.download_service}`;
                 } else
                     link.innerText = obj.download_link;
 

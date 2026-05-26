@@ -71,7 +71,7 @@ def add_to_history(download: Download) -> None:
             'file_title': download.title,
             'volume_id': download.volume_id,
             'issue_id': download.issue_id,
-            'source': download.source_type.value,
+            'source': download.source_name,
             'downloaded_at': round(time()),
             'success': download.state != DownloadState.FAILED_STATE
         }
@@ -97,7 +97,7 @@ def add_dl_to_blocklist(download: Download) -> None:
         download.web_title,
         download.web_sub_title,
         download.download_link,
-        download.source_type,
+        download.download_service,
         download.volume_id,
         download.issue_id,
         BlocklistReason.LINK_BROKEN

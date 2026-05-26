@@ -36,6 +36,6 @@ Whether external downloads should be deleted from their client once they have co
 
 ## Service preference
 
-Kapowarr has the ability to download directly from the servers of GetComics, but also to download from services like MediaFire and Mega. When a download on GetComics is found and  has multiple possible download sources, this defines which source takes priority. If the first download fails, Kapowarr will try the next service in order.
+Kapowarr has the ability to download directly from the servers of GetComics, but also to download from services like MediaFire and Mega. When a download on GetComics is found and  has multiple possible download services, this defines which service takes priority. If the first download fails, Kapowarr will try the next service in order.
 
 If you have an account for one of these services (see [Credentials](./downloadclients.md#credentials) setting), you might want to put that one at the top, to make Kapowarr take advantage of the extra features that the account offers (extra bandwidth, higher rate limit, etc.).  

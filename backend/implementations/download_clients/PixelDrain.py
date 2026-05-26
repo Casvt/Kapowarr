@@ -7,10 +7,11 @@ from requests import RequestException, Response
 
 from backend.base.custom_exceptions import (ClientNotWorking,
                                             CredentialInvalid,
-                                            DownloadLimitReached)
+                                            DownloadServiceRateLimitReached)
 from backend.base.definitions import (BrokenClientReason, Constants,
                                       CredentialData, CredentialSource,
-                                      DownloadClientIdentifier, DownloadSource)
+                                      DownloadClientIdentifier,
+                                      DownloadService)
 from backend.base.helpers import Session
 from backend.base.logging import LOGGER
 from backend.implementations.credentials import Credentials
@@ -66,7 +67,7 @@ class PixelDrainDownload(BaseDirectDownload):
             f"Pixeldrain account transfer state: {transfer_limit_used}/{transfer_limit}"
         )
         if transfer_limit_used > transfer_limit:
-            raise DownloadLimitReached(DownloadSource.PIXELDRAIN)
+            raise DownloadServiceRateLimitReached(DownloadService.PIXELDRAIN)
         return None
 
     def _convert_to_pure_link(self) -> str:
@@ -83,7 +84,7 @@ class PixelDrainDownload(BaseDirectDownload):
                     # Let ClientNotWorking bubble up
                     self.login(pd_cred.api_key or '')
 
-                except (CredentialInvalid, DownloadLimitReached):
+                except (CredentialInvalid, DownloadServiceRateLimitReached):
                     continue
 
                 else:
@@ -127,7 +128,7 @@ def pd_login_validator(credential_data: CredentialData) -> CredentialData:
             credential_data.api_key or ''
         )
 
-    except DownloadLimitReached:
+    except DownloadServiceRateLimitReached:
         # Limit reached but credential working
         pass
 

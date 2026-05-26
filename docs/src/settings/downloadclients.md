@@ -1,6 +1,6 @@
 ## Built-in Clients
 
-A list of the download clients Kapowarr has built-in. It uses these to download from multiple sources offered by GetComics. Clicking on one of them shows a window with more information and, if the client has support for it, an option to enter credentials (see below).
+A list of the download clients Kapowarr has built-in. It uses these to download from multiple download services used by GetComics. Clicking on one of them shows a window with more information and, if the client has support for it, an option to enter credentials (see below).
 
 ### Credentials
 

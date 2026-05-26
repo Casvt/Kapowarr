@@ -581,17 +581,17 @@ def _migrate_add_links_in_download_queue():
 
 @DatabaseMigrationHandler.register_handler(23)
 def _migrate_service_preference_to_enum_values():
-    from backend.base.definitions import GCDownloadSource
+    from backend.base.definitions import GCDownloadService
     from backend.base.helpers import CommaList
     from backend.internals.settings import Settings
 
     source_string_to_enum = {
-        'mega': GCDownloadSource.MEGA.value,
-        'mediafire': GCDownloadSource.MEDIAFIRE.value,
-        'wetransfer': GCDownloadSource.WETRANSFER.value,
-        'pixeldrain': GCDownloadSource.PIXELDRAIN.value,
-        'getcomics': GCDownloadSource.GETCOMICS.value,
-        'getcomics (torrent)': GCDownloadSource.GETCOMICS_TORRENT.value
+        'mega': GCDownloadService.MEGA.value,
+        'mediafire': GCDownloadService.MEDIAFIRE.value,
+        'wetransfer': GCDownloadService.WETRANSFER.value,
+        'pixeldrain': GCDownloadService.PIXELDRAIN.value,
+        'getcomics': GCDownloadService.GETCOMICS.value,
+        'getcomics (torrent)': GCDownloadService.GETCOMICS_TORRENT.value
     }
 
     new_service_preference = CommaList((

@@ -20,12 +20,13 @@ from urllib3.exceptions import ProtocolError, TimeoutError
 
 from backend.base.custom_exceptions import (ClientNotWorking,
                                             CredentialInvalid,
-                                            DownloadLimitReached,
-                                            DownloadLinkBroken, IssueNotFound)
+                                            DownloadLinkBroken,
+                                            DownloadServiceRateLimitReached,
+                                            IssueNotFound)
 from backend.base.definitions import (BaseEnum, BrokenClientReason, Constants,
                                       CredentialData, CredentialSource,
                                       DownloadClientIdentifier,
-                                      DownloadSource, DownloadState)
+                                      DownloadService, DownloadState)
 from backend.base.helpers import Session
 from backend.base.logging import LOGGER
 from backend.implementations.credentials import Credentials
@@ -705,7 +706,7 @@ class Mega(MegaABC):
 
         if res.get('tl', 0): # tl = time left
             # Download limit reached
-            raise DownloadLimitReached(DownloadSource.MEGA)
+            raise DownloadServiceRateLimitReached(DownloadService.MEGA)
 
         attr = MegaCrypto.decrypt_attr(res["at"], self.__master_key)
         if not attr:
@@ -827,7 +828,8 @@ class Mega(MegaABC):
 
                         if not chunk:
                             # Download limit reached mid download
-                            raise DownloadLimitReached(DownloadSource.MEGA)
+                            raise DownloadServiceRateLimitReached(
+                                DownloadService.MEGA)
 
                         chunk = decryptor.update(chunk)
                         f.write(chunk)
@@ -1000,7 +1002,7 @@ class MegaFolder(MegaABC):
 
                 if res.get('tl', 0): # tl = time left
                     # Download limit reached
-                    raise DownloadLimitReached(DownloadSource.MEGA)
+                    raise DownloadServiceRateLimitReached(DownloadService.MEGA)
 
                 self.pure_link = res['g']
                 file_size_downloaded = 0
@@ -1033,8 +1035,8 @@ class MegaFolder(MegaABC):
 
                                 if not chunk:
                                     # Download limit reached mid download
-                                    raise DownloadLimitReached(
-                                        DownloadSource.MEGA
+                                    raise DownloadServiceRateLimitReached(
+                                        DownloadService.MEGA
                                     )
 
                                 chunk = decryptor.update(chunk)
@@ -1138,7 +1140,7 @@ class MegaDownload(BaseDirectDownload):
         volume_id: int,
         covered_issues: Union[float, Tuple[float, float], None],
 
-        source_type: DownloadSource,
+        download_service: DownloadService,
         source_name: str,
 
         web_link: Union[str, None],
@@ -1159,7 +1161,7 @@ class MegaDownload(BaseDirectDownload):
         self._volume_id = volume_id
         self._issue_id = None
         self._covered_issues = covered_issues
-        self._source_type = source_type
+        self._download_service = download_service
         self._source_name = source_name
         self._web_link = web_link
         self._web_title = web_title

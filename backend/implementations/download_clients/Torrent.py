@@ -7,9 +7,10 @@ from typing import Any, Dict, List, Tuple, Union
 from requests import RequestException
 
 from backend.base.custom_exceptions import DownloadLinkBroken, IssueNotFound
-from backend.base.definitions import (DownloadClientIdentifier, DownloadSource,
-                                      DownloadState, DownloadType,
-                                      ExternalDownload, ExternalDownloadClient)
+from backend.base.definitions import (DownloadClientIdentifier,
+                                      DownloadService, DownloadState,
+                                      DownloadType, ExternalDownload,
+                                      ExternalDownloadClient)
 from backend.base.helpers import Session, get_torrent_info
 from backend.base.logging import LOGGER
 from backend.implementations.download_client_manager import DownloadClients
@@ -47,7 +48,7 @@ class TorrentDownload(ExternalDownload, BaseDirectDownload):
         volume_id: int,
         covered_issues: Union[float, Tuple[float, float], None],
 
-        source_type: DownloadSource,
+        download_service: DownloadService,
         source_name: str,
 
         web_link: Union[str, None],
@@ -69,7 +70,7 @@ class TorrentDownload(ExternalDownload, BaseDirectDownload):
         self._volume_id = volume_id
         self._issue_id = None
         self._covered_issues = covered_issues
-        self._source_type = source_type
+        self._download_service = download_service
         self._source_name = source_name
         self._web_link = web_link
         self._web_title = web_title

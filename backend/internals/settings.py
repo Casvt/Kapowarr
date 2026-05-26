@@ -21,8 +21,8 @@ from backend.base.custom_exceptions import (ClientNotWorking,
                                             InvalidSettingModification,
                                             KeyNotFound)
 from backend.base.definitions import (BaseEnum, Constants, DateType,
-                                      FileDate, GCDownloadSource, OSType,
-                                      ProxyType, SeedingHandling)
+                                      FileDate, GCDownloadService,
+                                      OSType, ProxyType, SeedingHandling)
 from backend.base.files import (are_folders_colliding, folder_path,
                                 uppercase_drive_letter)
 from backend.base.helpers import (CommaList, Singleton, build_proxy_url,
@@ -115,7 +115,7 @@ class PublicSettingsValues:
     format_preference: CommaList = field(default_factory=lambda: CommaList(''))
 
     service_preference: CommaList = field(default_factory=lambda: CommaList(
-        (s.value for s in GCDownloadSource._member_map_.values())
+        (s.value for s in GCDownloadService._member_map_.values())
     ))
     avoid_large_gc_downloads: bool = False
     download_folder: str = folder_path('temp_downloads')
@@ -547,7 +547,7 @@ class Settings(metaclass=Singleton):
         elif key == 'service_preference':
             available = [
                 s.value
-                for s in GCDownloadSource._member_map_.values()
+                for s in GCDownloadService._member_map_.values()
             ]
 
             for entry in value:
