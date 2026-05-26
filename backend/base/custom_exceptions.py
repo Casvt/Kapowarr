@@ -442,27 +442,6 @@ class TaskNotDeletable(KapowarrException):
 
 
 # region Downloads
-class DownloadNotFound(KapowarrException):
-    "Download with given ID not found"
-
-    def __init__(self, download_id: int) -> None:
-        self.download_id = download_id
-        LOGGER.warning(
-            f"Download with given ID not found: {download_id}"
-        )
-        return
-
-    @property
-    def api_response(self) -> ApiResponse:
-        return {
-            "code": 404,
-            "error": self.__class__.__name__,
-            "result": {
-                "download_id": self.download_id
-            }
-        }
-
-
 class LinkBroken(KapowarrException):
     "The link is broken"
 
@@ -528,13 +507,34 @@ class DownloadLimitReached(KapowarrException):
         }
 
 
-class DownloadUnmovable(KapowarrException):
+class DownloadQueueEntryNotFound(KapowarrException):
+    "A download in the download queue with given ID not found"
+
+    def __init__(self, download_id: int) -> None:
+        self.download_id = download_id
+        LOGGER.warning(
+            f"Download in download queue with given ID not found: {download_id}"
+        )
+        return
+
+    @property
+    def api_response(self) -> ApiResponse:
+        return {
+            "code": 404,
+            "error": self.__class__.__name__,
+            "result": {
+                "download_id": self.download_id
+            }
+        }
+
+
+class DownloadQueueEntryUnmovable(KapowarrException):
     "The position of the download in the queue can not be changed"
 
     def __init__(self, download_id: int) -> None:
         self.download_id = download_id
         LOGGER.warning(
-            f"The position of the download in the queue can not be changed: {download_id}"
+            f"Position of download in download queue with given ID can't be changed: {download_id}"
         )
         return
 
