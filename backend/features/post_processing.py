@@ -15,6 +15,7 @@ from backend.base.definitions import (BlocklistReason,
 from backend.base.files import (copy_directory, delete_file_folder,
                                 rename_file, set_detected_extension)
 from backend.base.logging import LOGGER
+from backend.features.notifications import NotificationService
 from backend.implementations.blocklist import add_to_blocklist
 from backend.implementations.conversion import mass_convert
 from backend.implementations.converters import extract_files_from_folder
@@ -282,6 +283,12 @@ def set_file_properties(download: Download) -> None:
     return
 
 
+def notify_download(download: Download) -> None:
+    "Send a notification for a completed download"
+    NotificationService().notify_download_from_download(download)
+    return
+
+
 # region Post-Processors
 class PostProcessor:
     actions_success = [
@@ -291,7 +298,8 @@ class PostProcessor:
         rename_with_proper_extension,
         add_file_to_database,
         convert_file,
-        set_file_properties
+        set_file_properties,
+        notify_download
     ]
 
     actions_seeding = []
@@ -369,7 +377,8 @@ class PostProcessorTorrentsComplete(PostProcessor):
         add_to_history,
         move_torrent_to_dest,
         convert_file,
-        set_file_properties
+        set_file_properties,
+        notify_download
     ]
 
 
@@ -384,5 +393,6 @@ class PostProcessorTorrentsCopy(PostProcessor):
         copy_file_torrent,
         convert_file,
         set_file_properties,
-        reset_file_link
+        reset_file_link,
+        notify_download
     ]

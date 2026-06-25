@@ -1268,6 +1268,25 @@ class Library:
         LOGGER.info(
             f'Added volume with CV ID {comicvine_id} and ID {volume_id}'
         )
+
+        try:
+            from backend.features.notifications import (NotificationService,
+                                                        VolumeAddEvent)
+            event = VolumeAddEvent(
+                volume_id=volume_id,
+                volume_title=vd['title'],
+                volume_year=vd.get('year') or 0,
+                volume_comicvine_id=vd['comicvine_id'],
+                volume_path=folder,
+                publisher=vd.get('publisher') or ''
+            )
+            NotificationService().notify_volume_add(event)
+        except Exception:
+            LOGGER.exception(
+                'Failed to dispatch volume-add notification for volume %d',
+                volume_id
+            )
+
         return volume_id
 
 

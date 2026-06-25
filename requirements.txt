@@ -6,5 +6,6 @@ waitress ~= 3.0
 cryptography ~= 46.0, >= 46.0.5
 bencoding ~= 0.2
 aiohttp ~= 3.9
+apprise ~= 1.9
 flask-socketio ~= 5.3
 websocket-client ~= 1.3

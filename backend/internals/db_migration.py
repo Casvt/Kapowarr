@@ -1202,3 +1202,22 @@ def _migrate_blocklist_source_to_download_service():
         ALTER TABLE blocklist
             RENAME COLUMN source TO download_service;
     """)
+
+    return
+
+
+@DatabaseMigrationHandler.register_handler(47)
+def _migrate_add_notifications():
+    get_db().executescript("""
+        CREATE TABLE IF NOT EXISTS notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            provider_type TEXT NOT NULL,
+            settings TEXT NOT NULL DEFAULT '{}',
+            on_download BOOL NOT NULL DEFAULT 1,
+            on_volume_add BOOL NOT NULL DEFAULT 1,
+            on_application_update BOOL NOT NULL DEFAULT 1,
+            enabled BOOL NOT NULL DEFAULT 1
+        );
+    """)
+    return
