@@ -29,11 +29,11 @@ Featured on [Noted](https://noted.lol/kapowarr/) and [Respectlytics](https://res
 
 ## Installation, support and documentation
 
-- For instructions on how to install Kapowarr, see the [installation documentation](https://casvt.github.io/Kapowarr/installation/installation/).
-- For support, a [Discord server](https://discord.gg/5gWtW3ekgZ) and [subreddit](https://www.reddit.com/r/kapowarr/) are available, or [make an issue](https://github.com/Casvt/Kapowarr/issues).
-- For the planning of features or their progress, check the [project board](https://github.com/users/Casvt/projects/5).
-- For all documentation, see the [documentation hub](https://casvt.github.io/Kapowarr/).
-- For donations, go to the [Ko-Fi page](https://ko-fi.com/casvt).
+- For instructions on how to install Kapowarr, see the [installation documentation](https://casvt.github.io/Kapowarr/installation/installation/)
+- For support, a [Discord server](https://discord.gg/5gWtW3ekgZ) and [subreddit](https://www.reddit.com/r/kapowarr/) are available, or [make an issue](https://github.com/Casvt/Kapowarr/issues)
+- For the planning of features or their progress, check the [project board](https://github.com/users/Casvt/projects/5)
+- For all documentation, see the [documentation hub](https://casvt.github.io/Kapowarr/)
+- For donations, go to the [Ko-Fi page](https://ko-fi.com/casvt)
 
 ## Screenshots
 

@@ -4,14 +4,14 @@ On this page, you can find instructions on how to install Kapowarr using Docker 
 
 ### Install Docker
 
-The first step is to install Docker, if you don't have it installed already. The official Docker documentation hub offers great instructions on [how to install docker CLI and Docker Desktop](https://docs.docker.com/engine/install/). Take notice of whether you installed the 'Docker CLI' (the Docker documentation also calls this 'Docker CE') or 'Docker Desktop', for future instructions.
+The first step is to install Docker if you don't have it installed already. The official Docker documentation hub offers great instructions on [how to install docker CLI or Docker Desktop](https://docs.docker.com/engine/install/). Take notice of whether you installed the 'Docker CLI' (the Docker documentation also calls this 'Docker CE') or 'Docker Desktop', for future instructions.
 
 ??? info "Quick introduction to Docker"
-	Docker allows you to create little virtual computers, called 'containers'. You can run an application inside these containers. This is useful because you decide how much resources these containers can use, and what access these applications get to "the outside". It makes it safer (e.g. the application only has access to folders on the computer that you explicitly give it access to), and makes installation easier (the developer makes sure that inside the container everything is setup properly, not you).
+	Docker allows you to create little virtual computers, called 'containers'. You can run an application inside these containers. This is useful because you decide how much resources these containers can use, and what access these applications get to "the outside". It makes it safer and installation easier. It makes it safer because the application only has access to folders on the computer that you explicitly give it access to, and makes installation easier because you don't have to make sure that everything is set up properly, as the developer will ensure that.
 	
-	Allowing folders and network connections through the container is done using 'mapping'. For example, you can map the folder `D:\Comics` on the host to the folder `/comics` inside the container. Then everything inside the host folder (`D:\Comics`) is visible to the application via the mapped container folder (`/comics`). Mapping network ports works in a similar manner.
+	Allowing folders and network connections through the container is done using 'mapping'. For example, you can map the folder `D:\Comics` on the host to the folder `/comics` inside the container. Then everything in the host folder is visible to the application via the folder mapped inside the container. Mapping network ports works in a similar manner.
 	
-	When you turn off a container, all file changes inside the container (e.g. folders/files added) are lost. This is so that the environment inside the container when starting up is always the same. So in order to save a file/folder permanently, it has to be stored on the host and then mapped to somewhere inside the container.
+	When you turn off a container, all changes to files and folders inside the container are lost (e.g. comic files that are added). This is so that the environment inside the container is always the same when starting up. In order to save a file/folder permanently, it has to be stored on the host and then mapped to somewhere inside the container.
 
 ### Create place for the database
 
@@ -39,13 +39,13 @@ Kapowarr needs a permanent place to put the database file. This can be a [Docker
 	=== "Linux"
 		Following the Linux standards, we suggest the folder `/opt/Kapowarr/db`. This is not mandatory however. You are allowed to create a folder anywhere you like.
 
-		Create the desired folder using the UI (if your distro offers this) or with the following shell command (replace `/path/to/directory` with desired path):
+		If your Linux distro offers it, create the desired folder using the UI. Otherwise, create it with the following shell command (replace `/path/to/directory` with the desired path):
 
 		```bash
 		mkdir "/path/to/directory"
 		```
 
-		The folder needs to offer read, write and execution permissions to the user that the container will run as. You can change the user that the container runs as using the PUID (user) and PGID (group) environment variables when launching the container later. The folder also needs to either be owned by that user, be owned by a group that the user is a part of or have sufficient permissions so that _any_ user can use the folder.
+		The user that the container runs as will need read, write and execution permissions. You can change the user that the container runs as using the PUID (user) and PGID (group) environment variables when launching the container later. The folder also needs to either be owned by that user, be owned by a group that the user is a part of, or have sufficient permissions so that _any_ user can use the folder.
 
 	=== "MacOS"
 		Following MacOS standards, we suggest the folder `/Applications/Kapowarr/db`. This is not mandatory however. You are allowed to create a folder anywhere you like.
@@ -56,12 +56,12 @@ Kapowarr needs a permanent place to put the database file. This can be a [Docker
 		mkdir "/path/to/directory"
 		```
 
-		The folder needs to offer read, write and execution permissions to the user that the container will run as. You can change the user that the container runs as using the PUID and PGID (for the group) environment variables when launching the container later. The folder also needs to either be owned by that user, be owned by a group that the user is a part of or have sufficient permissions so that _any_ user can use the folder.
+		The user that the container runs as will need read, write and execution permissions. You can change the user that the container runs as using the PUID and PGID (for the group) environment variables when launching the container later. The folder also needs to either be owned by that user, be owned by a group that the user is a part of, or have sufficient permissions so that _any_ user can use the folder.
 
 	=== "Windows"
 		There is no defined standard for Windows on where to put such a folder. We suggest a path like `C:\apps\Kapowarr\db` or `D:\Kapowarr\db`. This is not mandatory however. You are allowed to create a folder anywhere you like.
 
-		Create the desired folder either using the Windows Explorer, or using the following Powershell command:
+		Create the desired folder either using the Windows Explorer or using the following Powershell command:
 
 		```powershell
 		mkdir "C:\path\to\directory"
@@ -69,13 +69,13 @@ Kapowarr needs a permanent place to put the database file. This can be a [Docker
 
 ### Create a root folder
 
-You need at least one folder that all media files can be stored in, called a [root folder](../settings/mediamanagement.md#root-folders). If you don't already have a folder with comics, then create one. The folder is allowed to be anywhere you like. You can create it using the same instructions as for [creating a folder for the database file](#__tabbed_1_2).
+You will need at least one [root folder](../settings/mediamanagement.md#root-folders) that all media files can be stored in. If you don't already have a folder with comics, create one. The folder is allowed to be anywhere you like. You can create it using the same instructions as for [creating a folder for the database file](#__tabbed_1_2).
 
 ### Create a download folder
 
-Kapowarr needs a [download folder](../settings/download.md#direct-download-temporary-folder). If you don't already have a folder that software can download to, then create one. The folder is allowed to be anywhere you like. You can create it using the same instructions as for [creating a folder for the database file](#__tabbed_1_2).
+Kapowarr needs a [download folder](../settings/download.md#direct-download-temporary-folder). If you don't already have a folder that software can download to, create one. The folder is allowed to be anywhere you like. You can create it using the same instructions as for [creating a folder for the database file](#__tabbed_1_2).
 
-The database folder, root folder(s) and download folder can't intersect (e.g.: the download folder can't be inside the root folder).
+The database folder, root folder(s) and download folder can't intersect (e.g. the download folder can't be inside the root folder).
 
 ### Launch container
 

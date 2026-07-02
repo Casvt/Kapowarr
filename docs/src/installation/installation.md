@@ -17,7 +17,7 @@ Instructions on how to update an installation can be found on the pages of the r
 
 If you already have experience with Docker and the *arr suite of apps, then below you can find some quick instructions to get Kapowarr up and running fast. If you need some more guidance, follow the full guide for [Docker](./docker.md) or a [manual install](./manual_install.md).
 
-You need to have a download folder and root folder created on the host. The database will be stored in a Docker volume. Replace the paths (`/path/to/...`) with their respective values. Set the timezone. Change the user and group the container runs as if desired. Add the mapped folder as your root folder in Kapowarr (`/comics`). See the [examples](./docker.md#example) for some extra help.
+You need to have a download folder and root folder created on the host. The database will be stored in a Docker volume. Replace the paths with their respective values (`/path/to/...`). Set the timezone. If desired, change the user and group that the container runs as. Add the mapped folder as your root folder in Kapowarr (`/comics`). See the [examples](./docker.md#example) for more help.
 
 === "Docker CLI"
 	=== "Linux"
