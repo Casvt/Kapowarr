@@ -124,3 +124,8 @@ def ui_metadata():
 @ui.route('/settings/general', methods=methods)
 def ui_general():
     return render('settings_general.html')
+
+
+@ui.route('/settings/notifications', methods=methods)
+def ui_notifications():
+    return render('settings_notifications.html')

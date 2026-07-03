@@ -692,3 +692,46 @@ class BlocklistEntryNotFound(KapowarrException):
                 "blocklist_entry_id": self.blocklist_entry_id
             }
         }
+
+
+# region Notifications
+class NotificationNotFound(KapowarrException):
+    "Notification connection with given ID not found"
+
+    def __init__(self, notification_id: int) -> None:
+        self.notification_id = notification_id
+        LOGGER.warning(
+            f"Notification connection with given ID not found: {notification_id}"
+        )
+        return
+
+    @property
+    def api_response(self) -> ApiResponse:
+        return {
+            "code": 404,
+            "error": self.__class__.__name__,
+            "result": {
+                "notification_id": self.notification_id
+            }
+        }
+
+
+class InvalidNotificationSettings(KapowarrException):
+    "The notification provider settings are invalid"
+
+    def __init__(self, message: str = '') -> None:
+        self.message = message
+        LOGGER.warning(
+            f"Invalid notification settings: {message}"
+        )
+        return
+
+    @property
+    def api_response(self) -> ApiResponse:
+        return {
+            "code": 400,
+            "error": self.__class__.__name__,
+            "result": {
+                "message": self.message
+            }
+        }

@@ -1,0 +1,188 @@
+/* Settings: Connect (notification connections) */
+
+/* ===================== */
+/* Connection cards      */
+/* ===================== */
+#connection-list {
+	display: flex;
+	gap: 1rem;
+	flex-wrap: wrap;
+	margin-bottom: 1rem;
+}
+
+.connection-card {
+	position: relative;
+	width: 15rem;
+	min-height: 5rem;
+
+	border-radius: 6px;
+	padding: 1rem;
+	background-color: var(--foreground-color);
+	color: var(--text-color);
+	cursor: pointer;
+
+	box-shadow: 0 0 9px 0px #00000075;
+	text-align: left;
+	overflow: hidden;
+}
+
+.connection-card::after {
+	content: '';
+	position: absolute;
+	inset: 0 0 0 auto;
+	box-shadow: 0px 0px 20px 36px var(--foreground-color);
+}
+
+.connection-card .card-name {
+	font-size: 1.1rem;
+	font-weight: 500;
+	margin-bottom: 0.3rem;
+}
+
+.connection-card .card-provider {
+	font-size: 0.85rem;
+	color: var(--dimmed-text-color);
+}
+
+.connection-card .card-badge {
+	display: inline-block;
+	margin-top: 0.4rem;
+	padding: 0.15rem 0.5rem;
+	border-radius: 3px;
+	font-size: 0.75rem;
+	font-weight: 600;
+}
+
+.connection-card .card-badge.disabled {
+	background-color: var(--error-color);
+	color: white;
+}
+
+.connection-card .card-badge.enabled {
+	background-color: var(--success-color);
+	color: white;
+}
+
+.no-connections-msg {
+	color: var(--dimmed-text-color);
+	margin-bottom: 1rem;
+}
+
+/* ===================== */
+/* Add button            */
+/* ===================== */
+.add-connection-btn {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+
+	width: 15rem;
+	height: 5rem;
+
+	border-radius: 6px;
+	border: 2px dashed var(--border-color);
+	background: transparent;
+	cursor: pointer;
+	transition: border-color 200ms;
+}
+
+.add-connection-btn:hover {
+	border-color: var(--accent-color);
+}
+
+.add-connection-btn > img {
+	width: 1.6rem;
+	transform: rotate(45deg);
+	opacity: 0.6;
+}
+
+/* ===================== */
+/* Provider picker grid  */
+/* ===================== */
+#choose-provider-window > div:nth-child(2) {
+	justify-content: flex-start;
+}
+
+#provider-grid {
+	display: flex;
+	justify-content: center;
+	gap: 1rem;
+	flex-wrap: wrap;
+}
+
+.provider-card {
+	width: 12rem;
+	min-height: 5rem;
+
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+
+	border-radius: 6px;
+	padding: 1rem;
+	background-color: var(--foreground-color);
+	color: var(--text-color);
+	cursor: pointer;
+
+	box-shadow: 0 0 9px 0px #00000075;
+	transition: transform 100ms ease;
+}
+
+.provider-card:hover {
+	transform: scale(1.03);
+}
+
+.provider-card .provider-card-name {
+	font-size: 1.1rem;
+	font-weight: 500;
+	text-align: center;
+}
+
+/* ===================== */
+/* Edit/Add modal        */
+/* ===================== */
+.notification-info {
+	padding: 0.75rem 1rem;
+	margin-bottom: 0.5rem;
+	border-radius: 6px;
+	background-color: var(--accent-color);
+	color: var(--nav-background-color);
+	font-size: 0.9rem;
+	text-align: center;
+}
+
+.trigger-help {
+	margin-bottom: 0.5rem;
+	color: var(--dimmed-text-color);
+	font-size: 0.9rem;
+}
+
+.trigger-label {
+	display: block;
+	padding: 0.3rem 0;
+	cursor: pointer;
+}
+
+.trigger-label input[type="checkbox"] {
+	width: 1.15rem;
+	aspect-ratio: 1/1;
+	margin-right: 0.5rem;
+	vertical-align: middle;
+}
+
+/* Settings fields within the modal */
+#edit-settings-fields table {
+	width: 100%;
+}
+
+#edit-settings-fields th,
+#edit-settings-fields td {
+	padding: 0.4rem 0.5rem;
+}
+
+#edit-settings-fields input,
+#edit-settings-fields select {
+	width: 100%;
+	box-sizing: border-box;
+}

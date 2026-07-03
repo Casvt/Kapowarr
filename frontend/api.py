@@ -8,7 +8,9 @@ from typing import Any, Dict, List, Tuple, Type, Union
 from flask import Blueprint, request, send_file
 
 from backend.base.custom_exceptions import (InvalidKeyValue,
-                                            KeyNotFound, TaskNotFound)
+                                            InvalidNotificationSettings,
+                                            KeyNotFound, NotificationNotFound,
+                                            TaskNotFound)
 from backend.base.definitions import (BlocklistReason, BlocklistReasonID,
                                       CredentialData, CredentialSource,
                                       DownloadService, DownloadType, FileMatch,
@@ -24,6 +26,8 @@ from backend.features.download_queue import (DownloadHandler,
 from backend.features.library_import import (import_library,
                                              propose_library_import)
 from backend.features.mass_edit import run_mass_editor_action
+from backend.features.notifications import (NotificationService,
+                                            provider_registry)
 from backend.features.search import manual_search
 from backend.features.tasks import (Task, TaskHandler,
                                     delete_task_history, get_task_history,
@@ -46,6 +50,7 @@ from backend.implementations.remote_mapping import RemoteMappings
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Library, delete_issue_file
 from backend.internals.db_models import FilesDB
+from backend.internals.db_models_notifications import NotificationConnection
 from backend.internals.server import Server, StartTypeHandlers
 from backend.internals.settings import Settings, get_about_data
 from backend.internals.status import StatusHandlers
@@ -1484,3 +1489,89 @@ def api_files(f_id: int):
     elif request.method == 'DELETE':
         delete_issue_file(f_id)
         return return_api({})
+
+
+# =====================
+# Notifications
+# =====================
+@api.route('/notifications', methods=['GET', 'POST'])
+@error_handler
+@auth
+def api_notifications():
+    if request.method == 'GET':
+        return return_api(NotificationConnection.get_all())
+
+    # POST — create new connection
+    data = request.get_json(silent=True) or {}
+    required = ['name', 'provider_type', 'settings']
+    for key in required:
+        if key not in data:
+            raise KeyNotFound(key)
+
+    provider_type = data['provider_type']
+    if provider_type not in provider_registry:
+        raise InvalidNotificationSettings(
+            f'Unknown provider type: {provider_type}'
+        )
+
+    provider_class = provider_registry[provider_type]
+    provider_class().validate_settings(data['settings'])
+
+    notification_id = NotificationConnection.add(data)
+    return return_api({'id': notification_id}, code=201)
+
+
+@api.route('/notifications/providers', methods=['GET'])
+@error_handler
+@auth
+def api_notifications_providers():
+    result = {}
+    for name, cls in provider_registry.items():
+        fields = getattr(cls, 'FIELDS', [])
+        result[name] = {'fields': fields}
+    return return_api(result)
+
+
+@api.route(
+    '/notifications/<int:notification_id>',
+    methods=['GET', 'PUT', 'DELETE']
+)
+@error_handler
+@auth
+def api_notification(notification_id: int):
+    if request.method == 'GET':
+        return return_api(NotificationConnection.get_one(notification_id))
+
+    if request.method == 'DELETE':
+        NotificationConnection.delete(notification_id)
+        return return_api({})
+
+    # PUT — update existing connection
+    data = request.get_json(silent=True) or {}
+    required = ['name', 'provider_type', 'settings']
+    for key in required:
+        if key not in data:
+            raise KeyNotFound(key)
+
+    provider_type = data['provider_type']
+    if provider_type not in provider_registry:
+        raise InvalidNotificationSettings(
+            f'Unknown provider type: {provider_type}'
+        )
+
+    provider_class = provider_registry[provider_type]
+    provider_class().validate_settings(data['settings'])
+
+    NotificationConnection.update(notification_id, data)
+    return return_api({})
+
+
+@api.route(
+    '/notifications/<int:notification_id>/test',
+    methods=['POST']
+)
+@error_handler
+@auth
+def api_notification_test(notification_id: int):
+    NotificationService().send_test(notification_id)
+    return return_api({})

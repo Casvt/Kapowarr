@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% from "base.html" import icon_button, window %}
+{% block title %}Connect{% endblock %}
+{% block css %}
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/window.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/settings_notifications.css') }}">
+{% endblock %}
+{% block js %}
+	<script src="{{ url_for('static', filename='js/window.js') }}" defer></script>
+	<script src="{{ url_for('static', filename='js/settings_notifications.js') }}" defer></script>
+{% endblock %}
+
+{% block windows %}
+	{% set choose_content %}
+		<div id="provider-grid"></div>
+	{% endset %}
+
+	{{ window(False, "choose-provider-window", "Add Connection", choose_content) }}
+
+	{% set edit_content %}
+		<p class="notification-info hidden" id="edit-info"></p>
+		<p class="error hidden" id="edit-error"></p>
+		<form id="edit-notification-form">
+			<table>
+				<tr>
+					<th><label for="edit-name-input">Name</label></th>
+					<td>
+						<input type="text" id="edit-name-input" required placeholder="My Notification">
+					</td>
+				</tr>
+				<tr>
+					<th>Notification Triggers</th>
+					<td>
+						<p class="trigger-help">Select which events should trigger this notification</p>
+						<label class="trigger-label">
+							<input type="checkbox" id="edit-on-download" checked> On Issue Added
+						</label>
+						<label class="trigger-label">
+							<input type="checkbox" id="edit-on-volume-add" checked> On Volume Add
+						</label>
+						<label class="trigger-label">
+							<input type="checkbox" id="edit-on-app-update" checked> On Application Update
+						</label>
+					</td>
+				</tr>
+				<tr id="edit-settings-row">
+					<td colspan="2" id="edit-settings-fields"></td>
+				</tr>
+			</table>
+		</form>
+	{% endset %}
+
+	{% set edit_submit %}
+		<button id="delete-connection-edit" type="button">Delete</button>
+		<button id="test-edit-connection" class="test-button" type="button">
+			<div>Failed</div>
+			<div>Test</div>
+			<div>Success</div>
+		</button>
+		<button id="submit-edit-connection" type="submit" form="edit-notification-form">Save</button>
+	{% endset %}
+
+	{{ window(False, "edit-notification-window", "Add Connection", edit_content, edit_submit) }}
+{% endblock windows %}
+
+{% block main %}
+<main>
+	<div class="settings-container">
+		<h2>Connections</h2>
+		<div id="connection-list" class="client-list"></div>
+		<div id="no-connections" class="no-connections-msg">
+			No connections configured. Click the + button to add one.
+		</div>
+		<button id="add-connection" class="add-connection-btn icon-text-color" title="Add notification connection">
+			<img src="{{url_base}}/static/img/cancel.svg" alt="">
+		</button>
+	</div>
+</main>
+{% endblock main %}
