@@ -3,6 +3,8 @@
 from asyncio import run
 from typing import Callable, Dict, List
 
+from backend.base.definitions import DownloadType, GCDownloadService
+from backend.base.helpers import CommaList
 from backend.base.logging import LOGGER
 from backend.internals.db import get_db, iter_commit
 
@@ -47,6 +49,54 @@ class DatabaseMigrationHandler:
             int: The version.
         """
         return max(cls.handlers) + 1
+
+    @classmethod
+    def is_first_startup(cls) -> bool:
+        """Whether this is the first startup ever. Specifically, whether the
+        config table is present in the database.
+
+        Returns:
+            bool: Whether this is the first startup ever.
+        """
+        result = get_db().execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='config';"
+        ).exists() is None
+        return result
+
+    @classmethod
+    def on_first_startup(cls) -> None:
+        """Handle the first startup ever"""
+        cursor = get_db()
+
+        # Insert GetComics indexer
+        cursor.execute("""
+            INSERT INTO indexer_clients(
+                enabled,
+                download_type, client_type,
+                title, url,
+                gc_service_preference,
+                gc_avoid_large_downloads
+            ) VALUES (
+                :enabled,
+                :download_type, :client_type,
+                :title, :url,
+                :gc_service_preference,
+                :gc_avoid_large_downloads
+            );
+            """,
+            {
+                "enabled": True,
+                "download_type": DownloadType.DDL,
+                "client_type": "GetComics",
+                "title": "GetComics",
+                "url": "https://getcomics.org",
+                "gc_service_preference": str(CommaList(
+                    (s.value for s in GCDownloadService._member_map_.values())
+                )),
+                "gc_avoid_large_downloads": False
+            }
+        )
+        return
 
     @classmethod
     def migrate(cls) -> None:
@@ -518,14 +568,9 @@ def _migrate_tpb_naming_to_special_version_naming():
 
 @DatabaseMigrationHandler.register_handler(19)
 def _migrate_add_we_transfer_to_preference():
-    from backend.internals.settings import Settings
-
-    service_preference = Settings().sv.service_preference
-    service_preference.append("wetransfer")
-    get_db().execute(
-        "UPDATE config SET value = ? WHERE key = 'service_preference';",
-        (service_preference,)
-    )
+    # This migration used to add WeTransfer to the service preference list.
+    # This setting doesn't exist anymore, as it was moved to the indexer
+    # setting.
     return
 
 
@@ -540,15 +585,9 @@ def _migrate_clear_unsupported_source_blocklist_entries():
 
 @DatabaseMigrationHandler.register_handler(21)
 def _migrate_add_pixel_drain_to_preference():
-    from backend.internals.settings import Settings
-
-    service_preference = Settings().sv.service_preference
-    service_preference.append("pixeldrain")
-    get_db().execute(
-        "UPDATE config SET value = ? WHERE key = 'service_preference';",
-        (service_preference,)
-    )
-
+    # This migration used to add WeTransfer to the service preference list.
+    # This setting doesn't exist anymore, as it was moved to the indexer
+    # setting.
     return
 
 
@@ -581,29 +620,9 @@ def _migrate_add_links_in_download_queue():
 
 @DatabaseMigrationHandler.register_handler(23)
 def _migrate_service_preference_to_enum_values():
-    from backend.base.definitions import GCDownloadService
-    from backend.base.helpers import CommaList
-    from backend.internals.settings import Settings
-
-    source_string_to_enum = {
-        'mega': GCDownloadService.MEGA.value,
-        'mediafire': GCDownloadService.MEDIAFIRE.value,
-        'wetransfer': GCDownloadService.WETRANSFER.value,
-        'pixeldrain': GCDownloadService.PIXELDRAIN.value,
-        'getcomics': GCDownloadService.GETCOMICS.value,
-        'getcomics (torrent)': GCDownloadService.GETCOMICS_TORRENT.value
-    }
-
-    new_service_preference = CommaList((
-        source_string_to_enum[service.lower()]
-        for service in Settings().sv.service_preference
-    ))
-
-    get_db().execute(
-        "UPDATE config SET value = ? WHERE key = 'service_preference';",
-        (new_service_preference,)
-    )
-
+    # This migration used to add WeTransfer to the service preference list.
+    # This setting doesn't exist anymore, as it was moved to the indexer
+    # setting.
     return
 
 
@@ -1202,3 +1221,51 @@ def _migrate_blocklist_source_to_download_service():
         ALTER TABLE blocklist
             RENAME COLUMN source TO download_service;
     """)
+
+
+@DatabaseMigrationHandler.register_handler(47)
+def _migrate_add_gc_indexer() -> None:
+    cursor = get_db()
+
+    service_preference = cursor.execute(
+        "SELECT value FROM config WHERE key = 'service_preference';"
+    ).exists()
+
+    avoid_large_downloads = cursor.execute(
+        "SELECT value FROM config WHERE key = 'avoid_large_gc_downloads';"
+    ).exists()
+
+    get_db().execute("""
+        INSERT INTO indexer_clients(
+            enabled,
+            download_type, client_type,
+            title, url,
+            gc_service_preference,
+            gc_avoid_large_downloads
+        ) VALUES (
+            :enabled,
+            :download_type, :client_type,
+            :title, :url,
+            :gc_service_preference,
+            :gc_avoid_large_downloads
+        );
+        """,
+        {
+            "enabled": True,
+            "download_type": DownloadType.DDL,
+            "client_type": "GetComics",
+            "title": "GetComics",
+            "url": "https://getcomics.org",
+            "gc_service_preference": service_preference,
+            "gc_avoid_large_downloads": avoid_large_downloads
+        }
+    )
+
+    cursor.execute(
+        "DELETE FROM config WHERE key = 'service_preference';"
+    )
+    cursor.execute(
+        "DELETE FROM config WHERE key = 'avoid_large_gc_downloads';"
+    )
+
+    return

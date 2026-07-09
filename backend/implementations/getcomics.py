@@ -19,12 +19,11 @@ from backend.base.custom_exceptions import (DownloadLinkBroken,
                                             EnqueuingDownloadFailure,
                                             IssueNotFound)
 from backend.base.definitions import (GC_DOWNLOAD_SERVICE_TERMS,
-                                      BlocklistReason, Constants, Download,
+                                      BlocklistReason, Download,
                                       DownloadClientIdentifier, DownloadGroup,
                                       DownloadType,
                                       EnqueuingDownloadFailureReason,
-                                      GCDownloadService, SearchResultData,
-                                      SpecialVersion)
+                                      GCDownloadService, SpecialVersion)
 from backend.base.file_extraction import (extract_filename_data,
                                           refine_special_version)
 from backend.base.helpers import (AsyncSession, check_overlapping_issues,
@@ -36,10 +35,10 @@ from backend.implementations.blocklist import (add_to_blocklist,
                                                blocklist_contains)
 from backend.implementations.download_client_manager import DownloadClients
 from backend.implementations.external_client_manager import ExternalClients
+from backend.implementations.indexer_client_manager import IndexerClients
 from backend.implementations.matching import download_group_filter
 from backend.implementations.volumes import Volume
 from backend.internals.db import iter_commit
-from backend.internals.settings import Settings
 
 mediafire_dd_regex = compile(
     r'https?://download\d+\.mediafire\.com/',
@@ -49,74 +48,9 @@ size_regex = compile(
     r'\d+(?:\.\d+)?\s*(?:B|Ki?B|Mi?B|Gi?B|Ti?B)',
     IGNORECASE
 )
-MAX_PAGE_DEPTH = 10
 
 
 # region Scraping
-def _get_page_count(soup: BeautifulSoup) -> int:
-    """From a search result page, extract the total page count.
-
-    Args:
-        soup (BeautifulSoup): The soup of the search result page.
-
-    Returns:
-        int: The number of pages. E.g. `10` means 10 pages of search results.
-    """
-    page_links = soup.find_all(["a", "span"], {"class": "page-numbers"})
-
-    if not page_links:
-        return 1
-
-    return int(
-        page_links[-1]
-        .get_text(strip=True)
-        .replace(',', '')
-        .replace('.', '')
-    )
-
-
-def _get_articles(
-    soup: BeautifulSoup
-) -> List[Tuple[str, str, int]]:
-    """From a GC search result page, extract article (single search result)
-    data.
-
-    Args:
-        soup (BeautifulSoup): The soup of the GC search result page.
-
-    Returns:
-        List[Tuple[str, str, int]]: The data of the articles. First string is
-        the link, second string is the title, the integer is the byte size.
-    """
-    result: List[Tuple[str, str, int]] = []
-    for article in soup.find_all("article", {"class": "post"}):
-        title_el = article.find("h1", {"class": "post-title"})
-        if not title_el:
-            continue
-
-        anchor = title_el.find('a')
-        if not anchor:
-            continue
-
-        link: str = first_of_range(anchor.get('href') or '')
-        title = title_el.get_text(strip=True)
-
-        size_container = title_el.next_sibling
-        if not isinstance(size_container, Tag):
-            size = 0
-        else:
-            size_p = next(size_container.children, None)
-            if not size_p:
-                size = 0
-            else:
-                size_text = size_p.get_text().split("Size : ")[1]
-                size = normalise_size(size_text)
-
-        result.append((link, title, size))
-
-    return result
-
-
 def _get_title(
     soup: BeautifulSoup
 ) -> Union[str, None]:
@@ -380,8 +314,9 @@ def _get_download_groups(
     download_groups = __extract_button_links(body, torrent_client_available)
     download_groups.extend(__extract_list_links(body, torrent_client_available))
 
-    settings = Settings().sv
-    service_preference = settings.service_preference
+    indexer_data = IndexerClients.get_client(1).get_indexer_data()
+    service_preference = indexer_data['gc_service_preference']
+
     avoid_gc_preference = service_preference.copy()
     avoid_gc_preference.remove(GCDownloadService.GETCOMICS)
     avoid_gc_preference.append(GCDownloadService.GETCOMICS)
@@ -394,7 +329,7 @@ def _get_download_groups(
                 key=lambda k: (
                     avoid_gc_preference.index(k[0].value)
 
-                    if settings.avoid_large_gc_downloads
+                    if indexer_data["gc_avoid_large_downloads"]
                     and group['size'] >= 400000000
                     else
 
@@ -768,78 +703,6 @@ async def _test_paths(
         raise EnqueuingDownloadFailure(
             EnqueuingDownloadFailureReason.NO_WORKING_LINKS
         )
-
-
-# region Searching
-async def search_getcomics(
-    session: AsyncSession,
-    query: str
-) -> List[SearchResultData]:
-    """Give the search results from GC for the query.
-
-    Args:
-        session (AsyncSession): The session to make the requests with.
-        query (str): The query to use.
-
-    Returns:
-        List[SearchResultData]: The search results.
-    """
-    # Fetch first page and determine max pages
-    first_page = await session.get_text(
-        Constants.GC_SITE_URL,
-        params={"s": query},
-        quiet_fail=True
-    )
-    if not first_page:
-        return []
-
-    first_soup = BeautifulSoup(first_page, "html.parser")
-    max_page = min(_get_page_count(first_soup), MAX_PAGE_DEPTH)
-
-    # Fetch pages beyond first concurrently
-    other_tasks = [
-        session.get_text(
-            f"{Constants.GC_SITE_URL}/page/{page}",
-            params={"s": query},
-            quiet_fail=True
-        )
-        for page in range(2, max_page + 1)
-    ]
-
-    if Settings().sv.flaresolverr_base_url:
-        # FlareSolverr available, run at full speed
-        other_htmls = await gather(*other_tasks)
-    else:
-        # FlareSolverr not available, run at sequencial speed
-        other_htmls = [
-            await task
-            for task in other_tasks
-        ]
-
-    other_soups = [
-        BeautifulSoup(html, "html.parser")
-        for html in other_htmls
-        if html
-    ]
-
-    # Process the search results on each page
-    formatted_results: List[SearchResultData] = [
-        {
-            **extract_filename_data(
-                article[1],
-                assume_volume_number=False,
-                fix_year=True
-            ),
-            "link": article[0],
-            "display_title": article[1],
-            "size": article[2],
-            "source": Constants.GC_SOURCE_TERM
-        }
-        for soup in (first_soup, *other_soups)
-        for article in _get_articles(soup)
-    ]
-
-    return formatted_results
 
 
 # region Processing

@@ -7,7 +7,7 @@ Definitions of exceptions.
 from typing import Any, Union
 
 from backend.base.definitions import (ApiResponse, BrokenClientReason,
-                                      DownloadService,
+                                      DownloadService, DownloadType,
                                       EnqueuingDownloadFailureReason,
                                       KapowarrException)
 from backend.base.logging import LOGGER
@@ -584,6 +584,52 @@ class CredentialInvalid(KapowarrException):
             "code": 400,
             "error": self.__class__.__name__,
             "result": {}
+        }
+
+
+# region Indexers
+class AddingIndexerForbidden(KapowarrException):
+    "It's not allowed to add another instance of this indexer client"
+
+    def __init__(self, download_type: DownloadType, client_type: str) -> None:
+        self.download_type = download_type
+        self.client_type = client_type
+
+        LOGGER.warning(
+            f"Not allowed to add another indexer of {download_type=} and {client_type=}"
+        )
+        return
+
+    @property
+    def api_response(self) -> ApiResponse:
+        return {
+            "code": 400,
+            "error": self.__class__.__name__,
+            "result": {
+                "download_type": self.download_type.value,
+                "client_type": self.client_type
+            }
+        }
+
+
+class IndexerNotFound(KapowarrException):
+    "Indexer with given ID not found"
+
+    def __init__(self, indexer_id: int) -> None:
+        self.indexer_id = indexer_id
+        LOGGER.warning(
+            f"Indexer with given ID not found: {indexer_id}"
+        )
+        return
+
+    @property
+    def api_response(self) -> ApiResponse:
+        return {
+            "code": 404,
+            "error": self.__class__.__name__,
+            "result": {
+                "indexer_id": self.indexer_id
+            }
         }
 
 

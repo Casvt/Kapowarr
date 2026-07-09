@@ -12,6 +12,8 @@ from typing import NoReturn, Union
 
 from backend.base.definitions import Constants, StartType
 from backend.base.helpers import get_python_exe
+from backend.implementations.indexer_client_manager import IndexerClients
+from backend.implementations.query_builder_manager import QueryBuilders
 
 
 def _main(
@@ -85,6 +87,8 @@ def _main(
 
     ExternalClients.trigger_client_registration()
     DownloadClients.trigger_client_registration()
+    IndexerClients.trigger_client_registration()
+    QueryBuilders.trigger_builder_registration()
 
     set_db_location(db_folder)
 

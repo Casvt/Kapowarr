@@ -15,8 +15,9 @@ from typing import Any, Dict, Iterable, Iterator, List, Type, Union
 
 from flask import g
 
-from backend.base.definitions import (Constants, DateType, FileDate, ProxyType,
-                                      SeedingHandling, SpecialVersion, T)
+from backend.base.definitions import (Constants, DateType, DownloadType,
+                                      FileDate, ProxyType, SeedingHandling,
+                                      SpecialVersion, T)
 from backend.base.files import create_folder, folder_path
 from backend.base.helpers import CommaList, current_thread_id
 from backend.base.logging import LOGGER, set_log_level
@@ -302,6 +303,7 @@ def setup_db_adapters_and_converters() -> None:
     register_adapter(SeedingHandling, lambda e: e.value)
     register_adapter(SpecialVersion, lambda e: e.value)
     register_adapter(DateType, lambda e: e.value)
+    register_adapter(DownloadType, lambda e: e.value)
     return
 
 
@@ -314,12 +316,17 @@ def setup_db() -> None:
     cursor.execute("PRAGMA journal_mode = wal;")
     setup_db_adapters_and_converters()
 
+    is_first_startup = DatabaseMigrationHandler.is_first_startup()
+
     cursor.executescript(DB_SCHEMA)
 
     settings = Settings()
     settings_values = settings.get_settings()
 
     set_log_level(settings_values.log_level)
+
+    if is_first_startup:
+        DatabaseMigrationHandler.on_first_startup()
 
     DatabaseMigrationHandler.migrate()
 
@@ -431,6 +438,17 @@ CREATE TABLE IF NOT EXISTS volume_files(
         ON DELETE CASCADE,
     FOREIGN KEY (file_id) REFERENCES files(id)
         ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS indexer_clients(
+    id INTEGER PRIMARY KEY,
+    enabled BOOL NOT NULL DEFAULT 1,
+    download_type INTEGER NOT NULL,
+    client_type VARCHAR(255) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    url TEXT NOT NULL,
+
+    gc_service_preference TEXT,
+    gc_avoid_large_downloads BOOL
 );
 CREATE TABLE IF NOT EXISTS external_download_clients(
     id INTEGER PRIMARY KEY,
