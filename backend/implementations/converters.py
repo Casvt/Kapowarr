@@ -255,6 +255,10 @@ class ConvertersManager:
         runs_64bit = System.runs_64bit
         source_format = splitext(filepath)[1].lower().lstrip('.')
 
+        if source_format not in cls.converters:
+            # Can't convert from this source format
+            return None
+
         if (
             settings.extract_issue_ranges
             and source_format in cls.formats_convertible_to_folder()
