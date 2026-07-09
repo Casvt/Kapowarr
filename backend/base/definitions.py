@@ -645,6 +645,7 @@ class IndexerClientData(TypedDict):
 class SearchQuery(TypedDict):
     query: str
     page: int
+    total_available_variations: int
 
 
 class SearchResultData(FilenameData):
@@ -910,6 +911,7 @@ class SearchIterationStats:
     new_match_count: int
     next_page_available: bool
     remaining_wanted_issues: List[int]
+    total_available_variations: int
 
 
 # region Abstract Classes
@@ -1219,6 +1221,7 @@ class QueryBuilder(ABC):
 
         elif search_action == SearchAction.SEARCH_ISSUE:
             self.page = 1
+            self.query_variation_index = 0
 
         elif search_action == SearchAction.FETCH_NEXT_PAGE:
             self.page += 1

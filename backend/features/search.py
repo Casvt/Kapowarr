@@ -4,8 +4,9 @@ from asyncio import gather, run
 from typing import Dict, List, Set, Tuple, TypedDict, Union
 
 from backend.base.definitions import (IndexerClient, MatchedSearchResultData,
-                                      QueryBuilder, QueryResult, SearchAction,
-                                      SearchIterationStats, SpecialVersion)
+                                      QueryBuilder, QueryResult,
+                                      SearchAction, SearchIterationStats,
+                                      SearchQuery, SpecialVersion)
 from backend.base.file_extraction import refine_special_version
 from backend.base.helpers import (check_overlapping_issues,
                                   extract_year_from_date, force_range)
@@ -190,11 +191,12 @@ class SearchCoordinator:
 
         return rating
 
-    async def _run_iteration(self) -> List[QueryResult]:
+    async def _run_iteration(self) -> List[Tuple[SearchQuery, QueryResult]]:
         """Run one iteration of the searching loop for all indexers.
 
         Returns:
-            List[QueryResult]: The search results from the iteration.
+            List[Tuple[SearchQuery, QueryResult]]: The query and accompanying
+                search results from the iteration.
         """
         actions = [
             team["search_action_planner"].next_action()
@@ -218,7 +220,7 @@ class SearchCoordinator:
             for query, team in zip(queries, self.indexers)
         ))
 
-        return result
+        return list(zip(queries, result))
 
     async def search(self) -> List[MatchedSearchResultData]:
         """Perform the search.
@@ -240,13 +242,18 @@ class SearchCoordinator:
         while self.indexers and self.wanted_issues:
             all_results = await self._run_iteration()
 
-            for indexer_results, team in zip(all_results, self.indexers):
+            for (indexer_query, indexer_results), team in zip(
+                all_results, self.indexers
+            ):
                 stats = SearchIterationStats(
                     result_count=len(indexer_results.results),
                     matched_count=0,
                     new_match_count=0,
                     next_page_available=indexer_results.next_page_available,
-                    remaining_wanted_issues=self.wanted_issues
+                    remaining_wanted_issues=self.wanted_issues,
+                    total_available_variations=indexer_query[
+                        'total_available_variations'
+                    ]
                 )
 
                 for indexer_result in indexer_results.results:

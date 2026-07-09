@@ -57,14 +57,13 @@ class DDLQueryBuilder(QueryBuilder):
         else:
             queries = GENERAL_ISSUE_FORMATS
 
-        query = queries[self.query_variation_index % len(queries)]
+        query = queries[self.query_variation_index]
 
         if query_keys.year is None:
             query = query.replace('({year})', '').strip()
 
-        alias_index = self.alias_index % len(query_keys.titles)
         result = query.format(
-            title=normalise_query_string(query_keys.titles[alias_index])
+            title=normalise_query_string(query_keys.titles[self.alias_index])
             .replace(':', ''),
             year=query_keys.year,
             volume_number=query_keys.volume_number,
@@ -73,5 +72,6 @@ class DDLQueryBuilder(QueryBuilder):
 
         return {
             "query": result,
-            "page": self.page
+            "page": self.page,
+            "total_available_variations": len(queries)
         }
