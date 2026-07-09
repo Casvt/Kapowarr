@@ -1092,7 +1092,8 @@ class AsyncSession(ClientSession):
             timeout=ClientTimeout(
                 connect=Constants.REQUEST_TIMEOUT,
                 sock_read=Constants.REQUEST_TIMEOUT
-            )
+            ),
+            trust_env=True
         )
 
         self.fs = FlareSolverr()
