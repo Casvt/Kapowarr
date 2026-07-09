@@ -27,7 +27,6 @@ VOLUME_FORMATS = (
 
 SPECIFIC_ISSUE_FORMATS = (
     "{title} #{issue_number} ({year})",
-    "{title} Vol. {volume_number} #{issue_number}",
     "{title} #{issue_number}",
 )
 
