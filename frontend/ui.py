@@ -106,6 +106,11 @@ def ui_mediamanagement():
     return render('settings_mediamanagement.html')
 
 
+@ui.route('/settings/indexers', methods=methods)
+def ui_indexers():
+    return render('settings_indexers.html')
+
+
 @ui.route('/settings/download', methods=methods)
 def ui_download():
     return render('settings_download.html')

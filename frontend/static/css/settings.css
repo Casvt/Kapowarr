@@ -373,10 +373,12 @@
 	left: 20%;
 }
 
+#choose-indexer-window > div:nth-child(2),
 #choose-torrent-window > div:nth-child(2) {
 	justify-content: flex-start;
 }
 
+#choose-indexer-list,
 #choose-torrent-list {
 	display: flex;
 	justify-content: center;
@@ -384,6 +386,7 @@
 	flex-wrap: wrap;
 }
 
+#choose-indexer-list > button,
 #choose-torrent-list > button {
 	width: 10rem;
 	height: 4rem;

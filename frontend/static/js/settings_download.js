@@ -6,8 +6,6 @@ function fillSettings(api_key) {
 		document.querySelector('#download-timeout-input').value = ((json.result.failing_download_timeout || 0) / 60) || '';
 		document.querySelector('#seeding-handling-input').value = json.result.seeding_handling;
 		document.querySelector('#delete-downloads-input').checked = json.result.delete_completed_downloads;
-		document.querySelector('#avoid-large-gc-downloads-input').checked = json.result.avoid_large_gc_downloads;
-		fillPref(json.result.service_preference);
 	});
 };
 
@@ -19,9 +17,7 @@ function saveSettings(api_key) {
 		'concurrent_direct_downloads': parseInt(document.querySelector('#concurrent-direct-downloads-input').value),
 		'failing_download_timeout': parseInt(document.querySelector('#download-timeout-input').value || 0) * 60,
 		'seeding_handling': document.querySelector('#seeding-handling-input').value,
-		'delete_completed_downloads': document.querySelector('#delete-downloads-input').checked,
-		'avoid_large_gc_downloads': document.querySelector('#avoid-large-gc-downloads-input').checked,
-		'service_preference': [...document.querySelectorAll('#pref-table select')].map(e => e.value)
+		'delete_completed_downloads': document.querySelector('#delete-downloads-input').checked
 	};
 	sendAPI('PUT', '/settings', api_key, {}, data)
 	.then(response => 
@@ -52,43 +48,6 @@ function emptyFolder(api_key) {
 	.then(response => {
 		document.querySelector('#empty-download-folder').innerText = 'Done';
 	});
-};
-
-//
-// Service preference
-//
-function fillPref(pref) {
-	const selects = document.querySelectorAll('#pref-table select');
-	for (let i = 0; i < pref.length; i++) {
-		const service = pref[i];
-		const select = selects[i];
-		select.onchange = updatePrefOrder;
-		pref.forEach(option => {
-			const entry = document.createElement('option');
-			entry.value = option;
-			entry.innerText = option.charAt(0).toUpperCase() + option.slice(1);
-			if (option === service)
-				entry.selected = true;
-			select.appendChild(entry);
-		});
-	};
-};
-
-function updatePrefOrder(e) {
-	const other_selects = document.querySelectorAll(
-		`#pref-table select:not([data-place="${e.target.dataset.place}"])`
-	);
-	// Find select that has the value of the target select
-	for (let i = 0; i < other_selects.length; i++) {
-		if (other_selects[i].value === e.target.value) {
-			// Set it to old value of target select
-			all_values = [...document.querySelector('#pref-table select').options].map(e => e.value)
-			used_values = new Set([...document.querySelectorAll('#pref-table select')].map(s => s.value));
-			open_value = all_values.filter(e => !used_values.has(e))[0];
-			other_selects[i].value = open_value;
-			break;
-		};
-	};
 };
 
 // code run on load

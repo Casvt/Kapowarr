@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% from "base.html" import icon_button, window %}
+{% block title %}Indexers{% endblock %}
+{% block css %}
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/window.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+{% endblock %}
+{% block js %}
+	<script src="{{ url_for('static', filename='js/window.js') }}" defer></script>
+	<script src="{{ url_for('static', filename='js/settings_indexers.js') }}" defer></script>
+{% endblock %}
+
+{% block windows %}
+	{% set choose_content %}
+		<div id="choose-indexer-list"></div>
+	{% endset %}
+
+	{{ window(False, "choose-indexer-window", "Choose Indexer", choose_content) }}
+
+	{% set add_content %}
+		<p class="error hidden" id="add-error"></p>
+		<form id="add-indexer-form">
+			<table>
+				<tr>
+					<th><label for="add-title-input">Title</label></th>
+					<td>
+						<input type="text" id="add-title-input" required>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="add-enabled-input">Enable</label></th>
+					<td>
+						<input type="checkbox" id="add-enabled-input" checked>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="add-url-input">URL</label></th>
+					<td>
+						<input type="text" id="add-url-input" required>
+					</td>
+				</tr>
+			</table>
+		</form>
+	{% endset %}
+
+	{% set add_submit %}
+		<button id="test-indexer-add" class="test-button" type="button">
+			<div>Failed</div>
+			<div>Test</div>
+			<div>Success</div>
+		</button>
+		<button id="submit-indexer-add" type="submit" form="add-indexer-form">Add</button>
+	{% endset %}
+
+	{{ window(False, "add-indexer-window", "Add Indexer", add_content, add_submit) }}
+
+	{% set edit_content %}
+		<p class="error hidden" id="edit-error"></p>
+		<form id="edit-indexer-form">
+			<table>
+				<tr>
+					<th><label for="edit-title-input">Title</label></th>
+					<td>
+						<input type="text" id="edit-title-input" required>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="edit-enabled-input">Enable</label></th>
+					<td>
+						<input type="checkbox" id="edit-enabled-input" checked>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="edit-url-input">URL</label></th>
+					<td>
+						<input type="text" id="edit-url-input" required>
+					</td>
+				</tr>
+			</table>
+		</form>
+	{% endset %}
+
+	{% set edit_submit %}
+		<button id="delete-indexer-edit" type="button">Delete</button>
+		<button id="test-indexer-edit" class="test-button" type="button">
+			<div>Failed</div>
+			<div>Test</div>
+			<div>Success</div>
+		</button>
+		<button id="submit-indexer-edit" type="submit" form="edit-indexer-form">Save</button>
+	{% endset %}
+
+	{{ window(False, "edit-indexer-window", "Edit Indexer Client", edit_content, edit_submit) }}
+{% endblock windows %}
+
+{% block main %}
+<main>
+	<div class="settings-container">
+		<h2>DDL</h2>
+		<div id="ddl-indexer-list" class="client-list">
+			<button id="add-ddl-indexer" class="add-button icon-text-color" title="Add DDL indexer">
+				<img src="{{url_base}}/static/img/cancel.svg" alt="">
+			</button>
+		</div>
+	</div>
+</main>
+{% endblock main %}
