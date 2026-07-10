@@ -221,6 +221,9 @@ function loadIndexerOptionList(apiKey, downloadType) {
 };
 
 function loadAddIndexer(apiKey, downloadType, clientType) {
+	const error = document.querySelector("#add-error");
+	hide([error]);
+
 	const form = document.querySelector('#add-indexer-form tbody');
 	form.dataset.download_type = downloadType;
 	form.dataset.type = clientType;
@@ -249,6 +252,9 @@ function loadAddIndexer(apiKey, downloadType, clientType) {
 };
 
 function saveAddIndexer() {
+	const error = document.querySelector("#add-error");
+	hide([error]);
+
 	usingApiKey()
 	.then(apiKey => {
 		testAddIndexer(apiKey).then(result => {
@@ -275,6 +281,15 @@ function saveAddIndexer() {
 			.then(response => {
 				loadIndexers(apiKey);
 				closeWindow();
+			})
+			.catch(e => {
+				if (e.status === 400) {
+					// Only one instance allowed
+					error.innerText = "Only one instance of this indexer allowed";
+					hide([], [error]);
+				}
+				else
+					console.log(e);
 			});
 		});
 	});
