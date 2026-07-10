@@ -5,6 +5,7 @@ from __future__ import annotations
 from asyncio import gather, run
 from os import listdir
 from os.path import basename, join
+from time import sleep
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Tuple, Union
 
 from typing_extensions import assert_never
@@ -483,13 +484,9 @@ class DownloadHandler(metaclass=Singleton):
         self,
         add_args: Iterable[Tuple[str, int, Union[int, None], bool]]
     ) -> None:
-        async def add_wrapper():
-            await gather(
-                *(self.add(*entry)
-                for entry in add_args)
-            )
-
-        run(add_wrapper())
+        for entry in add_args:
+            run(self.add(*entry))
+            sleep(1.0)
         return
 
     def __load_downloads(self) -> None:
