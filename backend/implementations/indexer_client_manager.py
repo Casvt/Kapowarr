@@ -30,8 +30,12 @@ def _validate_indexer_data(
 ) -> Dict[str, Any]:
     filtered_data: Dict[str, Any] = {}
     for key in ICF._member_map_.values():
-        if key in required_tokens and key.value not in data:
+        if key not in required_tokens:
+            continue
+
+        if key.value not in data:
             raise KeyNotFound(key.value)
+
         value = data[key.value]
 
         if (
@@ -121,10 +125,16 @@ class BaseIndexerClient(IndexerClient):
         self._title: str = data['title']
         self._url: str = data['url']
 
-        self._gc_service_preference = CommaList(data["gc_service_preference"])
-        self._gc_avoid_large_downloads: bool = data["gc_avoid_large_downloads"]
-        if self._gc_avoid_large_downloads is None:
-            self._gc_avoid_large_downloads = False
+        if (
+            data["gc_service_preference"] is not None
+            and data["gc_avoid_large_downloads"] is not None
+        ):
+            self._gc_service_preference = CommaList(
+                data["gc_service_preference"])
+            self._gc_avoid_large_downloads = data["gc_avoid_large_downloads"]
+        else:
+            self._gc_service_preference = None
+            self._gc_avoid_large_downloads = None
 
         return
 
@@ -166,12 +176,16 @@ class BaseIndexerClient(IndexerClient):
         self._enabled = filtered_data[ICF.ENABLED.value]
         self._title = filtered_data[ICF.TITLE.value]
         self._url = filtered_data[ICF.URL.value]
-        self._gc_service_preference = CommaList(
-            filtered_data["gc_service_preference"]
-        )
-        self._gc_avoid_large_downloads = filtered_data[
-            "gc_avoid_large_downloads"
-        ]
+        if (
+            "gc_service_preference" in self.required_tokens
+            and "gc_avoid_large_downloads" in self.required_tokens
+        ):
+            self._gc_service_preference = CommaList(
+                filtered_data["gc_service_preference"]
+            )
+            self._gc_avoid_large_downloads = filtered_data[
+                "gc_avoid_large_downloads"
+            ]
 
         return
 
@@ -455,7 +469,11 @@ class IndexerClients:
                 .clients[DownloadType(client["download_type"])]
                 [client["client_type"]]
             )
-            gc_service_preference = CommaList(client["gc_service_preference"])
+            if client["gc_service_preference"] is not None:
+                gc_service_preference = CommaList(
+                    client["gc_service_preference"])
+            else:
+                gc_service_preference = None
 
             result.append({
                 "id": client["id"],

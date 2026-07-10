@@ -315,7 +315,7 @@ def _get_download_groups(
     download_groups.extend(__extract_list_links(body, torrent_client_available))
 
     indexer_data = IndexerClients.get_client(1).get_indexer_data()
-    service_preference = indexer_data['gc_service_preference']
+    service_preference = indexer_data['gc_service_preference'] or []
 
     avoid_gc_preference = service_preference.copy()
     avoid_gc_preference.remove(GCDownloadService.GETCOMICS)
