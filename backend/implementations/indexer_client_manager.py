@@ -425,7 +425,7 @@ class IndexerClients:
         # Raises exception on fail
         ClientClass.test(filtered_data["url"])
 
-        data.update({
+        filtered_data.update({
             'download_type': ClientClass.download_type.value,
             'client_type': client_type
         })
@@ -444,7 +444,7 @@ class IndexerClients:
                 :gc_service_preference, :gc_avoid_large_downloads
             );
             """,
-            data
+            filtered_data
         ).lastrowid
         return cls.get_client(indexer_id)
 
