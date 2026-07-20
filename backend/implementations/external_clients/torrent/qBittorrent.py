@@ -223,7 +223,7 @@ class qBittorrent(BaseExternalClient):
         files = {
             'urls': (None, download_link),
             'savepath': (None, target_folder),
-            'category': (None, Constants.TORRENT_TAG)
+            'category': (None, Constants.EXTERNAL_DOWNLOAD_TAG)
         }
 
         try:
@@ -244,7 +244,7 @@ class qBittorrent(BaseExternalClient):
         return t_hash
 
     def get_download(self, download_id: str) -> Union[Dict[str, Any], None]:
-        if self.last_update + Constants.TORRENT_UPDATE_INTERVAL < time():
+        if self.last_update + Constants.EXTERNAL_CLIENT_UPDATE_INTERVAL < time():
             self._update_statuses()
 
         return self.statuses[download_id]

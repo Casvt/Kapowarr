@@ -168,7 +168,7 @@ class DownloadHandler(metaclass=Singleton):
                 # Or seeding with files copied
                 # Or seeding with seeding_handling = 'complete'
                 download.sleep_event.wait(
-                    timeout=Constants.TORRENT_UPDATE_INTERVAL
+                    timeout=Constants.EXTERNAL_CLIENT_UPDATE_INTERVAL
                 )
 
         ws.emit(RemovedFromQueueEvent(download))

@@ -260,7 +260,7 @@ class Transmission(BaseExternalClient):
         return t_hash
 
     def get_download(self, download_id: str) -> Union[dict, None]:
-        if self.last_update + Constants.TORRENT_UPDATE_INTERVAL < time():
+        if self.last_update + Constants.EXTERNAL_CLIENT_UPDATE_INTERVAL < time():
             self._update_statuses()
 
         return self.statuses[download_id]
