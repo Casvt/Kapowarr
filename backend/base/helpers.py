@@ -526,10 +526,10 @@ def normalise_string(s: str) -> str:
 combining_marks_regex = compile(r'[\u0300-\u036f]')
 
 
-def normalise_query_string(s: str) -> str:
+def fully_normalise_string(s: str) -> str:
     """On top of the standard normalisation of `normalise_string()`, also
-    replace special characters with their ASCII version. E.g. 'æ' to 'ae' and
-    'ō' to 'o'.
+    replace special characters with their ASCII version and remove accents.
+    E.g. 'æ' to 'ae', 'ō' to 'o' and 'é' to 'e'.
 
     Args:
         s (str): Input string.

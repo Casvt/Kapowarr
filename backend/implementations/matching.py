@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Dict, List, Mapping, Tuple, Union
 
 from backend.base.definitions import IssueData, SpecialVersion, VolumeMetadata
 from backend.base.file_extraction import special_version_regex
-from backend.base.helpers import force_range, normalise_query_string
+from backend.base.helpers import force_range, fully_normalise_string
 from backend.implementations.blocklist import blocklist_contains
 
 if TYPE_CHECKING:
@@ -45,12 +45,12 @@ def match_title(
     """
     clean_reference_title = clean_title_regex.sub(
         '',
-        normalise_query_string(title1).lower()
+        fully_normalise_string(title1).lower()
     ).replace(' ', '')
 
     clean_title = clean_title_regex.sub(
         '',
-        normalise_query_string(title2).lower()
+        fully_normalise_string(title2).lower()
     ).replace(' ', '')
 
     if allow_contains:
