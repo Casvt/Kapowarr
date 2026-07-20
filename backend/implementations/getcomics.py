@@ -483,6 +483,12 @@ async def __purify_link(
 
     async with AsyncSession() as session:
         r = await session.get(link)
+    if r.status == 429:
+        # GetComics rate-limited the download-link resolution. Treat as a
+        # rate limit (not a broken link) so it isn't blocklisted. See #342.
+        raise EnqueuingDownloadFailure(
+            EnqueuingDownloadFailureReason.LINK_RATE_LIMITED
+        )
     if not r.ok:
         raise DownloadLinkBroken(link)
     url = str(r.real_url)
