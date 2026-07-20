@@ -70,8 +70,15 @@ class GetComicsIndexer(BaseIndexerClient):
             if not anchor:
                 continue
 
-            link: str = first_of_range(anchor.get('href') or '')
+            cat_el = article.find("a", {"class": "post-category"})
+            if (
+                not cat_el
+                or cat_el.get_text(strip=True) in ("News", "Sponsored")
+            ):
+                continue
+
             title = title_el.get_text(strip=True)
+            link: str = first_of_range(anchor.get('href') or '')
 
             size_container = title_el.next_sibling
             if not isinstance(size_container, Tag):
