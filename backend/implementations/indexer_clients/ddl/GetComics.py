@@ -75,14 +75,17 @@ class GetComicsIndexer(BaseIndexerClient):
 
             size_container = title_el.next_sibling
             if not isinstance(size_container, Tag):
-                size = 0
+                size = -1
             else:
                 size_p = next(size_container.children, None)
                 if not size_p:
-                    size = 0
+                    size = -1
                 else:
-                    size_text = size_p.get_text().split("Size : ")[1]
-                    size = normalise_size(size_text)
+                    split_size = size_p.get_text().split("Size : ")
+                    if len(split_size) != 2:
+                        size = -1
+                    else:
+                        size = normalise_size(split_size[1])
 
             result.append((link, title, size))
 
