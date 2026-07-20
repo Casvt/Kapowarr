@@ -519,7 +519,7 @@ CREATE TABLE IF NOT EXISTS blocklist(
     web_sub_title TEXT,
 
     download_link TEXT UNIQUE,
-    source VARCHAR(30),
+    download_service VARCHAR(30),
 
     reason INTEGER NOT NULL CHECK (reason > 0),
     added_at INTEGER NOT NULL CHECK (added_at > 0),

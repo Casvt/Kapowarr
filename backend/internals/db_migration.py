@@ -1222,6 +1222,8 @@ def _migrate_blocklist_source_to_download_service():
             RENAME COLUMN source TO download_service;
     """)
 
+    return
+
 
 @DatabaseMigrationHandler.register_handler(47)
 def _migrate_add_gc_indexer() -> None:
