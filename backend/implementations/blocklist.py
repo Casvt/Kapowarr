@@ -223,7 +223,7 @@ def delete_blocklist_entry(id: int) -> None:
     Raises:
         BlocklistEntryNotFound: The ID doesn't map to any blocklist entry.
     """
-    LOGGER.debug(f'Deleting blocklist entry {id}')
+    LOGGER.info(f'Deleting blocklist entry {id}')
 
     entry_found = get_db().execute(
         "DELETE FROM blocklist WHERE id = ?",
