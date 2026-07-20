@@ -87,12 +87,7 @@ class FlareSolverr:
                     return False
 
                 result = result.json()
-                if not (
-                    result.get("status") == "ok"
-                    # Byparr doesn't return the same, even though it states it's
-                    # a drop-in replacement
-                    or "is working" in result.get("msg", "")
-                ):
+                if result.get("status") != "ok":
                     return False
 
             except RequestException:
