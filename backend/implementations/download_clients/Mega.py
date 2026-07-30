@@ -568,7 +568,18 @@ class MegaAccount:
                 user=user
             )
 
-        if isinstance(res, int) or 'e' in res:
+        if isinstance(res, int):
+            if res == -9:
+                raise CredentialInvalid
+
+            raise ClientNotWorking(
+                BrokenClientReason.FAILED_PROCESSING_RESPONSE
+            )
+
+        if 'e' in res:
+            if res['e'] == -9:
+                raise CredentialInvalid
+
             raise ClientNotWorking(
                 BrokenClientReason.FAILED_PROCESSING_RESPONSE
             )
