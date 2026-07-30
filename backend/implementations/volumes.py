@@ -51,6 +51,7 @@ ONE_DAY = timedelta(days=1)
 THIRTY_DAYS = timedelta(days=30)
 split_regex = compile(r'(?<!vs)(?<!r\.i\.p)(?:(?<=[\.!\?])\s|(?<=[\.!\?]</p>)(?!$))', IGNORECASE)
 remove_link_regex = compile(r'<a[^>]*>.*?</a>', IGNORECASE)
+annual_regex = compile(r'\bannual\b', IGNORECASE)
 omnibus_regex = compile(r'\bomnibus\b', IGNORECASE)
 os_regex = compile(r'(?<!preceding\s)\bone[\- ]?shot\b(?!\scollections?)', IGNORECASE)
 hc_regex = compile(r'(?<!preceding\s)\bhard[\- ]?cover\b(?!\scollections?)', IGNORECASE)
@@ -1317,21 +1318,24 @@ def determine_special_version(volume_id: int) -> SpecialVersion:
         # Volume is annual
         return SpecialVersion.NORMAL
 
-    if one_issue and volume_data.description:
+    if volume_data.description:
         # Look for Special Version in first sentence of description. Only first
         # sentence as to avoid false hits, like referring to another volume that
         # is a Special Version in the description (e.g. "Included in the TPB")
         first_sentence = split_regex.split(volume_data.description)[0]
         first_sentence = remove_link_regex.sub('', first_sentence)
 
-        if omnibus_regex.search(first_sentence):
+        if one_issue and omnibus_regex.search(first_sentence):
             return SpecialVersion.OMNIBUS
 
-        if os_regex.search(first_sentence):
+        if one_issue and os_regex.search(first_sentence):
             return SpecialVersion.ONE_SHOT
 
-        if hc_regex.search(first_sentence):
+        if one_issue and hc_regex.search(first_sentence):
             return SpecialVersion.HARD_COVER
+
+        if annual_regex.search(first_sentence):
+            return SpecialVersion.NORMAL
 
     if one_issue and issues[0].date:
         thirty_plus_days_ago = (
