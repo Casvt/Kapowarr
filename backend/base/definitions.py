@@ -433,9 +433,9 @@ class BlocklistReasonID(BaseEnum):
 class BlocklistReason(BaseEnum):
     "The reason for putting a link on the blocklist"
 
-    LINK_BROKEN = "Link broken"
-    NO_WORKING_LINKS = "No supported or working links"
-    ADDED_BY_USER = "Added by user"
+    LINK_BROKEN = "link_broken"
+    NO_WORKING_LINKS = "no_working_links"
+    ADDED_BY_USER = "added_by_user"
 
 
 class BrokenClientReason(BaseEnum):
@@ -444,11 +444,11 @@ class BrokenClientReason(BaseEnum):
     (aside from an invalid link)
     """
 
-    CONNECTION_ERROR = "Failed to connect"
-    NOT_CLIENT_INSTANCE = "What was connected to was not the expected client"
-    VERSION_NOT_SUPPORTED = "The version is not supported"
-    FAILED_PROCESSING_RESPONSE = "Got an unexpected response back"
-    ACCESS_DENIED = "Access denied by client but not because of invalid credentials"
+    CONNECTION_ERROR = "connection_error"
+    NOT_CLIENT_INSTANCE = "not_client_instance"
+    VERSION_NOT_SUPPORTED = "version_not_supported"
+    FAILED_PROCESSING_RESPONSE = "failed_processing_response"
+    ACCESS_DENIED = "access_denied"
     """
     Access denied not because credentials are invalid but because,
     e.g., Mega failed to log in anonymously or a webpage is blocked by CF
@@ -459,14 +459,14 @@ class EnqueuingDownloadFailureReason(BaseEnum):
     "The reason a download failed to be added to the queue"
 
     # Download link is webpage with links on it. E.g. GetComics.
-    WEBPAGE_BROKEN = "Webpage unavailable"
-    NO_MATCHES = "No links found on webpage that match to volume and are not blocklisted"
-    NO_WORKING_LINKS = "All download links found on the webpage are broken"
-    ONLY_RATE_LIMITED_LINKS = "All working download links on the webpage are from rate limited services"
+    WEBPAGE_BROKEN = "webpage_broken"
+    NO_MATCHES = "no_matches"
+    NO_WORKING_LINKS = "no_working_links"
+    ONLY_RATE_LIMITED_LINKS = "only_rate_limited_links"
 
     # Any download link, whether webpage or direct link.
-    LINK_BROKEN = "Download link broken"
-    LINK_RATE_LIMITED = "Download link rate limited"
+    LINK_BROKEN = "link_broken"
+    LINK_RATE_LIMITED = "link_rate_limited"
 
 
 class DownloadType(BaseEnum):

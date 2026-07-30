@@ -44,6 +44,16 @@ const ViewEls = {
 	issues_list: document.querySelector('#issues-list')
 };
 
+const enqueueFailureReasonMap = {
+    webpage_broken: "Webpage unavailable",
+    no_matches: "No links found on webpage that match to volume and are not blocklisted",
+    no_working_links: "All download links found on the webpage are broken",
+    only_rate_limited_links: "All working download links on the webpage are from rate limited services",
+
+    link_broken: "Download link broken",
+    link_rate_limited: "Download link rate limited"
+}
+
 //
 // Filling data
 //
@@ -408,7 +418,7 @@ function addManualSearch(link, force, button, api_key, issue_id=null) {
 		else {
 			img.src = `${url_base}/static/img/download.svg`;
 			button.classList.add('error');
-			button.title = json.result.fail_reason;
+			button.title = enqueueFailureReasonMap[json.result.fail_reason];
 		};
 	});
 };

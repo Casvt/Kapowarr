@@ -1,3 +1,12 @@
+const brokenClientReasonMap = {
+    connection_error: "Failed to connect",
+    not_client_instance: "What was connected to was not the expected client",
+    version_not_supported: "The version is not supported",
+    failed_processing_response: "Got an unexpected response back",
+    access_denied: "Access denied by client but not because of invalid credentials",
+	invalid_credentials: "Failed to login with the given credentials"
+}
+
 function createUsernameInput(id) {
 	const username_row = document.createElement('tr');
 	const username_header = document.createElement('th');
@@ -166,7 +175,7 @@ async function testEditTorrent(api_key) {
 		else {
 			// Test failed
 			test_button.classList.add('show-fail');
-			error.innerText = json.result.description;
+			error.innerText = brokenClientReasonMap[json.result.description];
 			hide([], [error]);
 		};
 		return json.result.success;
@@ -296,11 +305,12 @@ async function testAddTorrent(api_key) {
 		if (json.result.success)
 			// Test successful
 			test_button.classList.add('show-success');
-		else
+		else {
 			// Test failed
 			test_button.classList.add('show-fail');
-			error.innerText = json.result.description;
+			error.innerText = brokenClientReasonMap[json.result.description];
 			hide([], [error]);
+		}
 		return json.result.success;
 	});
 };
@@ -391,7 +401,7 @@ function addCredential() {
 					if (json.error === "CredentialInvalid") {
 						document.querySelector('#builtin-window p.error').innerText = "Invalid credentials";
 					} else {
-						document.querySelector('#builtin-window p.error').innerText = json.result.reason_text;
+						document.querySelector('#builtin-window p.error').innerText = brokenClientReasonMap[json.result.reason];
 					}
 					hide([], [document.querySelector('#builtin-window p.error')]);
 				});

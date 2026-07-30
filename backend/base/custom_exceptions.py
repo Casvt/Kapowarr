@@ -468,9 +468,8 @@ class EnqueuingDownloadFailure(KapowarrException):
 
     def __init__(self, reason: EnqueuingDownloadFailureReason) -> None:
         self.reason = reason
-        self.reason_text = reason.value
         LOGGER.warning(
-            f"Failed to enqueue download: {self.reason_text}"
+            f"Failed to enqueue download: {self.reason}"
         )
         return
 
@@ -480,7 +479,7 @@ class EnqueuingDownloadFailure(KapowarrException):
             "code": 400,
             "error": self.__class__.__name__,
             "result": {
-                "reason_text": self.reason.value
+                "reason": self.reason.value
             }
         }
 
@@ -639,9 +638,8 @@ class ClientNotWorking(KapowarrException):
 
     def __init__(self, reason: BrokenClientReason) -> None:
         self.reason = reason
-        self.reason_text = reason.value
         LOGGER.warning(
-            f"The download client isn't working: {self.reason_text}"
+            f"The download client isn't working: {self.reason}"
         )
         return
 
@@ -651,7 +649,7 @@ class ClientNotWorking(KapowarrException):
             "code": 400,
             "error": self.__class__.__name__,
             "result": {
-                "reason_text": self.reason_text
+                "reason": self.reason.value
             }
         }
 

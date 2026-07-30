@@ -1,3 +1,12 @@
+const brokenClientReasonMap = {
+    connection_error: "Failed to connect",
+    not_client_instance: "What was connected to was not the expected client",
+    version_not_supported: "The version is not supported",
+    failed_processing_response: "Got an unexpected response back",
+    access_denied: "Access denied by client but not because of invalid credentials",
+	invalid_credentials: "Failed to login with the given credentials"
+}
+
 function createGCAvoidLargeDownloadsInput(inputId) {
 	const row = document.createElement('tr');
 	const header = document.createElement('th');
@@ -188,7 +197,7 @@ async function testEditIndexer(apiKey) {
 		else {
 			// Test failed
 			testButton.classList.add('show-fail');
-			error.innerText = json.result.description;
+			error.innerText = brokenClientReasonMap[json.result.description];
 			hide([], [error]);
 		};
 		return json.result.success;
@@ -315,7 +324,7 @@ async function testAddIndexer(apiKey) {
 		else
 			// Test failed
 			testButton.classList.add('show-fail');
-			error.innerText = json.result.description;
+			error.innerText = brokenClientReasonMap[json.result.description];
 			hide([], [error]);
 		return json.result.success;
 	});

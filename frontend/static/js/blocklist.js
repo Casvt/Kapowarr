@@ -13,6 +13,12 @@ const BlockEls = {
 	entry: document.querySelector('.pre-build-els .list-entry')
 };
 
+const reasonMap = {
+	link_broken: "Link broken",
+	no_working_links: "No supported or working links",
+	added_by_user: "Added by user"
+}
+
 var offset = 0;
 
 function fillList(api_key) {
@@ -40,7 +46,7 @@ function fillList(api_key) {
                 link.href = obj.download_link;
             };
 
-            entry.querySelector('.reason-column').innerText = obj.reason;
+            entry.querySelector('.reason-column').innerText = reasonMap[obj.reason];
 
 			var d = new Date(obj.added_at * 1000);
 			var formatted_date =
