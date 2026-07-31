@@ -13,8 +13,20 @@
 		<section aria-label="Status Checks">
 			<h2>Status Checks</h2>
 			<div class="container">
-				<div id="status-checks-list"></div>
-				<p id="status-checks-ok">All systems operational</p>
+				<table id="status-table">
+					<thead>
+						<tr>
+							<th>Message</th>
+							<th>Actions</th>
+						</tr>
+					</thead>
+					<tbody id="status-body">
+						<tr id="status-clear-row">
+							<td>All systems operational</td>
+							<td></td>
+						</tr>
+					</tbody>
+				</table>
 			</div>
 		</section>
 		<section aria-label="About">

@@ -25,39 +25,62 @@ section:not(:first-of-type) h2 {
 	color: var(--text-color);
 }
 
+#status-table {
+	width: calc(100% - 2rem);
+	min-width: 30rem;
+
+	margin-inline: 1rem;
+}
+
+#status-body tr {
+	transition: background-color 150ms linear;
+	
+	&:hover {
+		background-color: var(--hover-color);
+	}
+}
+
+#status-table :where(th, td) {
+	padding-block: .5rem;
+
+	&:first-of-type {
+		width: 100%;
+		padding-left: 1rem;
+	}
+
+	&:last-of-type {
+		width: 7rem;
+
+		display: flex;
+		align-items: center;
+
+		padding-left: 1rem;
+		padding-right: 1rem;
+
+		& button {
+			width: 1rem;
+			fill: var(--light-color);
+		}
+	}
+}
+
+#status-body td {
+	border-top: 1px solid var(--border-color);
+}
+
+#status-body:has(tr:not(#status-clear-row)) #status-clear-row {
+	display: none;
+}
+
 #copy-about {
 	width: 4rem;
-	
+
 	padding: .5rem;
 	border-radius: 4px;
 	color: var(--nav-background-color);
 	background-color: var(--accent-color);
 
 	font-weight: 700;
-}
-
-.status-check-item {
-	display: flex;
-	align-items: center;
-	gap: 1rem;
-	padding: .5rem;
-}
-
-.status-check-item p {
-	color: var(--error-color);
-}
-
-.status-check-item button {
-	padding: .3rem .7rem;
-	border-radius: 4px;
-	background-color: var(--accent-color);
-	color: var(--nav-background-color);
-	font-weight: 700;
-	font-size: .8rem;
-}
-
-#status-checks-ok {
-	padding: .5rem;
 }
 
 #about-table {
