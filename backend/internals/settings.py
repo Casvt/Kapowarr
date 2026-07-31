@@ -20,8 +20,9 @@ from backend.base.custom_exceptions import (ClientNotWorking,
                                             FolderNotFound, InvalidKeyValue,
                                             InvalidSettingModification,
                                             KeyNotFound)
-from backend.base.definitions import (BaseEnum, Constants, DateType, FileDate,
-                                      OSType, ProxyType, SeedingHandling)
+from backend.base.definitions import (BaseEnum, Constants, DateType,
+                                      FileDate, OSType, ProxyType,
+                                      SeedingHandling, StatusType)
 from backend.base.files import (are_folders_colliding, folder_path,
                                 uppercase_drive_letter)
 from backend.base.helpers import (CommaList, Singleton, build_proxy_url,
@@ -541,6 +542,7 @@ class Settings(metaclass=Singleton):
 
         elif key == 'flaresolverr_base_url':
             from backend.implementations.flaresolverr import FlareSolverr
+            from backend.internals.status import StatusHandlers
 
             converted_value = value
             if converted_value:
@@ -551,6 +553,9 @@ class Settings(metaclass=Singleton):
                 and not FlareSolverr.test_flaresolverr(converted_value)
             ):
                 raise InvalidKeyValue(key, value)
+
+            if converted_value:
+                StatusHandlers().clear(StatusType.CF_CHALLENGE_WITH_NO_FS, '')
 
         else:
             from backend.implementations.naming import (NAMING_MAPPING,

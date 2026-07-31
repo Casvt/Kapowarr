@@ -411,3 +411,40 @@ class RootFolderFullStatus(StatusHandler):
             "type": self.status_type.value,
             "display_subtypes": list(self._subtypes)
         }
+
+
+@StatusHandlers.register_handler(StatusType.CF_CHALLENGE_WITH_NO_FS)
+class CFChallengeWithNoFSStatus(StatusHandler):
+    def __init__(self, status_type: StatusType) -> None:
+        super().__init__(status_type)
+        self._timestamp: Union[int, None] = None
+        return
+
+    def get_expiry(self, subtype: str, timestamp: int) -> Union[int, None]:
+        return None
+
+    def report(self, subtype: str, timestamp: int) -> None:
+        self._timestamp = timestamp
+        return
+
+    def restore(
+        self,
+        subtype: str,
+        timestamp: int,
+        remaining: Union[int, None]
+    ) -> None:
+        self._timestamp = timestamp
+        return
+
+    def clear(self, subtype: Union[str, None] = None) -> None:
+        self._timestamp = None
+        return
+
+    def problem_reported(self, subtype: Union[str, None] = None) -> bool:
+        return isinstance(self._timestamp, int)
+
+    def get_display(self) -> StatusData:
+        return {
+            "type": self.status_type.value,
+            "display_subtypes": []
+        }

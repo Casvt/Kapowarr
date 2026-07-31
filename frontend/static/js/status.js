@@ -43,6 +43,10 @@ const statusDescs = {
 	root_folder_full: {
 		desc: 'Root folder is full',
 		subTypeLabels: {}
+	},
+	cf_challenge_with_no_fs: {
+		desc: 'CloudFlare challenge encountered and FlareSolverr is not set up',
+		subTypeLabels: {}
 	}
 }
 
@@ -82,10 +86,13 @@ function loadStatus(apiKey) {
 			const row = document.createElement("tr")
 			
 			const desc = document.createElement("td")
-			const subs = entry.display_subtypes
-				.map(s => statusDescs[entry.type].subTypeLabels[s] || s)
-				.join(', ')
-			desc.innerText = `${statusDescs[entry.type].desc}: ${subs}`
+			desc.innerText = statusDescs[entry.type].desc
+			if (entry.display_subtypes.length > 0) {
+				const subs = entry.display_subtypes
+					.map(s => statusDescs[entry.type].subTypeLabels[s] || s)
+					.join(', ')
+				desc.innerText += `: ${subs}`
+			}
 			row.appendChild(desc)
 			
 			const actions = document.createElement("td")

@@ -276,6 +276,8 @@ class StatusType(BaseEnum):
     ROOT_FOLDER_ALMOST_FULL = "root_folder_almost_full"
     ROOT_FOLDER_FULL = "root_folder_full"
 
+    CF_CHALLENGE_WITH_NO_FS = "cf_challenge_with_no_fs"
+
 
 class StartType(BaseEnum):
     "The reason for or cause of starting up"

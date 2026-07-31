@@ -7,10 +7,11 @@ from typing import TYPE_CHECKING, Any, Dict, Mapping, Tuple, Union
 
 from requests import RequestException
 
-from backend.base.definitions import Constants, ProxyType
+from backend.base.definitions import Constants, ProxyType, StatusType
 from backend.base.helpers import Session
 from backend.base.logging import LOGGER
 from backend.internals.settings import Settings
+from backend.internals.status import StatusHandlers
 
 if TYPE_CHECKING:
     from backend.base.helpers import AsyncSession
@@ -149,6 +150,7 @@ class FlareSolverr:
             LOGGER.warning(
                 "Request blocked by CloudFlare and FlareSolverr not setup"
             )
+            StatusHandlers().report(StatusType.CF_CHALLENGE_WITH_NO_FS, '')
             return
 
         with Session() as session:
@@ -231,6 +233,7 @@ class FlareSolverr:
             LOGGER.warning(
                 "Request blocked by CloudFlare and FlareSolverr not setup"
             )
+            StatusHandlers().report(StatusType.CF_CHALLENGE_WITH_NO_FS, '')
             return
 
         # Technically this makes it a max amount of FS sessions per AsyncSession
