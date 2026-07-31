@@ -9,13 +9,14 @@ from typing import Dict, List, Union, cast
 from backend.base.custom_exceptions import (FolderNotFound, RootFolderInUse,
                                             RootFolderInvalid,
                                             RootFolderNotFound)
-from backend.base.definitions import RootFolder, SizeData
+from backend.base.definitions import RootFolder, SizeData, StatusType
 from backend.base.files import (are_folders_colliding, create_folder,
                                 uppercase_drive_letter)
 from backend.base.helpers import Singleton, first_of_subarrays, force_suffix
 from backend.base.logging import LOGGER
 from backend.internals.db import get_db
 from backend.internals.settings import Settings
+from backend.internals.status import StatusHandlers
 
 
 class RootFolders(metaclass=Singleton):
@@ -44,6 +45,39 @@ class RootFolders(metaclass=Singleton):
                 ("total", "used", "free"),
                 disk_usage(root_folder_path)
             )))
+
+            if d_usage["used"] / d_usage["total"] > 0.99:
+                sh = StatusHandlers()
+                sh.report(
+                    StatusType.ROOT_FOLDER_FULL,
+                    root_folder_path
+                )
+                sh.clear(
+                    StatusType.ROOT_FOLDER_ALMOST_FULL,
+                    root_folder_path
+                )
+
+            elif d_usage["used"] / d_usage["total"] > 0.9:
+                sh = StatusHandlers()
+                sh.report(
+                    StatusType.ROOT_FOLDER_ALMOST_FULL,
+                    root_folder_path
+                )
+                sh.clear(
+                    StatusType.ROOT_FOLDER_FULL,
+                    root_folder_path
+                )
+
+            else:
+                sh = StatusHandlers()
+                sh.clear(
+                    StatusType.ROOT_FOLDER_ALMOST_FULL,
+                    root_folder_path
+                )
+                sh.clear(
+                    StatusType.ROOT_FOLDER_FULL,
+                    root_folder_path
+                )
 
         except (FileNotFoundError, PermissionError, OSError):
             d_usage = None

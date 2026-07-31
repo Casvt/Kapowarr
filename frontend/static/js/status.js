@@ -35,6 +35,14 @@ const statusDescs = {
 			fetch_volume: 'Fetching volume metadata',
 			fetch_issues: 'Fetching issue metadata'
 		}
+	},
+	root_folder_almost_full: {
+		desc: 'Root folder is almost full',
+		subTypeLabels: {}
+	},
+	root_folder_full: {
+		desc: 'Root folder is full',
+		subTypeLabels: {}
 	}
 }
 

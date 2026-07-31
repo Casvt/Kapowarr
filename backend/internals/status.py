@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from time import time
-from typing import Dict, List, Type, TypeVar, Union
+from typing import Dict, List, Optional, Type, TypeVar, Union
 
 from backend.base.definitions import StatusData, StatusHandler, StatusType
 from backend.base.helpers import Singleton
@@ -337,3 +337,77 @@ class CVRateLimitStatus(StatusHandler):
         self._timers.pop(subtype, None)
         StatusHandlers().clear(StatusType.CV_RATE_LIMIT, subtype)
         return
+
+
+@StatusHandlers.register_handler(StatusType.ROOT_FOLDER_ALMOST_FULL)
+class RootFolderAlmostFullStatus(StatusHandler):
+    def get_expiry(self, subtype: str, timestamp: int) -> Union[int, None]:
+        return None
+
+    def report(self, subtype: str, timestamp: int) -> None:
+        self._subtypes[subtype] = timestamp
+        return
+
+    def restore(
+        self,
+        subtype: str,
+        timestamp: int,
+        remaining: Union[int, None]
+    ) -> None:
+        self._subtypes[subtype] = timestamp
+        return
+
+    def clear(self, subtype: Union[str, None] = None) -> None:
+        if subtype is not None:
+            self._subtypes.pop(subtype, None)
+        else:
+            self._subtypes.clear()
+        return
+
+    def problem_reported(self, subtype: Union[str, None] = None) -> bool:
+        if subtype is not None:
+            return subtype in self._subtypes
+        return len(self._subtypes) > 0
+
+    def get_display(self) -> StatusData:
+        return {
+            "type": self.status_type.value,
+            "display_subtypes": list(self._subtypes)
+        }
+
+
+@StatusHandlers.register_handler(StatusType.ROOT_FOLDER_FULL)
+class RootFolderFullStatus(StatusHandler):
+    def get_expiry(self, subtype: str, timestamp: int) -> Union[int, None]:
+        return None
+
+    def report(self, subtype: str, timestamp: int) -> None:
+        self._subtypes[subtype] = timestamp
+        return
+
+    def restore(
+        self,
+        subtype: str,
+        timestamp: int,
+        remaining: Union[int, None]
+    ) -> None:
+        self._subtypes[subtype] = timestamp
+        return
+
+    def clear(self, subtype: Union[str, None] = None) -> None:
+        if subtype is not None:
+            self._subtypes.pop(subtype, None)
+        else:
+            self._subtypes.clear()
+        return
+
+    def problem_reported(self, subtype: Union[str, None] = None) -> bool:
+        if subtype is not None:
+            return subtype in self._subtypes
+        return len(self._subtypes) > 0
+
+    def get_display(self) -> StatusData:
+        return {
+            "type": self.status_type.value,
+            "display_subtypes": list(self._subtypes)
+        }
