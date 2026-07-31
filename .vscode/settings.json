@@ -20,7 +20,7 @@
 
 	"python.testing.unittestEnabled": true,
 	"python.testing.unittestArgs": [
-		"-s", "./tests",
+		"-s", "./tests/Tbackend",
 		"-p", "*.py"
 	],
 
