@@ -29,6 +29,40 @@ from backend.internals.db import commit
 from backend.internals.db_models import FilesDB
 
 
+def _group_matches(
+    file_data: FilenameData,
+    group_files: Dict[str, FilenameData]
+) -> bool:
+    """Check whether a file should be grouped with a set of existing files."""
+    reference = next(iter(group_files.values()))
+    if (
+        file_data['series'] != reference['series']
+        or file_data['annual'] != reference['annual']
+        or file_data['special_version'] != reference['special_version']
+    ):
+        return False
+
+    years = {
+        group_file_data['year']
+        for group_file_data in group_files.values()
+        if group_file_data['year'] is not None
+    }
+
+    if (
+        years
+        and file_data['year'] is not None
+        and not min(years) - 1 <= file_data['year'] <= max(years) + 1
+    ):
+        return False
+
+    only_volume_numbers = all(
+        group_file_data['issue_number'] is None
+        for group_file_data in group_files.values()
+    )
+
+    return only_volume_numbers ^ (file_data['issue_number'] is not None)
+
+
 def create_groups(
     files: Dict[str, FilenameData]
 ) -> Dict[int, Dict[str, FilenameData]]:
@@ -44,21 +78,16 @@ def create_groups(
             to the files that are in the group, where the files are in the form
             of a mapping from the filename to their filename data.
     """
-    group_mapping: Dict[int, FilenameData] = {}
     groups: Dict[int, Dict[str, FilenameData]] = {}
 
     for file, file_data in files.items():
-        match_data = file_data.copy()
-        del match_data['issue_number'] # type: ignore
-
-        for group_idx, group_data in group_mapping.items():
-            if match_data == group_data:
-                groups[group_idx][file] = file_data
+        for group_files in groups.values():
+            if _group_matches(file_data, group_files):
+                group_files[file] = file_data
                 break
         else:
             new_group_number = max(groups or (0,)) + 1
             groups.setdefault(new_group_number, {})[file] = file_data
-            group_mapping[new_group_number] = match_data
 
     LOGGER.debug('File groupings: %s', groups)
     return groups
