@@ -36,6 +36,13 @@ const statusDescs = {
 			fetch_issues: 'Fetching issue metadata'
 		}
 	},
+	download_service_rate_limit: {
+		desc: 'Download service rate limit reached',
+		subTypeLabels: {
+			Mega: 'Mega',
+			Pixeldrain: 'Pixeldrain'
+		}
+	},
 	root_folder_almost_full: {
 		desc: 'Root folder is almost full',
 		subTypeLabels: {}

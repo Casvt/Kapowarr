@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
+from datetime import datetime, timedelta
 from time import time
-from typing import Dict, List, Optional, Type, TypeVar, Union
+from typing import Dict, List, Type, TypeVar, Union
 
 from backend.base.definitions import StatusData, StatusHandler, StatusType
 from backend.base.helpers import Singleton
@@ -336,6 +337,87 @@ class CVRateLimitStatus(StatusHandler):
         """
         self._timers.pop(subtype, None)
         StatusHandlers().clear(StatusType.CV_RATE_LIMIT, subtype)
+        return
+
+
+@StatusHandlers.register_handler(StatusType.DOWNLOAD_SERVICE_RATE_LIMIT)
+class DownloadServiceRateLimitStatus(StatusHandler):
+    """Status handler for download service daily rate limits."""
+
+    def get_expiry(self, subtype: str, timestamp: int) -> int:
+        next_midnight = (
+            datetime.fromtimestamp(timestamp)
+            .replace(hour=0, minute=0, second=0, microsecond=0)
+            + timedelta(days=1)
+        )
+        return int(next_midnight.timestamp())
+
+    def report(self, subtype: str, timestamp: int) -> None:
+        already_reported = subtype in self._subtypes
+
+        self._subtypes[subtype] = timestamp
+        if not already_reported:
+            remaining = self.get_expiry(subtype, timestamp) - timestamp
+            self._schedule_timer(subtype, remaining)
+
+        return
+
+    def restore(
+        self,
+        subtype: str,
+        timestamp: int,
+        remaining: Union[int, None]
+    ) -> None:
+        self._subtypes[subtype] = timestamp
+        if remaining is not None:
+            self._schedule_timer(subtype, remaining)
+        return
+
+    def clear(self, subtype: Union[str, None] = None) -> None:
+        if subtype is not None:
+            self._subtypes.pop(subtype, None)
+            self._cancel_timer(subtype)
+        else:
+            self._subtypes.clear()
+            for t in list(self._timers):
+                self._cancel_timer(t)
+        return
+
+    def problem_reported(self, subtype: Union[str, None] = None) -> bool:
+        if subtype is not None:
+            return subtype in self._subtypes
+        return len(self._subtypes) > 0
+
+    def get_display(self) -> StatusData:
+        return {
+            "type": self.status_type.value,
+            "display_subtypes": list(self._subtypes)
+        }
+
+    def _schedule_timer(self, subtype: str, seconds: int) -> None:
+        if subtype in self._timers:
+            return
+
+        timer = Server().get_db_timer_thread(
+            interval=max(1, seconds),
+            target=self._on_expiry,
+            name=f"StatusExpiry.{self.status_type.value}.{subtype}",
+            args=(subtype,)
+        )
+        timer.daemon = True
+        timer.start()
+        self._timers[subtype] = timer
+        return
+
+    def _cancel_timer(self, subtype: str) -> None:
+        timer = self._timers.pop(subtype, None)
+        if timer is not None:
+            timer.cancel()
+        return
+
+    def _on_expiry(self, subtype: str) -> None:
+        self._timers.pop(subtype, None)
+        StatusHandlers().clear(StatusType.DOWNLOAD_SERVICE_RATE_LIMIT, subtype)
         return
 
 

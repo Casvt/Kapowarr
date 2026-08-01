@@ -272,6 +272,7 @@ class StatusType(BaseEnum):
     "A type of status issue that can be reported"
 
     CV_RATE_LIMIT = "cv_rate_limit"
+    DOWNLOAD_SERVICE_RATE_LIMIT = "download_service_rate_limit"
 
     ROOT_FOLDER_ALMOST_FULL = "root_folder_almost_full"
     ROOT_FOLDER_FULL = "root_folder_full"
