@@ -122,7 +122,6 @@ class PixelDrainFolderDownload(PixelDrainDownload):
         self._api_key = None
         self._first_fetch = True
         download_id = self.download_link.rstrip("/").split("/")[-1]
-        'https://pixeldrain.com/api/list/{download_id}/zip'
         return Constants.PIXELDRAIN_API_URL + '/list/' + download_id + '/zip'
 
 
