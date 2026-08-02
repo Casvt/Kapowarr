@@ -3,11 +3,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from threading import Thread, Timer
 from time import sleep, time
-from typing import Dict, List, Tuple, Type, TypeVar, Union
-
-from flask import Flask
+from typing import TYPE_CHECKING, Dict, List, Tuple, Type, TypeVar, Union
 
 from backend.base.custom_exceptions import (InvalidKeyValue,
                                             TaskNotDeletable, TaskNotFound)
@@ -18,9 +15,12 @@ from backend.features.search import auto_search
 from backend.implementations.conversion import mass_convert
 from backend.implementations.naming import mass_rename
 from backend.implementations.volumes import Volume, refresh_and_scan
-from backend.internals.db import close_db, get_db
-from backend.internals.server import (TaskAddedEvent, TaskEndedEvent,
+from backend.internals.db import get_db
+from backend.internals.server import (Server, TaskAddedEvent, TaskEndedEvent,
                                       TaskStatusEvent, WebSocket)
+
+if TYPE_CHECKING:
+    from threading import Timer
 
 
 class Task(ABC):
@@ -71,13 +71,6 @@ class TaskHandler(metaclass=Singleton):
     queue: List[dict] = []
     task_interval_waiter: Union[Timer, None] = None
 
-    def __init__(self) -> None:
-        """Setup the handler"""
-        handler_context = Flask('handler')
-        handler_context.teardown_appcontext(close_db)
-        self.context = handler_context.app_context
-        return
-
     @classmethod
     def register_task(cls, identifier: str):
         def wrapper(action: Type[TaskType]) -> Type[TaskType]:
@@ -104,39 +97,39 @@ class TaskHandler(metaclass=Singleton):
             task (Task): The task to run
         """
         LOGGER.debug(f'Running task {task.display_title}')
-        with self.context():
-            socket = WebSocket()
-            try:
-                result = task.run()
-                cursor = get_db()
 
-                # Note in history
-                cursor.execute(
-                    "INSERT INTO task_history VALUES (?,?,?);",
-                    (task.action, task.display_title, round(time()))
-                )
+        socket = WebSocket()
+        try:
+            result = task.run()
+            cursor = get_db()
 
-                if not task.stop:
-                    if task.category == 'download' and result:
-                        DownloadHandler().add_multiple(
-                            (link, indexer_id, volume_id, issue_id, False)
-                            for link, indexer_id, volume_id, issue_id in result
-                        )
+            # Note in history
+            cursor.execute(
+                "INSERT INTO task_history VALUES (?,?,?);",
+                (task.action, task.display_title, round(time()))
+            )
 
-                    LOGGER.info(f'Finished task {task.display_title}')
+            if not task.stop:
+                if task.category == 'download' and result:
+                    DownloadHandler().add_multiple(
+                        (link, indexer_id, volume_id, issue_id, False)
+                        for link, indexer_id, volume_id, issue_id in result
+                    )
 
-            except Exception:
-                LOGGER.exception(
-                    'An error occured while trying to run a task: ')
-                task.message = 'AN ERROR OCCURED'
-                socket.emit(TaskStatusEvent(task.message))
-                sleep(1.5)
+                LOGGER.info(f'Finished task {task.display_title}')
 
-            finally:
-                if not task.stop:
-                    socket.emit(TaskEndedEvent(task))
-                    self.queue.pop(0)
-                    self._process_queue()
+        except Exception:
+            LOGGER.exception(
+                'An error occured while trying to run a task: ')
+            task.message = 'AN ERROR OCCURED'
+            socket.emit(TaskStatusEvent(task.message))
+            sleep(1.5)
+
+        finally:
+            if not task.stop:
+                socket.emit(TaskEndedEvent(task))
+                self.queue.pop(0)
+                self._process_queue()
 
         return
 
@@ -170,10 +163,10 @@ class TaskHandler(metaclass=Singleton):
             'task': task,
             'id': id,
             'status': 'queued',
-            'thread': Thread(
+            'thread': Server().get_db_thread(
                 target=self.__run_task,
-                args=(task,),
-                name=f"TaskThread-{id}"
+                name=f"TaskThread-{id}",
+                args=(task,)
             )
         }
         self.queue.append(task_data)
@@ -202,44 +195,45 @@ class TaskHandler(metaclass=Singleton):
     def __check_intervals(self) -> None:
         "Check if any interval task needs to be run and add to queue if so"
         LOGGER.debug('Checking task intervals')
-        with self.context():
-            current_time = time()
+        current_time = time()
 
-            cursor = get_db()
-            interval_tasks = cursor.execute(
-                "SELECT task_name, interval, next_run FROM task_intervals;"
-            ).fetchall()
-            LOGGER.debug(f'Task intervals: {list(map(dict, interval_tasks))}')
-            for task in interval_tasks:
-                if task['next_run'] <= current_time:
-                    # Add task to queue
-                    TaskClass = self.tasks[task['task_name']]
-                    if TaskClass is UpdateAll:
-                        inst = TaskClass(allow_skipping=True)
-                    else:
-                        inst = TaskClass()
-                    self.add(inst)
+        cursor = get_db()
+        interval_tasks = cursor.execute(
+            "SELECT task_name, interval, next_run FROM task_intervals;"
+        ).fetchall()
+        LOGGER.debug(f'Task intervals: {list(map(dict, interval_tasks))}')
+        for task in interval_tasks:
+            if task['next_run'] <= current_time:
+                # Add task to queue
+                TaskClass = self.tasks[task['task_name']]
+                if TaskClass is UpdateAll:
+                    inst = TaskClass(allow_skipping=True)
+                else:
+                    inst = TaskClass()
+                self.add(inst)
 
-                    # Update next_run
-                    next_run = round(current_time + task['interval'])
-                    cursor.execute(
-                        "UPDATE task_intervals SET next_run = ? WHERE task_name = ?;",
-                        (next_run, task['task_name']))
+                # Update next_run
+                next_run = round(current_time + task['interval'])
+                cursor.execute(
+                    "UPDATE task_intervals SET next_run = ? WHERE task_name = ?;",
+                    (next_run, task['task_name']))
 
         self.handle_intervals()
         return
 
     def handle_intervals(self) -> None:
         "Find next time an interval task needs to be run"
-        with self.context():
-            next_run = get_db().execute(
-                "SELECT MIN(next_run) FROM task_intervals"
-            ).fetchone()[0]
+        next_run: int = get_db().execute(
+            "SELECT MIN(next_run) FROM task_intervals"
+        ).fetchone()[0]
         timedelta = next_run - round(time()) + 1
         LOGGER.debug(f'Next interval task is in {timedelta} seconds')
 
-        self.task_interval_waiter = Timer(timedelta, self.__check_intervals)
-        self.task_interval_waiter.name = "TaskIntervalThread"
+        self.task_interval_waiter = Server().get_db_timer_thread(
+            interval=timedelta,
+            target=self.__check_intervals,
+            name="TaskIntervalThread"
+        )
         self.task_interval_waiter.start()
         return
 
