@@ -30,6 +30,9 @@ from backend.internals.db import get_db
 from backend.internals.settings import Settings
 from backend.internals.status import StatusHandlers
 
+# autopep8: off
+preceding_volume_regex = compile(r'preceded by (?:<a[^>]*>)?(.*?)' + volume_regex.pattern, IGNORECASE)
+continuing_volume_regex = compile(r'continued in (?:<a[^>]*>)?(.*?)' + volume_regex.pattern, IGNORECASE)
 translation_regex = compile(
     r'^<p>\s*\w+(?<!English) publication(\.?</p>$|,\s| \(in the \w+(?<!English) language\)|, translates )|' +
     r'^<p>\s*published by the \w+(?<!English) wing of|' +
@@ -45,6 +48,7 @@ translation_regex = compile(
     IGNORECASE)
 headers = {'h2', 'h3', 'h4', 'h5', 'h6'}
 lists = {'ul', 'ol'}
+# autopep8: on
 
 
 def _clean_description(description: str, short: bool = False) -> str:
@@ -250,6 +254,49 @@ class ComicVine:
                 return default
             raise MetadataSourceRateLimitReached
 
+    def __determine_volume_number(self, volume_data: Dict[str, Any]) -> int:
+        title = normalise_string(volume_data['name'] or '')
+
+        volume_number = None
+        volume_result = volume_regex.search(volume_data['deck'] or '')
+        if volume_result:
+            volume_number = force_range(extract_volume_number(
+                volume_result.group(1)
+            ))[0]
+
+        if volume_number is None:
+            prec_volume_result = preceding_volume_regex.search(
+                volume_data['description'] or ''
+            )
+            if prec_volume_result and (
+                not prec_volume_result.group(1)
+                or normalise_string(prec_volume_result.group(1)) == title
+            ):
+                volume_number = force_range(extract_volume_number(
+                    prec_volume_result.group(2)
+                ))[0]
+                if volume_number is not None:
+                    volume_number += 1
+
+        if volume_number is None:
+            continuing_volume_result = continuing_volume_regex.search(
+                volume_data['description'] or ''
+            )
+            if continuing_volume_result and (
+                not continuing_volume_result.group(1)
+                or normalise_string(continuing_volume_result.group(1)) == title
+            ):
+                volume_number = force_range(extract_volume_number(
+                    continuing_volume_result.group(2)
+                ))[0]
+                if volume_number is not None:
+                    volume_number -= 1
+
+        if volume_number is None:
+            volume_number = 1
+
+        return volume_number
+
     def __format_volume_output(
         self,
         volume_data: Dict[str, Any]
@@ -262,18 +309,8 @@ class ComicVine:
         Returns:
             VolumeMetadata: The formatted data.
         """
-        # Determine volume number
-        volume_result = volume_regex.search(volume_data['deck'] or '')
-        if volume_result:
-            volume_number = force_range(extract_volume_number(
-                volume_result.group(1)
-            ))[0]
-            if volume_number is None:
-                volume_number = 1
-        else:
-            volume_number = 1
+        volume_number = self.__determine_volume_number(volume_data)
 
-        # Determine description
         description = _clean_description(volume_data['description'])
 
         # Determine translation value
