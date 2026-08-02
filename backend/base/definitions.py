@@ -657,7 +657,8 @@ class SearchResultData(FilenameData):
     link: str
     display_title: str
     size: int
-    source: str
+    indexer_id: int
+    indexer_title: str
 
 
 class SearchResultMatchData(TypedDict):

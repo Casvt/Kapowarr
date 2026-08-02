@@ -1123,9 +1123,33 @@ def api_volume_manual_search(id: int):
 @auth
 def api_volume_download(id: int):
     Library.get_volume(id)
-    link: str = extract_key(request, 'link')
-    force_match: bool = extract_key(request, 'force_match')
-    result = run(DownloadHandler().add(link, id, force_match=force_match))
+    data = request.get_json()
+
+    if not isinstance(data, dict):
+        raise InvalidKeyValue("body", data)
+
+    if "link" not in data:
+        raise KeyNotFound("link")
+    if not isinstance(data["link"], str):
+        raise InvalidKeyValue("link", data["link"])
+
+    if "force_match" not in data:
+        raise KeyNotFound("force_match")
+    if not isinstance(data["force_match"], bool):
+        raise InvalidKeyValue("force_match", data["force_match"])
+
+    if "indexer_id" not in data:
+        raise KeyNotFound("indexer_id")
+    if not isinstance(data["indexer_id"], int):
+        raise InvalidKeyValue("indexer_id", data["indexer_id"])
+
+    result = run(DownloadHandler().add(
+        data["link"],
+        indexer_id=data["indexer_id"],
+        volume_id=id,
+        issue_id=None,
+        force_match=data["force_match"]
+    ))
     return return_api(
         {
             'result': (result or (None,))[0],
@@ -1152,10 +1176,32 @@ def api_issue_manual_search(id: int):
 @auth
 def api_issue_download(id: int):
     volume_id = Library.get_issue(id).get_data().volume_id
-    link = extract_key(request, 'link')
-    force_match: bool = extract_key(request, 'force_match')
+    data = request.get_json()
+
+    if not isinstance(data, dict):
+        raise InvalidKeyValue("body", data)
+
+    if "link" not in data:
+        raise KeyNotFound("link")
+    if not isinstance(data["link"], str):
+        raise InvalidKeyValue("link", data["link"])
+
+    if "force_match" not in data:
+        raise KeyNotFound("force_match")
+    if not isinstance(data["force_match"], bool):
+        raise InvalidKeyValue("force_match", data["force_match"])
+
+    if "indexer_id" not in data:
+        raise KeyNotFound("indexer_id")
+    if not isinstance(data["indexer_id"], int):
+        raise InvalidKeyValue("indexer_id", data["indexer_id"])
+
     result = run(DownloadHandler().add(
-        link, volume_id, id, force_match=force_match
+        data["link"],
+        indexer_id=data["indexer_id"],
+        volume_id=volume_id,
+        issue_id=id,
+        force_match=data["force_match"]
     ))
     return return_api(
         {

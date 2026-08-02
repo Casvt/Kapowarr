@@ -388,6 +388,7 @@ class DownloadHandler(metaclass=Singleton):
     async def add(
         self,
         link: str,
+        indexer_id: int,
         volume_id: int,
         issue_id: Union[int, None] = None,
         force_match: bool = False
@@ -397,21 +398,23 @@ class DownloadHandler(metaclass=Singleton):
         Args:
             link (str): A getcomics link to download from.
 
+            indexer_id (int): The ID of the indexer that the link came from.
+
             volume_id (int): The id of the volume for which the download is
-            intended.
+                intended.
 
             issue_id (Union[int, None], optional): The id of the issue for which
-            the download is intended.
+                the download is intended.
                 Defaults to None.
 
             force_match (bool, optional): On sources where downloads are
-            filtered, skip this and instead download everything.
+                filtered, skip this and instead download everything.
                 Defaults to False.
 
         Returns:
             Tuple[List[dict], Union[FailReason, None]]:
-            Queue entries that were added from the link and reason for failing
-            if no entries were added.
+                Queue entries that were added from the link and reason for failing
+                if no entries were added.
         """
         LOGGER.info(
             'Adding download for ' +
@@ -429,7 +432,7 @@ class DownloadHandler(metaclass=Singleton):
             gcp = GetComicsPage(link)
 
             try:
-                await gcp.load_data()
+                await gcp.load_data(indexer_id)
 
             except EnqueuingDownloadFailure as e:
                 if e.reason != EnqueuingDownloadFailureReason.LINK_RATE_LIMITED:
@@ -482,7 +485,7 @@ class DownloadHandler(metaclass=Singleton):
 
     def add_multiple(
         self,
-        add_args: Iterable[Tuple[str, int, Union[int, None], bool]]
+        add_args: Iterable[Tuple[str, int, int, Union[int, None], bool]]
     ) -> None:
         for entry in add_args:
             run(self.add(*entry))

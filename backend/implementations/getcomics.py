@@ -289,12 +289,14 @@ def __extract_list_links(
 
 
 def _get_download_groups(
-    soup: BeautifulSoup
+    soup: BeautifulSoup,
+    indexer_id: int
 ) -> List[DownloadGroup]:
     """From a GC article, extract the download groups.
 
     Args:
         soup (BeautifulSoup): The soup of the GC article.
+        indexer_id (int): The ID that the GC indexer has.
 
     Returns:
         List[DownloadGroup]: The download groups.
@@ -314,7 +316,7 @@ def _get_download_groups(
     download_groups = __extract_button_links(body, torrent_client_available)
     download_groups.extend(__extract_list_links(body, torrent_client_available))
 
-    indexer_data = IndexerClients.get_client(1).get_indexer_data()
+    indexer_data = IndexerClients.get_client(indexer_id).get_indexer_data()
     service_preference = indexer_data['gc_service_preference'] or []
 
     avoid_gc_preference = service_preference.copy()
@@ -735,9 +737,12 @@ class GetComicsPage:
         self.download_groups: List[DownloadGroup] = []
         return
 
-    async def load_data(self) -> None:
+    async def load_data(self, indexer_id: int) -> None:
         """Scrape and process the data of the page, in prepration of creating
         downloads from the page.
+
+        Args:
+            indexer_id (int): The ID that the GC indexer has.
 
         Raises:
             EnqueuingDownloadFailure: Failed to fetch the webpage.
@@ -764,7 +769,7 @@ class GetComicsPage:
                 )
 
         self.title = _get_title(soup)
-        self.download_groups = _get_download_groups(soup)
+        self.download_groups = _get_download_groups(soup, indexer_id)
         return
 
     async def create_downloads(

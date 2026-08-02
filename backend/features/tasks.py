@@ -49,7 +49,7 @@ class Task(ABC):
         ...
 
     @abstractmethod
-    def run(self) -> Union[None, List[Tuple[str, int, Union[int, None]]]]:
+    def run(self) -> Union[None, List[Tuple[str, int, int, Union[int, None]]]]:
         """Run the task
 
         Returns:
@@ -93,7 +93,7 @@ class AutoSearchIssue(Task):
         self._issue_id = issue_id
         return
 
-    def run(self) -> List[Tuple[str, int, Union[int, None]]]:
+    def run(self) -> List[Tuple[str, int, int, Union[int, None]]]:
         volume = Volume(self._volume_id)
         volume_title = volume.vd.title
         issue_number = volume.get_issue(self._issue_id).get_data().issue_number
@@ -104,7 +104,7 @@ class AutoSearchIssue(Task):
         results = auto_search(self._volume_id, self._issue_id)
         if results:
             return [
-                (result['link'], self._volume_id, self._issue_id)
+                (result['link'], result["indexer_id"], self._volume_id, self._issue_id)
                 for result in results
             ]
         return []
@@ -249,7 +249,7 @@ class AutoSearchVolume(Task):
         self._volume_id = volume_id
         return
 
-    def run(self) -> List[Tuple[str, int, Union[int, None]]]:
+    def run(self) -> List[Tuple[str, int, int, Union[int, None]]]:
         volume_title = Volume(self._volume_id).vd.title
         self.message = f'Searching for {volume_title}'
         WebSocket().emit(TaskStatusEvent(self.message))
@@ -258,7 +258,7 @@ class AutoSearchVolume(Task):
         results = auto_search(self._volume_id)
         if results:
             return [
-                (result['link'], self._volume_id, None)
+                (result['link'], result["indexer_id"], self._volume_id, None)
                 for result in results
             ]
         return []
@@ -468,12 +468,12 @@ class SearchAll(Task):
     def __init__(self) -> None:
         return
 
-    def run(self) -> List[Tuple[str, int, Union[int, None]]]:
+    def run(self) -> List[Tuple[str, int, int, Union[int, None]]]:
         cursor = get_db(force_new=True)
         cursor.execute(
             "SELECT id, title FROM volumes WHERE monitored = 1;"
         )
-        downloads: List[Tuple[str, int, Union[int, None]]] = []
+        downloads: List[Tuple[str, int, int, Union[int, None]]] = []
         ws = WebSocket()
         for volume_id, volume_title in cursor:
             if self.stop:
@@ -484,7 +484,7 @@ class SearchAll(Task):
             results = auto_search(volume_id)
             if results:
                 downloads += [
-                    (result['link'], volume_id, None)
+                    (result['link'], result["indexer_id"], volume_id, None)
                     for result in results
                 ]
         return downloads
@@ -536,8 +536,8 @@ class TaskHandler(metaclass=Singleton):
                 if not task.stop:
                     if task.category == 'download' and result:
                         DownloadHandler().add_multiple(
-                            (link, volume_id, issue_id, False)
-                            for link, volume_id, issue_id in result
+                            (link, indexer_id, volume_id, issue_id, False)
+                            for link, indexer_id, volume_id, issue_id in result
                         )
 
                     LOGGER.info(f'Finished task {task.display_title}')
