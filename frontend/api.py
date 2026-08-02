@@ -1143,20 +1143,14 @@ def api_volume_download(id: int):
     if not isinstance(data["indexer_id"], int):
         raise InvalidKeyValue("indexer_id", data["indexer_id"])
 
-    result = run(DownloadHandler().add(
+    result = DownloadHandler().add(
         data["link"],
         indexer_id=data["indexer_id"],
         volume_id=id,
         issue_id=None,
         force_match=data["force_match"]
-    ))
-    return return_api(
-        {
-            'result': (result or (None,))[0],
-            'fail_reason': result[1].value if result[1] else result[1]
-        },
-        code=201
     )
+    return return_api(result, code=201)
 
 
 @api.route('/issues/<int:id>/manualsearch', methods=['GET'])
@@ -1196,20 +1190,14 @@ def api_issue_download(id: int):
     if not isinstance(data["indexer_id"], int):
         raise InvalidKeyValue("indexer_id", data["indexer_id"])
 
-    result = run(DownloadHandler().add(
+    result = DownloadHandler().add(
         data["link"],
         indexer_id=data["indexer_id"],
         volume_id=volume_id,
         issue_id=id,
         force_match=data["force_match"]
-    ))
-    return return_api(
-        {
-            'result': result[0],
-            'fail_reason': result[1].value if result[1] else result[1]
-        },
-        code=201
     )
+    return return_api(result, code=201)
 
 
 @api.route('/activity/queue', methods=['GET', 'DELETE'])

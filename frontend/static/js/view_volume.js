@@ -410,17 +410,22 @@ function addManualSearch(link, indexer_id, force, button, api_key, issue_id=null
 		: `/volumes/${volume_id}/download`;
 
 	sendAPI('POST', url, api_key, {}, {link: link, indexer_id: indexer_id, force_match: force})
-	.then(response => response.json())
-	.then(json => {
+	.then(() => {
 		img.classList.remove('spinning');
-		if (json.result.fail_reason === null)
-			img.src = `${url_base}/static/img/check.svg`;
-		else {
-			img.src = `${url_base}/static/img/download.svg`;
-			button.classList.add('error');
-			button.title = enqueueFailureReasonMap[json.result.fail_reason];
-		};
-	});
+		img.src = `${url_base}/static/img/check.svg`;
+	})
+	.catch(e => {
+		e.json().then(json => {
+			if (json.error === "EnqueuingDownloadFailure") {
+				img.classList.remove('spinning');
+				img.src = `${url_base}/static/img/download.svg`;
+				button.classList.add('error');
+				button.title = enqueueFailureReasonMap[json.result.reason];
+			}
+			else
+				console.log(json)
+		})
+	})
 };
 
 function blockManualSearch(

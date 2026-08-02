@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from asyncio import gather, run
 from os import listdir
 from os.path import basename, join
 from time import sleep
@@ -32,8 +31,9 @@ from backend.implementations.blocklist import add_to_blocklist
 from backend.implementations.download_client_manager import DownloadClients
 from backend.implementations.download_clients.Mega import MegaDownload
 from backend.implementations.download_clients.Torrent import TorrentDownload
+from backend.implementations.download_prepper_manager import DownloadPreppers
 from backend.implementations.external_client_manager import ExternalClients
-from backend.implementations.getcomics import GetComicsPage
+from backend.implementations.indexer_client_manager import IndexerClients
 from backend.implementations.volumes import Issue
 from backend.internals.db import get_db, iter_commit
 from backend.internals.server import (AddedToQueueEvent, QueueStatusEvent,
@@ -44,9 +44,6 @@ if TYPE_CHECKING:
     from threading import Thread
 
 
-# =====================
-# Download handling
-# =====================
 class DownloadHandler(metaclass=Singleton):
     queue: List[Download] = []
 
@@ -56,181 +53,7 @@ class DownloadHandler(metaclass=Singleton):
         create_folder(self.settings.sv.download_folder)
         return
 
-    # region Running Download
-    def __run_download(self, download: Download) -> None:
-        """Start a download. Intended to be run in a thread.
-
-        Args:
-            download (Download): The download to run.
-                One of the entries in self.queue.
-        """
-        LOGGER.info(f'Starting download: {download.id}')
-
-        ws = WebSocket()
-        status_event = QueueStatusEvent(download)
-        try:
-            download.run()
-
-        except DownloadServiceRateLimitReached as e:
-            download.stop(DownloadState.FAILED_STATE)
-            if e.service == DownloadService.MEGA:
-                self._remove_mega(exclude_id=download.id)
-
-        ws.emit(status_event)
-        if download.state == DownloadState.SHUTDOWN_STATE:
-            PostProcessor.shutdown(download)
-            return
-
-        elif download.state == DownloadState.CANCELED_STATE:
-            PostProcessor.canceled(download)
-
-        elif download.state == DownloadState.FAILED_STATE:
-            PostProcessor.failed(download)
-
-        elif download.state == DownloadState.DOWNLOADING_STATE:
-            download.state = DownloadState.IMPORTING_STATE
-            ws.emit(status_event)
-
-            # While this download is post-processing, start the next one.
-            self._process_queue()
-
-            PostProcessor.success(download)
-
-        self.queue.remove(download)
-        ws.emit(RemovedFromQueueEvent(download))
-
-        self._process_queue()
-        return
-
-    def __run_torrent_download(self, download: TorrentDownload) -> None:
-        """Start a torrent download. Intended to be run in a thread.
-
-        Args:
-            download (TorrentDownload): The torrent download to run.
-                One of the entries in self.queue.
-        """
-        download.run()
-
-        ws = WebSocket()
-        status_event = QueueStatusEvent(download)
-        seeding_handling = self.settings.sv.seeding_handling
-
-        if seeding_handling == SeedingHandling.COMPLETE:
-            post_processer = PostProcessorTorrentsComplete
-
-        elif seeding_handling == SeedingHandling.COPY:
-            post_processer = PostProcessorTorrentsCopy
-
-        else:
-            assert_never(seeding_handling)
-
-        # When seeding_handling is 'copy', keep track of whether we already
-        # copied the files
-        files_copied = False
-
-        while True:
-            download.update_status()
-            ws.emit(status_event)
-
-            if download.state == DownloadState.CANCELED_STATE:
-                download.remove_from_client(delete_files=True)
-                post_processer.canceled(download)
-                self.queue.remove(download)
-                break
-
-            elif download.state == DownloadState.FAILED_STATE:
-                download.remove_from_client(delete_files=True)
-                post_processer.perm_failed(download)
-                self.queue.remove(download)
-                break
-
-            elif download.state == DownloadState.SHUTDOWN_STATE:
-                break
-
-            elif (
-                seeding_handling == SeedingHandling.COPY
-                and download.state == DownloadState.SEEDING_STATE
-                and not files_copied
-            ):
-                files_copied = True
-                post_processer.seeding(download)
-
-            elif download.state == DownloadState.IMPORTING_STATE:
-                if self.settings.sv.delete_completed_downloads:
-                    download.remove_from_client(delete_files=False)
-                post_processer.success(download)
-                self.queue.remove(download)
-                break
-
-            else:
-                # Queued
-                # Or downloading
-                # Or seeding with files copied
-                # Or seeding with seeding_handling = 'complete'
-                download.sleep_event.wait(
-                    timeout=Constants.EXTERNAL_CLIENT_UPDATE_INTERVAL
-                )
-
-        ws.emit(RemovedFromQueueEvent(download))
-        return
-
-    # region Queue Management
-    def _process_queue(self) -> None:
-        """
-        Handle the queue. In the case that there is something in the queue
-        and not the max amount of downloads are active, start a download.
-        This can safely be called at any point in time and with the queue in
-        any state.
-        """
-        active_downloads = 0
-        max_downloads = self.settings.sv.concurrent_direct_downloads
-        for download in self.queue:
-            if not isinstance(download, ExternalDownload):
-                if download.state == DownloadState.DOWNLOADING_STATE:
-                    active_downloads += 1
-
-                elif (
-                    download.state == DownloadState.QUEUED_STATE
-                    and active_downloads < max_downloads
-                ):
-                    if download.download_thread is not None:
-                        download.download_thread.start()
-                    active_downloads += 1
-
-                if active_downloads >= max_downloads:
-                    break
-
-        return
-
-    def set_queue_location(
-        self,
-        download_id: int,
-        index: int
-    ) -> None:
-        """Set the location of a download in the queue.
-
-        Args:
-            download_id (int): The ID of the download to move.
-
-            index (int): The new index of the download.
-
-        Raises:
-            DownloadQueueEntryNotFound: The ID doesn't map to any download in
-                the queue.
-            DownloadUnmovable: The download is not allowed to be moved.
-            InvalidKeyValue: The index is out of bounds.
-        """
-        download = self.get_one(download_id)
-        if download.state != DownloadState.QUEUED_STATE:
-            raise DownloadQueueEntryUnmovable(download_id)
-
-        if index < 0 or index >= len(self.queue):
-            raise InvalidKeyValue('index', index)
-
-        self.queue.remove(download)
-        self.queue.insert(index, download)
-        return
-
+    # region Adding
     def __prepare_downloads_for_queue(
         self,
         downloads: List[Download],
@@ -316,105 +139,37 @@ class DownloadHandler(metaclass=Singleton):
             WebSocket().emit(AddedToQueueEvent(download))
         return downloads
 
-    # region Getting
-    def get_all(self) -> List[dict]:
-        """Get all queue entries
-
-        Returns:
-            List[dict]: All queue entries, formatted using `Download.as_dict()`.
-        """
-        return [e.as_dict() for e in self.queue]
-
-    def get_one(self, download_id: int) -> Download:
-        """Get a queue entry based on it's ID.
-
-        Args:
-            download_id (int): The ID of the download to fetch.
-
-        Raises:
-            DownloadQueueEntryNotFound: The ID doesn't map to any download in
-                the queue.
-
-        Returns:
-            Download: The queue entry.
-        """
-        for entry in self.queue:
-            if entry.id == download_id:
-                return entry
-        raise DownloadQueueEntryNotFound(download_id)
-
-    # region Adding
-    def __determine_link_type(self, link: str) -> Union[str, None]:
-        """Determine the service type of the link (e.g. getcomics, torrent, etc.).
-
-        Args:
-            link (str): The link to check.
-
-        Returns:
-            Union[str, None]: The service type of the link or `None` if unknown.
-        """
-        if link.startswith("https://getcomics.org"):
-            return 'gc'
-        return None
-
-    def link_in_queue(self, link: str) -> bool:
-        """Check if a link is already in the queue.
-
-        Args:
-            link (str): The link to check for.
-
-        Returns:
-            bool: Whether the link is in the queue.
-        """
-        return any(
-            link in (d.web_link, d.download_link)
-            for d in self.queue
-        )
-
-    def download_for_volume_queued(self, volume_id: int) -> bool:
-        """Check whether there is a download in the queue for a given volume.
-
-        Args:
-            volume_id (int): The ID of the volume to check for.
-
-        Returns:
-            bool: Whether there is a download in the queue for the given volume.
-        """
-        return any(
-            d.volume_id == volume_id
-            for d in self.queue
-        )
-
-    async def add(
+    def add(
         self,
         link: str,
         indexer_id: int,
         volume_id: int,
         issue_id: Union[int, None] = None,
         force_match: bool = False
-    ) -> Tuple[List[dict], Union[EnqueuingDownloadFailureReason, None]]:
+    ) -> List[Dict[str, Any]]:
         """Add a download to the queue.
 
         Args:
-            link (str): A getcomics link to download from.
+            link (str): A link to download from.
 
             indexer_id (int): The ID of the indexer that the link came from.
 
-            volume_id (int): The id of the volume for which the download is
+            volume_id (int): The ID of the volume for which the download is
                 intended.
 
-            issue_id (Union[int, None], optional): The id of the issue for which
+            issue_id (Union[int, None], optional): The ID of the issue for which
                 the download is intended.
                 Defaults to None.
 
             force_match (bool, optional): On sources where downloads are
-                filtered, skip this and instead download everything.
+                filtered, don't and instead download everything.
                 Defaults to False.
 
+        Raises:
+            EnqueuingDownloadFailure: Failed to add download to queue.
+
         Returns:
-            Tuple[List[dict], Union[FailReason, None]]:
-                Queue entries that were added from the link and reason for failing
-                if no entries were added.
+            List[Dict[str, Any]]: Queue entries that were added from the link.
         """
         LOGGER.info(
             'Adding download for ' +
@@ -424,55 +179,47 @@ class DownloadHandler(metaclass=Singleton):
 
         if self.link_in_queue(link):
             LOGGER.info('Download already in queue')
-            return [], None
+            return []
 
-        link_type = self.__determine_link_type(link)
-        downloads: List[Download] = []
-        if link_type == 'gc':
-            gcp = GetComicsPage(link)
+        indexer = IndexerClients.get_client(indexer_id)
+        PrepperClass = DownloadPreppers.get_prepper(
+            indexer.download_type, indexer.client_type
+        )
+        prepper = PrepperClass(
+            link, indexer_id,
+            volume_id, issue_id,
+            force_match
+        )
 
-            try:
-                await gcp.load_data(indexer_id)
+        try:
+            downloads = prepper.get_downloads()
 
-            except EnqueuingDownloadFailure as e:
-                if e.reason != EnqueuingDownloadFailureReason.LINK_RATE_LIMITED:
-                    add_to_blocklist(
-                        web_link=link,
-                        web_title=None,
-                        web_sub_title=None,
-                        download_link=None,
-                        download_service=None,
-                        volume_id=volume_id,
-                        issue_id=issue_id,
-                        reason=BlocklistReason.LINK_BROKEN
-                    )
-                LOGGER.warning(
-                    f'Unable to extract download links from source; fail_reason="{e.reason.value}"'
-                )
-                return [], e.reason
-
-            try:
-                downloads = await gcp.create_downloads(
-                    volume_id, issue_id, force_match
+        except EnqueuingDownloadFailure as e:
+            if e.reason == EnqueuingDownloadFailureReason.WEBPAGE_BROKEN:
+                add_to_blocklist(
+                    web_link=link,
+                    web_title=prepper.web_title,
+                    web_sub_title=None,
+                    download_link=None,
+                    download_service=None,
+                    volume_id=volume_id,
+                    issue_id=issue_id,
+                    reason=BlocklistReason.LINK_BROKEN
                 )
 
-            except EnqueuingDownloadFailure as e:
-                if e.reason == EnqueuingDownloadFailureReason.NO_WORKING_LINKS:
-                    add_to_blocklist(
-                        web_link=link,
-                        web_title=gcp.title,
-                        web_sub_title=None,
-                        download_link=None,
-                        download_service=None,
-                        volume_id=volume_id,
-                        issue_id=issue_id,
-                        reason=BlocklistReason.NO_WORKING_LINKS
-                    )
-
-                LOGGER.warning(
-                    f'Unable to extract download links from source; fail_reason="{e.reason.value}"'
+            elif e.reason == EnqueuingDownloadFailureReason.NO_WORKING_LINKS:
+                add_to_blocklist(
+                    web_link=link,
+                    web_title=prepper.web_title,
+                    web_sub_title=None,
+                    download_link=None,
+                    download_service=None,
+                    volume_id=volume_id,
+                    issue_id=issue_id,
+                    reason=BlocklistReason.NO_WORKING_LINKS
                 )
-                return [], e.reason
+
+            raise e
 
         result = self.__prepare_downloads_for_queue(
             downloads,
@@ -481,14 +228,18 @@ class DownloadHandler(metaclass=Singleton):
         self.queue += result
 
         self._process_queue()
-        return [r.as_dict() for r in result], None
+        return [r.as_dict() for r in result]
 
     def add_multiple(
         self,
         add_args: Iterable[Tuple[str, int, int, Union[int, None], bool]]
     ) -> None:
         for entry in add_args:
-            run(self.add(*entry))
+            try:
+                self.add(*entry)
+            except EnqueuingDownloadFailure:
+                pass
+
             sleep(1.0)
         return
 
@@ -610,6 +361,236 @@ class DownloadHandler(metaclass=Singleton):
         )
         result.start()
         return result
+
+    # region Running Download
+    def __run_download(self, download: Download) -> None:
+        """Start a download. Intended to be run in a thread.
+
+        Args:
+            download (Download): The download to run.
+                One of the entries in self.queue.
+        """
+        LOGGER.info(f'Starting download: {download.id}')
+
+        ws = WebSocket()
+        status_event = QueueStatusEvent(download)
+        try:
+            download.run()
+
+        except DownloadServiceRateLimitReached as e:
+            download.stop(DownloadState.FAILED_STATE)
+            if e.service == DownloadService.MEGA:
+                self._remove_mega(exclude_id=download.id)
+
+        ws.emit(status_event)
+        if download.state == DownloadState.SHUTDOWN_STATE:
+            PostProcessor.shutdown(download)
+            return
+
+        elif download.state == DownloadState.CANCELED_STATE:
+            PostProcessor.canceled(download)
+
+        elif download.state == DownloadState.FAILED_STATE:
+            PostProcessor.failed(download)
+
+        elif download.state == DownloadState.DOWNLOADING_STATE:
+            download.state = DownloadState.IMPORTING_STATE
+            ws.emit(status_event)
+
+            # While this download is post-processing, start the next one.
+            self._process_queue()
+
+            PostProcessor.success(download)
+
+        self.queue.remove(download)
+        ws.emit(RemovedFromQueueEvent(download))
+
+        self._process_queue()
+        return
+
+    def __run_torrent_download(self, download: TorrentDownload) -> None:
+        """Start a torrent download. Intended to be run in a thread.
+
+        Args:
+            download (TorrentDownload): The torrent download to run.
+                One of the entries in self.queue.
+        """
+        download.run()
+
+        ws = WebSocket()
+        status_event = QueueStatusEvent(download)
+        seeding_handling = self.settings.sv.seeding_handling
+
+        if seeding_handling == SeedingHandling.COMPLETE:
+            post_processer = PostProcessorTorrentsComplete
+
+        elif seeding_handling == SeedingHandling.COPY:
+            post_processer = PostProcessorTorrentsCopy
+
+        else:
+            assert_never(seeding_handling)
+
+        # When seeding_handling is 'copy', keep track of whether we already
+        # copied the files
+        files_copied = False
+
+        while True:
+            download.update_status()
+            ws.emit(status_event)
+
+            if download.state == DownloadState.CANCELED_STATE:
+                download.remove_from_client(delete_files=True)
+                post_processer.canceled(download)
+                self.queue.remove(download)
+                break
+
+            elif download.state == DownloadState.FAILED_STATE:
+                download.remove_from_client(delete_files=True)
+                post_processer.perm_failed(download)
+                self.queue.remove(download)
+                break
+
+            elif download.state == DownloadState.SHUTDOWN_STATE:
+                break
+
+            elif (
+                seeding_handling == SeedingHandling.COPY
+                and download.state == DownloadState.SEEDING_STATE
+                and not files_copied
+            ):
+                files_copied = True
+                post_processer.seeding(download)
+
+            elif download.state == DownloadState.IMPORTING_STATE:
+                if self.settings.sv.delete_completed_downloads:
+                    download.remove_from_client(delete_files=False)
+                post_processer.success(download)
+                self.queue.remove(download)
+                break
+
+            else:
+                # Queued
+                # Or downloading
+                # Or seeding with files copied
+                # Or seeding with seeding_handling = 'complete'
+                download.sleep_event.wait(
+                    timeout=Constants.EXTERNAL_CLIENT_UPDATE_INTERVAL
+                )
+
+        ws.emit(RemovedFromQueueEvent(download))
+        return
+
+    # region Queue Management
+    def link_in_queue(self, link: str) -> bool:
+        """Check if a link is already in the queue.
+
+        Args:
+            link (str): The link to check for.
+
+        Returns:
+            bool: Whether the link is in the queue.
+        """
+        return any(
+            link in (d.web_link, d.download_link)
+            for d in self.queue
+        )
+
+    def download_for_volume_queued(self, volume_id: int) -> bool:
+        """Check whether there is a download in the queue for a given volume.
+
+        Args:
+            volume_id (int): The ID of the volume to check for.
+
+        Returns:
+            bool: Whether there is a download in the queue for the given volume.
+        """
+        return any(
+            d.volume_id == volume_id
+            for d in self.queue
+        )
+
+    def _process_queue(self) -> None:
+        """
+        Handle the queue. In the case that there is something in the queue
+        and not the max amount of downloads are active, start a download.
+        This can safely be called at any point in time and with the queue in
+        any state.
+        """
+        active_downloads = 0
+        max_downloads = self.settings.sv.concurrent_direct_downloads
+        for download in self.queue:
+            if not isinstance(download, ExternalDownload):
+                if download.state == DownloadState.DOWNLOADING_STATE:
+                    active_downloads += 1
+
+                elif (
+                    download.state == DownloadState.QUEUED_STATE
+                    and active_downloads < max_downloads
+                ):
+                    if download.download_thread is not None:
+                        download.download_thread.start()
+                    active_downloads += 1
+
+                if active_downloads >= max_downloads:
+                    break
+
+        return
+
+    def set_queue_location(
+        self,
+        download_id: int,
+        index: int
+    ) -> None:
+        """Set the location of a download in the queue.
+
+        Args:
+            download_id (int): The ID of the download to move.
+
+            index (int): The new index of the download.
+
+        Raises:
+            DownloadQueueEntryNotFound: The ID doesn't map to any download in
+                the queue.
+            DownloadUnmovable: The download is not allowed to be moved.
+            InvalidKeyValue: The index is out of bounds.
+        """
+        download = self.get_one(download_id)
+        if download.state != DownloadState.QUEUED_STATE:
+            raise DownloadQueueEntryUnmovable(download_id)
+
+        if index < 0 or index >= len(self.queue):
+            raise InvalidKeyValue('index', index)
+
+        self.queue.remove(download)
+        self.queue.insert(index, download)
+        return
+
+    # region Getting
+    def get_all(self) -> List[dict]:
+        """Get all queue entries
+
+        Returns:
+            List[dict]: All queue entries, formatted using `Download.as_dict()`.
+        """
+        return [e.as_dict() for e in self.queue]
+
+    def get_one(self, download_id: int) -> Download:
+        """Get a queue entry based on it's ID.
+
+        Args:
+            download_id (int): The ID of the download to fetch.
+
+        Raises:
+            DownloadQueueEntryNotFound: The ID doesn't map to any download in
+                the queue.
+
+        Returns:
+            Download: The queue entry.
+        """
+        for entry in self.queue:
+            if entry.id == download_id:
+                return entry
+        raise DownloadQueueEntryNotFound(download_id)
 
     # region Removing and stopping
     def remove(self, download_id: int, blocklist: bool = False) -> None:
@@ -741,9 +722,7 @@ class DownloadHandler(metaclass=Singleton):
         return
 
 
-# =====================
 # region Download History
-# =====================
 def get_download_history(
     volume_id: Union[int, None] = None,
     issue_id: Union[int, None] = None,
@@ -753,15 +732,15 @@ def get_download_history(
 
     Args:
         volume_id (Union[int, None], optional): Get the history of a specific
-        volume.
+            volume.
             Defaults to None.
 
         issue_id (Union[int, None], optional): Get the history of a specific
-        issue. No need to supply volume_id in order to get issue history.
+            issue. No need to supply volume_id in order to get issue history.
             Defaults to None.
 
-        offset (int, optional): The offset of the list.
-        The higher the number, the deeper into history you go.
+        offset (int, optional): The offset of the list. The higher the number,
+            the deeper into history you go.
             Defaults to 0.
 
     Returns:
@@ -819,9 +798,7 @@ def get_download_history(
 
 
 def delete_download_history() -> None:
-    """
-    Delete complete download history
-    """
+    "Delete complete download history"
     LOGGER.info("Deleting download history")
     get_db().execute("DELETE FROM download_history;")
     return
