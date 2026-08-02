@@ -1061,28 +1061,6 @@ class WebSocketEvent(ABC):
         ...
 
 
-class MassEditorAction(ABC):
-    identifier: str
-    "The string used in the API to refer to the action"
-
-    def __init__(self, volume_ids: List[int]) -> None:
-        """Prepare a mass editor action.
-
-        Args:
-            volume_ids (List[int]): The volume IDs to work on.
-        """
-        self.volume_ids = volume_ids
-        return
-
-    @abstractmethod
-    def run(self, **kwargs: Any) -> None:
-        "Run the mass editor action"
-        ...
-
-    def __repr__(self) -> str:
-        return f'<{self.__class__.__name__}(action={self.identifier}; ids={self.volume_ids}); {id(self)}>'
-
-
 class IndexerClient(ABC):
     client_type: str
     "The name of the indexer client (e.g. 'Torznab')"
