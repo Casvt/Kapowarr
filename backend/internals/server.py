@@ -34,8 +34,7 @@ from backend.internals.settings import Settings
 if TYPE_CHECKING:
     from flask.ctx import AppContext
 
-    from backend.base.definitions import Download
-    from backend.features.tasks import Task
+    from backend.base.definitions import Download, Task
 
 
 # region Thread Manager

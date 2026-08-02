@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from time import sleep, time
 from typing import TYPE_CHECKING, Dict, List, Tuple, Type, TypeVar, Union
 
 from backend.base.custom_exceptions import (InvalidKeyValue,
                                             TaskNotDeletable, TaskNotFound)
+from backend.base.definitions import Task
 from backend.base.helpers import Singleton
 from backend.base.logging import LOGGER
 from backend.features.download_queue import DownloadHandler
@@ -21,41 +21,6 @@ from backend.internals.server import (Server, TaskAddedEvent, TaskEndedEvent,
 
 if TYPE_CHECKING:
     from threading import Timer
-
-
-class Task(ABC):
-    action: str
-
-    stop: bool
-    message: str
-    display_title: str
-    category: str
-
-    @property
-    @abstractmethod
-    def volume_id(self) -> Union[int, None]:
-        ...
-
-    @property
-    @abstractmethod
-    def issue_id(self) -> Union[int, None]:
-        ...
-
-    @abstractmethod
-    def __init__(self, **kwargs) -> None:
-        ...
-
-    @abstractmethod
-    def run(self) -> Union[None, List[Tuple[str, int, int, Union[int, None]]]]:
-        """Run the task
-
-        Returns:
-            Union[None, List[Tuple[str, int, Union[int, None]]]]:
-            Either `None` if the task has no result or
-            `List[Tuple[str, int, Union[int, None]]]` if the task returns
-            search results.
-        """
-        ...
 
 
 # region Task Handler
