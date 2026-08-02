@@ -73,7 +73,7 @@ You will need at least one [root folder](../settings/mediamanagement.md#root-fol
 
 ### Create a download folder
 
-Kapowarr needs a [download folder](../settings/download.md#direct-download-temporary-folder). If you don't already have a folder that software can download to, create one. The folder is allowed to be anywhere you like. You can create it using the same instructions as for [creating a folder for the database file](#__tabbed_1_2).
+Kapowarr needs a [download folder](../settings/download.md#download-folder). If you don't already have a folder that software can download to, create one. The folder is allowed to be anywhere you like. You can create it using the same instructions as for [creating a folder for the database file](#__tabbed_1_2).
 
 The database folder, root folder(s) and download folder can't intersect (e.g. the download folder can't be inside the root folder).
 

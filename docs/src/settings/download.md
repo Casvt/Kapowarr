@@ -1,12 +1,12 @@
 ## Download Location
 
-### Direct Download Temporary Folder
+### Download Folder
 
-This is where the files being downloaded get written to before being processed and moved to the correct location.
+This is the folder that files temporarily get downloaded to before being moved to the final location.
 
 If you run Kapowarr using Docker, leave this set to the default value of `/app/temp_downloads` and instead change the value of `/path/to/download_folder` in the [Docker command](../installation/docker.md#launch-container). If you have a manual install, you can change this value to whatever you want. It is required to be outside your root folders.
 
-### Empty Temporary Download Folder
+### Empty Download Folder
 
 This isn't so much of a setting as it is a tool. It will delete all files from the download folder that aren't actively being downloaded. This can be handy if the application crashed while downloading, leading to half-downloaded 'ghost' files in the folder.  
 

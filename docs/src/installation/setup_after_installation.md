@@ -18,9 +18,9 @@ Root folders are the base folders that Kapowarr puts media files in. Add at leas
 !!! warning "Adding root folders on Docker"
 	If you use Docker to run Kapowarr, then the root folder that you enter in the web-UI is the mapped folder, not the folder path on the host machine. That means that if you followed the [Docker installation instructions](../installation/docker.md#launch-container), you would need to enter `/comics`, `/comics-2`, etc. as your root folder.
 
-## Direct Download Temporary Folder
+## Download Folder
 
-This is only applicable to people _not_ using Docker. If you want to, you can change the folder that Kapowarr downloads files to using the ['Direct Download Temporary Folder' setting](../settings/download.md#direct-download-temporary-folder).
+This is only applicable to people _not_ using Docker. If you want to, you can change the folder that Kapowarr downloads files to using the ['Download Folder' setting](../settings/download.md#download-folder).
 
 ## Credentials
 
