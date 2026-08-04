@@ -127,11 +127,11 @@ class DownloadHandler(metaclass=Singleton):
                     name=f'DownloadThread-{download.id}'
                 )
 
-            if isinstance(download, TorrentDownload):
+            else:
                 thread = Server().get_db_thread(
-                    target=self.__run_torrent_download,
+                    target=self.__run_external_download,
                     args=(download,),
-                    name=f'TorrentDownloadThread-{download.id}'
+                    name=f'ExternalDownloadThread-{download.id}'
                 )
                 download.download_thread = thread
                 thread.start()
@@ -407,11 +407,11 @@ class DownloadHandler(metaclass=Singleton):
         self._process_queue()
         return
 
-    def __run_torrent_download(self, download: TorrentDownload) -> None:
-        """Start a torrent download. Intended to be run in a thread.
+    def __run_external_download(self, download: ExternalDownload) -> None:
+        """Start an external download. Intended to be run in a thread.
 
         Args:
-            download (TorrentDownload): The torrent download to run.
+            download (ExternalDownload): The external download to run.
                 One of the entries in self.queue.
         """
         download.run()
@@ -421,10 +421,10 @@ class DownloadHandler(metaclass=Singleton):
         seeding_handling = self.settings.sv.seeding_handling
 
         if seeding_handling == SeedingHandling.COMPLETE:
-            post_processer = PostProcessorTorrentsComplete
+            PostProcessorExternal = PostProcessorTorrentsComplete
 
         elif seeding_handling == SeedingHandling.COPY:
-            post_processer = PostProcessorTorrentsCopy
+            PostProcessorExternal = PostProcessorTorrentsCopy
 
         else:
             assert_never(seeding_handling)
@@ -439,13 +439,13 @@ class DownloadHandler(metaclass=Singleton):
 
             if download.state == DownloadState.CANCELED_STATE:
                 download.remove_from_client(delete_files=True)
-                post_processer.canceled(download)
+                PostProcessorExternal.canceled(download)
                 self.queue.remove(download)
                 break
 
             elif download.state == DownloadState.FAILED_STATE:
                 download.remove_from_client(delete_files=True)
-                post_processer.perm_failed(download)
+                PostProcessorExternal.perm_failed(download)
                 self.queue.remove(download)
                 break
 
@@ -458,12 +458,12 @@ class DownloadHandler(metaclass=Singleton):
                 and not files_copied
             ):
                 files_copied = True
-                post_processer.seeding(download)
+                PostProcessorExternal.seeding(download)
 
             elif download.state == DownloadState.IMPORTING_STATE:
                 if self.settings.sv.delete_completed_downloads:
                     download.remove_from_client(delete_files=False)
-                post_processer.success(download)
+                PostProcessorExternal.success(download)
                 self.queue.remove(download)
                 break
 
@@ -518,20 +518,22 @@ class DownloadHandler(metaclass=Singleton):
         active_downloads = 0
         max_downloads = self.settings.sv.concurrent_direct_downloads
         for download in self.queue:
-            if not isinstance(download, ExternalDownload):
-                if download.state == DownloadState.DOWNLOADING_STATE:
-                    active_downloads += 1
+            if isinstance(download, ExternalDownload):
+                continue
 
-                elif (
-                    download.state == DownloadState.QUEUED_STATE
-                    and active_downloads < max_downloads
-                ):
-                    if download.download_thread is not None:
-                        download.download_thread.start()
-                    active_downloads += 1
+            if download.state == DownloadState.DOWNLOADING_STATE:
+                active_downloads += 1
 
-                if active_downloads >= max_downloads:
-                    break
+            elif (
+                download.state == DownloadState.QUEUED_STATE
+                and active_downloads < max_downloads
+            ):
+                if download.download_thread is not None:
+                    download.download_thread.start()
+                active_downloads += 1
+
+            if active_downloads >= max_downloads:
+                break
 
         return
 
@@ -565,11 +567,11 @@ class DownloadHandler(metaclass=Singleton):
         return
 
     # region Getting
-    def get_all(self) -> List[dict]:
+    def get_all(self) -> List[Dict[str, Any]]:
         """Get all queue entries
 
         Returns:
-            List[dict]: All queue entries, formatted using `Download.as_dict()`.
+            List[Dict[str, Any]]: All queue entries.
         """
         return [e.as_dict() for e in self.queue]
 
@@ -673,7 +675,7 @@ class DownloadHandler(metaclass=Singleton):
 
     def remove_all(self) -> None:
         """Remove all downloads from the queue"""
-        for download in self.queue[::-1]:
+        for download in reversed(self.queue):
             self.remove(download.id)
 
         for download in self.queue:
