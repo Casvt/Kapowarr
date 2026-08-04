@@ -191,6 +191,8 @@ class BaseDirectDownload(Download):
                 and e.response.status_code == 403
             ):
                 # Pixeldrain rate limit because of hotlinking
+                # Note: Don't report rate limit because it's on the download
+                #   and not the account.
                 raise DownloadServiceRateLimitReached(
                     DownloadService.PIXELDRAIN
                 )
