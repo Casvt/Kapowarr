@@ -29,8 +29,6 @@ from backend.features.post_processing import (PostProcessor,
                                               PostProcessorTorrentsCopy)
 from backend.implementations.blocklist import add_to_blocklist
 from backend.implementations.download_client_manager import DownloadClients
-from backend.implementations.download_clients.Mega import MegaDownload
-from backend.implementations.download_clients.Torrent import TorrentDownload
 from backend.implementations.download_prepper_manager import DownloadPreppers
 from backend.implementations.external_client_manager import ExternalClients
 from backend.implementations.indexer_client_manager import IndexerClients
@@ -708,7 +706,8 @@ class DownloadHandler(metaclass=Singleton):
     def empty_download_folder(self) -> None:
         """
         Empty the download folder of files that aren't being downloaded.
-        Handy in the case that a crash left half-downloaded files behind in the folder.
+        Handy in the case that a crash left half-downloaded files behind in the
+        folder.
         """
         LOGGER.info('Emptying the download folder')
         folder = self.settings.sv.download_folder
