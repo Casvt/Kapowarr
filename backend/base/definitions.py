@@ -11,7 +11,7 @@ from datetime import datetime
 from enum import Enum
 from threading import Event, Thread
 from typing import (TYPE_CHECKING, Any, Callable, Dict, List,
-                    Mapping, Tuple, TypedDict, TypeVar, Union)
+                    Mapping, Tuple, Type, TypedDict, TypeVar, Union)
 
 if TYPE_CHECKING:
     from threading import Timer
@@ -754,6 +754,12 @@ class FileMatch(TypedDict):
     forced_match: bool
 
 
+class QueuedTaskData(TypedDict):
+    id: int
+    task: 'Task'
+    thread: Thread
+
+
 # region Dataclasses
 @dataclass
 class BlocklistEntry:
@@ -1067,7 +1073,6 @@ class Task(ABC):
     stop: bool
     message: str
     display_title: str
-    category: str
 
     @property
     @abstractmethod
@@ -1089,9 +1094,9 @@ class Task(ABC):
 
         Returns:
             Union[None, List[Tuple[str, int, Union[int, None]]]]:
-            Either `None` if the task has no result or
-            `List[Tuple[str, int, Union[int, None]]]` if the task returns
-            search results.
+                Either `None` if the task has no result or
+                `List[Tuple[str, int, Union[int, None]]]` if the task returns
+                search results.
         """
         ...
 
