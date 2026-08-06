@@ -159,14 +159,6 @@ class SettingsValues(PublicSettingsValues):
     backup_url_base: str = ''
 
 
-task_intervals = {
-    # If there are tasks that should be run at the same time,
-    # but per se after each other, put them in that order in the dict.
-    'update_all': 3600, # every hour
-    'search_all': 86400 # every day
-}
-
-
 class Settings(metaclass=Singleton):
     def __init__(self) -> None:
         self._insert_missing_settings()

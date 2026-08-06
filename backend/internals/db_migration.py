@@ -1273,3 +1273,33 @@ def _migrate_fix_avoid_large_downloads() -> None:
     )
 
     return
+
+
+@DatabaseMigrationHandler.register_handler(49)
+def _migrate_task_intervals_to_schedule() -> None:
+    from backend.base.helpers import get_schedules_next_run
+    from backend.features.tasks import TASK_INTERVALS
+
+    cursor = get_db()
+
+    cursor.execute("DROP TABLE task_intervals;")
+    cursor.execute("""
+        CREATE TABLE task_intervals(
+            task_name PRIMARY KEY,
+            schedule TEXT NOT NULL,
+            next_run INTEGER NOT NULL
+        );
+    """)
+
+    cursor.executemany(
+        """
+        INSERT INTO task_intervals(task_name, schedule, next_run)
+        VALUES (?, ?, ?);
+        """,
+        (
+            (task_name, schedule, get_schedules_next_run(schedule))
+            for task_name, schedule in TASK_INTERVALS.items()
+        )
+    )
+
+    return

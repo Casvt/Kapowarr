@@ -383,12 +383,33 @@ def api_task_history():
         return return_api({})
 
 
-@api.route('/system/tasks/planning', methods=['GET'])
+@api.route('/system/tasks/planning', methods=['GET', 'PUT'])
 @error_handler
 @auth
 def api_task_planning():
-    result = TaskHandler().get_task_planning()
-    return return_api(result)
+    th = TaskHandler()
+
+    if request.method == 'GET':
+        result = th.get_task_planning()
+        return return_api(result)
+
+    elif request.method == 'PUT':
+        data = request.get_json()
+        if not isinstance(data, dict):
+            raise InvalidKeyValue(value=data)
+        if 'task_name' not in data:
+            raise KeyNotFound('task_name')
+        if 'schedule' not in data:
+            raise KeyNotFound('schedule')
+        if not isinstance(data['task_name'], str):
+            raise InvalidKeyValue('task_name', data['task_name'])
+        if not isinstance(data['schedule'], str):
+            raise InvalidKeyValue('schedule', data['schedule'])
+
+        th.update_task_schedule(data["task_name"], data["schedule"])
+
+        result = th.get_task_planning()
+        return return_api(result)
 
 
 @api.route('/system/tasks/<int:task_id>', methods=['GET', 'DELETE'])

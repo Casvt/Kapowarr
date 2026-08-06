@@ -10,7 +10,6 @@ from os.path import dirname, exists, isdir, join
 from sqlite3 import (PARSE_DECLTYPES, Connection, Cursor, ProgrammingError,
                      Row, register_adapter, register_converter)
 from threading import current_thread
-from time import time
 from typing import Any, Dict, Iterable, Iterator, List, Type, Union
 
 from flask import g
@@ -309,8 +308,9 @@ def setup_db_adapters_and_converters() -> None:
 
 def setup_db() -> None:
     """Setup the default config and database connection and tables"""
+    from backend.features.tasks import insert_task_intervals
     from backend.internals.db_migration import DatabaseMigrationHandler
-    from backend.internals.settings import Settings, task_intervals
+    from backend.internals.settings import Settings
 
     cursor = get_db()
     cursor.execute("PRAGMA journal_mode = wal;")
@@ -335,20 +335,7 @@ def setup_db() -> None:
         settings.generate_api_key()
 
     # Add task intervals
-    LOGGER.debug(f'Inserting task intervals: {task_intervals}')
-    current_time = round(time())
-    cursor.executemany(
-        """
-        INSERT INTO task_intervals
-        VALUES (?, ?, ?)
-        ON CONFLICT(task_name) DO
-        UPDATE
-        SET
-            interval = ?;
-        """,
-        ((k, v, current_time, v) for k, v in task_intervals.items())
-    )
-
+    insert_task_intervals()
     return
 
 
@@ -506,7 +493,7 @@ CREATE TABLE IF NOT EXISTS task_history(
 );
 CREATE TABLE IF NOT EXISTS task_intervals(
     task_name PRIMARY KEY,
-    interval INTEGER NOT NULL,
+    schedule TEXT NOT NULL,
     next_run INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS blocklist(
