@@ -1,21 +1,24 @@
 {% extends "base.html" %}
-{% from "base.html" import icon_button %}
+{% from "base.html" import icon_button, window %}
 {% block title %}Tasks{% endblock %}
 {% block css %}
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/window.css') }}">
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/tasks.css') }}">
 {% endblock %}
 {% block js %}
+	<script src="{{ url_for('static', filename='js/window.js') }}" defer></script>
 	<script src="{{ url_for('static', filename='js/tasks.js') }}" defer></script>
 {% endblock %}
 
 {% block pre_build_rows %}
 <tr class="task-entry">
 	<td class="name-column"></td>
-	<td class="interval-column"></td>
+	<td class="schedule-column"></td>
 	<td class="prev-column"></td>
 	<td class="next-column"></td>
-	<td class="run-column">
+	<td class="actions-column">
 		{{ icon_button("", "Run the task", "refresh.svg") }}
+		{{ icon_button("", "Edit the schedule", "edit.svg") }}
 	</td>
 </tr>
 <tr class="history-entry">
@@ -23,6 +26,39 @@
 	<td class="date-column"></td>
 </tr>
 {% endblock %}
+
+{% block windows %}
+	{% set edit_content %}
+		<p id="schedule-error" class="error hidden">*Custom Cron schedule is invalid</p>
+		<form id="task-form">
+			<table class="fold-table">
+				<tr>
+					<th><label for="task-schedule-preset">Task Schedule</label></th>
+					<td>
+						<select id="task-schedule-preset">
+							<option value="0 * * * *">Every hour</option>
+							<option value="0 0 * * *">Once per day</option>
+							<option value="">Custom schedule</option>
+						</select>
+					</td>
+				</tr>
+				<tr id="custom-schedule-row">
+					<th><label for="custom-schedule">Custom Schedule</label></th>
+					<td>
+						<input type="text" id="custom-schedule" required placeholder="E.g. '0 * * * *'">
+						<p>Enter a Cron schedule</p>
+					</td>
+				</tr>
+			</table>
+		</form>
+	{% endset %}
+
+	{% set edit_submit %}
+		<button id="task-submit" type="submit" form="task-form">Save</button>
+	{% endset %}
+
+	{{ window(False, "task-window", "Edit task schedule", edit_content, edit_submit) }}
+{% endblock windows %}
 
 {% block main %}
 <main>
@@ -35,18 +71,18 @@
 	<div class="main-window">
 		<h2>Scheduled</h2>
 		<div class="task-interval-container">
-		<table class="task-interval-table icon-text-color">
-			<thead>
-				<tr>
-					<th>Name</th>
-					<th>Interval</th>
-					<th>Last Execution</th>
-					<th>Next Execution</th>
-					<th>Run</th>
-				</tr>
-			</thead>
-			<tbody id="task-intervals"></tbody>
-		</table>
+			<table class="task-interval-table icon-text-color">
+				<thead>
+					<tr>
+						<th>Name</th>
+						<th>Schedule</th>
+						<th>Last Execution</th>
+						<th>Next Execution</th>
+						<th>Actions</th>
+					</tr>
+				</thead>
+				<tbody id="task-intervals"></tbody>
+			</table>
 		</div>
 		<h2>History</h2>
 		<table>

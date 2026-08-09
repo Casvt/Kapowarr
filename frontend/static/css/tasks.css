@@ -24,12 +24,12 @@
 	min-width: 6rem;
 }
 
-.task-interval-table tr > :where(.interval-column, .prev-column, .next-column) {
+.task-interval-table tr > :where(.schedule-column, .prev-column, .next-column) {
 	width: 8.5rem;
 }
 
-.task-interval-table tr > .run-column {
-	width: 4rem;
+.task-interval-table tr > .actions-column {
+	width: 6rem;
 }
 
 .task-interval-table tr > td {
@@ -55,4 +55,21 @@ th, td {
 
 .history-entry > * {
 	border-top: 1px solid var(--border-color);
+}
+
+#task-form {
+	width: 100%;
+	max-width: 30rem;
+}
+
+#task-form tbody {
+	vertical-align: text-top;
+}
+
+#task-form:not(:has(#task-schedule-preset option[value=""]:checked)) #custom-schedule-row {
+	display: none;
+}
+
+#schedule-error {
+	margin-inline: auto;
 }
