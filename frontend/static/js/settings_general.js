@@ -124,8 +124,5 @@ usingApiKey()
 document.querySelector('#theme-input').onchange = e => {
 	const value = document.querySelector('#theme-input').value;
 	setLocalStorage({'theme': value});
-	if (value === 'dark')
-		document.querySelector(':root').classList.add('dark-mode');
-	else if (value === 'light')
-		document.querySelector(':root').classList.remove('dark-mode');
+	setupTheme();
 };

@@ -4,16 +4,26 @@ from io import BytesIO
 from json import dumps
 from typing import Any
 
-from flask import Blueprint, redirect, render_template, send_file
+from flask import Blueprint, redirect, render_template, request, send_file
 
 from backend.internals.server import Server
 
 ui = Blueprint('ui', __name__)
 methods = ['GET']
+ALLOWED_THEMES = ["", "dark-mode"]
 
 
 def render(filename: str, **kwargs: Any) -> str:
-    return render_template(filename, url_base=Server.url_base, **kwargs)
+    theme = ''
+    if "theme" in request.cookies and request.cookies["theme"] in ALLOWED_THEMES:
+        theme = request.cookies["theme"]
+
+    return render_template(
+        filename,
+        url_base=Server.url_base,
+        theme=theme,
+        **kwargs
+    )
 
 
 @ui.route('/manifest.json', methods=methods)

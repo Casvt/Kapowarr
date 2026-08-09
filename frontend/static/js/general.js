@@ -364,6 +364,29 @@ function setLocalStorage(keys_values) {
 	return;
 };
 
+function setupTheme() {
+	const theme = getLocalStorage('theme')['theme']
+	let className = ''
+	if (theme === 'dark') {
+		className = 'dark-mode'
+	}
+
+	const root = document.querySelector(":root")
+	root.classList.remove(...root.classList.values())
+	if (className)
+		document.querySelector(":root").classList.add(className)
+
+	const expires = new Date()
+	if (className === "")
+		// Expire it, which removes it
+		expires.setTime(expires.getTime() - 86400 * 1000)
+	else
+		expires.setTime(expires.getTime() + 86400 * 1000)
+
+	document.cookie = `theme=${className}; expires=${expires.toUTCString()}; path=/;`
+	return
+}
+
 // code run on load
 
 const url_base = document.querySelector('#url_base').dataset.value;
@@ -379,8 +402,7 @@ usingApiKey()
 });
 
 setupLocalStorage();
-if (getLocalStorage('theme')['theme'] === 'dark')
-	document.querySelector(':root').classList.add('dark-mode');
+setupTheme();
 
 document.querySelector('#toggle-nav').onclick = e =>
 	document.querySelector('#nav-bar').classList.toggle('show-nav');
