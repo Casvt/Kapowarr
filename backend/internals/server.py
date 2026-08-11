@@ -29,6 +29,7 @@ from backend.base.logging import LOGGER, setup_logging
 from backend.internals.db import (DBConnectionManager, close_db,
                                   set_db_location,
                                   setup_db_adapters_and_converters)
+from backend.internals.db_backup_import import revert_db_import
 from backend.internals.settings import Settings
 
 if TYPE_CHECKING:
@@ -723,6 +724,21 @@ class HostingChangesHandler(StartTypeHandler):
         return
 
     def on_diffuse(self) -> None:
+        return
+
+
+@StartTypeHandlers.register_handler(StartType.RESTART_DB_CHANGES)
+class DatabaseChangesHandler(StartTypeHandler):
+    description = "database import"
+    timeout = Constants.DB_REVERT_TIME
+    restart_on_timeout = True
+
+    def on_timeout(self) -> None:
+        revert_db_import(swap=True)
+        return
+
+    def on_diffuse(self) -> None:
+        revert_db_import(swap=False)
         return
 
 

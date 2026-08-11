@@ -3,18 +3,22 @@
 from asyncio import run
 from datetime import datetime
 from io import BytesIO
+from os import remove
+from os.path import basename, splitext
 from typing import Any, Dict, List, Tuple, Union
 
-from flask import Blueprint, request, send_file
+from flask import Blueprint, after_this_request, request, send_file
 
-from backend.base.custom_exceptions import InvalidKeyValue, KeyNotFound
+from backend.base.custom_exceptions import (InvalidDatabaseFile,
+                                            InvalidKeyValue, KeyNotFound)
 from backend.base.definitions import (BlocklistReason, BlocklistReasonID,
                                       CredentialData, CredentialSource,
                                       DownloadService, DownloadType, FileMatch,
-                                      KapowarrException, LibraryFilter,
-                                      LibrarySorting, MonitorScheme,
-                                      SpecialVersion, StartType, StatusType,
-                                      VolumeData)
+                                      InvalidDatabaseReason, KapowarrException,
+                                      LibraryFilter, LibrarySorting,
+                                      MonitorScheme, SpecialVersion, StartType,
+                                      StatusType, VolumeData)
+from backend.base.files import folder_path
 from backend.base.helpers import hash_credential
 from backend.base.logging import LOGGER, get_log_file_contents
 from backend.features.download_queue import (DownloadHandler,
@@ -44,6 +48,9 @@ from backend.implementations.naming import (generate_volume_folder_name,
 from backend.implementations.remote_mapping import RemoteMappings
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Library, delete_issue_file
+from backend.internals.db_backup_import import (create_database_copy,
+                                                get_backup, get_backups,
+                                                import_db, import_db_backup)
 from backend.internals.db_models import FilesDB
 from backend.internals.server import Server, StartTypeHandlers
 from backend.internals.settings import Settings, get_about_data
@@ -441,6 +448,92 @@ def api_shutdown():
 def api_restart():
     Server().restart()
     return return_api({})
+
+
+# region Database Backup
+@api.route('/system/database', methods=['GET', 'POST'])
+@error_handler
+@auth
+def api_database():
+    if request.method == "GET":
+        filepath = create_database_copy(folder_path('db'))
+
+        @after_this_request
+        def remove_file(response):
+            remove(filepath)
+            return response
+
+        return send_file(
+            filepath,
+            mimetype="application/x-sqlite3",
+            download_name=basename(filepath)
+        ), 200
+
+    elif request.method == "POST":
+        if "file" not in request.files:
+            raise KeyNotFound("file")
+
+        db_file = request.files["file"]
+        if not (db_file.filename and splitext(db_file.filename)[1] == ".db"):
+            raise InvalidDatabaseFile(
+                db_file.filename or '',
+                InvalidDatabaseReason.NOT_KAPOWARR_DB
+            )
+
+        if "copy_hosting_settings" not in request.form:
+            raise KeyNotFound("copy_hosting_settings")
+
+        if not request.form["copy_hosting_settings"] in ("true", "false"):
+            raise InvalidKeyValue(
+                "copy_hosting_settings",
+                request.form["copy_hosting_settings"]
+            )
+
+        copy_hosting_settings = request.form["copy_hosting_settings"] == "true"
+
+        save_path = folder_path("db", "Kapowarr_upload.db")
+        db_file.save(save_path)
+
+        import_db(save_path, copy_hosting_settings)
+        return return_api({})
+
+
+@api.route('/system/database/backups', methods=['GET'])
+@error_handler
+@auth
+def api_backups():
+    return return_api(get_backups())
+
+
+@api.route('/system/database/backups/<int:b_idx>', methods=['GET', 'POST'])
+@error_handler
+@auth
+def api_backup(b_idx: int):
+    if request.method == "GET":
+        filepath = get_backup(b_idx)['filepath']
+        return send_file(
+            filepath,
+            mimetype="application/x-sqlite3",
+            download_name=basename(filepath)
+        ), 200
+
+    elif request.method == "POST":
+        data = request.get_json()
+
+        if not isinstance(data, dict):
+            raise InvalidKeyValue(value=data)
+
+        if 'copy_hosting_settings' not in data:
+            raise KeyNotFound("copy_hosting_settings")
+
+        if not isinstance(data["copy_hosting_settings"], bool):
+            raise InvalidKeyValue(
+                "copy_hosting_settings",
+                data["copy_hosting_settings"]
+            )
+
+        import_db_backup(b_idx, data['copy_hosting_settings'])
+        return return_api({})
 
 
 # region Settings

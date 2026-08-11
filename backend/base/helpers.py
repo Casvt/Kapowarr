@@ -1377,7 +1377,7 @@ class PortablePool(Pool):
         log_filepath = get_log_filepath()
         log_folder = dirname(log_filepath)
         log_file = basename(log_filepath)
-        db_folder = dirname(DBConnection.file)
+        db_folder = dirname(DBConnection.default_file)
         ws_queue = WebSocket().client_manager.queue
 
         super().__init__(

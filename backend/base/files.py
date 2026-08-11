@@ -762,7 +762,23 @@ def set_volume_folder_owner_group(
 
 
 # region Moving
-def __copy2(src, dst, *, follow_symlinks=True):
+def copy(
+    src,
+    dst,
+    *,
+    follow_symlinks=True
+) -> str:
+    """Copy a file or folder.
+
+    Args:
+        src (str): The source file or folder.
+        dst (str): The destination of the copy.
+        follow_symlinks (bool, optional): Whether to follow symlinks.
+            Defaults to True.
+
+    Returns:
+        str: The destination.
+    """
     try:
         return copy2(src, dst, follow_symlinks=follow_symlinks)
 
@@ -805,12 +821,12 @@ def rename_file(
         # Cannot move folder into itself
         old_before = before
         before = old_before + '_temp'
-        move(old_before, before, copy_function=__copy2)
+        move(old_before, before, copy_function=copy)
 
     create_folder(dirname(after))
 
     # Move file into folder
-    move(before, after, copy_function=__copy2)
+    move(before, after, copy_function=copy)
 
     return
 
@@ -822,7 +838,7 @@ def copy_directory(source: str, target: str) -> None:
         source (str): The current folderpath of the source directory.
         target (str): The desired folderpath to where the directory should be copied.
     """
-    copytree(source, target, copy_function=__copy2)
+    copytree(source, target, copy_function=copy)
     return
 
 
