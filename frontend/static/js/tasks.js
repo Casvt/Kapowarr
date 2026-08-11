@@ -121,10 +121,12 @@ function fillPlanning(api_key) {
 				convertTime(task.last_run, false);
 			entry.querySelector('.next-column').innerText =
 				convertTime(task.next_run, true);
-			entry.querySelector('.actions-column button:first-of-type').onclick =
-				e => sendAPI('POST', '/system/tasks', api_key, {}, {'cmd': task.task_name});
+			entry.querySelector('.actions-column button:first-of-type').onclick = () => {
+				sendAPI('POST', '/system/tasks', api_key, {}, {'cmd': task.task_name})
+				.then(() => refreshPage(api_key))
+			};
 			entry.querySelector('.actions-column button:last-of-type').onclick =
-				e => openScheduleEditor(task.task_name, task.schedule);
+				() => openScheduleEditor(task.task_name, task.schedule);
 
 			TaskEls.intervals.appendChild(entry);
 		});
@@ -158,17 +160,18 @@ function clearHistory(api_key) {
 	TaskEls.history.innerHTML = '';
 };
 
+function refreshPage(apiKey) {
+	fillPlanning(apiKey)
+	fillHistory(apiKey)
+}
+
 // code run on load
 
 usingApiKey()
 .then(api_key => {
-	fillHistory(api_key);
-	fillPlanning(api_key);
-	TaskEls.buttons.refresh.onclick = e => {
-		fillPlanning(api_key)
-		fillHistory(api_key)
-	};
-	TaskEls.buttons.clear.onclick = e => clearHistory(api_key);
+	refreshPage(api_key);
+	TaskEls.buttons.refresh.onclick = () => refreshPage(api_key);
+	TaskEls.buttons.clear.onclick = () => clearHistory(api_key);
 
 	TaskEls.edit.preset.onchange = e => {
 		if (e.target.value === '') {
