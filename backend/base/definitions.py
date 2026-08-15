@@ -107,6 +107,14 @@ class Constants:
     )
     "The HTTP status codes for which a retry should be done"
 
+    STATUS_RATELIMIT_RETRIES = (
+        429, # Too Many Requests
+    )
+    "The HTTP status codes for which a retry should be done after waiting"
+
+    MAX_RATELIMIT_WAIT = 30 # seconds
+    "The maximum amount of seconds to wait in-between rate limited retries"
+
     PROXY_TEST_URL = "https://httpbin.org/ip"
 
     CV_SITE_URL = "https://comicvine.gamespot.com"

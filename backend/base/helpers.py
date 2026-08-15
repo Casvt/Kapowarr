@@ -9,6 +9,7 @@ from __future__ import annotations
 from asyncio import sleep
 from base64 import urlsafe_b64encode
 from datetime import datetime
+from email.utils import parsedate_to_datetime
 from functools import lru_cache
 from hashlib import pbkdf2_hmac
 from multiprocessing.pool import Pool
@@ -18,6 +19,7 @@ from re import compile
 from subprocess import run
 from sys import base_exec_prefix, executable, maxsize, platform, version_info
 from threading import current_thread
+from time import sleep as sync_sleep
 from typing import (TYPE_CHECKING, Any, Callable, Collection, Dict, Iterable,
                     Iterator, List, Mapping, Sequence, Tuple, Union)
 from unicodedata import normalize
@@ -959,6 +961,55 @@ def retry(
         )
 
 
+def get_ratelimit_wait(
+    headers: Mapping[str, str],
+    round: int
+) -> float:
+    """Determine how long to wait before retrying a rate limited request. The
+    `Retry-After` header of the response is honoured if it's present and
+    usable, in both the "delay in seconds" and the "HTTP date" notation.
+    Otherwise the standard exponential backoff is applied.
+
+    ```
+    >>> get_ratelimit_wait({"Retry-After": "5"}, 1)
+    5.0
+    >>> get_ratelimit_wait({}, 3)
+    4.0
+    ```
+
+    Args:
+        headers (Mapping[str, str]): The headers of the rate limited response.
+
+        round (int): The retry round that was just done, starting at 1.
+
+    Returns:
+        float: The amount of seconds to wait, never negative and never more
+            than `Constants.MAX_RATELIMIT_WAIT`.
+    """
+    wait = None
+    retry_after = headers.get("Retry-After")
+
+    if retry_after:
+        try:
+            wait = float(retry_after)
+
+        except ValueError:
+            try:
+                wait = (
+                    parsedate_to_datetime(retry_after).timestamp()
+                    - datetime.now().timestamp()
+                )
+            except (TypeError, ValueError, OverflowError):
+                wait = None
+
+    if wait is None:
+        wait = float(
+            Constants.BACKOFF_FACTOR_RETRIES * (2 ** (round - 1))
+        )
+
+    return max(0.0, min(wait, float(Constants.MAX_RATELIMIT_WAIT)))
+
+
 class Session(RSession):
     """
     Inherits from `requests.Session`. Adds retries, sets user agent and handles
@@ -1006,14 +1057,36 @@ class Session(RSession):
         self.headers.update({"User-Agent": ua})
         self.cookies.update(cf_cookies)
 
-        result = super().request(
-            method, url, params, data, headers,
-            cookies, files, auth,
-            timeout, allow_redirects,
-            proxies, hooks,
-            stream, verify,
-            cert, json
-        )
+        for round in range(1, Constants.TOTAL_RETRIES + 1):
+            result = super().request(
+                method, url, params, data, headers,
+                cookies, files, auth,
+                timeout, allow_redirects,
+                proxies, hooks,
+                stream, verify,
+                cert, json
+            )
+
+            if (
+                result.status_code not in Constants.STATUS_RATELIMIT_RETRIES
+                or round == Constants.TOTAL_RETRIES
+            ):
+                # Not rate limited, or out of retries. In the latter case, the
+                # response is returned instead of raised, so that callers can
+                # tell a rate limit apart from a broken request.
+                break
+
+            wait = get_ratelimit_wait(result.headers, round)
+            LOGGER.warning(
+                "%s request to %s is rate limited. "
+                "Retrying in %.1fs for round %d...",
+                method, url, wait, round + 1
+            )
+            # The body of the response is of no use and is never read when
+            # streaming, which would keep the connection checked out of the
+            # pool for the duration of the wait and the rounds after it.
+            result.close()
+            sync_sleep(wait)
 
         if result.status_code == 403:
             fs_result = self.fs.handle_cf_block(result.url, result.headers)
@@ -1102,6 +1175,23 @@ class AsyncSession(ClientSession):
                     Constants.BACKOFF_FACTOR_RETRIES *
                     (2 ** (round - 1))
                 )
+                continue
+
+            if (
+                response.status in Constants.STATUS_RATELIMIT_RETRIES
+                and round < Constants.TOTAL_RETRIES
+            ):
+                wait = get_ratelimit_wait(response.headers, round)
+                LOGGER.warning(
+                    "%s request to %s is rate limited. "
+                    "Retrying in %.1fs for round %d...",
+                    method, url, wait, round + 1
+                )
+                # Give the connection back before waiting on it, instead of
+                # holding it for the duration of the wait and the rounds
+                # after it.
+                response.release()
+                await sleep(wait)
                 continue
 
             if response.status == 403:
