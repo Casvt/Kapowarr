@@ -32,6 +32,42 @@ class extract_filename_data(unittest.TestCase):
         return
 
     # autopep8: off
+    def test_book_in_series_title(self):
+        cases = {
+            'StarHenge Book 2 - A Kiss for Atticus Volume 1 (2026)/#1 - StarHenge Book 2 - A Kiss for Atticus (2026) Volume 1.cbr':
+                {'series': 'StarHenge Book 2 A Kiss for Atticus', 'year': 2026, 'volume_number': 1, 'special_version': None, 'issue_number': 1.0, 'annual': False},
+
+            'StarHenge Book 2 - A Kiss for Atticus Volume 1 (2026)/StarHenge Book 2 - A Kiss for Atticus (2026) 1-2':
+                {'series': 'StarHenge Book 2 A Kiss for Atticus', 'year': 2026, 'volume_number': 1, 'special_version': None, 'issue_number': (1.0, 2.0), 'annual': False},
+
+            'StarHenge Book 2 - A Kiss for Atticus #1 (2026)':
+                {'series': 'StarHenge Book 2 A Kiss for Atticus', 'year': 2026, 'volume_number': 1, 'special_version': None, 'issue_number': 1.0, 'annual': False},
+
+            'Hellblazer Book 3 #7 (2020)':
+                {'series': 'Hellblazer Book 3', 'year': 2020, 'volume_number': 1, 'special_version': None, 'issue_number': 7.0, 'annual': False},
+
+            'Preacher Book 3 (2010)/Preacher Book 3 #12.cbz':
+                {'series': 'Preacher Book 3', 'year': 2010, 'volume_number': 1, 'special_version': None, 'issue_number': 12.0, 'annual': False},
+
+            'Saga Book 2 - Something #5 (2024)':
+                {'series': 'Saga Book 2 Something', 'year': 2024, 'volume_number': 1, 'special_version': None, 'issue_number': 5.0, 'annual': False},
+
+            'Series Book 3 (2020)':
+                {'series': 'Series', 'year': 2020, 'volume_number': 1, 'special_version': None, 'issue_number': 3.0, 'annual': False},
+
+            'Series Books 1-5 (2020)':
+                {'series': 'Series', 'year': 2020, 'volume_number': 1, 'special_version': None, 'issue_number': (1.0, 5.0), 'annual': False},
+
+            'Series Book 3 of 5 (2020)':
+                {'series': 'Series', 'year': 2020, 'volume_number': 1, 'special_version': None, 'issue_number': 3.0, 'annual': False},
+
+            'Notebook 5 (2020)':
+                {'series': 'Notebook', 'year': 2020, 'volume_number': 1, 'special_version': None, 'issue_number': 5.0, 'annual': False}
+        }
+        self.run_cases(cases)
+    # autopep8: on
+
+    # autopep8: off
     def test_general(self):
         cases = {
             'Iron-Man Volume 2 Issue 3.cbr':

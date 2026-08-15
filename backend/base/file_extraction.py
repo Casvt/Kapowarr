@@ -7,7 +7,7 @@ generalising it. The string can be a filepath, filename, search result title, et
 
 from os.path import basename, dirname, splitext
 from re import IGNORECASE, Pattern, compile
-from typing import Collection, Dict, Tuple, TypeVar, Union
+from typing import Collection, Dict, Iterable, Sequence, Tuple, TypeVar, Union
 
 from backend.base.definitions import (CharConstants, FileConstants,
                                       FilenameData, SpecialVersion, VolumeData)
@@ -313,6 +313,61 @@ def _find_issue_numbers(
                 yield (result.group(group_number), start, end)
 
 
+def _select_issue_number(
+    candidates: Iterable[Tuple[str, int, int]],
+    source: str,
+    occupied_pos: Sequence[Tuple[int, int]]
+) -> Union[Tuple[str, int], None]:
+    """Choose which of the found issue numbers to use.
+
+    The candidates are already in order of preference, so normally the first
+    one that doesn't overlap with other extracted information is taken. The
+    exception is the `book` keyword: unlike the other issue keywords, it's
+    often part of the series title itself (e.g. "StarHenge Book 2 - A Kiss for
+    Atticus"), so it's only used when nothing else in the string can be the
+    issue number.
+
+    Args:
+        candidates (Iterable[Tuple[str, int, int]]): The found issue numbers,
+        in order of preference, as (number, start position, end position).
+
+        source (str): The string that the candidates were found in.
+
+        occupied_pos (Sequence[Tuple[int, int]]): The position ranges that are
+        already taken by other extracted information.
+
+    Returns:
+        Union[Tuple[str, int], None]: The issue number and the position that
+        the series name ends at, or `None` if no issue number was found.
+    """
+    book_match = None
+
+    for number, start, end in candidates:
+        if check_overlapping_pos(occupied_pos, (start, end)):
+            continue
+
+        if source[start:end].lower().startswith("book"):
+            if book_match is None:
+                book_match = (number, start, end)
+            continue
+
+        if book_match and check_overlapping_pos(
+            (book_match[1:],), (start, end)
+        ):
+            # This candidate is the number of the `book` keyword match, just
+            # without the keyword itself (e.g. the "3" of "Series Book 3").
+            # Take the keyword match, so that the keyword isn't left behind as
+            # the last word of the series name.
+            break
+
+        return number, start
+
+    if book_match:
+        return book_match[0], book_match[1]
+
+    return None
+
+
 def extract_filename_data(
     filepath: str,
     assume_volume_number: bool = True,
@@ -518,16 +573,13 @@ def extract_filename_data(
                     issue_regex_5, issue_regex_6))
         )
 
-        for extracted_number, result_start, result_end in _find_issue_numbers(
-            pos_options, is_annual=annual
-        ):
-            if not check_overlapping_pos(
-                all_year_pos + [(special_pos, special_end)],
-                (result_start, result_end)
-            ):
-                issue_number = extracted_number
-                issue_pos = result_start
-                break
+        selected_issue = _select_issue_number(
+            _find_issue_numbers(pos_options, is_annual=annual),
+            filename,
+            all_year_pos + [(special_pos, special_end)]
+        )
+        if selected_issue:
+            issue_number, issue_pos = selected_issue
 
     else:
         pos_options = (
@@ -541,16 +593,13 @@ def extract_filename_data(
                     issue_regex_5, issue_regex_6))
         )
 
-        for extracted_number, result_start, result_end in _find_issue_numbers(
-            pos_options, is_annual=annual
-        ):
-            if not check_overlapping_pos(
-                all_year_folderpos,
-                (result_start, result_end)
-            ):
-                issue_number = extracted_number
-                issue_folderpos = result_start
-                break
+        selected_issue = _select_issue_number(
+            _find_issue_numbers(pos_options, is_annual=annual),
+            foldername,
+            all_year_folderpos
+        )
+        if selected_issue:
+            issue_number, issue_folderpos = selected_issue
 
     if not issue_number and not special_version:
         # If no issue number is found and no Special Version is determined,
