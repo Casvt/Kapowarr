@@ -381,7 +381,7 @@ def extract_filename_data(
     all_year_folderpos = [(10_000, 0)]
     volume_pos, volume_end = 10_000, 0
     volume_folderpos, volume_folderend = 10_000, 0
-    issue_pos, issue_folderpos = 10_000, 10_000
+    issue_pos, issue_end, issue_folderpos = 10_000, 0, 10_000
     special_pos, special_end = 10_000, 0
 
     # Process folder if file is metadata file, as metadata filename contains
@@ -527,6 +527,7 @@ def extract_filename_data(
             ):
                 issue_number = extracted_number
                 issue_pos = result_start
+                issue_end = result_end
                 break
 
     else:
@@ -580,6 +581,25 @@ def extract_filename_data(
             # Series name is assumed to be the upper foldername
             series = strip_filename_regex.sub('', upper_foldername)
     series = series_regex.sub('', series.replace('-', ' ').replace('_', ' '))
+
+    if (
+        not series
+        and issue_pos == 0
+        and not is_image_file
+        and not clean_filename[issue_end:].lstrip().startswith('-')
+    ):
+        # The issue number was found at the very start of the filename, there
+        # is no folder to take the series name from, and the number isn't
+        # separated from the rest by a dash (as in "5 - Title"). So there is
+        # nothing left that could be the series, meaning the number is not an
+        # issue number at all but (the start of) a series name that happens to
+        # begin with a number. E.g. "2000AD" is a series, not issue 2000.
+        series = series_regex.sub(
+            '', clean_filename.replace('-', ' ').replace('_', ' ')
+        )
+        issue_number = None
+        if not special_version:
+            special_version = SpecialVersion.TPB.value
 
     # Format output
     if issue_number is not None:

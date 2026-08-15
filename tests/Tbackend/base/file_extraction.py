@@ -332,4 +332,29 @@ class extract_filename_data(unittest.TestCase):
                 {'series': 'Iron Man', 'year': 2012, 'volume_number': 2, 'special_version': 'metadata', 'issue_number': 5.0, 'annual': False}
         }
         self.run_cases(cases)
+
+    def test_numeric_series_name(self):
+        cases = {
+            '2000AD':
+                {'series': '2000AD', 'year': None, 'volume_number': 1, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
+
+            '2000 AD':
+                {'series': '2000 AD', 'year': None, 'volume_number': 1, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
+
+            '2000AD (2026)':
+                {'series': '2000AD', 'year': 2026, 'volume_number': 1, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
+
+            '52':
+                {'series': '52', 'year': None, 'volume_number': 1, 'special_version': 'tpb', 'issue_number': None, 'annual': False},
+
+            '2000AD #2493 (2026)':
+                {'series': '2000AD', 'year': 2026, 'volume_number': 1, 'special_version': None, 'issue_number': 2493.0, 'annual': False},
+
+            '52 #10 (2007)':
+                {'series': '52', 'year': 2007, 'volume_number': 1, 'special_version': None, 'issue_number': 10.0, 'annual': False},
+
+            '100 Bullets #1 (1999)':
+                {'series': '100 Bullets', 'year': 1999, 'volume_number': 1, 'special_version': None, 'issue_number': 1.0, 'annual': False}
+        }
+        self.run_cases(cases)
     # autopep8: on
