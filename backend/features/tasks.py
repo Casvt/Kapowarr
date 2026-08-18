@@ -385,7 +385,8 @@ class TaskHandler(metaclass=Singleton):
                 FROM task_history
                 GROUP BY task_name
             ) h
-            ON i.task_name = h.task_name;
+            ON i.task_name = h.task_name
+            ORDER BY i.task_name;
             """
         ).fetchalldict()
 
