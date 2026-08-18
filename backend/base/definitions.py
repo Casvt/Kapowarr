@@ -11,7 +11,7 @@ from datetime import datetime
 from enum import Enum
 from threading import Event, Thread
 from typing import (TYPE_CHECKING, Any, Callable, Dict, List,
-                    Mapping, Tuple, Type, TypedDict, TypeVar, Union)
+                    Mapping, Tuple, TypedDict, TypeVar, Union)
 
 if TYPE_CHECKING:
     from threading import Timer
@@ -313,7 +313,7 @@ class InvalidDatabaseReason(BaseEnum):
 
     VERSION_NOT_SUPPORTED = "version_not_supported"
     """
-    Uploaded database is higher version than this Kapowarr installation can\
+    Uploaded database is higher version than this Kapowarr installation can
     support
     """
 
