@@ -101,6 +101,19 @@ def create_groups(
             new_group_number = max(groups or (0,)) + 1
             groups.setdefault(new_group_number, {})[file] = file_data
 
+    # Convert VAI groups to issue groups
+    for group in groups.values():
+        if any(
+            group_file_data['issue_number'] is not None
+            for group_file_data in group.values()
+        ):
+            continue
+
+        for group_file_data in group.values():
+            group_file_data['issue_number'] = group_file_data['volume_number']
+            group_file_data['volume_number'] = None
+            group_file_data['special_version'] = SpecialVersion.NORMAL.value
+
     LOGGER.debug('File groupings: %s', groups)
     return groups
 
