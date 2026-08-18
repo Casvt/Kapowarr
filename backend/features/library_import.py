@@ -22,6 +22,7 @@ from backend.base.helpers import force_suffix
 from backend.base.logging import LOGGER
 from backend.implementations.comicvine import ComicVine
 from backend.implementations.file_matching import scan_files
+from backend.implementations.matching import match_special_version
 from backend.implementations.naming import mass_rename
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Library
@@ -38,7 +39,11 @@ def _group_matches(
     if (
         file_data['series'] != reference['series']
         or file_data['annual'] != reference['annual']
-        or file_data['special_version'] != reference['special_version']
+        or not match_special_version(
+            reference['special_version'],
+            file_data['special_version'],
+            reference['series']
+        )
     ):
         return False
 
@@ -55,12 +60,19 @@ def _group_matches(
     ):
         return False
 
+    if file_data['special_version'] in (
+        SpecialVersion.METADATA, SpecialVersion.COVER
+    ):
+        # Don't check volume/issue number match for volume files
+        # so short circuit
+        return True
+
     only_volume_numbers = all(
         group_file_data['issue_number'] is None
         for group_file_data in group_files.values()
     )
 
-    return only_volume_numbers ^ (file_data['issue_number'] is not None)
+    return only_volume_numbers == (file_data['issue_number'] is None)
 
 
 def create_groups(
@@ -201,7 +213,7 @@ def propose_library_import(
         f: d
         for f, d in sorted(
             unimported_files.items(),
-            key=lambda e: basename(e[0])
+            key=lambda e: e[0].lower()
         )
     }
 
