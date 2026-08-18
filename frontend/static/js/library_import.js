@@ -30,6 +30,22 @@ const LIEls = {
 
 const rowid_to_filepath = {};
 
+function buildMatchTitle(title, year, issue_count) {
+	let result = ''
+	if (title)
+		result += title
+
+	if (year !== null)
+		result += ` (${year})`
+
+	if (issue_count !== null) {
+		const plural = issue_count !== 1 ? 's' : ''
+		result += ` [${issue_count} issue${plural}]`
+	}
+	
+	return result
+}
+
 function loadProposal(api_key) {
 	const params = {
 		limit: parseInt(document.querySelector('#limit-input').value),
@@ -66,9 +82,9 @@ function loadProposal(api_key) {
 
 			const CV_link = entry.querySelector('a');
 			CV_link.href = result.cv.link || '';
-			CV_link.innerText = result.cv.title || '';
-
-			entry.querySelector('.issue-count').innerText = result.cv.issue_count;
+			CV_link.innerText = buildMatchTitle(
+				result.cv.title, null, result.cv.issue_count
+			)
 
 			entry.querySelector('button').onclick = e => openEditCVMatch(rowid);
 
@@ -153,8 +169,7 @@ function editCVMatch(
 		rowid_to_filepath[tr.dataset.rowid].cv_id = parseInt(comicvine_id);
 		const link = tr.querySelector('a');
 		link.href = site_url;
-		link.innerText = `${title} (${year})`;
-		tr.querySelector('.issue-count').innerText = issue_count;
+		link.innerText = buildMatchTitle(title, year, issue_count)
 	});
 };
 
@@ -171,12 +186,11 @@ function searchCV() {
 
 				const title = entry.querySelector('td:nth-child(1) a');
 				title.href = result.site_url;
-				title.innerText = `${result.title} (${result.year})`;
+				title.innerText = buildMatchTitle(
+					result.title, result.year, result.issue_count
+				)
 
-				entry.querySelector('td:nth-child(2)').innerText =
-					result.issue_count;
-
-				const select_button = entry.querySelector('td:nth-child(3) button');
+				const select_button = entry.querySelector('td:nth-child(2) button');
 				select_button.onclick = e => {
 					editCVMatch(
 						LIEls.search.window.dataset.rowid,
@@ -189,7 +203,7 @@ function searchCV() {
 					closeWindow();
 				};
 
-				const select_for_all_button = entry.querySelector('td:nth-child(4) button');
+				const select_for_all_button = entry.querySelector('td:nth-child(3) button');
 				select_for_all_button.onclick = e => {
 					const rowid = LIEls.search.window.dataset.rowid;
 					const group_number = document.querySelector(`tr[data-rowid="${rowid}"]`)
