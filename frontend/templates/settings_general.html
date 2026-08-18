@@ -177,6 +177,22 @@
 					</td>
 				</tr>
 			</table>
+			<h2>Database Backups</h2>
+			<table class="fold-table">
+				<tr>
+					<th><label for="db-backup-folder-input">Backup Folder</label></th>
+					<td>
+						<input type="text" id="db-backup-folder-input" required spellcheck="false">
+					</td>
+				</tr>
+				<tr>
+					<th><label for="db-backup-count-input">Backup Count</label></th>
+					<td>
+						<input type="number" id="db-backup-count-input" required min="0">
+						<p>The amount of backups to keep. If a new backup will exceed this amount, the oldest backup is deleted.</p>
+					</td>
+				</tr>
+			</table>
 		</form>
 	</div>
 </main>

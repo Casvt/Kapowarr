@@ -16,6 +16,8 @@ function fillSettings(api_key) {
 		document.querySelector('#cv-input').value = json.result.comicvine_api_key;
 		document.querySelector('#flaresolverr-input').value = json.result.flaresolverr_base_url;
 		document.querySelector('#log-level-input').value = json.result.log_level;
+		document.querySelector('#db-backup-folder-input').value = json.result.db_backup_folder;
+		document.querySelector('#db-backup-count-input').value = json.result.db_backup_amount;
 		
 		if (json.result.auth_username && json.result.auth_password) {
 			document.querySelector('#auth-toggle').value = 'username-password';
@@ -33,6 +35,7 @@ function saveSettings(api_key) {
 	document.querySelector('#proxy-password-input').classList.remove('error-input');
 	document.querySelector('#cv-input').classList.remove('error-input');
 	document.querySelector("#flaresolverr-input").classList.remove('error-input');
+	document.querySelector("#db-backup-folder-input").classList.remove("error-input");
 
 	let proxyIgnoredAddresses = document.querySelector('#proxy-ignored-addresses-input').value.split(',');
 	if (proxyIgnoredAddresses[0] === '') {
@@ -52,7 +55,9 @@ function saveSettings(api_key) {
 		'proxy_ignored_addresses': proxyIgnoredAddresses,
 		'comicvine_api_key': document.querySelector('#cv-input').value,
 		'flaresolverr_base_url': document.querySelector('#flaresolverr-input').value,
-		'log_level': parseInt(document.querySelector('#log-level-input').value)
+		'log_level': parseInt(document.querySelector('#log-level-input').value),
+		'db_backup_folder': document.querySelector("#db-backup-folder-input").value,
+		'db_backup_amount': parseInt(document.querySelector("#db-backup-count-input").value)
 	};
 	
 	const auth_toggle = document.querySelector('#auth-toggle');
@@ -95,6 +100,11 @@ function saveSettings(api_key) {
 			&& json.result.key === "flaresolverr_base_url"
 		)
 			document.querySelector("#flaresolverr-input").classList.add('error-input');
+
+		else if (
+			json.error === "FolderNotFound"
+		)
+			document.querySelector("#db-backup-folder-input").classList.add("error-input");
 
 		else
 			console.log(json.error);

@@ -1,0 +1,55 @@
+.table-container {
+	overflow-x: auto;
+
+	padding: 1rem;
+	color: var(--text-color);
+}
+
+#backup-table {
+	width: 100%;
+	min-width: 30rem;
+}
+
+#backup-table tbody tr {
+	transition: background-color 150ms ease-in-out;
+}
+
+#backup-table tbody tr:hover {
+	background-color: var(--hover-color);
+}
+
+#backup-table :where(th, td) {
+	padding: .5rem;
+}
+
+#backup-table tr > :nth-child(2) {
+	width: 11rem;
+}
+
+#backup-table tr > :last-child {
+	width: 6rem;
+}
+
+#backup-table td {
+	border-top: 1px solid var(--border-color);
+}
+
+#backup-table button {
+	height: 2rem;
+	width: 2rem;
+	padding: .4rem;
+	fill: var(--text-color);
+}
+
+#import-window span {
+	font-weight: bold;
+}
+
+#import-db-form tbody,
+#upload-db-form tbody {
+	vertical-align: text-top;
+}
+
+#upload-error {
+	margin-inline: auto;
+}

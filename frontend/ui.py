@@ -106,6 +106,11 @@ def ui_tasks():
     return render('tasks.html')
 
 
+@ui.route('/system/backups', methods=methods)
+def ui_backup():
+    return render('backups.html')
+
+
 @ui.route('/settings', methods=methods)
 def ui_settings():
     return redirect(f'{Server.url_base}/settings/mediamanagement')

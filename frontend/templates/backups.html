@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% from "base.html" import icon_button, window %}
+{% block title %}Backups{% endblock %}
+{% block css %}
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/window.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/backups.css') }}">
+{% endblock %}
+{% block js %}
+	<script src="{{ url_for('static', filename='js/window.js') }}" defer></script>
+	<script src="{{ url_for('static', filename='js/backups.js') }}" defer></script>
+{% endblock %}
+
+{% block windows %}
+	{% set upload_content %}
+		<p>You will be uploading a database file. Access Kapowarr within one minute to keep the new database, or the upload will automatically be reverted.</p>
+		<p id="upload-error" class="error hidden">*Invalid database file</p>
+		<form id="upload-db-form">
+			<table class="fold-table">
+				<tbody>
+					<tr>
+						<th><label for="database-file">Database File</label></th>
+						<td>
+							<input type="file" id="database-file" required>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="copy-hosting-upload">Keep Hosting Settings</label></th>
+						<td>
+							<input type="checkbox" id="copy-hosting-upload">
+							<p>Keep the current hosting settings instead of using the settings in the uploaded database when importing.</p>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</form>
+	{% endset %}
+
+	{% set upload_submit %}
+		<button id="submit-upload-db" type="submit" form="upload-db-form">Import</button>
+	{% endset %}
+
+	{{ window(False, "upload-window", "Upload Database", upload_content, upload_submit) }}
+
+	{% set import_content %}
+		<p>You will be importing database backup <span id="db-backup-name"></span>, created on <span id="db-creation-date"></span>.
+			Access Kapowarr within one minute to keep the new database, or the import will automatically be reverted.</p>
+		<form id="import-db-form">
+			<table class="fold-table">
+				<tbody>
+					<tr>
+						<th><label for="copy-hosting-import">Keep Hosting Settings</label></th>
+						<td>
+							<input type="checkbox" id="copy-hosting-import">
+							<p>Keep the current hosting settings instead of using the settings in the selected database backup when importing.</p>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</form>
+	{% endset %}
+
+	{% set import_submit %}
+		<button id="submit-import-db" type="submit" form="import-db-form">Import</button>
+	{% endset %}
+
+	{{ window(False, "import-window", "Import Database", import_content, import_submit) }}
+{% endblock windows %}
+
+{% block main %}
+<main>
+	<section class="tool-bar-container" aria-label="Tool bar">
+		<div class="tool-bar">
+			{{ icon_button("download-button", "Download the database", "download.svg", "Download Database") }}
+			{{ icon_button("upload-button", "Upload a database file", "upload.svg", "Upload Database") }}
+		</div>
+	</section>
+	<div class="table-container">
+		<table id="backup-table" class="icon-text-color">
+			<thead>
+				<tr>
+					<th>File</th>
+					<th>Creation</th>
+					<th>Actions</th>
+				</tr>
+			</thead>
+			<tbody id="backup-list"></tbody>
+		</table>
+	</div>
+</main>
+{% endblock main %}
