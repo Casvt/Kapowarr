@@ -276,11 +276,8 @@ class FlareSolverr:
             return
 
         # Technically this makes it a max amount of FS sessions per AsyncSession
-        # instance. Luckily, for the most intense request scenario of searching
-        # for downloads, just one session is used so that works out. We just
-        # need to refactor the FlareSolverr implementation to stand more as a
-        # separate entity from the Session and AsyncSession classes so that we
-        # can regulate session count and session instances better.
+        # instance, but in most cases the application only has one AsyncSession
+        # running at any point in time.
         if self.session_semaphore is None:
             self.session_semaphore = Semaphore(
                 Constants.MAX_CONCURRENT_FS_SESSIONS
