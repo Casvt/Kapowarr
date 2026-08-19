@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from asyncio import Semaphore
 from datetime import datetime, timezone
+from time import time
 from typing import TYPE_CHECKING, Any, Dict, Mapping, Tuple, Union
 
 from requests import RequestException
@@ -54,10 +55,17 @@ class FSCache:
             Tuple[str, str]: First element is the UA, or default UA. Second
                 element is the clearance cookie value.
         """
-        return (
-            cls.ua_mapping.get(url, Constants.DEFAULT_USERAGENT),
-            cls.cookie_mapping.get(url, ('', 0.0))[0]
-        )
+        ua = cls.ua_mapping.get(url, Constants.DEFAULT_USERAGENT)
+        cookie = cls.cookie_mapping.get(url, ('', 0.0))
+
+        if cookie[0] and time() > cookie[1]:
+            # Expired
+            cls.ua_mapping.pop(url, None)
+            cls.cookie_mapping.pop(url, None)
+            ua = Constants.DEFAULT_USERAGENT
+            cookie = ('', 0.0)
+
+        return (ua, cookie[0])
 
     @classmethod
     def set_ua_cookies(cls, url: str, fs_response: Dict[str, Any]) -> None:
