@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from asyncio import Semaphore
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, Mapping, Tuple, Union
 
 from requests import RequestException
@@ -18,26 +19,44 @@ if TYPE_CHECKING:
 
 
 class FSCache:
-    cookie_mapping: Dict[str, Dict[str, str]] = {}
+    cookie_mapping: Dict[str, Tuple[str, float]] = {}
     ua_mapping: Dict[str, str] = {}
 
+    @staticmethod
+    def _build_cookie(cookie: Dict[str, Any]) -> str:
+        result = f"{cookie['value']}; SameSite={cookie['sameSite']}; Partitioned"
+        if cookie["httpOnly"]:
+            result += "; HttpOnly"
+        if cookie["secure"]:
+            result += "; Secure"
+        if cookie["path"]:
+            result += f"; Path={cookie['path']}"
+        if cookie["domain"]:
+            result += f"; Domain={cookie['domain'].lstrip('.')}"
+        if cookie["expiry"]:
+            timestamp = datetime.fromtimestamp(
+                cookie["expiry"], tz=timezone.utc
+            )
+            result += f"; Expires={timestamp.strftime('%a, %d %b %Y %H:%M:%S GMT')}"
+        return result
+
     @classmethod
-    def get_ua_cookies(cls, url: str) -> Tuple[str, Dict[str, str]]:
+    def get_ua_cookies(cls, url: str) -> Tuple[str, str]:
         """Get the user agent and cookies for a certain URL. The UA and cookies
         can be cleared by CF, so use them to avoid challenges. In case the URL
         is not CF protected, or hasn't explicitly been cleared yet, then the
         default UA is returned and no cookie definitions.
 
         Args:
-            url (str): The URL to get the UA and cookies for.
+            url (str): The URL to get the UA and cookie for.
 
         Returns:
-            Tuple[str, Dict[str, str]]: First element is the UA, or default
-                UA. Second element is a mapping of any extra cookies.
+            Tuple[str, str]: First element is the UA, or default UA. Second
+                element is the clearance cookie value.
         """
         return (
             cls.ua_mapping.get(url, Constants.DEFAULT_USERAGENT),
-            cls.cookie_mapping.get(url, {})
+            cls.cookie_mapping.get(url, ('', 0.0))[0]
         )
 
     @classmethod
@@ -48,11 +67,15 @@ class FSCache:
             url (str): The URL that the clearance is for.
             fs_response (Dict[str, Any]): The response from FS.
         """
-        cls.ua_mapping[url] = fs_response["userAgent"]
-        cls.cookie_mapping[url] = {
-            cookie["name"]: cookie["value"]
-            for cookie in fs_response["cookies"]
-        }
+        for cookie in fs_response["cookies"]:
+            if cookie["name"] == "cf_clearance":
+                cls.ua_mapping[url] = fs_response["userAgent"]
+                cls.cookie_mapping[url] = (
+                    cls._build_cookie(cookie),
+                    cookie["expiry"]
+                )
+                break
+
         return
 
 
@@ -139,18 +162,18 @@ class FlareSolverr:
         """
         return self.base_url is not None
 
-    def get_ua_cookies(self, url: str) -> Tuple[str, Dict[str, str]]:
+    def get_ua_cookies(self, url: str) -> Tuple[str, str]:
         """Get the user agent and cookies for a certain URL. The UA and cookies
         can be cleared by CF, so use them to avoid challenges. In case the URL
         is not CF protected, or hasn't explicitly been cleared yet, then the
         default UA is returned and no cookie definitions.
 
         Args:
-            url (str): The URL to get the UA and cookies for.
+            url (str): The URL to get the UA and cookie for.
 
         Returns:
-            Tuple[str, Dict[str, str]]: First element is the UA, or default
-                UA. Second element is a mapping of any extra cookies.
+            Tuple[str, str]: First element is the UA, or default UA. Second
+                element is the clearance cookie value.
         """
         return FSCache.get_ua_cookies(url)
 

@@ -1002,9 +1002,9 @@ class Session(RSession):
         stream=None, verify=None,
         cert=None, json=None
     ):
-        ua, cf_cookies = self.fs.get_ua_cookies(url)
+        ua, cf_cookie = self.fs.get_ua_cookies(url)
         self.headers.update({"User-Agent": ua})
-        self.cookies.update(cf_cookies)
+        self.cookies.update({"cf_clearance": cf_cookie})
 
         result = super().request(
             method, url, params, data, headers,
@@ -1070,9 +1070,9 @@ class AsyncSession(ClientSession):
         method, url = args[0], args[1]
         sleep_time = Constants.BACKOFF_FACTOR_RETRIES
 
-        ua, cf_cookies = self.fs.get_ua_cookies(url)
+        ua, cf_cookie = self.fs.get_ua_cookies(url)
         self.headers.update({"User-Agent": ua})
-        self.cookie_jar.update_cookies(cf_cookies)
+        self.cookie_jar.update_cookies({"cf_clearance": cf_cookie})
 
         for round in range(1, Constants.TOTAL_RETRIES + 1):
             try:
