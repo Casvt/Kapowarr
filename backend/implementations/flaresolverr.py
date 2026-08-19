@@ -17,10 +17,46 @@ if TYPE_CHECKING:
     from backend.base.helpers import AsyncSession
 
 
-class FlareSolverr:
+class FSCache:
     cookie_mapping: Dict[str, Dict[str, str]] = {}
     ua_mapping: Dict[str, str] = {}
 
+    @classmethod
+    def get_ua_cookies(cls, url: str) -> Tuple[str, Dict[str, str]]:
+        """Get the user agent and cookies for a certain URL. The UA and cookies
+        can be cleared by CF, so use them to avoid challenges. In case the URL
+        is not CF protected, or hasn't explicitly been cleared yet, then the
+        default UA is returned and no cookie definitions.
+
+        Args:
+            url (str): The URL to get the UA and cookies for.
+
+        Returns:
+            Tuple[str, Dict[str, str]]: First element is the UA, or default
+                UA. Second element is a mapping of any extra cookies.
+        """
+        return (
+            cls.ua_mapping.get(url, Constants.DEFAULT_USERAGENT),
+            cls.cookie_mapping.get(url, {})
+        )
+
+    @classmethod
+    def set_ua_cookies(cls, url: str, fs_response: Dict[str, Any]) -> None:
+        """Cache the user agent and cookies for CF clearance.
+
+        Args:
+            url (str): The URL that the clearance is for.
+            fs_response (Dict[str, Any]): The response from FS.
+        """
+        cls.ua_mapping[url] = fs_response["userAgent"]
+        cls.cookie_mapping[url] = {
+            cookie["name"]: cookie["value"]
+            for cookie in fs_response["cookies"]
+        }
+        return
+
+
+class FlareSolverr:
     def __init__(self) -> None:
         settings = Settings().sv
         self.session_semaphore: Union[Semaphore, None] = None
@@ -116,10 +152,7 @@ class FlareSolverr:
             Tuple[str, Dict[str, str]]: First element is the UA, or default
                 UA. Second element is a mapping of any extra cookies.
         """
-        return (
-            self.ua_mapping.get(url, Constants.DEFAULT_USERAGENT),
-            self.cookie_mapping.get(url, {})
-        )
+        return FSCache.get_ua_cookies(url)
 
     def handle_cf_block(
         self,
@@ -194,11 +227,7 @@ class FlareSolverr:
             # returned webpage is empty.
             return
 
-        self.ua_mapping[url] = result["userAgent"]
-        self.cookie_mapping[url] = {
-            cookie["name"]: cookie["value"]
-            for cookie in result["cookies"]
-        }
+        FSCache.set_ua_cookies(url, result)
 
         return result
 
@@ -282,10 +311,6 @@ class FlareSolverr:
             # returned webpage is empty.
             return
 
-        self.ua_mapping[url] = result["userAgent"]
-        self.cookie_mapping[url] = {
-            cookie["name"]: cookie["value"]
-            for cookie in result["cookies"]
-        }
+        FSCache.set_ua_cookies(url, result)
 
         return result
