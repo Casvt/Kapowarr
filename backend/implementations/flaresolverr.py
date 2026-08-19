@@ -6,6 +6,7 @@ from asyncio import Semaphore
 from datetime import datetime, timezone
 from time import time
 from typing import TYPE_CHECKING, Any, Dict, Mapping, Tuple, Union
+from urllib.parse import urlparse
 
 from requests import RequestException
 
@@ -55,13 +56,15 @@ class FSCache:
             Tuple[str, str]: First element is the UA, or default UA. Second
                 element is the clearance cookie value.
         """
-        ua = cls.ua_mapping.get(url, Constants.DEFAULT_USERAGENT)
-        cookie = cls.cookie_mapping.get(url, ('', 0.0))
+        domain = urlparse(url).netloc
+
+        ua = cls.ua_mapping.get(domain, Constants.DEFAULT_USERAGENT)
+        cookie = cls.cookie_mapping.get(domain, ('', 0.0))
 
         if cookie[0] and time() > cookie[1]:
             # Expired
-            cls.ua_mapping.pop(url, None)
-            cls.cookie_mapping.pop(url, None)
+            cls.ua_mapping.pop(domain, None)
+            cls.cookie_mapping.pop(domain, None)
             ua = Constants.DEFAULT_USERAGENT
             cookie = ('', 0.0)
 
@@ -75,10 +78,11 @@ class FSCache:
             url (str): The URL that the clearance is for.
             fs_response (Dict[str, Any]): The response from FS.
         """
+        domain = urlparse(url).netloc
         for cookie in fs_response["cookies"]:
             if cookie["name"] == "cf_clearance":
-                cls.ua_mapping[url] = fs_response["userAgent"]
-                cls.cookie_mapping[url] = (
+                cls.ua_mapping[domain] = fs_response["userAgent"]
+                cls.cookie_mapping[domain] = (
                     cls._build_cookie(cookie),
                     cookie["expiry"]
                 )
