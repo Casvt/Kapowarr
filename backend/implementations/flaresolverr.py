@@ -222,40 +222,15 @@ class FlareSolverr:
             return
 
         with Session() as session:
-            # The reason we manually create and close a session for one request
-            # is that it's way faster than making just the request and letting
-            # FS make the temporary session itself. Why it's so much faster to
-            # make a session ourselves compared to FlareSolverr making it for
-            # one request, I don't know. It's orders of magnitude faster.
-
-            # Start session
-            session_id = self.__api_request(
-                self.base_url, session,
-                {
-                    'cmd': 'sessions.create',
-                    **(self.proxy_data or {})
-                }
-            )["session"]
-
-            # Get result
             result = self.__api_request(
                 self.base_url, session,
                 {
                     'cmd': 'request.get',
-                    'session': session_id,
                     'url': url,
-                    'maxTimeout': Constants.FS_RESOLVE_TIMEOUT * 1000
+                    'maxTimeout': Constants.FS_RESOLVE_TIMEOUT * 1000,
+                    **(self.proxy_data or {})
                 }
             )["solution"]
-
-            # Close session
-            self.__api_request(
-                self.base_url, session,
-                {
-                    'cmd': 'sessions.destroy',
-                    'session': session_id
-                }
-            )
 
         if result["response"] is None:
             # FlareSolverr responded, but content of
@@ -311,35 +286,16 @@ class FlareSolverr:
                 Constants.MAX_CONCURRENT_FS_SESSIONS
             )
 
-        # Start session
         async with self.session_semaphore:
-            session_id = (await self.__async_api_request(
-                self.base_url, session,
-                {
-                    'cmd': 'sessions.create',
-                    **(self.proxy_data or {})
-                }
-            ))["session"]
-
-            # Get result
             result = (await self.__async_api_request(
                 self.base_url, session,
                 {
                     'cmd': 'request.get',
-                    'session': session_id,
                     'url': url,
-                    'maxTimeout': Constants.FS_RESOLVE_TIMEOUT * 1000
+                    'maxTimeout': Constants.FS_RESOLVE_TIMEOUT * 1000,
+                    **(self.proxy_data or {})
                 }
             ))["solution"]
-
-            # Close session
-            await self.__async_api_request(
-                self.base_url, session,
-                {
-                    'cmd': 'sessions.destroy',
-                    'session': session_id
-                }
-            )
 
         if result["response"] is None:
             # FlareSolverr responded, but content of
