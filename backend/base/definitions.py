@@ -1232,14 +1232,13 @@ class IndexerClient(ABC):
 
     @classmethod
     @abstractmethod
-    def test(
-        cls,
-        url: str
-    ) -> None:
+    def test(cls, url: str, **extra_fields: Any) -> None:
         """Check if an indexer is working.
 
         Args:
             url (str): The url on which the indexer is available.
+            extra_fields (kwargs, optional): Extra fields and their values,
+                possibly used by the indexer during testing.
 
         Raises:
             ClientNotWorking: Can't connect to client.

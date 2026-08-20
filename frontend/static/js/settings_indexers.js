@@ -183,11 +183,20 @@ async function testEditIndexer(apiKey) {
 	const form = document.querySelector('#edit-indexer-form tbody');
 	const testButton = document.querySelector('#test-indexer-edit');
 	testButton.classList.remove('show-success', 'show-fail');
+
+	const prefTable = document.querySelectorAll("#pref-table select")
+	let gcServicePreference = null
+	if (prefTable)
+		gcServicePreference = [...prefTable].map(e => e.value)
+
 	const data = {
 		download_type: parseInt(form.dataset.download_type),
 		client_type: form.dataset.type,
-		url: form.querySelector('#edit-url-input').value
+		url: form.querySelector('#edit-url-input').value,
+		gc_service_preference: gcServicePreference,
+		gc_avoid_large_downloads: form.querySelector('#edit-gc-avoid-input')?.checked ?? null,
 	};
+
 	return await sendAPI('POST', '/indexers/test', apiKey, {}, data)
 	.then(response => response.json())
 	.then(json => {
@@ -310,11 +319,20 @@ async function testAddIndexer(apiKey) {
 	const form = document.querySelector('#add-indexer-form tbody');
 	const testButton = document.querySelector('#test-indexer-add');
 	testButton.classList.remove('show-success', 'show-fail');
+
+	const prefTable = document.querySelectorAll("#pref-table select")
+	let gcServicePreference = null
+	if (prefTable)
+		gcServicePreference = [...prefTable].map(e => e.value)
+
 	const data = {
 		download_type: parseInt(form.dataset.download_type),
 		client_type: form.dataset.type,
-		url: form.querySelector('#add-url-input').value
+		url: form.querySelector('#add-url-input').value,
+		gc_service_preference: gcServicePreference,
+		gc_avoid_large_downloads: form.querySelector('#add-gc-avoid-input')?.checked ?? null,
 	};
+
 	return await sendAPI('POST', '/indexers/test', apiKey, {}, data)
 	.then(response => response.json())
 	.then(json => {

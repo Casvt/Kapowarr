@@ -14,6 +14,7 @@ from backend.base.custom_exceptions import (InvalidDatabaseFile,
 from backend.base.definitions import (BlocklistReason, BlocklistReasonID,
                                       CredentialData, CredentialSource,
                                       DownloadService, DownloadType, FileMatch,
+                                      IndexerClientField,
                                       InvalidDatabaseReason, KapowarrException,
                                       LibraryFilter, LibrarySorting,
                                       MonitorScheme, SpecialVersion, StartType,
@@ -792,9 +793,7 @@ def api_indexers():
             k: data.get(k)
             for k in (
                 'download_type', 'client_type',
-                'enabled', 'title',
-                'url',
-                'gc_service_preference', 'gc_avoid_large_downloads'
+                *IndexerClientField._value2member_map_
             )
         }
 
@@ -832,9 +831,20 @@ def api_indexers_options():
 def api_indexers_test():
     data: dict = request.get_json()
     data = {
-        k: data.get(k)
-        for k in ('download_type', 'client_type', 'url')
+        k: data[k]
+        for k in (
+            'download_type', 'client_type',
+            *IndexerClientField._value2member_map_
+        )
+        if k in data
     }
+
+    if 'download_type' not in data:
+        raise KeyNotFound('download_type')
+    if 'client_type' not in data:
+        raise KeyNotFound('client_type')
+    if 'url' not in data:
+        raise KeyNotFound('url')
 
     if not isinstance(data["download_type"], int):
         raise InvalidKeyValue("download_type", data["download_type"])
@@ -861,11 +871,7 @@ def api_indexer(id: int):
         data: dict = request.get_json()
         data = {
             k: data.get(k)
-            for k in (
-                'enabled', 'title',
-                'url',
-                'gc_service_preference', 'gc_avoid_large_downloads'
-            )
+            for k in IndexerClientField._value2member_map_
         }
         client.update_indexer(data)
         return return_api(client.get_indexer_data())
