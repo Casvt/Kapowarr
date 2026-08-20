@@ -181,7 +181,6 @@
 	display: none;
 }
 
-
 /*  */
 /* Proxy Selection */
 /*  */
@@ -262,6 +261,7 @@
 #builtin-window .window-content form {
 	display: none;
 	width: 100%;
+	max-width: unset;
 }
 
 #builtin-window[data-tag="mega"] .window-content :where(#mega-title, #mega-desc, #mega-form) {
@@ -322,11 +322,17 @@
 }
 
 .window-content form {
-	width: 60%;
+	width: 100%;
+	max-width: 30rem;
+}
+
+.window-content form > table > tbody {
+	vertical-align: text-top;
 }
 
 .test-button {
 	position: relative;
+	flex: 0 0 auto;
 	width: 5rem;
 	height: 2rem;
 	display: flex;
@@ -401,6 +407,11 @@
 	box-shadow: 0 0 9px 0px #00000075;
 }
 
+#add-torrent-window .window-content,
+#edit-torrent-window .window-content {
+	justify-content: space-around;
+}
+
 /*  */
 /* Remote Mapping */
 /*  */
@@ -447,4 +458,24 @@
 
 #remote-mapping-list > tr > td {
 	border-top: 1px solid var(--border-color);
+}
+
+/*  */
+/* Indexers */
+/*  */
+#add-indexer-window .window-content,
+#edit-indexer-window .window-content {
+	justify-content: space-around;
+	
+	& form {
+		max-width: 40rem;
+	}
+}
+
+#pref-table {
+	max-width: 17rem;
+}
+
+#pref-table th {
+	width: 2rem;
 }

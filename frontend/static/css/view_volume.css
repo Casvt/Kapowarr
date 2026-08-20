@@ -197,6 +197,11 @@ tbody .issue-title:hover {
 	text-align: center;
 }
 
+#edit-window .window-content {
+	justify-content: flex-start;
+	overflow-x: auto;
+}
+
 #edit-window tbody {
 	vertical-align: text-top;
 }
