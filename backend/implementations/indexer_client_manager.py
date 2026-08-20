@@ -362,8 +362,7 @@ class IndexerClients:
         enabled: bool,
         title: str,
         url: str,
-        gc_service_preference: Union[CommaList, None],
-        gc_avoid_large_downloads: Union[bool, None]
+        **extra_fields: Any
     ) -> IndexerClient:
         """Add an indexer client.
 
@@ -380,12 +379,8 @@ class IndexerClients:
 
             url (str): The url on which the indexer is available.
 
-            gc_service_preference (Union[CommaList, None]): Only applicable for
-                the GC client. The preference order for download services
-                offered on a GC download page.
-
-            gc_avoid_large_downloads (Union[bool, None]): Only applicable for
-                the GC client. Whether to avoid downloads if they're over 400MB.
+            extra_fields (kwargs, optional): Extra fields and their values,
+                possibly used by the indexer.
 
         Raises:
             InvalidKeyValue: One of the parameters has an invalid argument.
@@ -425,8 +420,7 @@ class IndexerClients:
             'enabled': enabled,
             'title': title,
             'url': url,
-            'gc_service_preference': gc_service_preference,
-            'gc_avoid_large_downloads': gc_avoid_large_downloads
+            **extra_fields
         }
         LOGGER.info(
             f"Adding indexer: {download_type=}, {client_type=}, {data=}"
@@ -439,6 +433,13 @@ class IndexerClients:
         # Raises exception on fail
         ClientClass.test(**filtered_data)
 
+        filtered_data = {
+            key: filtered_data.get(key)
+            for key in (
+                'download_type', 'client_type',
+                *ICF._value2member_map_
+            )
+        }
         filtered_data.update({
             'download_type': ClientClass.download_type.value,
             'client_type': client_type
@@ -469,43 +470,21 @@ class IndexerClients:
         Returns:
             List[IndexerClientData]: The list of all data of the indexer clients.
         """
-        cursor = get_db()
-        cursor.execute("""
-            SELECT
-                id, enabled,
-                download_type, client_type,
-                title, url,
-                gc_service_preference, gc_avoid_large_downloads
+        clients = get_db().execute("""
+            SELECT id, download_type, client_type
             FROM indexer_clients
             ORDER BY title, id;
-        """)
+        """).fetchall()
 
         result: List[IndexerClientData] = []
-        for client in cursor:
+        for client in clients:
             ClientClass = (cls
                 .clients[DownloadType(client["download_type"])]
                 [client["client_type"]]
             )
-            if client["gc_service_preference"] is not None:
-                gc_service_preference = CommaList(
-                    client["gc_service_preference"])
-            else:
-                gc_service_preference = None
-
-            result.append({
-                "id": client["id"],
-                "enabled": client["enabled"],
-                "download_type": client["download_type"],
-                "client_type": client["client_type"],
-                "required_tokens": [
-                    t.value
-                    for t in ClientClass.required_tokens
-                ],
-                "title": client["title"],
-                "url": client["url"],
-                "gc_service_preference": gc_service_preference,
-                "gc_avoid_large_downloads": client["gc_avoid_large_downloads"]
-            })
+            result.append(
+                ClientClass(client["id"]).get_indexer_data()
+            )
 
         return result
 

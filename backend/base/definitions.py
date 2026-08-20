@@ -517,7 +517,16 @@ class IndexerClientField(BaseEnum):
 
     # GC
     GC_SERVICE_PREFERENCE = "gc_service_preference"
+    """
+    Only applicable for the GC client. The preference order for download
+    services offered on a GC download page.
+    """
+
     GC_AVOID_LARGE_DOWNLOADS = "gc_avoid_large_downloads"
+    """
+    Only applicable for the GC client. Whether to avoid downloads if they're
+    over 400MB.
+    """
 
 
 class SearchAction(BaseEnum):
