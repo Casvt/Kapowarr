@@ -7,7 +7,7 @@ generalising it. The string can be a filepath, filename, search result title, et
 
 from os.path import basename, dirname, splitext
 from re import IGNORECASE, Pattern, compile
-from typing import Collection, Dict, Iterable, Sequence, Tuple, TypeVar, Union
+from typing import Collection, Dict, Tuple, TypeVar, Union
 
 from backend.base.definitions import (CharConstants, FileConstants,
                                       FilenameData, SpecialVersion, VolumeData)
@@ -43,7 +43,7 @@ special_version_regex = compile(r'(?:(?<!\s{3})\b|\()(?:(?P<tpb>tpb|trade paper 
 volume_regex = compile(volume_regex_snippet, IGNORECASE)
 volume_folder_regex = compile(volume_regex_snippet + r'|^(\d+)$', IGNORECASE)
 issue_regex = compile(r'\(_(\-?' + issue_regex_snippet + r')\)', IGNORECASE)
-issue_regex_2 = compile(r'(?:(?<!\()(?:(?<![a-z])c(?!2c)|\bissues?|\bbooks?)(?!\))|\bno)(?:\.?[\s\-_]?|\s\-\s)(?:#\s*)?(\-?' + issue_regex_snippet + r'(?:(?:\-|\s\-\s|\.\-\.)\-?' + issue_regex_snippet + r')?)\b', IGNORECASE)
+issue_regex_2 = compile(r'(?:(?<!\()(?:(?<![a-z])c(?!2c)|\bissues?)(?!\))|\bno)(?:\.?[\s\-_]?|\s\-\s)(?:#\s*)?(\-?' + issue_regex_snippet + r'(?:(?:\-|\s\-\s|\.\-\.)\-?' + issue_regex_snippet + r')?)\b', IGNORECASE)
 issue_regex_3 = compile(r'(?:annuals?[\s\._])?(?<!part[\s\._])(' + issue_regex_snippet + r')[\s\-\._]?\(?[\s\-\._]?of[\s\-\._]?' + issue_regex_snippet + r'(?![\s\-\._]covers)\)?(?=\s|\.|_|(?=\()|$)', IGNORECASE)
 issue_regex_4 = compile(r'(?<!--)(?:annuals?[\s\._])?(?<!pages\s)(?:#\s*)?(\-?' + issue_regex_snippet + r'(?:\-|\s\-\s|\.\-\.)' + issue_regex_snippet + r')(?=\s|\.|_|(?=\()|$)', IGNORECASE)
 issue_regex_5 = compile(r'(?<!page\s)(?:annuals?[\s\._])?#\s*(\-?' + issue_regex_snippet + r')\b(?!(?:\-|\s\-\s|\.\-\.)' + issue_regex_snippet + r')', IGNORECASE)
@@ -57,6 +57,11 @@ cover_regex = compile(r'\b(?<!no[ \-_])(?<!hard[ \-_])(?<!\d[ \-_]covers)cover\b
 page_regex = compile(r'^(\d+(?:[a-f]|_\d+)?)$|\b(?i:page|pg)[\s\.\-_]?(\d+(?:[a-f]|_\d+)?)|n?\d+[_\-p](\d+(?:[a-f]|_\d+)?)')
 page_regex_2 = compile(r'(\d+)')
 revision_regex = compile(r'[1-3]\.\d')
+# Same form as issue_regex_2, but for the `book` keyword. It's deliberately not
+# one of the ordered issue regexes: unlike the other keywords, `book` is often
+# part of the series title itself ("StarHenge Book 2 - A Kiss for Atticus"), so
+# it's a fallback rather than a candidate. See _find_issue_numbers().
+issue_regex_book = compile(r'(?:(?<!\()\bbooks?(?!\)))(?:\.?[\s\-_]?|\s\-\s)(?:#\s*)?(\-?' + issue_regex_snippet + r'(?:(?:\-|\s\-\s|\.\-\.)\-?' + issue_regex_snippet + r')?)\b', IGNORECASE)
 # autopep8: on
 
 
@@ -273,6 +278,15 @@ def _find_issue_numbers(
     is_annual: bool
 ):
     for file_part_with_issue, pos_option, regex_list in pos_options:
+        # `book` is often part of the series title, so it's only used as the
+        # issue number once nothing else in the string can be one.
+        book_matches = [
+            (m.group(1), m.start(0), m.end(0))
+            for m in issue_regex_book.finditer(
+                file_part_with_issue, **pos_option
+            )
+        ]
+
         for regex in regex_list:
             regex_result = sorted(
                 regex.finditer(
@@ -310,62 +324,21 @@ def _find_issue_numbers(
                             continue
                         start += prefix.end(0)
 
+                containing_book = next(
+                    (b for b in book_matches if b[1] <= start < b[2]),
+                    None
+                )
+                if containing_book:
+                    # This is the number of a `book` keyword match without the
+                    # keyword itself (the "3" of "Series Book 3"). Use the
+                    # keyword match instead, so that `Book` isn't left behind
+                    # as the last word of the series name.
+                    yield containing_book
+                    continue
+
                 yield (result.group(group_number), start, end)
 
-
-def _select_issue_number(
-    candidates: Iterable[Tuple[str, int, int]],
-    source: str,
-    occupied_pos: Sequence[Tuple[int, int]]
-) -> Union[Tuple[str, int], None]:
-    """Choose which of the found issue numbers to use.
-
-    The candidates are already in order of preference, so normally the first
-    one that doesn't overlap with other extracted information is taken. The
-    exception is the `book` keyword: unlike the other issue keywords, it's
-    often part of the series title itself (e.g. "StarHenge Book 2 - A Kiss for
-    Atticus"), so it's only used when nothing else in the string can be the
-    issue number.
-
-    Args:
-        candidates (Iterable[Tuple[str, int, int]]): The found issue numbers,
-        in order of preference, as (number, start position, end position).
-
-        source (str): The string that the candidates were found in.
-
-        occupied_pos (Sequence[Tuple[int, int]]): The position ranges that are
-        already taken by other extracted information.
-
-    Returns:
-        Union[Tuple[str, int], None]: The issue number and the position that
-        the series name ends at, or `None` if no issue number was found.
-    """
-    book_match = None
-
-    for number, start, end in candidates:
-        if check_overlapping_pos(occupied_pos, (start, end)):
-            continue
-
-        if source[start:end].lower().startswith("book"):
-            if book_match is None:
-                book_match = (number, start, end)
-            continue
-
-        if book_match and check_overlapping_pos(
-            (book_match[1:],), (start, end)
-        ):
-            # This candidate is the number of the `book` keyword match, just
-            # without the keyword itself (e.g. the "3" of "Series Book 3").
-            # Take the keyword match, so that the keyword isn't left behind as
-            # the last word of the series name.
-            break
-
-        return number, start
-
-    if book_match:
-        return book_match[0], book_match[1]
-
-    return None
+        yield from book_matches
 
 
 def extract_filename_data(
@@ -573,13 +546,16 @@ def extract_filename_data(
                     issue_regex_5, issue_regex_6))
         )
 
-        selected_issue = _select_issue_number(
-            _find_issue_numbers(pos_options, is_annual=annual),
-            filename,
-            all_year_pos + [(special_pos, special_end)]
-        )
-        if selected_issue:
-            issue_number, issue_pos = selected_issue
+        for extracted_number, result_start, result_end in _find_issue_numbers(
+            pos_options, is_annual=annual
+        ):
+            if not check_overlapping_pos(
+                all_year_pos + [(special_pos, special_end)],
+                (result_start, result_end)
+            ):
+                issue_number = extracted_number
+                issue_pos = result_start
+                break
 
     else:
         pos_options = (
@@ -593,13 +569,16 @@ def extract_filename_data(
                     issue_regex_5, issue_regex_6))
         )
 
-        selected_issue = _select_issue_number(
-            _find_issue_numbers(pos_options, is_annual=annual),
-            foldername,
-            all_year_folderpos
-        )
-        if selected_issue:
-            issue_number, issue_folderpos = selected_issue
+        for extracted_number, result_start, result_end in _find_issue_numbers(
+            pos_options, is_annual=annual
+        ):
+            if not check_overlapping_pos(
+                all_year_folderpos,
+                (result_start, result_end)
+            ):
+                issue_number = extracted_number
+                issue_folderpos = result_start
+                break
 
     if not issue_number and not special_version:
         # If no issue number is found and no Special Version is determined,
