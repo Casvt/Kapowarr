@@ -11,9 +11,11 @@
 {% endblock %}
 
 {% block pre_build_rows %}
-<tr class="li-result" data-group_number="" data-rowid="">
+<tr class="li-result" data-rowid="">
 	<td>
-		<input type="checkbox" checked>
+		<label>
+			<input type="checkbox" title="Whether to import the file" checked>
+		</label>
 	</td>
 	<td class="file-column" title=""></td>
 	<td>
@@ -30,7 +32,6 @@
 		<a target="_blank" href=""></a>
 	</td>
 	<td><button>Select</button></td>
-	<td><button>Select for group</button></td>
 </tr>
 {% endblock pre_build_rows %}
 
@@ -150,7 +151,9 @@
 			<table aria-label="File list">
 				<thead>
 					<th>
-						<input type="checkbox" id="selectall-input" aria-label="Select all entries for importing" checked>
+						<label>
+							<input type="checkbox" id="selectall-input" aria-label="Select all entries for importing" checked>
+						</label>
 					</th>
 					<th>File</th>
 					<th>Match</th>

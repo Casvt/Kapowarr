@@ -1,36 +1,38 @@
-const LIEls = {
-	pre_build: {
-		li_result: document.querySelector('.pre-build-els .li-result'),
-		search_result: document.querySelector('.pre-build-els .search-result')
+const liEls = {
+	preBuild: {
+		liResult: document.querySelector('.pre-build-els .li-result'),
+		searchResult: document.querySelector('.pre-build-els .search-result')
 	},
 	views: {
-		start: document.querySelector('#start-window'),
-		no_result: document.querySelector('#no-result-window'),
-		list: document.querySelector('#list-window'),
-		loading: document.querySelector('#loading-window'),
-		no_cv: document.querySelector('#no-cv-window')
+		start: document.getElementById('start-window'),
+		noResult: document.getElementById('no-result-window'),
+		list: document.getElementById('list-window'),
+		loading: document.getElementById('loading-window'),
+		noCv: document.getElementById('no-cv-window')
 	},
-	rate_limit_banner: document.querySelector('#rate-limit-banner'),
-	proposal_list: document.querySelector('.proposal-list'),
-	select_all: document.querySelector('#selectall-input'),
+	rateLimitBanner: document.getElementById('rate-limit-banner'),
+	proposalList: document.querySelector('.proposal-list'),
+	selectAll: document.getElementById('selectall-input'),
 	search: {
-		window: document.querySelector('#cv-window'),
-		input: document.querySelector('#search-input'),
+		window: document.getElementById('cv-window'),
+		input: document.getElementById('search-input'),
 		results: document.querySelector('.search-results'),
 		container: document.querySelector('.search-results-container'),
 		bar: document.querySelector('.search-bar')
 	},
 	buttons: {
 		cancel: document.querySelectorAll('.cancel-button'),
-		run: document.querySelector('#run-import-button'),
-		import: document.querySelector('#import-button'),
-		import_rename: document.querySelector('#import-rename-button')
+		run: document.getElementById('run-import-button'),
+		import: document.getElementById('import-button'),
+		importRename: document.getElementById('import-rename-button')
 	}
-};
+}
 
-const rowid_to_filepath = {};
+const rowidToFilepath = {}
+let shiftSelectStart = null
+const selectedRows = new Set()
 
-function buildMatchTitle(title, year, issue_count) {
+function buildMatchTitle(title, year, issueCount) {
 	let result = ''
 	if (title)
 		result += title
@@ -38,15 +40,24 @@ function buildMatchTitle(title, year, issue_count) {
 	if (year !== null)
 		result += ` (${year})`
 
-	if (issue_count !== null) {
-		const plural = issue_count !== 1 ? 's' : ''
-		result += ` [${issue_count} issue${plural}]`
+	if (issueCount !== null) {
+		const plural = issueCount !== 1 ? 's' : ''
+		result += ` [${issueCount} issue${plural}]`
 	}
-	
+
 	return result
 }
 
-function loadProposal(api_key) {
+function updateSelection() {
+	liEls.proposalList.querySelectorAll(".li-result").forEach((entry, rowid) => {
+		if (selectedRows.has(rowid))
+			entry.classList.add("selected")
+		else
+			entry.classList.remove("selected")
+	})
+}
+
+function loadProposal(apiKey) {
 	const params = {
 		limit: parseInt(document.querySelector('#limit-input').value),
 		limit_parent_folder: document.querySelector('#folder-input').value,
@@ -57,28 +68,74 @@ function loadProposal(api_key) {
 		params.folder_filter = encodeURIComponent(ffi.value);
 
 	hide(
-		[LIEls.views.start, document.querySelector('#folder-filter-error'),
-		 LIEls.rate_limit_banner],
-		[LIEls.views.loading]
+		[
+			liEls.views.start,
+			document.querySelector('#folder-filter-error'),
+			liEls.rateLimitBanner
+		],
+		[liEls.views.loading]
 	);
 
-	LIEls.proposal_list.innerHTML = '';
-	LIEls.select_all.checked = true;
+	liEls.proposalList.innerHTML = '';
+	liEls.selectAll.checked = true;
 
-	fetchAPI('/libraryimport', api_key, params)
+	fetchAPI('/libraryimport', apiKey, params)
 	.then(json => {
 		json.result.forEach((result, rowid) => {
-			const entry = LIEls.pre_build.li_result.cloneNode(true);
+			const entry = liEls.preBuild.liResult.cloneNode(true);
 			entry.dataset.rowid = rowid;
-			entry.dataset.group_number = result.group_number;
-			rowid_to_filepath[rowid] = {
+			rowidToFilepath[rowid] = {
 				cv_id: result.cv.id || null,
 				filepath: result.filepath
 			};
+			entry.addEventListener("click", e => e.stopPropagation())
+
+			const toggle = entry.querySelector("input[type='checkbox']")
+			toggle.onchange = () => toggleSelected(rowid)
 
 			const title = entry.querySelector('.file-column');
 			title.innerText = result.file_title;
 			title.title = result.filepath;
+			title.onclick = (e) => {
+				e.stopPropagation()
+
+				if (
+					e.ctrlKey
+					|| e.shiftKey && shiftSelectStart === null
+				) {
+					if (selectedRows.has(rowid))
+						selectedRows.delete(rowid)
+					else
+						selectedRows.add(rowid)
+
+					shiftSelectStart = rowid
+				}
+
+				else if (e.shiftKey) {
+					let start = shiftSelectStart,
+						end = rowid
+					if (start > end) {
+						start = rowid
+						end = shiftSelectStart
+					}
+
+					const addSelection = selectedRows.has(shiftSelectStart)
+					for (let i = start; i <= end; i++) {
+						if (addSelection)
+							selectedRows.add(i)
+						else
+							selectedRows.delete(i)
+					}
+				}
+
+				else {
+					selectedRows.clear()
+					selectedRows.add(rowid)
+					shiftSelectStart = rowid
+				}
+
+				updateSelection()
+			}
 
 			const CV_link = entry.querySelector('a');
 			CV_link.href = result.cv.link || '';
@@ -88,28 +145,28 @@ function loadProposal(api_key) {
 
 			entry.querySelector('button').onclick = e => openEditCVMatch(rowid);
 
-			LIEls.proposal_list.appendChild(entry);
+			liEls.proposalList.appendChild(entry);
 		});
 
 		if (json.result.length > 0) {
-			hide([LIEls.views.loading], [LIEls.views.list]);
+			hide([liEls.views.loading], [liEls.views.list]);
 
 			const has_empty_matches = json.result.some(
 				r => r.cv.id === null
 			);
 			if (has_empty_matches) {
-				fetchAPI('/system/status', api_key)
+				fetchAPI('/system/status', apiKey)
 				.then(checks => {
 					const search_limited = checks.result.some(
 						st => st.type === 'cv_rate_limit'
 							&& st.display_subtypes.includes('search_volumes')
 					);
 					if (search_limited)
-						hide([], [LIEls.rate_limit_banner]);
+						hide([], [liEls.rateLimitBanner]);
 				});
 			};
 		} else
-			hide([LIEls.views.loading], [LIEls.views.no_result]);
+			hide([liEls.views.loading], [liEls.views.noResult]);
 	})
 	.catch(e => {
 		e.json().then(j => {
@@ -117,15 +174,15 @@ function loadProposal(api_key) {
 				j.error === "InvalidKeyValue"
 				&& j.result.key === "comicvine_api_key"
 			)
-				hide([LIEls.views.loading], [LIEls.views.no_cv]);
+				hide([liEls.views.loading], [liEls.views.noCv]);
 
 			else if (
 				j.error === "InvalidKeyValue"
 				&& j.result.key === "folder_filter"
 			)
 				hide(
-					[LIEls.views.loading],
-					[LIEls.views.start, document.querySelector('#folder-filter-error')]
+					[liEls.views.loading],
+					[liEls.views.start, document.querySelector('#folder-filter-error')]
 				);
 
 			else
@@ -135,38 +192,54 @@ function loadProposal(api_key) {
 };
 
 function toggleSelectAll() {
-	const checked = LIEls.select_all.checked;
-	LIEls.proposal_list.querySelectorAll('input[type="checkbox"]').forEach(
+	const checked = liEls.selectAll.checked;
+	liEls.proposalList.querySelectorAll('input[type="checkbox"]').forEach(
 		e => e.checked = checked
 	);
 };
 
+function toggleSelected(rowid) {
+	if (!selectedRows.has(rowid))
+		return
+
+	const checked = liEls.proposalList.querySelector(
+		`tr[data-rowid="${rowid}"] input[type="checkbox"]`
+	).checked
+
+	selectedRows.forEach(rowid =>
+		liEls.proposalList.querySelector(
+			`tr[data-rowid="${rowid}"] input[type="checkbox"]`
+		).checked = checked
+	)
+}
+
+let editMatchId = null
+
 function openEditCVMatch(rowid) {
-	LIEls.search.window.dataset.rowid = rowid;
-	LIEls.search.results.innerHTML = '';
-	hide([LIEls.search.container]);
-	LIEls.search.input.value = '';
+	editMatchId = rowid
+	liEls.search.results.innerHTML = '';
+	hide([liEls.search.container]);
+	liEls.search.input.value = '';
 	showWindow('cv-window');
-	LIEls.search.input.focus();
+	liEls.search.input.focus();
 };
 
 function editCVMatch(
-	rowid,
 	comicvine_id,
 	site_url,
 	title,
 	year,
-	issue_count,
-	group_number=null
+	issue_count
 ) {
 	let target_td;
-	if (group_number === null)
-		target_td = document.querySelectorAll(`tr[data-rowid="${rowid}"]`);
+	if (selectedRows.has(editMatchId))
+		target_td = selectedRows
 	else
-		target_td = document.querySelectorAll(`tr[data-group_number="${group_number}"]`);
+		target_td = [editMatchId]
 
-	target_td.forEach(tr => {
-		rowid_to_filepath[tr.dataset.rowid].cv_id = parseInt(comicvine_id);
+	target_td.forEach(rowid => {
+		const tr = liEls.proposalList.querySelector(`tr[data-rowid="${rowid}"]`)
+		rowidToFilepath[rowid].cv_id = parseInt(comicvine_id);
 		const link = tr.querySelector('a');
 		link.href = site_url;
 		link.innerText = buildMatchTitle(title, year, issue_count)
@@ -174,15 +247,15 @@ function editCVMatch(
 };
 
 function searchCV() {
-	const input = LIEls.search.input;
+	const input = liEls.search.input;
 	input.blur();
 	usingApiKey()
 	.then(api_key => {
-		LIEls.search.results.innerHTML = '';
+		liEls.search.results.innerHTML = '';
 		fetchAPI('/volumes/search', api_key, {query: input.value})
 		.then(json => {
 			json.result.forEach(result => {
-				const entry = LIEls.pre_build.search_result.cloneNode(true);
+				const entry = liEls.preBuild.searchResult.cloneNode(true);
 
 				const title = entry.querySelector('td:nth-child(1) a');
 				title.href = result.site_url;
@@ -193,7 +266,6 @@ function searchCV() {
 				const select_button = entry.querySelector('td:nth-child(2) button');
 				select_button.onclick = e => {
 					editCVMatch(
-						LIEls.search.window.dataset.rowid,
 						result.comicvine_id,
 						result.site_url,
 						result.title,
@@ -203,62 +275,59 @@ function searchCV() {
 					closeWindow();
 				};
 
-				const select_for_all_button = entry.querySelector('td:nth-child(3) button');
-				select_for_all_button.onclick = e => {
-					const rowid = LIEls.search.window.dataset.rowid;
-					const group_number = document.querySelector(`tr[data-rowid="${rowid}"]`)
-						.dataset.group_number;
-					editCVMatch(
-						rowid,
-						result.comicvine_id,
-						result.site_url,
-						result.title,
-						result.year,
-						result.issue_count,
-						group_number
-					);
-					closeWindow();
-				};
-
-				LIEls.search.results.appendChild(entry);
+				liEls.search.results.appendChild(entry);
 			});
-			hide([], [LIEls.search.container]);
+			hide([], [liEls.search.container]);
 		});
 	});
 };
 
 function importLibrary(api_key, rename=false) {
-	const data = [...LIEls.proposal_list.querySelectorAll(
+	const data = [...liEls.proposalList.querySelectorAll(
 		'tr:has(input[type="checkbox"]:checked)'
 	)]
-		.filter(i => rowid_to_filepath[i.dataset.rowid].cv_id !== null)
+		.filter(i => rowidToFilepath[i.dataset.rowid].cv_id !== null)
 		.map(e => {
 			const rowid = e.dataset.rowid;
 			return {
-				'filepath': rowid_to_filepath[rowid].filepath,
-				'id': rowid_to_filepath[rowid].cv_id
+				'filepath': rowidToFilepath[rowid].filepath,
+				'id': rowidToFilepath[rowid].cv_id
 			};
 		});
 
-	hide([LIEls.views.list], [LIEls.views.loading]);
+	hide([liEls.views.list], [liEls.views.loading]);
 	sendAPI('POST', '/libraryimport', api_key, {rename_files: rename}, data)
-	.then(response => hide([LIEls.views.loading], [LIEls.views.start]));
+	.then(() => hide([liEls.views.loading], [liEls.views.start]));
 };
 
 // code run on load
 
 usingApiKey()
 .then(api_key => {
-	LIEls.buttons.run.onclick = e => loadProposal(api_key);
-	LIEls.buttons.import.onclick = e => importLibrary(api_key, false);
-	LIEls.buttons.import_rename.onclick = e => importLibrary(api_key, true);
+	liEls.buttons.run.onclick = e => loadProposal(api_key);
+	liEls.buttons.import.onclick = e => importLibrary(api_key, false);
+	liEls.buttons.importRename.onclick = e => importLibrary(api_key, true);
 });
 
-LIEls.search.bar.action = 'javascript:searchCV();';
-LIEls.select_all.onchange = e => toggleSelectAll();
-LIEls.buttons.cancel.forEach(b =>
+liEls.search.bar.action = 'javascript:searchCV();';
+liEls.selectAll.onchange = e => toggleSelectAll();
+liEls.buttons.cancel.forEach(b =>
 	b.onclick = e => hide(
-		[LIEls.views.list, LIEls.views.no_result, LIEls.views.no_cv],
-		[LIEls.views.start]
+		[liEls.views.list, liEls.views.noResult, liEls.views.noCv],
+		[liEls.views.start]
 	)
 );
+document.addEventListener("click", () => {
+	if (selectedRows.size) {
+		selectedRows.clear()
+		updateSelection()
+		shiftSelectStart = null
+	}
+})
+document.addEventListener("keydown", (e) => {
+	if (e.key === "Escape") {
+		selectedRows.clear()
+		updateSelection()
+		shiftSelectStart = null
+	}
+})

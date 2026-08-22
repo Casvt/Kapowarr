@@ -146,7 +146,8 @@ main {
 	width: 100%;
 }
 
-.table-container :where(td, th) {
+.table-container :where(td, th),
+.table-container label {
 	padding: .5rem 1rem;
 }
 
@@ -154,28 +155,44 @@ main {
 	padding-left: 1rem;
 }
 
-.proposal-list > tr {
-	transition: background-color 400ms linear;
+.li-result {
+	transition: background-color 200ms linear;
 }
 
-.proposal-list > tr:hover {
+.li-result:hover {
 	background-color: var(--hover-color);
 }
 
-.proposal-list td {
+.li-result td {
 	border-top: 1px solid var(--border-color);
 }
 
-.proposal-list td:first-child {
+.table-container :where(td, th):first-child {
 	width: 3rem;
+	padding: 0rem;
 }
 
-.proposal-list td a {
+.li-result td:nth-child(2) {
+	cursor: pointer;
+	user-select: none;
+}
+
+.li-result td a {
 	color: var(--accent-color);
+	user-select: none;
 }
 
-.proposal-list button img {
+.li-result td:last-child {
+	width: 5rem;
+	user-select: none;
+}
+
+.li-result button img {
 	height: 1.5rem;
+}
+
+.li-result.selected {
+	background-color: var(--border-color);
 }
 
 #cv-window .window-content {
@@ -247,7 +264,7 @@ main {
 }
 
 .search-results td:last-child {
-	min-width: 9rem;
+	width: 5rem;
 }
 
 .search-results td a {
