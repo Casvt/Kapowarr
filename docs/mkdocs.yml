@@ -101,6 +101,7 @@ nav:
   - Settings:
     - Introduction: settings/settings.md
     - Media Management: settings/mediamanagement.md
+    - Indexers: settings/indexers.md
     - Download: settings/download.md
     - Download Clients: settings/downloadclients.md
     - Metadata: settings/metadata.md
