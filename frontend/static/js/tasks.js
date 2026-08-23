@@ -23,7 +23,8 @@ const TaskEls = {
 const scheduleDescriptions = {
 	'0 * * * *': 'Every hour',
 	'0 0 * * *': 'Once per day',
-	'0 0 * * 1': 'Once per week'
+	'0 0 * * 1': 'Once per week',
+	'0,30 * * * *': 'Every half hour'
 };
 
 function convertTime(epoch, future) {

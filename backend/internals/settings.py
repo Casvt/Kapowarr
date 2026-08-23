@@ -2,6 +2,7 @@
 
 from dataclasses import _MISSING_TYPE, asdict, dataclass, field
 from functools import lru_cache
+from time import time
 
 try:
     from grp import getgrgid, getgrnam
@@ -156,6 +157,8 @@ class SettingsValues(PublicSettingsValues):
     """All settings including privates"""
     database_version: int = DatabaseMigrationHandler.latest_db_version()
     auth_salt: bytes = token_bytes()
+
+    last_rss_sync: int = round(time()) - 86400
 
     backup_host: str = '0.0.0.0'
     backup_port: int = 5656

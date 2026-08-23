@@ -28,7 +28,7 @@ from backend.features.download_queue import (DownloadHandler,
 from backend.features.library_import import (import_library,
                                              propose_library_import)
 from backend.features.mass_edit import MassEditorActionManager
-from backend.features.search import manual_search
+from backend.features.search_full import manual_search
 from backend.features.tasks import (TaskHandler, delete_task_history,
                                     get_task_history)
 from backend.implementations.blocklist import (add_to_blocklist,

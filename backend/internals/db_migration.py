@@ -1303,3 +1303,12 @@ def _migrate_task_intervals_to_schedule() -> None:
     )
 
     return
+
+
+@DatabaseMigrationHandler.register_handler(50)
+def _migrate_remove_search_all_task() -> None:
+    get_db().execute(
+        "DELETE FROM task_intervals WHERE task_name='search_all';"
+    )
+
+    return

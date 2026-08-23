@@ -14,8 +14,7 @@ const library_els = {
 		filter: document.querySelector('#filter-button')
 	},
 	task_buttons: {
-		update_all: document.querySelector('#updateall-button'),
-		search_all: document.querySelector('#searchall-button')
+		update_all: document.querySelector('#updateall-button')
 	},
 	search: {
 		clear: document.querySelector('#clear-search'),
@@ -288,8 +287,6 @@ usingApiKey()
 			'cmd': 'update_all',
 			'allow_skipping': false
 		});
-	library_els.task_buttons.search_all.onclick =
-		e => sendAPI('POST', '/system/tasks', api_key, {}, {'cmd': 'search_all'});
 
 	library_els.view_options.sort.onchange = e => {
 		setLocalStorage({'lib_sorting': library_els.view_options.sort.value});

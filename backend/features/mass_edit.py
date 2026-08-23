@@ -8,7 +8,7 @@ from backend.base.custom_exceptions import (InvalidKeyValue, KeyNotFound,
 from backend.base.definitions import MonitorScheme
 from backend.base.logging import LOGGER
 from backend.features.download_queue import DownloadHandler
-from backend.features.search import auto_search
+from backend.features.search_full import auto_search
 from backend.implementations.conversion import mass_convert
 from backend.implementations.file_processing import (mass_set_file_date,
                                                      mass_set_ownership,

@@ -12,7 +12,8 @@ from backend.base.definitions import QueuedTaskData, Task
 from backend.base.helpers import Singleton, get_schedules_next_run
 from backend.base.logging import LOGGER
 from backend.features.download_queue import DownloadHandler
-from backend.features.search import auto_search
+from backend.features.search_discover import discover_downloads
+from backend.features.search_full import auto_search
 from backend.implementations.conversion import mass_convert
 from backend.implementations.naming import mass_rename
 from backend.implementations.volumes import Volume, refresh_and_scan
@@ -30,8 +31,8 @@ TASK_INTERVALS = {
     # Note: If there are tasks that should be run at the same time,
     #   but per se after each other, put them in that order in the dict.
     'update_all': '0 * * * *', # every hour at minute 0
-    'search_all': '0 0 * * *', # every day at 00:00
-    'backup_db': '0 0 * * 1' # every Monday at 00:00
+    'backup_db': '0 0 * * 1', # every Monday at 00:00
+    'rss_sync': '0,30 * * * *' # every half hour
 }
 
 
@@ -832,47 +833,6 @@ class UpdateAll(LibraryTask):
         return
 
 
-@TaskHandler.register_task('search_all')
-class SearchAll(LibraryTask, DownloadTask):
-    "Trigger an automatic search for each volume in the library"
-
-    stop = False
-    message = ''
-    display_title = 'Search All'
-
-    @property
-    def volume_id(self) -> None:
-        return None
-
-    @property
-    def issue_id(self) -> None:
-        return None
-
-    def __init__(self) -> None:
-        return
-
-    def run(self):
-        cursor = get_db(force_new=True)
-        cursor.execute(
-            "SELECT id, title FROM volumes WHERE monitored = 1;"
-        )
-        downloads: List[Tuple[str, int, int, Union[int, None]]] = []
-        ws = WebSocket()
-        for volume_id, volume_title in cursor:
-            if self.stop:
-                break
-            self.message = f'Searching for {volume_title}'
-            ws.emit(TaskStatusEvent(self.message))
-            # Get search results and download them
-            results = auto_search(volume_id)
-            if results:
-                downloads += [
-                    (result['link'], result["indexer_id"], volume_id, None)
-                    for result in results
-                ]
-        return downloads
-
-
 # region System tasks
 @TaskHandler.register_task("backup_db")
 class BackupDatabase(Task):
@@ -899,3 +859,35 @@ class BackupDatabase(Task):
 
         backup_database()
         return
+
+
+@TaskHandler.register_task('rss_sync')
+class RssSync(DownloadTask):
+    "Do an RSS sync"
+
+    stop = False
+    message = ''
+    display_title = 'RSS Sync'
+
+    @property
+    def volume_id(self) -> None:
+        return None
+
+    @property
+    def issue_id(self) -> None:
+        return None
+
+    def __init__(self) -> None:
+        return
+
+    def run(self):
+        self.message = 'Performing RSS Sync'
+        WebSocket().emit(TaskStatusEvent(self.message))
+
+        results = discover_downloads()
+        downloads: List[Tuple[str, int, int, Union[int, None]]] = [
+            (download['link'], download["indexer_id"], volume_id, None)
+            for volume_id, downloads in results.items()
+            for download in downloads
+        ]
+        return downloads
