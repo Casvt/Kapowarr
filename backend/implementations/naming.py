@@ -677,10 +677,11 @@ def same_name_indexing(
     Returns:
         Dict[str, str]: The planned renames, now updated with numbers if needed.
     """
-    if not isdir(volume_folder):
-        return planned_renames
-
-    final_names = set(list_files(volume_folder))
+    final_names = (
+        set(list_files(volume_folder))
+        if isdir(volume_folder)
+        else set()
+    )
     for before, after in planned_renames.items():
         new_after = after
         index = 1
