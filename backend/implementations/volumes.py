@@ -34,6 +34,7 @@ from backend.base.files import (change_basefolder, create_folder,
                                 rename_file)
 from backend.base.helpers import (PortablePool, extract_year_from_date,
                                   first_of_subarrays, to_number_cv_id)
+from backend.base.file_extraction import extract_filename_data
 from backend.base.logging import LOGGER
 from backend.implementations.comicvine import ComicVine
 from backend.implementations.file_matching import scan_files
@@ -772,9 +773,41 @@ class Volume:
             self.id, current_volume_folder, new_volume_folder
         )
 
+        # A volume's folder can be carrying files that are not its own --
+        # a directory shared with another series, or an earlier import
+        # that guessed wrong. Those files end up linked to the volume, and
+        # moving the volume moved everything it was linked to, carrying
+        # them deeper into the wrong series without saying so.
+        #
+        # In my library one volume's move took eleven books of a different
+        # series into its new folder, and another took an entire annual
+        # directory belonging to a different run.
+        #
+        # So the volume now takes only the files that name it. The rest
+        # stay where they are, on disk and still named by their database
+        # row, under the folder they were actually filed in, and the log
+        # says which they were.
+        strangers = []
+        moving = []
+        for file in self.get_all_files():
+            filepath = file["filepath"]
+            series = extract_filename_data(filepath)['series']
+            if series and not match_title(volume_data.title, series):
+                strangers.append(filepath)
+            else:
+                moving.append(filepath)
+
+        if strangers:
+            LOGGER.warning(
+                "Volume %d (%s) has %d file(s) that name a different "
+                "series; they are staying where they are rather than "
+                "moving with it. First: %s",
+                self.id, volume_data.title, len(strangers), strangers[0]
+            )
+
         # Move files
         file_changes = change_basefolder(
-            (f["filepath"] for f in self.get_all_files()),
+            moving,
             current_volume_folder,
             new_volume_folder
         )
