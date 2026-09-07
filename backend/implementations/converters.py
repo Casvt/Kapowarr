@@ -9,7 +9,7 @@ from __future__ import annotations
 from functools import lru_cache
 from itertools import chain
 from os import utime
-from os.path import basename, dirname, getmtime, join, splitext
+from os.path import basename, dirname, getmtime, isfile, join, splitext
 from typing import Dict, List, Set, Tuple, Union
 from zipfile import ZipFile
 
@@ -288,6 +288,59 @@ class ConvertersManager:
         return None
 
 
+def conversion_failed(
+    source: str,
+    target: str,
+    workspace: Union[str, None] = None,
+    detail: str = ''
+) -> List[str]:
+    """Abandon a conversion, leaving the file it was given untouched.
+
+    A converter that cannot produce its target must not destroy its
+    source. `rar_to_zip` extracts, zips and then deletes the original
+    without checking that the extraction worked -- and `run_rar` returns
+    a `CompletedProcess` whose return code nothing looked at. When rar
+    fails it leaves the folder empty, and `create_zip_archive` on an
+    empty folder writes a valid ZIP with no entries: 22 bytes, an
+    end-of-central-directory record and nothing else. The file record is
+    then repointed at that stub and the source removed, so the issue
+    counts as complete and the comic is gone.
+
+    Args:
+        source (str): The file the converter was given, which is kept.
+
+        target (str): What it was trying to produce, removed if a partial
+            or empty one was made.
+
+        workspace (Union[str, None], optional): A scratch folder to clean
+            up. Defaults to None.
+
+        detail (str, optional): What went wrong, for the log.
+            Defaults to ''.
+
+    Returns:
+        List[str]: The source, unchanged, as the conversion's result.
+    """
+    LOGGER.error(
+        "Could not convert %s%s. Leaving the original alone.",
+        source, f': {detail}' if detail else ''
+    )
+    if target and isfile(target):
+        delete_file_folder(target)
+    if workspace:
+        delete_file_folder(workspace)
+    return [source]
+
+
+def archive_is_empty(filepath: str) -> bool:
+    "Whether a ZIP archive was written with nothing in it."
+    try:
+        with ZipFile(filepath, 'r') as archive:
+            return not archive.namelist()
+    except Exception:
+        return True
+
+
 # region ZIP
 @ConvertersManager.register_converter("zip", "cbz")
 def zip_to_cbz(file: str) -> List[str]:
@@ -312,7 +365,7 @@ def zip_to_rar(file: str) -> List[str]:
     with ZipFile(file, 'r') as zip:
         zip.extractall(archive_folder)
 
-    run_rar([
+    result = run_rar([
         'a', # Add files to archive
         '-ep', # Exclude paths from names
         '-inul', # Disable all messages
@@ -320,11 +373,18 @@ def zip_to_rar(file: str) -> List[str]:
         archive_folder # Source folder
     ])
 
+    target_file = splitext(file)[0] + '.rar'
+    if result.returncode != 0 or not isfile(target_file):
+        return conversion_failed(
+            file, target_file, archive_folder,
+            f'rar exited {result.returncode} and wrote no archive'
+        )
+
     delete_file_folder(archive_folder)
     delete_file_folder(file)
     delete_empty_parent_folders(dirname(file), volume_folder)
 
-    return [splitext(file)[0] + '.rar']
+    return [target_file]
 
 
 @ConvertersManager.register_converter("zip", "cbr", supports_32bit=False)
@@ -421,12 +481,18 @@ def rar_to_zip(file: str) -> List[str]:
     archive_folder = generate_archive_folder(volume_folder, file)
     create_folder(archive_folder)
 
-    run_rar([
+    result = run_rar([
         'x', # Extract files with full path
         '-inul', # Disable all messages
         file, # Source archive file
         archive_folder # Target folder to extract into
     ])
+
+    if result.returncode != 0 or not list_files(archive_folder):
+        return conversion_failed(
+            file, '', archive_folder,
+            f'rar exited {result.returncode} and extracted nothing'
+        )
 
     # Files that are put in a ZIP file have to have a minimum last
     # modification time.
@@ -439,6 +505,12 @@ def rar_to_zip(file: str) -> List[str]:
 
     target_file = splitext(file)[0] + '.zip'
     create_zip_archive(archive_folder, target_file)
+
+    if archive_is_empty(target_file):
+        return conversion_failed(
+            file, target_file, archive_folder,
+            'the archive it wrote holds nothing'
+        )
 
     delete_file_folder(archive_folder)
     delete_file_folder(file)
