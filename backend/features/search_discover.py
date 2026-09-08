@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from asyncio import gather, run
-from datetime import datetime
+from datetime import datetime, timedelta
 from time import time
 from typing import Dict, List
 
@@ -30,7 +30,10 @@ async def _get_all_new_releases() -> List[SearchResultData]:
         if indexer.get_indexer_data()["enabled"]
     ]
 
-    last_rss_sync = datetime.fromtimestamp(Settings().sv.last_rss_sync)
+    last_rss_sync = (
+        datetime.fromtimestamp(Settings().sv.last_rss_sync)
+        - timedelta(days=2)
+    )
 
     results = await gather(*(
         indexer.discover(last_rss_sync)
