@@ -329,11 +329,18 @@ def file_importing_filter(
         number_to_year.get(force_range(issue_number)[-1])
     )
 
+    # Neither are given, so we'll never know what volume the files are exactly
+    # for. But they're in the volume folder, so we'll assume they match.
+    neither_found = (
+        file_data['year'], file_data['volume_number']
+    ) == (None, None)
+
     is_match = (
         matching_special_version
         and (
             matching_volume_number
             or matching_year
+            or neither_found
         )
     )
 

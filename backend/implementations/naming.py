@@ -630,7 +630,10 @@ def check_mock_filename(
                     mock_issue.date
                 )
             }
-            efd = extract_filename_data(resulting_name)
+            efd = extract_filename_data(
+                resulting_name,
+                assume_volume_number=False
+            )
             if not (
                 file_importing_filter(
                     efd,
