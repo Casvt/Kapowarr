@@ -294,6 +294,8 @@ def file_importing_filter(
         file_data (FilenameData): Extracted data from file.
         volume_data (VolumeData): The data of the volume.
         volume_issues (List[IssueData]): The data of the issues of the volume.
+        number_to_year (Mapping[float, Union[int, None]]): calculated issue
+            numbers mapped to their release year for all issues of volume.
 
     Returns:
         bool: Whether the file matches to the volume or not.
