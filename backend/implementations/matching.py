@@ -329,11 +329,22 @@ def file_importing_filter(
         number_to_year.get(force_range(issue_number)[-1])
     )
 
+    # The name stated neither a volume number nor a year, so there is nothing
+    # here to place the file in one volume of a series rather than another.
+    # `Detective.Comics.962.cbz` is the shape of it: Detective Comics (2016) is
+    # volume 3 and holds #934-1112, and the file names neither. Rule nothing in
+    # or out on that absence, and let the issue number do the work.
+    nothing_stated = (
+        file_data['volume_number'] is None
+        and file_data['year'] is None
+    )
+
     is_match = (
         matching_special_version
         and (
             matching_volume_number
             or matching_year
+            or nothing_stated
         )
     )
 

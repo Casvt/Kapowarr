@@ -125,7 +125,17 @@ def scan_files(
             )
             continue
 
-        file_data = extract_filename_data(file)
+        # Don't let the parser invent a volume number. Most files don't name
+        # one, and most volumes are volume 1, so an assumed 1 acts as a match
+        # for a series' volume-1 entry and a mismatch for every other one.
+        # For a VAI volume the volume number is the issue number, so the
+        # assumption is still doing real work there and is left alone.
+        file_data = extract_filename_data(
+            file,
+            assume_volume_number=(
+                volume_data.special_version == SpecialVersion.VOLUME_AS_ISSUE
+            )
+        )
 
         # Check if file matches volume
         if not file_importing_filter(
