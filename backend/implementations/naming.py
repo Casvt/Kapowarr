@@ -26,7 +26,7 @@ from backend.base.files import (clean_filepath_simple, clean_filepath_smartly,
                                 delete_empty_child_folders,
                                 delete_empty_parent_folders, list_files,
                                 rename_file)
-from backend.base.helpers import (extract_year_from_date,
+from backend.base.helpers import (DateFormatter, extract_year_from_date,
                                   filtered_iter, force_range)
 from backend.base.logging import LOGGER
 from backend.implementations.file_processing import mass_process_files
@@ -207,12 +207,17 @@ def get_issue_naming_keys(
     """
     issue_padding = Settings().sv.issue_padding
 
+    if issue_data.date is not None:
+        issue_release_date = DateFormatter(issue_data.date)
+    else:
+        issue_release_date = None
+
     return IssueNamingKeys(
         **_get_base_naming_keys(volume_data).todict(),
 
         issue_comicvine_id=issue_data.comicvine_id,
         issue_number=str(issue_data.issue_number).zfill(issue_padding),
-        issue_release_date=issue_data.date,
+        issue_release_date=issue_release_date,
         issue_release_year=extract_year_from_date(issue_data.date),
         issue_title=clean_filestring(issue_data.title or '') or None
     )
@@ -470,7 +475,7 @@ def check_format(format: str, type: str) -> bool:
         return False
 
     keys = [
-        fn
+        fn.split(":")[0] # Split to remove format spec if present
         for _, fn, _, _ in Formatter().parse(format)
         if fn is not None
     ]

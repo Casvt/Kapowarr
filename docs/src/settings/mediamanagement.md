@@ -60,6 +60,19 @@ The naming format for the file itself.
 	| {issue_release_date} | 1963-03-01 |
 	| {issue_release_year} | 1963 |
 
+??? tip "Date Formatting"
+	For _all_ naming format settings that offer the `issue_release_date` variable can the value be customised using [strftime format codes](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes).
+
+	| Format Code | Example |
+	| ----------- | ------- |
+	| {issue_release_date:%Y} | 1963 |
+	| {issue_release_date:%m} | 03 |
+	| {issue_release_date:%d} | 01 |
+	| {issue_release_date:%B} | March |
+	| {issue_release_date:%b} | Mar |
+	| {issue_release_date:%Y-%m} | 1963-03 |
+	| {issue_release_date:%B %Y} | March 1963 |
+
 | Example Value | Example Resulting Name |
 | ------------- | -------------- |
 | {series_name} ({year}) Volume {volume_number} Issue \{issue_number\} | Deadpool (1994) Volume 01 Issue 002 |

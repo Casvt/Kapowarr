@@ -913,6 +913,42 @@ class DictKeyedDict(dict):
         return zip(self.keys(), self.values())
 
 
+class DateFormatter:
+    """When inserting/formatting a date into a string (f-string or str.format()),
+    insert this class that receives the date instead to allow the date to be
+    formatted using strf formats.
+
+    ```
+    >>> df = DateFormatter("2026-02-03")
+    >>> f"Date: {df:%B %Y}"
+    'Date: February 2026'
+    ```
+    """
+
+    def __init__(self, date: str) -> None:
+        """Initialise the date formatter.
+
+        Args:
+            date (str): The date, in YYYY-MM-DD format.
+        """
+        self.date = date
+        self.date_obj = datetime.strptime(date, "%Y-%m-%d")
+        return
+
+    def __str__(self) -> str:
+        return self.date
+
+    def __format__(self, format_spec: str) -> str:
+        if not format_spec:
+            return self.date
+
+        try:
+            return self.date_obj.strftime(format_spec)
+        except (ValueError, TypeError):
+            # Invalid spec
+            return self.date
+
+
 # region Requests
 @lru_cache(1)
 def _running_urllib3_v2_and_above() -> bool:
