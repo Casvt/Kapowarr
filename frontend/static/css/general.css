@@ -463,9 +463,10 @@ main > *:not(.tool-bar-container) {
 	align-items: center;
 	gap: 1rem;
 
+	padding: 1.5rem;
 	color: var(--text-color);
 
-	font-size: 1.5rem;
+	font-size: clamp(1rem, 2vw, 1.25rem);
 	text-align: center;
 }
 
