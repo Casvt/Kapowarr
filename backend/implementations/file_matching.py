@@ -125,7 +125,10 @@ def scan_files(
             )
             continue
 
-        file_data = extract_filename_data(file)
+        file_data = extract_filename_data(
+            file,
+            assume_volume_number=False
+        )
 
         # Check if file matches volume
         if not file_importing_filter(

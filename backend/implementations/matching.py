@@ -294,6 +294,8 @@ def file_importing_filter(
         file_data (FilenameData): Extracted data from file.
         volume_data (VolumeData): The data of the volume.
         volume_issues (List[IssueData]): The data of the issues of the volume.
+        number_to_year (Mapping[float, Union[int, None]]): calculated issue
+            numbers mapped to their release year for all issues of volume.
 
     Returns:
         bool: Whether the file matches to the volume or not.
@@ -329,11 +331,18 @@ def file_importing_filter(
         number_to_year.get(force_range(issue_number)[-1])
     )
 
+    # Neither are given, so we'll never know what volume the files are exactly
+    # for. But they're in the volume folder, so we'll assume they match.
+    neither_found = (
+        file_data['year'], file_data['volume_number']
+    ) == (None, None)
+
     is_match = (
         matching_special_version
         and (
             matching_volume_number
             or matching_year
+            or neither_found
         )
     )
 

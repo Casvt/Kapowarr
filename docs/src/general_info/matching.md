@@ -15,7 +15,7 @@ This covers how Kapowarr matches files to issues of a volume. Information is ext
 Rules:
 
 1. Has to mention issue number and should match.
-2. Either year or volume number has to be mentioned and should match.
+2. Either year or volume number has to be mentioned and should match, or neither should be mentioned.
 
 Examples:
 
@@ -29,7 +29,7 @@ This is a volume where the issue titles are in the format 'Volume N'.
 Rules:
 
 1. Volume number of file refers to issue number of volume or volume number of file refers to volume number of volume and issue number of file refers to issue number of volume.
-2. Either year or volume number has to be mentioned and should match.
+2. Either year or volume number has to be mentioned and should match, or neither should be mentioned.
 
 Examples:
 
@@ -42,7 +42,7 @@ Rules:
 
 1. Is allowed to have 'TPB'.
 2. Is not allowed to have issue number.
-3. Either year or volume number has to be mentioned and should match.
+3. Either year or volume number has to be mentioned and should match, or neither should be mentioned.
 
 Examples:
 
@@ -60,7 +60,7 @@ The following is _not_ allowed:
 Rules:
 
 1. Has to mention 'one-shot', issue number 1 or no issue number.
-2. Either year or volume number has to be mentioned and should match.
+2. Either year or volume number has to be mentioned and should match, or neither should be mentioned.
 
 Examples:
 
@@ -74,7 +74,7 @@ Examples:
 Rules:
 
 1. Has to mention 'hard-cover', issue number 1 or no issue number.
-2. Either year or volume number has to be mentioned and should match.
+2. Either year or volume number has to be mentioned and should match, or neither should be mentioned.
 
 Examples:
 

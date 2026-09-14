@@ -16,7 +16,7 @@ from typing import (TYPE_CHECKING, Any, Callable, Dict, List,
 if TYPE_CHECKING:
     from threading import Timer
 
-    from backend.base.helpers import CommaList
+    from backend.base.helpers import CommaList, DateFormatter
 
 # region Types
 T = TypeVar("T")
@@ -858,7 +858,7 @@ class VolumeNamingKeys(BaseNamingKeys):
 class TitlelessIssueNamingKeys(BaseNamingKeys):
     issue_comicvine_id: int
     issue_number: str
-    issue_release_date: Union[str, None]
+    issue_release_date: Union['DateFormatter', None]
     issue_release_year: Union[int, None]
 
 
