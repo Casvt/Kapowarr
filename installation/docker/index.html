@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/img/favicon.svg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -986,6 +986,8 @@
       
         
       
+        
+      
     
     
     
@@ -1076,6 +1078,34 @@
     
   
     Media Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../settings/indexers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Indexers
   
 
     
@@ -1416,12 +1446,12 @@
 <p>On this page, you can find instructions on how to install Kapowarr using Docker and how to update a Docker installation.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <h3 id="install-docker">Install Docker<a class="headerlink" href="#install-docker" title="Permanent link">&para;</a></h3>
-<p>The first step is to install Docker, if you don't have it installed already. The official Docker documentation hub offers great instructions on <a href="https://docs.docker.com/engine/install/">how to install docker CLI and Docker Desktop</a>. Take notice of whether you installed the 'Docker CLI' (the Docker documentation also calls this 'Docker CE') or 'Docker Desktop', for future instructions.</p>
+<p>The first step is to install Docker if you don't have it installed already. The official Docker documentation hub offers great instructions on <a href="https://docs.docker.com/engine/install/">how to install docker CLI or Docker Desktop</a>. Take notice of whether you installed the 'Docker CLI' (the Docker documentation also calls this 'Docker CE') or 'Docker Desktop', for future instructions.</p>
 <details class="info">
 <summary>Quick introduction to Docker</summary>
-<p>Docker allows you to create little virtual computers, called 'containers'. You can run an application inside these containers. This is useful because you decide how much resources these containers can use, and what access these applications get to "the outside". It makes it safer (e.g. the application only has access to folders on the computer that you explicitly give it access to), and makes installation easier (the developer makes sure that inside the container everything is setup properly, not you).</p>
-<p>Allowing folders and network connections through the container is done using 'mapping'. For example, you can map the folder <code class="highlight">D:\Comics</code> on the host to the folder <code class="highlight">/comics</code> inside the container. Then everything inside the host folder (<code class="highlight">D:\Comics</code>) is visible to the application via the mapped container folder (<code class="highlight">/comics</code>). Mapping network ports works in a similar manner.</p>
-<p>When you turn off a container, all file changes inside the container (e.g. folders/files added) are lost. This is so that the environment inside the container when starting up is always the same. So in order to save a file/folder permanently, it has to be stored on the host and then mapped to somewhere inside the container.</p>
+<p>Docker allows you to create little virtual computers, called 'containers'. You can run an application inside these containers. This is useful because you decide how much resources these containers can use, and what access these applications get to "the outside". It makes it safer and installation easier. It makes it safer because the application only has access to folders on the computer that you explicitly give it access to, and makes installation easier because you don't have to make sure that everything is set up properly, as the developer will ensure that.</p>
+<p>Allowing folders and network connections through the container is done using 'mapping'. For example, you can map the folder <code class="highlight">D:\Comics</code> on the host to the folder <code class="highlight">/comics</code> inside the container. Then everything in the host folder is visible to the application via the folder mapped inside the container. Mapping network ports works in a similar manner.</p>
+<p>When you turn off a container, all changes to files and folders inside the container are lost (e.g. comic files that are added). This is so that the environment inside the container is always the same when starting up. In order to save a file/folder permanently, it has to be stored on the host and then mapped to somewhere inside the container.</p>
 </details>
 <h3 id="create-place-for-the-database">Create place for the database<a class="headerlink" href="#create-place-for-the-database" title="Permanent link">&para;</a></h3>
 <p>Kapowarr needs a permanent place to put the database file. This can be a <a href="https://docs.docker.com/storage/volumes/">Docker volume</a> or a folder on the host machine.</p>
@@ -1453,22 +1483,22 @@
 <div class="tabbed-content">
 <div class="tabbed-block">
 <p>Following the Linux standards, we suggest the folder <code class="highlight">/opt/Kapowarr/db</code>. This is not mandatory however. You are allowed to create a folder anywhere you like.</p>
-<p>Create the desired folder using the UI (if your distro offers this) or with the following shell command (replace <code class="highlight">/path/to/directory</code> with desired path):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>mkdir<span class="w"> </span><span class="s2">&quot;/path/to/directory&quot;</span>
+<p>If your Linux distro offers it, create the desired folder using the UI. Otherwise, create it with the following shell command (replace <code class="highlight">/path/to/directory</code> with the desired path):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>mkdir<span class="w"> </span><span class="s2">"/path/to/directory"</span>
 </code></pre></div>
-<p>The folder needs to offer read, write and execution permissions to the user that the container will run as. You can change the user that the container runs as using the PUID (user) and PGID (group) environment variables when launching the container later. The folder also needs to either be owned by that user, be owned by a group that the user is a part of or have sufficient permissions so that <em>any</em> user can use the folder.</p>
+<p>The user that the container runs as will need read, write and execution permissions. You can change the user that the container runs as using the PUID (user) and PGID (group) environment variables when launching the container later. The folder also needs to either be owned by that user, be owned by a group that the user is a part of, or have sufficient permissions so that <em>any</em> user can use the folder.</p>
 </div>
 <div class="tabbed-block">
 <p>Following MacOS standards, we suggest the folder <code class="highlight">/Applications/Kapowarr/db</code>. This is not mandatory however. You are allowed to create a folder anywhere you like.</p>
 <p>Create the desired folder using the UI or with the following shell command (replace <code class="highlight">/path/to/directory</code> with desired path):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>mkdir<span class="w"> </span><span class="s2">&quot;/path/to/directory&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>mkdir<span class="w"> </span><span class="s2">"/path/to/directory"</span>
 </code></pre></div>
-<p>The folder needs to offer read, write and execution permissions to the user that the container will run as. You can change the user that the container runs as using the PUID and PGID (for the group) environment variables when launching the container later. The folder also needs to either be owned by that user, be owned by a group that the user is a part of or have sufficient permissions so that <em>any</em> user can use the folder.</p>
+<p>The user that the container runs as will need read, write and execution permissions. You can change the user that the container runs as using the PUID and PGID (for the group) environment variables when launching the container later. The folder also needs to either be owned by that user, be owned by a group that the user is a part of, or have sufficient permissions so that <em>any</em> user can use the folder.</p>
 </div>
 <div class="tabbed-block">
 <p>There is no defined standard for Windows on where to put such a folder. We suggest a path like <code class="highlight">C:\apps\Kapowarr\db</code> or <code class="highlight">D:\Kapowarr\db</code>. This is not mandatory however. You are allowed to create a folder anywhere you like.</p>
-<p>Create the desired folder either using the Windows Explorer, or using the following Powershell command:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">mkdir</span> <span class="s2">&quot;C:\path\to\directory&quot;</span>
+<p>Create the desired folder either using the Windows Explorer or using the following Powershell command:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">mkdir</span> <span class="s2">"C:\path\to\directory"</span>
 </code></pre></div>
 </div>
 </div>
@@ -1477,10 +1507,10 @@
 </div>
 </div>
 <h3 id="create-a-root-folder">Create a root folder<a class="headerlink" href="#create-a-root-folder" title="Permanent link">&para;</a></h3>
-<p>You need at least one folder that all media files can be stored in, called a <a href="../../settings/mediamanagement/#root-folders">root folder</a>. If you don't already have a folder with comics, then create one. The folder is allowed to be anywhere you like. You can create it using the same instructions as for <a href="#__tabbed_1_2">creating a folder for the database file</a>.</p>
+<p>You will need at least one <a href="../../settings/mediamanagement/#root-folders">root folder</a> that all media files can be stored in. If you don't already have a folder with comics, create one. The folder is allowed to be anywhere you like. You can create it using the same instructions as for <a href="#__tabbed_1_2">creating a folder for the database file</a>.</p>
 <h3 id="create-a-download-folder">Create a download folder<a class="headerlink" href="#create-a-download-folder" title="Permanent link">&para;</a></h3>
-<p>Kapowarr needs a <a href="../../settings/download/#direct-download-temporary-folder">download folder</a>. If you don't already have a folder that software can download to, then create one. The folder is allowed to be anywhere you like. You can create it using the same instructions as for <a href="#__tabbed_1_2">creating a folder for the database file</a>.</p>
-<p>The database folder, root folder(s) and download folder can't intersect (e.g.: the download folder can't be inside the root folder).</p>
+<p>Kapowarr needs a <a href="../../settings/download/#download-folder">download folder</a>. If you don't already have a folder that software can download to, create one. The folder is allowed to be anywhere you like. You can create it using the same instructions as for <a href="#__tabbed_1_2">creating a folder for the database file</a>.</p>
+<p>The database folder, root folder(s) and download folder can't intersect (e.g. the download folder can't be inside the root folder).</p>
 <h3 id="launch-container">Launch container<a class="headerlink" href="#launch-container" title="Permanent link">&para;</a></h3>
 <p>Now we can launch the container.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="4:3"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><input id="__tabbed_4_3" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">Docker CLI</label><label for="__tabbed_4_2">Docker Compose</label><label for="__tabbed_4_3">Docker Desktop</label></div>
@@ -1492,9 +1522,9 @@
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span>--name<span class="w"> </span>kapowarr<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span>-v<span class="w"> </span><span class="s2">&quot;kapowarr-db:/app/db&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span>-v<span class="w"> </span><span class="s2">&quot;/path/to/download_folder:/app/temp_downloads&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span>-v<span class="w"> </span><span class="s2">&quot;/path/to/root_folder:/comics&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span>-v<span class="w"> </span><span class="s2">"kapowarr-db:/app/db"</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span>-v<span class="w"> </span><span class="s2">"/path/to/download_folder:/app/temp_downloads"</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span>-v<span class="w"> </span><span class="s2">"/path/to/root_folder:/comics"</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span>-p<span class="w"> </span><span class="m">5656</span>:5656<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span>-e<span class="w"> </span><span class="nv">PUID</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span>-e<span class="w"> </span><span class="nv">PGID</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="se">\</span>
@@ -1505,9 +1535,9 @@
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span>--name<span class="w"> </span>kapowarr<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span>-v<span class="w"> </span><span class="s2">&quot;kapowarr-db:/app/db&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span>-v<span class="w"> </span><span class="s2">&quot;/path/to/download_folder:/app/temp_downloads&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span>-v<span class="w"> </span><span class="s2">&quot;/path/to/root_folder:/comics&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span>-v<span class="w"> </span><span class="s2">"kapowarr-db:/app/db"</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span>-v<span class="w"> </span><span class="s2">"/path/to/download_folder:/app/temp_downloads"</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span>-v<span class="w"> </span><span class="s2">"/path/to/root_folder:/comics"</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span>-p<span class="w"> </span><span class="m">5656</span>:5656<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">    </span>-e<span class="w"> </span><span class="nv">PUID</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">    </span>-e<span class="w"> </span><span class="nv">PGID</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="se">\</span>
@@ -1516,7 +1546,7 @@
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">docker</span> <span class="n">run</span> <span class="n">-d</span> <span class="p">-</span><span class="n">-name</span> <span class="n">kapowarr</span> <span class="n">-v</span> <span class="s2">&quot;kapowarr-db:/app/db&quot;</span> <span class="n">-v</span> <span class="s2">&quot;DRIVE:\with\download_folder:/app/temp_downloads&quot;</span> <span class="n">-v</span> <span class="s2">&quot;DRIVE:\with\root_folder:/comics&quot;</span> <span class="n">-p</span> <span class="n">5656</span><span class="p">:</span><span class="n">5656</span> <span class="n">-e</span> <span class="n">PUID</span><span class="p">=</span><span class="n">0</span> <span class="n">-e</span> <span class="n">PGID</span><span class="p">=</span><span class="n">0</span> <span class="n">-e</span> <span class="n">TZ</span><span class="p">=</span><span class="n">Etc</span><span class="p">/</span><span class="n">UTC</span> <span class="n">mrcas</span><span class="p">/</span><span class="n">kapowarr</span><span class="p">:</span><span class="n">latest</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">docker</span> <span class="n">run</span> <span class="n">-d</span> <span class="p">-</span><span class="n">-name</span> <span class="n">kapowarr</span> <span class="n">-v</span> <span class="s2">"kapowarr-db:/app/db"</span> <span class="n">-v</span> <span class="s2">"DRIVE:\with\download_folder:/app/temp_downloads"</span> <span class="n">-v</span> <span class="s2">"DRIVE:\with\root_folder:/comics"</span> <span class="n">-p</span> <span class="n">5656</span><span class="p">:</span><span class="n">5656</span> <span class="n">-e</span> <span class="n">PUID</span><span class="p">=</span><span class="n">0</span> <span class="n">-e</span> <span class="n">PGID</span><span class="p">=</span><span class="n">0</span> <span class="n">-e</span> <span class="n">TZ</span><span class="p">=</span><span class="n">Etc</span><span class="p">/</span><span class="n">UTC</span> <span class="n">mrcas</span><span class="p">/</span><span class="n">kapowarr</span><span class="p">:</span><span class="n">latest</span>
 </code></pre></div>
 </div>
 </div>
@@ -1528,8 +1558,8 @@
 <div class="admonition example">
 <p class="admonition-title">Examples</p>
 <ul>
-<li><code class="highlight">-v &quot;/opt/Kapowarr/db:/app/db&quot;</code></li>
-<li><code class="highlight">-v &quot;C:\apps\Kapowarr\db:/app/db&quot;</code></li>
+<li><code class="highlight">-v "/opt/Kapowarr/db:/app/db"</code></li>
+<li><code class="highlight">-v "C:\apps\Kapowarr\db:/app/db"</code></li>
 </ul>
 </div>
 <ol start="2">
@@ -1538,8 +1568,8 @@
 <div class="admonition example">
 <p class="admonition-title">Examples</p>
 <ul>
-<li><code class="highlight"><span class="o">-</span><span class="n">v</span><span class="w"> </span><span class="s2">&quot;/home/my-user/comic-downloads:/app/temp_downloads&quot;</span></code></li>
-<li><code class="highlight"><span class="o">-</span><span class="n">v</span><span class="w"> </span><span class="s2">&quot;D:\Comics\Downloads:/app/temp_downloads&quot;</span></code></li>
+<li><code class="highlight"><span class="o">-</span><span class="n">v</span><span class="w"> </span><span class="s2">"/home/my-user/comic-downloads:/app/temp_downloads"</span></code></li>
+<li><code class="highlight"><span class="o">-</span><span class="n">v</span><span class="w"> </span><span class="s2">"D:\Comics\Downloads:/app/temp_downloads"</span></code></li>
 </ul>
 </div>
 <ol start="3">
@@ -1548,18 +1578,18 @@
 <div class="admonition example">
 <p class="admonition-title">Examples</p>
 <ul>
-<li><code class="highlight">-v &quot;/home/my-user/comics:/comics&quot;</code></li>
-<li><code class="highlight">-v &quot;D:\Comics\Library:/comics&quot;</code></li>
+<li><code class="highlight">-v "/home/my-user/comics:/comics"</code></li>
+<li><code class="highlight">-v "D:\Comics\Library:/comics"</code></li>
 </ul>
 </div>
 <ol start="4">
-<li>You can map multiple root folders by repeating <code class="highlight">-v &quot;/path/to/root_folder:/comics&quot;</code> (or <code class="highlight">-v &quot;DRIVE:\with\root_folder:/comics&quot;</code> for Windows) in the command, but then supplying different values for <code class="highlight">/path/to/root_folder</code> and <code class="highlight">/comics</code>.</li>
+<li>You can map multiple root folders by repeating <code class="highlight">-v "/path/to/root_folder:/comics"</code> (or <code class="highlight">-v "DRIVE:\with\root_folder:/comics"</code> for Windows) in the command, but then supplying different values for <code class="highlight">/path/to/root_folder</code> and <code class="highlight">/comics</code>.</li>
 </ol>
 <div class="admonition example">
 <p class="admonition-title">Examples</p>
 <ul>
-<li><code class="highlight">-v &quot;/home/my-user/comics-2:/comics-2&quot; \</code></li>
-<li><code class="highlight">-v &quot;E:\Comics:/comics-2&quot;</code></li>
+<li><code class="highlight">-v "/home/my-user/comics-2:/comics-2" \</code></li>
+<li><code class="highlight">-v "E:\Comics:/comics-2"</code></li>
 </ul>
 </div>
 <ol start="5">
@@ -1584,23 +1614,23 @@
 </div>
 <div class="tabbed-block">
 <p>The contents of the <code class="highlight">docker-compose.yml</code> file are below. The source file can also be found <a href="https://github.com/Casvt/Kapowarr/blob/development/docker-compose.yml">on GitHub</a>. But before you copy, paste and run it, read the notes below!</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">services</span><span class="p">:</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span><span class="n">kapowarr</span><span class="p">:</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">        </span><span class="n">container_name</span><span class="p">:</span><span class="w"> </span><span class="n">kapowarr</span>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">        </span><span class="n">image</span><span class="p">:</span><span class="w"> </span><span class="n">mrcas</span><span class="o">/</span><span class="n">kapowarr</span><span class="p">:</span><span class="n">latest</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">        </span><span class="n">environment</span><span class="p">:</span>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="n">PUID</span><span class="o">=</span><span class="mi">0</span>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="n">PGID</span><span class="o">=</span><span class="mi">0</span>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="n">TZ</span><span class="o">=</span><span class="n">Etc</span><span class="o">/</span><span class="n">UTC</span>
-<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">        </span><span class="n">volumes</span><span class="p">:</span>
-<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s2">&quot;kapowarr-db:/app/db&quot;</span>
-<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s2">&quot;/path/to/download_folder:/app/temp_downloads&quot;</span>
-<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s2">&quot;/path/to/comics:/comics&quot;</span>
-<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="w">        </span><span class="n">ports</span><span class="p">:</span>
-<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="mi">5656</span><span class="p">:</span><span class="mi">5656</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nt">services</span><span class="p">:</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span><span class="nt">kapowarr</span><span class="p">:</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">        </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kapowarr</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mrcas/kapowarr:latest</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">        </span><span class="nt">environment</span><span class="p">:</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PUID=0</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PGID=0</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TZ=Etc/UTC</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">        </span><span class="nt">volumes</span><span class="p">:</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"kapowarr-db:/app/db"</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"/path/to/download_folder:/app/temp_downloads"</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"/path/to/comics:/comics"</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="w">        </span><span class="nt">ports</span><span class="p">:</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5656:5656</span>
 <a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>
-<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="n">volumes</span><span class="p">:</span>
-<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="w">    </span><span class="n">kapowarr</span><span class="o">-</span><span class="n">db</span><span class="p">:</span>
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="nt">volumes</span><span class="p">:</span>
+<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="w">    </span><span class="nt">kapowarr-db</span><span class="p">:</span>
 </code></pre></div>
 <p>Then run the following command to start the container. Run this command from within the directory where the <code class="highlight">docker-compose.yml</code> file is located.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>docker-compose<span class="w"> </span>up<span class="w"> </span>-d
@@ -1612,8 +1642,8 @@
 <div class="admonition example">
 <p class="admonition-title">Examples</p>
 <ul>
-<li><code class="highlight">- &quot;/opt/Kapowarr/db:/app/db&quot;</code></li>
-<li><code class="highlight">- &quot;C:\apps\Kapowarr\db:/app/db&quot;</code></li>
+<li><code class="highlight">- "/opt/Kapowarr/db:/app/db"</code></li>
+<li><code class="highlight">- "C:\apps\Kapowarr\db:/app/db"</code></li>
 </ul>
 </div>
 <ol start="2">
@@ -1622,8 +1652,8 @@
 <div class="admonition example">
 <p class="admonition-title">Examples</p>
 <ul>
-<li><code class="highlight"><span class="o">-</span><span class="w"> </span><span class="s2">&quot;/home/my-user/comic-downloads:/app/temp_downloads&quot;</span></code></li>
-<li><code class="highlight"><span class="o">-</span><span class="w"> </span><span class="s2">&quot;D:\Comics\Downloads:/app/temp_downloads&quot;</span></code></li>
+<li><code class="highlight"><span class="o">-</span><span class="w"> </span><span class="s2">"/home/my-user/comic-downloads:/app/temp_downloads"</span></code></li>
+<li><code class="highlight"><span class="o">-</span><span class="w"> </span><span class="s2">"D:\Comics\Downloads:/app/temp_downloads"</span></code></li>
 </ul>
 </div>
 <ol start="3">
@@ -1632,18 +1662,18 @@
 <div class="admonition example">
 <p class="admonition-title">Examples</p>
 <ul>
-<li><code class="highlight">- &quot;/home/my-user/comics:/comics&quot;</code></li>
-<li><code class="highlight">- &quot;D:\Comics\Library:/comics&quot;</code></li>
+<li><code class="highlight">- "/home/my-user/comics:/comics"</code></li>
+<li><code class="highlight">- "D:\Comics\Library:/comics"</code></li>
 </ul>
 </div>
 <ol start="4">
-<li>You can map multiple root folders by repeating <code class="highlight"><span class="k">-</span> &quot;/path/to/root_folder:/comics&quot;</code> in the command, but then supplying different values for <code class="highlight">/path/to/root_folder</code> and <code class="highlight">/comics</code>.</li>
+<li>You can map multiple root folders by repeating <code class="highlight"><span class="k">-</span> "/path/to/root_folder:/comics"</code> in the command, but then supplying different values for <code class="highlight">/path/to/root_folder</code> and <code class="highlight">/comics</code>.</li>
 </ol>
 <div class="admonition example">
 <p class="admonition-title">Examples</p>
 <ul>
-<li><code class="highlight">- &quot;/home/my-user/comics-2:/comics-2&quot;</code></li>
-<li><code class="highlight">- &quot;E:\Comics:/comics-2&quot;</code></li>
+<li><code class="highlight">- "/home/my-user/comics-2:/comics-2"</code></li>
+<li><code class="highlight">- "E:\Comics:/comics-2"</code></li>
 </ul>
 </div>
 <ol start="5">
@@ -1715,10 +1745,10 @@
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">    </span>--name<span class="w"> </span>kapowarr<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span>-v<span class="w"> </span><span class="s2">&quot;kapowarr-db:/app/db&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">    </span>-v<span class="w"> </span><span class="s2">&quot;/home/cas/media/Downloads:/app/temp_downloads&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">    </span>-v<span class="w"> </span><span class="s2">&quot;/home/cas/media/Comics:/comics&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">    </span>-v<span class="w"> </span><span class="s2">&quot;/home/cas/other_media/Comics-2:/comics-2&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span>-v<span class="w"> </span><span class="s2">"kapowarr-db:/app/db"</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">    </span>-v<span class="w"> </span><span class="s2">"/home/cas/media/Downloads:/app/temp_downloads"</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">    </span>-v<span class="w"> </span><span class="s2">"/home/cas/media/Comics:/comics"</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">    </span>-v<span class="w"> </span><span class="s2">"/home/cas/other_media/Comics-2:/comics-2"</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">    </span>-p<span class="w"> </span><span class="m">5656</span>:5656<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">    </span>-e<span class="w"> </span><span class="nv">PUID</span><span class="o">=</span><span class="m">1000</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="w">    </span>-e<span class="w"> </span><span class="nv">PGID</span><span class="o">=</span><span class="m">1000</span><span class="w"> </span><span class="se">\</span>
@@ -1727,24 +1757,24 @@
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">services</span><span class="p">:</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">    </span><span class="n">kapowarr</span><span class="p">:</span>
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">        </span><span class="n">container_name</span><span class="p">:</span><span class="w"> </span><span class="n">kapowarr</span>
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">        </span><span class="n">image</span><span class="p">:</span><span class="w"> </span><span class="n">mrcas</span><span class="o">/</span><span class="n">kapowarr</span><span class="p">:</span><span class="n">latest</span>
-<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">        </span><span class="n">environment</span><span class="p">:</span>
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="n">PUID</span><span class="o">=</span><span class="mi">1000</span>
-<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="n">PGID</span><span class="o">=</span><span class="mi">1000</span>
-<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="n">TZ</span><span class="o">=</span><span class="n">Europe</span><span class="o">/</span><span class="n">Amsterdam</span>
-<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">        </span><span class="n">volumes</span><span class="p">:</span>
-<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s2">&quot;kapowarr-db:/app/db&quot;</span>
-<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s2">&quot;/home/cas/media/Downloads:/app/temp_downloads&quot;</span>
-<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s2">&quot;/home/cas/media/Comics:/comics&quot;</span>
-<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="s2">&quot;/home/cas/other_media/Comics-2:/comics-2&quot;</span>
-<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="w">        </span><span class="n">ports</span><span class="p">:</span>
-<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="w">            </span><span class="o">-</span><span class="w"> </span><span class="mi">5656</span><span class="p">:</span><span class="mi">5656</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nt">services</span><span class="p">:</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">    </span><span class="nt">kapowarr</span><span class="p">:</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">        </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kapowarr</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mrcas/kapowarr:latest</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">        </span><span class="nt">environment</span><span class="p">:</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PUID=1000</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PGID=1000</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TZ=Europe/Amsterdam</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">        </span><span class="nt">volumes</span><span class="p">:</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"kapowarr-db:/app/db"</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"/home/cas/media/Downloads:/app/temp_downloads"</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"/home/cas/media/Comics:/comics"</span>
+<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"/home/cas/other_media/Comics-2:/comics-2"</span>
+<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="w">        </span><span class="nt">ports</span><span class="p">:</span>
+<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5656:5656</span>
 <a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a>
-<a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a><span class="n">volumes</span><span class="p">:</span>
-<a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="w">    </span><span class="n">kapowarr</span><span class="o">-</span><span class="n">db</span><span class="p">:</span>
+<a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a><span class="nt">volumes</span><span class="p">:</span>
+<a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="w">    </span><span class="nt">kapowarr-db</span><span class="p">:</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
@@ -1816,7 +1846,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="March 6, 2026 14:33:36 UTC"><span class="timeago" datetime="2026-03-06T14:33:36+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="March 6, 2026 14:33:36 UTC">2026-03-06</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="August 2, 2026 11:47:13 UTC"><span class="timeago" datetime="2026-08-02T11:47:13+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="August 2, 2026 11:47:13 UTC">2026-08-02</span>
   </span>
 
     
@@ -1877,7 +1907,7 @@
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.tabs.link", "content.code.copy", "header.autohide", "navigation.expand", "navigation.indexes", "navigation.instant", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
         <script src="../../js/timeago.min.js"></script>
       

@@ -13,7 +13,7 @@
       
       
       
-        <link rel="prev" href="../mediamanagement/">
+        <link rel="prev" href="../indexers/">
       
       
         <link rel="next" href="../downloadclients/">
@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/img/favicon.svg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -837,6 +837,8 @@
       
         
       
+        
+      
     
     
     
@@ -945,6 +947,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../indexers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Indexers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -1016,10 +1046,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#direct-download-temporary-folder" class="md-nav__link">
+  <a href="#download-folder" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Direct Download Temporary Folder
+        Download Folder
       
     </span>
   </a>
@@ -1027,10 +1057,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#empty-temporary-download-folder" class="md-nav__link">
+  <a href="#empty-download-folder" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Empty Temporary Download Folder
+        Empty Download Folder
       
     </span>
   </a>
@@ -1100,17 +1130,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#service-preference" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Service preference
-      
-    </span>
-  </a>
   
 </li>
       
@@ -1305,10 +1324,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#direct-download-temporary-folder" class="md-nav__link">
+  <a href="#download-folder" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Direct Download Temporary Folder
+        Download Folder
       
     </span>
   </a>
@@ -1316,10 +1335,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#empty-temporary-download-folder" class="md-nav__link">
+  <a href="#empty-download-folder" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Empty Temporary Download Folder
+        Empty Download Folder
       
     </span>
   </a>
@@ -1392,17 +1411,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#service-preference" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Service preference
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1426,10 +1434,10 @@
   <h1>Download</h1>
 
 <h2 id="download-location">Download Location<a class="headerlink" href="#download-location" title="Permanent link">&para;</a></h2>
-<h3 id="direct-download-temporary-folder">Direct Download Temporary Folder<a class="headerlink" href="#direct-download-temporary-folder" title="Permanent link">&para;</a></h3>
-<p>This is where the files being downloaded get written to before being processed and moved to the correct location.</p>
+<h3 id="download-folder">Download Folder<a class="headerlink" href="#download-folder" title="Permanent link">&para;</a></h3>
+<p>This is the folder that files temporarily get downloaded to before being moved to the final location.</p>
 <p>If you run Kapowarr using Docker, leave this set to the default value of <code class="highlight"><span class="o">/</span><span class="n">app</span><span class="o">/</span><span class="n">temp_downloads</span></code> and instead change the value of <code class="highlight"><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">download_folder</span></code> in the <a href="../../installation/docker/#launch-container">Docker command</a>. If you have a manual install, you can change this value to whatever you want. It is required to be outside your root folders.</p>
-<h3 id="empty-temporary-download-folder">Empty Temporary Download Folder<a class="headerlink" href="#empty-temporary-download-folder" title="Permanent link">&para;</a></h3>
+<h3 id="empty-download-folder">Empty Download Folder<a class="headerlink" href="#empty-download-folder" title="Permanent link">&para;</a></h3>
 <p>This isn't so much of a setting as it is a tool. It will delete all files from the download folder that aren't actively being downloaded. This can be handy if the application crashed while downloading, leading to half-downloaded 'ghost' files in the folder.  </p>
 <h2 id="queue">Queue<a class="headerlink" href="#queue" title="Permanent link">&para;</a></h2>
 <h3 id="concurrent-direct-downloads">Concurrent Direct Downloads<a class="headerlink" href="#concurrent-direct-downloads" title="Permanent link">&para;</a></h3>
@@ -1450,9 +1458,6 @@ Make a copy of the downloaded files and post-process those (moving, renaming, co
 </ol>
 <h3 id="delete-completed-downloads">Delete Completed Downloads<a class="headerlink" href="#delete-completed-downloads" title="Permanent link">&para;</a></h3>
 <p>Whether external downloads should be deleted from their client once they have completed. Otherwise leave them in the queue of the external download client as 'completed'.</p>
-<h2 id="service-preference">Service preference<a class="headerlink" href="#service-preference" title="Permanent link">&para;</a></h2>
-<p>Kapowarr has the ability to download directly from the servers of GetComics, but also to download from services like MediaFire and Mega. When a download on GetComics is found and  has multiple possible download sources, this defines which source takes priority. If the first download fails, Kapowarr will try the next service in order.</p>
-<p>If you have an account for one of these services (see <a href="../downloadclients/#credentials">Credentials</a> setting), you might want to put that one at the top, to make Kapowarr take advantage of the extra features that the account offers (extra bandwidth, higher rate limit, etc.).  </p>
 
 
 
@@ -1473,7 +1478,7 @@ Make a copy of the downloaded files and post-process those (moving, renaming, co
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="March 2, 2026 13:58:32 UTC"><span class="timeago" datetime="2026-03-02T13:58:32+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="March 2, 2026 13:58:32 UTC">2026-03-02</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="August 23, 2026 16:00:38 UTC"><span class="timeago" datetime="2026-08-23T16:00:38+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="August 23, 2026 16:00:38 UTC">2026-08-23</span>
   </span>
 
     
@@ -1534,7 +1539,7 @@ Make a copy of the downloaded files and post-process those (moving, renaming, co
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.tabs.link", "content.code.copy", "header.autohide", "navigation.expand", "navigation.indexes", "navigation.instant", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
         <script src="../../js/timeago.min.js"></script>
       
