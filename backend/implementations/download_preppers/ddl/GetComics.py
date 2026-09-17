@@ -4,7 +4,7 @@ from asyncio import gather, run
 from functools import reduce
 from hashlib import sha1
 from re import IGNORECASE, compile
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, List, Tuple, Union
 
 from aiohttp import ClientError
 from bencoding import bencode
@@ -416,7 +416,7 @@ async def _purify_link(
 @DownloadPreppers.register_prepper(DownloadType.DDL, "GetComics")
 class GetComicsPrepper(DownloadPrepper):
     @property
-    def web_title(self) -> Optional[str]:
+    def web_title(self) -> Union[str, None]:
         return self._web_title
 
     def __init__(
