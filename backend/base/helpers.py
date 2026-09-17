@@ -21,7 +21,7 @@ from threading import current_thread
 from typing import (TYPE_CHECKING, Any, Callable, Collection, Dict, Iterable,
                     Iterator, List, Mapping, Sequence, Tuple, Union)
 from unicodedata import normalize
-from urllib.parse import quote_plus, unquote
+from urllib.parse import quote_plus, unquote, urlencode
 
 from aiohttp import ClientError, ClientSession, ClientTimeout
 from bencoding import bdecode
@@ -308,6 +308,45 @@ def get_torrent_info(torrent: bytes) -> Dict[bytes, Any]:
         Dict[bytes, Any]: The info.
     """
     return bdecode(torrent)[b"info"] # type: ignore
+
+
+def build_magnet_link(hash: str, name: Union[bytes, str]) -> str:
+    """Build a magnet link based on a hash and filename. Trackers are
+    automatically added.
+
+    Args:
+        hash (str): The hash of the torrent.
+        name (Union[bytes, str]): The filename of the torrent.
+
+    Returns:
+        str: The resulting magnet link.
+    """
+    if isinstance(name, bytes):
+        name = name.decode('utf-8')
+
+    params = [
+        ('xt', f'urn:btih:{hash}'),
+        ('dn', name),
+        ('tr', 'udp://tracker.cyberia.is:6969/announce'),
+        ('tr', 'udp://tracker.port443.xyz:6969/announce'),
+        ('tr', 'http://tracker3.itzmx.com:6961/announce'),
+        ('tr', 'udp://tracker.moeking.me:6969/announce'),
+        ('tr', 'http://vps02.net.orel.ru:80/announce'),
+        ('tr', 'http://tracker.openzim.org:80/announce'),
+        ('tr', 'udp://tracker.skynetcloud.tk:6969/announce'),
+        ('tr', 'https://1.tracker.eu.org:443/announce'),
+        ('tr', 'https://3.tracker.eu.org:443/announce'),
+        ('tr', 'http://re-tracker.uz:80/announce'),
+        ('tr', 'https://tracker.parrotsec.org:443/announce'),
+        ('tr', 'udp://explodie.org:6969/announce'),
+        ('tr', 'udp://tracker.filemail.com:6969/announce'),
+        ('tr', 'udp://tracker.nyaa.uk:6969/announce'),
+        ('tr', 'udp://retracker.netbynet.ru:2710/announce'),
+        ('tr', 'http://tracker.gbitt.info:80/announce'),
+        ('tr', 'http://tracker2.dler.org:80/announce')
+    ]
+
+    return "magnet:?" + urlencode(params)
 
 
 def get_schedules_next_run(cron_schedule: str) -> int:

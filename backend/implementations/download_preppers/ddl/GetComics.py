@@ -24,7 +24,7 @@ from backend.base.definitions import (GC_DOWNLOAD_SERVICE_TERMS,
                                       GCDownloadService, SpecialVersion)
 from backend.base.file_extraction import (extract_filename_data,
                                           refine_special_version)
-from backend.base.helpers import (AsyncSession, Session,
+from backend.base.helpers import (AsyncSession, Session, build_magnet_link,
                                   check_overlapping_issues, first_of_range,
                                   fix_year, force_range, get_torrent_info,
                                   normalise_size, normalise_year)
@@ -400,11 +400,11 @@ async def _purify_link(
         and content_type == "application/x-bittorrent"
     ):
         # Link is to torrent file
-        hash = sha1(bencode(get_torrent_info(await r.read()))).hexdigest()
-        return (
-            "magnet:?xt=urn:btih:" + hash + "&tr=udp://tracker.cyberia.is:6969/announce&tr=udp://tracker.port443.xyz:6969/announce&tr=http://tracker3.itzmx.com:6961/announce&tr=udp://tracker.moeking.me:6969/announce&tr=http://vps02.net.orel.ru:80/announce&tr=http://tracker.openzim.org:80/announce&tr=udp://tracker.skynetcloud.tk:6969/announce&tr=https://1.tracker.eu.org:443/announce&tr=https://3.tracker.eu.org:443/announce&tr=http://re-tracker.uz:80/announce&tr=https://tracker.parrotsec.org:443/announce&tr=udp://explodie.org:6969/announce&tr=udp://tracker.filemail.com:6969/announce&tr=udp://tracker.nyaa.uk:6969/announce&tr=udp://retracker.netbynet.ru:2710/announce&tr=http://tracker.gbitt.info:80/announce&tr=http://tracker2.dler.org:80/announce",
-            DownloadClientIdentifier.TORRENT
-        )
+        info = get_torrent_info(await r.read())
+        name = info[b"name"]
+        hash = sha1(bencode(info)).hexdigest()
+
+        return build_magnet_link(hash, name), DownloadClientIdentifier.TORRENT
 
     else:
         # Link is DDL download from getcomics
