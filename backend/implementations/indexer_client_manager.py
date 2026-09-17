@@ -495,16 +495,15 @@ class IndexerClients:
         Returns:
             List[IndexerClient]: The list of all indexer clients.
         """
-        cursor = get_db()
-        cursor.execute("""
+        clients = get_db().execute("""
             SELECT download_type, client_type, id
             FROM indexer_clients
             ORDER BY title, id;
-        """)
+        """).fetchall()
 
         return [
             cls.clients[DownloadType(client[0])][client[1]](client[2])
-            for client in cursor
+            for client in clients
         ]
 
     @classmethod
