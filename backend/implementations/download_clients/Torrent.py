@@ -11,7 +11,7 @@ from backend.base.custom_exceptions import DownloadLinkBroken, IssueNotFound
 from backend.base.definitions import (DownloadClientIdentifier,
                                       DownloadService, DownloadState,
                                       DownloadType, ExternalDownload,
-                                      ExternalDownloadClient)
+                                      ExternalDownloadClient, FileConstants)
 from backend.base.helpers import get_torrent_info
 from backend.base.logging import LOGGER
 from backend.implementations.download_client_manager import DownloadClients
@@ -121,7 +121,10 @@ class TorrentDownload(ExternalDownload, BaseDirectDownload):
                     raise e
 
         if not self._filename_body:
-            self._filename_body = splitext(torrent_name)[0]
+            if torrent_name.endswith(FileConstants.SCANNABLE_EXTENSIONS):
+                self._filename_body = splitext(torrent_name)[0]
+            else:
+                self._filename_body = torrent_name
 
         self._title = basename(self._filename_body)
         self._files = [join(self._download_folder, torrent_name)]
