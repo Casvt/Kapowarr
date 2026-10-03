@@ -62,10 +62,19 @@ class PixelDrainDownload(BaseDirectDownload):
                 transfer_limit_used = response["monthly_transfer_used"]
                 transfer_limit = response["monthly_transfer_cap"]
                 if transfer_limit == -1:
+                    # Account-level cap explicitly set to unlimited
                     transfer_limit = float("inf")
+                elif transfer_limit == 0:
+                    # No custom account-level cap set, fall back to the
+                    # plan's default transfer cap
+                    transfer_limit = response["subscription"][
+                        "monthly_transfer_cap"]
+                    if transfer_limit == -1:
+                        transfer_limit = float("inf")
 
         LOGGER.debug(
-            f"Pixeldrain account transfer state: {transfer_limit_used}/{transfer_limit}"
+            f"Pixeldrain account transfer state: "
+            f"{transfer_limit_used}/{transfer_limit}"
         )
         if transfer_limit_used > transfer_limit:
             StatusHandlers().report(
