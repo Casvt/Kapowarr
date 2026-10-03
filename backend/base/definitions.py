@@ -951,6 +951,7 @@ class QueryKeys:
     volume_number: int
     special_version: SpecialVersion
     issue_number: Union[str, None]
+    issue_year: Union[int, None]
 
 
 @dataclass

@@ -307,6 +307,7 @@ class SearchCoordinator:
                             **match_result
                         })
 
+                LOGGER.debug(f"Search stats: {stats}")
                 team["search_action_planner"].process_stats(stats)
 
         await gather(*(

@@ -17,6 +17,13 @@ VAI_FORMATS = (
     "{title}"
 )
 
+SPECIFIC_VAI_ISSUE_FORMATS = (
+    "{title} Vol. {issue_number} ({year})",
+    "{title} Vol. {issue_number}"
+)
+
+GENERAL_VAI_ISSUE_FORMATS = SPECIFIC_VAI_ISSUE_FORMATS + ("{title}",)
+
 VOLUME_FORMATS = (
     "{title} ({year})",
     "{title} Vol. {volume_number} ({year})",
@@ -44,26 +51,37 @@ class DDLQueryBuilder(QueryBuilder):
         if query_keys.special_version == SpecialVersion.TPB:
             queries = TPB_FORMATS
 
-        elif query_keys.special_version == SpecialVersion.VOLUME_AS_ISSUE:
-            queries = VAI_FORMATS
-
         elif query_keys.issue_number is None:
-            queries = VOLUME_FORMATS
+            if query_keys.special_version == SpecialVersion.VOLUME_AS_ISSUE:
+                queries = VAI_FORMATS
+            else:
+                queries = VOLUME_FORMATS
 
         elif self.originally_volume_search:
-            queries = SPECIFIC_ISSUE_FORMATS
+            if query_keys.special_version == SpecialVersion.VOLUME_AS_ISSUE:
+                queries = SPECIFIC_VAI_ISSUE_FORMATS
+            else:
+                queries = SPECIFIC_ISSUE_FORMATS
 
         else:
-            queries = GENERAL_ISSUE_FORMATS
+            if query_keys.special_version == SpecialVersion.VOLUME_AS_ISSUE:
+                queries = GENERAL_VAI_ISSUE_FORMATS
+            else:
+                queries = GENERAL_ISSUE_FORMATS
 
         query = queries[self.query_variation_index]
 
         if query_keys.year is None:
             query = query.replace('({year})', '').strip()
 
+        if query_keys.issue_number is None:
+            year = query_keys.year
+        else:
+            year = query_keys.issue_year or query_keys.year
+
         result = query.format(
             title=query_keys.titles[self.alias_index],
-            year=query_keys.year,
+            year=year,
             volume_number=query_keys.volume_number,
             issue_number=query_keys.issue_number
         )

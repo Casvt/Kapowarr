@@ -4,6 +4,7 @@ from typing import List, Set, Tuple, Union
 
 from backend.base.definitions import (IssueData, QueryKeys, SearchAction,
                                       SearchIterationStats, VolumeData)
+from backend.base.helpers import extract_year_from_date
 
 
 class SearchActionPlanner:
@@ -190,13 +191,17 @@ class SearchActionPlanner:
             QueryKeys: The resulting keys to be used by the query builder.
         """
         issue_number = None
+        issue_year = None
         if self.current_issue is not None:
-            issue_number = self.issue_data[self.current_issue].issue_number
+            issue_data = self.issue_data[self.current_issue]
+            issue_number = issue_data.issue_number
+            issue_year = extract_year_from_date(issue_data.date)
 
         return QueryKeys(
             titles=self.titles,
             year=self.volume_data.year,
             volume_number=self.volume_data.volume_number,
             special_version=self.volume_data.special_version,
-            issue_number=issue_number
+            issue_number=issue_number,
+            issue_year=issue_year
         )
