@@ -135,6 +135,15 @@ This flows better for ARIA.
 .issue-date {
 	width: 6.5rem;
 }
+.issue-number,
+.issue-date {
+	cursor: pointer;
+	user-select: none;
+}
+.issue-number.sort-active,
+.issue-date.sort-active {
+	color: var(--accent-color);
+}
 .issue-status {
 	width: 3rem;
 }

@@ -41,8 +41,14 @@ const ViewEls = {
 		edit: document.querySelector('#edit-button'),
 		delete: document.querySelector('#delete-button')
 	},
-	issues_list: document.querySelector('#issues-list')
+	issues_list: document.querySelector('#issues-list'),
+	issue_headers: {
+		issue_number: document.querySelector('th.issue-number'),
+		date: document.querySelector('th.issue-date')
+	}
 };
+
+let current_issue_sort = getLocalStorage('issue_sorting').issue_sorting;
 
 const enqueueFailureReasonMap = {
     webpage_broken: "Webpage unavailable",
@@ -121,8 +127,15 @@ class IssueEntry {
 function fillTable(issues, api_key) {
 	ViewEls.issues_list.innerHTML = '';
 
-	for (i = issues.length - 1; i >= 0; i--) {
-		const obj = issues[i];
+	// The backend returns issues ascending by the active sort key.
+	// Issue-number sort is browsed low-to-high; date sort keeps the
+	// existing newest-first order.
+	const ordered_issues = current_issue_sort === 'issue_number' ?
+		issues :
+		[...issues].reverse();
+
+	for (i = 0; i < ordered_issues.length; i++) {
+		const obj = ordered_issues[i];
 
 		const entry = ViewEls.pre_build.issue_entry.cloneNode(true);
 		entry.dataset.id = obj.id;
@@ -226,6 +239,7 @@ function fillPage(data, api_key) {
 	// fill issue lists
 	fillTable(data.issues, api_key);
 	fillIssueMatchTable(data.issues);
+	updateIssueSortIndicator();
 
 	mapButtons(volume_id);
 
@@ -253,6 +267,35 @@ function fillPage(data, api_key) {
 
         table.appendChild(entry);
 	});
+};
+
+function updateIssueSortIndicator() {
+	ViewEls.issue_headers.issue_number.classList.toggle(
+		'sort-active', current_issue_sort === 'issue_number'
+	);
+	ViewEls.issue_headers.date.classList.toggle(
+		'sort-active', current_issue_sort === 'date'
+	);
+};
+
+function loadVolume(api_key) {
+	fetchAPI(`/volumes/${volume_id}`, api_key, {issue_sort: current_issue_sort})
+	.then(json => fillPage(json.result, api_key))
+	.catch(e => {
+		if (e.status === 404)
+			window.location.href = `${url_base}/`
+		else
+			console.log(e);
+	});
+};
+
+function setIssueSort(sort, api_key) {
+	if (sort === current_issue_sort)
+		return;
+
+	current_issue_sort = sort;
+	setLocalStorage({'issue_sorting': sort});
+	loadVolume(api_key);
 };
 
 //
@@ -952,14 +995,12 @@ function showInfoWindow(window) {
 
 usingApiKey()
 .then(api_key => {
-	fetchAPI(`/volumes/${volume_id}`, api_key)
-	.then(json => fillPage(json.result, api_key))
-	.catch(e => {
-		if (e.status === 404)
-			window.location.href = `${url_base}/`
-		else
-			console.log(e);
-	});
+	loadVolume(api_key);
+
+	ViewEls.issue_headers.issue_number.title = 'Sort by issue number';
+	ViewEls.issue_headers.issue_number.onclick = e => setIssueSort('issue_number', api_key);
+	ViewEls.issue_headers.date.title = 'Sort by release date';
+	ViewEls.issue_headers.date.onclick = e => setIssueSort('date', api_key);
 
 	ViewEls.tool_bar.refresh.onclick = e => refreshVolume(api_key);
 	ViewEls.tool_bar.auto_search.onclick = e => autosearchVolume(api_key);
