@@ -433,6 +433,17 @@ class LibrarySorting(BaseEnum):
                          "title, year, volume_number")
 
 
+class IssueSorting(BaseEnum):
+    """
+    The way to order the issues of a volume, where the key value is the
+    value of the `ORDER BY ...` SQL statement
+    """
+
+    DATE = "date, calculated_issue_number"
+    ISSUE_NUMBER = "calculated_issue_number, date"
+    TITLE = "title, calculated_issue_number"
+
+
 class LibraryFilter(BaseEnum):
     """
     The filter to apply to the library, where the key value is the entire

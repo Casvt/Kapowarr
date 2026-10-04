@@ -41,8 +41,35 @@ const ViewEls = {
 		edit: document.querySelector('#edit-button'),
 		delete: document.querySelector('#delete-button')
 	},
-	issues_list: document.querySelector('#issues-list')
+	issues_list: document.querySelector('#issues-list'),
+	issue_headers: {
+		issue_number: document.querySelector('th.issue-number'),
+		title: document.querySelector('th.issue-title'),
+		date: document.querySelector('th.issue-date')
+	}
 };
+
+// Default direction when a column is clicked for the first time (not a
+// repeat click, which instead reverses whatever direction is already set).
+const ISSUE_SORT_DEFAULT_DIRECTION = {
+	issue_number: 'asc',
+	title: 'asc',
+	date: 'desc'
+};
+
+const ISSUE_SORT_LABELS = {
+	issue_number: 'issue number',
+	title: 'title',
+	date: 'release date'
+};
+
+const issue_sort_state = getLocalStorage('issue_sorting', 'issue_sort_direction');
+let current_issue_sort = issue_sort_state.issue_sorting;
+let current_issue_direction = issue_sort_state.issue_sort_direction;
+
+// Bumped on every loadVolume() call so a slow, superseded response can be
+// told apart from the latest one and discarded instead of rendered.
+let issue_sort_request_id = 0;
 
 const enqueueFailureReasonMap = {
     webpage_broken: "Webpage unavailable",
@@ -121,8 +148,14 @@ class IssueEntry {
 function fillTable(issues, api_key) {
 	ViewEls.issues_list.innerHTML = '';
 
-	for (i = issues.length - 1; i >= 0; i--) {
-		const obj = issues[i];
+	// The backend always returns issues ascending by the active sort key;
+	// descending is applied here by simply reversing that list.
+	const ordered_issues = current_issue_direction === 'desc' ?
+		[...issues].reverse() :
+		issues;
+
+	for (i = 0; i < ordered_issues.length; i++) {
+		const obj = ordered_issues[i];
 
 		const entry = ViewEls.pre_build.issue_entry.cloneNode(true);
 		entry.dataset.id = obj.id;
@@ -169,7 +202,7 @@ function fillPage(data, api_key) {
 			.innerText;
 		ViewEls.vol_edit.special_version
 			.querySelector("option[value='auto']")
-			.innerText += ` (${sv_name})`;
+			.innerText = `Automatic (${sv_name})`;
 	};
 
 	// Cover
@@ -192,6 +225,7 @@ function fillPage(data, api_key) {
 
 	// Tags
 	const tags = ViewEls.vol_data.tags;
+	tags.innerHTML = '';
 	if (data.year !== null) {
 		const year = document.createElement('p');
 		year.innerText = data.year;
@@ -226,6 +260,7 @@ function fillPage(data, api_key) {
 	// fill issue lists
 	fillTable(data.issues, api_key);
 	fillIssueMatchTable(data.issues);
+	updateIssueSortIndicator();
 
 	mapButtons(volume_id);
 
@@ -253,6 +288,70 @@ function fillPage(data, api_key) {
 
         table.appendChild(entry);
 	});
+};
+
+function updateIssueSortIndicator() {
+	let active_arrow = null;
+
+	Object.entries(ViewEls.issue_headers).forEach(([sort, header]) => {
+		const is_active = sort === current_issue_sort;
+		header.classList.toggle('sort-active', is_active);
+		header.setAttribute(
+			'aria-sort',
+			is_active ?
+				(current_issue_direction === 'asc' ? 'ascending' : 'descending') :
+				'none'
+		);
+		if (is_active)
+			active_arrow = header.querySelector('.sort-arrow');
+		else
+			hide([header.querySelector('.sort-arrow')]);
+	});
+
+	active_arrow.src = `${url_base}/static/img/${
+		current_issue_direction === 'asc' ? images.arrow_up : images.arrow_down
+	}`;
+	active_arrow.title = current_issue_direction === 'asc' ?
+		'Sorted ascending' :
+		'Sorted descending';
+	active_arrow.classList.remove('hidden');
+};
+
+function loadVolume(api_key) {
+	const request_id = ++issue_sort_request_id;
+
+	fetchAPI(`/volumes/${volume_id}`, api_key, {issue_sort: current_issue_sort})
+	.then(json => {
+		// A later sort click may have started a newer request that's
+		// already resolved; discard this one instead of rendering stale
+		// data under the now-current sort indicator.
+		if (request_id !== issue_sort_request_id)
+			return;
+
+		fillPage(json.result, api_key);
+	})
+	.catch(e => {
+		if (e.status === 404)
+			window.location.href = `${url_base}/`
+		else
+			console.log(e);
+	});
+};
+
+function setIssueSort(sort, api_key) {
+	if (sort === current_issue_sort) {
+		// Same column clicked again: reverse the sorting order.
+		current_issue_direction = current_issue_direction === 'asc' ? 'desc' : 'asc';
+	} else {
+		current_issue_sort = sort;
+		current_issue_direction = ISSUE_SORT_DEFAULT_DIRECTION[sort];
+	};
+
+	setLocalStorage({
+		'issue_sorting': current_issue_sort,
+		'issue_sort_direction': current_issue_direction
+	});
+	loadVolume(api_key);
 };
 
 //
@@ -713,6 +812,7 @@ function submitManagedIssues(api_key) {
 
 function fillIssueMatchTable(issues) {
 	const table = document.querySelector('#issue-match-table tbody');
+	table.innerHTML = '';
 	issues.forEach(issue => {
 		const entry = ViewEls.pre_build.match.cloneNode(true);
 
@@ -952,13 +1052,14 @@ function showInfoWindow(window) {
 
 usingApiKey()
 .then(api_key => {
-	fetchAPI(`/volumes/${volume_id}`, api_key)
-	.then(json => fillPage(json.result, api_key))
-	.catch(e => {
-		if (e.status === 404)
-			window.location.href = `${url_base}/`
-		else
-			console.log(e);
+	loadVolume(api_key);
+
+	Object.entries(ViewEls.issue_headers).forEach(([sort, header]) => {
+		const button = header.querySelector('.sort-button');
+		const label = `Sort by ${ISSUE_SORT_LABELS[sort]}`;
+		button.title = label;
+		button.setAttribute('aria-label', label);
+		button.onclick = e => setIssueSort(sort, api_key);
 	});
 
 	ViewEls.tool_bar.refresh.onclick = e => refreshVolume(api_key);

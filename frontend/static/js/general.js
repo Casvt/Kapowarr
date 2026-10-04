@@ -89,7 +89,9 @@ const icons = {
 
 const images = {
 	check: 'check.svg',
-	cancel: 'cancel.svg'
+	cancel: 'cancel.svg',
+	arrow_up: 'arrow_up.svg',
+	arrow_down: 'arrow_down.svg'
 };
 
 //
@@ -317,6 +319,8 @@ const default_values = {
 	'lib_sorting': 'title',
 	'lib_view': 'posters',
 	'lib_filter': '',
+	'issue_sorting': 'date',
+	'issue_sort_direction': 'desc',
 	'theme': 'light',
 	'translated_filter': 'all',
 	'api_key': null,
