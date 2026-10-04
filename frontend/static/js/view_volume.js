@@ -205,6 +205,7 @@ function fillPage(data, api_key) {
 
 	// Tags
 	const tags = ViewEls.vol_data.tags;
+	tags.innerHTML = '';
 	if (data.year !== null) {
 		const year = document.createElement('p');
 		year.innerText = data.year;
@@ -756,6 +757,7 @@ function submitManagedIssues(api_key) {
 
 function fillIssueMatchTable(issues) {
 	const table = document.querySelector('#issue-match-table tbody');
+	table.innerHTML = '';
 	issues.forEach(issue => {
 		const entry = ViewEls.pre_build.match.cloneNode(true);
 
