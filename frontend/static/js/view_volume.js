@@ -57,9 +57,19 @@ const ISSUE_SORT_DEFAULT_DIRECTION = {
 	date: 'desc'
 };
 
+const ISSUE_SORT_LABELS = {
+	issue_number: 'issue number',
+	title: 'title',
+	date: 'release date'
+};
+
 const issue_sort_state = getLocalStorage('issue_sorting', 'issue_sort_direction');
 let current_issue_sort = issue_sort_state.issue_sorting;
 let current_issue_direction = issue_sort_state.issue_sort_direction;
+
+// Bumped on every loadVolume() call so a slow, superseded response can be
+// told apart from the latest one and discarded instead of rendered.
+let issue_sort_request_id = 0;
 
 const enqueueFailureReasonMap = {
     webpage_broken: "Webpage unavailable",
@@ -192,7 +202,7 @@ function fillPage(data, api_key) {
 			.innerText;
 		ViewEls.vol_edit.special_version
 			.querySelector("option[value='auto']")
-			.innerText += ` (${sv_name})`;
+			.innerText = `Automatic (${sv_name})`;
 	};
 
 	// Cover
@@ -286,6 +296,12 @@ function updateIssueSortIndicator() {
 	Object.entries(ViewEls.issue_headers).forEach(([sort, header]) => {
 		const is_active = sort === current_issue_sort;
 		header.classList.toggle('sort-active', is_active);
+		header.setAttribute(
+			'aria-sort',
+			is_active ?
+				(current_issue_direction === 'asc' ? 'ascending' : 'descending') :
+				'none'
+		);
 		if (is_active)
 			active_arrow = header.querySelector('.sort-arrow');
 		else
@@ -302,8 +318,18 @@ function updateIssueSortIndicator() {
 };
 
 function loadVolume(api_key) {
+	const request_id = ++issue_sort_request_id;
+
 	fetchAPI(`/volumes/${volume_id}`, api_key, {issue_sort: current_issue_sort})
-	.then(json => fillPage(json.result, api_key))
+	.then(json => {
+		// A later sort click may have started a newer request that's
+		// already resolved; discard this one instead of rendering stale
+		// data under the now-current sort indicator.
+		if (request_id !== issue_sort_request_id)
+			return;
+
+		fillPage(json.result, api_key);
+	})
 	.catch(e => {
 		if (e.status === 404)
 			window.location.href = `${url_base}/`
@@ -1028,12 +1054,13 @@ usingApiKey()
 .then(api_key => {
 	loadVolume(api_key);
 
-	ViewEls.issue_headers.issue_number.title = 'Sort by issue number';
-	ViewEls.issue_headers.issue_number.onclick = e => setIssueSort('issue_number', api_key);
-	ViewEls.issue_headers.title.title = 'Sort by title';
-	ViewEls.issue_headers.title.onclick = e => setIssueSort('title', api_key);
-	ViewEls.issue_headers.date.title = 'Sort by release date';
-	ViewEls.issue_headers.date.onclick = e => setIssueSort('date', api_key);
+	Object.entries(ViewEls.issue_headers).forEach(([sort, header]) => {
+		const button = header.querySelector('.sort-button');
+		const label = `Sort by ${ISSUE_SORT_LABELS[sort]}`;
+		button.title = label;
+		button.setAttribute('aria-label', label);
+		button.onclick = e => setIssueSort(sort, api_key);
+	});
 
 	ViewEls.tool_bar.refresh.onclick = e => refreshVolume(api_key);
 	ViewEls.tool_bar.auto_search.onclick = e => autosearchVolume(api_key);
