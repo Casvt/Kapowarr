@@ -44,11 +44,22 @@ const ViewEls = {
 	issues_list: document.querySelector('#issues-list'),
 	issue_headers: {
 		issue_number: document.querySelector('th.issue-number'),
+		title: document.querySelector('th.issue-title'),
 		date: document.querySelector('th.issue-date')
 	}
 };
 
-let current_issue_sort = getLocalStorage('issue_sorting').issue_sorting;
+// Default direction when a column is clicked for the first time (not a
+// repeat click, which instead reverses whatever direction is already set).
+const ISSUE_SORT_DEFAULT_DIRECTION = {
+	issue_number: 'asc',
+	title: 'asc',
+	date: 'desc'
+};
+
+const issue_sort_state = getLocalStorage('issue_sorting', 'issue_sort_direction');
+let current_issue_sort = issue_sort_state.issue_sorting;
+let current_issue_direction = issue_sort_state.issue_sort_direction;
 
 const enqueueFailureReasonMap = {
     webpage_broken: "Webpage unavailable",
@@ -127,12 +138,11 @@ class IssueEntry {
 function fillTable(issues, api_key) {
 	ViewEls.issues_list.innerHTML = '';
 
-	// The backend returns issues ascending by the active sort key.
-	// Issue-number sort is browsed low-to-high; date sort keeps the
-	// existing newest-first order.
-	const ordered_issues = current_issue_sort === 'issue_number' ?
-		issues :
-		[...issues].reverse();
+	// The backend always returns issues ascending by the active sort key;
+	// descending is applied here by simply reversing that list.
+	const ordered_issues = current_issue_direction === 'desc' ?
+		[...issues].reverse() :
+		issues;
 
 	for (i = 0; i < ordered_issues.length; i++) {
 		const obj = ordered_issues[i];
@@ -271,12 +281,24 @@ function fillPage(data, api_key) {
 };
 
 function updateIssueSortIndicator() {
-	ViewEls.issue_headers.issue_number.classList.toggle(
-		'sort-active', current_issue_sort === 'issue_number'
-	);
-	ViewEls.issue_headers.date.classList.toggle(
-		'sort-active', current_issue_sort === 'date'
-	);
+	let active_arrow = null;
+
+	Object.entries(ViewEls.issue_headers).forEach(([sort, header]) => {
+		const is_active = sort === current_issue_sort;
+		header.classList.toggle('sort-active', is_active);
+		if (is_active)
+			active_arrow = header.querySelector('.sort-arrow');
+		else
+			hide([header.querySelector('.sort-arrow')]);
+	});
+
+	active_arrow.src = `${url_base}/static/img/${
+		current_issue_direction === 'asc' ? images.arrow_up : images.arrow_down
+	}`;
+	active_arrow.title = current_issue_direction === 'asc' ?
+		'Sorted ascending' :
+		'Sorted descending';
+	active_arrow.classList.remove('hidden');
 };
 
 function loadVolume(api_key) {
@@ -291,11 +313,18 @@ function loadVolume(api_key) {
 };
 
 function setIssueSort(sort, api_key) {
-	if (sort === current_issue_sort)
-		return;
+	if (sort === current_issue_sort) {
+		// Same column clicked again: reverse the sorting order.
+		current_issue_direction = current_issue_direction === 'asc' ? 'desc' : 'asc';
+	} else {
+		current_issue_sort = sort;
+		current_issue_direction = ISSUE_SORT_DEFAULT_DIRECTION[sort];
+	};
 
-	current_issue_sort = sort;
-	setLocalStorage({'issue_sorting': sort});
+	setLocalStorage({
+		'issue_sorting': current_issue_sort,
+		'issue_sort_direction': current_issue_direction
+	});
 	loadVolume(api_key);
 };
 
@@ -1001,6 +1030,8 @@ usingApiKey()
 
 	ViewEls.issue_headers.issue_number.title = 'Sort by issue number';
 	ViewEls.issue_headers.issue_number.onclick = e => setIssueSort('issue_number', api_key);
+	ViewEls.issue_headers.title.title = 'Sort by title';
+	ViewEls.issue_headers.title.onclick = e => setIssueSort('title', api_key);
 	ViewEls.issue_headers.date.title = 'Sort by release date';
 	ViewEls.issue_headers.date.onclick = e => setIssueSort('date', api_key);
 

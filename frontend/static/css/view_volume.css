@@ -135,14 +135,18 @@ This flows better for ARIA.
 .issue-date {
 	width: 6.5rem;
 }
-.issue-number,
-.issue-date {
+thead th.issue-number,
+thead th.issue-title,
+thead th.issue-date {
 	cursor: pointer;
 	user-select: none;
 }
-.issue-number.sort-active,
-.issue-date.sort-active {
+thead th.sort-active {
 	color: var(--accent-color);
+}
+.sort-arrow {
+	vertical-align: middle;
+	margin-left: .2rem;
 }
 .issue-status {
 	width: 3rem;

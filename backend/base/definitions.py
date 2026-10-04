@@ -441,6 +441,7 @@ class IssueSorting(BaseEnum):
 
     DATE = "date, calculated_issue_number"
     ISSUE_NUMBER = "calculated_issue_number, date"
+    TITLE = "title, calculated_issue_number"
 
 
 class LibraryFilter(BaseEnum):
