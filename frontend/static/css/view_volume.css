@@ -133,13 +133,14 @@ This flows better for ARIA.
 	width: 3.5rem;
 }
 .issue-date {
-	width: 6.5rem;
+	width: 8rem;
 }
 thead th.issue-number,
 thead th.issue-title,
 thead th.issue-date {
 	cursor: pointer;
 	user-select: none;
+	white-space: nowrap;
 }
 thead th.sort-active {
 	color: var(--accent-color);
