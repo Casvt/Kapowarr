@@ -55,7 +55,7 @@ class PixelDrainDownload(BaseDirectDownload):
                 ).json()
 
                 transfer_limit_used = limits["transfer_limit_used"]
-                transfer_limit = limits["transfer_limit"]
+                transfer_limit = response["subscription"]["monthly_transfer_cap"]
 
             else:
                 # Paid account, so grab transfer limits from user data
