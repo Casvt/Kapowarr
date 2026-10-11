@@ -22,7 +22,7 @@ if TYPE_CHECKING:
                                           SearchResultMatchData, VolumeData)
 
 clean_title_regex = compile(
-    r'((?<=annual)s|/|\-|–|\+|,|\.|\!|:|\bthe\s|\band\b|&|’|\'|\"|\bone[\-\s]?shot\b|\bhard[\-\s]?cover\b|\bomnibus\b|\btpb\b)'
+    r'((?<=annual)s|/|\-|–|\+|,|\.|\!|:|=|\bthe\s|\band\b|&|’|\'|\"|\bone[\-\s]?shot\b|\bhard[\-\s]?cover\b|\bomnibus\b|\btpb\b)'
 )
 
 
@@ -241,9 +241,9 @@ def folder_extraction_filter(
     annual = 'annual' in volume_data.title.lower()
     matching_annual = file_data['annual'] == annual
 
-    matching_title = match_title(
-        file_data['series'],
-        volume_data.title
+    matching_title = (
+        match_title(volume_data.title, file_data['series'])
+        or match_title(volume_data.alt_title or '', file_data['series'])
     )
 
     matching_year = match_year(
@@ -368,9 +368,9 @@ def download_group_filter(
     """
     annual = 'annual' in volume_data.title.lower()
 
-    matching_title = match_title(
-        volume_data.title,
-        processed_desc['series']
+    matching_title = (
+        match_title(volume_data.title, processed_desc['series'])
+        or match_title(volume_data.alt_title or '', processed_desc['series'])
     )
 
     matching_volume_number = match_volume_number(
