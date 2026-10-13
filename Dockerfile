@@ -27,11 +27,16 @@ RUN pip3 wheel --wheel-dir=/wheels -r requirements.txt
 # --- Runtime Stage ---
 FROM python:${PYTHON}-slim-${DISTRO} AS runtime
 WORKDIR /app
+ARG TARGETARCH
 
 # Install Runtime Dependencies
 RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=private \
     --mount=target=/var/cache/apt,type=cache,sharing=private \
+    sed -i 's/Components: main/Components: main contrib non-free non-free-firmware/g' /etc/apt/sources.list.d/debian.sources && \
     apt-get update && \
+    if [ "$TARGETARCH" != "amd64" ]; then \
+        apt-get install -y --no-install-recommends unrar; \
+    fi && \
     apt-get full-upgrade -y && \
     apt-get autoremove -y
 COPY --from=tianon/gosu /gosu /usr/local/bin/
@@ -46,6 +51,10 @@ RUN groupadd -g 1000 kapowarr && \
     mkdir -p /app/db /app/logs /app/temp_downloads
 
 COPY --chmod=755 . .
+RUN if [ "$TARGETARCH" != "amd64" ]; then \
+        rm -f /app/backend/lib/rar_linux_64 && \
+        ln -s /usr/bin/unrar /app/backend/lib/rar_linux_64; \
+    fi
 
 ENV PUID=0 \
     PGID=0 \
