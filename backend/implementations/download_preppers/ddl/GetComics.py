@@ -604,10 +604,6 @@ class GetComicsPrepper(DownloadPrepper):
         Args:
             group (DownloadGroup): The download group to convert.
 
-            web_link (str): The link to the web page.
-
-            web_title (Union[str, None]): The title of the GC article.
-
         Returns:
             Tuple[Union[Download, None], bool]: If successful, the download and
                 `False`. If unsuccessful, `None` and whether it failed because
@@ -691,10 +687,6 @@ class GetComicsPrepper(DownloadPrepper):
 
         Args:
             link_paths (List[List[DownloadGroup]]): The link paths.
-
-            web_link (str): The link to the GC article.
-
-            web_title (Union[str, None]): The title of the GC article.
 
         Raises:
             EnqueuingDownloadFailure: Failed to extract downloads because no links
