@@ -306,7 +306,7 @@ function fillRootFolder(api_key) {
 
             const path_error = document.createElement('p');
             path_error.classList.add('error', 'hidden');
-            path_error.innerText = '*Folder is in other root folder';
+            path_error.innerText = '*Folder is in other root folder or download folder';
             path.appendChild(path_error);
 
             entry.appendChild(path);
