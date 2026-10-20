@@ -111,8 +111,8 @@ def _validate_indexer_data(
 
             value = CommaList(value)
             for entry in value:
-                if (
-                    isinstance(entry, str) and not entry.isdigit()
+                if not (
+                    isinstance(entry, str) and entry.isdigit()
                     or isinstance(entry, int)
                 ):
                     raise InvalidKeyValue(key.value, value)
