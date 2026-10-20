@@ -1254,9 +1254,18 @@ def api_volume_download(id: int):
     if not isinstance(data["indexer_id"], int):
         raise InvalidKeyValue("indexer_id", data["indexer_id"])
 
+    if "title_data" not in data:
+        raise KeyNotFound("title_data")
+    if not isinstance(data["title_data"], dict):
+        raise InvalidKeyValue("title_data", data["title_data"])
+    title_data = data["title_data"]
+    if isinstance(title_data["issue_number"], list):
+        title_data["issue_number"] = tuple(title_data["issue_number"])
+
     result = DownloadHandler().add(
         data["link"],
         indexer_id=data["indexer_id"],
+        title_data=title_data, # type: ignore
         volume_id=id,
         issue_id=None,
         force_match=data["force_match"]
@@ -1301,9 +1310,18 @@ def api_issue_download(id: int):
     if not isinstance(data["indexer_id"], int):
         raise InvalidKeyValue("indexer_id", data["indexer_id"])
 
+    if "title_data" not in data:
+        raise KeyNotFound("title_data")
+    if not isinstance(data["title_data"], dict):
+        raise InvalidKeyValue("title_data", data["title_data"])
+    title_data = data["title_data"]
+    if isinstance(title_data["issue_number"], list):
+        title_data["issue_number"] = tuple(title_data["issue_number"])
+
     result = DownloadHandler().add(
         data["link"],
         indexer_id=data["indexer_id"],
+        title_data=title_data, # type: ignore
         volume_id=volume_id,
         issue_id=id,
         force_match=data["force_match"]

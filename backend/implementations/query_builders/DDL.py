@@ -5,6 +5,13 @@ from backend.base.definitions import (DownloadType, QueryBuilder,
                                       SpecialVersion)
 from backend.implementations.query_builder_manager import QueryBuilders
 
+VOLUME_FORMATS = (
+    "{title} ({year})",
+    "{title} Vol. {volume_number} ({year})",
+    "{title} Vol. {volume_number}",
+    "{title}"
+)
+
 TPB_FORMATS = (
     "{title} Vol. {volume_number} ({year}) TPB",
     "{title} ({year}) TPB",
@@ -23,13 +30,6 @@ SPECIFIC_VAI_ISSUE_FORMATS = (
 )
 
 GENERAL_VAI_ISSUE_FORMATS = SPECIFIC_VAI_ISSUE_FORMATS + ("{title}",)
-
-VOLUME_FORMATS = (
-    "{title} ({year})",
-    "{title} Vol. {volume_number} ({year})",
-    "{title} Vol. {volume_number}",
-    "{title}"
-)
 
 SPECIFIC_ISSUE_FORMATS = (
     "{title} #{issue_number} ({year})",

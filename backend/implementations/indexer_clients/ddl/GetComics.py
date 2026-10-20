@@ -138,7 +138,9 @@ class GetComicsIndexer(BaseIndexerClient):
                 "display_title": article[1],
                 "size": article[2],
                 "indexer_id": self._id,
-                "indexer_title": self._title
+                "indexer_title": self._title,
+                "seeders": None,
+                "leechers": None
             }
             for article in self.__get_articles(soup)
         ]
@@ -201,7 +203,9 @@ class GetComicsIndexer(BaseIndexerClient):
                 "display_title": display_title,
                 "size": -1,
                 "indexer_id": self._id,
-                "indexer_title": self._title
+                "indexer_title": self._title,
+                "seeders": None,
+                "leechers": None
             })
 
         return result

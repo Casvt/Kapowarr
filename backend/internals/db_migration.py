@@ -1312,3 +1312,14 @@ def _migrate_remove_search_all_task() -> None:
     )
 
     return
+
+
+@DatabaseMigrationHandler.register_handler(51)
+def _migrate_add_torrent_usenet_indexer_fields() -> None:
+    get_db().executescript("""
+        ALTER TABLE indexer_clients ADD COLUMN api_path VARCHAR(255);
+        ALTER TABLE indexer_clients ADD COLUMN api_key VARCHAR(255);
+        ALTER TABLE indexer_clients ADD COLUMN categories VARCHAR(255);
+    """)
+
+    return

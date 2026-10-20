@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from typing import Any, Callable, Dict, List, TypeVar
+from typing import Any, Callable, Dict, List, Tuple, TypeVar, Union
 
 from backend.base.custom_exceptions import (InvalidKeyValue, KeyNotFound,
                                             RootFolderNotFound,
                                             VolumeDownloadedFor)
-from backend.base.definitions import MonitorScheme
+from backend.base.definitions import FilenameData, MonitorScheme
 from backend.base.logging import LOGGER
 from backend.features.download_queue import DownloadHandler
 from backend.features.search_full import auto_search
@@ -188,10 +188,26 @@ def mass_editor_search(
         ))
 
         search_results = auto_search(volume_id)
-        download_handler.add_multiple(
-            (result['link'], result["indexer_id"], volume_id, None, False)
-            for result in search_results
-        )
+        downloads: List[Tuple[
+            str, int, FilenameData, int, Union[int, None], bool
+        ]] = []
+        for result in search_results:
+            title_data: FilenameData = {
+                "series": result["series"],
+                "year": result["year"],
+                "volume_number": result["volume_number"],
+                "special_version": result["special_version"],
+                "issue_number": result["issue_number"],
+                "annual": result["annual"]
+            }
+            downloads.append((
+                result['link'], result["indexer_id"],
+                title_data,
+                volume_id, None,
+                False
+            ))
+
+        download_handler.add_multiple(downloads)
 
     return
 

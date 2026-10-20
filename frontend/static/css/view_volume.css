@@ -242,16 +242,32 @@ tbody .issue-title:hover {
 	width: 18px;
 }
 
-.search-entry > td:nth-child(2) {
-	width: 100%;
-}
-
 .source-column {
-	width: 6rem;
+	width: 8rem;
 }
 
 .size-column {
 	text-wrap-mode: nowrap;
+}
+
+td.peers-column > div {
+	width: min-content;
+
+	padding: .125rem .25rem;
+	border-radius: 4px;
+	color: var(--nav-color);
+	background-color: var(--info-color);
+
+	text-wrap-mode: nowrap;
+	font-size: smaller;
+
+	&.no-seeders {
+		background-color: var(--error-color);
+	}
+
+	&.low-seeders {
+		background-color: var(--warning-color);
+	}
 }
 
 .search-action-column {

@@ -74,6 +74,8 @@ noscript {
 	--accent-color: #ebc700;
 	--success-color: #54db68;
 	--error-color: #db5461;
+	--warning-color: #ffa500;
+	--info-color: #5d9cec;
 
 	--header-background-color: var(--accent-color);
 	--header-color: var(--dark-color);

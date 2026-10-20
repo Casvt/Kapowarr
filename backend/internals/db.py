@@ -471,7 +471,11 @@ CREATE TABLE IF NOT EXISTS indexer_clients(
     url TEXT NOT NULL,
 
     gc_service_preference TEXT,
-    gc_avoid_large_downloads BOOL
+    gc_avoid_large_downloads BOOL,
+
+    api_path VARCHAR(255),
+    api_key VARCHAR(255),
+    categories VARCHAR(255)
 );
 CREATE TABLE IF NOT EXISTS external_download_clients(
     id INTEGER PRIMARY KEY,

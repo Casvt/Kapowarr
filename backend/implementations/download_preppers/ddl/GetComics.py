@@ -21,7 +21,8 @@ from backend.base.definitions import (GC_DOWNLOAD_SERVICE_TERMS,
                                       DownloadPrepper, DownloadService,
                                       DownloadType,
                                       EnqueuingDownloadFailureReason,
-                                      GCDownloadService, SpecialVersion)
+                                      FilenameData, GCDownloadService,
+                                      SpecialVersion)
 from backend.base.file_extraction import (extract_filename_data,
                                           refine_special_version)
 from backend.base.helpers import (AsyncSession, Session, build_magnet_link,
@@ -423,6 +424,7 @@ class GetComicsPrepper(DownloadPrepper):
         self,
         link: str,
         indexer_id: int,
+        title_data: FilenameData,
         volume_id: int,
         issue_id: Union[int, None] = None,
         force_match: bool = False

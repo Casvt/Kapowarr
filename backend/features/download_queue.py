@@ -16,11 +16,12 @@ from backend.base.custom_exceptions import (ClientNotWorking,
                                             DownloadServiceRateLimitReached,
                                             EnqueuingDownloadFailure,
                                             InvalidKeyValue, IssueNotFound)
-from backend.base.definitions import (BlocklistReason, Constants, Download,
-                                      DownloadClientIdentifier,
+from backend.base.definitions import (BlocklistReason, Constants,
+                                      Download, DownloadClientIdentifier,
                                       DownloadService, DownloadState,
                                       EnqueuingDownloadFailureReason,
-                                      ExternalDownload, SeedingHandling)
+                                      ExternalDownload, FilenameData,
+                                      SeedingHandling)
 from backend.base.files import create_folder, delete_file_folder
 from backend.base.helpers import CommaList, Singleton
 from backend.base.logging import LOGGER
@@ -141,6 +142,7 @@ class DownloadHandler(metaclass=Singleton):
         self,
         link: str,
         indexer_id: int,
+        title_data: FilenameData,
         volume_id: int,
         issue_id: Union[int, None] = None,
         force_match: bool = False
@@ -151,6 +153,8 @@ class DownloadHandler(metaclass=Singleton):
             link (str): A link to download from.
 
             indexer_id (int): The ID of the indexer that the link came from.
+
+            title_data (FilenameData): The filename data of the title.
 
             volume_id (int): The ID of the volume for which the download is
                 intended.
@@ -185,6 +189,7 @@ class DownloadHandler(metaclass=Singleton):
         )
         prepper = PrepperClass(
             link, indexer_id,
+            title_data,
             volume_id, issue_id,
             force_match
         )
@@ -228,10 +233,9 @@ class DownloadHandler(metaclass=Singleton):
         self._process_queue()
         return [r.as_dict() for r in result]
 
-    def add_multiple(
-        self,
-        add_args: Iterable[Tuple[str, int, int, Union[int, None], bool]]
-    ) -> None:
+    def add_multiple(self, add_args: Iterable[Tuple[
+        str, int, FilenameData, int, Union[int, None], bool
+    ]]) -> None:
         for entry in add_args:
             try:
                 self.add(*entry)
@@ -244,7 +248,7 @@ class DownloadHandler(metaclass=Singleton):
     def __load_downloads(self) -> None:
         """
         Load downloads from the database and add them to the queue
-        for re-downloading
+        for re-downloading.
         """
         cursor = get_db()
         downloads = cursor.execute("""
