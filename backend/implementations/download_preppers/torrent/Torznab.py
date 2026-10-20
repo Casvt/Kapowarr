@@ -43,7 +43,11 @@ class TorznabPrepper(DownloadPrepper):
         if not self.link.startswith("magnet:?"):
             # HTTP link that redirects to magnet link
             with Session() as session:
-                response = session.get(self.link, stream=True)
+                response = session.get(
+                    self.link,
+                    stream=True,
+                    allow_redirects=False
+                )
             self.link = response.headers.get("Location", "")
             if not self.link.startswith("magnet:?"):
                 raise EnqueuingDownloadFailure(
