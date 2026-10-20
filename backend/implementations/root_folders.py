@@ -37,10 +37,10 @@ class RootFolders(metaclass=Singleton):
         root_folder_id: int,
         root_folder_path: str
     ) -> RootFolder:
-        if not isdir(root_folder_path):
-            create_folder(root_folder_path)
-
         try:
+            if not isdir(root_folder_path):
+                create_folder(root_folder_path)
+
             d_usage = cast(SizeData, dict(zip(
                 ("total", "used", "free"),
                 disk_usage(root_folder_path)
