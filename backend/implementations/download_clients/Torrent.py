@@ -106,6 +106,7 @@ class TorrentDownload(ExternalDownload, BaseDirectDownload):
         # downloaded in
         torrent_name = run(self._fetch_torrent_name())
         if not torrent_name:
+            LOGGER.warning("Failed to convert magnet link to torrent file")
             raise DownloadLinkBroken(self.download_link)
 
         self._filename_body = ''

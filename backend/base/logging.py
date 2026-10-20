@@ -189,6 +189,8 @@ def setup_logging(
     if log_level is not None:
         set_log_level(log_level)
 
+    logging.getLogger("magnet2torrent").setLevel(logging.WARNING)
+
     return
 
 
