@@ -10,8 +10,8 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 from enum import Enum
 from threading import Event, Thread
-from typing import (TYPE_CHECKING, Any, Callable, Dict, List,
-                    Mapping, Tuple, TypedDict, TypeVar, Union)
+from typing import (TYPE_CHECKING, Any, Callable, Dict, List, Mapping,
+                    Sequence, Tuple, TypedDict, TypeVar, Union)
 
 if TYPE_CHECKING:
     from threading import Timer
@@ -1317,6 +1317,19 @@ class QueryBuilder(ABC):
         return
 
     @abstractmethod
+    def _select_queries(self, query_keys: QueryKeys) -> Sequence[str]:
+        """Determine the set of possible queries that should be used for this
+        iteration. For example, different query formats can be used based on
+        whether a search for an issue or for a volume is done.
+
+        Args:
+            query_keys (QueryKeys): The query keys that are used this iteration.
+
+        Returns:
+            Sequence[str]: The set of query formats that can be used.
+        """
+        ...
+
     def next_query(
         self,
         search_action: SearchAction,
@@ -1334,7 +1347,31 @@ class QueryBuilder(ABC):
         Returns:
             SearchQuery: The resulting query string and which page to fetch.
         """
-        ...
+        self._update_state(search_action)
+
+        queries = self._select_queries(query_keys)
+        query = queries[self.query_variation_index]
+
+        if query_keys.year is None:
+            query = query.replace('({year})', '').strip()
+
+        if query_keys.issue_number is None:
+            year = query_keys.year
+        else:
+            year = query_keys.issue_year or query_keys.year
+
+        result = query.format(
+            title=query_keys.titles[self.alias_index],
+            year=year,
+            volume_number=query_keys.volume_number,
+            issue_number=query_keys.issue_number
+        )
+
+        return {
+            "query": result,
+            "page": self.page,
+            "total_available_variations": len(queries)
+        }
 
 
 class ExternalDownloadClient(ABC):
