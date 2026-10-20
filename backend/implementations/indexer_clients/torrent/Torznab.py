@@ -141,7 +141,46 @@ class TorznabIndexer(BaseIndexerClient):
         )
 
     async def discover(self, last_check: datetime) -> List[SearchResultData]:
-        return []
+        if not self.session:
+            self.session = AsyncSession()
+
+        rss_results = await self.session.get_text(
+            self._url + (self._api_path or ''),
+            params={
+                "t": "search",
+                "apikey": self._api_key,
+                "extended": 1,
+                "q": "",
+                "cat": str(self._categories or [])
+            },
+            quiet_fail=True
+        )
+        if not rss_results:
+            return []
+
+        formatted_results: List[SearchResultData] = []
+        for item in ElementTree.XML(rss_results).iter("item"):
+            processed_item = await self.__process_item(item)
+            if processed_item is None:
+                continue
+
+            date_el = item.find('pubDate')
+            if date_el is None:
+                continue
+            date = date_el.text or ''
+            if not date:
+                continue
+            parsed_date = (
+                datetime
+                .strptime(date, "%a, %d %b %Y %H:%M:%S %z")
+                .replace(tzinfo=None)
+            )
+            if last_check > parsed_date:
+                continue
+
+            formatted_results.append(processed_item)
+
+        return formatted_results
 
     async def shutdown(self) -> None:
         if self.session:
@@ -170,7 +209,7 @@ class TorznabIndexer(BaseIndexerClient):
                         BrokenClientReason.CONNECTION_ERROR
                     )
 
-                if response.headers["Content-Type"] not in (
+                if response.headers["Content-Type"].split(";")[0] not in (
                     "application/xml",
                     "application/rss",
                     "application/rss+xml"
