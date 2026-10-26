@@ -260,6 +260,9 @@ class Settings(metaclass=Singleton):
             InvalidKeyValue: Value of the key is not allowed.
             InvalidSettingModification: Key can not be modified this way.
             FolderNotFound: Folder not found.
+            CredentialInvalid: The credential is not valid.
+            MetadataSourceNotWorking: Something went wrong contacting the
+                metadata source.
         """
         from backend.implementations.naming import (NAMING_MAPPING,
                                                     check_mock_filename)
@@ -383,6 +386,9 @@ class Settings(metaclass=Singleton):
             InvalidKeyValue: Value of the key is not allowed.
             InvalidSettingModification: Key can not be modified this way.
             FolderNotFound: Folder not found.
+            CredentialInvalid: The credential is not valid.
+            MetadataSourceNotWorking: Something went wrong contacting the
+                metadata source.
 
         Returns:
             Any: (Converted) Setting value.
@@ -467,8 +473,8 @@ class Settings(metaclass=Singleton):
         elif key == 'comicvine_api_key':
             from backend.implementations.comicvine import ComicVine
             converted_value = value.strip()
-            if converted_value and not ComicVine(converted_value).test_key():
-                raise InvalidKeyValue(key, value)
+            if converted_value:
+                ComicVine(converted_value).test_key()
 
         elif key == 'download_folder':
             from backend.implementations.root_folders import RootFolders

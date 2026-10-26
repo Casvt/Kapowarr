@@ -236,13 +236,19 @@ function search(reset_url_params=true) {
 			else
 				hide([SearchEls.msgs.loading], [SearchEls.search_results]);
 		})
-		.catch(e => {
-			if (e.status === 400)
+		.catch(async (e) => {
+			const j = await e.json();
+			if (
+				j.error === "CredentialInvalid"
+				|| j.error === "MetadataSourceNotWorking"
+			)
 				hide([SearchEls.msgs.loading], [SearchEls.msgs.failed]);
-			else if (e.status === 509)
+
+			else if (j.error === "MetadataSourceRateLimitReached")
 				hide([SearchEls.msgs.loading], [SearchEls.msgs.rate_limited]);
+
 			else
-				console.log(e);
+				console.log(j);
 		});
 	});
 };
@@ -457,16 +463,28 @@ function addVolume() {
 			addAlreadyAdded(entry, json.result.id);
 			closeWindow();
 		})
-		.catch(e => {
-			if (e.status === 509) {
+		.catch(async (e) => {
+			const j = await e.json();
+
+			if (j.error === "MetadataSourceRateLimitReached") {
 				SearchEls.window.submit.innerText = 'Metadata source API rate limit reached';
 				SearchEls.window.submit.style.color = 'var(--error-color)';
 				showWindow("add-window");
-			} else if (e.status === 400) {
+			}
+
+			else if (j.error === "CredentialInvalid") {
 				SearchEls.window.submit.innerText = 'The API key of the metadata source is invalid';
 				SearchEls.window.submit.style.color = 'var(--error-color)';
 				showWindow("add-window");
-			} else
+			}
+			
+			else if (j.error === "MetadataSourceNotWorking") {
+				SearchEls.window.submit.innerText = 'Failed to contact the metadata source';
+				SearchEls.window.submit.style.color = 'var(--error-color)';
+				showWindow("add-window");
+			}
+
+			else
 				console.log(e);
 		});
 	});

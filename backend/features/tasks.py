@@ -6,7 +6,8 @@ from abc import abstractmethod
 from time import sleep, time
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Type, TypeVar, Union
 
-from backend.base.custom_exceptions import (InvalidKeyValue,
+from backend.base.custom_exceptions import (CredentialInvalid, InvalidKeyValue,
+                                            MetadataSourceNotWorking,
                                             TaskNotDeletable, TaskNotFound)
 from backend.base.definitions import FilenameData, QueuedTaskData, Task
 from backend.base.helpers import Singleton, get_schedules_next_run
@@ -713,8 +714,7 @@ class RefreshAndScanVolume(Task):
 
         try:
             refresh_and_scan(self._volume_id, update_websocket=True)
-        except InvalidKeyValue:
-            # API key invalid
+        except (CredentialInvalid, MetadataSourceNotWorking):
             pass
 
         return
@@ -853,8 +853,7 @@ class UpdateAll(LibraryTask):
                 allow_skipping=self.allow_skipping
             )
 
-        except InvalidKeyValue:
-            # API key invalid
+        except (CredentialInvalid, MetadataSourceNotWorking):
             pass
 
         return

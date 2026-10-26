@@ -171,8 +171,8 @@ function loadProposal(apiKey) {
 	.catch(e => {
 		e.json().then(j => {
 			if (
-				j.error === "InvalidKeyValue"
-				&& j.result.key === "comicvine_api_key"
+				j.error === "CredentialInvalid"
+				|| j.error === "MetadataSourceNotWorking"
 			)
 				hide([liEls.views.loading], [liEls.views.noCv]);
 

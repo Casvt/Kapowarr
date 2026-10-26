@@ -470,6 +470,18 @@ class BlocklistReason(BaseEnum):
     ADDED_BY_USER = "added_by_user"
 
 
+class BrokenMetadataSourceReason(BaseEnum):
+    "The reason that contacting the metadata source went wrong"
+
+    CONNECTION_ERROR = "connection_error"
+    FAILED_PROCESSING_RESPONSE = "failed_processing_response"
+    ACCESS_DENIED = "access_denied"
+    """
+    Access denied not because credentials are invalid but because,
+    e.g., we're banned.
+    """
+
+
 class BrokenClientReason(BaseEnum):
     """"
     The reason that a download client is not working

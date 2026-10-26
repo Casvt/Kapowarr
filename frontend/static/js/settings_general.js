@@ -69,15 +69,15 @@ function saveSettings(api_key) {
 
 	sendAPI('PUT', '/settings', api_key, {}, data)
 	.then(response => response.json())
-	.then(json => {
+	.then(() => {
 		document.querySelector("#save-button p").innerText = 'Saved';
 	})
 	.catch(async e => {
 		document.querySelector("#save-button p").innerText = 'Failed';
 		const json = await e.json();
 		if (
-			json.error === "InvalidKeyValue"
-			&& json.result.key === "comicvine_api_key"
+			json.error === "CredentialInvalid"
+			|| json.error === "MetadataSourceNotWorking"
 		)
 			document.querySelector('#cv-input').classList.add('error-input');
 

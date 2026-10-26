@@ -2,7 +2,9 @@
 
 from typing import Any, Callable, Dict, List, Tuple, TypeVar, Union
 
-from backend.base.custom_exceptions import (InvalidKeyValue, KeyNotFound,
+from backend.base.custom_exceptions import (CredentialInvalid, InvalidKeyValue,
+                                            KeyNotFound,
+                                            MetadataSourceNotWorking,
                                             RootFolderNotFound,
                                             VolumeDownloadedFor)
 from backend.base.definitions import FilenameData, MonitorScheme
@@ -163,7 +165,7 @@ def mass_editor_update(
 
         try:
             refresh_and_scan(volume_id)
-        except InvalidKeyValue:
+        except (CredentialInvalid, MetadataSourceNotWorking):
             # API key invalid
             break
 

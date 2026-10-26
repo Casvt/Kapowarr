@@ -7,6 +7,7 @@ Definitions of exceptions.
 from typing import Any, Union
 
 from backend.base.definitions import (ApiResponse, BrokenClientReason,
+                                      BrokenMetadataSourceReason,
                                       DownloadService, DownloadType,
                                       EnqueuingDownloadFailureReason,
                                       InvalidDatabaseReason, KapowarrException)
@@ -324,24 +325,6 @@ class VolumeNotFound(KapowarrException):
             "result": {
                 "volume_id": self.volume_id
             }
-        }
-
-
-class VolumeNotMatched(KapowarrException):
-    "Volume not matched with ComicVine database"
-
-    def __init__(self) -> None:
-        LOGGER.warning(
-            "Volume not matched with ComicVine database"
-        )
-        return
-
-    @property
-    def api_response(self) -> ApiResponse:
-        return {
-            "code": 400,
-            "error": self.__class__.__name__,
-            "result": {}
         }
 
 
@@ -744,6 +727,27 @@ class ExternalClientDownloading(KapowarrException):
 
 
 # region Metadata Source
+class MetadataSourceNotWorking(KapowarrException):
+    "Something went wrong contacting the metadata source"
+
+    def __init__(self, reason: BrokenMetadataSourceReason) -> None:
+        self.reason = reason
+        LOGGER.warning(
+            f"The metadata source is not working: {reason}"
+        )
+        return
+
+    @property
+    def api_response(self) -> ApiResponse:
+        return {
+            "code": 400,
+            "error": self.__class__.__name__,
+            "result": {
+                "reason": self.reason.value
+            }
+        }
+
+
 class MetadataSourceRateLimitReached(KapowarrException):
     "Rate limit reached of metadata source"
 
@@ -757,6 +761,24 @@ class MetadataSourceRateLimitReached(KapowarrException):
     def api_response(self) -> ApiResponse:
         return {
             "code": 509,
+            "error": self.__class__.__name__,
+            "result": {}
+        }
+
+
+class MetadataSourceDataEntryNotFound(KapowarrException):
+    "Entry not found at metadata source"
+
+    def __init__(self) -> None:
+        LOGGER.warning(
+            "Entry not found at metadata source"
+        )
+        return
+
+    @property
+    def api_response(self) -> ApiResponse:
+        return {
+            "code": 400,
             "error": self.__class__.__name__,
             "result": {}
         }
