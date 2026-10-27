@@ -109,8 +109,11 @@ class GetComicsIndexer(BaseIndexerClient):
             await sleep(1.0)
 
         page = await self.session.get_text(
-            f"{self._url}/page/{query['page']}",
-            params={"s": query["query"]},
+            f"{self._url}/",
+            params={
+                "s": query["query"],
+                "paged": query["page"]
+            },
             quiet_fail=True
         )
         self.request_count += 1
