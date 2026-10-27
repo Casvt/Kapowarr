@@ -234,16 +234,18 @@ tbody .issue-title:hover {
 	border-top: 1px solid var(--border-color);
 }
 
-.match-column {
-	width: 4rem;
-}
-
 .match-column > img {
 	width: 18px;
 }
 
+.search-entry > td:nth-child(2) {
+	width: 100%;
+	min-width: 14rem;
+}
+
 .source-column {
-	width: 8rem;
+	min-width: 8rem;
+	max-width: 10rem;
 }
 
 .size-column {
@@ -251,6 +253,7 @@ tbody .issue-title:hover {
 }
 
 td.peers-column > div {
+	margin-inline: auto;
 	width: min-content;
 
 	padding: .125rem .25rem;
