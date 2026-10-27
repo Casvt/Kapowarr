@@ -709,10 +709,16 @@ class Volume:
             new_root_folder
         )
         for old_name, new_name in file_changes.items():
+            if not exists(old_name):
+                # File doesn't exist anymore. Maybe it got deleted with no R&S
+                # or it's already at the destination.
+                continue
+
             rename_file(
                 old_name,
                 new_name
             )
+
         if isdir(volume_data.folder):
             delete_empty_child_folders(volume_data.folder)
 
