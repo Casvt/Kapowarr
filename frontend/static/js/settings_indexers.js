@@ -152,7 +152,7 @@ function createCategoriesInput(inputId) {
 	const input = document.createElement('input');
 	input.type = 'text'
 	input.required = true
-	input.value = "7000"
+	input.value = "7030"
 	input.id = inputId;
 	container.appendChild(input);
 	const description = document.createElement('p');
