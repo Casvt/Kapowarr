@@ -1,6 +1,6 @@
 from asyncio import sleep
 from datetime import datetime
-from typing import Any, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 from bs4 import BeautifulSoup, Tag
 from requests import RequestException
@@ -108,9 +108,13 @@ class GetComicsIndexer(BaseIndexerClient):
         if self.request_count > 5:
             await sleep(1.0)
 
+        search_params: Dict[str, Union[str, int]] = {"s": query["query"]}
+        if query["page"] > 1:
+            search_params["paged"] = query["page"]
+
         page = await self.session.get_text(
-            f"{self._url}/page/{query['page']}",
-            params={"s": query["query"]},
+            f"{self._url.rstrip('/')}/",
+            params=search_params,
             quiet_fail=True
         )
         self.request_count += 1
