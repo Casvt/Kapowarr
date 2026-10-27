@@ -1,20 +1,28 @@
 # Contributing to Kapowarr
 
-This guide collects the practical information contributors need before working on Kapowarr.
+This guide describes the contribution process and the expectations for anyone wishing to contribute to Kapowarr. Please read it before starting any work.
 
-## General steps
+## General Process
 
 Contributing to Kapowarr normally follows these steps:
 
-1. Open a [contributing request](https://github.com/Casvt/Kapowarr/issues/new?template=3_contribute_request.yml) and describe the change you want to make. This request should be approved before work starts.
-2. Once approved, do the implementation locally and test it thoroughly.
-3. When the work is ready, open a pull request against the development branch and include a short summary of what changed and a link to the original contribution request issue.
+1. Open a [contribution request](https://github.com/Casvt/Kapowarr/issues/new?template=3_contribute_request.yml) describing the change you want to make. This is mandatory and must be approved before you start working on the implementation.
+2. Once approved, implement the change locally and test it thoroughly.
+3. When the work is ready, open a pull request against the development branch. Include a short summary of the changes and a link to the original contribution request issue.
 4. The pull request will be reviewed. Changes may be requested before it is merged.
-5. When everything looks good, the pull request will be accepted and the work is finished.
+5. Once the changes have been approved and merged, the contribution is complete.
 
-The contributing request is useful for more than just coordination. It helps avoid duplicate work, avoid work that is not desired, gives maintainers a place to discuss implementation details, and makes it easier to keep track of progress and questions.
+The contribution request is important. It allows maintainers to assess whether a proposed change is wanted, discuss the intended behaviour and implementation, avoid duplicate work and it offers a place for questions to be asked during development. **Do not skip this step simply because you believe your proposed change would be useful or straightforward.**
 
-## Local development
+### If you have already completed the work
+
+If you have already implemented a change without first opening and obtaining approval for a contribution request, do not open a contribution request retroactively. Open a pull request directly instead. At that point, the implementation already exists, so a separate request to approve work that has already been done serves little purpose. However, this does not mean that the contribution request is optional or that skipping it is an acceptable alternative to following the guidelines. You were expected to read and follow this guide before starting work.
+
+By starting development without an approved contribution request, you accept the risk that your work may be rejected instantly due to problems in the PR that could've been avoided by creating a contribution request.
+
+**If you have not started development yet, there is no exception: open a contribution request and wait for approval first.**
+
+## Local Development
 
 After a contribution request has been accepted, you can start working locally.
 
@@ -51,16 +59,16 @@ python3 -m unittest discover -s ./tests -p '*.py'
 
 Visual Studio Code is the editor used mostly for this project, but it is not a requirement to use it. A VSC Workspace settings file is included to help with setting up the usage of these tools with integration into VSC, assuming the accompanying extensions of these tools are installed. There is also a .pre-commit-config.yaml file that configures pre-commit hooks, if you have that installed and want to use it. It runs the four tools before a commit.
 
-## Strict rules
+## Strict Rules
 
 The following rules should always be respected:
 
 1. Kapowarr should support Python 3.8 and newer.
 2. The application should remain compatible with Linux, macOS, Windows, and the Docker container.
 3. The relevant tests should pass before a change is submitted.
-4. Changes should stay focused on the issue or feature being worked on and should not introduce unrelated behavior changes.
+4. Changes should stay focused on the issue or feature being worked on and should not introduce unrelated behaviour changes.
 
-## Styling guide
+## Styling Guide
 
 The backend styling guide is not enforced as a hard rule in every case, but contributors should try to follow it as much as possible. Running autopep8 and isort usually covers most of the mechanical formatting concerns.
 
@@ -72,7 +80,7 @@ The main conventions are:
 4. Keep imports sorted and grouped consistently.
 5. Keep lines reasonably short and readable, with the project’s existing style in mind.
 
-## Backend folder structure
+## Backend Folder Structure
 
 A useful mental model for the backend is that the code is organized from generic utilities toward higher-level workflows:
 
@@ -83,7 +91,7 @@ A useful mental model for the backend is that the code is organized from generic
 
 In other words, the general flow is base -> internals -> implementations -> features.
 
-## Abbreviations and terminology
+## Abbreviations and Terminology
 
 Below is a table with abbreviations commonly used throughout the codebase and
 git commit messages:
@@ -106,11 +114,11 @@ git commit messages:
 | WT | WeTransfer |
 | MF | MediaFire |
 
-## Explanations of various systems
+## Explanations of Various Systems
 
 This section has high-level explanations of various systems in the codebase. 
 
-### Searching system
+### Searching System
 
 This subsection covers the search pipeline, starting from a search for downloads for a specific volume or issue and ending at having a list of search results. The searching system consists of three parts:
 
