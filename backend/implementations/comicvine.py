@@ -17,8 +17,9 @@ from backend.base.custom_exceptions import (CredentialInvalid,
                                             MetadataSourceNotWorking,
                                             MetadataSourceRateLimitReached)
 from backend.base.definitions import (BrokenMetadataSourceReason, Constants,
-                                      FilenameData, IssueMetadata,
-                                      StatusType, T, VolumeMetadata)
+                                      FilenameData, IssueCredits,
+                                      IssueMetadata, StatusType, T,
+                                      VolumeMetadata)
 from backend.base.file_extraction import (extract_issue_number,
                                           extract_volume_number, volume_regex)
 from backend.base.helpers import (AsyncSession, Session, batched,
@@ -158,7 +159,15 @@ class ComicVine:
         'cover_date',
         'store_date',
         'description',
-        'volume'
+        'volume',
+        'site_detail_url'
+    ))
+    issue_credits_field_list = ','.join((
+        'person_credits',
+        'character_credits',
+        'team_credits',
+        'location_credits',
+        'story_arc_credits',
     ))
     search_field_list = ','.join((
         'aliases',
@@ -391,7 +400,8 @@ class ComicVine:
             'description': _clean_description(
                 issue_data['description'],
                 short=True
-            )
+            ),
+            'site_url': issue_data.get('site_detail_url') or None
         }
 
         return result
@@ -609,6 +619,67 @@ class ComicVine:
                 volume_infos.extend(batch_volumes)
 
             return volume_infos
+
+    async def fetch_issue_credits(
+        self,
+        cv_id: int
+    ) -> Union[IssueCredits, None]:
+        """Get the credits of a single issue.
+
+        Args:
+            cv_id (int): The CV ID of the issue.
+
+        Raises:
+            MetadataSourceRateLimitReached: The rate limit is reached.
+            MetadataSourceDataEntryNotFound: Couldn't convert string CV ID to
+                number.
+
+        Returns:
+            Union[IssueCredits, None]: The data, or `None` if ComicVine doesn't
+                know the issue.
+        """
+        if StatusHandlers().problem_reported(StatusType.CV_RATE_LIMIT, "fetch_issue"):
+            raise MetadataSourceRateLimitReached
+
+        LOGGER.debug(f'Fetching issue credits for {cv_id}')
+
+        try:
+            async with AsyncSession() as session:
+                result = await self.__call_api(
+                    session,
+                    f'/issue/4000-{cv_id}',
+                    {'field_list': self.issue_credits_field_list}
+                )
+            StatusHandlers().clear(StatusType.CV_RATE_LIMIT, "fetch_issue")
+
+        except MetadataSourceRateLimitReached:
+            StatusHandlers().report(StatusType.CV_RATE_LIMIT, "fetch_issue")
+            raise
+
+        except MetadataSourceDataEntryNotFound:
+            LOGGER.warning(f'Issue {cv_id} not found on ComicVine')
+            return None
+
+        data: Dict[str, Any] = result.get('results') or {}
+
+        def names(key: str) -> List[str]:
+            return [
+                c['name'].strip()
+                for c in data.get(key) or []
+                if c.get('name')
+            ]
+
+        return {
+            'people': [
+                (p['name'].strip(), p.get('role') or '')
+                for p in data.get('person_credits') or []
+                if p.get('name')
+            ],
+            'characters': names('character_credits'),
+            'teams': names('team_credits'),
+            'locations': names('location_credits'),
+            'storyarc': names('story_arc_credits')
+        }
 
     async def fetch_issues(
         self,

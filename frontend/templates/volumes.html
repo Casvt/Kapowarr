@@ -134,6 +134,13 @@
 					<button data-action="convert">Convert</button>
                     <button data-action="unmonitor">Unmonitor</button>
                     <button data-action="monitor">Monitor</button>
+					<div class="option-container">
+						<button data-action="tag_metadata">Tag Metadata</button>
+						<select name="force_tag" id="force-tag-input" aria-label="Force overwrite existing metadata">
+							<option value="false" selected>Skip Existing</option>
+							<option value="true">Force Overwrite</option>
+						</select>
+					</div>
 				</div>
 				<div class="action-divider">
 					<div class="option-container">
