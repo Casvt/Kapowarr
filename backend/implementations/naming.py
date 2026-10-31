@@ -549,6 +549,7 @@ def check_mock_filename(
         title="One Shot",
         date="2023-03-04",
         description="",
+        site_url=None,
         monitored=True,
         files=[]
     )

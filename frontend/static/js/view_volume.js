@@ -36,6 +36,7 @@ const ViewEls = {
 		manual_search: document.querySelector('#manualsearch-button'),
 		rename: document.querySelector('#rename-button'),
 		convert: document.querySelector('#convert-button'),
+		tag_metadata: document.querySelector('#tag-metadata-button'),
 		manage: document.querySelector('#manage-button'),
 		files: document.querySelector('#files-button'),
 		edit: document.querySelector('#edit-button'),
@@ -303,6 +304,18 @@ function autosearchVolume(api_key) {
 
 	sendAPI('POST', '/system/tasks', api_key, {}, {
 		cmd: 'auto_search',
+		volume_id: volume_id
+	});
+};
+
+function tagVolume(api_key) {
+	const button_info = task_to_button[`mass_tag#${volume_id}`];
+	const icon = button_info.button.querySelector('img');
+	icon.src = button_info.loading_icon;
+	icon.classList.add('spinning');
+
+	sendAPI('POST', '/system/tasks', api_key, {}, {
+		cmd: 'mass_tag',
 		volume_id: volume_id
 	});
 };
@@ -1001,6 +1014,7 @@ usingApiKey()
 	ViewEls.tool_bar.manual_search.onclick = e => showManualSearch(api_key);
 	ViewEls.tool_bar.rename.onclick = e => showRename(api_key);
 	ViewEls.tool_bar.convert.onclick = e => showConvert(api_key);
+	ViewEls.tool_bar.tag_metadata.onclick = e => tagVolume(api_key);
 	ViewEls.tool_bar.manage.onclick = e => showManageIssues(api_key);
 	ViewEls.tool_bar.edit.onclick = e => showEdit(api_key);
 

@@ -33,7 +33,8 @@ const statusDescs = {
 		subTypeLabels: {
 			search_volumes: 'Searching volumes',
 			fetch_volume: 'Fetching volume metadata',
-			fetch_issues: 'Fetching issue metadata'
+			fetch_issues: 'Fetching issue metadata',
+			fetch_issue: 'Fetching extended issue metadata'
 		}
 	},
 	download_service_rate_limit: {

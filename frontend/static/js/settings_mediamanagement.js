@@ -16,7 +16,9 @@ const inputs = {
 	'chmod_folder': document.querySelector('#chmod-folder-input'),
 	'chown_group': document.querySelector('#chown-group-input'),
 	'convert_input': document.querySelector('#convert-input'),
-	'extract_input': document.querySelector('#extract-input')
+	'extract_input': document.querySelector('#extract-input'),
+	'tag_metadata_input': document.querySelector('#tag-metadata-input'),
+	'tag_extended_metadata_input': document.querySelector('#tag-extended-metadata-input')
 };
 
 //
@@ -43,6 +45,8 @@ function fillSettings(api_key) {
 		inputs.chown_group.value = json.result.chown_group;
 		inputs.convert_input.checked = json.result.convert;
 		inputs.extract_input.checked = json.result.extract_issue_ranges;
+		inputs.tag_metadata_input.checked = json.result.tag_metadata;
+		inputs.tag_extended_metadata_input.checked = json.result.tag_extended_metadata;
 
 		fillConvert(api_key, json.result.format_preference);
 	});
@@ -76,6 +80,8 @@ function saveSettings(api_key) {
 		'chown_group': inputs.chown_group.value,
 		'convert': inputs.convert_input.checked,
 		'extract_issue_ranges': inputs.extract_input.checked,
+		'tag_metadata': inputs.tag_metadata_input.checked,
+		'tag_extended_metadata': inputs.tag_extended_metadata_input.checked,
 		'format_preference': convert_preference,
 	};
 	sendAPI('PUT', '/settings', api_key, {}, data)

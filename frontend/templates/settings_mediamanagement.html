@@ -191,6 +191,28 @@
 					</tr>
 				</tbody>
 			</table>
+			<h2>Metadata Files</h2>
+			<table class="fold-table">
+				<tbody>
+					<tr>
+						<th><label for="tag-metadata-input">Tag Metadata</label></th>
+						<td>
+							<input type="checkbox" id="tag-metadata-input">
+							<p>Automatically export ComicInfo.xml metadata into comic archives after they are downloaded.</p>
+							<p>Existing files can be tagged with the Tag Metadata button within volumes, or with the mass editor.</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="tag-extended-metadata-input">Extended Data <br>in Metadata Files</label></th>
+						<td>
+							<input type="checkbox" id="tag-extended-metadata-input">
+							<p>Also embed the writers, artists, characters, teams, locations and story arcs.</p>
+							<p>These are not stored by Kapowarr, so an extra request is made per issue to ComicVine to fetch the additional data.</p>
+							<p>This is limited to 200 requests per hour and will cause a bulk run to stop when the limit is reached. When this happens, tag them later using the mass editor with 'Skip Existing'.</p>
+						</td>
+					</tr>
+				</tbody>
+			</table>
 			<h2>Root Folders</h2>
 			<div id="root-folder-container">
 				<table id="root-folder-table" class="icon-text-color">

@@ -226,6 +226,31 @@ The formats that Kapowarr should convert the files to. It will try to convert th
 
 	_Note: if Kapowarr determines that a file in the archive file is not related to the volume, it will not be extracted and will be deleted when the archive file is finished being unpacked. If you find faulty deletions occurring, please make an issue on GitHub._
 
+## Metadata Export
+
+Kapowarr can embed a `ComicInfo.xml` metadata file into comic archives (CBZ, ZIP, CBR and RAR). Readers such as Komga and Kavita use it to match files and to show details.
+
+### Tag Metadata
+
+Automatically export metadata after a file is downloaded. The file always gets the title, issue number, issue title, release date, publisher, format (TPB, one-shot, etc.), description, link to the issue on ComicVine, and ComicVine ID of the issue.
+
+Files that you already have can be tagged with the 'Tag Metadata' button when viewing a volume, which replaces any existing `ComicInfo.xml`, or with the Tag Metadata action in the mass editor. The mass editor has a choice between:
+
+| Choice | Result |
+| ------ | ------ |
+| Skip Existing | Files that already have a `ComicInfo.xml` are skipped |
+| Force Overwrite | The `ComicInfo.xml` of every file is replaced |
+
+_Note: the link to the issue on ComicVine is stored when the volume is refreshed. For volumes that were added before this was supported, do a Refresh & Scan before tagging to ensure the link is not left out._
+
+### Extended Data In Metadata Files
+
+Also embed the writers, artists, letterers, colorists, editors, characters, teams, locations and story arcs. ComicVine only supplies these when asking for one issue at a time and Kapowarr doesn't store them internally. Every tagged issue makes one request to ComicVine, which is limited to 200 per hour.
+
+If the limit is reached while tagging many files, Kapowarr safely stops and the status tab shows that the rate limit for fetching extended issue metadata has been reached. Similarly, for downloads that finish while the limit is reached, they are left without a metadata file until manually exported. In both cases, after the limit has reset, run the mass editor again with 'Skip Existing'.
+
+Files that were tagged when this setting was disabled are not updated automatically. Use 'Force Overwrite' to add the extended data to them.
+
 ## Root Folders
 
 Root folders are the base folders that Kapowarr works in. All media files are put in these folders. Kapowarr needs at least one root folder set in order to work properly.

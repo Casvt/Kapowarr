@@ -355,6 +355,16 @@ usingApiKey()
 				).value
 			}
 		);
+	library_els.mass_edit.bar.querySelector('button[data-action="tag_metadata"]').onclick =
+		e => runAction(
+			api_key,
+			e.target.dataset.action,
+			{
+				'force': document.querySelector(
+					'select[name="force_tag"]'
+				).value === "true"
+			}
+		);
 
 	socket.on(
 		'downloaded_status',

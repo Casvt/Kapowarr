@@ -135,7 +135,7 @@ class Issue:
             SELECT
                 id, volume_id, comicvine_id,
                 issue_number, calculated_issue_number,
-                title, date, description,
+                title, date, description, site_url,
                 monitored
             FROM issues
             WHERE id = ?
@@ -437,7 +437,7 @@ class Volume:
             SELECT
                 id, volume_id, comicvine_id,
                 issue_number, calculated_issue_number,
-                title, date, description,
+                title, date, description, site_url,
                 monitored
             FROM issues
             WHERE volume_id = ?
@@ -1221,11 +1221,13 @@ class Library:
                     title,
                     date,
                     description,
+                    site_url,
                     monitored
                 ) VALUES (
                     :volume_id, :comicvine_id,
                     :issue_number, :calculated_issue_number,
                     :title, :date, :description,
+                    :site_url,
                     :monitored
                 );
                 """,
@@ -1238,6 +1240,7 @@ class Library:
                         "title": i["title"],
                         "date": i["date"],
                         "description": i["description"],
+                        "site_url": i["site_url"],
                         "monitored": True
                     }
                     for i in vd["issues"] or []
@@ -1511,10 +1514,11 @@ def refresh_and_scan(
             title,
             date,
             description,
+            site_url,
             monitored
         ) VALUES (
             :volume_id, :comicvine_id, :issue_number, :calculated_issue_number,
-            :title, :date, :description, :monitored
+            :title, :date, :description, :site_url, :monitored
         )
         ON CONFLICT(comicvine_id) DO
         UPDATE
@@ -1523,7 +1527,8 @@ def refresh_and_scan(
             calculated_issue_number = :calculated_issue_number,
             title = :title,
             date = :date,
-            description = :description;
+            description = :description,
+            site_url = :site_url;
         """,
         ({
             "volume_id": cv_to_id_fetch[isd["volume_id"]][0],
@@ -1533,6 +1538,7 @@ def refresh_and_scan(
             "title": isd["title"],
             "date": isd["date"],
             "description": isd["description"],
+            "site_url": isd["site_url"],
             "monitored": cv_to_id_fetch[isd["volume_id"]][0] in monitor_issues_volume_ids
         }
             for isd in issue_datas

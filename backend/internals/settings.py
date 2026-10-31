@@ -116,6 +116,8 @@ class PublicSettingsValues:
 
     convert: bool = False
     extract_issue_ranges: bool = False
+    tag_metadata: bool = False
+    tag_extended_metadata: bool = False
     format_preference: CommaList = field(default_factory=lambda: CommaList(''))
 
     download_folder: str = folder_path('temp_downloads')
