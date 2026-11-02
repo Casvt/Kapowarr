@@ -55,9 +55,21 @@ function registerLogin(api_key) {
 };
 
 function redirect() {
-	parameters = new URLSearchParams(window.location.search);
-	redirect_value = parameters.get('redirect') || `${url_base}/`;
-	window.location.href = redirect_value;
+	const parameters = new URLSearchParams(window.location.search);
+	const redirectValue = parameters.get('redirect');
+
+	if (
+		redirectValue
+		&& redirectValue.startsWith(`${url_base}/`)
+		&& !redirectValue.startsWith("//")
+		&& !redirectValue.startsWith("\\")
+		// ASCII control characters
+		&& !/[\u0000-\u001F]/.test(redirectValue)
+		|| redirectValue === url_base
+	)
+		window.location.href = redirectValue
+	else
+		window.location.href = `${url_base}/`;
 };
 
 // code run on load
