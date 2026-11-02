@@ -9,9 +9,23 @@ import logging.config
 from io import StringIO
 from logging.handlers import RotatingFileHandler
 from os.path import exists, isdir, isfile, join
+from re import compile
 from typing import Any, Union
 
 from backend.base.definitions import Constants
+
+_REDACTION_REGEX = compile(
+    r"(?:"
+    r"(?<=['\"_]apikey['\"]:\s['\"])\w+|"
+    r"(?<=['\"_]api_key['\"]:\s['\"])\w+|"
+    r"(?<=['\"_]username['\"]:\s['\"])\w+|"
+    r"(?<=['\"_]password['\"]:\s['\"])\w+|"
+    r"(?<=apikey=)\w+|"
+    r"(?<=api_key=)\w+|"
+    r"(?<=username=)\w+|"
+    r"(?<=password=)\w+"
+    r")"
+)
 
 
 class UpToInfoFilter(logging.Filter):
@@ -19,7 +33,14 @@ class UpToInfoFilter(logging.Filter):
         return record.levelno <= logging.INFO
 
 
-class ErrorColorFormatter(logging.Formatter):
+class RedactionFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> Any:
+        result = super().format(record)
+        result = _REDACTION_REGEX.sub('<REDACTED>', result)
+        return result
+
+
+class ErrorColorFormatter(RedactionFormatter):
     def format(self, record: logging.LogRecord) -> Any:
         result = super().format(record)
         return f"\033[1;31:40m{result}\033[0m"
@@ -52,6 +73,7 @@ LOGGING_CONFIG = {
     "disable_existing_loggers": False,
     "formatters": {
         "simple": {
+            "()": RedactionFormatter,
             "format": "[%(asctime)s][%(levelname)s] %(message)s",
             "datefmt": "%H:%M:%S"
         },
@@ -61,6 +83,7 @@ LOGGING_CONFIG = {
             "datefmt": "%H:%M:%S"
         },
         "detailed": {
+            "()": RedactionFormatter,
             "format": "%(asctime)s | %(processName)s | %(threadName)s | %(filename)sL%(lineno)s | %(levelname)s | %(message)s",
             "datefmt": "%Y-%m-%dT%H:%M:%S%z",
         }
