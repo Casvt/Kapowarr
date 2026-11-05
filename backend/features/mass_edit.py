@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict, List, Tuple, TypeVar, Union
 from backend.base.custom_exceptions import (CredentialInvalid, InvalidKeyValue,
                                             KeyNotFound,
                                             MetadataSourceNotWorking,
+                                            MetadataSourceRateLimitReached,
                                             RootFolderNotFound,
                                             VolumeDownloadedFor)
 from backend.base.definitions import FilenameData, MonitorScheme
@@ -12,10 +13,10 @@ from backend.base.logging import LOGGER
 from backend.features.download_queue import DownloadHandler
 from backend.features.search_full import auto_search
 from backend.implementations.conversion import mass_convert
-from backend.implementations.file_processing import (mass_set_file_date,
+from backend.implementations.file_processing import (mass_export_metadata,
+                                                     mass_set_file_date,
                                                      mass_set_ownership,
-                                                     mass_set_permissions,
-                                                     mass_tag)
+                                                     mass_set_permissions)
 from backend.implementations.naming import mass_rename
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Volume, refresh_and_scan
@@ -319,28 +320,30 @@ def mass_editor_file_ownership(
     return
 
 
-@MassEditorActionManager.register_action('tag_metadata')
-def mass_editor_tag_metadata(
+@MassEditorActionManager.register_action('export_metadata')
+def mass_editor_export_metadata(
     volume_ids: List[int],
     identifier: str,
     kwargs: Any
 ) -> None:
-    force_tag = kwargs.get('force', False)
-    if not isinstance(force_tag, bool):
-        raise InvalidKeyValue('force', force_tag)
+    force = kwargs.get('force', False)
+    if not isinstance(force, bool):
+        raise InvalidKeyValue('force', force)
 
     ws = WebSocket()
     total_items = len(volume_ids)
 
-    for item_index, volume_id in enumerate(iter_commit(volume_ids)):
-        ws.emit(MassEditorStatusEvent(
-            identifier,
-            item_index + 1,
-            total_items
-        ))
+    try:
+        for item_index, volume_id in enumerate(iter_commit(volume_ids)):
+            ws.emit(MassEditorStatusEvent(
+                identifier,
+                item_index + 1,
+                total_items
+            ))
 
-        if not mass_tag(volume_id, force=force_tag):
-            # ComicVine rate limit reached
-            break
+            mass_export_metadata(volume_id, force=force)
+
+    except MetadataSourceRateLimitReached:
+        pass
 
     return

@@ -17,7 +17,7 @@ from backend.base.custom_exceptions import (CredentialInvalid,
                                             MetadataSourceNotWorking,
                                             MetadataSourceRateLimitReached)
 from backend.base.definitions import (BrokenMetadataSourceReason, Constants,
-                                      FilenameData, IssueCredits,
+                                      ExtendedIssueMetadata, FilenameData,
                                       IssueMetadata, StatusType, T,
                                       VolumeMetadata)
 from backend.base.file_extraction import (extract_issue_number,
@@ -162,7 +162,7 @@ class ComicVine:
         'volume',
         'site_detail_url'
     ))
-    issue_credits_field_list = ','.join((
+    extended_issue_field_list = ','.join((
         'person_credits',
         'character_credits',
         'team_credits',
@@ -620,40 +620,40 @@ class ComicVine:
 
             return volume_infos
 
-    async def fetch_issue_credits(
+    async def fetch_extended_issue_metadata(
         self,
         cv_id: int
-    ) -> Union[IssueCredits, None]:
-        """Get the credits of a single issue.
+    ) -> Union[ExtendedIssueMetadata, None]:
+        """Get the extended metadata of a single issue.
 
         Args:
             cv_id (int): The CV ID of the issue.
 
         Raises:
             MetadataSourceRateLimitReached: The rate limit is reached.
-            MetadataSourceDataEntryNotFound: Couldn't convert string CV ID to
-                number.
 
         Returns:
-            Union[IssueCredits, None]: The data, or `None` if ComicVine doesn't
+            Union[ExtendedIssueMetadata, None]: The data, or `None` if ComicVine doesn't
                 know the issue.
         """
-        if StatusHandlers().problem_reported(StatusType.CV_RATE_LIMIT, "fetch_issue"):
+        if StatusHandlers().problem_reported(
+            StatusType.CV_RATE_LIMIT,
+            "fetch_extended_issue_metadata"):
             raise MetadataSourceRateLimitReached
 
-        LOGGER.debug(f'Fetching issue credits for {cv_id}')
+        LOGGER.debug(f'Fetching extended issue metadata for {cv_id}')
 
         try:
             async with AsyncSession() as session:
                 result = await self.__call_api(
                     session,
                     f'/issue/4000-{cv_id}',
-                    {'field_list': self.issue_credits_field_list}
+                    {'field_list': self.extended_issue_field_list}
                 )
-            StatusHandlers().clear(StatusType.CV_RATE_LIMIT, "fetch_issue")
+            StatusHandlers().clear(StatusType.CV_RATE_LIMIT, "fetch_extended_issue_metadata")
 
         except MetadataSourceRateLimitReached:
-            StatusHandlers().report(StatusType.CV_RATE_LIMIT, "fetch_issue")
+            StatusHandlers().report(StatusType.CV_RATE_LIMIT, "fetch_extended_issue_metadata")
             raise
 
         except MetadataSourceDataEntryNotFound:

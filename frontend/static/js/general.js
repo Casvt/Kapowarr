@@ -134,8 +134,8 @@ function mapButtons(id) {
 			'icon': `${url_base}/static/img/convert.svg`,
 			'loading_icon': `${url_base}/static/img/loading.svg`
 		};
-		task_to_button[`mass_tag#${id}`] = {
-			'button': document.querySelector('#tag-metadata-button'),
+		task_to_button[`mass_export_metadata#${id}`] = {
+			'button': document.querySelector('#export-metadata-button'),
 			'icon': `${url_base}/static/img/save.svg`,
 			'loading_icon': `${url_base}/static/img/loading.svg`
 		};

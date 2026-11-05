@@ -355,13 +355,13 @@ usingApiKey()
 				).value
 			}
 		);
-	library_els.mass_edit.bar.querySelector('button[data-action="tag_metadata"]').onclick =
+	library_els.mass_edit.bar.querySelector('button[data-action="export_metadata"]').onclick =
 		e => runAction(
 			api_key,
 			e.target.dataset.action,
 			{
 				'force': document.querySelector(
-					'select[name="force_tag"]'
+					'select[name="force_export"]'
 				).value === "true"
 			}
 		);

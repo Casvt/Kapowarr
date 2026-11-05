@@ -750,9 +750,9 @@ class IssueMetadata(TypedDict):
     site_url: Union[str, None]
 
 
-class IssueCredits(TypedDict):
-    """The issue metadata that is supplied by ComicVine's
-    `/issue` endpoint, and not by `/issues`."""
+class ExtendedIssueMetadata(TypedDict):
+    """Extended issue metadata that is not stored in the database, but fetched
+    on demand when needed."""
     people: List[Tuple[str, str]]
     characters: List[str]
     teams: List[str]

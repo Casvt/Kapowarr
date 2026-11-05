@@ -339,7 +339,7 @@ def api_tasks():
             'auto_search', 'auto_search_issue',
             'mass_rename', 'mass_rename_issue',
             'mass_convert', 'mass_convert_issue',
-            'mass_tag',
+            'mass_export_metadata'
         ):
             volume_id = data.get('volume_id')
             if not volume_id or not isinstance(volume_id, int):

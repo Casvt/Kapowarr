@@ -1,30 +1,30 @@
 # -*- coding: utf-8 -*-
 
 """
-Create a ComicInfo.xml metadata file and embed it in comic archives
+Create a ComicInfo.xml metadata file and export it into comic archives
 """
 
 import re
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from os import replace, stat
-from pathlib import Path
+from os.path import basename, dirname, join, splitext
 from shutil import chown, copy2, copystat
 from tempfile import TemporaryDirectory
-from typing import Dict, Sequence, Union
+from typing import Dict, List, Sequence, Union
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from bs4 import BeautifulSoup
 
-from backend.base.definitions import (IssueCredits, IssueData,
-                                      OSType, VolumeData)
-from backend.base.files import get_archive_mimetype
+from backend.base.definitions import (SV_TO_FULL_TERM, ExtendedIssueMetadata,
+                                      IssueData, OSType, VolumeData)
 from backend.base.helpers import get_os_type, run_rar
 from backend.implementations.comicvine import _clean_description
 from backend.internals.settings import System
 
 FILENAME = 'ComicInfo.xml'
-FILE_EXTS = ('.cbz', '.zip', '.cbr', '.rar')
+ZIP_EXTS = ('.cbz', '.zip')
+RAR_EXTS = ('.cbr', '.rar')
 
 FIELD_ORDER = (
     'Title', 'Series', 'Number', 'Volume', 'Summary', 'Notes',
@@ -36,7 +36,7 @@ FIELD_ORDER = (
 
 ROLE_PATTERNS = {
     'CoverArtist': re.compile(r'\bcover'),
-    'Writer': re.compile(r'\b(writ|script|plot|story)'),
+    'Writer': re.compile(r'\b(writ|script|plot|story\b)'),
     'Penciller': re.compile(r'\b(pencil|art|breakdown)'),
     'Inker': re.compile(r'\b(ink|finish)'),
     'Colorist': re.compile(r'\b(color|colour)'),
@@ -44,14 +44,13 @@ ROLE_PATTERNS = {
     'Editor': re.compile(r'\b(editor)')
 }
 
-# Data Formatting
 
-
+# region Content
 def _clean_html(html: Union[str, None]) -> Union[str, None]:
     if not html:
         return None
-    html = _clean_description(html)
-    soup = BeautifulSoup(html, 'html.parser')
+
+    soup = BeautifulSoup(_clean_description(html), 'html.parser')
     for br in soup.find_all('br'):
         br.replace_with('\n')
     for p in soup.find_all('p'):
@@ -62,41 +61,42 @@ def _clean_html(html: Union[str, None]) -> Union[str, None]:
     return text.strip() or None
 
 
-def _map_credits(
-    credits: Sequence[Union[IssueCredits, None]]) -> Dict[str, str]:
-    result_map: Dict[str, Dict[str, None]] = {}
+def _map_extended_metadata(
+    extended_metadata: Sequence[Union[ExtendedIssueMetadata, None]]
+) -> Dict[str, str]:
+    result: Dict[str, Dict[str, None]] = {}
 
-    def add(field: str, name: str):
+    def add(field: str, name: str) -> None:
         if clean_name := name.replace(',', '').strip():
-            result_map.setdefault(field, {})[clean_name] = None
+            result.setdefault(field, {})[clean_name] = None
 
-    for credit in filter(None, credits):
-        for name, roles in credit.get('people', []):
+    for metadata in filter(None, extended_metadata):
+        for name, roles in metadata['people']:
             for role in roles.split(','):
-                for xml_field, pattern in ROLE_PATTERNS.items():
+                for field, pattern in ROLE_PATTERNS.items():
                     if pattern.search(role.strip().lower()):
-                        add(xml_field, name)
+                        add(field, name)
                         break
 
-        for xml_field in ('Characters', 'Teams', 'Locations', 'StoryArc'):
-            for name in credit.get(xml_field.lower(), []):
-                add(xml_field, name)
+        for field in ('Characters', 'Teams', 'Locations', 'StoryArc'):
+            for name in metadata.get(field.lower(), []):
+                add(field, name)
 
-    return {field: ', '.join(names) for field, names in result_map.items()}
+    return {field: ', '.join(names) for field, names in result.items()}
 
 
-def _build_fields(volume: VolumeData,
+def _build_fields(
+    volume: VolumeData,
     issues: Sequence[IssueData],
-    credits: Sequence[Union[IssueCredits,
-    None]]) -> Dict[str,
-     str]:
+    extended_metadata: Sequence[Union[ExtendedIssueMetadata, None]]
+) -> Dict[str, str]:
     issue = issues[0]
     fields = {
         'Series': volume.title,
         'Number': issue.issue_number,
         'Volume': volume.volume_number,
         'Publisher': volume.publisher,
-        'Format': volume.special_version.value,
+        'Format': SV_TO_FULL_TERM.get(volume.special_version)
     }
 
     try:
@@ -109,12 +109,14 @@ def _build_fields(volume: VolumeData,
         fields['Title'] = issue.title
         fields['Summary'] = _clean_html(issue.description)
         fields['Web'] = issue.site_url
-        fields['Notes'] = f'Tagged by Kapowarr using info from Comic Vine. [Issue ID {issue.comicvine_id}]'
+        fields['Notes'] = (
+            f'Exported by Kapowarr. [Issue ID {issue.comicvine_id}]')
     else:
         fields['Web'] = volume.site_url
-        fields['Notes'] = 'Tagged by Kapowarr using info from Comic Vine.'
+        fields['Notes'] = (
+            f'Exported by Kapowarr. [Volume ID {volume.comicvine_id}]')
 
-    fields.update(_map_credits(credits))
+    fields.update(_map_extended_metadata(extended_metadata))
     return {k: str(v) for k, v in fields.items() if v}
 
 
@@ -130,90 +132,150 @@ def _build_xml(fields: Dict[str, str]) -> bytes:
     return ET.tostring(root, encoding='utf-8', xml_declaration=True)
 
 
-# Archive File Modifiers
+# region Archives
+def _is_zip(filepath: str) -> bool:
+    return splitext(filepath)[1].lower() in ZIP_EXTS
 
 
-def can_embed(filepath: Union[str, Path]) -> bool:
-    path = Path(filepath)
-    if path.suffix.lower() not in FILE_EXTS or not path.is_file():
-        return False
-    archive_type = get_archive_mimetype(str(path))
-    return archive_type == 'zip' or (
-        archive_type == 'rar' and System.runs_64bit)
+def _is_rar(filepath: str) -> bool:
+    return splitext(filepath)[1].lower() in RAR_EXTS
 
 
-def has_comicinfo(filepath: Union[str, Path]) -> bool:
-    path = str(filepath)
-    if get_archive_mimetype(path) == 'zip':
-        with ZipFile(path) as zf:
-            return any(n.lower() == FILENAME.lower() for n in zf.namelist())
+def can_export(filepath: str) -> bool:
+    """Check if the file extension is supported to export metadata.
+
+    Args:
+        filepath (str): The filepath of the archive.
+
+    Returns:
+        bool: Whether the file is supported for metadata export.
+    """
+    return _is_zip(filepath) or _is_rar(filepath)
+
+
+def _find_comicinfo(filepath: str) -> List[str]:
+    if _is_zip(filepath):
+        with ZipFile(filepath) as zip:
+            names = zip.namelist()
+
     else:
-        result = run_rar(['lb', path])
-        if result.returncode == 0:
-            return any(
-                n.strip().lower() == FILENAME.lower()
-                for n in result.stdout.splitlines())
-        return False
+        result = run_rar([
+            'lb',
+            filepath
+        ])
+        if result.returncode != 0:
+            raise OSError(
+                f'Failed to list files with rar: Error {result.returncode}')
+        names = [n.strip() for n in result.stdout.splitlines()]
+
+    return [n for n in names if n.lower() == FILENAME.lower()]
 
 
-def _zip_with_xml(source: Path, target: Path, xml_bytes: bytes) -> None:
-    if not has_comicinfo(source):
+def has_comicinfo(filepath: str) -> bool:
+    """Check if an archive has a ComicInfo.xml file.
+
+    Args:
+        filepath (str): The filepath of the archive.
+
+    Raises:
+        BadZipFile: The zip archive is not valid.
+        OSError: The archive couldn't be read.
+
+    Returns:
+        bool: Whether the archive has a ComicInfo.xml file.
+    """
+    return bool(_find_comicinfo(filepath))
+
+
+def _zip_with_xml(source: str, target: str, xml: bytes) -> None:
+    if not has_comicinfo(filepath=source):
         copy2(source, target)
-        with ZipFile(target, 'a') as zf:
-            zf.writestr(FILENAME, xml_bytes, ZIP_DEFLATED)
+        with ZipFile(target, 'a') as zip:
+            zip.writestr(FILENAME, xml, ZIP_DEFLATED)
         return
 
     with ZipFile(source) as zin, ZipFile(target, 'w') as zout:
         zout.comment = zin.comment
         for item in zin.infolist():
             if item.filename.lower() != FILENAME.lower():
-                zout.writestr(item, zin.read(item))
-        zout.writestr(FILENAME, xml_bytes, ZIP_DEFLATED)
+                zout.writestr(item, data=zin.read(item))
+        zout.writestr(FILENAME, xml, ZIP_DEFLATED)
+    return
 
 
-def _rar_with_xml(source: Path, target: Path, xml_bytes: bytes) -> None:
+def _rar_with_xml(source: str, target: str, xml: bytes) -> None:
     copy2(source, target)
 
-    result = run_rar(['lb', str(target)])
-    if result.returncode == 0:
-        for name in [n.strip() for n in result.stdout.splitlines()
-                     if n.strip().lower() == FILENAME.lower()]:
-            run_rar(['d', '-inul', str(target), name])
+    for name in _find_comicinfo(target):
+        result = run_rar([
+            'd',
+            '-inul',
+            target,
+            name
+        ])
+        if result.returncode != 0:
+            raise OSError(
+                f'Failed to remove from rar: Error {result.returncode}')
 
-    xml_file = target.parent / FILENAME
-    xml_file.write_bytes(xml_bytes)
+    xml_file = join(dirname(target), FILENAME)
+    with open(xml_file, 'wb') as f:
+        f.write(xml)
 
-    res = run_rar(['a', '-ep', '-inul', str(target), str(xml_file)])
-    if res.returncode != 0:
-        raise RuntimeError(f'Failed to add to rar: Error {res.returncode}')
+    result = run_rar([
+        'a',
+        '-ep',
+        '-inul',
+        target,
+        xml_file
+    ])
+    if result.returncode != 0:
+        raise OSError(f'Failed to add to rar: Error {result.returncode}')
+    return
 
 
-# Main Entry Point
+def export_comicinfo(
+    filepath: str,
+    volume: VolumeData,
+    issues: Sequence[IssueData],
+    extended_metadata: Sequence[Union[ExtendedIssueMetadata, None]] = ()
+) -> None:
+    """Export metadata as a ComicInfo.xml into the comic archive file.
 
+    Args:
+        filepath (str): The filepath of the archive.
 
-def tag_archive(filepath: Union[str, Path], volume: VolumeData,
-                issues: Sequence[IssueData],
-                credits: Sequence[Union[IssueCredits, None]] = ()) -> None:
-    path = Path(filepath)
+        volume (VolumeData): The volume that the archive is in.
 
-    fields = _build_fields(volume, issues, credits)
-    xml_bytes = _build_xml(fields)
+        issues (Sequence[IssueData]): The issue(s) in the archive.
+
+        extended_metadata (Sequence[Union[ExtendedIssueMetadata, None]], optional):
+            The extended metadata of the archive's issues.
+            Defaults to ().
+
+    Raises:
+        BadZipFile: The zip archive is not valid.
+        OSError: The archive couldn't be read.
+    """
+    xml = _build_xml(_build_fields(volume, issues, extended_metadata))
 
     # Make edits on temporary file
-    with TemporaryDirectory(dir=path.parent, prefix='.kapowarr-') as folder:
-        target = Path(folder) / path.name
+    with TemporaryDirectory(
+        dir=dirname(filepath), prefix='.kapowarr-'
+    ) as folder:
+        target = join(folder, basename(filepath))
 
-        if get_archive_mimetype(str(path)) == 'zip':
-            _zip_with_xml(path, target, xml_bytes)
+        if _is_zip(filepath):
+            _zip_with_xml(filepath, target, xml)
         else:
-            _rar_with_xml(path, target, xml_bytes)
+            _rar_with_xml(filepath, target, xml)
 
-        copystat(path, target)
+        copystat(filepath, target)
         if get_os_type() in (OSType.LINUX, OSType.MACOS):
-            st = stat(path)
+            st = stat(filepath)
             try:
                 chown(target, st.st_uid, st.st_gid)
             except OSError:
                 pass
 
-        replace(target, path)
+        replace(target, filepath)
+    return
