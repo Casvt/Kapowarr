@@ -747,6 +747,17 @@ class IssueMetadata(TypedDict):
     title: Union[str, None]
     date: Union[str, None]
     description: str
+    site_url: Union[str, None]
+
+
+class ExtendedIssueMetadata(TypedDict):
+    """Extended issue metadata that is not stored in the database, but fetched
+    on demand when needed."""
+    people: List[Tuple[str, str]]
+    characters: List[str]
+    teams: List[str]
+    locations: List[str]
+    storyarc: List[str]
 
 
 class VolumeMetadata(TypedDict):
@@ -899,6 +910,7 @@ class IssueData:
     title: Union[str, None]
     date: Union[str, None]
     description: str
+    site_url: Union[str, None]
     monitored: bool
     files: List[FileData]
 

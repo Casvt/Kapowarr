@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Type, TypeVar, Union
 
 from backend.base.custom_exceptions import (CredentialInvalid, InvalidKeyValue,
                                             MetadataSourceNotWorking,
+                                            MetadataSourceRateLimitReached,
                                             TaskNotDeletable, TaskNotFound)
 from backend.base.definitions import FilenameData, QueuedTaskData, Task
 from backend.base.helpers import Singleton, get_schedules_next_run
@@ -16,6 +17,7 @@ from backend.features.download_queue import DownloadHandler
 from backend.features.search_discover import discover_downloads
 from backend.features.search_full import auto_search
 from backend.implementations.conversion import mass_convert
+from backend.implementations.file_processing import mass_export_metadata
 from backend.implementations.naming import mass_rename
 from backend.implementations.volumes import Volume, refresh_and_scan
 from backend.internals.db import get_db
@@ -812,6 +814,43 @@ class MassConvertVolume(Task):
             update_websocket_files=True
         )
 
+        return
+
+
+@TaskHandler.register_task('mass_export_metadata')
+class MassExportMetadataVolume(Task):
+    "Trigger metadata export for a volume"
+
+    stop = False
+    message = ''
+    display_title = 'Export Metadata'
+
+    @property
+    def volume_id(self) -> int:
+        return self._volume_id
+
+    @property
+    def issue_id(self) -> None:
+        return None
+
+    def __init__(self, volume_id: int) -> None:
+        """Create the task
+
+        Args:
+            volume_id (int): The ID of the volume for which to perform the task.
+        """
+        self._volume_id = volume_id
+        return
+
+    def run(self) -> None:
+        volume_title = Volume(self._volume_id).vd.title
+        self.message = f'Exporting metadata for {volume_title}'
+        WebSocket().emit(TaskStatusEvent(self.message))
+
+        try:
+            mass_export_metadata(self._volume_id, force=True)
+        except MetadataSourceRateLimitReached:
+            pass
         return
 
 

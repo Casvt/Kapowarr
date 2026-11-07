@@ -6,6 +6,7 @@ from os.path import basename, exists, isfile, join, splitext
 from time import time
 from typing import TYPE_CHECKING, Dict
 
+from backend.base.custom_exceptions import MetadataSourceRateLimitReached
 from backend.base.definitions import (BlocklistReason,
                                       DownloadState, FileConstants)
 from backend.base.files import (copy_directory, delete_file_folder,
@@ -15,7 +16,8 @@ from backend.implementations.blocklist import add_to_blocklist
 from backend.implementations.conversion import mass_convert
 from backend.implementations.converters import extract_files_from_folder
 from backend.implementations.file_matching import scan_files
-from backend.implementations.file_processing import mass_process_files
+from backend.implementations.file_processing import (mass_export_metadata,
+                                                     mass_process_files)
 from backend.implementations.naming import mass_rename
 from backend.implementations.volumes import Volume
 from backend.internals.db import commit, get_db
@@ -251,6 +253,21 @@ class PostProcessingContext:
         )
         return
 
+    def export_metadata(self) -> None:
+        "Export the metadata of the downloaded files"
+        if not Settings().sv.export_metadata:
+            return
+
+        try:
+            mass_export_metadata(
+                self.download.volume_id,
+                filepath_filter=self.download.files,
+                force=True
+            )
+        except MetadataSourceRateLimitReached:
+            pass
+        return
+
 
 # region Post-Processors
 class PostProcessor:
@@ -271,6 +288,7 @@ class PostProcessor:
         commit()
         self.ctx.add_file_to_database()
         self.ctx.convert_file()
+        self.ctx.export_metadata()
         self.ctx.set_file_properties()
         return
 
@@ -319,6 +337,7 @@ class PostProcessorTorrentsComplete(PostProcessor):
         self.ctx.move_torrent_to_dest()
         commit()
         self.ctx.convert_file()
+        self.ctx.export_metadata()
         self.ctx.set_file_properties()
         return
 
@@ -340,6 +359,7 @@ class PostProcessorTorrentsCopy(PostProcessor):
         self.ctx.copy_file_torrent()
         commit()
         self.ctx.convert_file()
+        self.ctx.export_metadata()
         self.ctx.set_file_properties()
         self.download.files = self.ctx.original_files
         commit()
