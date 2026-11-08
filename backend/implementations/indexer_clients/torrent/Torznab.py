@@ -59,15 +59,24 @@ class TorznabIndexer(BaseIndexerClient):
 
         # Link
         link = torznab_keys.get("magneturl") or ''
+
+        guid_el = item.find("guid")
+        if not link and guid_el is not None:
+            guid = guid_el.text or ''
+            if guid.startswith("margnet:?"):
+                link = guid
+
         if not link and "infohash" in torznab_keys:
             link = build_magnet_link(torznab_keys["infohash"].lower(), title)
-        enclosure = item.find('enclosure')
-        if not link and enclosure is not None:
-            link = enclosure.attrib.get('url') or ''
-        if not link:
-            link_el = item.find('link')
-            if link_el is not None:
-                link = link_el.text or ''
+
+        enclosure_el = item.find('enclosure')
+        if not link and enclosure_el is not None:
+            link = enclosure_el.attrib.get('url') or ''
+
+        link_el = item.find('link')
+        if not link and link_el is not None:
+            link = link_el.text or ''
+
         if not link:
             return None
         link = unquote(unescape(link))
@@ -76,10 +85,10 @@ class TorznabIndexer(BaseIndexerClient):
         size = torznab_keys.get("size", "")
         if (
             not size
-            and enclosure is not None
-            and enclosure.attrib.get("length")
+            and enclosure_el is not None
+            and enclosure_el.attrib.get("length")
         ):
-            size = enclosure.attrib.get("length", "")
+            size = enclosure_el.attrib.get("length", "")
         if not size:
             size_el = item.find("size")
             if size_el is not None:
