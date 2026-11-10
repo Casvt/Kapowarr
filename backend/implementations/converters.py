@@ -317,17 +317,19 @@ def zip_to_rar(file: str) -> List[str]:
     with ZipFile(file, 'r') as zip:
         zip.extractall(archive_folder)
 
+    target_file = splitext(file)[0] + '.rar'
     result = run_rar([
         'a', # Add files to archive
         '-ep', # Exclude paths from names
         '-inul', # Disable all messages
-        splitext(file)[0], # Ext-less target filename of created archive
+        target_file, # Target filename of created archive
         archive_folder # Source folder
     ])
 
-    target_file = splitext(file)[0] + '.rar'
     if result.returncode != 0 or not isfile(target_file):
         LOGGER.error(f"Failed to rar up files: Error {result.returncode}")
+        if isdir(archive_folder):
+            delete_file_folder(archive_folder)
         if isfile(target_file):
             delete_file_folder(target_file)
         return [file]
