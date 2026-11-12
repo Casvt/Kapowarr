@@ -133,7 +133,22 @@ This flows better for ARIA.
 	width: 3.5rem;
 }
 .issue-date {
-	width: 6.5rem;
+	width: 8rem;
+}
+thead th.sort-active {
+	color: var(--accent-color);
+}
+.sort-button {
+	border: none;
+	font: inherit;
+	color: inherit;
+	user-select: none;
+	white-space: nowrap;
+}
+.sort-arrow {
+	width: 15px;
+	vertical-align: middle;
+	margin-left: .2rem;
 }
 .issue-status {
 	width: 3rem;

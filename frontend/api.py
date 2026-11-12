@@ -13,12 +13,13 @@ from backend.base.custom_exceptions import (InvalidDatabaseFile,
                                             InvalidKeyValue, KeyNotFound)
 from backend.base.definitions import (BlocklistReason, BlocklistReasonID,
                                       CredentialData, CredentialSource,
-                                      DownloadService, DownloadType, FileMatch,
-                                      IndexerClientField,
-                                      InvalidDatabaseReason, KapowarrException,
-                                      LibraryFilter, LibrarySorting,
-                                      MonitorScheme, SpecialVersion, StartType,
-                                      StatusType, VolumeData)
+                                      DownloadService, DownloadType,
+                                      FileMatch, IndexerClientField,
+                                      InvalidDatabaseReason, IssueSorting,
+                                      KapowarrException, LibraryFilter,
+                                      LibrarySorting, MonitorScheme,
+                                      SpecialVersion, StartType, StatusType,
+                                      VolumeData)
 from backend.base.files import folder_path
 from backend.base.helpers import hash_credential
 from backend.base.logging import LOGGER, get_log_file_contents
@@ -124,6 +125,12 @@ def extract_key(request, key: str, check_existence: bool = True) -> Any:
             except KeyError:
                 raise InvalidKeyValue(key, value)
 
+        elif key == 'issue_sort':
+            try:
+                value = IssueSorting[value.upper()]
+            except KeyError:
+                raise InvalidKeyValue(key, value)
+
         elif key == 'filter':
             try:
                 value = LibraryFilter[value.upper()] if value else None
@@ -156,6 +163,9 @@ def extract_key(request, key: str, check_existence: bool = True) -> Any:
         # Default value
         if key == 'sort':
             value = LibrarySorting.TITLE
+
+        elif key == 'issue_sort':
+            value = IssueSorting.DATE
 
         elif key == 'filter':
             value = None
@@ -1062,7 +1072,8 @@ def api_volume(id: int):
     volume = Library.get_volume(id)
 
     if request.method == 'GET':
-        volume_info = volume.get_public_data()
+        issue_sort = extract_key(request, 'issue_sort', False)
+        volume_info = volume.get_public_data(issue_sort=issue_sort)
         return return_api(volume_info)
 
     elif request.method == 'PUT':
