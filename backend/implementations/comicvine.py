@@ -18,8 +18,8 @@ from backend.base.custom_exceptions import (CredentialInvalid,
                                             MetadataSourceRateLimitReached)
 from backend.base.definitions import (BrokenMetadataSourceReason, Constants,
                                       ExtendedIssueFileMetadata, FilenameData,
-                                      IssueMetadata, StatusType, T,
-                                      VolumeMetadata)
+                                      IssueMetadata, LibraryImportMatch,
+                                      StatusType, T, VolumeMetadata)
 from backend.base.file_extraction import (extract_issue_number,
                                           extract_volume_number, volume_regex)
 from backend.base.helpers import (AsyncSession, Session, batched,
@@ -418,7 +418,9 @@ class ComicVine:
                 issue_data['description'],
                 short=True
             ),
-            'site_url': issue_data['site_detail_url'] or None
+            'site_url': issue_data['site_detail_url'] or None,
+            'volume_title': issue_data['volume']['name'],
+            'volume_site_url': issue_data['volume']['site_detail_url']
         }
 
         return result
@@ -676,12 +678,16 @@ class ComicVine:
 
     async def fetch_issues(
         self,
-        cv_ids: Sequence[Union[str, int]]
+        cv_ids: Sequence[Union[str, int]],
+        issue_ids_supplied: bool = False
     ) -> List[IssueMetadata]:
         """Get the metadata of the issues of volumes.
 
         Args:
             cv_ids (Sequence[Union[str, int]]): The CV IDs of the volumes.
+            issue_ids_supplied (bool, optional): Whether the CV IDs are not of
+                the volumes, but instead actually of specific issues.
+                Defaults to False.
 
         Raises:
             CredentialInvalid: The API key is not valid.
@@ -701,6 +707,11 @@ class ComicVine:
 
         LOGGER.debug(f'Fetching issue data for volumes {formatted_cv_ids}')
 
+        if not issue_ids_supplied:
+            filter_string = "volume:%s"
+        else:
+            filter_string = "id:%s"
+
         issue_infos = []
         async with AsyncSession() as session:
             for id_batch in batched(formatted_cv_ids, 50):
@@ -711,7 +722,7 @@ class ComicVine:
                         '/issues',
                         {
                             'field_list': self.issue_field_list,
-                            'filter': f'volume:{batch_filter}'
+                            'filter': filter_string % batch_filter
                         }
                     )
                     StatusHandlers().clear(
@@ -741,7 +752,7 @@ class ComicVine:
                                 '/issues',
                                 {
                                     'field_list': self.issue_field_list,
-                                    'filter': f'volume:{batch_filter}',
+                                    'filter': filter_string % batch_filter,
                                     'offset': offset
                                 },
                                 {'results': []}
@@ -899,7 +910,7 @@ class ComicVine:
         self,
         file_groups: Dict[int, Dict[str, FilenameData]],
         only_english: bool
-    ) -> Dict[int, Dict[str, Any]]:
+    ) -> Dict[int, LibraryImportMatch]:
         """Match groups of filenames to CV volumes.
 
         Args:
@@ -913,8 +924,8 @@ class ComicVine:
             MetadataSourceNotWorking: Something went wrong contacting CV.
 
         Returns:
-            Dict[int, Dict[str, Any]]: A mapping from the group number to its CV
-                match.
+            Dict[int, LibraryImportMatch]: A mapping from the group number to
+                its match at CV.
         """
         # All files in a group share a series title. Searching is done by series
         # title, so search for every title/group instead of for every file.
@@ -936,7 +947,7 @@ class ComicVine:
                 ))
             )))
 
-        matches: Dict[int, Dict[str, Any]] = {}
+        matches: Dict[int, LibraryImportMatch] = {}
         for title, group_numbers in titles_to_groups.items():
             for group_number in group_numbers:
                 result = select_best_volume_result_for_file(

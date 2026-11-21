@@ -3,7 +3,7 @@ from typing import Dict
 
 from backend.base.definitions import FilenameData
 from backend.base.file_extraction import extract_filename_data
-from backend.features.library_import import create_groups
+from backend.features.library_import import _create_groups
 
 
 class CreateGroupsTests(unittest.TestCase):
@@ -17,7 +17,7 @@ class CreateGroupsTests(unittest.TestCase):
             )
         }
 
-        groups = create_groups(files)
+        groups = _create_groups(files)
 
         self.assertEqual(len(groups), 1)
         self.assertEqual(set(groups[1].keys()), set(files.keys()))
@@ -38,7 +38,7 @@ class CreateGroupsTests(unittest.TestCase):
             )
         }
 
-        groups = create_groups(files)
+        groups = _create_groups(files)
 
         self.assertEqual(len(groups), 2)
         self.assertEqual(set(groups[1].keys()), {
@@ -63,6 +63,6 @@ class CreateGroupsTests(unittest.TestCase):
             )
         }
 
-        groups = create_groups(files)
+        groups = _create_groups(files)
         self.assertEqual(len(groups), 1)
         self.assertEqual(set(groups[1].keys()), set(files.keys()))

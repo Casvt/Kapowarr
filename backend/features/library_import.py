@@ -4,14 +4,16 @@ from asyncio import run
 from glob import glob
 from itertools import chain
 from os.path import abspath, basename, dirname, isfile, join, splitext
-from typing import Any, Dict, List, Union
+from re import IGNORECASE, compile
+from typing import Dict, List, Union
 
 from backend.base.custom_exceptions import (InvalidKeyValue,
                                             MetadataSourceDataEntryNotFound,
                                             MetadataSourceRateLimitReached,
                                             VolumeAlreadyAdded)
 from backend.base.definitions import (CVFileMapping, FileConstants,
-                                      FilenameData, MonitorScheme,
+                                      FilenameData, LibraryImportEntry,
+                                      LibraryImportMatch, MonitorScheme,
                                       SpecialVersion)
 from backend.base.file_extraction import extract_filename_data
 from backend.base.files import (change_basefolder, common_folder,
@@ -23,14 +25,31 @@ from backend.base.logging import LOGGER
 from backend.implementations.comicvine import ComicVine
 from backend.implementations.file_matching import scan_files
 from backend.implementations.matching import match_special_version
+from backend.implementations.metadata_formats import \
+    get_issue_metadata_contents
 from backend.implementations.naming import mass_rename
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Library
 from backend.internals.db import commit
 from backend.internals.db_models import FilesDB
 
+cv_issue_link_regex = compile(
+    r"https://comicvine.gamespot.com/[^/]+/4000-(\d+)"
+)
+cv_volume_link_regex = compile(
+    r"https://comicvine.gamespot.com/[^/]+/4050-(\d+)"
+)
+cv_issue_desc_regex = compile(
+    r"(?:Comic\s?Vine.*\[Issue ID (\d+)|\[CVID 4000-(\d+))",
+    IGNORECASE
+)
+cv_volume_desc_regex = compile(
+    r"(?:Comic\s?Vine.*\[Volume ID (\d+)|\[CVID 4050-(\d+))",
+    IGNORECASE
+)
 
-def _group_matches(
+
+def _matches_group(
     file_data: FilenameData,
     group_files: Dict[str, FilenameData]
 ) -> bool:
@@ -75,7 +94,7 @@ def _group_matches(
     return only_volume_numbers == (file_data['issue_number'] is None)
 
 
-def create_groups(
+def _create_groups(
     files: Dict[str, FilenameData]
 ) -> Dict[int, Dict[str, FilenameData]]:
     """Group files together that seem like they are for the same volume.
@@ -94,7 +113,7 @@ def create_groups(
 
     for file, file_data in files.items():
         for group_files in groups.values():
-            if _group_matches(file_data, group_files):
+            if _matches_group(file_data, group_files):
                 group_files[file] = file_data
                 break
         else:
@@ -118,14 +137,104 @@ def create_groups(
     return groups
 
 
+def _find_volume_match(
+    group_to_files: Dict[int, Dict[str, FilenameData]],
+    only_english: bool
+) -> Dict[int, LibraryImportMatch]:
+    """Find a match at the metadata source for each group. First the metadata
+    files of the groups are checked for any references to IDs. Otherwise a
+    search is done to find a volume that matches the group.
+
+    Args:
+        group_to_files (Dict[int, Dict[str, FilenameData]]): The mapping from
+            group ID to the files in the group.
+        only_english (bool): Only match with English releases.
+
+    Returns:
+        Dict[int, LibraryImportMatch]: The group ID to its match.
+    """
+    group_to_cv: Dict[int, LibraryImportMatch] = {}
+
+    volume_matches: Dict[int, int] = {}
+    issue_matches: Dict[int, int] = {}
+    for group_id, group_files in group_to_files.items():
+        for group_file in group_files:
+            file_metadata = get_issue_metadata_contents(group_file)
+            if file_metadata is None:
+                continue
+
+            volume_link = cv_volume_link_regex.search(
+                file_metadata["issue_site_url"] or ""
+            )
+            if volume_link:
+                volume_matches[int(volume_link.group(1))] = group_id
+                break
+
+            issue_link = cv_issue_link_regex.search(
+                file_metadata["issue_site_url"] or ""
+            )
+            if issue_link:
+                issue_matches[int(issue_link.group(1))] = group_id
+                break
+
+            volume_desc = cv_volume_desc_regex.search(
+                file_metadata["notes"] or ""
+            )
+            if volume_desc:
+                volume_matches[int(
+                    volume_desc.group(1) or volume_desc.group(2)
+                )] = group_id
+                break
+
+            issue_desc = cv_issue_desc_regex.search(
+                file_metadata["notes"] or ""
+            )
+            if issue_desc:
+                issue_matches[int(
+                    issue_desc.group(1) or issue_desc.group(2)
+                )] = group_id
+                break
+
+    cv = ComicVine()
+    if volume_matches:
+        volumes = run(cv.fetch_volumes(list(volume_matches)))
+        for volume in volumes:
+            group_to_cv[volume_matches[volume['comicvine_id']]] = {
+                "id": volume["comicvine_id"],
+                "title": f"{volume['title']} ({volume['year']})",
+                "issue_count": volume["issue_count"],
+                "link": volume["site_url"]
+            }
+
+    if issue_matches:
+        issues = run(cv.fetch_issues(
+            list(issue_matches),
+            issue_ids_supplied=True
+        ))
+        for issue in issues:
+            group_to_cv[issue_matches[issue["comicvine_id"]]] = {
+                "id": issue["volume_id"],
+                "title": issue["volume_title"],
+                "issue_count": None,
+                "link": issue["volume_site_url"]
+            }
+
+    group_to_cv.update(run(cv.filenames_to_cvs(
+        {k: v for k, v in group_to_files.items() if k not in group_to_cv},
+        only_english=only_english
+    )))
+
+    return group_to_cv
+
+
 def propose_library_import(
     folder_filter: Union[str, None] = None,
     limit: int = 20,
     limit_parent_folder: bool = False,
     only_english: bool = True
-) -> List[Dict[str, Any]]:
+) -> List[LibraryImportEntry]:
     """Get list of unimported files and their suggestion for a matching volume
-    on CV.
+    on the online metadata source.
 
     Args:
         folder_filter (Union[str, None], optional): Only scan the folders that
@@ -139,17 +248,18 @@ def propose_library_import(
             folder, not folder. Useful if each issue has their own sub-folder.
             Defaults to False.
 
-        only_english (bool, optional): Only match with english releases.
+        only_english (bool, optional): Only match with English releases.
             Defaults to True.
 
     Raises:
         InvalidKeyValue: The file filter matches to folders outside
             the root folders.
         CredentialInvalid: The API key of the metadata source is invalid.
-        MetadataSourceNotWorking: Something went wrong contacting CV.
+        MetadataSourceNotWorking: Something went wrong contacting the
+            metadata source.
 
     Returns:
-        List[Dict[str, Any]]: The list of files and their matches.
+        List[LibraryImportEntry]: The list of files and their matches.
     """
     LOGGER.info('Loading library import')
 
@@ -231,15 +341,12 @@ def propose_library_import(
         )
     }
 
-    # Find a match for the groups on CV
-    group_to_files = create_groups(unimported_files)
-    group_to_cv = run(ComicVine().filenames_to_cvs(
-        group_to_files,
-        only_english=only_english
-    ))
+    # Find a match for the groups on the metadata source
+    group_to_files = _create_groups(unimported_files)
+    group_to_cv = _find_volume_match(group_to_files, only_english)
 
     # Build result
-    result = [
+    result: List[LibraryImportEntry] = [
         {
             'filepath': file,
             'file_title': (
@@ -271,7 +378,8 @@ def import_library(
 
     Raises:
         CredentialInvalid: The API key of the metadata source is invalid.
-        MetadataSourceNotWorking: Something went wrong contacting CV.
+        MetadataSourceNotWorking: Something went wrong contacting the
+            metadata source.
     """
     LOGGER.info('Starting library import')
 

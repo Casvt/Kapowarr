@@ -745,6 +745,8 @@ class IssueMetadata(TypedDict):
     date: Union[str, None]
     description: str
     site_url: Union[str, None]
+    volume_title: str
+    volume_site_url: str
 
 
 class VolumeMetadata(TypedDict):
@@ -794,6 +796,21 @@ class IssueFileMetadata(ExtendedIssueFileMetadata):
     issue_month: Union[str, None]
     issue_day: Union[str, None]
     issue_site_url: Union[str, None]
+    notes: Union[str, None]
+
+
+class LibraryImportMatch(TypedDict):
+    id: Union[int, None]
+    title: Union[str, None]
+    issue_count: Union[int, None]
+    link: Union[str, None]
+
+
+class LibraryImportEntry(TypedDict):
+    filepath: str
+    file_title: str
+    cv: LibraryImportMatch
+    group_number: int
 
 
 class CVFileMapping(TypedDict):

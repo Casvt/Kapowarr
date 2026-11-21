@@ -8,7 +8,7 @@ from shutil import chown, copystat
 from tempfile import TemporaryDirectory
 from typing import Dict, List, Union, cast
 from xml.etree import ElementTree
-from zipfile import ZipFile
+from zipfile import BadZipFile, ZipFile
 
 from bs4 import BeautifulSoup
 
@@ -29,6 +29,7 @@ _FIELD_MAPPING = {
     "Number": ("issue_number", str),
     "Title": ("issue_title", str),
     "Summary": ("issue_description", str),
+    "Notes": ("notes", str),
     "Year": ("issue_year", str),
     "Month": ("issue_month", str),
     "Day": ("issue_day", str),
@@ -72,16 +73,20 @@ def get_issue_metadata_contents(
             contents = f.read()
 
     elif splitext(filepath)[1].lower() in (".cbz", ".zip"):
-        with ZipFile(filepath, "r") as zip:
-            matching_files = [
-                file
-                for file in zip.namelist()
-                if file.lower() == "comicinfo.xml"
-            ]
-            if not matching_files:
-                # File doesn't exist in zip
-                return None
-            contents = zip.read(matching_files[0])
+        try:
+            with ZipFile(filepath, "r") as zip:
+                matching_files = [
+                    file
+                    for file in zip.namelist()
+                    if file.lower() == "comicinfo.xml"
+                ]
+                if not matching_files:
+                    # File doesn't exist in zip
+                    return None
+                contents = zip.read(matching_files[0])
+
+        except BadZipFile:
+            return None
 
     elif splitext(filepath)[1].lower() in (".cbr", ".rar"):
         namelist = run_rar([
@@ -108,8 +113,8 @@ def get_issue_metadata_contents(
         ]).stdout
 
     else:
-        # File format not supported; should already be filtered out
-        raise RuntimeError("File format not supported to get metadata of")
+        # File format not supported
+        return None
 
     try:
         xml = ElementTree.XML(contents)
@@ -210,8 +215,8 @@ def _build_comicinfo(
             for i in issue_datas
             if i.description
         )),
-        "Notes": "Exported by Kapowarr. [CVID%s]" % (
-            ','.join((str(i.comicvine_id) for i in issue_datas))
+        "Notes": "Exported by Kapowarr. [CVID 4000-%s]" % (
+            ',4000-'.join((str(i.comicvine_id) for i in issue_datas))
         )
     }
 
@@ -386,7 +391,8 @@ def export_issue_metadata(
 
     else:
         # File format not supported; should already be filtered out
-        raise RuntimeError("File format not supported to get metadata of")
+        raise RuntimeError(
+            f"File format not supported to get metadata of: {filepath}")
 
     FilesDB.update_size(filepath)
     mass_process_files(volume_data.id, filepath_filter=[filepath])
