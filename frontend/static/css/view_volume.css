@@ -436,6 +436,10 @@ td.peers-column > div {
 	background-color: var(--accent-color);
 }
 
+#issue-info a {
+	text-decoration: underline;
+}
+
 .f-filepath,
 .gf-filepath,
 .mi-filepath {

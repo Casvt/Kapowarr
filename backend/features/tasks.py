@@ -17,7 +17,7 @@ from backend.features.download_queue import DownloadHandler
 from backend.features.search_discover import discover_downloads
 from backend.features.search_full import auto_search
 from backend.implementations.conversion import mass_convert
-from backend.implementations.file_processing import mass_export_metadata
+from backend.implementations.metadata_export import export_issues_metadata
 from backend.implementations.naming import mass_rename
 from backend.implementations.volumes import Volume, refresh_and_scan
 from backend.internals.db import get_db
@@ -834,7 +834,7 @@ class MassExportMetadataVolume(Task):
         return None
 
     def __init__(self, volume_id: int) -> None:
-        """Create the task
+        """Create the task.
 
         Args:
             volume_id (int): The ID of the volume for which to perform the task.
@@ -848,7 +848,7 @@ class MassExportMetadataVolume(Task):
         WebSocket().emit(TaskStatusEvent(self.message))
 
         try:
-            mass_export_metadata(self._volume_id, force=True)
+            export_issues_metadata(self._volume_id, force=True)
         except MetadataSourceRateLimitReached:
             pass
         return

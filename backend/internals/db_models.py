@@ -164,6 +164,14 @@ class FilesDB:
         return
 
     @staticmethod
+    def update_size(filepath: str) -> None:
+        get_db().execute(
+            "UPDATE files SET size = ? WHERE filepath = ?;",
+            (stat(filepath).st_size, filepath)
+        )
+        return
+
+    @staticmethod
     def delete_file(
         file_id: int
     ) -> None:

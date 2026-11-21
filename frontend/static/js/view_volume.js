@@ -959,8 +959,21 @@ function showIssueInfo(issue_id, api_key) {
 	document.querySelector('#issue-rename-selector').dataset.issue_id = issue_id;
 	fetchAPI(`/issues/${issue_id}`, api_key)
 	.then(json => {
-		document.querySelector('#issue-info-title').innerText =
-			`${json.result.title} - #${json.result.issue_number} - ${json.result.date}`;
+		const issueTitle = document.querySelector('#issue-info-title');
+		if (json.result.title)
+			issueTitle.innerText = `${json.result.title} - #${json.result.issue_number}`;
+		else
+			issueTitle.innerText = `#${json.result.issue_number}`;
+		if (json.result.date)
+			issueTitle.innerText += ` - ${json.result.date}`;
+		if (json.result.site_url) {
+			const siteLink = document.createElement("a");
+			siteLink.innerText = "link";
+			siteLink.href = json.result.site_url;
+			issueTitle.innerText += " - ";
+			issueTitle.appendChild(siteLink);
+		}
+			
 		document.querySelector('#issue-info-desc').innerHTML = json.result.description;
 		const files_table = document.querySelector('#issue-files-list');
 		files_table.innerHTML = '';

@@ -13,10 +13,10 @@ from backend.base.logging import LOGGER
 from backend.features.download_queue import DownloadHandler
 from backend.features.search_full import auto_search
 from backend.implementations.conversion import mass_convert
-from backend.implementations.file_processing import (mass_export_metadata,
-                                                     mass_set_file_date,
+from backend.implementations.file_processing import (mass_set_file_date,
                                                      mass_set_ownership,
                                                      mass_set_permissions)
+from backend.implementations.metadata_export import export_issues_metadata
 from backend.implementations.naming import mass_rename
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Volume, refresh_and_scan
@@ -341,7 +341,7 @@ def mass_editor_export_metadata(
                 total_items
             ))
 
-            mass_export_metadata(volume_id, force=force)
+            export_issues_metadata(volume_id, force=force)
 
     except MetadataSourceRateLimitReached:
         pass

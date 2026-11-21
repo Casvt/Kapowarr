@@ -778,9 +778,6 @@ def preview_mass_rename(
                 issues[0],
             )
 
-            if basename(file.lower()) in FileConstants.METADATA_FILES:
-                gen_filename_body += ' ' + splitext(basename(file))[0]
-
         elif file.endswith(FileConstants.IMAGE_EXTENSIONS):
             # Volume Cover
             gen_filename_body = generate_issue_name(

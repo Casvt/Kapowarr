@@ -16,8 +16,8 @@ from backend.implementations.blocklist import add_to_blocklist
 from backend.implementations.conversion import mass_convert
 from backend.implementations.converters import extract_files_from_folder
 from backend.implementations.file_matching import scan_files
-from backend.implementations.file_processing import (mass_export_metadata,
-                                                     mass_process_files)
+from backend.implementations.file_processing import mass_process_files
+from backend.implementations.metadata_export import export_issues_metadata
 from backend.implementations.naming import mass_rename
 from backend.implementations.volumes import Volume
 from backend.internals.db import commit, get_db
@@ -255,17 +255,19 @@ class PostProcessingContext:
 
     def export_metadata(self) -> None:
         "Export the metadata of the downloaded files"
-        if not Settings().sv.export_metadata:
+        if not Settings().sv.auto_export_metadata:
             return
 
         try:
-            mass_export_metadata(
+            export_issues_metadata(
                 self.download.volume_id,
-                filepath_filter=self.download.files,
-                force=True
+                force=True,
+                filepath_filter=self.download.files
             )
+
         except MetadataSourceRateLimitReached:
             pass
+
         return
 
 
