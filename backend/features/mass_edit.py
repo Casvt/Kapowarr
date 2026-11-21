@@ -5,10 +5,9 @@ from typing import Any, Callable, Dict, List, Tuple, TypeVar, Union
 from backend.base.custom_exceptions import (CredentialInvalid, InvalidKeyValue,
                                             KeyNotFound,
                                             MetadataSourceNotWorking,
-                                            MetadataSourceRateLimitReached,
                                             RootFolderNotFound,
                                             VolumeDownloadedFor)
-from backend.base.definitions import FilenameData, MonitorScheme
+from backend.base.definitions import FilenameData, MonitorScheme, StatusType
 from backend.base.logging import LOGGER
 from backend.features.download_queue import DownloadHandler
 from backend.features.search_full import auto_search
@@ -22,6 +21,7 @@ from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Volume, refresh_and_scan
 from backend.internals.db import iter_commit
 from backend.internals.server import MassEditorStatusEvent, WebSocket
+from backend.internals.status import StatusHandlers
 
 ActionCallable = Callable[[List[int], str, Dict[str, Any]], None]
 
@@ -331,19 +331,21 @@ def mass_editor_export_metadata(
         raise InvalidKeyValue('force', force)
 
     ws = WebSocket()
+    sh = StatusHandlers()
     total_items = len(volume_ids)
 
-    try:
-        for item_index, volume_id in enumerate(iter_commit(volume_ids)):
-            ws.emit(MassEditorStatusEvent(
-                identifier,
-                item_index + 1,
-                total_items
-            ))
+    for item_index, volume_id in enumerate(iter_commit(volume_ids)):
+        ws.emit(MassEditorStatusEvent(
+            identifier,
+            item_index + 1,
+            total_items
+        ))
 
-            export_issues_metadata(volume_id, force=force)
+        export_issues_metadata(volume_id, force=force)
 
-    except MetadataSourceRateLimitReached:
-        pass
+        if sh.problem_reported(
+            StatusType.CV_RATE_LIMIT, "fetch_extended_issue_metadata"
+        ):
+            break
 
     return

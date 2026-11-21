@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Type, TypeVar, Union
 
 from backend.base.custom_exceptions import (CredentialInvalid, InvalidKeyValue,
                                             MetadataSourceNotWorking,
-                                            MetadataSourceRateLimitReached,
                                             TaskNotDeletable, TaskNotFound)
 from backend.base.definitions import FilenameData, QueuedTaskData, Task
 from backend.base.helpers import Singleton, get_schedules_next_run
@@ -847,10 +846,7 @@ class MassExportMetadataVolume(Task):
         self.message = f'Exporting metadata for {volume_title}'
         WebSocket().emit(TaskStatusEvent(self.message))
 
-        try:
-            export_issues_metadata(self._volume_id, force=True)
-        except MetadataSourceRateLimitReached:
-            pass
+        export_issues_metadata(self._volume_id, force=True)
         return
 
 

@@ -6,7 +6,6 @@ from os.path import basename, exists, isfile, join, splitext
 from time import time
 from typing import TYPE_CHECKING, Dict
 
-from backend.base.custom_exceptions import MetadataSourceRateLimitReached
 from backend.base.definitions import (BlocklistReason,
                                       DownloadState, FileConstants)
 from backend.base.files import (copy_directory, delete_file_folder,
@@ -258,15 +257,11 @@ class PostProcessingContext:
         if not Settings().sv.auto_export_metadata:
             return
 
-        try:
-            export_issues_metadata(
-                self.download.volume_id,
-                force=True,
-                filepath_filter=self.download.files
-            )
-
-        except MetadataSourceRateLimitReached:
-            pass
+        export_issues_metadata(
+            self.download.volume_id,
+            force=True,
+            filepath_filter=self.download.files
+        )
 
         return
 
