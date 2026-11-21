@@ -16,8 +16,7 @@ from shutil import chown, copy2, copytree, move, rmtree
 from typing import Dict, Iterable, List, Sequence, Union
 from zipfile import ZIP_DEFLATED, ZipFile
 
-from backend.base.definitions import (CharConstants, Constants,
-                                      FileConstants, OSType)
+from backend.base.definitions import CharConstants, FileConstants, OSType
 from backend.base.helpers import (check_filter, force_prefix,
                                   force_suffix, get_os_type, run_rar)
 from backend.base.logging import LOGGER
@@ -458,39 +457,6 @@ def common_folder(files: Sequence[str]) -> str:
         return dirname(files[0])
 
     return commonpath(files)
-
-
-def generate_archive_folder(
-    volume_folder: str,
-    archive_file: str
-) -> str:
-    """Generate a folder in which the given archive file can be extracted. The
-    folder is not created.
-
-    ```
-    >>> generate_archive_folder(
-        '/comics/Batman',
-        '/comics/Batman/Batman #1-100/Batman (2010) #1-100.cbr'
-    )
-    '/comics/Batman/.archive_extract_Batman #1-100_Batman (2010) #1-100'
-    ```
-
-    Args:
-        volume_folder (str): The volume folder that the archive file is in.
-        archive_file (str): The filepath of the archive file itself.
-
-    Returns:
-        str: The folder in which the archive file can be extracted.
-    """
-    folder_name_parts = (
-        Constants.ARCHIVE_EXTRACT_FOLDER,
-        *relpath(splitext(archive_file)[0], volume_folder).split(sep)
-    )
-
-    return join(
-        volume_folder,
-        '_'.join(folder_name_parts)
-    )
 
 
 # region Creation

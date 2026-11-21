@@ -9,7 +9,8 @@ from __future__ import annotations
 from functools import lru_cache
 from itertools import chain
 from os import utime
-from os.path import basename, dirname, getmtime, isdir, isfile, join, splitext
+from os.path import basename, dirname, getmtime, isfile, join, splitext
+from tempfile import TemporaryDirectory
 from typing import Dict, List, Set, Tuple, Union
 from zipfile import ZipFile
 
@@ -18,8 +19,7 @@ from backend.base.file_extraction import extract_filename_data
 from backend.base.files import (archive_contains_issues, create_folder,
                                 create_zip_archive,
                                 delete_empty_parent_folders,
-                                delete_file_folder, generate_archive_folder,
-                                list_files, rename_file,
+                                delete_file_folder, list_files, rename_file,
                                 set_detected_extension)
 from backend.base.helpers import run_rar
 from backend.base.logging import LOGGER
@@ -60,13 +60,7 @@ def extract_files_from_folder(
 
     relevant_files: List[str] = []
     for file in folder_contents:
-        # Remove archive extraction folder name from filepath so that
-        # extracted series name is correct, if series name is extracted from
-        # foldername.
-        efd = extract_filename_data(
-            file.replace(Constants.ARCHIVE_EXTRACT_FOLDER + '_', ''),
-            assume_volume_number=False
-        )
+        efd = extract_filename_data(file, assume_volume_number=False)
 
         if folder_extraction_filter(efd, volume_data, volume_issues, end_year):
             relevant_files.append(file)
@@ -312,29 +306,25 @@ def zip_to_rar(file: str) -> List[str]:
         return [file]
 
     volume_folder = Volume(volume_id).vd.folder
-    archive_folder = generate_archive_folder(volume_folder, file)
+    with TemporaryDirectory(dir=volume_folder, prefix=".kapowarr-") as temp_dir:
+        with ZipFile(file, 'r') as zip:
+            zip.extractall(temp_dir)
 
-    with ZipFile(file, 'r') as zip:
-        zip.extractall(archive_folder)
-
-    target_file = splitext(file)[0] + '.rar'
-    result = run_rar([
-        'a', # Add files to archive
-        '-ep', # Exclude paths from names
-        '-inul', # Disable all messages
-        target_file, # Target filename of created archive
-        archive_folder # Source folder
-    ])
+        target_file = splitext(file)[0] + '.rar'
+        result = run_rar([
+            'a', # Add files to archive
+            '-ep', # Exclude paths from names
+            '-inul', # Disable all messages
+            target_file, # Target filename of created archive
+            temp_dir # Source folder
+        ])
 
     if result.returncode != 0 or not isfile(target_file):
         LOGGER.error(f"Failed to rar up files: Error {result.returncode}")
-        if isdir(archive_folder):
-            delete_file_folder(archive_folder)
         if isfile(target_file):
             delete_file_folder(target_file)
         return [file]
 
-    delete_file_folder(archive_folder)
     delete_file_folder(file)
     delete_empty_parent_folders(dirname(file), volume_folder)
 
@@ -359,15 +349,17 @@ def zip_to_folder(file: str) -> List[str]:
         return [file]
 
     volume_folder = Volume(volume_id).vd.folder
-    archive_folder = generate_archive_folder(volume_folder, file)
+    with TemporaryDirectory(dir=volume_folder, prefix=".kapowarr-") as temp_dir:
+        temp_dir = join(temp_dir, splitext(basename(file))[0])
+        create_folder(temp_dir)
 
-    with ZipFile(file, 'r') as zip:
-        zip.extractall(archive_folder)
+        with ZipFile(file, 'r') as zip:
+            zip.extractall(temp_dir)
 
-    resulting_files = extract_files_from_folder(
-        archive_folder,
-        volume_id
-    )
+        resulting_files = extract_files_from_folder(
+            temp_dir,
+            volume_id
+        )
 
     if resulting_files:
         scan_files(volume_id, filepath_filter=resulting_files)
@@ -433,35 +425,30 @@ def rar_to_zip(file: str) -> List[str]:
         return [file]
 
     volume_folder = Volume(volume_id).vd.folder
-    archive_folder = generate_archive_folder(volume_folder, file)
-    create_folder(archive_folder)
+    with TemporaryDirectory(dir=volume_folder, prefix=".kapowarr-") as temp_dir:
+        result = run_rar([
+            'x', # Extract files with full path
+            '-inul', # Disable all messages
+            file, # Source archive file
+            temp_dir # Target folder to extract into
+        ])
 
-    result = run_rar([
-        'x', # Extract files with full path
-        '-inul', # Disable all messages
-        file, # Source archive file
-        archive_folder # Target folder to extract into
-    ])
+        if result.returncode != 0 or not list_files(temp_dir):
+            LOGGER.error(f"Failed to unrar files: Error {result.returncode}")
+            return [file]
 
-    if result.returncode != 0 or not list_files(archive_folder):
-        LOGGER.error(f"Failed to unrar files: Error {result.returncode}")
-        if isdir(archive_folder):
-            delete_file_folder(archive_folder)
-        return [file]
+        # Files that are put in a ZIP file have to have a minimum last
+        # modification time.
+        for f in list_files(temp_dir):
+            if getmtime(f) <= Constants.ZIP_MIN_MOD_TIME:
+                utime(
+                    f,
+                    (Constants.ZIP_MIN_MOD_TIME, Constants.ZIP_MIN_MOD_TIME)
+                )
 
-    # Files that are put in a ZIP file have to have a minimum last
-    # modification time.
-    for f in list_files(archive_folder):
-        if getmtime(f) <= Constants.ZIP_MIN_MOD_TIME:
-            utime(
-                f,
-                (Constants.ZIP_MIN_MOD_TIME, Constants.ZIP_MIN_MOD_TIME)
-            )
+        target_file = splitext(file)[0] + '.zip'
+        create_zip_archive(temp_dir, target_file)
 
-    target_file = splitext(file)[0] + '.zip'
-    create_zip_archive(archive_folder, target_file)
-
-    delete_file_folder(archive_folder)
     delete_file_folder(file)
     delete_empty_parent_folders(dirname(file), volume_folder)
 
@@ -486,20 +473,21 @@ def rar_to_folder(file: str) -> List[str]:
         return [file]
 
     volume_folder = Volume(volume_id).vd.folder
-    archive_folder = generate_archive_folder(volume_folder, file)
-    create_folder(archive_folder)
+    with TemporaryDirectory(dir=volume_folder, prefix=".kapowarr-") as temp_dir:
+        temp_dir = join(temp_dir, splitext(basename(file))[0])
+        create_folder(temp_dir)
 
-    run_rar([
-        'x', # Extract files with full path
-        '-inul', # Disable all messages
-        file, # Source archive file
-        archive_folder # Target folder to extract into
-    ])
+        run_rar([
+            'x', # Extract files with full path
+            '-inul', # Disable all messages
+            file, # Source archive file
+            temp_dir # Target folder to extract into
+        ])
 
-    resulting_files = extract_files_from_folder(
-        archive_folder,
-        volume_id
-    )
+        resulting_files = extract_files_from_folder(
+            temp_dir,
+            volume_id
+        )
 
     if resulting_files:
         scan_files(volume_id, filepath_filter=resulting_files)

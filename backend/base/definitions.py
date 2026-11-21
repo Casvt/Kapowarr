@@ -80,9 +80,6 @@ class Constants:
     MAX_FILENAME_LENGTH = 255
     "The maximum amount of characters that a filename is allowed to be"
 
-    ARCHIVE_EXTRACT_FOLDER = ".archive_extract"
-    "The subfolder to extract archives into temporarily"
-
     ZIP_MIN_MOD_TIME = 315619200 # epoch
     "The minimum modification time that a file inside a zip should have"
 
