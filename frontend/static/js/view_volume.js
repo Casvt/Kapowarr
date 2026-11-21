@@ -36,6 +36,7 @@ const ViewEls = {
 		manual_search: document.querySelector('#manualsearch-button'),
 		rename: document.querySelector('#rename-button'),
 		convert: document.querySelector('#convert-button'),
+		export_metadata: document.querySelector('#export-metadata-button'),
 		manage: document.querySelector('#manage-button'),
 		files: document.querySelector('#files-button'),
 		edit: document.querySelector('#edit-button'),
@@ -303,6 +304,18 @@ function autosearchVolume(api_key) {
 
 	sendAPI('POST', '/system/tasks', api_key, {}, {
 		cmd: 'auto_search',
+		volume_id: volume_id
+	});
+};
+
+function exportMetadata(api_key) {
+	const button_info = task_to_button[`mass_export_metadata#${volume_id}`];
+	const icon = button_info.button.querySelector('img');
+	icon.src = button_info.loading_icon;
+	icon.classList.add('spinning');
+
+	sendAPI('POST', '/system/tasks', api_key, {}, {
+		cmd: 'mass_export_metadata',
 		volume_id: volume_id
 	});
 };
@@ -946,8 +959,21 @@ function showIssueInfo(issue_id, api_key) {
 	document.querySelector('#issue-rename-selector').dataset.issue_id = issue_id;
 	fetchAPI(`/issues/${issue_id}`, api_key)
 	.then(json => {
-		document.querySelector('#issue-info-title').innerText =
-			`${json.result.title} - #${json.result.issue_number} - ${json.result.date}`;
+		const issueTitle = document.querySelector('#issue-info-title');
+		if (json.result.title)
+			issueTitle.innerText = `${json.result.title} - #${json.result.issue_number}`;
+		else
+			issueTitle.innerText = `#${json.result.issue_number}`;
+		if (json.result.date)
+			issueTitle.innerText += ` - ${json.result.date}`;
+		if (json.result.site_url) {
+			const siteLink = document.createElement("a");
+			siteLink.innerText = "link";
+			siteLink.href = json.result.site_url;
+			issueTitle.innerText += " - ";
+			issueTitle.appendChild(siteLink);
+		}
+			
 		document.querySelector('#issue-info-desc').innerHTML = json.result.description;
 		const files_table = document.querySelector('#issue-files-list');
 		files_table.innerHTML = '';
@@ -1001,6 +1027,7 @@ usingApiKey()
 	ViewEls.tool_bar.manual_search.onclick = e => showManualSearch(api_key);
 	ViewEls.tool_bar.rename.onclick = e => showRename(api_key);
 	ViewEls.tool_bar.convert.onclick = e => showConvert(api_key);
+	ViewEls.tool_bar.export_metadata.onclick = e => exportMetadata(api_key);
 	ViewEls.tool_bar.manage.onclick = e => showManageIssues(api_key);
 	ViewEls.tool_bar.edit.onclick = e => showEdit(api_key);
 

@@ -1323,3 +1323,10 @@ def _migrate_add_torrent_usenet_indexer_fields() -> None:
     """)
 
     return
+
+
+@DatabaseMigrationHandler.register_handler(52)
+def _migrate_add_issue_site_url() -> None:
+    get_db().execute("ALTER TABLE issues ADD COLUMN site_url TEXT;")
+
+    return

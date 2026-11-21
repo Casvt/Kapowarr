@@ -747,6 +747,7 @@ class IssueMetadata(TypedDict):
     title: Union[str, None]
     date: Union[str, None]
     description: str
+    site_url: Union[str, None]
 
 
 class VolumeMetadata(TypedDict):
@@ -764,6 +765,38 @@ class VolumeMetadata(TypedDict):
     translated: bool
     already_added: Union[int, None]
     issues: Union[List[IssueMetadata], None]
+
+
+class ExtendedIssueFileMetadata(TypedDict):
+    """
+    Extended issue metadata that is not stored in the database, but fetched
+    on demand when needed.
+    """
+    cover_artist: Union[List[str], None]
+    writer: Union[List[str], None]
+    penciller: Union[List[str], None]
+    inker: Union[List[str], None]
+    colorist: Union[List[str], None]
+    letterer: Union[List[str], None]
+    editor: Union[List[str], None]
+    characters: Union[List[str], None]
+    teams: Union[List[str], None]
+    locations: Union[List[str], None]
+    storyarc: Union[List[str], None]
+
+
+class IssueFileMetadata(ExtendedIssueFileMetadata):
+    series: Union[str, None]
+    volume_number: Union[str, None]
+    format: Union[str, None]
+    publisher: Union[str, None]
+    issue_number: Union[str, None]
+    issue_title: Union[str, None]
+    issue_description: Union[str, None]
+    issue_year: Union[str, None]
+    issue_month: Union[str, None]
+    issue_day: Union[str, None]
+    issue_site_url: Union[str, None]
 
 
 class CVFileMapping(TypedDict):
@@ -899,6 +932,7 @@ class IssueData:
     title: Union[str, None]
     date: Union[str, None]
     description: str
+    site_url: Union[str, None]
     monitored: bool
     files: List[FileData]
 

@@ -549,6 +549,7 @@ def check_mock_filename(
         title="One Shot",
         date="2023-03-04",
         description="",
+        site_url=None,
         monitored=True,
         files=[]
     )
@@ -776,9 +777,6 @@ def preview_mass_rename(
                 volume_data,
                 issues[0],
             )
-
-            if basename(file.lower()) in FileConstants.METADATA_FILES:
-                gen_filename_body += ' ' + splitext(basename(file))[0]
 
         elif file.endswith(FileConstants.IMAGE_EXTENSIONS):
             # Volume Cover

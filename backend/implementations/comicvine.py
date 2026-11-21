@@ -17,8 +17,9 @@ from backend.base.custom_exceptions import (CredentialInvalid,
                                             MetadataSourceNotWorking,
                                             MetadataSourceRateLimitReached)
 from backend.base.definitions import (BrokenMetadataSourceReason, Constants,
-                                      FilenameData, IssueMetadata,
-                                      StatusType, T, VolumeMetadata)
+                                      ExtendedIssueFileMetadata, FilenameData,
+                                      IssueMetadata, StatusType, T,
+                                      VolumeMetadata)
 from backend.base.file_extraction import (extract_issue_number,
                                           extract_volume_number, volume_regex)
 from backend.base.helpers import (AsyncSession, Session, batched,
@@ -49,10 +50,27 @@ translation_regex = compile(
     IGNORECASE)
 headers = {'h2', 'h3', 'h4', 'h5', 'h6'}
 lists = {'ul', 'ol'}
+ROLE_MAPPING = {
+    "cover": "cover_artist",
+    "writer": "writer",
+    "script": "writer",
+    "plot": "writer",
+    "story": "writer",
+    "penciller": "penciller",
+    "penciler": "penciller",
+    "artist": "penciller",
+    "breakdown": "penciller",
+    "inker": "inker",
+    "finisher": "inker",
+    "colorist": "colorist",
+    "colourist": "colorist",
+    "letterer": "letterer",
+    "editor": "editor"
+}
 # autopep8: on
 
 
-def _clean_description(description: str, short: bool = False) -> str:
+def clean_description(description: str, short: bool = False) -> str:
     """Reduce the size of the volume/issue description (written in html) to only
     essential information. Removes images, lists (e.g. of authors), and fixes
     links that have a relative URL.
@@ -158,7 +176,15 @@ class ComicVine:
         'cover_date',
         'store_date',
         'description',
-        'volume'
+        'volume',
+        'site_detail_url'
+    ))
+    extended_issue_field_list = ','.join((
+        'person_credits',
+        'character_credits',
+        'team_credits',
+        'location_credits',
+        'story_arc_credits',
     ))
     search_field_list = ','.join((
         'aliases',
@@ -327,7 +353,7 @@ class ComicVine:
         """
         volume_number = self.__determine_volume_number(volume_data)
 
-        description = _clean_description(volume_data['description'])
+        description = clean_description(volume_data['description'])
 
         # Determine translation value
         translated = translation_regex.match(
@@ -388,11 +414,49 @@ class ComicVine:
             'calculated_issue_number': calculated_issue_number,
             'title': normalise_string(issue_data['name'] or '') or None,
             'date': issue_data[self.date_type] or None,
-            'description': _clean_description(
+            'description': clean_description(
                 issue_data['description'],
                 short=True
-            )
+            ),
+            'site_url': issue_data['site_detail_url'] or None
         }
+
+        return result
+
+    def __format_extended_metadata_output(
+        self,
+        metadata_output: Dict[str, Any]
+    ) -> ExtendedIssueFileMetadata:
+        """Format the API output containing the extended metadata of an issue.
+
+        Args:
+            metadata_output (Dict[str, Any]): The API output.
+
+        Returns:
+            ExtendedIssueFileMetadata: The formatted data.
+        """
+        def names(key): return list(
+            map(lambda i: i["name"], metadata_output[key]))
+
+        result: ExtendedIssueFileMetadata = {
+            'cover_artist': [],
+            'writer': [],
+            'penciller': [],
+            'inker': [],
+            'colorist': [],
+            'letterer': [],
+            'editor': [],
+            'characters': names('character_credits'),
+            'teams': names('team_credits'),
+            'locations': names('location_credits'),
+            'storyarc': names('story_arc_credits')
+        }
+
+        for person in metadata_output["person_credits"]:
+            roles = person["role"].replace(", ", ",").split(",")
+            for role in roles:
+                if role in ROLE_MAPPING:
+                    result[ROLE_MAPPING[role]].append(person["name"])
 
         return result
 
@@ -693,6 +757,64 @@ class ComicVine:
                             ))
 
             return issue_infos
+
+    async def fetch_extended_metadata_issues(
+        self,
+        cv_ids: Sequence[int]
+    ) -> Dict[int, ExtendedIssueFileMetadata]:
+        """Get the extended metadata of multiple issues.
+
+        Args:
+            cv_ids (Sequence[Union[str, int]]): The CV IDs of the issues.
+
+        Raises:
+            MetadataSourceDataEntryNotFound: The ID doesn't map to any issue.
+
+        Returns:
+            Union[int, ExtendedIssueMetadata]: The CV ID of the issue mapped
+                to its data. The collection of issues could be incomplete if the
+                rate limit was reached.
+        """
+        LOGGER.debug(f'Fetching extended issue metadata for issue {cv_ids}')
+
+        issue_infos: Dict[int, ExtendedIssueFileMetadata] = {}
+
+        rate_limit_reached = False
+        async with AsyncSession() as session:
+            async for id_batch in self.__sleep_iter(batched(cv_ids, 10), 10):
+                tasks = (
+                    self.__call_api(
+                        session,
+                        f'/issue/4000-{cv_id}',
+                        {'field_list': self.extended_issue_field_list},
+                        {'results': {}}
+                    )
+                    for cv_id in id_batch
+                )
+                responses = await gather(*tasks)
+
+                for cv_id, response in zip(id_batch, responses):
+                    if not response["results"]:
+                        rate_limit_reached = True
+                        continue
+
+                    issue_infos[cv_id] = self.__format_extended_metadata_output(
+                        response["results"]
+                    )
+
+                if rate_limit_reached:
+                    break
+
+        if rate_limit_reached:
+            StatusHandlers().report(
+                StatusType.CV_RATE_LIMIT, "fetch_extended_issue_metadata"
+            )
+        else:
+            StatusHandlers().clear(
+                StatusType.CV_RATE_LIMIT, "fetch_extended_issue_metadata"
+            )
+
+        return issue_infos
 
     async def __search_volume(
         self, query: str

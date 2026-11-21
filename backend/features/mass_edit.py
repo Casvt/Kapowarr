@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict, List, Tuple, TypeVar, Union
 from backend.base.custom_exceptions import (CredentialInvalid, InvalidKeyValue,
                                             KeyNotFound,
                                             MetadataSourceNotWorking,
+                                            MetadataSourceRateLimitReached,
                                             RootFolderNotFound,
                                             VolumeDownloadedFor)
 from backend.base.definitions import FilenameData, MonitorScheme
@@ -15,6 +16,7 @@ from backend.implementations.conversion import mass_convert
 from backend.implementations.file_processing import (mass_set_file_date,
                                                      mass_set_ownership,
                                                      mass_set_permissions)
+from backend.implementations.metadata_export import export_issues_metadata
 from backend.implementations.naming import mass_rename
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Volume, refresh_and_scan
@@ -314,5 +316,34 @@ def mass_editor_file_ownership(
 ) -> None:
     for volume_id in volume_ids:
         mass_set_ownership(volume_id)
+
+    return
+
+
+@MassEditorActionManager.register_action('export_metadata')
+def mass_editor_export_metadata(
+    volume_ids: List[int],
+    identifier: str,
+    kwargs: Any
+) -> None:
+    force = kwargs.get('force', False)
+    if not isinstance(force, bool):
+        raise InvalidKeyValue('force', force)
+
+    ws = WebSocket()
+    total_items = len(volume_ids)
+
+    try:
+        for item_index, volume_id in enumerate(iter_commit(volume_ids)):
+            ws.emit(MassEditorStatusEvent(
+                identifier,
+                item_index + 1,
+                total_items
+            ))
+
+            export_issues_metadata(volume_id, force=force)
+
+    except MetadataSourceRateLimitReached:
+        pass
 
     return

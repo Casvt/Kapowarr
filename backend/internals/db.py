@@ -423,6 +423,7 @@ CREATE TABLE IF NOT EXISTS issues(
     date VARCHAR(10),
     description TEXT,
     monitored BOOL NOT NULL DEFAULT 1,
+    site_url TEXT,
 
     FOREIGN KEY (volume_id) REFERENCES volumes(id)
         ON DELETE CASCADE
