@@ -660,7 +660,7 @@ def normalise_base_url(base_url: str) -> str:
     Returns:
         str: Normalised base URL.
     """
-    result = base_url.rstrip('/')
+    result = base_url.rstrip('/').split("#")[0].split("?")[0]
     if not result.startswith(("http://", "https://")):
         result = f"http://{result}"
     return result
