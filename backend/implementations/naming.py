@@ -162,17 +162,13 @@ def get_volume_naming_keys(volume_data: VolumeData) -> VolumeNamingKeys:
 
 
 def get_special_version_naming_keys(
-    volume_data: VolumeData,
-    is_volume_cover: bool = False
+    volume_data: VolumeData
 ) -> VolumeNamingKeys:
     """Generate the values of the naming keys for a Special Version file, like
     an OS, HC, etc.
 
     Args:
         volume_data (VolumeData): The data of the volume to base the values on.
-        is_volume_cover (bool, optional): Whether the special version key should
-            be given a value for covers.
-            Defaults to False.
 
     Returns:
         VolumeNamingKeys: The values of the naming keys for a Special Version file.
@@ -182,13 +178,8 @@ def get_special_version_naming_keys(
     else:
         sv_mapping = SV_TO_SHORT_TERM
 
-    if is_volume_cover:
-        special_version = SpecialVersion.COVER
-    else:
-        special_version = volume_data.special_version
-
     result = get_volume_naming_keys(volume_data)
-    result.special_version = sv_mapping.get(special_version)
+    result.special_version = sv_mapping.get(volume_data.special_version)
     return result
 
 
@@ -266,8 +257,7 @@ def generate_volume_folder_path(
 
 def _determine_format(
     volume_data: VolumeData,
-    calculated_issue_number: Union[float, Tuple[float, float], None],
-    is_volume_cover: bool = False
+    calculated_issue_number: Union[float, Tuple[float, float], None]
 ) -> Tuple[str, BaseNamingKeys]:
     """Determine which naming format should be used and prepare the formatting
     key values for it.
@@ -277,9 +267,6 @@ def _determine_format(
         calculated_issue_number (Union[float, Tuple[float, float], None]):
             The issue (or issue range) that the file covers. Give volume number
             here in case of VAI.
-        is_volume_cover (bool, optional): Whether the special version key should
-            be given a value for volume covers.
-            Defaults to False.
 
     Raises:
         IssueNotFound: No issue found with the given issue number.
@@ -290,15 +277,7 @@ def _determine_format(
     """
     sv = Settings().sv
 
-    if is_volume_cover:
-        # Iron-Man Volume 2 Cover
-        formatting_data = get_special_version_naming_keys(
-            volume_data,
-            is_volume_cover=True
-        )
-        format = sv.file_naming_special_version
-
-    elif volume_data.special_version in (
+    if volume_data.special_version in (
         SpecialVersion.TPB,
         SpecialVersion.ONE_SHOT,
         SpecialVersion.HARD_COVER,
@@ -337,8 +316,7 @@ def _determine_format(
 
 def generate_issue_name(
     volume_data: VolumeData,
-    calculated_issue_number: Union[float, Tuple[float, float], None],
-    is_volume_cover: bool = False
+    calculated_issue_number: Union[float, Tuple[float, float], None]
 ) -> str:
     """Generate an issue filename based on the format string for the issue type.
 
@@ -347,9 +325,6 @@ def generate_issue_name(
         calculated_issue_number (Union[float, Tuple[float, float], None]):
             The issue (or issue range) that the file covers. Give volume number
             here in case of VAI.
-        is_volume_cover (bool, optional): Whether the name is for a volume cover
-            instead of an issue file.
-            Defaults to False.
 
     Raises:
         IssueNotFound: No issue found with the given issue number.
@@ -360,7 +335,7 @@ def generate_issue_name(
     sv = Settings().sv
 
     naming_format, formatting_data = _determine_format(
-        volume_data, calculated_issue_number, is_volume_cover
+        volume_data, calculated_issue_number
     )
 
     if (
@@ -778,16 +753,8 @@ def preview_mass_rename(
                 issues[0],
             )
 
-        elif file.endswith(FileConstants.IMAGE_EXTENSIONS):
-            # Volume Cover
-            gen_filename_body = generate_issue_name(
-                volume_data,
-                calculated_issue_number=None,
-                is_volume_cover=True
-            )
-
         else:
-            # Metadata
+            # Metadata or volume cover
             gen_filename_body = splitext(basename(file))[0]
 
         if issues and file.endswith(FileConstants.IMAGE_EXTENSIONS):
