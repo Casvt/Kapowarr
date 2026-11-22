@@ -199,38 +199,31 @@ class TorznabIndexer(BaseIndexerClient):
                         "apikey": api_key
                     }
                 )
-                if response.status_code in (401, 403):
-                    raise CredentialInvalid
-
-                if not response.ok:
-                    raise ClientNotWorking(
-                        BrokenClientReason.CONNECTION_ERROR
-                    )
-
-                if response.headers["Content-Type"].split(";")[0] not in (
-                    "application/xml",
-                    "application/rss",
-                    "application/rss+xml"
-                ):
-                    raise ClientNotWorking(
-                        BrokenClientReason.NOT_CLIENT_INSTANCE
-                    )
-
-                root = ElementTree.XML(response.text)
-                if (
-                    root.tag == "error"
-                    and 100 <= int(root.attrib.get("code") or -1) <= 107
-                ):
-                    raise CredentialInvalid
-
-                if root.tag != "caps":
-                    raise ClientNotWorking(
-                        BrokenClientReason.NOT_CLIENT_INSTANCE
-                    )
 
             except RequestException:
-                raise ClientNotWorking(
-                    BrokenClientReason.CONNECTION_ERROR
-                )
+                raise ClientNotWorking(BrokenClientReason.CONNECTION_ERROR)
+
+        if response.status_code in (401, 403):
+            raise CredentialInvalid
+
+        if not response.ok:
+            raise ClientNotWorking(BrokenClientReason.CONNECTION_ERROR)
+
+        if response.headers["Content-Type"].split(";")[0] not in (
+            "application/xml",
+            "application/rss",
+            "application/rss+xml"
+        ):
+            raise ClientNotWorking(BrokenClientReason.NOT_CLIENT_INSTANCE)
+
+        root = ElementTree.XML(response.text)
+        if (
+            root.tag == "error"
+            and 100 <= int(root.attrib.get("code") or -1) <= 107
+        ):
+            raise CredentialInvalid
+
+        if root.tag != "caps":
+            raise ClientNotWorking(BrokenClientReason.NOT_CLIENT_INSTANCE)
 
         return

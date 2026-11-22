@@ -3,7 +3,7 @@
 from collections import OrderedDict
 from datetime import datetime
 from html import unescape
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, List, Union
 from urllib.parse import unquote
 from xml.etree import ElementTree
 
@@ -15,7 +15,6 @@ from backend.base.definitions import (BrokenClientReason, DownloadType,
                                       SearchQuery, SearchResultData)
 from backend.base.file_extraction import extract_filename_data
 from backend.base.helpers import AsyncSession, Session
-from backend.base.logging import LOGGER
 from backend.implementations.indexer_client_manager import (BaseIndexerClient,
                                                             IndexerClients)
 
@@ -44,21 +43,6 @@ def _remember_title(link: str, title: str) -> None:
     while len(RECENT_TITLES) > 10_000:
         RECENT_TITLES.popitem(last=False)
     return
-
-
-def _newznab_error(root: ElementTree.Element) -> Union[Tuple[str, str], None]:
-    """Get the Newznab error in a response, if it is one.
-
-    Args:
-        root (Element): The root of the XML response.
-
-    Returns:
-        Union[Tuple[str, str], None]: The error code and description, or
-            `None` if the response isn't an error.
-    """
-    if root.tag != 'error':
-        return None
-    return (root.get('code') or '', root.get('description') or '')
 
 
 @IndexerClients.register_client(
@@ -131,49 +115,28 @@ class NewznabIndexer(BaseIndexerClient):
             "leechers": None
         }
 
-    async def _request(
-        self,
-        params: Dict[str, Any]
-    ) -> Union[ElementTree.Element, None]:
+    async def search(self, query: SearchQuery) -> QueryResult:
         if not self.session:
             self.session = AsyncSession()
 
-        text = await self.session.get_text(
+        offset = (query['page'] - 1) * PAGE_SIZE
+        response = await self.session.get_text(
             self._url + (self._api_path or ''),
             params={
-                **params,
-                'apikey': self._api_key or '',
-                'cat': str(self._categories or [])
+                't': 'search',
+                'q': query['query'],
+                'cat': str(self._categories or []),
+                'offset': offset,
+                'limit': PAGE_SIZE,
+                'extended': 1,
+                'apikey': self._api_key
             },
             quiet_fail=True
         )
-        if not text:
-            return None
-
-        root = ElementTree.XML(text)
-
-        error = _newznab_error(root)
-        if error:
-            LOGGER.warning(
-                f"Newznab indexer {self._title} returned error {error[0]}: "
-                f"{error[1]}"
-            )
-            return None
-
-        return root
-
-    async def search(self, query: SearchQuery) -> QueryResult:
-        offset = (query['page'] - 1) * PAGE_SIZE
-        root = await self._request({
-            't': 'search',
-            'q': query['query'],
-            'offset': offset,
-            'limit': PAGE_SIZE,
-            'extended': 1
-        })
-        if root is None:
+        if not response:
             return QueryResult([], next_page_available=False)
 
+        root = ElementTree.XML(response)
         channel = root.find('channel')
         if channel is None:
             return QueryResult([], next_page_available=False)
@@ -208,17 +171,26 @@ class NewznabIndexer(BaseIndexerClient):
         )
 
     async def discover(self, last_check: datetime) -> List[SearchResultData]:
-        root = await self._request({
-            't': 'search',
-            'limit': PAGE_SIZE,
-            'extended': 1,
-            'q': ''
-        })
-        if root is None:
+        if not self.session:
+            self.session = AsyncSession()
+
+        response = await self.session.get_text(
+            self._url + (self._api_path or ''),
+            params={
+                't': 'search',
+                'q': '',
+                'cat': str(self._categories or []),
+                'limit': PAGE_SIZE,
+                'extended': 1,
+                'apikey': self._api_key
+            },
+            quiet_fail=True
+        )
+        if not response:
             return []
 
         formatted_results: List[SearchResultData] = []
-        for item in root.iter("item"):
+        for item in ElementTree.XML(response).iter("item"):
             processed_item = self.__process_item(item)
             if processed_item is None:
                 continue
@@ -256,15 +228,15 @@ class NewznabIndexer(BaseIndexerClient):
         with Session() as session:
             try:
                 # Searching instead of asking for the capabilities, because
-                # some indexers allow `t=caps` without (valid) API key.
+                # some indexers allow t=caps without (valid) API key.
                 response = session.get(
                     url + (api_path or ''),
                     params={
                         't': 'search',
                         'q': 'test',
+                        'cat': categories,
                         'limit': 1,
-                        'apikey': api_key or '',
-                        'cat': categories
+                        'apikey': api_key
                     }
                 )
 
@@ -272,35 +244,26 @@ class NewznabIndexer(BaseIndexerClient):
                 raise ClientNotWorking(BrokenClientReason.CONNECTION_ERROR)
 
         if response.status_code in (401, 403):
-            # E.g. Prowlarr answers a wrong API key with an empty 401
             raise CredentialInvalid
 
         if not response.ok:
-            raise ClientNotWorking(
-                BrokenClientReason.CONNECTION_ERROR
-            )
+            raise ClientNotWorking(BrokenClientReason.CONNECTION_ERROR)
 
         if response.headers["Content-Type"].split(";")[0] not in (
             "application/xml",
             "application/rss",
             "application/rss+xml"
         ):
-            raise ClientNotWorking(
-                BrokenClientReason.NOT_CLIENT_INSTANCE
-            )
+            raise ClientNotWorking(BrokenClientReason.NOT_CLIENT_INSTANCE)
 
         root = ElementTree.XML(response.text)
-        error = _newznab_error(root)
-        if error:
-            if error[0] in NEWZNAB_AUTH_ERRORS:
-                raise CredentialInvalid
-            LOGGER.error(
-                f"Newznab indexer returned error {error[0]}: {error[1]}"
-            )
-            raise ClientNotWorking(
-                BrokenClientReason.FAILED_PROCESSING_RESPONSE
-            )
+        if (
+            root.tag == "error"
+            and 100 <= int(root.attrib.get("code") or -1) <= 107
+        ):
+            raise CredentialInvalid
 
         if root.tag != 'rss':
             raise ClientNotWorking(BrokenClientReason.NOT_CLIENT_INSTANCE)
+
         return
