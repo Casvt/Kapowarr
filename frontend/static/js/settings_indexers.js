@@ -275,6 +275,8 @@ async function testEditIndexer(apiKey) {
 	const data = {
 		download_type: parseInt(form.dataset.download_type),
 		client_type: form.dataset.type,
+		title: form.querySelector('#edit-title-input').value,
+		enabled: form.querySelector('#edit-enabled-input').checked,
 		url: form.querySelector('#edit-url-input').value,
 		gc_service_preference: gcServicePreference,
 		gc_avoid_large_downloads: form.querySelector('#edit-gc-avoid-input')?.checked ?? null,
@@ -426,6 +428,8 @@ async function testAddIndexer(apiKey) {
 	const data = {
 		download_type: parseInt(form.dataset.download_type),
 		client_type: form.dataset.type,
+		title: form.querySelector('#add-title-input').value,
+		enabled: form.querySelector('#add-enabled-input').checked,
 		url: form.querySelector('#add-url-input').value,
 		gc_service_preference: gcServicePreference,
 		gc_avoid_large_downloads: form.querySelector('#add-gc-avoid-input')?.checked ?? null,
