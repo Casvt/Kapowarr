@@ -52,7 +52,8 @@ const enqueueFailureReasonMap = {
     only_rate_limited_links: "All working download links on the webpage are from rate limited services",
 
     link_broken: "Download link broken",
-    link_rate_limited: "Download link rate limited"
+    link_rate_limited: "Download link rate limited",
+	no_download_client_available: "No download client available"
 }
 
 //

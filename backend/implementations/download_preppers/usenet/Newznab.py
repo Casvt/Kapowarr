@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
 
-"""
-Turns an NZB link from a Newznab indexer into a usenet download.
-"""
-
 from html import unescape
 from re import IGNORECASE, compile
 from typing import List, Optional, Union
@@ -14,13 +10,13 @@ from requests import RequestException
 from backend.base.custom_exceptions import (EnqueuingDownloadFailure,
                                             ExternalClientNotFound,
                                             IssueNotFound)
-from backend.base.definitions import (Download, DownloadPrepper,
-                                      DownloadService, DownloadType,
+from backend.base.definitions import (Download, DownloadClientIdentifier,
+                                      DownloadPrepper, DownloadService,
+                                      DownloadType,
                                       EnqueuingDownloadFailureReason,
                                       FilenameData)
 from backend.base.helpers import Session
-from backend.base.logging import LOGGER
-from backend.implementations.download_clients.Usenet import UsenetDownload
+from backend.implementations.download_client_manager import DownloadClients
 from backend.implementations.download_prepper_manager import DownloadPreppers
 from backend.implementations.indexer_client_manager import IndexerClients
 from backend.implementations.indexer_clients.usenet.Newznab import \
@@ -126,7 +122,6 @@ class NewznabPrepper(DownloadPrepper):
         Returns:
             str: The release name.
         """
-        LOGGER.debug(f"Fetching NZB {self.link}")
         with Session() as session:
             try:
                 response = session.get(self.link)
@@ -144,7 +139,6 @@ class NewznabPrepper(DownloadPrepper):
 
         nzb = response.text
         if '<nzb' not in nzb[:2000].lower():
-            LOGGER.warning(f"Link does not serve an NZB: {self.link}")
             raise EnqueuingDownloadFailure(
                 EnqueuingDownloadFailureReason.WEBPAGE_BROKEN
             )
@@ -159,20 +153,19 @@ class NewznabPrepper(DownloadPrepper):
     def get_downloads(self) -> List[Download]:
         self._web_title = self.__fetch_nzb()
 
-        indexer_title = IndexerClients.get_client(self.indexer_id).title
-
         try:
-            download = UsenetDownload(
+            download = DownloadClients.get_client(
+                DownloadClientIdentifier.USENET)(
                 download_link=self.link,
                 volume_id=self.volume_id,
                 covered_issues=self.title_data["issue_number"],
                 download_service=DownloadService.USENET,
-                source_name=indexer_title,
+                source_name=IndexerClients.get_client(
+                    self.indexer_id).title,
                 web_link=None,
                 web_title=self._web_title,
                 web_sub_title=None,
-                forced_match=self.force_match
-            )
+                forced_match=self.force_match)
 
         except IssueNotFound:
             raise EnqueuingDownloadFailure(
@@ -180,12 +173,8 @@ class NewznabPrepper(DownloadPrepper):
             )
 
         except ExternalClientNotFound:
-            LOGGER.error(
-                "Can't download from usenet: no usenet client (e.g. SABnzbd) "
-                "is set up and enabled"
-            )
             raise EnqueuingDownloadFailure(
-                EnqueuingDownloadFailureReason.NO_WORKING_LINKS
+                EnqueuingDownloadFailureReason.NO_DOWNLOAD_CLIENT_AVAILABLE
             )
 
         return [download]

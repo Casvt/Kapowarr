@@ -2,7 +2,9 @@
 
 from typing import List, Union
 
-from backend.base.custom_exceptions import EnqueuingDownloadFailure
+from backend.base.custom_exceptions import (EnqueuingDownloadFailure,
+                                            ExternalClientNotFound,
+                                            IssueNotFound)
 from backend.base.definitions import (Download, DownloadClientIdentifier,
                                       DownloadPrepper, DownloadService,
                                       DownloadType,
@@ -54,15 +56,24 @@ class TorznabPrepper(DownloadPrepper):
                     EnqueuingDownloadFailureReason.LINK_BROKEN
                 )
 
-        download = DownloadClients.get_client(DownloadClientIdentifier.TORRENT)(
-            download_link=self.link,
-            volume_id=self.volume_id,
-            covered_issues=self.title_data["issue_number"],
-            download_service=DownloadService.TORRENT,
-            source_name=IndexerClients.get_client(self.indexer_id).title,
-            web_link=None,
-            web_title=None,
-            web_sub_title=None,
-            forced_match=self.force_match
-        )
+        try:
+            download = DownloadClients.get_client(
+                DownloadClientIdentifier.TORRENT)(
+                download_link=self.link, volume_id=self.volume_id,
+                covered_issues=self.title_data["issue_number"],
+                download_service=DownloadService.TORRENT,
+                source_name=IndexerClients.get_client(self.indexer_id).title,
+                web_link=None, web_title=None, web_sub_title=None,
+                forced_match=self.force_match)
+
+        except IssueNotFound:
+            raise EnqueuingDownloadFailure(
+                EnqueuingDownloadFailureReason.NO_MATCHES
+            )
+
+        except ExternalClientNotFound:
+            raise EnqueuingDownloadFailure(
+                EnqueuingDownloadFailureReason.NO_DOWNLOAD_CLIENT_AVAILABLE
+            )
+
         return [download]

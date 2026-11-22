@@ -508,6 +508,7 @@ class EnqueuingDownloadFailureReason(BaseEnum):
     # Any download link, whether webpage or direct link.
     LINK_BROKEN = "link_broken"
     LINK_RATE_LIMITED = "link_rate_limited"
+    NO_DOWNLOAD_CLIENT_AVAILABLE = "no_download_client_available"
 
 
 class DownloadType(BaseEnum):
