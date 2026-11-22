@@ -19,13 +19,6 @@ from backend.implementations.search_action_planner import SearchActionPlanner
 from backend.implementations.volumes import Volume
 
 
-def _range_width(issue_range: Tuple[float, float]) -> float:
-    """The number of issues an issue range covers. Never zero: release names
-    can parse into a reversed range (e.g. dotted usenet names), which would
-    otherwise divide by zero when ranking."""
-    return max(abs(issue_range[1] - issue_range[0]) + 1, 1.0)
-
-
 class IndexerTeam(TypedDict):
     indexer: IndexerClient
     query_builder: QueryBuilder
@@ -166,9 +159,9 @@ class SearchCoordinator:
                     <= result['issue_number'][1]
                 ):
                     # Issue number falls between range
-                    rating.append(
-                        1 - (1 / _range_width(result['issue_number']))
-                    )
+                    rating.append(1 - (1 / max(abs(
+                        result['issue_number'][1] - result['issue_number'][0]
+                    ) + 1, 1.0)))
 
                 else:
                     # Issue number falls outside so release is not useful
@@ -185,7 +178,9 @@ class SearchCoordinator:
         else:
             # Search was for volume
             if isinstance(result['issue_number'], tuple):
-                rating.append(1.0 / _range_width(result['issue_number']))
+                rating.append(1.0 / max(abs(
+                    result['issue_number'][1] - result['issue_number'][0]
+                ) + 1, 1.0))
 
             elif isinstance(result['issue_number'], float):
                 rating.append(1)
