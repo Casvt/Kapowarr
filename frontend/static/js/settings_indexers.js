@@ -451,7 +451,8 @@ async function testAddIndexer(apiKey) {
 
 const typeToList = {
 	1: document.querySelector("#ddl-indexer-list"),
-	2: document.querySelector("#torrent-indexer-list")
+	2: document.querySelector("#torrent-indexer-list"),
+	3: document.querySelector("#usenet-indexer-list")
 };
 
 function loadIndexers(apiKey) {

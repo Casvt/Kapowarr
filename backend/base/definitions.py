@@ -515,6 +515,7 @@ class DownloadType(BaseEnum):
 
     DDL = 1
     TORRENT = 2
+    USENET = 3
 
 
 class IndexerClientField(BaseEnum):
@@ -610,6 +611,8 @@ class DownloadService(BaseEnum):
     "A torrent magnet link directly on the webpage"
 
     TORRENT = "Torrent"
+    USENET = "Usenet"
+    "An NZB from a Newznab indexer, downloaded by a usenet client"
 
 
 class DownloadClientIdentifier(BaseEnum):
@@ -623,6 +626,7 @@ class DownloadClientIdentifier(BaseEnum):
     PIXELDRAIN = "pd"
     PIXELDRAIN_FOLDER = "pd_folder"
     TORRENT = "torrent"
+    USENET = "usenet"
     WETRANSFER = "wt"
 
 

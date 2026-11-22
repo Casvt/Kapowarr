@@ -154,7 +154,7 @@
 		<div id="choose-torrent-list"></div>
 	{% endset %}
 
-	{{ window(False, "choose-torrent-window", "Choose Torrent Client", choose_content) }}
+	{{ window(False, "choose-torrent-window", "Choose Download Client", choose_content) }}
 
 	{% set add_content %}
 		<p class="error hidden" id="add-error"></p>
@@ -192,7 +192,7 @@
 		<button id="submit-torrent-add" type="submit" form="add-torrent-form">Add</button>
 	{% endset %}
 
-	{{ window(False, "add-torrent-window", "Add Torrent Client", add_content, add_submit) }}
+	{{ window(False, "add-torrent-window", "Add Download Client", add_content, add_submit) }}
 
 	{% set edit_content %}
 		<p class="error hidden" id="edit-error"></p>
@@ -231,7 +231,7 @@
 		<button id="submit-torrent-edit" type="submit" form="edit-torrent-form">Save</button>
 	{% endset %}
 
-	{{ window(False, "edit-torrent-window", "Edit Torrent Client", edit_content, edit_submit) }}
+	{{ window(False, "edit-torrent-window", "Edit Download Client", edit_content, edit_submit) }}
 
 	{% set add_remote_mapping_content %}
 		<p class="error hidden" id="add-mapping-error"></p>
@@ -317,6 +317,12 @@
 		<h2>Torrent Clients</h2>
 		<div id="torrent-client-list" class="client-list">
 			<button id="add-torrent-client" class="add-button icon-text-color" title="Add torrent client">
+				<img src="{{url_base}}/static/img/cancel.svg" alt="">
+			</button>
+		</div>
+		<h2>Usenet Clients</h2>
+		<div id="usenet-client-list" class="client-list">
+			<button id="add-usenet-client" class="add-button icon-text-color" title="Add usenet client">
 				<img src="{{url_base}}/static/img/cancel.svg" alt="">
 			</button>
 		</div>
