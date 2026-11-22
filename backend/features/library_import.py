@@ -25,8 +25,8 @@ from backend.base.logging import LOGGER
 from backend.implementations.comicvine import ComicVine
 from backend.implementations.file_matching import scan_files
 from backend.implementations.matching import match_special_version
-from backend.implementations.metadata_formats import \
-    get_issue_metadata_contents
+from backend.implementations.metadata_formats import (
+    get_issue_metadata_contents, get_volume_metadata_contents)
 from backend.implementations.naming import mass_rename
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Library
@@ -141,9 +141,9 @@ def _find_volume_match(
     group_to_files: Dict[int, Dict[str, FilenameData]],
     only_english: bool
 ) -> Dict[int, LibraryImportMatch]:
-    """Find a match at the metadata source for each group. First the metadata
-    files of the groups are checked for any references to IDs. Otherwise a
-    search is done to find a volume that matches the group.
+    """Find a match at the metadata source for each group. First the volume and
+    issue metadata files of the groups are checked for IDs. Otherwise a search
+    is done to find a volume that matches the group.
 
     Args:
         group_to_files (Dict[int, Dict[str, FilenameData]]): The mapping from
@@ -158,6 +158,15 @@ def _find_volume_match(
     volume_matches: Dict[int, int] = {}
     issue_matches: Dict[int, int] = {}
     for group_id, group_files in group_to_files.items():
+        series_metadata = get_volume_metadata_contents(
+            common_folder(list(group_files))
+        )
+        if series_metadata:
+            comicvine_id = series_metadata.get("comicid")
+            if isinstance(comicvine_id, int):
+                volume_matches[comicvine_id] = group_id
+                continue
+
         for group_file in group_files:
             file_metadata = get_issue_metadata_contents(group_file)
             if file_metadata is None:

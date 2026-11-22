@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime
+from json import JSONDecodeError, dumps, load
 from os import replace, stat
 from os.path import basename, dirname, isdir, isfile, join, splitext
 from re import sub
@@ -14,8 +15,9 @@ from bs4 import BeautifulSoup
 
 from backend.base.definitions import (SV_TO_SHORT_TERM,
                                       ExtendedIssueFileMetadata, IssueData,
-                                      IssueFileMetadata, OSType, VolumeData)
-from backend.base.files import copy
+                                      IssueFileMetadata, OSType, VolumeData,
+                                      VolumeFileMetadata)
+from backend.base.files import copy, create_folder
 from backend.base.helpers import get_os_type, run_rar
 from backend.implementations.comicvine import clean_description
 from backend.implementations.file_processing import mass_process_files
@@ -49,6 +51,35 @@ _FIELD_MAPPING = {
 
 
 # region Get Content
+def get_volume_metadata_contents(
+    filepath: str
+) -> Union[VolumeFileMetadata, None]:
+    """Get the metadata from a volume's folder.
+
+    Args:
+        filepath (str): The path to a volume folder or its metadata file.
+
+    Returns:
+        Union[VolumeFileMetadata, None]: The metadata, or `None` if the file is
+            missing or invalid.
+    """
+    if isdir(filepath):
+        filepath = join(filepath, "series.json")
+    elif basename(filepath).lower() != "series.json":
+        return None
+
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            contents = load(f)
+    except (OSError, UnicodeDecodeError, JSONDecodeError):
+        return None
+
+    if not isinstance(contents, dict) and "metadata" in contents:
+        return None
+
+    return cast(VolumeFileMetadata, contents["metadata"])
+
+
 def get_issue_metadata_contents(
     filepath: str
 ) -> Union[IssueFileMetadata, None]:
@@ -147,7 +178,7 @@ def get_issue_metadata_contents(
 
 # region Build Content
 def _clean_summary(description: str) -> str:
-    """Clean the issue summary and turn it from html into text.
+    """Clean a volume/issue description and turn it from html into text.
 
     Args:
         description (str): The full issue description in HTML.
@@ -159,6 +190,41 @@ def _clean_summary(description: str) -> str:
     text = soup.get_text(" ").replace('\xa0', ' ')
     text = sub(r'\n+', ' ', text)
     return " ".join(text.split())
+
+
+def _build_series_json(
+    volume_data: VolumeData,
+    issue_data: List[IssueData]
+) -> str:
+    """Build the metadata dictionary for a volume.
+
+    Args:
+        volume_data (VolumeData): The data of the volume.
+        issue_data (List[IssueData]): The data of the issues in the volume.
+
+    Returns:
+        str: The resulting series json.
+    """
+    series_json = {"metadata": {
+        "type": "comicSeries",
+        "publisher": volume_data.publisher,
+        "imprint": None,
+        "name": volume_data.title,
+        "comicid": volume_data.comicvine_id,
+        "year": volume_data.year,
+        "description_text": _clean_summary(volume_data.description),
+        "description_formatted": volume_data.description,
+        "volume": volume_data.volume_number,
+        "booktype": SV_TO_SHORT_TERM.get(volume_data.special_version, ""),
+        "age_rating": None,
+        "collects": None,
+        "comic_image": None,
+        "total_issues": len(issue_data),
+        "publication_run": "",
+        "status": ""
+    }}
+
+    return dumps(series_json, indent=4, ensure_ascii=False)
 
 
 def _build_comicinfo(
@@ -252,6 +318,36 @@ def _build_comicinfo(
 
 
 # region Export Content
+def export_volume_metadata_file(
+    volume_data: VolumeData,
+    issue_data: List[IssueData]
+) -> None:
+    """Export a volume's metadata to a file in its volume folder.
+
+    Args:
+        volume_data (VolumeData): The data of the volume to export.
+        issue_data (List[IssueData]): The data of the issues in the volume.
+    """
+    create_folder(volume_data.folder)
+    filepath = join(volume_data.folder, "series.json")
+    with open(filepath, "wt") as f:
+        f.write(_build_series_json(volume_data, issue_data))
+    return
+
+
+def export_volume_cover_file(cover: bytes, volume_folder: str) -> None:
+    """Export a volume cover image to an image file in its volume folder.
+
+    Args:
+        cover (bytes): The image data of the volume cover.
+        volume_folder (str): The folder to export the image to.
+    """
+    create_folder(volume_folder)
+    with open(join(volume_folder, "cover.jpg"), "wb") as f:
+        f.write(cover)
+    return
+
+
 def _export_to_zip(xml: str, filepath: str) -> None:
     """Put the metadata into a ComicInfo.xml file inside the zip. Handles both
     when the file doesn't contain one yet and when it does.

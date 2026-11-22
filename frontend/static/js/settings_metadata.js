@@ -3,6 +3,9 @@ function fillSettings(api_key) {
 	.then(json => {
 		document.querySelector('#date-type-input').value = json.result.date_type;
 		document.querySelector('#auto-export-metadata-input').checked = json.result.auto_export_metadata;
+		document.querySelector('#export-issue-metadata-input').checked = json.result.export_issue_metadata;
+		document.querySelector('#export-volume-metadata-input').checked = json.result.export_volume_metadata;
+		document.querySelector('#export-volume-cover-input').checked = json.result.export_volume_cover;
 		document.querySelector('#export-extended-metadata-input').checked = json.result.export_extended_metadata;
 	});
 };
@@ -12,6 +15,9 @@ function saveSettings(api_key) {
 	const data = {
 		'date_type': document.querySelector('#date-type-input').value,
 		'auto_export_metadata': document.querySelector('#auto-export-metadata-input').checked,
+		'export_issue_metadata': document.querySelector('#export-issue-metadata-input').checked,
+		'export_volume_metadata': document.querySelector('#export-volume-metadata-input').checked,
+		'export_volume_cover': document.querySelector('#export-volume-cover-input').checked,
 		'export_extended_metadata': document.querySelector('#export-extended-metadata-input').checked
 	};
 	sendAPI('PUT', '/settings', api_key, {}, data)

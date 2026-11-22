@@ -16,7 +16,8 @@ from backend.features.download_queue import DownloadHandler
 from backend.features.search_discover import discover_downloads
 from backend.features.search_full import auto_search
 from backend.implementations.conversion import mass_convert
-from backend.implementations.metadata_export import export_issues_metadata
+from backend.implementations.metadata_export import (export_issues_metadata,
+                                                     export_volume_metadata)
 from backend.implementations.naming import mass_rename
 from backend.implementations.volumes import Volume, refresh_and_scan
 from backend.internals.db import get_db
@@ -847,6 +848,7 @@ class MassExportMetadataVolume(Task):
         WebSocket().emit(TaskStatusEvent(self.message))
 
         export_issues_metadata(self._volume_id, force=True)
+        export_volume_metadata(self._volume_id)
         return
 
 

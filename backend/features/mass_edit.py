@@ -15,7 +15,8 @@ from backend.implementations.conversion import mass_convert
 from backend.implementations.file_processing import (mass_set_file_date,
                                                      mass_set_ownership,
                                                      mass_set_permissions)
-from backend.implementations.metadata_export import export_issues_metadata
+from backend.implementations.metadata_export import (export_issues_metadata,
+                                                     export_volume_metadata)
 from backend.implementations.naming import mass_rename
 from backend.implementations.root_folders import RootFolders
 from backend.implementations.volumes import Volume, refresh_and_scan
@@ -342,6 +343,7 @@ def mass_editor_export_metadata(
         ))
 
         export_issues_metadata(volume_id, force=force)
+        export_volume_metadata(volume_id)
 
         if sh.problem_reported(
             StatusType.CV_RATE_LIMIT, "fetch_extended_issue_metadata"

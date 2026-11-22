@@ -126,6 +126,9 @@ class PublicSettingsValues:
 
     date_type: DateType = DateType.COVER_DATE
     auto_export_metadata: bool = False
+    export_issue_metadata: bool = True
+    export_volume_metadata: bool = False
+    export_volume_cover: bool = False
     export_extended_metadata: bool = False
 
     def todict(self, to_public: bool = True) -> Dict[str, Any]:

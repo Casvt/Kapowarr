@@ -9,8 +9,10 @@ from backend.base.definitions import ExtendedIssueFileMetadata, FileConstants
 from backend.base.helpers import PortablePool
 from backend.base.logging import LOGGER
 from backend.implementations.comicvine import ComicVine
+from backend.implementations.file_matching import scan_files
 from backend.implementations.metadata_formats import (
-    export_issue_metadata, get_issue_metadata_contents)
+    export_issue_metadata, export_volume_cover_file,
+    export_volume_metadata_file, get_issue_metadata_contents)
 from backend.implementations.volumes import Volume
 from backend.internals.settings import Settings
 
@@ -31,6 +33,11 @@ def export_issues_metadata(
             Defaults to None.
     """
     filepath_filter_set = set(filepath_filter or [])
+    settings = Settings().sv
+    if not settings.export_issue_metadata:
+        return
+
+    LOGGER.info(f"Exporting issue metadata for volume {volume_id} ({force=})")
     volume = Volume(volume_id)
     issues = {i.id: i for i in volume.get_issues()}
 
@@ -56,7 +63,6 @@ def export_issues_metadata(
 
             files_to_issues.setdefault(filepath, set()).add(issue.id)
 
-    settings = Settings().sv
     if not force:
         # Filter out files that already have metadata
         files_to_issues = {
@@ -103,5 +109,34 @@ def export_issues_metadata(
                 for file, issue_ids in files_to_issues.items()
             )
         )
+
+    return
+
+
+def export_volume_metadata(volume_id: int) -> None:
+    """Export the metadata of a volume. Handles both the exporting of the
+    metadata to a file and the cover to an image file, based on the settings.
+
+    Args:
+        volume_id (int): The ID of the volume to export for.
+    """
+    settings = Settings().sv
+    if not settings.export_volume_metadata and not settings.export_volume_cover:
+        return
+
+    LOGGER.info(f"Exporting volume metadata for volume {volume_id}")
+    volume = Volume(volume_id)
+    volume_data = volume.get_data()
+    issue_data = volume.get_issues(_skip_files=True)
+
+    if settings.export_volume_metadata:
+        export_volume_metadata_file(volume_data, issue_data)
+
+    if settings.export_volume_cover:
+        cover = volume.get_cover().getvalue()
+        if cover:
+            export_volume_cover_file(cover, volume_data.folder)
+
+    scan_files(volume_id)
 
     return

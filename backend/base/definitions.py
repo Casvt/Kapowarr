@@ -771,6 +771,18 @@ class VolumeMetadata(TypedDict):
     issues: Union[List[IssueMetadata], None]
 
 
+class VolumeFileMetadata(TypedDict):
+    name: Union[str, None]
+    volume: Union[int, None]
+    year: Union[int, None]
+    comicid: Union[int, None]
+    publisher: Union[str, None]
+    description_text: Union[str, None]
+    description_formatted: Union[str, None]
+    booktype: Union[str, None]
+    total_issues: Union[int, None]
+
+
 class ExtendedIssueFileMetadata(TypedDict):
     """
     Extended issue metadata that is not stored in the database, but fetched

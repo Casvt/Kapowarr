@@ -1628,6 +1628,13 @@ def refresh_and_scan(
 
         FilesDB.delete_unmatched_files()
 
+    if Settings().sv.auto_export_metadata:
+        from backend.implementations.metadata_export import \
+            export_volume_metadata
+
+        for processed_volume_id, _ in cv_to_id_fetch.values():
+            export_volume_metadata(processed_volume_id)
+
     return
 
 
