@@ -254,7 +254,7 @@ def _translate_filepath(filepath: str) -> str:
 def _extensionless_filename(filepath: str) -> str:
     """Convert a filepath into a filename where recognised file extensions are
     removed, where the recognised extensions are in
-    `backend.base.definitions.FileConstants.CONTENT_EXTENSIONS`.
+    `backend.base.definitions.FileConstants.SCANNABLE_EXTENSIONS`.
 
     Args:
         filepath (str): The original filepath or filename.
@@ -263,7 +263,7 @@ def _extensionless_filename(filepath: str) -> str:
         str: The filename without extension.
     """
     filename = basename(filepath)
-    if splitext(filename)[1].lower() in FileConstants.CONTENT_EXTENSIONS:
+    if splitext(filename)[1].lower() in FileConstants.SCANNABLE_EXTENSIONS:
         filename = splitext(filename)[0]
     return filename
 

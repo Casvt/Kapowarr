@@ -2,7 +2,7 @@
 
 from asyncio import run
 from functools import reduce
-from os.path import basename, dirname, splitext
+from os.path import basename, dirname
 from typing import Dict, List, Set, Union
 
 from backend.base.definitions import ExtendedIssueFileMetadata, FileConstants
@@ -55,11 +55,6 @@ def export_issues_metadata(
 
             if filepath.endswith(FileConstants.IMAGE_EXTENSIONS):
                 filepath = dirname(filepath)
-
-            elif splitext(filepath)[1].lower() not in (
-                ".zip", ".cbz", ".rar", ".cbr",
-            ):
-                continue
 
             files_to_issues.setdefault(filepath, set()).add(issue.id)
 

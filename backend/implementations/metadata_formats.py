@@ -144,8 +144,11 @@ def get_issue_metadata_contents(
         ]).stdout
 
     else:
-        # File format not supported
-        return None
+        sidecar_filepath = splitext(filepath)[0] + ".xml"
+        if not isfile(sidecar_filepath):
+            return None
+        with open(sidecar_filepath, "r") as f:
+            contents = f.read()
 
     try:
         xml = ElementTree.XML(contents)
@@ -470,10 +473,7 @@ def export_issue_metadata(
     xml = _build_comicinfo(volume_data, issue_datas, extended_issue_datas)
 
     if isdir(filepath):
-        if isfile(join(filepath, "ComicInfo.xml")):
-            filepath = join(filepath, "ComicInfo.xml")
-        else:
-            return None
+        filepath = join(filepath, "ComicInfo.xml")
 
     if basename(filepath).lower() == "comicinfo.xml":
         with open(filepath, "wt") as f:
@@ -486,9 +486,9 @@ def export_issue_metadata(
         _export_to_rar(xml, filepath)
 
     else:
-        # File format not supported; should already be filtered out
-        raise RuntimeError(
-            f"File format not supported to get metadata of: {filepath}")
+        sidecar_filepath = splitext(filepath)[0] + ".xml"
+        with open(sidecar_filepath, "wt") as f:
+            f.write(xml)
 
     FilesDB.update_size(filepath)
     mass_process_files(volume_data.id, filepath_filter=[filepath])

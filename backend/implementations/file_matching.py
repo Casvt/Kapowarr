@@ -129,6 +129,11 @@ def scan_files(
             file,
             assume_volume_number=False
         )
+        if (
+            file.endswith(FileConstants.METADATA_EXTENSIONS)
+            and file_data["special_version"] != SpecialVersion.METADATA
+        ):
+            file_data["special_version"] = SpecialVersion.METADATA.value
 
         # Check if file matches volume
         if not file_importing_filter(
