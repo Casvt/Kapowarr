@@ -1,12 +1,5 @@
 # -*- coding: utf-8 -*-
 
-"""
-Query builder for Newznab (usenet) indexers. Newznab searches match on words,
-so the queries use plain words: no '#' or parentheses. Release names usually
-pad issue numbers ("Series 039 (2020)"), so issue searches try both the padded
-and the plain number.
-"""
-
 from typing import Sequence
 
 from backend.base.definitions import (DownloadType, QueryBuilder,
@@ -32,19 +25,18 @@ VAI_FORMATS = (
     "{title}"
 )
 
+SPECIFIC_VAI_ISSUE_FORMATS = (
+    "{title} Vol {issue_number} ({year})",
+    "{title} Vol {issue_number}"
+)
+
+GENERAL_VAI_ISSUE_FORMATS = SPECIFIC_VAI_ISSUE_FORMATS + ("{title}",)
+
 SPECIFIC_ISSUE_FORMATS = (
-    "{title} {padded_issue_number}",
     "{title} {issue_number}",
 )
 
 GENERAL_ISSUE_FORMATS = SPECIFIC_ISSUE_FORMATS + ("{title}",)
-
-
-def _padded(issue_number: str) -> str:
-    "Pad a whole issue number to three digits, like release names do"
-    if issue_number.isdigit():
-        return issue_number.zfill(3)
-    return issue_number
 
 
 @QueryBuilders.register_builder(DownloadType.USENET)
@@ -53,54 +45,30 @@ class UsenetQueryBuilder(QueryBuilder):
         if query_keys.special_version == SpecialVersion.TPB:
             return TPB_FORMATS
 
-        elif query_keys.special_version == SpecialVersion.VOLUME_AS_ISSUE:
-            return VAI_FORMATS
-
         elif query_keys.issue_number is None:
-            return VOLUME_FORMATS
+            if query_keys.special_version == SpecialVersion.VOLUME_AS_ISSUE:
+                return VAI_FORMATS
+            else:
+                return VOLUME_FORMATS
 
-        if self.originally_volume_search:
-            queries = SPECIFIC_ISSUE_FORMATS
+        elif self.originally_volume_search:
+            if query_keys.special_version == SpecialVersion.VOLUME_AS_ISSUE:
+                return SPECIFIC_VAI_ISSUE_FORMATS
+            else:
+                return SPECIFIC_ISSUE_FORMATS
+
         else:
-            queries = GENERAL_ISSUE_FORMATS
-
-        if _padded(query_keys.issue_number) == query_keys.issue_number:
-            # The padded variation equals the plain one (e.g. issue 100)
-            queries = tuple(
-                q
-                for q in queries
-                if "{padded_issue_number}" not in q
-            )
-        return queries
+            if query_keys.special_version == SpecialVersion.VOLUME_AS_ISSUE:
+                return GENERAL_VAI_ISSUE_FORMATS
+            else:
+                return GENERAL_ISSUE_FORMATS
 
     def next_query(
         self,
         search_action: SearchAction,
         query_keys: QueryKeys
     ) -> SearchQuery:
-        self._update_state(search_action)
+        if query_keys.issue_number and query_keys.issue_number.isdigit():
+            query_keys.issue_number = query_keys.issue_number.zfill(3)
 
-        queries = self._select_queries(query_keys)
-        query = queries[min(self.query_variation_index, len(queries) - 1)]
-
-        if query_keys.issue_number is None:
-            year = query_keys.year
-        else:
-            year = query_keys.issue_year or query_keys.year
-        if year is None:
-            query = query.replace('{year}', '')
-
-        issue_number = query_keys.issue_number or ''
-        result = query.format(
-            title=query_keys.titles[self.alias_index],
-            year=year,
-            volume_number=query_keys.volume_number,
-            issue_number=issue_number,
-            padded_issue_number=_padded(issue_number)
-        )
-
-        return {
-            "query": " ".join(result.split()),
-            "page": self.page,
-            "total_available_variations": len(queries)
-        }
+        return super().next_query(search_action, query_keys)

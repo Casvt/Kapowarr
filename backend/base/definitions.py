@@ -1417,7 +1417,7 @@ class QueryBuilder(ABC):
         query = queries[self.query_variation_index]
 
         if query_keys.year is None:
-            query = query.replace('({year})', '').strip()
+            query = " ".join(query.replace('({year})', '').split())
 
         if query_keys.issue_number is None:
             year = query_keys.year
