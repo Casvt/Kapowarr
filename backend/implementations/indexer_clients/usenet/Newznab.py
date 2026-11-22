@@ -7,8 +7,7 @@ NZB files.
 """
 
 from collections import OrderedDict
-from datetime import datetime, timezone
-from email.utils import parsedate_to_datetime
+from datetime import datetime
 from typing import Any, Dict, List, Tuple, Union
 from xml.etree.ElementTree import Element, ParseError, fromstring
 
@@ -123,19 +122,21 @@ def _parse_items(
             except ValueError:
                 continue
 
-        pub_date = None
-        raw_date = item.findtext('pubDate')
-        if raw_date:
-            try:
-                pub_date = parsedate_to_datetime(raw_date)
-            except (TypeError, ValueError):
-                pub_date = None
+        date = item.findtext("pubDate")
+        if date:
+            parsed_date = (
+                datetime
+                .strptime(date, "%a, %d %b %Y %H:%M:%S %z")
+                .replace(tzinfo=None)
+            )
+        else:
+            parsed_date = None
 
         items.append({
             'title': title,
             'link': link,
             'size': size,
-            'pub_date': pub_date
+            'pub_date': parsed_date
         })
 
     return items, offset, total
@@ -240,14 +241,11 @@ class NewznabIndexer(BaseIndexerClient):
         if root is None:
             return []
 
-        if last_check.tzinfo is None:
-            last_check = last_check.replace(tzinfo=timezone.utc)
-
         items, _, _ = _parse_items(root)
         return [
             self._to_search_result(item)
             for item in items
-            if item['pub_date'] is None or item['pub_date'] > last_check
+            if item['pub_date'] is not None and item['pub_date'] > last_check
         ]
 
     async def shutdown(self) -> None:
