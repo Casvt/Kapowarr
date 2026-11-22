@@ -1,15 +1,9 @@
 # -*- coding: utf-8 -*-
 
-"""
-Newznab indexer client. Searches a Newznab compatible API (a usenet indexer
-like NZBGeek or NZBFinder, or an indexer proxied by Prowlarr/NZBHydra2) for
-NZB files.
-"""
-
 from collections import OrderedDict
 from datetime import datetime
 from typing import Any, Dict, List, Tuple, Union
-from xml.etree.ElementTree import Element, ParseError, fromstring
+from xml.etree import ElementTree
 
 from requests import RequestException
 
@@ -52,7 +46,7 @@ insufficient privileges
 """
 
 
-def _newznab_error(root: Element) -> Union[Tuple[str, str], None]:
+def _newznab_error(root: ElementTree.Element) -> Union[Tuple[str, str], None]:
     """Get the Newznab error in a response, if it is one.
 
     Args:
@@ -68,7 +62,7 @@ def _newznab_error(root: Element) -> Union[Tuple[str, str], None]:
 
 
 def _parse_items(
-    root: Element
+    root: ElementTree.Element
 ) -> Tuple[List[Dict[str, Any]], Union[int, None], Union[int, None]]:
     """Get the releases out of a Newznab search response.
 
@@ -173,7 +167,10 @@ class NewznabIndexer(BaseIndexerClient):
             "leechers": None
         }
 
-    async def _request(self, params: Dict[str, Any]) -> Union[Element, None]:
+    async def _request(
+        self,
+        params: Dict[str, Any]
+    ) -> Union[ElementTree.Element, None]:
         if not self.session:
             self.session = AsyncSession()
 
@@ -189,13 +186,7 @@ class NewznabIndexer(BaseIndexerClient):
         if not text:
             return None
 
-        try:
-            root = fromstring(text)
-        except ParseError:
-            LOGGER.warning(
-                f"Newznab indexer {self._title} returned an invalid response"
-            )
-            return None
+        root = ElementTree.XML(text)
 
         error = _newznab_error(root)
         if error:
@@ -282,11 +273,21 @@ class NewznabIndexer(BaseIndexerClient):
             # E.g. Prowlarr answers a wrong API key with an empty 401
             raise CredentialInvalid
 
-        try:
-            root = fromstring(response.text)
-        except ParseError:
-            raise ClientNotWorking(BrokenClientReason.NOT_CLIENT_INSTANCE)
+        if not response.ok:
+            raise ClientNotWorking(
+                BrokenClientReason.CONNECTION_ERROR
+            )
 
+        if response.headers["Content-Type"].split(";")[0] not in (
+            "application/xml",
+            "application/rss",
+            "application/rss+xml"
+        ):
+            raise ClientNotWorking(
+                BrokenClientReason.NOT_CLIENT_INSTANCE
+            )
+
+        root = ElementTree.XML(response.text)
         error = _newznab_error(root)
         if error:
             if error[0] in NEWZNAB_AUTH_ERRORS:
