@@ -34,13 +34,10 @@ class TorznabIndexer(BaseIndexerClient):
 
         return
 
-    async def __process_item(
+    def __process_item(
         self,
         item: ElementTree.Element
     ) -> Union[SearchResultData, None]:
-        if not self.session:
-            self.session = AsyncSession()
-
         torznab_keys = {
             tor_key.attrib["name"].lower(): tor_key.attrib["value"]
             for tor_key in item.findall(
@@ -50,36 +47,33 @@ class TorznabIndexer(BaseIndexerClient):
         }
 
         # Title
-        title_el = item.find('title')
-        if title_el is None:
-            return None
-        title = title_el.text or ''
+        title = item.findtext("title")
         if not title:
             return None
 
         # Link
-        link = torznab_keys.get("magneturl") or ''
+        magnet_link = torznab_keys.get("magneturl") or ''
 
-        guid_el = item.find("guid")
-        if not link and guid_el is not None:
-            guid = guid_el.text or ''
-            if guid.startswith("margnet:?"):
-                link = guid
+        guid = item.findtext("guid")
+        if not magnet_link and guid and guid.startswith("magnet:?"):
+            magnet_link = guid
 
-        if not link and "infohash" in torznab_keys:
-            link = build_magnet_link(torznab_keys["infohash"].lower(), title)
+        if not magnet_link and "infohash" in torznab_keys:
+            magnet_link = build_magnet_link(
+                torznab_keys["infohash"].lower(), title
+            )
 
         enclosure_el = item.find('enclosure')
-        if not link and enclosure_el is not None:
-            link = enclosure_el.attrib.get('url') or ''
+        if not magnet_link and enclosure_el is not None:
+            magnet_link = enclosure_el.attrib.get('url') or ''
 
-        link_el = item.find('link')
-        if not link and link_el is not None:
-            link = link_el.text or ''
+        link = item.findtext("link")
+        if not magnet_link and link:
+            magnet_link = link
 
-        if not link:
+        if not magnet_link:
             return None
-        link = unquote(unescape(link))
+        magnet_link = unquote(unescape(magnet_link))
 
         # Size
         size = torznab_keys.get("size", "")
@@ -90,9 +84,7 @@ class TorznabIndexer(BaseIndexerClient):
         ):
             size = enclosure_el.attrib.get("length", "")
         if not size:
-            size_el = item.find("size")
-            if size_el is not None:
-                size = size_el.text or ''
+            size = item.findtext("size") or size
         if size.isdigit():
             parsed_size = int(size)
         else:
@@ -111,7 +103,7 @@ class TorznabIndexer(BaseIndexerClient):
                 assume_volume_number=False,
                 fix_year=True
             ),
-            "link": link,
+            "link": magnet_link,
             "display_title": title,
             "size": parsed_size,
             "indexer_id": self._id,
@@ -140,7 +132,7 @@ class TorznabIndexer(BaseIndexerClient):
 
         formatted_results: List[SearchResultData] = []
         for item in ElementTree.XML(results).iter("item"):
-            processed_item = await self.__process_item(item)
+            processed_item = self.__process_item(item)
             if processed_item is not None:
                 formatted_results.append(processed_item)
 
@@ -169,14 +161,11 @@ class TorznabIndexer(BaseIndexerClient):
 
         formatted_results: List[SearchResultData] = []
         for item in ElementTree.XML(rss_results).iter("item"):
-            processed_item = await self.__process_item(item)
+            processed_item = self.__process_item(item)
             if processed_item is None:
                 continue
 
-            date_el = item.find('pubDate')
-            if date_el is None:
-                continue
-            date = date_el.text or ''
+            date = item.findtext('pubDate')
             if not date:
                 continue
             parsed_date = (

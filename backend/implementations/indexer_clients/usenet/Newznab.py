@@ -2,7 +2,9 @@
 
 from collections import OrderedDict
 from datetime import datetime
+from html import unescape
 from typing import Any, Dict, List, Tuple, Union
+from urllib.parse import unquote
 from xml.etree import ElementTree
 
 from requests import RequestException
@@ -27,23 +29,21 @@ NZB link -> release title of recent search results. The download prepper
 only gets the link, and the NZB itself doesn't reliably contain the release
 name (its meta name is often a raw usenet subject).
 """
-RECENT_TITLES_MAX = 10_000
-
-
-def remember_title(link: str, title: str) -> None:
-    "Remember the release title of an NZB link"
-    RECENT_TITLES[link] = title
-    RECENT_TITLES.move_to_end(link)
-    while len(RECENT_TITLES) > RECENT_TITLES_MAX:
-        RECENT_TITLES.popitem(last=False)
-    return
-
 
 NEWZNAB_AUTH_ERRORS = ("100", "101", "102")
 """
 Newznab error codes for incorrect user credentials, account suspended and
 insufficient privileges
 """
+
+
+def _remember_title(link: str, title: str) -> None:
+    "Remember the release title of an NZB link"
+    RECENT_TITLES[link] = title
+    RECENT_TITLES.move_to_end(link)
+    while len(RECENT_TITLES) > 10_000:
+        RECENT_TITLES.popitem(last=False)
+    return
 
 
 def _newznab_error(root: ElementTree.Element) -> Union[Tuple[str, str], None]:
@@ -61,81 +61,6 @@ def _newznab_error(root: ElementTree.Element) -> Union[Tuple[str, str], None]:
     return (root.get('code') or '', root.get('description') or '')
 
 
-def _parse_items(
-    root: ElementTree.Element
-) -> Tuple[List[Dict[str, Any]], Union[int, None], Union[int, None]]:
-    """Get the releases out of a Newznab search response.
-
-    Args:
-        root (Element): The root of the XML (RSS) response.
-
-    Returns:
-        Tuple[List[Dict[str, Any]], Union[int, None], Union[int, None]]:
-            The releases (title, link, size, pub_date), the offset and the
-            total number of results, if the indexer supplied them.
-    """
-    channel = root.find('channel')
-    if channel is None:
-        return [], None, None
-
-    offset, total = None, None
-    response = channel.find(f'{NEWZNAB_NS}response')
-    if response is not None:
-        try:
-            offset = int(response.get('offset') or 0)
-            total = int(response.get('total') or 0)
-        except ValueError:
-            pass
-
-    items: List[Dict[str, Any]] = []
-    for item in channel.findall('item'):
-        title = (item.findtext('title') or '').strip()
-
-        link = (item.findtext('link') or '').strip()
-        enclosure = item.find('enclosure')
-        if enclosure is not None and enclosure.get('url'):
-            link = enclosure.get('url') or link
-
-        if not title or not link:
-            continue
-
-        size = -1
-        attrs = {
-            attr.get('name'): attr.get('value')
-            for attr in item.findall(f'{NEWZNAB_NS}attr')
-        }
-        for candidate in (
-            attrs.get('size'),
-            item.findtext('size'),
-            enclosure.get('length') if enclosure is not None else None
-        ):
-            try:
-                if candidate and int(candidate) > 0:
-                    size = int(candidate)
-                    break
-            except ValueError:
-                continue
-
-        date = item.findtext("pubDate")
-        if date:
-            parsed_date = (
-                datetime
-                .strptime(date, "%a, %d %b %Y %H:%M:%S %z")
-                .replace(tzinfo=None)
-            )
-        else:
-            parsed_date = None
-
-        items.append({
-            'title': title,
-            'link': link,
-            'size': size,
-            'pub_date': parsed_date
-        })
-
-    return items, offset, total
-
-
 @IndexerClients.register_client(
     DownloadType.USENET, 'Newznab',
     (
@@ -150,17 +75,56 @@ class NewznabIndexer(BaseIndexerClient):
         self.session: Union[AsyncSession, None] = None
         return
 
-    def _to_search_result(self, item: Dict[str, Any]) -> SearchResultData:
-        remember_title(item['link'], item['title'])
+    def __process_item(
+        self,
+        item: ElementTree.Element
+    ) -> Union[SearchResultData, None]:
+        newznab_keys = {
+            tor_key.attrib["name"].lower(): tor_key.attrib["value"]
+            for tor_key in item.findall(f"{NEWZNAB_NS}attr")
+            if "name" in tor_key.attrib and "value" in tor_key.attrib
+        }
+
+        # Title
+        title = item.findtext("title")
+        if not title:
+            return None
+
+        # Link
+        link = item.findtext("link")
+        enclosure = item.find("enclosure")
+        if enclosure is not None and enclosure.get("url"):
+            link = enclosure.get("url") or link
+        if not link:
+            return None
+        link = unquote(unescape(link))
+
+        # Size
+        size = newznab_keys.get("size", "")
+        if (
+            not size
+            and enclosure is not None
+            and enclosure.attrib.get("length")
+        ):
+            size = enclosure.attrib.get("length", "")
+        if not size:
+            size = item.findtext("size") or ""
+        if size.isdigit():
+            parsed_size = int(size)
+        else:
+            parsed_size = -1
+
+        _remember_title(link, title)
+
         return {
             **extract_filename_data(
-                item['title'],
+                title,
                 assume_volume_number=False,
                 fix_year=True
             ),
-            "link": item['link'],
-            "display_title": item['title'],
-            "size": item['size'],
+            "link": link,
+            "display_title": title,
+            "size": parsed_size,
             "indexer_id": self._id,
             "indexer_title": self._title,
             "seeders": None,
@@ -210,16 +174,36 @@ class NewznabIndexer(BaseIndexerClient):
         if root is None:
             return QueryResult([], next_page_available=False)
 
-        items, response_offset, total = _parse_items(root)
+        channel = root.find('channel')
+        if channel is None:
+            return QueryResult([], next_page_available=False)
+
+        response_offset, total = None, None
+        response = channel.find(f'{NEWZNAB_NS}response')
+        if response is not None:
+            try:
+                response_offset = int(response.get('offset') or 0)
+                total = int(response.get('total') or 0)
+            except ValueError:
+                pass
+
+        formatted_results: List[SearchResultData] = []
+        result_count = 0
+        for item in root.iter("item"):
+            result_count += 1
+            processed_item = self.__process_item(item)
+            if processed_item is not None:
+                formatted_results.append(processed_item)
+
         if total is not None:
             next_page_available = (
-                (response_offset or offset) + len(items) < total
+                (response_offset or offset) + result_count < total
             )
         else:
-            next_page_available = len(items) >= PAGE_SIZE
+            next_page_available = result_count >= PAGE_SIZE
 
         return QueryResult(
-            [self._to_search_result(item) for item in items],
+            formatted_results,
             next_page_available=next_page_available
         )
 
@@ -227,17 +211,35 @@ class NewznabIndexer(BaseIndexerClient):
         root = await self._request({
             't': 'search',
             'limit': PAGE_SIZE,
-            'extended': 1
+            'extended': 1,
+            'q': ''
         })
         if root is None:
             return []
 
-        items, _, _ = _parse_items(root)
-        return [
-            self._to_search_result(item)
-            for item in items
-            if item['pub_date'] is not None and item['pub_date'] > last_check
-        ]
+        formatted_results: List[SearchResultData] = []
+        for item in root.iter("item"):
+            processed_item = self.__process_item(item)
+            if processed_item is None:
+                continue
+
+            date_el = item.find('pubDate')
+            if date_el is None:
+                continue
+            date = date_el.text or ''
+            if not date:
+                continue
+            parsed_date = (
+                datetime
+                .strptime(date, "%a, %d %b %Y %H:%M:%S %z")
+                .replace(tzinfo=None)
+            )
+            if last_check > parsed_date:
+                continue
+
+            formatted_results.append(processed_item)
+
+        return formatted_results
 
     async def shutdown(self) -> None:
         if self.session:
