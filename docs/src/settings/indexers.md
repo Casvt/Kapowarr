@@ -12,10 +12,20 @@ GetComics not only offers downloads directly from their servers, but also via se
 
 If you have an account for one of these services (see [Credentials](./downloadclients.md#credentials) setting), you might want to put that one at the top, to make Kapowarr take advantage of the extra features that the account offers (extra bandwidth, higher rate limit, etc.).  
 
-## Newznab
+## Torrent and Usenet
 
-A Newznab indexer searches a usenet indexer (like NZBFinder or NZBGeek) for NZB files, either directly or via a proxy like Prowlarr. Downloading them requires a usenet client (see [Usenet Clients](./downloadclients.md#usenet-clients)).
+### URL
 
-- **URL** and **API Path**: together the address of the API. For most indexers that is the base URL and `/api`. For an indexer proxied by Prowlarr, use the URL Prowlarr shows for it (e.g. `http://prowlarr:9696/1`) with `/api`.
-- **API Key**: the API key of your account at the indexer (or of Prowlarr).
-- **Categories**: the Newznab categories to search in, separated with commas. The default, `7030`, is Books > Comics.
+The base URL to access the specific indexer. Don't include the api endpoint. E.g. `http://prowlarr:9696/19`.
+
+### API Path
+
+The specific path to access the API of the indexer. This is almost always `/api`.
+
+### API Key
+
+The API key of your account at the indexer (or of the proxy like Prowlarr or Jackett).
+
+### Categories
+
+The Torznab/Newznab categories to search in, separated with commas. The default, 7030, is the "Comics" category.

@@ -30,8 +30,6 @@ Wait until the torrent has completed seeding and then move the files. You'll hav
 2. **Copy**  
 Make a copy of the downloaded files and post-process those (moving, renaming, converting, etc.). When the torrent finishes seeding, its files are deleted. With this setup, your downloaded comics will be available immediately, but will temporarily take up twice as much space.
 
-Usenet downloads have nothing to seed, so they are always imported as soon as the usenet client has finished, regardless of this setting.
-
 ### Delete Completed Downloads
 
 Whether external downloads should be deleted from their client once they have completed. Otherwise leave them in the queue of the external download client as 'completed'.
