@@ -28,8 +28,7 @@ ICF = IndexerClientField
 
 def _validate_indexer_data(
     data: Mapping[str, Any],
-    required_tokens: Tuple[IndexerClientField, ...],
-    enforce_existence: bool = True
+    required_tokens: Tuple[IndexerClientField, ...]
 ) -> Dict[str, Any]:
     filtered_data: Dict[str, Any] = {}
     for key in ICF._member_map_.values():
@@ -40,11 +39,7 @@ def _validate_indexer_data(
             continue
 
         if key.value not in data:
-            if enforce_existence:
-                raise KeyNotFound(key.value)
-            else:
-                filtered_data[key.value] = None
-                continue
+            raise KeyNotFound(key.value)
 
         # Key is required and given, but value could still by anything.
         # Check value below.
@@ -339,6 +334,7 @@ class IndexerClients:
                 possibly used by the indexer during testing.
 
         Raises:
+            KeyNotFound: One of the required keys was not found.
             InvalidKeyValue: One of the parameters has an invalid argument.
 
         Returns:
@@ -356,8 +352,7 @@ class IndexerClients:
 
         filtered_data = _validate_indexer_data(
             {'url': url, **extra_fields},
-            ClientClass.required_tokens,
-            enforce_existence=False
+            ClientClass.required_tokens
         )
 
         try:
@@ -410,6 +405,7 @@ class IndexerClients:
                 possibly used by the indexer.
 
         Raises:
+            KeyNotFound: One of the required keys was not found.
             InvalidKeyValue: One of the parameters has an invalid argument.
             AddingIndexerForbidden: Not allowed to add another instance of this
                 indexer client.

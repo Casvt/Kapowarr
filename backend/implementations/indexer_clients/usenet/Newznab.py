@@ -9,7 +9,7 @@ NZB files.
 from collections import OrderedDict
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
-from typing import Any, Dict, Iterable, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 from xml.etree.ElementTree import Element, ParseError, fromstring
 
 from requests import RequestException
@@ -23,9 +23,6 @@ from backend.base.helpers import AsyncSession, Session
 from backend.base.logging import LOGGER
 from backend.implementations.indexer_client_manager import (BaseIndexerClient,
                                                             IndexerClients)
-
-DEFAULT_CATEGORIES = "7030"
-"Newznab category Books > Comics"
 
 PAGE_SIZE = 100
 
@@ -54,22 +51,6 @@ NEWZNAB_AUTH_ERRORS = ("100", "101", "102")
 Newznab error codes for incorrect user credentials, account suspended and
 insufficient privileges
 """
-
-
-def category_param(categories: Union[Iterable[str], str, None]) -> str:
-    """The value of the `cat` parameter.
-
-    Args:
-        categories (Union[Iterable[str], str, None]): The category IDs, as a
-            list or a comma separated string.
-
-    Returns:
-        str: The comma separated category IDs, or the default when empty.
-    """
-    if isinstance(categories, str):
-        categories = categories.split(',')
-    cleaned = [str(c).strip() for c in categories or [] if str(c).strip()]
-    return ','.join(cleaned) or DEFAULT_CATEGORIES
 
 
 def _newznab_error(root: Element) -> Union[Tuple[str, str], None]:
@@ -200,7 +181,7 @@ class NewznabIndexer(BaseIndexerClient):
             params={
                 **params,
                 'apikey': self._api_key or '',
-                'cat': category_param(self._categories)
+                'cat': str(self._categories or [])
             },
             quiet_fail=True
         )
@@ -277,9 +258,9 @@ class NewznabIndexer(BaseIndexerClient):
 
     @classmethod
     def test(cls, url: str, **extra_fields: Any) -> None:
-        api_path: Union[str, None] = extra_fields.get(ICF.API_PATH.value)
-        api_key: Union[str, None] = extra_fields.get(ICF.API_KEY.value)
-        categories = extra_fields.get(ICF.CATEGORIES.value)
+        api_path: str = extra_fields[ICF.API_PATH.value]
+        api_key: str = extra_fields[ICF.API_KEY.value]
+        categories: str = extra_fields[ICF.CATEGORIES.value]
 
         with Session() as session:
             try:
@@ -292,9 +273,10 @@ class NewznabIndexer(BaseIndexerClient):
                         'q': 'test',
                         'limit': 1,
                         'apikey': api_key or '',
-                        'cat': category_param(categories)
+                        'cat': categories
                     }
                 )
+
             except RequestException:
                 raise ClientNotWorking(BrokenClientReason.CONNECTION_ERROR)
 
