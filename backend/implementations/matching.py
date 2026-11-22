@@ -16,6 +16,8 @@ from backend.base.definitions import IssueData, SpecialVersion, VolumeMetadata
 from backend.base.file_extraction import special_version_regex
 from backend.base.helpers import force_range, fully_normalise_string
 from backend.implementations.blocklist import blocklist_contains
+from backend.implementations.release_title import (checks_release_language,
+                                                   release_language_conflict)
 
 if TYPE_CHECKING:
     from backend.base.definitions import (FilenameData, SearchResultData,
@@ -501,6 +503,23 @@ def check_search_result_match(
             # Issue search, but
             # extracted issue number(s) don't match number of searched issue
             return {'match': False, 'match_issue': "Issue numbers don't match"}
+
+    if checks_release_language(result.get('indexer_id')):
+        # The same album exists in several languages; check the album title
+        # and language tags in the release name
+        conflict = release_language_conflict(
+            result['display_title'],
+            volume_data,
+            volume_issues,
+            (
+                issue_number
+                if isinstance(issue_number, float)
+                and issue_number != float('-inf')
+                else None
+            )
+        )
+        if conflict:
+            return {'match': False, 'match_issue': conflict}
 
     return {'match': True, 'match_issue': None}
 
