@@ -16,9 +16,10 @@ from backend.base.custom_exceptions import (ClientNotWorking,
                                             DownloadServiceRateLimitReached,
                                             EnqueuingDownloadFailure,
                                             InvalidKeyValue, IssueNotFound)
-from backend.base.definitions import (BlocklistReason, Constants,
-                                      Download, DownloadClientIdentifier,
+from backend.base.definitions import (BlocklistReason, Constants, Download,
+                                      DownloadClientIdentifier,
                                       DownloadService, DownloadState,
+                                      DownloadType,
                                       EnqueuingDownloadFailureReason,
                                       ExternalDownload, FilenameData,
                                       SeedingHandling)
@@ -423,6 +424,9 @@ class DownloadHandler(metaclass=Singleton):
         ws = WebSocket()
         status_event = QueueStatusEvent(download)
         seeding_handling = self.settings.sv.seeding_handling
+        if download.external_client.download_type == DownloadType.USENET:
+            # Nothing to seed: import the files as soon as the client is done
+            seeding_handling = SeedingHandling.COMPLETE
 
         if seeding_handling == SeedingHandling.COMPLETE:
             pp = PostProcessorTorrentsComplete(download)

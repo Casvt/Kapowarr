@@ -11,3 +11,11 @@ GetComics offers downloads directly from their servers, but throttles the downlo
 GetComics not only offers downloads directly from their servers, but also via services like Mega and MediaFire. When a download on GetComics is found and has multiple possible download services, this defines which service takes priority. If the first download fails, Kapowarr will try the next service in order.
 
 If you have an account for one of these services (see [Credentials](./downloadclients.md#credentials) setting), you might want to put that one at the top, to make Kapowarr take advantage of the extra features that the account offers (extra bandwidth, higher rate limit, etc.).  
+
+## Newznab
+
+A Newznab indexer searches a usenet indexer (like NZBFinder or NZBGeek) for NZB files, either directly or via a proxy like Prowlarr. Downloading them requires a usenet client (see [Usenet Clients](./downloadclients.md#usenet-clients)).
+
+- **URL** and **API Path**: together the address of the API. For most indexers that is the base URL and `/api`. For an indexer proxied by Prowlarr, use the URL Prowlarr shows for it (e.g. `http://prowlarr:9696/1`) with `/api`.
+- **API Key**: the API key of your account at the indexer (or of Prowlarr).
+- **Categories**: the Newznab categories to search in, separated with commas. The default, `7030`, is Books > Comics.
