@@ -21,8 +21,7 @@ from backend.base.definitions import (BlocklistReason, Constants, Download,
                                       DownloadService, DownloadState,
                                       DownloadType,
                                       EnqueuingDownloadFailureReason,
-                                      ExternalDownload, FilenameData,
-                                      SeedingHandling)
+                                      ExternalDownload, SeedingHandling)
 from backend.base.files import create_folder, delete_file_folder
 from backend.base.helpers import CommaList, Singleton
 from backend.base.logging import LOGGER
@@ -143,7 +142,7 @@ class DownloadHandler(metaclass=Singleton):
         self,
         link: str,
         indexer_id: int,
-        title_data: FilenameData,
+        title: str,
         volume_id: int,
         issue_id: Union[int, None] = None,
         force_match: bool = False
@@ -155,7 +154,7 @@ class DownloadHandler(metaclass=Singleton):
 
             indexer_id (int): The ID of the indexer that the link came from.
 
-            title_data (FilenameData): The filename data of the title.
+            title (str): The original title returned by the indexer.
 
             volume_id (int): The ID of the volume for which the download is
                 intended.
@@ -190,7 +189,7 @@ class DownloadHandler(metaclass=Singleton):
         )
         prepper = PrepperClass(
             link, indexer_id,
-            title_data,
+            title,
             volume_id, issue_id,
             force_match
         )
@@ -235,7 +234,7 @@ class DownloadHandler(metaclass=Singleton):
         return [r.as_dict() for r in result]
 
     def add_multiple(self, add_args: Iterable[Tuple[
-        str, int, FilenameData, int, Union[int, None], bool
+        str, int, str, int, Union[int, None], bool
     ]]) -> None:
         for entry in add_args:
             try:

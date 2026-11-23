@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from collections import OrderedDict
 from datetime import datetime
 from html import unescape
 from typing import Any, List, Union
@@ -22,27 +21,11 @@ PAGE_SIZE = 100
 
 NEWZNAB_NS = "{http://www.newznab.com/DTD/2010/feeds/attributes/}"
 
-RECENT_TITLES: "OrderedDict[str, str]" = OrderedDict()
-"""
-NZB link -> release title of recent search results. The download prepper
-only gets the link, and the NZB itself doesn't reliably contain the release
-name (its meta name is often a raw usenet subject).
-"""
-
 NEWZNAB_AUTH_ERRORS = ("100", "101", "102")
 """
 Newznab error codes for incorrect user credentials, account suspended and
 insufficient privileges
 """
-
-
-def _remember_title(link: str, title: str) -> None:
-    "Remember the release title of an NZB link"
-    RECENT_TITLES[link] = title
-    RECENT_TITLES.move_to_end(link)
-    while len(RECENT_TITLES) > 10_000:
-        RECENT_TITLES.popitem(last=False)
-    return
 
 
 @IndexerClients.register_client(
@@ -97,8 +80,6 @@ class NewznabIndexer(BaseIndexerClient):
             parsed_size = int(size)
         else:
             parsed_size = -1
-
-        _remember_title(link, title)
 
         return {
             **extract_filename_data(

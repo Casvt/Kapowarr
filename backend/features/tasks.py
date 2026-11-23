@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Type, TypeVar, Union
 from backend.base.custom_exceptions import (CredentialInvalid, InvalidKeyValue,
                                             MetadataSourceNotWorking,
                                             TaskNotDeletable, TaskNotFound)
-from backend.base.definitions import FilenameData, QueuedTaskData, Task
+from backend.base.definitions import QueuedTaskData, Task
 from backend.base.helpers import Singleton, get_schedules_next_run
 from backend.base.logging import LOGGER
 from backend.features.download_queue import DownloadHandler
@@ -461,7 +461,7 @@ class DownloadTask(Task):
     """
 
     @abstractmethod
-    def run(self) -> List[Tuple[str, int, FilenameData, int, Union[int, None]]]:
+    def run(self) -> List[Tuple[str, int, str, int, Union[int, None]]]:
         ...
 
 
@@ -503,20 +503,12 @@ class AutoSearchIssue(DownloadTask):
         # Get search results and download them
         results = auto_search(self._volume_id, self._issue_id)
         downloads: List[Tuple[
-            str, int, FilenameData, int, Union[int, None]
+            str, int, str, int, Union[int, None]
         ]] = []
         for result in results:
-            title_data: FilenameData = {
-                "series": result["series"],
-                "year": result["year"],
-                "volume_number": result["volume_number"],
-                "special_version": result["special_version"],
-                "issue_number": result["issue_number"],
-                "annual": result["annual"]
-            }
             downloads.append((
                 result['link'], result["indexer_id"],
-                title_data,
+                result["display_title"],
                 self._volume_id, self._issue_id
             ))
 
@@ -664,20 +656,12 @@ class AutoSearchVolume(DownloadTask):
         # Get search results and download them
         results = auto_search(self._volume_id)
         downloads: List[Tuple[
-            str, int, FilenameData, int, Union[int, None]
+            str, int, str, int, Union[int, None]
         ]] = []
         for result in results:
-            title_data: FilenameData = {
-                "series": result["series"],
-                "year": result["year"],
-                "volume_number": result["volume_number"],
-                "special_version": result["special_version"],
-                "issue_number": result["issue_number"],
-                "annual": result["annual"]
-            }
             downloads.append((
                 result['link'], result["indexer_id"],
-                title_data,
+                result["display_title"],
                 self._volume_id, None
             ))
 
@@ -949,21 +933,13 @@ class RssSync(DownloadTask):
 
         results_per_volume = discover_downloads()
         downloads: List[Tuple[
-            str, int, FilenameData, int, Union[int, None]
+            str, int, str, int, Union[int, None]
         ]] = []
         for volume_id, results in results_per_volume.items():
             for result in results:
-                title_data: FilenameData = {
-                    "series": result["series"],
-                    "year": result["year"],
-                    "volume_number": result["volume_number"],
-                    "special_version": result["special_version"],
-                    "issue_number": result["issue_number"],
-                    "annual": result["annual"]
-                }
                 downloads.append((
                     result['link'], result["indexer_id"],
-                    title_data,
+                    result["display_title"],
                     volume_id, None
                 ))
 

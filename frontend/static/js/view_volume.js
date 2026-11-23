@@ -357,15 +357,6 @@ function showManualSearch(api_key, issue_id=null) {
 	fetchAPI(url, api_key)
 	.then(json => {
 		json.result.forEach(result => {
-			const title_data = {
-				series: result.series,
-				year: result.year,
-				volume_number: result.volume_number,
-				special_version: result.special_version,
-				issue_number: result.issue_number,
-				annual: result.annual
-			}
-			
 			const entry = ViewEls.pre_build.manual_search.cloneNode(true);
 			tbody.appendChild(entry);
 
@@ -407,12 +398,12 @@ function showManualSearch(api_key, issue_id=null) {
 			const download_button = entry.querySelector('.search-action-column :nth-child(1)');
 			download_button.classList.add('icon-text-color');
 			download_button.onclick =
-				() => addManualSearch(result.link, result.indexer_id, title_data, false, download_button, api_key, issue_id);
+				() => addManualSearch(result.link, result.indexer_id, result.display_title, false, download_button, api_key, issue_id);
 
 			const force_download_button = entry.querySelector('.search-action-column :nth-child(2)');
 			force_download_button.classList.add('icon-text-color');
 			force_download_button.onclick =
-				() => addManualSearch(result.link, result.indexer_id, title_data, true, force_download_button, api_key, issue_id);
+				() => addManualSearch(result.link, result.indexer_id, result.display_title, true, force_download_button, api_key, issue_id);
 
 			const blocklist_button = entry.querySelector('.search-action-column :nth-child(3)')
 			if (result.match_issue === null || !result.match_issue.includes('blocklist'))
@@ -434,7 +425,7 @@ function showManualSearch(api_key, issue_id=null) {
 	});
 };
 
-function addManualSearch(link, indexer_id, title_data, force, button, api_key, issue_id=null) {
+function addManualSearch(link, indexer_id, title, force, button, api_key, issue_id=null) {
 	button.classList.remove('error');
 	button.title = 'Download';
 	const img = button.querySelector('img');
@@ -449,7 +440,7 @@ function addManualSearch(link, indexer_id, title_data, force, button, api_key, i
 		link: link,
 		force_match: force,
 		indexer_id: indexer_id,
-		title_data: title_data
+		title: title
 	}
 
 	sendAPI('POST', url, api_key, {}, data)

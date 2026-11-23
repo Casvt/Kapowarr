@@ -7,7 +7,7 @@ from backend.base.custom_exceptions import (CredentialInvalid, InvalidKeyValue,
                                             MetadataSourceNotWorking,
                                             RootFolderNotFound,
                                             VolumeDownloadedFor)
-from backend.base.definitions import FilenameData, MonitorScheme, StatusType
+from backend.base.definitions import MonitorScheme, StatusType
 from backend.base.logging import LOGGER
 from backend.features.download_queue import DownloadHandler
 from backend.features.search_full import auto_search
@@ -194,20 +194,12 @@ def mass_editor_search(
 
         search_results = auto_search(volume_id)
         downloads: List[Tuple[
-            str, int, FilenameData, int, Union[int, None], bool
+            str, int, str, int, Union[int, None], bool
         ]] = []
         for result in search_results:
-            title_data: FilenameData = {
-                "series": result["series"],
-                "year": result["year"],
-                "volume_number": result["volume_number"],
-                "special_version": result["special_version"],
-                "issue_number": result["issue_number"],
-                "annual": result["annual"]
-            }
             downloads.append((
                 result['link'], result["indexer_id"],
-                title_data,
+                result["display_title"],
                 volume_id, None,
                 False
             ))

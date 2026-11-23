@@ -1221,14 +1221,14 @@ class Task(ABC):
 
     @abstractmethod
     def run(self) -> Union[None, List[Tuple[
-        str, int, FilenameData, int, Union[int, None]
+        str, int, str, int, Union[int, None]
     ]]]:
         """Run the task
 
         Returns:
             Union[None, List[Tuple[str, int, Union[int, None]]]]:
                 Either `None` if the task has no result or
-                `List[Tuple[str, int, FilenameData, int, Union[int, None]]]` if
+                `List[Tuple[str, int, str, int, Union[int, None]]]` if
                 the task returns search results.
         """
         ...
@@ -1652,7 +1652,7 @@ class DownloadPrepper(ABC):
         self,
         link: str,
         indexer_id: int,
-        title_data: FilenameData,
+        title: str,
         volume_id: int,
         issue_id: Union[int, None] = None,
         force_match: bool = False
@@ -1664,7 +1664,7 @@ class DownloadPrepper(ABC):
 
             indexer_id (int): The ID of the indexer that the link came from.
 
-            title_data (FilenameData): The filename data of the title.
+            title (str): The original title returned by the indexer.
 
             volume_id (int): The ID of the volume for which the download is
                 intended.
