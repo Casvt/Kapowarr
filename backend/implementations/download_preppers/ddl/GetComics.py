@@ -597,88 +597,121 @@ class GetComicsPrepper(DownloadPrepper):
 
     async def __purify_download_group(
         self,
-        group: DownloadGroup
-    ) -> Tuple[Union[Download, None], bool]:
-        """Turn a download group into a working link and client for the link.
+        group: DownloadGroup,
+        links: List[Tuple[GCDownloadService, str]],
+        start_index: int
+    ) -> Tuple[
+        Union[Tuple[GCDownloadService, str, DownloadClientIdentifier], None],
+        int
+    ]:
+        """Find the next usable link in a download group.
 
         Args:
             group (DownloadGroup): The download group to convert.
+            links (List[Tuple[GCDownloadService, str]]): The group's links.
+            start_index (int): The first link to try.
 
         Returns:
-            Tuple[Union[Download, None], bool]: If successful, the download and
-                `False`. If unsuccessful, `None` and whether it failed because
-                the rate limit of a service was reached.
+            Tuple[Union[Tuple[GCDownloadService, str, DownloadClientIdentifier], None], int]:
+                The service, purified link, client identifier, and next link
+                index, or `None` and the index after the last link.
         """
-        limit_reached = False
-        for service, links in group['links'].items():
-            for link in iter_commit(links):
-                try:
-                    pure_link, identifier = await _purify_link(service, link)
+        for index in range(start_index, len(links)):
+            service, link = links[index]
+            try:
+                pure_link, identifier = await _purify_link(service, link)
 
-                except DownloadLinkBroken:
-                    # Link broken
-                    add_to_blocklist(
-                        web_link=self.link,
-                        web_title=self._web_title,
-                        web_sub_title=group['web_sub_title'],
-                        download_link=link,
-                        download_service=service,
-                        volume_id=self.volume_id,
-                        issue_id=self.issue_id,
-                        reason=BlocklistReason.LINK_BROKEN
-                    )
-                    continue
+            except DownloadLinkBroken:
+                # Link broken
+                add_to_blocklist(
+                    web_link=self.link,
+                    web_title=self._web_title,
+                    web_sub_title=group['web_sub_title'],
+                    download_link=link,
+                    download_service=service,
+                    volume_id=self.volume_id,
+                    issue_id=self.issue_id,
+                    reason=BlocklistReason.LINK_BROKEN
+                )
+                continue
 
-                except ClientError:
-                    # Link blocked by CF and FS not setup
-                    continue
+            except ClientError:
+                # Link blocked by CF and FS not setup
+                continue
 
-                except DownloadServiceRateLimitReached:
-                    # Link is rate limited so just go to the next one
-                    continue
+            except DownloadServiceRateLimitReached:
+                # Link is rate limited so just go to the next one
+                continue
 
-                try:
-                    dl_instance = DownloadClients.get_client(identifier)(
-                        download_link=pure_link,
-                        volume_id=self.volume_id,
-                        covered_issues=group["info"]["issue_number"],
-                        download_service=service, # type: ignore
-                        source_name=service.value,
-                        web_link=self.link,
-                        web_title=self._web_title,
-                        web_sub_title=group['web_sub_title'],
-                        forced_match=self.force_match
-                    )
+            return (service, pure_link, identifier), index + 1
 
-                except DownloadLinkBroken:
-                    # Link broken
-                    add_to_blocklist(
-                        web_link=self.link,
-                        web_title=self._web_title,
-                        web_sub_title=group['web_sub_title'],
-                        download_link=pure_link,
-                        download_service=service,
-                        volume_id=self.volume_id,
-                        issue_id=self.issue_id,
-                        reason=BlocklistReason.LINK_BROKEN
-                    )
+        return None, len(links)
 
-                except IssueNotFound:
-                    # The group refers to issues that don't exist in the
-                    # volume, and download is not forced.
-                    return None, False
+    async def __purify_download_groups(
+        self,
+        pending: List[
+            Tuple[DownloadGroup, List[Tuple[GCDownloadService, str]], int]
+        ]
+    ) -> List[Tuple[
+        Union[Tuple[GCDownloadService, str, DownloadClientIdentifier], None],
+        int
+    ]]:
+        return list(await gather(*(
+            self.__purify_download_group(group, links, start_index)
+            for group, links, start_index in pending
+        )))
 
-                except DownloadServiceRateLimitReached:
-                    # Link works but the download limit for the service is
-                    # reached
-                    limit_reached = True
+    def __create_download(
+        self,
+        group: DownloadGroup,
+        candidate: Tuple[GCDownloadService, str, DownloadClientIdentifier]
+    ) -> Tuple[Union[Download, None], bool, bool]:
+        """Create a download outside the event loop used to resolve its link.
 
-                else:
-                    return dl_instance, limit_reached
+        Returns:
+            Tuple[Union[Download, None], bool, bool]: The download, whether to
+                try another link, and whether a service rate limit was reached.
+        """
+        service, pure_link, identifier = candidate
+        try:
+            dl_instance = DownloadClients.get_client(identifier)(
+                download_link=pure_link,
+                volume_id=self.volume_id,
+                covered_issues=group["info"]["issue_number"],
+                download_service=service, # type: ignore
+                source_name=service.value,
+                web_link=self.link,
+                web_title=self._web_title,
+                web_sub_title=group['web_sub_title'],
+                forced_match=self.force_match
+            )
 
-        return None, limit_reached
+        except DownloadLinkBroken:
+            # Link broken
+            add_to_blocklist(
+                web_link=self.link,
+                web_title=self._web_title,
+                web_sub_title=group['web_sub_title'],
+                download_link=pure_link,
+                download_service=service,
+                volume_id=self.volume_id,
+                issue_id=self.issue_id,
+                reason=BlocklistReason.LINK_BROKEN
+            )
+            return None, True, False
 
-    async def __test_paths(
+        except IssueNotFound:
+            # The group refers to issues that don't exist in the
+            # volume, and download is not forced.
+            return None, False, False
+
+        except DownloadServiceRateLimitReached:
+            # Link works but the download limit for the service is reached.
+            return None, True, True
+
+        return dl_instance, False, False
+
+    def __test_paths(
         self,
         link_paths: List[List[DownloadGroup]]
     ) -> List[Download]:
@@ -695,23 +728,54 @@ class GetComicsPrepper(DownloadPrepper):
         Returns:
             List[Download]: A list of downloads.
         """
-        downloads: Tuple[Union[Download, None], ...] = tuple()
-        limit_reached: Tuple[bool, ...] = tuple()
+        last_limit_reached = False
         for path in link_paths:
-            downloads, limit_reached = zip(*(await gather(*(
-                self.__purify_download_group(group)
+            pending = [
+                (
+                    group,
+                    [
+                        (service, link)
+                        for service, links in group['links'].items()
+                        for link in links
+                    ],
+                    0
+                )
                 for group in path
-            ))))
-            downloads = tuple(d for d in downloads if d is not None)
+            ]
+            downloads: List[Download] = []
+            limit_reached = False
 
-            if not downloads:
-                continue
+            while pending:
+                candidates = run(self.__purify_download_groups(pending))
 
-            LOGGER.debug(f'Chosen links: {downloads}')
-            return list(downloads)
+                next_pending = []
+                for (group, links, _), (candidate, next_index) in iter_commit(
+                    zip(pending, candidates)
+                ):
+                    if candidate is None:
+                        continue
+
+                    download, try_next, rate_limited = self.__create_download(
+                        group,
+                        candidate
+                    )
+                    limit_reached = limit_reached or rate_limited
+
+                    if download is not None:
+                        downloads.append(download)
+                    elif try_next and next_index < len(links):
+                        next_pending.append((group, links, next_index))
+
+                pending = next_pending
+
+            if downloads:
+                LOGGER.debug(f'Chosen links: {downloads}')
+                return downloads
+
+            last_limit_reached = limit_reached
 
         # Nothing worked
-        if any(limit_reached):
+        if last_limit_reached:
             raise EnqueuingDownloadFailure(
                 EnqueuingDownloadFailureReason.ONLY_RATE_LIMITED_LINKS
             )
@@ -732,6 +796,6 @@ class GetComicsPrepper(DownloadPrepper):
                 EnqueuingDownloadFailureReason.NO_MATCHES
             )
 
-        working_downloads = run(self.__test_paths(link_paths))
+        working_downloads = self.__test_paths(link_paths)
 
         return working_downloads
