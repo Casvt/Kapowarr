@@ -75,6 +75,9 @@ class TorznabIndexer(BaseIndexerClient):
             return None
         magnet_link = unquote(unescape(magnet_link))
 
+        comments = item.findtext("comments") or ""
+        web_link = comments if comments.startswith("http") else None
+
         # Size
         size = torznab_keys.get("size", "")
         if (
@@ -104,6 +107,7 @@ class TorznabIndexer(BaseIndexerClient):
                 fix_year=True
             ),
             "link": magnet_link,
+            "web_link": web_link,
             "display_title": title,
             "size": parsed_size,
             "indexer_id": self._id,

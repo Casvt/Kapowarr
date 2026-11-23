@@ -375,7 +375,7 @@ function showManualSearch(api_key, issue_id=null) {
 				);
 
 			const title = entry.querySelector('a');
-			title.href = result.link;
+			title.href = result.web_link;
 			title.innerText = result.display_title;
 
 			entry.querySelector('.source-column').innerText = result.indexer_title;
@@ -398,12 +398,12 @@ function showManualSearch(api_key, issue_id=null) {
 			const download_button = entry.querySelector('.search-action-column :nth-child(1)');
 			download_button.classList.add('icon-text-color');
 			download_button.onclick =
-				() => addManualSearch(result.link, result.indexer_id, result.display_title, false, download_button, api_key, issue_id);
+				() => addManualSearch(result.link, result.web_link, result.indexer_id, result.display_title, false, download_button, api_key, issue_id);
 
 			const force_download_button = entry.querySelector('.search-action-column :nth-child(2)');
 			force_download_button.classList.add('icon-text-color');
 			force_download_button.onclick =
-				() => addManualSearch(result.link, result.indexer_id, result.display_title, true, force_download_button, api_key, issue_id);
+				() => addManualSearch(result.link, result.web_link, result.indexer_id, result.display_title, true, force_download_button, api_key, issue_id);
 
 			const blocklist_button = entry.querySelector('.search-action-column :nth-child(3)')
 			if (result.match_issue === null || !result.match_issue.includes('blocklist'))
@@ -425,7 +425,7 @@ function showManualSearch(api_key, issue_id=null) {
 	});
 };
 
-function addManualSearch(link, indexer_id, title, force, button, api_key, issue_id=null) {
+function addManualSearch(link, web_link, indexer_id, title, force, button, api_key, issue_id=null) {
 	button.classList.remove('error');
 	button.title = 'Download';
 	const img = button.querySelector('img');
@@ -440,7 +440,8 @@ function addManualSearch(link, indexer_id, title, force, button, api_key, issue_
 		link: link,
 		force_match: force,
 		indexer_id: indexer_id,
-		title: title
+		title: title,
+		web_link: web_link
 	}
 
 	sendAPI('POST', url, api_key, {}, data)

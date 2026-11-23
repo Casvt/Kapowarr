@@ -426,9 +426,11 @@ class GetComicsPrepper(DownloadPrepper):
         title: str,
         volume_id: int,
         issue_id: Union[int, None] = None,
+        web_link: Union[str, None] = None,
         force_match: bool = False
     ) -> None:
         self.link = link
+        self.web_link = web_link or link
         self.indexer_id = indexer_id
         self.volume_id = volume_id
         self.issue_id = issue_id
@@ -629,7 +631,7 @@ class GetComicsPrepper(DownloadPrepper):
             except DownloadLinkBroken:
                 # Link broken
                 add_to_blocklist(
-                    web_link=self.link,
+                    web_link=self.web_link,
                     web_title=self._web_title,
                     web_sub_title=group['web_sub_title'],
                     download_link=link,
@@ -685,7 +687,7 @@ class GetComicsPrepper(DownloadPrepper):
                 covered_issues=group["info"]["issue_number"],
                 download_service=service, # type: ignore
                 source_name=service.value,
-                web_link=self.link,
+                web_link=self.web_link,
                 web_title=self._web_title,
                 web_sub_title=group['web_sub_title'],
                 forced_match=self.force_match
@@ -694,7 +696,7 @@ class GetComicsPrepper(DownloadPrepper):
         except DownloadLinkBroken:
             # Link broken
             add_to_blocklist(
-                web_link=self.link,
+                web_link=self.web_link,
                 web_title=self._web_title,
                 web_sub_title=group['web_sub_title'],
                 download_link=pure_link,

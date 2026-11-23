@@ -66,6 +66,9 @@ class NewznabIndexer(BaseIndexerClient):
             return None
         link = unquote(unescape(link))
 
+        comments = item.findtext("comments") or ""
+        web_link = comments if comments.startswith("http") else None
+
         # Size
         size = newznab_keys.get("size", "")
         if (
@@ -88,6 +91,7 @@ class NewznabIndexer(BaseIndexerClient):
                 fix_year=True
             ),
             "link": link,
+            "web_link": web_link,
             "display_title": title,
             "size": parsed_size,
             "indexer_id": self._id,

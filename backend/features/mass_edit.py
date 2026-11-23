@@ -194,13 +194,14 @@ def mass_editor_search(
 
         search_results = auto_search(volume_id)
         downloads: List[Tuple[
-            str, int, str, int, Union[int, None], bool
+            str, int, str, int, Union[int, None], Union[str, None], bool
         ]] = []
         for result in search_results:
             downloads.append((
                 result['link'], result["indexer_id"],
                 result["display_title"],
                 volume_id, None,
+                result["web_link"],
                 False
             ))
 

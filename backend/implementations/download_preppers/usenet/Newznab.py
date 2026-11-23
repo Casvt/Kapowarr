@@ -31,9 +31,11 @@ class NewznabPrepper(DownloadPrepper):
         title: str,
         volume_id: int,
         issue_id: Union[int, None] = None,
+        web_link: Union[str, None] = None,
         force_match: bool = False
     ) -> None:
         self.link = link
+        self.web_link = web_link
         self.indexer_id = indexer_id
         self.title = title
         self.title_data = extract_filename_data(
@@ -95,7 +97,7 @@ class NewznabPrepper(DownloadPrepper):
                 source_name=IndexerClients.get_client(
                     self.indexer_id
                 ).title,
-                web_link=None,
+                web_link=self.web_link,
                 web_title=self._web_title,
                 web_sub_title=None,
                 forced_match=self.force_match

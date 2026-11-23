@@ -1260,12 +1260,20 @@ def api_volume_download(id: int):
     if not isinstance(data["title"], str):
         raise InvalidKeyValue("title", data["title"])
 
+    web_link = data.get("web_link")
+    if not (
+        web_link is None
+        or web_link and isinstance(web_link, str)
+    ):
+        raise InvalidKeyValue("web_link", web_link)
+
     result = DownloadHandler().add(
         data["link"],
         indexer_id=data["indexer_id"],
         title=data["title"],
         volume_id=id,
         issue_id=None,
+        web_link=web_link,
         force_match=data["force_match"]
     )
     return return_api(result, code=201)
@@ -1313,12 +1321,20 @@ def api_issue_download(id: int):
     if not isinstance(data["title"], str):
         raise InvalidKeyValue("title", data["title"])
 
+    web_link = data.get("web_link")
+    if not (
+        web_link is None
+        or web_link and isinstance(web_link, str)
+    ):
+        raise InvalidKeyValue("web_link", web_link)
+
     result = DownloadHandler().add(
         data["link"],
         indexer_id=data["indexer_id"],
         title=data["title"],
         volume_id=volume_id,
         issue_id=id,
+        web_link=web_link,
         force_match=data["force_match"]
     )
     return return_api(result, code=201)

@@ -145,6 +145,7 @@ class DownloadHandler(metaclass=Singleton):
         title: str,
         volume_id: int,
         issue_id: Union[int, None] = None,
+        web_link: Union[str, None] = None,
         force_match: bool = False
     ) -> List[Dict[str, Any]]:
         """Add a download to the queue.
@@ -161,6 +162,10 @@ class DownloadHandler(metaclass=Singleton):
 
             issue_id (Union[int, None], optional): The ID of the issue for which
                 the download is intended.
+                Defaults to None.
+
+            web_link (Union[str, None], optional): A link to the webpage for
+                the download.
                 Defaults to None.
 
             force_match (bool, optional): On sources where downloads are
@@ -191,6 +196,7 @@ class DownloadHandler(metaclass=Singleton):
             link, indexer_id,
             title,
             volume_id, issue_id,
+            web_link,
             force_match
         )
 
@@ -234,7 +240,7 @@ class DownloadHandler(metaclass=Singleton):
         return [r.as_dict() for r in result]
 
     def add_multiple(self, add_args: Iterable[Tuple[
-        str, int, str, int, Union[int, None], bool
+        str, int, str, int, Union[int, None], Union[str, None], bool
     ]]) -> None:
         for entry in add_args:
             try:

@@ -117,7 +117,11 @@ class TaskHandler(metaclass=Singleton):
             if not task.stop:
                 if isinstance(task, DownloadTask) and results:
                     DownloadHandler().add_multiple(
-                        (*result, False) for result in results
+                        (
+                            result[0], result[1], result[2], result[3],
+                            result[4], result[5], False
+                        )
+                        for result in results
                     )
 
                 LOGGER.info(f'Finished task {task.display_title}')
@@ -461,7 +465,9 @@ class DownloadTask(Task):
     """
 
     @abstractmethod
-    def run(self) -> List[Tuple[str, int, str, int, Union[int, None]]]:
+    def run(self) -> List[Tuple[
+        str, int, str, int, Union[int, None], Union[str, None]
+    ]]:
         ...
 
 
@@ -503,13 +509,14 @@ class AutoSearchIssue(DownloadTask):
         # Get search results and download them
         results = auto_search(self._volume_id, self._issue_id)
         downloads: List[Tuple[
-            str, int, str, int, Union[int, None]
+            str, int, str, int, Union[int, None], Union[str, None]
         ]] = []
         for result in results:
             downloads.append((
                 result['link'], result["indexer_id"],
                 result["display_title"],
-                self._volume_id, self._issue_id
+                self._volume_id, self._issue_id,
+                result["web_link"]
             ))
 
         return downloads
@@ -656,13 +663,14 @@ class AutoSearchVolume(DownloadTask):
         # Get search results and download them
         results = auto_search(self._volume_id)
         downloads: List[Tuple[
-            str, int, str, int, Union[int, None]
+            str, int, str, int, Union[int, None], Union[str, None]
         ]] = []
         for result in results:
             downloads.append((
                 result['link'], result["indexer_id"],
                 result["display_title"],
-                self._volume_id, None
+                self._volume_id, None,
+                result["web_link"]
             ))
 
         return downloads
@@ -933,14 +941,15 @@ class RssSync(DownloadTask):
 
         results_per_volume = discover_downloads()
         downloads: List[Tuple[
-            str, int, str, int, Union[int, None]
+            str, int, str, int, Union[int, None], Union[str, None]
         ]] = []
         for volume_id, results in results_per_volume.items():
             for result in results:
                 downloads.append((
                     result['link'], result["indexer_id"],
                     result["display_title"],
-                    volume_id, None
+                    volume_id, None,
+                    result["web_link"]
                 ))
 
         return downloads

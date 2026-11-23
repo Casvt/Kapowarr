@@ -720,6 +720,7 @@ class SearchQuery(TypedDict):
 
 class SearchResultData(FilenameData):
     link: str
+    web_link: Union[str, None]
     display_title: str
     size: int
     indexer_id: int
@@ -1221,15 +1222,17 @@ class Task(ABC):
 
     @abstractmethod
     def run(self) -> Union[None, List[Tuple[
-        str, int, str, int, Union[int, None]
+        str, int, str, int, Union[int, None], Union[str, None]
     ]]]:
         """Run the task
 
         Returns:
-            Union[None, List[Tuple[str, int, Union[int, None]]]]:
+            Union[None, List[Tuple[
+                str, int, str, int, Union[int, None], Union[str, None]
+            ]]]:
                 Either `None` if the task has no result or
-                `List[Tuple[str, int, str, int, Union[int, None]]]` if
-                the task returns search results.
+                a list containing the download link, indexer ID, title, volume
+                ID, optional issue ID and optional web link.
         """
         ...
 
@@ -1655,6 +1658,7 @@ class DownloadPrepper(ABC):
         title: str,
         volume_id: int,
         issue_id: Union[int, None] = None,
+        web_link: Union[str, None] = None,
         force_match: bool = False
     ) -> None:
         """Set up the prepper.
@@ -1671,6 +1675,10 @@ class DownloadPrepper(ABC):
 
             issue_id (Union[int, None], optional): The ID of the issue for which
                 the download is intended.
+                Defaults to None.
+
+            web_link (Union[str, None], optional): A link to the webpage for
+                the download.
                 Defaults to None.
 
             force_match (bool, optional): On sources where downloads are

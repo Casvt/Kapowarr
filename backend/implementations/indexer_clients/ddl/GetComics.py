@@ -138,6 +138,7 @@ class GetComicsIndexer(BaseIndexerClient):
                     fix_year=True
                 ),
                 "link": article[0],
+                "web_link": article[0],
                 "display_title": article[1],
                 "size": article[2],
                 "indexer_id": self._id,
@@ -203,6 +204,7 @@ class GetComicsIndexer(BaseIndexerClient):
                     fix_year=True
                 ),
                 "link": link,
+                "web_link": link,
                 "display_title": display_title,
                 "size": -1,
                 "indexer_id": self._id,
